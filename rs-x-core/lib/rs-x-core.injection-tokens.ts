@@ -1,0 +1,15 @@
+export const RsXCoreInjectionTokens = {
+   IInjectionContainer: Symbol('IInjectionContainer'),
+   IErrorLog: Symbol('IErrorLog'),
+   IIndexValueAccessorProvider: Symbol('IIndexValueAccessorProvider'),
+   IIndexValueAccessor: Symbol('IIndexValueAccessor'),
+   IMapKeyAccessor: Symbol('IMapKeyAccessor'),
+   ISetKeyAccessor: Symbol('ISetKeyAccessor'),
+   IArrayIndexAccessor: Symbol('IArrayIndexAccessor'),
+   IPropertyValueAccessor: Symbol('IPropertyValueAccessor'),
+   IMethodAccessor: Symbol('IPropertyValueAccessor'),
+   IDeepClone: Symbol('IDeepClone'),
+   IEqualityService: Symbol('IEqualityService'),
+   IObservableAccessor: Symbol('IObservableAccessor'),
+   IPromiseAccessor: Symbol('IPromiseAccessor'),
+};
