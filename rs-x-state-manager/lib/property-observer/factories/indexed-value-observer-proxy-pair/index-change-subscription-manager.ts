@@ -3,7 +3,7 @@ import {
    IPropertyChange,
    ISingletonFactory,
    SingletonFactory,
-} from '@rs-x-core';
+} from '@rs-x/core';
 import { IDisposableOwner } from '../../../disposable-owner.interface';
 import {
    GroupedChangeSubscriptionsForContextManager,

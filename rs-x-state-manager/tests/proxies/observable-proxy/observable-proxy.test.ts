@@ -1,7 +1,7 @@
-import { IPropertyChange, ObservableAccessor, WaitForEvent } from '@rs-x-core';
+import { IPropertyChange, ObservableAccessor, WaitForEvent } from '@rs-x/core';
 import { Observable, Subject } from 'rxjs';
 import { ObservableProxyFactory } from '../../../lib/proxies/observable-proxy/observable-proxy.factory';
-import { ObservableMock, SubscriptionMock } from '@rs-x-core/testing';
+import { ObservableMock, SubscriptionMock } from '@rs-x/core/testing';
 
 describe('ObserableProxy tests', () => {
    it('passed in observable is used as id', () => {

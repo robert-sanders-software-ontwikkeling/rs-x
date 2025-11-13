@@ -4,7 +4,7 @@ import {
    truePredicate,
    Type,
    WaitForEvent,
-} from '@rs-x-core';
+} from '@rs-x/core';
 import { ArrayProxyFactory } from '../../../lib/proxies/array-proxy/array-proxy.factory';
 import {
    IArrayObserverProxyPair,

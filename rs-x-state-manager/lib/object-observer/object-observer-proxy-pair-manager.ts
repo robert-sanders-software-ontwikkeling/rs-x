@@ -3,7 +3,7 @@ import {
    Injectable,
    InvalidOperationException,
    SingletonFactory,
-} from '@rs-x-core';
+} from '@rs-x/core';
 import { IObserverProxyPair } from '../object-property-observer-proxy-pair-manager.type';
 import { IProxyRegistry } from '../proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerInjectionTokens } from '../rs-x-state-manager-injection-tokes';

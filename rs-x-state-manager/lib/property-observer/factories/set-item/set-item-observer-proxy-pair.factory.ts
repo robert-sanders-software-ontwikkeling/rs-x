@@ -5,7 +5,7 @@ import {
    Injectable,
    RsXCoreInjectionTokens,
    truePredicate,
-} from '@rs-x-core';
+} from '@rs-x/core';
 import { IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
 import { IndexObserverProxyPairFactory } from '../indexed-value-observer-proxy-pair/indexed-value-observer-proxy-pair.factory';

@@ -1,4 +1,4 @@
-import { ObservableAccessor } from '@rs-x-core';
+import { ObservableAccessor } from '@rs-x/core';
 import { Observable } from 'rxjs';
 import { ObservableProxyFactory } from '../../../lib/proxies/observable-proxy/observable-proxy.factory';
 

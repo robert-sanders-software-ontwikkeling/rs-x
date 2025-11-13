@@ -3,7 +3,7 @@ import {
    Injectable,
    SingletonFactory,
    SingletonFactoryWithGuid,
-} from '@rs-x-core';
+} from '@rs-x/core';
 import { AbstractExpression } from '../expressions/abstract-expression';
 import { IExpressionParser } from '../expressions/interfaces';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';

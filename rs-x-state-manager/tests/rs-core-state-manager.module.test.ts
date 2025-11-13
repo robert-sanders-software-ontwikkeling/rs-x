@@ -1,4 +1,4 @@
-import { InjectionContainer } from '@rs-x-core';
+import { InjectionContainer } from '@rs-x/core';
 import { ArrayObserverProxyPairFactory } from '../lib/object-observer/factories/array-observer-proxy-pair.factory';
 import { MapObserverProxyPairFactory } from '../lib/object-observer/factories/map-observer-proxy-pair.factory';
 import { ObservableObserverProxyPairFactory } from '../lib/object-observer/factories/observable-observer-proxy-pair.factory';

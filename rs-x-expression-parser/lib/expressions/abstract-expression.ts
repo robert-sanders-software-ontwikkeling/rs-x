@@ -1,4 +1,4 @@
-import { IStateManager, MustProxify } from '@rs-x-state-manager';
+import { IStateManager, MustProxify } from '@rs-x/state-manager';
 import { Observable, ReplaySubject, Subscription } from 'rxjs';
 import { ExpressionType, IExpression } from './interfaces';
 

@@ -7,6 +7,5 @@ export * from './index-value-accessor';
 export * from './rs-x-core.injection-tokens';
 export * from './rs-x-core.module';
 export * from './singleton-factory';
-export * from './testing';
 export * from './types';
 export * from './wait-for-event';

@@ -4,7 +4,7 @@ import {
    IPropertyChange,
    truePredicate,
    WaitForEvent,
-} from '@rs-x-core';
+} from '@rs-x/core';
 import { IProxyRegistry } from 'rs-x-state-manager/lib/proxies/proxy-registry/proxy-registry.interface';
 import { ISetObserverProxyPairFactory } from '../../../lib/object-observer/factories/set-observer-proxy-pair.factory.type';
 import { IObjectPropertyObserverProxyPairManager } from '../../../lib/object-property-observer-proxy-pair-manager.type';

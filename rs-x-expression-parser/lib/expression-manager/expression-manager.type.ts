@@ -1,4 +1,4 @@
-import { ISingletonFactory } from '@rs-x-core';
+import { ISingletonFactory } from '@rs-x/core';
 import { AbstractExpression } from '../expressions/abstract-expression';
 
 export interface IExpressionInfo {

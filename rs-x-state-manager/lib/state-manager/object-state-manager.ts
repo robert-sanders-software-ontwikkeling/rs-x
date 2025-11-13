@@ -5,7 +5,7 @@ import {
    RsXCoreInjectionTokens,
    SingletonFactory,
    UnsupportedException,
-} from '@rs-x-core';
+} from '@rs-x/core';
 import {
    IObjectStateManager,
    IState,

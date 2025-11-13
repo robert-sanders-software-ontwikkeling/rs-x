@@ -4,7 +4,7 @@ import {
    SingletonFactory,
    SingletonFactoryWithGuid,
    UnsupportedException,
-} from '@rs-x-core';
+} from '@rs-x/core';
 import {
    IObjectPropertyObserverProxyPairManager,
    IObserverProxyPair,

@@ -1,4 +1,4 @@
-import { InjectionContainer, truePredicate } from '@rs-x-core';
+import { InjectionContainer, truePredicate } from '@rs-x/core';
 import { IIndexValueObserverManager } from '../../lib/index-value-observer-manager/index-value-manager-observer.type';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
 import {

@@ -1,4 +1,4 @@
-import { InjectionContainer, IPropertyChange, WaitForEvent } from '@rs-x-core';
+import { InjectionContainer, IPropertyChange, WaitForEvent } from '@rs-x/core';
 import { IMapItemObserverManager } from '../../../../lib/property-observer/factories/map-item/map-item-observer-manager.type';
 import { IMapProxyFactory } from '../../../../lib/proxies/map-proxy/map-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';

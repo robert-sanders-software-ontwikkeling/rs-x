@@ -7,12 +7,12 @@ import {
    RsXCoreInjectionTokens,
    Type,
    UnsupportedException,
-} from '@rs-x-core';
+} from '@rs-x/core';
 import {
    IMustProxifyItemHandlerFactory,
    IStateManager,
    RsXStateManagerInjectionTokens,
-} from '@rs-x-state-manager';
+} from '@rs-x/state-manager';
 import { generate as astToString } from 'astring';
 import * as espree from 'espree';
 import * as estraverse from 'estraverse';

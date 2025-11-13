@@ -1,5 +1,5 @@
-import { IDisposable } from '@rs-x-core';
-import { IStateChange } from '@rs-x-state-manager';
+import { IDisposable } from '@rs-x/core';
+import { IStateChange } from '@rs-x/state-manager';
 import { Observable } from 'rxjs';
 
 export interface IIndexValueObserver extends IDisposable {

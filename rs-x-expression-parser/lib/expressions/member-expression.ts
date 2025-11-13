@@ -1,8 +1,8 @@
-import { emptyFunction, IIndexValueAccessor, truePredicate } from '@rs-x-core';
+import { emptyFunction, IIndexValueAccessor, truePredicate } from '@rs-x/core';
 import {
    IMustProxifyItemHandlerFactory,
    MustProxify,
-} from '@rs-x-state-manager';
+} from '@rs-x/state-manager';
 import { Subscription } from 'rxjs';
 import { IIndexValueObserverManager } from '../index-value-observer-manager/index-value-manager-observer.type';
 import {

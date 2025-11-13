@@ -1,4 +1,4 @@
-import { echo, Inject, Injectable, SingletonFactoryWithGuid } from '@rs-x-core';
+import { echo, Inject, Injectable, SingletonFactoryWithGuid } from '@rs-x/core';
 import { AbstractObserver } from '../../abstract-observer';
 import { IDisposableOwner } from '../../disposable-owner.interface';
 import { MustProxify } from '../../object-property-observer-proxy-pair-manager.type';

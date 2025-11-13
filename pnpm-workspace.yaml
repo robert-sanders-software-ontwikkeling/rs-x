@@ -1,0 +1,4 @@
+packages:
+  - "rs-x-core"
+  - "rs-x-expression-parser"
+  - "rs-x-state-manager"

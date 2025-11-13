@@ -4,7 +4,7 @@ import {
    Injectable,
    replaceSetItemAt,
    RsXCoreInjectionTokens,
-} from '@rs-x-core';
+} from '@rs-x/core';
 import { IObjectPropertyObserverProxyPairManager } from '../../object-property-observer-proxy-pair-manager.type';
 import { IMustProxifyItemHandlerFactory } from '../../property-observer/must-proxify-item-handler.factory.type';
 import { IProxyRegistry } from '../../proxies/proxy-registry/proxy-registry.interface';

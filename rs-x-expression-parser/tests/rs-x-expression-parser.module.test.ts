@@ -1,4 +1,4 @@
-import { InjectionContainer } from '@rs-x-core';
+import { InjectionContainer } from '@rs-x/core';
 import { ExpressionManager } from '../lib/expression-manager/expression-manager';
 
 import { ArrayIndexOwnerResolver } from '../lib/index-value-observer-manager/array-index-owner-resolver';

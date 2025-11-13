@@ -1,4 +1,4 @@
-import { ISingletonFactory } from '@rs-x-core';
+import { ISingletonFactory } from '@rs-x/core';
 import { MustProxify } from '../../../object-property-observer-proxy-pair-manager.type';
 import { IObserver } from '../../../observer.interface';
 import { IIndexObserverInfo } from '../index-observer-info.interface';

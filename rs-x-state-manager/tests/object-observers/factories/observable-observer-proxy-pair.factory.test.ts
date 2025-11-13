@@ -1,5 +1,5 @@
-import { InjectionContainer, IPropertyChange, WaitForEvent } from '@rs-x-core';
-import { ObservableMock, SubscriptionMock } from '@rs-x-core/testing';
+import { InjectionContainer, IPropertyChange, WaitForEvent } from '@rs-x/core';
+import { ObservableMock, SubscriptionMock } from '@rs-x/core/testing';
 import { Subject } from 'rxjs';
 import { IObjectObserverProxyPairFactory } from '../../../lib/object-observer/object-observer-proxy-pair.factory.interface';
 import { IObserver } from '../../../lib/observer.interface';

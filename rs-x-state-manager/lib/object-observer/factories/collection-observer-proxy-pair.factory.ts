@@ -1,4 +1,4 @@
-import { Assertion, IErrorLog } from '@rs-x-core';
+import { Assertion, IErrorLog } from '@rs-x/core';
 import { IDisposableOwner } from '../../disposable-owner.interface';
 import {
    IObjectPropertyObserverProxyPairManager,

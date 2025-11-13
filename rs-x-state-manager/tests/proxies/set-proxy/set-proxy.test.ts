@@ -1,4 +1,4 @@
-import { echo, IPropertyChange, truePredicate, WaitForEvent } from '@rs-x-core';
+import { echo, IPropertyChange, truePredicate, WaitForEvent } from '@rs-x/core';
 import { SetProxyFactory } from '../../../lib/proxies/set-proxy/set-proxy.factory';
 import {
    ISetObserverProxyPair,

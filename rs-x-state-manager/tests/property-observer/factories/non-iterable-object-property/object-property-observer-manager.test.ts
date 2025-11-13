@@ -1,4 +1,4 @@
-import { InjectionContainer, IPropertyChange, WaitForEvent } from '@rs-x-core';
+import { InjectionContainer, IPropertyChange, WaitForEvent } from '@rs-x/core';
 import { IObjectPropertyObserverManager } from '../../../../lib/property-observer/factories/non-iterable-object-property/object-property-observer-manager.type';
 import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';

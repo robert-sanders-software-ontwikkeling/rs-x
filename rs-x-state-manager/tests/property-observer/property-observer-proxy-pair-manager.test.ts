@@ -1,4 +1,4 @@
-import { UnsupportedException } from '@rs-x-core';
+import { UnsupportedException } from '@rs-x/core';
 import { ObjectPropertyObserverProxyPairManager } from '../../lib/object-property-observer-proxy-pair-manager';
 import { IPropertyObserverProxyPairManager } from '../../lib/object-property-observer-proxy-pair-manager.type';
 import { ObserverMock } from '../../lib/testing/observer.mock';

@@ -1,4 +1,4 @@
-import { replaceSetItemAt } from '@rs-x-core';
+import { replaceSetItemAt } from '@rs-x/core';
 import { Injectable } from '../dependency-injection';
 import { ISetKeyAccessor } from './set-key-accessor.type';
 

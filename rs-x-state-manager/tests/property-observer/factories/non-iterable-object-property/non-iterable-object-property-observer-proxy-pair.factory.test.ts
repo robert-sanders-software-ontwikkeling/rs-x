@@ -3,7 +3,7 @@ import {
    IPropertyChange,
    truePredicate,
    WaitForEvent,
-} from '@rs-x-core';
+} from '@rs-x/core';
 import { of } from 'rxjs';
 import { IObserver } from '../../../../lib/observer.interface';
 import { IPropertyObserverProxyPairFactory } from '../../../../lib/property-observer/property-observer-proxy-pair.factory.interface';

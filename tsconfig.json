@@ -24,19 +24,19 @@
       "inlineSources": true,
       "noImplicitOverride": true,
       "paths": {
-         "@rs-x-core": [
+         "@rs-x/core": [
             "rs-x-core/lib/index.ts"
          ],
-         "@rs-x-core/testing": [
+         "@rs-x/core/testing": [
             "rs-x-core/lib/testing/index.ts"
          ],
-         "@rs-x-state-manager": [
+         "@rs-x/state-manager": [
             "rs-x-state-manager/lib/index.ts"
          ],
-         "@rs-x-state-manager/testing": [
+         "@rs-x/state-manager/testing": [
             "rs-x-state-manager/lib/testing/index.ts"
          ],
-         "@rs-x-expression-parser": [
+         "@rs-x/expression-parser": [
             "rs-x-core-ui/lib/index.ts"
          ]
       },

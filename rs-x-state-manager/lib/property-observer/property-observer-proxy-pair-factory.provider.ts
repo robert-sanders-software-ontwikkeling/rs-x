@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@rs-x-core';
+import { Inject, Injectable } from '@rs-x/core';
 import { RsXStateManagerInjectionTokens } from '../rs-x-state-manager-injection-tokes';
 import { IPropertyObserverProxyPairFactoryProvider } from './property-observer-proxy-factory.provider.interface';
 import { IPropertyObserverProxyPairFactory } from './property-observer-proxy-pair.factory.interface';

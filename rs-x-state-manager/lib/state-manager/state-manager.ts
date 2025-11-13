@@ -8,7 +8,7 @@ import {
    IPropertyChange,
    PENDING,
    RsXCoreInjectionTokens,
-} from '@rs-x-core';
+} from '@rs-x/core';
 
 import { Observable, Subject } from 'rxjs';
 import {

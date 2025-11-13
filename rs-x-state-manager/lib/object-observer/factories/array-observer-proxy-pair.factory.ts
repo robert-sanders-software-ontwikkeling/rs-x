@@ -3,7 +3,7 @@ import {
    Inject,
    Injectable,
    RsXCoreInjectionTokens,
-} from '@rs-x-core';
+} from '@rs-x/core';
 import {
    IObjectPropertyObserverProxyPairManager,
    IObserverProxyPair,

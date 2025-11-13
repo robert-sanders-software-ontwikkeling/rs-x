@@ -1,4 +1,4 @@
-import { Injectable } from '@rs-x-core';
+import { Injectable } from '@rs-x/core';
 import { IIdentifierOwnerResolver } from './identifier-owner-resolver.interface';
 
 @Injectable()

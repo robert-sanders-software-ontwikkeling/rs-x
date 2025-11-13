@@ -1,6 +1,6 @@
-import { ISingletonFactory } from '@rs-x-core';
+import { ISingletonFactory } from '@rs-x/core';
 import { IIndexValueObserver } from './index-value-observer.interface';
-import { MustProxify } from '@rs-x-state-manager';
+import { MustProxify } from '@rs-x/state-manager';
 
 export interface IIndexInfo {
    context: unknown;

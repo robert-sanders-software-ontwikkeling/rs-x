@@ -1,4 +1,4 @@
-import { InjectionContainer, Type, WaitForEvent } from '@rs-x-core';
+import { InjectionContainer, Type, WaitForEvent } from '@rs-x/core';
 import {
    ExpressionType,
    IExpression,
