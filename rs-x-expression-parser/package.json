@@ -8,8 +8,8 @@
   },
   "dependencies": {
     "rxjs": "7.8.2",
-    "@rs-x/core": "*",
-    "@rs-x/state-manager": "*"
+    "@rs-x/core": "workspace:*",
+    "@rs-x/state-manager": "workspace:*"
   },
   "devDependencies": {
     "tsup": "8.5.1",
