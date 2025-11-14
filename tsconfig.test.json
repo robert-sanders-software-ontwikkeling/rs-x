@@ -46,7 +46,8 @@
          "./types"
       ],
       "types": [
-         "node", "jest"
+         "node",
+         "jest"
       ]
    },
    "ts-node": {

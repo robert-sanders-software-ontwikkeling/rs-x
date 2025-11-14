@@ -1,6 +1,6 @@
 import type { Config } from '@jest/types';
 import { pathsToModuleNameMapper } from 'ts-jest';
-import { compilerOptions } from './tsconfig.json';
+import { compilerOptions } from './tsconfig.test.json';
 
 Object.keys(compilerOptions.paths).forEach((alias) => {
   compilerOptions.paths[alias] = [

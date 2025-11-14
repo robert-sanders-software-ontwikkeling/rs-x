@@ -1,9 +1,6 @@
-import { firstValueFrom, isObservable, Observable } from 'rxjs';
 import { ArgumentException } from '../exceptions/argument-exception';
-import { InvalidOperationException } from '../exceptions/invalid-operation-exception';
-import { ConstructorType } from './constructor.type';
-import { IPropertyDescriptor } from './property-descriptor.interface';
 import { PropertyDescriptorType } from './property-descriptor-type.enum';
+import { IPropertyDescriptor } from './property-descriptor.interface';
 
 export type GetFunction<T> = () => T;
 export type SetFunction<T> = (value: T) => void;
