@@ -30,7 +30,6 @@ const jestConfig: Config.InitialOptions = {
     '^.+\\.html?$': 'html-loader-jest',
   },
 
-  setupFiles: ['fake-indexeddb/auto'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
 
   cacheDirectory: '<rootDir>/dist/jest',
