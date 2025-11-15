@@ -63,7 +63,7 @@ There are two variants
 
 - Non-recursive: will only monitor the setting the value for the the index
     ```ts
-    {% include_relative demo/src/register-non-recursive-state.ts %}
+    {% include_relative ../demo/src/rs-x-state-manager/register-non-recursive-state.ts %}
     ```
 
     ```
@@ -83,5 +83,5 @@ There are two variants
 
 
     ```ts
-    {% include_relative demo/src/register-recursive-state.ts %}
+    {% include_relative ../demo/src/rs-x-state-manager/register-recursive-state.ts %}
     ```

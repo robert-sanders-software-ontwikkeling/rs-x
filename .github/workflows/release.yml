@@ -3,42 +3,54 @@ name: CI
 on:
   push:
     branches:
-      - '**'    # runs on all branches, or specify main/dev/feature/*
+      - '**'
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    outputs:
+      build-dir: ${{ steps.build.outputs.build-dir }}
     steps:
-      # Checkout the repo
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9 #
-
-      # Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: lts/*
           cache: 'pnpm'
 
-      # Install dependencies using pnpm
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Install dependencies
         run: pnpm install
 
-      # Run ESLint
       - name: Lint code
         run: pnpm lint
 
-      # Run tests
       - name: Run tests
         run: pnpm test
 
-  publish:
-    if: github.ref == 'refs/heads/main'  # Only publish from main branch
+      - name: Build all packages
+        id: build
+        run: |
+          pnpm -r run build
+          pnpm demo --all   # build all demos
+        # save the build output as artifact
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            rs-x-core/dist
+            rs-x-state-manager/dist
+            rs-x-expression-parser/dist
+            demo/dist
+
+  update-docs:
     runs-on: ubuntu-latest
     needs: build-and-test
     steps:
@@ -51,8 +63,55 @@ jobs:
           node-version: lts/*
           cache: 'pnpm'
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Install dependencies
         run: pnpm install
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: .
+
+      - name: Update README.md from demos
+        run: pnpm ts-node demo/update-readmes.ts
+
+      - name: Commit updated READMEs
+        run: |
+          git config user.name "CI Bot"
+          git config user.email "ci@example.com"
+          git add '**/readme.md'
+          git diff --cached --quiet || git commit -m "Update README.md from demos"
+          git push
+
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: [build-and-test, update-docs]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: .
 
       - name: Set NPM auth token
         env:
@@ -62,5 +121,5 @@ jobs:
       - name: Publish packages via Changesets
         run: |
           pnpm changeset version
-          pnpm build:all
+          # Use the previously built artifacts, no rebuild needed
           pnpm changeset publish
