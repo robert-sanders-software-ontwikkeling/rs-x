@@ -4,7 +4,7 @@ export class ParserException extends Error {
       message: string,
       public readonly position?: number
    ) {
-      super(createMessage(expression, message, position));
+      super(createMessage(expression, message, position ?? 0));
    }
 }
 
