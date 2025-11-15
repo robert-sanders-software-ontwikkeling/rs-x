@@ -19,7 +19,7 @@ const jestConfig: Config.InitialOptions = {
     '^.+\\.tsx?$': [
       'ts-jest',
       {
-        tsconfig: '<rootDir>/tsconfig.json',
+        tsconfig: '<rootDir>/tsconfig.test.json',
         diagnostics: true,
         useESM: true,
         isolatedModules: false,
