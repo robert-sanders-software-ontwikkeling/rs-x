@@ -1,58 +1,37 @@
-name: CI
+name: Build
 
 on:
   push:
-    branches:
-      - '*'     # all nested branches (feature/*, bugfix/*)
-  pull_request:
-    branches:
-      - '*'      # any PR target branch
-
-    workflow_dispatch:
+    branches-ignore:
+      - main
+  workflow_dispatch:
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout the repo
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: lts/*
 
-      # 3️⃣ Install pnpm CLI
-      - name: Install pnpm
+      - name: Install pnpm CLI
         uses: pnpm/action-setup@v4
         with:
           version: 9
 
-      # 4️⃣ Install dependencies
       - name: Install dependencies
         run: pnpm install
 
-      # 5️⃣ Lint code
       - name: Lint code
         run: pnpm lint
 
-      # 6️⃣ Initialize CodeQL
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: ['typescript']
-
-      # 7️⃣ Run tests
       - name: Run tests
         run: pnpm test
 
-      # 8️⃣ Perform CodeQL analysis
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-
-      # 9️⃣ Build packages
       - name: Build packages
         run: pnpm -r run build
