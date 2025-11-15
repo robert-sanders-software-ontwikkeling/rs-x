@@ -1,55 +1,55 @@
-import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { readdirSync, readFileSync, writeFileSync, statSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
 
-const root = resolve(".");
+const EXCLUDED_DIRS = ['node_modules', 'dist', '.git'];
 
-function walkDir(dir: string): string[] {
-  const files: string[] = [];
-  for (const file of readdirSync(dir)) {
-    const fullPath = join(dir, file);
+function walkDir(dir: string, callback: (filePath: string) => void) {
+  if (EXCLUDED_DIRS.some((ex) => dir.includes(ex))) return;
 
-    // Skip node_modules and hidden folders
-    if (file === "node_modules" || file.startsWith(".")) continue;
-
-    try {
-      const stats = statSync(fullPath);
-      if (stats.isDirectory()) {
-        files.push(...walkDir(fullPath));
-      } else {
-        files.push(fullPath);
-      }
-    } catch {
-      // skip files that can't be read
-      continue;
-    }
+  for (const entry of readdirSync(dir)) {
+    const fullPath = join(dir, entry);
+    const stats = statSync(fullPath);
+    if (stats.isDirectory()) walkDir(fullPath, callback);
+    else if (entry.toLowerCase() === '_readme.md') callback(fullPath);
   }
-  return files;
 }
 
-function updateReadme(filePath: string) {
-  let content = readFileSync(filePath, "utf-8");
+function updateReadme(readmePath: string) {
+  let content = readFileSync(readmePath, 'utf-8');
+  const lines = content.split('\n');
 
-  const includeRegex = /^( *){% include_relative (.+?) %}/gm;
+  const updatedLines = lines.map((line) => {
+    const match = line.match(/\{\%\s*include_relative\s+(.+?)\s*\%\}/);
+    if (!match) return line;
 
-  content = content.replace(includeRegex, (match, indentation, relativePath) => {
-    const demoFile = resolve(filePath, "..", relativePath.trim());
+    const demoPath = match[1].trim();
+    const absDemoPath = join(dirname(readmePath), demoPath);
+
+    let demoCode: string;
     try {
-      const demoContent = readFileSync(demoFile, "utf-8");
-      return demoContent
-        .split("\n")
-        .map(line => indentation + line)
-        .join("\n");
+      demoCode = readFileSync(absDemoPath, 'utf-8');
     } catch {
-      return indentation + `// FILE NOT FOUND: ${relativePath}`;
+      return `// FILE NOT FOUND: ${demoPath}`;
     }
+
+    // Use indentation of code block marker (```ts) or none
+    const indentation = '';
+    const indentedCode = demoCode
+      .split('\n')
+      .map((l) => (l.trim() === '' ? '' : indentation + l))
+      .join('\n');
+
+    return indentedCode;
   });
 
-  const outFile = join(filePath.replace("_readme.md", "readme.md"));
-  writeFileSync(outFile, content, "utf-8");
+  const newContent = updatedLines.join('\n');
+  const outputReadmePath = join(dirname(readmePath), 'readme.md');
+
+  if (!existsSync(outputReadmePath) || readFileSync(outputReadmePath, 'utf-8') !== newContent) {
+    writeFileSync(outputReadmePath, newContent, 'utf-8');
+    console.log(`Generated: ${outputReadmePath}`);
+  }
 }
 
-// Recursively find all _readme.md files
-const readmeFiles = walkDir(root).filter(f => f.endsWith("_readme.md"));
-readmeFiles.forEach(updateReadme);
-
-console.log("Readmes updated!");
+walkDir(process.cwd(), updateReadme);
+console.log('All _readme.md files processed.');
