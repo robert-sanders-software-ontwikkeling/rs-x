@@ -3,7 +3,7 @@ name: Update READMEs
 on:
   push:
     branches:
-      - **  # triggers when something is merged into main
+      - '**'  # triggers when something is merged into main
   workflow_dispatch: # allows manual trigger
 
 jobs:
