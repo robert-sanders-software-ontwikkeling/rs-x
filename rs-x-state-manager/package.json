@@ -1,0 +1,17 @@
+{
+  "name": "@rs-x/state-manager",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup lib/index.ts --format cjs,esm --dts --out-dir dist"
+  },
+  "dependencies": {
+    "rxjs": "7.8.2",
+    "@rs-x/core": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "8.5.1",
+    "typescript": "^5.9.3"
+  }
+}

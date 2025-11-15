@@ -1,4 +1,4 @@
-import { IDisposable, ISingletonFactory } from '@rs-x-core';
+import { IDisposable, ISingletonFactory } from '@rs-x/core';
 import { Observable } from 'rxjs';
 import { AbstractExpression } from './abstract-expression';
 

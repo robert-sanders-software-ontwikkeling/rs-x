@@ -3,7 +3,7 @@ import {
    IPropertyChange,
    truePredicate,
    WaitForEvent,
-} from '@rs-x-core';
+} from '@rs-x/core';
 import { IArrayItemObserverManager } from '../../../../lib/property-observer/factories/array-item/array-item-observer-manager.type';
 import { IArrayProxyFactory } from '../../../../lib/proxies/array-proxy/array-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';

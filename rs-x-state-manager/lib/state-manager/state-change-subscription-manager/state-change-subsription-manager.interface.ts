@@ -2,7 +2,7 @@ import {
    IPropertyChange,
    ISingletonFactory,
    ISingletonFactoryWithIdGeneration,
-} from '@rs-x-core';
+} from '@rs-x/core';
 import { Subscription } from 'rxjs';
 import { MustProxify } from '../../object-property-observer-proxy-pair-manager.type';
 import { IObserver } from '../../observer.interface';

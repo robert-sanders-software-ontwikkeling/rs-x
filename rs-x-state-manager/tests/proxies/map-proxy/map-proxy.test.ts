@@ -1,4 +1,4 @@
-import { echo, IPropertyChange, truePredicate, WaitForEvent } from '@rs-x-core';
+import { echo, IPropertyChange, truePredicate, WaitForEvent } from '@rs-x/core';
 import { IObserverProxyPair } from '../../../lib/object-property-observer-proxy-pair-manager.type';
 import { MapProxyFactory } from '../../../lib/proxies/map-proxy/map-proxy.factory';
 import { IMapProxifyData } from '../../../lib/proxies/map-proxy/map-proxy.factory.type';

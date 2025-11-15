@@ -1,4 +1,4 @@
-import { Injectable, SingletonFactory } from '@rs-x-core';
+import { Injectable, SingletonFactory } from '@rs-x/core';
 import { MustProxify } from '../object-property-observer-proxy-pair-manager.type';
 import { IMustProxifyItemHandlerFactory } from './must-proxify-item-handler.factory.type';
 

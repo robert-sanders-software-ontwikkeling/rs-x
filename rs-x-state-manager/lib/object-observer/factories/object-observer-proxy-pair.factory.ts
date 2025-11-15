@@ -1,4 +1,4 @@
-import { IErrorLog, truePredicate } from '@rs-x-core';
+import { IErrorLog, truePredicate } from '@rs-x/core';
 import { IDisposableOwner } from '../../disposable-owner.interface';
 import { IObserverProxyPair } from '../../object-property-observer-proxy-pair-manager.type';
 import { ObserverGroup } from '../../observer-group';

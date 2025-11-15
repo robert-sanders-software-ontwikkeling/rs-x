@@ -4,14 +4,14 @@ import {
    SingletonFactoryWithGuid,
    SingletonFactoryWithIdGeneration,
    UnexpectedException,
-} from '@rs-x-core';
+} from '@rs-x/core';
 import {
    IContextChanged,
    IStateChange,
    IStateManager,
    MustProxify,
    RsXStateManagerInjectionTokens,
-} from '@rs-x-state-manager';
+} from '@rs-x/state-manager';
 import { Observable, ReplaySubject, Subscription } from 'rxjs';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
 import { IIdentifierOwnerResolver } from './identifier-owner-resolver.interface';

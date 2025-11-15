@@ -1,4 +1,4 @@
-import { ConstructorType } from '@rs-x-core';
+import { ConstructorType } from '@rs-x/core';
 import { AbstractExpression } from './abstract-expression';
 import { BinaryExpression } from './binary-expression';
 import { ExpressionType } from './interfaces';

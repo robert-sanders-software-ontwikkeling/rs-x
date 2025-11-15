@@ -1,4 +1,4 @@
-import { Type } from '@rs-x-core';
+import { Type } from '@rs-x/core';
 import { IObserver } from '../../observer.interface';
 import { observerEqualTo } from './observer.equal-to';
 

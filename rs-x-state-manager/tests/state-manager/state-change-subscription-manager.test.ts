@@ -5,7 +5,7 @@ import {
    IPropertyChange,
    truePredicate,
    WaitForEvent,
-} from '@rs-x-core';
+} from '@rs-x/core';
 import { IObjectPropertyObserverProxyPairManager } from '../../lib/object-property-observer-proxy-pair-manager.type';
 import { RsXStateManagerInjectionTokens } from '../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../lib/rs-x-state-manager.module';

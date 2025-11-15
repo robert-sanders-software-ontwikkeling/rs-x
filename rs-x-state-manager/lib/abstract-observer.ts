@@ -1,4 +1,4 @@
-import { IPropertyChange } from '@rs-x-core';
+import { IPropertyChange } from '@rs-x/core';
 import { Observable, Subject } from 'rxjs';
 import { IObserver } from './observer.interface';
 import { IDisposableOwner } from './disposable-owner.interface';

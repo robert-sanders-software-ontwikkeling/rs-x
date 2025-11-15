@@ -1,4 +1,4 @@
-import { Injectable } from '@rs-x-core';
+import { Injectable } from '@rs-x/core';
 import { IProxyRegistry } from './proxy-registry.interface';
 
 @Injectable()

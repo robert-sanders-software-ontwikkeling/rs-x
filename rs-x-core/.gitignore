@@ -1,7 +1,0 @@
-# Ignore 
-
-node_modules
-dist
-compiled-build
-backup
-.DS_Store

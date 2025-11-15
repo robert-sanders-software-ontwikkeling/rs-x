@@ -3,7 +3,7 @@ import {
    IPropertyChange,
    ISingletonFactory,
    SingletonFactoryWithGuid,
-} from '@rs-x-core';
+} from '@rs-x/core';
 import { Subscription } from 'rxjs';
 import { IObserver } from './observer.interface';
 

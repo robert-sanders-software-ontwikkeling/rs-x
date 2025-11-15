@@ -1,6 +1,29 @@
 {
-  "extends": "../tsconfig.json",
-  "compilerOptions": {
-      "allowJs": true
-   }
+   "extends": "../tsconfig.json",
+   "compilerOptions": {
+      "allowJs": true,
+      "strict": false,
+      "baseUrl": ".",
+      "paths": {
+         "@rs-x/core": [
+            "rs-x-core/lib/index.ts"
+         ],
+         "@rs-x/core/testing": [
+            "rs-x-core/lib/testing/index.ts"
+         ],
+         "@rs-x/state-manager": [
+            "rs-x-state-manager/lib/index.ts"
+         ],
+         "@rs-x/state-manager/testing": [
+            "rs-x-state-manager/lib/testing/index.ts"
+         ]
+      }
+   },
+   "include": [
+      "**/*.ts"
+   ],
+   "exclude": [
+      "node_modules",
+      "dist"
+   ]
 }

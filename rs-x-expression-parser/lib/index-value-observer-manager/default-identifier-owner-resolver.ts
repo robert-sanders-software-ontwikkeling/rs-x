@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@rs-x-core';
+import { Inject, Injectable } from '@rs-x/core';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
 import { IIdentifierOwnerResolver } from './identifier-owner-resolver.interface';
 

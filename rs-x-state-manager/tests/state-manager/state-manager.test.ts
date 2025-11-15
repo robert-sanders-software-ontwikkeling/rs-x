@@ -3,8 +3,8 @@ import {
    truePredicate,
    Type,
    WaitForEvent,
-} from '@rs-x-core';
-import { ObservableMock } from '@rs-x-core/testing';
+} from '@rs-x/core';
+import { ObservableMock } from '@rs-x/core/testing';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { IArrayProxyFactory } from '../../lib/proxies/array-proxy/array-proxy.factory.type';
 import { IMapProxyFactory } from '../../lib/proxies/map-proxy/map-proxy.factory.type';

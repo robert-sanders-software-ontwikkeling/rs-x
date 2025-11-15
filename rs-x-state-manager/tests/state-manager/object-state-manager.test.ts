@@ -1,4 +1,4 @@
-import { DeepClone } from '@rs-x-core';
+import { DeepClone } from '@rs-x/core';
 import { ObjectStateManager } from '../../lib/state-manager/object-state-manager';
 
 describe('ObjectStateManager tests', () => {

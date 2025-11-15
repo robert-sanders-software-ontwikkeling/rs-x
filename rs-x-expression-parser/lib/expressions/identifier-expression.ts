@@ -1,5 +1,5 @@
-import { emptyFunction, truePredicate } from '@rs-x-core';
-import { IStateChange } from '@rs-x-state-manager';
+import { emptyFunction, truePredicate } from '@rs-x/core';
+import { IStateChange } from '@rs-x/state-manager';
 import { Subscription } from 'rxjs';
 import { IIndexValueObserverManager } from '../index-value-observer-manager/index-value-manager-observer.type';
 import { IIndexValueObserver } from '../index-value-observer-manager/index-value-observer.interface';

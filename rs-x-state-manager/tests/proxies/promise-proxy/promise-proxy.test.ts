@@ -1,4 +1,4 @@
-import { IPropertyChange, PromiseAccessor, WaitForEvent } from '@rs-x-core';
+import { IPropertyChange, PromiseAccessor, WaitForEvent } from '@rs-x/core';
 import { PromiseProxyFactory } from '../../../lib/proxies/promise-proxy/promise-proxy.factory';
 
 describe('PromiseProxy tests', () => {

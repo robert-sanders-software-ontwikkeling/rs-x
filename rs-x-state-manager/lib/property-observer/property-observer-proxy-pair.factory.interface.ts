@@ -1,4 +1,4 @@
-import { IDisposable } from '@rs-x-core';
+import { IDisposable } from '@rs-x/core';
 import {
    IObserverProxyPair,
    IPropertyInfo,

@@ -2,8 +2,8 @@ import { firstValueFrom, Observable, Subscription } from 'rxjs';
 
 interface WaitState<R> {
    results: R[];
-   pending: boolean;
-   subscription: Subscription;
+   pending?: boolean;
+   subscription?: Subscription;
    timerId: number;
 }
 
@@ -65,7 +65,7 @@ export class WaitForEvent<
    ): Subscription {
       return this._target[this._eventName].subscribe({
          next: (value) => {
-            if (state.pending || state.results.length >= this._options.count) {
+            if (state.pending || state.results.length >= (this._options.count ?? 1)) {
                return;
             }
 

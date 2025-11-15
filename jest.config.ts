@@ -1,6 +1,6 @@
 import type { Config } from '@jest/types';
 import { pathsToModuleNameMapper } from 'ts-jest';
-import { compilerOptions } from './tsconfig.json';
+import { compilerOptions } from './tsconfig.test.json';
 
 Object.keys(compilerOptions.paths).forEach((alias) => {
   compilerOptions.paths[alias] = [
@@ -19,7 +19,7 @@ const jestConfig: Config.InitialOptions = {
     '^.+\\.tsx?$': [
       'ts-jest',
       {
-        tsconfig: '<rootDir>/tsconfig.json',
+        tsconfig: '<rootDir>/tsconfig.test.json',
         diagnostics: true,
         useESM: true,
         isolatedModules: false,
@@ -30,7 +30,6 @@ const jestConfig: Config.InitialOptions = {
     '^.+\\.html?$': 'html-loader-jest',
   },
 
-  setupFiles: ['fake-indexeddb/auto'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
 
   cacheDirectory: '<rootDir>/dist/jest',

@@ -1,4 +1,4 @@
-import { AnyFunction, Assertion } from '@rs-x-core';
+import { AnyFunction, Assertion } from '@rs-x/core';
 import {
    AbstractExpression,
    IExpressionInitializeConfig,

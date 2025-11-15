@@ -6,7 +6,7 @@ import {
    RsXCoreInjectionTokens,
    truePredicate,
    Type,
-} from '@rs-x-core';
+} from '@rs-x/core';
 import { IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
 import {
    IPropertyInfo,

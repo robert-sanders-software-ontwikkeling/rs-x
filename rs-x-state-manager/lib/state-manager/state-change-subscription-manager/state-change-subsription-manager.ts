@@ -1,4 +1,4 @@
-import { IErrorLog, SingletonFactory } from '@rs-x-core';
+import { IErrorLog, SingletonFactory } from '@rs-x/core';
 import { GroupedChangeSubscriptionsForContextManager } from '../../grouped-change-subscriptions-for-context-manager';
 import {
    IObjectPropertyObserverProxyPairManager,

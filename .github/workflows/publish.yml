@@ -1,0 +1,73 @@
+name: Publish Packages
+
+on:
+  push:
+    branches:
+      - 'release/*' # Only triggers on release branches
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout the release branch
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false  # disable default GITHUB_TOKEN for pushing
+
+      # 2️⃣ Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
+
+      # 3️⃣ Install pnpm
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      # 4️⃣ Install dependencies
+      - name: Install dependencies
+        run: pnpm install
+
+      # 5️⃣ Validate that only changeset-related files changed
+      - name: Validate release branch changes
+        run: |
+          git fetch origin main
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+          echo "Changed files: $CHANGED_FILES"
+          for f in $CHANGED_FILES; do
+            if [[ ! "$f" =~ ^\.changeset/ && "$f" != "package.json" && "$f" != "pnpm-lock.yaml" ]]; then
+              echo "Unauthorized change detected: $f"
+              exit 1
+            fi
+          done
+
+      # 6️⃣ Commit version bump from Changesets (if any)
+      - name: Commit version bump
+        env:
+          PAT: ${{ secrets.PIPELINE_PAT }}
+        run: |
+          git config user.name "CI Bot"
+          git config user.email "ci@example.com"
+          pnpm changeset version
+          git add .
+          if ! git diff --cached --quiet; then
+            git commit -m "Version bump from Changesets"
+            git push https://x-access-token:${PAT}@github.com/${{ github.repository }} HEAD:${{ github.ref_name }}
+          else
+            echo "No version changes to commit."
+          fi
+
+      # 7️⃣ Build packages
+      - name: Build packages
+        run: pnpm -r run build
+
+      # 8️⃣ Publish packages
+      - name: Publish packages via Changesets
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: pnpm changeset publish

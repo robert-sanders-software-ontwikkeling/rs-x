@@ -1,4 +1,4 @@
-import { Type } from '@rs-x-core';
+import { Type } from '@rs-x/core';
 import { AbstractObserver } from '../../abstract-observer';
 import { ObserverGroup } from '../../observer-group';
 import { IObserver } from '../../observer.interface';

@@ -6,7 +6,7 @@ import {
    PropertyDescriptorType,
    SingletonFactory,
    Type,
-} from '@rs-x-core';
+} from '@rs-x/core';
 import { Subject } from 'rxjs';
 import { AbstractObserver } from '../../../abstract-observer';
 import { IDisposableOwner } from '../../../disposable-owner.interface';

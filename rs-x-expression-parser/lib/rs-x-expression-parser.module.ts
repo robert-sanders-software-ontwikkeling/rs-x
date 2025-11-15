@@ -1,5 +1,5 @@
-import { ContainerModule, InjectionContainer } from '@rs-x-core';
-import { RsXStateManagerModule } from '@rs-x-state-manager';
+import { ContainerModule, InjectionContainer } from '@rs-x/core';
+import { RsXStateManagerModule } from '@rs-x/state-manager';
 import { ExpressionManager } from './expression-manager/expression-manager';
 import { IExpressionManager } from './expression-manager/expression-manager.type';
 import { IExpressionParser } from './expressions/interfaces';

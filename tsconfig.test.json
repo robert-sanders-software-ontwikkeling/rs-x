@@ -1,0 +1,66 @@
+{
+   "compilerOptions": {
+      "forceConsistentCasingInFileNames": true,
+      "resolveJsonModule": true,
+      "outDir": "dist/build",
+      "target": "ES2024",
+      "module": "ESNext",
+      "moduleResolution": "node",
+      "sourceMap": true,
+      "emitDecoratorMetadata": true,
+      "experimentalDecorators": true,
+      "lib": [
+         "ES2024",
+         "dom"
+      ],
+      "noImplicitAny": false,
+      "allowSyntheticDefaultImports": true,
+      "downlevelIteration": true,
+      "declaration": true,
+      "esModuleInterop": true,
+      "useDefineForClassFields": false,
+      "pretty": true,
+      "baseUrl": "./",
+      "inlineSources": true,
+      "noImplicitOverride": true,
+      "paths": {
+         "@rs-x/core": [
+            "rs-x-core/lib/index.ts"
+         ],
+         "@rs-x/core/testing": [
+            "rs-x-core/lib/testing/index.ts"
+         ],
+         "@rs-x/state-manager": [
+            "rs-x-state-manager/lib/index.ts"
+         ],
+         "@rs-x/state-manager/testing": [
+            "rs-x-state-manager/lib/testing/index.ts"
+         ],
+         "@rs-x/expression-parser": [
+            "rs-x-core-ui/lib/index.ts"
+         ]
+      },
+      "allowJs": true,
+      "typeRoots": [
+         "node_modules/@types",
+         "./types"
+      ],
+      "types": [
+         "node",
+         "jest"
+      ]
+   },
+   "ts-node": {
+      "compilerOptions": {
+         "module": "CommonJS"
+      }
+   },
+   "include": [
+      "./types/declarations.d.ts",
+      "**/*"
+   ],
+   "exclude": [
+      "node_modules",
+      "dist"
+   ]
+}

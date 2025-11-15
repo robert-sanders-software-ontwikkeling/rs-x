@@ -1,4 +1,4 @@
-import { ProxyRegistry } from '@rs-x-state-manager';
+import { ProxyRegistry } from '@rs-x/state-manager';
 import { ArrayProxyFactory } from '../../../lib/proxies/array-proxy/array-proxy.factory';
 
 describe('ArrayProxyFactory tests', () => {

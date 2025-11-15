@@ -5,7 +5,7 @@ import {
    IPropertyChange,
    RsXCoreInjectionTokens,
    SingletonFactory,
-} from '@rs-x-core';
+} from '@rs-x/core';
 import { Subscription } from 'rxjs';
 import { AbstractObserver } from '../../../abstract-observer';
 import { IDisposableOwner } from '../../../disposable-owner.interface';

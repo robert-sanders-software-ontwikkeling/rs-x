@@ -1,0 +1,14 @@
+{
+  "name": "demo",
+  "type": "module",
+ "scripts": {
+    "demo": "ts-node-esm run-demo.ts"
+  },
+  "dependencies": {
+    "@rs-x/core": "workspace:*",
+    "@rs-x/state-manager": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
