@@ -106,7 +106,7 @@ update-docs:
           echo "No README changes, skipping commit."
         fi
 
-  publish:
+publish:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: [build-and-test, update-docs]
