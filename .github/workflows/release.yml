@@ -98,10 +98,10 @@ jobs:
           git config user.name "CI Bot"
           git config user.email "ci@example.com"
           git add '**/readme.md'
-          # Only commit if changes exist
+          # Only commit if there are changes
           if ! git diff --cached --quiet; then
             git commit -m "Update README.md from demos"
-            git push origin HEAD:${{ github.ref_name }}
+            git push https://x-access-token:${{ secrets.PIPELINE_PAT }}@github.com/${{ github.repository }} HEAD:${{ github.ref_name }}
           else
             echo "No README changes, skipping commit."
           fi
