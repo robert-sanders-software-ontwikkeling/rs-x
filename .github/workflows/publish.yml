@@ -1,0 +1,41 @@
+name: Publish Packages
+
+on:
+  workflow_dispatch: # allows manual trigger
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: publish        # the environment you created
+      url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build all packages
+        run: pnpm -r run build
+
+      - name: Set NPM auth token
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
+
+      - name: Publish packages via Changesets
+        run: |
+          pnpm changeset version
+          pnpm changeset publish
