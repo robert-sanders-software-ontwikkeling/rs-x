@@ -48,7 +48,6 @@ jobs:
         id: build
         run: |
           pnpm -r run build   # build all packages
-          pnpm demo --all     # build all demos
 
       # 9️⃣ Upload artifacts for downstream jobs
       - name: Upload build artifacts
