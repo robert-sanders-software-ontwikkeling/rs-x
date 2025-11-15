@@ -91,7 +91,6 @@ jobs:
       # 6️⃣ Build demos & generate READMEs
       - name: Build demos and update README.md
         run: |
-          pnpm demo --all
           pnpm ts-node demo/update-readmes.ts
 
       # 7️⃣ Commit updated READMEs only if changed
