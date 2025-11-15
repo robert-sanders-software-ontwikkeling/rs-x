@@ -98,9 +98,14 @@ update-docs:
         git config user.name "CI Bot"
         git config user.email "ci@example.com"
         git add '**/readme.md'
-        git diff --cached --quiet || git commit -m "Update README.md from demos"
-        git push
-        
+        # Only commit if there are changes
+        if ! git diff --cached --quiet; then
+          git commit -m "Update README.md from demos"
+          git push
+        else
+          echo "No README changes, skipping commit."
+        fi
+
   publish:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
