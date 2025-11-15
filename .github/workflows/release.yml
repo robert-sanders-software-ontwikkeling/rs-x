@@ -53,60 +53,60 @@ jobs:
             rs-x-core/dist
             rs-x-state-manager/dist
             rs-x-expression-parser/dist
+  
+  update-docs:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      # 1️⃣ Checkout the branch and keep credentials for push
+      - name: Checkout branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref_name }}
+          persist-credentials: true  # ✅ allows git push to work
 
-update-docs:
-  runs-on: ubuntu-latest
-  needs: build-and-test
-  steps:
-    # 1️⃣ Checkout the branch and keep credentials for push
-    - name: Checkout branch
-      uses: actions/checkout@v3
-      with:
-        ref: ${{ github.ref_name }}
-        persist-credentials: true  # ✅ allows git push to work
+      # 2️⃣ Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
 
-    # 2️⃣ Setup Node.js
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: lts/*
+      # 3️⃣ Install pnpm CLI
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
-    # 3️⃣ Install pnpm CLI
-    - name: Install pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        version: 9
+      # 4️⃣ Install dependencies
+      - name: Install dependencies
+        run: pnpm install
 
-    # 4️⃣ Install dependencies
-    - name: Install dependencies
-      run: pnpm install
+      # 5️⃣ Download build artifacts from previous step (if needed)
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: .
 
-    # 5️⃣ Download build artifacts from previous step (if needed)
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: build-artifacts
-        path: .
+      # 6️⃣ Generate README.md from demos
+      - name: Update README.md from demos
+        run: pnpm ts-node demo/update-readmes.ts
 
-    # 6️⃣ Generate README.md from demos
-    - name: Update README.md from demos
-      run: pnpm ts-node demo/update-readmes.ts
+      # 7️⃣ Commit updated READMEs only if there are changes
+      - name: Commit updated READMEs
+        run: |
+          git config user.name "CI Bot"
+          git config user.email "ci@example.com"
+          git add '**/readme.md'
+          # Only commit if changes exist
+          if ! git diff --cached --quiet; then
+            git commit -m "Update README.md from demos"
+            git push origin HEAD:${{ github.ref_name }}
+          else
+            echo "No README changes, skipping commit."
+          fi
 
-    # 7️⃣ Commit updated READMEs only if there are changes
-    - name: Commit updated READMEs
-      run: |
-        git config user.name "CI Bot"
-        git config user.email "ci@example.com"
-        git add '**/readme.md'
-        # Only commit if changes exist
-        if ! git diff --cached --quiet; then
-          git commit -m "Update README.md from demos"
-          git push origin HEAD:${{ github.ref_name }}
-        else
-          echo "No README changes, skipping commit."
-        fi
-
-publish:
+  publish:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: [build-and-test, update-docs]
