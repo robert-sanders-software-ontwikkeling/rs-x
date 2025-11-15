@@ -3,11 +3,10 @@ name: CI
 on:
   push:
     branches:
-      - '*'      # all top-level branches
       - '**'     # all nested branches (feature/*, bugfix/*)
   pull_request:
     branches:
-      - '*'      # any PR target branch
+      - '**'      # any PR target branch
 
 jobs:
   build-and-test:
