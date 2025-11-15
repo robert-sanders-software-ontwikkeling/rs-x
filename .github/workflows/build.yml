@@ -3,10 +3,12 @@ name: CI
 on:
   push:
     branches:
-      - '**'     # all nested branches (feature/*, bugfix/*)
+      - '*'     # all nested branches (feature/*, bugfix/*)
   pull_request:
     branches:
-      - '**'      # any PR target branch
+      - '*'      # any PR target branch
+
+    workflow_dispatch:
 
 jobs:
   build-and-test:
