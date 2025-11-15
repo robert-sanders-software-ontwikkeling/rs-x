@@ -11,37 +11,48 @@ jobs:
     outputs:
       build-dir: ${{ steps.build.outputs.build-dir }}
     steps:
+      # 1️⃣ Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # 2️⃣ Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: lts/*
-          cache: 'pnpm'
 
+      # 3️⃣ Install pnpm CLI
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
 
+      # 4️⃣ Verify pnpm
+      - name: Verify pnpm
+        run: pnpm -v
+
+      # 5️⃣ Install dependencies
       - name: Install dependencies
         run: pnpm install
 
+      # 6️⃣ Lint
       - name: Lint code
         run: pnpm lint
 
+      # 7️⃣ Tests
       - name: Run tests
         run: pnpm test
 
-      - name: Build all packages
+      # 8️⃣ Build packages and demos
+      - name: Build all packages & demos
         id: build
         run: |
           pnpm -r run build
-          pnpm demo --all   # build all demos
+          pnpm demo --all
 
+      # 9️⃣ Upload artifacts
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4   # updated to v4
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
           path: |
@@ -54,32 +65,38 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-test
     steps:
+      # 1️⃣ Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # 2️⃣ Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: lts/*
-          cache: 'pnpm'
 
+      # 3️⃣ Install pnpm CLI
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
 
+      # 4️⃣ Install dependencies
       - name: Install dependencies
         run: pnpm install
 
+      # 5️⃣ Download build artifacts
       - name: Download build artifacts
-        uses: actions/download-artifact@v4   # updated to v4
+        uses: actions/download-artifact@v4
         with:
           name: build-artifacts
           path: .
 
+      # 6️⃣ Update READMEs
       - name: Update README.md from demos
         run: pnpm ts-node demo/update-readmes.ts
 
+      # 7️⃣ Commit updated READMEs
       - name: Commit updated READMEs
         run: |
           git config user.name "CI Bot"
@@ -93,33 +110,37 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-and-test, update-docs]
     steps:
+      # 1️⃣ Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # 2️⃣ Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: lts/*
-          cache: 'pnpm'
 
+      # 3️⃣ Install pnpm CLI
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
 
+      # 4️⃣ Download build artifacts
       - name: Download build artifacts
-        uses: actions/download-artifact@v4   # updated to v4
+        uses: actions/download-artifact@v4
         with:
           name: build-artifacts
           path: .
 
+      # 5️⃣ Set NPM auth token
       - name: Set NPM auth token
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
 
+      # 6️⃣ Publish packages via Changesets (uses prebuilt artifacts)
       - name: Publish packages via Changesets
         run: |
           pnpm changeset version
-          # Use the previously built artifacts, no rebuild needed
           pnpm changeset publish
