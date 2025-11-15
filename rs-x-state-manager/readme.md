@@ -62,44 +62,26 @@ InjectionContainer.load(RsXStateManagerModule);
 There are two variants
 
 - Non-recursive: will only monitor the setting the value for the the index
-
     ```ts
-    import { InjectionContainer } from '@rs-x/core';
-    import { IStateChange, RsXStateManagerModule } from '@rs-x/state-manager';
-
-    InjectionContainer.load(RsXStateManagerModule);
-
-    const stateContext {
-         x: 10;
-    };
-
-    const stateManager: IIStateManager  = InjectionContainer.get(
-            RsXStateManagerInjectionTokens.IStateManager
-    );
-
-    stateManager.changed.subscribe((change: IStateChange) => {
-        console.log(change.newValue);
-    });
-
-    // This will emit a initial value 10
-    stateManager.register(stateContext, 'x');
-
-    // This will emit new value 20
-    stateContext.x = 20;
+    {% include_relative demo/src/register-non-recursive-state.ts %}
     ```
 
+    ```
+    #### Output
+
+    ```console
+    ********************************
+    Register non recusrive state
+    ********************************
+    Initial value:
+    10
+    Changed value:
+    20
+    ```
 
 - Recursive: will monitor both the setting of the value and the change of the value it self. For example if the index value is an object it will monitor changed for the object
 
 
-
-```ts
-import { InjectionContainer } from '@rs-x/core';
-import { RsXStateManagerModule } from '@rs-x/state-manager';
-
-InjectionContainer.load(RsXStateManagerModule);
-
-
-
-
-```
+    ```ts
+    {% include_relative demo/src/register-recursive-state.ts %}
+    ```
