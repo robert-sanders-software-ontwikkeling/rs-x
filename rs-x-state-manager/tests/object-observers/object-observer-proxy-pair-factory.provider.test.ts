@@ -24,7 +24,7 @@ describe('ObjectObserverProxyPairFactoryProvider tests', () => {
          RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
       );
 
-       expect(objectObserverFactoryProvider.factories.length).toEqual(6)
+      expect(objectObserverFactoryProvider.factories.length).toEqual(6)
       expect(objectObserverFactoryProvider.factories[0]).toBe(expected[0]);
       expect(objectObserverFactoryProvider.factories[1]).toBe(expected[1]);
       expect(objectObserverFactoryProvider.factories[2]).toBe(expected[2]);

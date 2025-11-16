@@ -4,7 +4,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsup lib/index.ts --format cjs,esm --dts --out-dir dist"
+    "build": "tsup lib/index.ts --format cjs,esm --dts --tsconfig ../tsconfig.build.json"
   },
   "dependencies": {
     "rxjs": "7.8.2",
