@@ -1,9 +1,9 @@
 import {
-   Inject,
    Injectable,
+   MultiInject,
    SingletonFactory,
    SingletonFactoryWithGuid,
-   UnsupportedException,
+   UnsupportedException
 } from '@rs-x/core';
 import {
    IObjectPropertyObserverProxyPairManager,
@@ -13,7 +13,6 @@ import {
    IPropertyObserverProxyPairManager,
    MustProxify,
 } from './object-property-observer-proxy-pair-manager.type';
-import { IPropertyObserverProxyPairFactoryProvider } from './property-observer/property-observer-proxy-factory.provider.interface';
 import { IPropertyObserverProxyPairFactory } from './property-observer/property-observer-proxy-pair.factory.interface';
 import { RsXStateManagerInjectionTokens } from './rs-x-state-manager-injection-tokes';
 
@@ -23,8 +22,7 @@ class PropertyObserverProxyPairManager
       IObserverProxyPair,
       IPropertyIdInfo
    >
-   implements IPropertyObserverProxyPairManager
-{
+   implements IPropertyObserverProxyPairManager {
    constructor(
       private readonly _object: unknown,
       private readonly _observerFactories: readonly IPropertyObserverProxyPairFactory[],
@@ -88,13 +86,12 @@ class PropertyObserverProxyPairManager
 @Injectable()
 export class ObjectPropertyObserverProxyPairManager
    extends SingletonFactory<unknown, unknown, IPropertyObserverProxyPairManager>
-   implements IObjectPropertyObserverProxyPairManager
-{
+   implements IObjectPropertyObserverProxyPairManager {
    constructor(
-      @Inject(
-         RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryProviderFactory
+      @MultiInject(
+         RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryList
       )
-      private readonly getObserverFactoryProvider: () => IPropertyObserverProxyPairFactoryProvider
+      private readonly _factories: IPropertyObserverProxyPairFactory[]
    ) {
       super();
    }
@@ -112,7 +109,7 @@ export class ObjectPropertyObserverProxyPairManager
    ): IPropertyObserverProxyPairManager {
       return new PropertyObserverProxyPairManager(
          context,
-         this.getObserverFactoryProvider().factories,
+         this._factories,
          () => this.release(context)
       );
    }

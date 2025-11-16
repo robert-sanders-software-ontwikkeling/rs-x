@@ -12,4 +12,5 @@ export const RsXCoreInjectionTokens = {
    IEqualityService: Symbol('IEqualityService'),
    IObservableAccessor: Symbol('IObservableAccessor'),
    IPromiseAccessor: Symbol('IPromiseAccessor'),
+   IIndexValueAccessorList:  Symbol('IIndexValueAccessorList'),
 };

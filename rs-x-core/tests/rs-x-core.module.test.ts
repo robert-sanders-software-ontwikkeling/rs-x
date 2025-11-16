@@ -160,6 +160,39 @@ describe('rs-x core module', () => {
       expect(a1).toBe(a2);
    });
 
+
+    it('can get an instance of IIndexValueAccessorList', () => {
+      const actual = InjectionContainer.getAll(
+         RsXCoreInjectionTokens.IIndexValueAccessorList
+      );
+
+      expect(actual.length).toEqual(7);
+
+      expect(actual[0]).toBeInstanceOf(PropertyValueAccessor);
+      expect(actual[1]).toBeInstanceOf(MethodAccessor);
+      expect(actual[2]).toBeInstanceOf(ArrayIndexAccessor);
+      expect(actual[3]).toBeInstanceOf(MapKeyAccessor);
+      expect(actual[4]).toBeInstanceOf(SetKeyAccessor);
+      expect(actual[5]).toBeInstanceOf(ObservableAccessor);
+      expect(actual[6]).toBeInstanceOf(PromiseAccessor);
+   });
+
+   it('IIndexValueAccessorList instance is a singelton', () => {
+      const a1 = InjectionContainer.getAll(
+          RsXCoreInjectionTokens.IIndexValueAccessorList
+      );
+      const a2 = InjectionContainer.getAll(
+         RsXCoreInjectionTokens.IIndexValueAccessorList
+      );
+      expect(a1[0]).toBe(a2[0]);
+      expect(a1[1]).toBe(a2[1]);
+      expect(a1[2]).toBe(a2[2]);
+      expect(a1[3]).toBe(a2[3]);
+      expect(a1[4]).toBe(a2[4]);
+      expect(a1[5]).toBe(a2[5]);
+      expect(a1[6]).toBe(a2[6]);
+   });
+
    it('can get instance of IDeepClone', () => {
       const actual = InjectionContainer.get(RsXCoreInjectionTokens.IDeepClone);
       expect(actual).toBeInstanceOf(DeepClone);
