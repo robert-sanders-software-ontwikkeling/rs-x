@@ -60,9 +60,55 @@ export const RsXCoreModule = new ContainerModule((options) => {
       .to(SetKeyAccessor)
       .inSingletonScope();
    options
+      .bind<IObservableAccessor>(RsXCoreInjectionTokens.IObservableAccessor)
+      .to(ObservableAccessor)
+      .inSingletonScope();
+   options
+      .bind<IPromiseAccessor>(RsXCoreInjectionTokens.IPromiseAccessor)
+      .to(PromiseAccessor)
+      .inSingletonScope();
+   options
       .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessor)
       .to(IndexValueAccessor)
       .inSingletonScope();
+
+   options
+      .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
+      .to(PropertyValueAccessor)
+      .inSingletonScope();
+
+   options
+      .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
+      .to(MethodAccessor)
+      .inSingletonScope();
+
+   options
+      .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
+      .to(ArrayIndexAccessor)
+      .inSingletonScope();
+
+   options
+      .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
+      .to(MapKeyAccessor)
+      .inSingletonScope();
+
+   options
+      .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
+      .to(SetKeyAccessor)
+      .inSingletonScope();
+
+   options
+      .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
+      .to(ObservableAccessor)
+      .inSingletonScope();
+
+   options
+      .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
+      .to(PromiseAccessor)
+      .inSingletonScope();
+
+
+
    options
       .bind<IIndexValueAccessorProvider>(
          RsXCoreInjectionTokens.IIndexValueAccessorProvider
@@ -77,12 +123,5 @@ export const RsXCoreModule = new ContainerModule((options) => {
       .bind<IEqualityService>(RsXCoreInjectionTokens.IEqualityService)
       .to(EqualityService)
       .inSingletonScope();
-   options
-      .bind<IObservableAccessor>(RsXCoreInjectionTokens.IObservableAccessor)
-      .to(ObservableAccessor)
-      .inSingletonScope();
-   options
-      .bind<IPromiseAccessor>(RsXCoreInjectionTokens.IPromiseAccessor)
-      .to(PromiseAccessor)
-      .inSingletonScope();
+
 });
