@@ -37,68 +37,49 @@ export const RsXCoreModule = new ContainerModule((options) => {
       .bind<IErrorLog>(RsXCoreInjectionTokens.IErrorLog)
       .to(ErrorLog)
       .inSingletonScope();
-   options
-      .bind<IPropertyValueAccessor>(
-         RsXCoreInjectionTokens.IPropertyValueAccessor
-      )
-      .to(PropertyValueAccessor)
-      .inSingletonScope();
-   options
-      .bind<IMethodAccessor>(RsXCoreInjectionTokens.IMethodAccessor)
-      .to(MethodAccessor)
-      .inSingletonScope();
-   options
-      .bind<IArrayIndexAccessor>(RsXCoreInjectionTokens.IArrayIndexAccessor)
-      .to(ArrayIndexAccessor)
-      .inSingletonScope();
-   options
-      .bind<IMapKeyAccessor>(RsXCoreInjectionTokens.IMapKeyAccessor)
-      .to(MapKeyAccessor)
-      .inSingletonScope();
-   options
-      .bind<ISetKeyAccessor>(RsXCoreInjectionTokens.ISetKeyAccessor)
-      .to(SetKeyAccessor)
-      .inSingletonScope();
-   options
-      .bind<IObservableAccessor>(RsXCoreInjectionTokens.IObservableAccessor)
-      .to(ObservableAccessor)
-      .inSingletonScope();
-   options
-      .bind<IPromiseAccessor>(RsXCoreInjectionTokens.IPromiseAccessor)
-      .to(PromiseAccessor)
-      .inSingletonScope();
-   options
-      .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessor)
-      .to(IndexValueAccessor)
-      .inSingletonScope();
+      
+   options.bind(PropertyValueAccessor).to(PropertyValueAccessor).inSingletonScope();
+   options.bind(MethodAccessor).to(MethodAccessor).inSingletonScope();
+   options.bind(ArrayIndexAccessor).to(ArrayIndexAccessor).inSingletonScope();
+   options.bind(MapKeyAccessor).to(MapKeyAccessor).inSingletonScope();
+   options.bind(SetKeyAccessor).to(SetKeyAccessor).inSingletonScope();
+   options.bind(ObservableAccessor).to(ObservableAccessor).inSingletonScope();
+   options.bind(PromiseAccessor).to(PromiseAccessor).inSingletonScope();
+
+
+   options.bind(RsXCoreInjectionTokens.IPropertyValueAccessor).toService(PropertyValueAccessor);
+   options.bind(RsXCoreInjectionTokens.IMethodAccessor).toService(MethodAccessor);
+   options.bind(RsXCoreInjectionTokens.IArrayIndexAccessor).toService(ArrayIndexAccessor);
+   options.bind(RsXCoreInjectionTokens.IMapKeyAccessor).toService(MapKeyAccessor);
+   options.bind(RsXCoreInjectionTokens.ISetKeyAccessor).toService(SetKeyAccessor);
+   options.bind(RsXCoreInjectionTokens.IObservableAccessor).toService(ObservableAccessor);
+   options.bind(RsXCoreInjectionTokens.IPromiseAccessor).toService(PromiseAccessor);
 
    options
       .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
-      .to(PropertyValueAccessor)
-      .inSingletonScope();
+      .toService(PropertyValueAccessor);
    options
       .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
-      .to(MethodAccessor)
-      .inSingletonScope();
+      .toService(MethodAccessor);
    options
       .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
-      .to(ArrayIndexAccessor)
-      .inSingletonScope();
+      .toService(ArrayIndexAccessor);
    options
       .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
-      .to(MapKeyAccessor)
-      .inSingletonScope();
+      .toService(MapKeyAccessor);
    options
       .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
-      .to(SetKeyAccessor)
-      .inSingletonScope();
+      .toService(SetKeyAccessor);
    options
       .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
-      .to(ObservableAccessor)
-      .inSingletonScope();
+      .toService(ObservableAccessor);
    options
       .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
-      .to(PromiseAccessor)
+      .toService(PromiseAccessor)
+
+   options
+      .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessor)
+      .to(IndexValueAccessor)
       .inSingletonScope();
    options
       .bind<IIndexValueAccessorProvider>(
