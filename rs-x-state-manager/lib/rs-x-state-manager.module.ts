@@ -9,7 +9,6 @@ import { ObjectObserverProxyPairFactoryProvider } from './object-observer/object
 import { IObjectObserverProxyPairFactoryProvider } from './object-observer/object-observer-proxy-pair-factory.provider.interface';
 import { ObjectObserverProxyPairManager } from './object-observer/object-observer-proxy-pair-manager';
 import { IObjectObserverProxyPairManager } from './object-observer/object-observer-proxy-pair-manager.type';
-import { IObjectObserverProxyPairFactory } from './object-observer/object-observer-proxy-pair.factory.interface';
 import { ObjectPropertyObserverProxyPairManager } from './object-property-observer-proxy-pair-manager';
 import { IObjectPropertyObserverProxyPairManager } from './object-property-observer-proxy-pair-manager.type';
 import { ArrayItemObserverProxyPairFactory } from './property-observer/factories/array-item/array-item-observe-proxy-pair.factory';
@@ -21,6 +20,11 @@ import { MapItemObserverProxyPairFactory } from './property-observer/factories/m
 import { NonIterableObjectPropertyObserverProxyPairFactory } from './property-observer/factories/non-iterable-object-property/non-iterable-object-property-observer-proxy-pair.factory';
 import { ObjectPropertyObserverManager } from './property-observer/factories/non-iterable-object-property/object-property-observer-manager';
 import { IObjectPropertyObserverManager } from './property-observer/factories/non-iterable-object-property/object-property-observer-manager.type';
+import { SetItemObserverManager } from './property-observer/factories/set-item/set-item-observer-manager';
+import { ISetItemObserverManager } from './property-observer/factories/set-item/set-item-observer-manager.type';
+import { SetItemObserverProxyPairFactory } from './property-observer/factories/set-item/set-item-observer-proxy-pair.factory';
+import { MustProxifyItemHandlerFactory } from './property-observer/must-proxify-item-handler.factory';
+import { IMustProxifyItemHandlerFactory } from './property-observer/must-proxify-item-handler.factory.type';
 import { IPropertyObserverProxyPairFactoryProvider } from './property-observer/property-observer-proxy-factory.provider.interface';
 import { PropertyObserverProxyPairFactoryProvider } from './property-observer/property-observer-proxy-pair-factory.provider';
 import { IPropertyObserverProxyPairFactory } from './property-observer/property-observer-proxy-pair.factory.interface';
@@ -32,6 +36,8 @@ import { ObservableProxyFactory } from './proxies/observable-proxy/observable-pr
 import { IObservableProxyFactory } from './proxies/observable-proxy/observable-proxy.factory.type';
 import { PromiseProxyFactory } from './proxies/promise-proxy/promise-proxy.factory';
 import { IPromiseProxyFactory } from './proxies/promise-proxy/promise-proxy.factory.type';
+import { ProxyRegistry } from './proxies/proxy-registry/proxy-registry';
+import { IProxyRegistry } from './proxies/proxy-registry/proxy-registry.interface';
 import { SetProxyFactory } from './proxies/set-proxy/set-proxy.factory';
 import { ISetProxyFactory } from './proxies/set-proxy/set-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from './rs-x-state-manager-injection-tokes';
@@ -39,16 +45,6 @@ import { ObjectStateManager } from './state-manager/object-state-manager';
 import { IObjectStateManager } from './state-manager/object-state-manager.interface';
 import { StateManager } from './state-manager/state-manager';
 import { IStateManager } from './state-manager/state-manager.interface';
-import { IArrayObserverProxyPairFactory } from './object-observer/factories/array-observer-proxy-pair.factory.type';
-import { IMapObserverProxyPairFactory } from './object-observer/factories/map-observer-proxy-pair.factory.type';
-import { ISetObserverProxyPairFactory } from './object-observer/factories/set-observer-proxy-pair.factory.type';
-import { ISetItemObserverManager } from './property-observer/factories/set-item/set-item-observer-manager.type';
-import { SetItemObserverManager } from './property-observer/factories/set-item/set-item-observer-manager';
-import { SetItemObserverProxyPairFactory } from './property-observer/factories/set-item/set-item-observer-proxy-pair.factory';
-import { MustProxifyItemHandlerFactory } from './property-observer/must-proxify-item-handler.factory';
-import { IMustProxifyItemHandlerFactory } from './property-observer/must-proxify-item-handler.factory.type';
-import { IProxyRegistry } from './proxies/proxy-registry/proxy-registry.interface';
-import { ProxyRegistry } from './proxies/proxy-registry/proxy-registry';
 
 InjectionContainer.load(RsXCoreModule);
 
@@ -89,36 +85,29 @@ export const RsXStateManagerModule = new ContainerModule((options) => {
       )
       .to(ObjectPropertyObserverProxyPairManager)
       .inSingletonScope();
-   options
-      .bind<IArrayObserverProxyPairFactory>(
-         RsXStateManagerInjectionTokens.IArrayObserverProxyPairFactory
-      )
-      .to(ArrayObserverProxyPairFactory)
-      .inSingletonScope();
-   options
-      .bind<IObjectObserverProxyPairFactory>(
-         RsXStateManagerInjectionTokens.PromiseObserverProxyPairFactory
-      )
-      .to(PromiseObserverProxyPairFactory)
-      .inSingletonScope();
-   options
-      .bind<IObjectObserverProxyPairFactory>(
-         RsXStateManagerInjectionTokens.ObservableObserverProxyPairFactory
-      )
-      .to(ObservableObserverProxyPairFactory)
-      .inSingletonScope();
-   options
-      .bind<IMapObserverProxyPairFactory>(
-         RsXStateManagerInjectionTokens.IMapObserverProxyPairFactory
-      )
-      .to(MapObserverProxyPairFactory)
-      .inSingletonScope();
-   options
-      .bind<ISetObserverProxyPairFactory>(
-         RsXStateManagerInjectionTokens.ISetObserverProxyPairFactory
-      )
-      .to(SetObserverProxyPairFactory)
-      .inSingletonScope();
+
+
+   options.bind(PlainObjectObserverProxyPairFactory).to(PlainObjectObserverProxyPairFactory).inSingletonScope();
+   options.bind(ArrayObserverProxyPairFactory).to(ArrayObserverProxyPairFactory).inSingletonScope();
+   options.bind(PromiseObserverProxyPairFactory).to(PromiseObserverProxyPairFactory).inSingletonScope();
+   options.bind(ObservableObserverProxyPairFactory).to(ObservableObserverProxyPairFactory).inSingletonScope();
+   options.bind(MapObserverProxyPairFactory).to(MapObserverProxyPairFactory).inSingletonScope();
+   options.bind(SetObserverProxyPairFactory).to(SetObserverProxyPairFactory).inSingletonScope();
+
+   options.bind(RsXStateManagerInjectionTokens.PlainObjectObserverProxyPairFactory).toService(PlainObjectObserverProxyPairFactory);
+   options.bind(RsXStateManagerInjectionTokens.IArrayObserverProxyPairFactory).toService(ArrayObserverProxyPairFactory);
+   options.bind(RsXStateManagerInjectionTokens.PromiseObserverProxyPairFactory).toService(PromiseObserverProxyPairFactory);
+   options.bind(RsXStateManagerInjectionTokens.ObservableObserverProxyPairFactory).toService(ObservableObserverProxyPairFactory);
+   options.bind(RsXStateManagerInjectionTokens.IMapObserverProxyPairFactory).toService(MapObserverProxyPairFactory);
+   options.bind(RsXStateManagerInjectionTokens.ISetObserverProxyPairFactory).toService(SetObserverProxyPairFactory);
+
+   options.bind(RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList).toService(PlainObjectObserverProxyPairFactory);
+   options.bind(RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList).toService(ArrayObserverProxyPairFactory);
+   options.bind(RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList ).toService(PromiseObserverProxyPairFactory);
+   options.bind(RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList).toService(ObservableObserverProxyPairFactory);
+   options.bind(RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList).toService(MapObserverProxyPairFactory);
+   options.bind(RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList).toService(SetObserverProxyPairFactory);
+   
    options
       .bind<IObjectObserverProxyPairFactoryProvider>(
          RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryProvider
@@ -161,12 +150,7 @@ export const RsXStateManagerModule = new ContainerModule((options) => {
       )
       .to(SetItemObserverManager)
       .inSingletonScope();
-   options
-      .bind<IObjectObserverProxyPairFactory>(
-         RsXStateManagerInjectionTokens.PlainObjectObserverProxyPairFactory
-      )
-      .to(PlainObjectObserverProxyPairFactory)
-      .inSingletonScope();
+  
    options
       .bind<IPropertyObserverProxyPairFactory>(
          RsXStateManagerInjectionTokens.NonIterableObjectPropertyObserverProxyPairFactory
@@ -229,43 +213,7 @@ export const RsXStateManagerModule = new ContainerModule((options) => {
       .bind<IStateManager>(RsXStateManagerInjectionTokens.IStateManager)
       .to(StateManager)
       .inSingletonScope();
-   options
-      .bind<IObjectObserverProxyPairFactory>(
-         RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
-      )
-      .to(PlainObjectObserverProxyPairFactory)
-      .inSingletonScope();
-   options
-      .bind<IObjectObserverProxyPairFactory>(
-         RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
-      )
-      .to(ArrayObserverProxyPairFactory)
-      .inSingletonScope();
-   options
-      .bind<IObjectObserverProxyPairFactory>(
-         RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
-      )
-      .to(PromiseObserverProxyPairFactory)
-      .inSingletonScope();
-   options
-      .bind<IObjectObserverProxyPairFactory>(
-         RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
-      )
-      .to(ObservableObserverProxyPairFactory)
-      .inSingletonScope();
-   options
-      .bind<IObjectObserverProxyPairFactory>(
-         RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
-      )
-      .to(MapObserverProxyPairFactory)
-      .inSingletonScope();
 
-   options
-      .bind<IObjectObserverProxyPairFactory>(
-         RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
-      )
-      .to(SetObserverProxyPairFactory)
-      .inSingletonScope();
    
 });
 
