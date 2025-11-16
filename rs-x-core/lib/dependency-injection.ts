@@ -3,6 +3,7 @@ import {
    ContainerModule,
    inject,
    injectable,
+   multiInject,
    unmanaged,
    preDestroy,
    ServiceIdentifier,
@@ -12,6 +13,7 @@ import 'reflect-metadata';
 import { ConstructorType } from './types';
 export {
    inject as Inject,
+   multiInject as MultiInject,
    injectable as Injectable,
    unmanaged as Unmanaged,
    ContainerModule,

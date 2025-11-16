@@ -229,6 +229,44 @@ export const RsXStateManagerModule = new ContainerModule((options) => {
       .bind<IStateManager>(RsXStateManagerInjectionTokens.IStateManager)
       .to(StateManager)
       .inSingletonScope();
+   options
+      .bind<IObjectObserverProxyPairFactory>(
+         RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
+      )
+      .to(PlainObjectObserverProxyPairFactory)
+      .inSingletonScope();
+   options
+      .bind<IObjectObserverProxyPairFactory>(
+         RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
+      )
+      .to(ArrayObserverProxyPairFactory)
+      .inSingletonScope();
+   options
+      .bind<IObjectObserverProxyPairFactory>(
+         RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
+      )
+      .to(PromiseObserverProxyPairFactory)
+      .inSingletonScope();
+   options
+      .bind<IObjectObserverProxyPairFactory>(
+         RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
+      )
+      .to(ObservableObserverProxyPairFactory)
+      .inSingletonScope();
+   options
+      .bind<IObjectObserverProxyPairFactory>(
+         RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
+      )
+      .to(MapObserverProxyPairFactory)
+      .inSingletonScope();
+
+   options
+      .bind<IObjectObserverProxyPairFactory>(
+         RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
+      )
+      .to(SetObserverProxyPairFactory)
+      .inSingletonScope();
+   
 });
 
 export async function unloadRsXStateManagerModule(): Promise<void> {

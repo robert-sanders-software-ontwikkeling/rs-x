@@ -8,6 +8,11 @@ export const RsXStateManagerInjectionTokens = {
    IObjectPropertyObserverProxyPairManager: Symbol(
       'IObjectPropertyObserverProxyPairManager'
    ),
+
+   PlainObjectObserverProxyPairFactory: Symbol(
+      'PlainObjectObserverProxyPairFactory'
+   ),
+
    IArrayObserverProxyPairFactory: Symbol('IArrayObserverProxyPairFactory'),
    PromiseObserverProxyPairFactory: Symbol('PromiseObserverProxyPairFactory'),
    ObservableObserverProxyPairFactory: Symbol(
@@ -15,6 +20,9 @@ export const RsXStateManagerInjectionTokens = {
    ),
    IMapObserverProxyPairFactory: Symbol('IMapObserverProxyPairFactory'),
    ISetObserverProxyPairFactory: Symbol('ISetObserverProxyPairFactory'),
+
+ 
+   IObjectObserverProxyPairFactoryList:  Symbol('IObjectObserverProxyPairFactoryList'),
    IObjectObserverProxyPairFactoryProvider: Symbol(
       'IObjectObserverProxyPairFactoryProvider'
    ),
@@ -31,9 +39,7 @@ export const RsXStateManagerInjectionTokens = {
    ),
    MapItemObserverProxyPairFactory: Symbol('MapItemObserverProxyPairFactory'),
    SetItemObserverProxyPairFactory: Symbol('SetItemObserverProxyPairFactory'),
-   PlainObjectObserverProxyPairFactory: Symbol(
-      'PlainObjectObserverProxyPairFactory'
-   ),
+ 
    IMustProxifyItemHandlerFactory: Symbol('IMustProxifyItemHandlerFactory'),
    IObjectStateManager: Symbol('IObjectStateManager'),
    IPropertyObserverProxyPairFactoryProvider: Symbol(

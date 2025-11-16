@@ -245,6 +245,36 @@ describe('RsXStateManagerModule', () => {
       expect(a1).toBe(a2);
    });
 
+
+    it('can get an instance of IObjectObserverProxyPairFactoryList', () => {
+      const actual = InjectionContainer.getAll(
+         RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
+      );
+
+      expect(actual[0]).toBeInstanceOf(PlainObjectObserverProxyPairFactory);
+      expect(actual[1]).toBeInstanceOf(ArrayObserverProxyPairFactory);
+      expect(actual[2]).toBeInstanceOf(PromiseObserverProxyPairFactory);
+      expect(actual[3]).toBeInstanceOf(ObservableObserverProxyPairFactory);
+      expect(actual[4]).toBeInstanceOf(MapObserverProxyPairFactory);
+      expect(actual[5]).toBeInstanceOf(SetObserverProxyPairFactory);
+   });
+
+   it('IObjectObserverProxyPairFactoryList instance is a singelton', () => {
+      const a1 = InjectionContainer.getAll(
+         RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
+      );
+      const a2 = InjectionContainer.getAll(
+         RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
+      );
+      expect(a1[0]).toBe(a2[0]);
+      expect(a1[1]).toBe(a2[1]);
+      expect(a1[2]).toBe(a2[2]);
+      expect(a1[3]).toBe(a2[3]);
+      expect(a1[4]).toBe(a2[4]);
+      expect(a1[5]).toBe(a2[5]);
+   });
+
+
    it('can get an instance of IObjectObserverProxyPairFactoryProvider', () => {
       const actual = InjectionContainer.get(
          RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryProvider
