@@ -8,7 +8,7 @@ import globals from "globals";
  */
 export default [
   {
-    ignores: ["dist/**", "**/*.d.ts"], // ignore build output & type definitions
+    ignores: ["**/dist/**", "**/*.d.ts"], // ignore build output & type definitions
   },
 
   {

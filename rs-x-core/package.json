@@ -2,7 +2,7 @@
     "name": "@rs-x/core",
     "version": "0.0.1",
     "scripts": {
-        "build": "tsup lib/index.ts --format cjs,esm --dts"
+        "build": "tsup lib/index.ts --format cjs,esm --dts --tsconfig ../tsconfig.build.json"
     },
     "dependencies": {
         "fast-equals": "^5.3.2",

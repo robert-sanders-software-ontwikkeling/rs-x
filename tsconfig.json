@@ -45,9 +45,7 @@
          "node_modules/@types",
          "./types"
       ],
-      "types": [
-       
-      ]
+      "types": ["jest"]
    },
    "ts-node": {
       "compilerOptions": {
