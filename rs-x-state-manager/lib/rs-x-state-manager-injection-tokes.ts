@@ -31,6 +31,7 @@ export const RsXStateManagerInjectionTokens = {
    IArrayItemObserverManager: Symbol('IArrayItemyObserverManager'),
    IMapItemObserverManager: Symbol('IMapItemObserverManager'),
    ISetItemObserverManager: Symbol('ISetItemObserverManager'),
+   IPropertyObserverProxyPairFactoryList:  Symbol('IPropertyObserverProxyPairFactoryList'),
    NonIterableObjectPropertyObserverProxyPairFactory: Symbol(
       'NonIterableObjectPropertyObserverProxyPairFactory'
    ),

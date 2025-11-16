@@ -17,7 +17,6 @@ import { ObjectPropertyObserverManager } from '../lib/property-observer/factorie
 import { SetItemObserverManager } from '../lib/property-observer/factories/set-item/set-item-observer-manager';
 import { SetItemObserverProxyPairFactory } from '../lib/property-observer/factories/set-item/set-item-observer-proxy-pair.factory';
 import { MustProxifyItemHandlerFactory } from '../lib/property-observer/must-proxify-item-handler.factory';
-import { PropertyObserverProxyPairFactoryProvider } from '../lib/property-observer/property-observer-proxy-pair-factory.provider';
 import { ArrayProxyFactory } from '../lib/proxies/array-proxy/array-proxy.factory';
 import { MapProxyFactory } from '../lib/proxies/map-proxy/map-proxy.factory';
 import { ObservableProxyFactory } from '../lib/proxies/observable-proxy/observable-proxy.factory';
@@ -251,6 +250,7 @@ describe('RsXStateManagerModule', () => {
          RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
       );
 
+      expect(actual.length).toEqual(6);
       expect(actual[0]).toBeInstanceOf(PlainObjectObserverProxyPairFactory);
       expect(actual[1]).toBeInstanceOf(ArrayObserverProxyPairFactory);
       expect(actual[2]).toBeInstanceOf(PromiseObserverProxyPairFactory);
@@ -272,6 +272,33 @@ describe('RsXStateManagerModule', () => {
       expect(a1[3]).toBe(a2[3]);
       expect(a1[4]).toBe(a2[4]);
       expect(a1[5]).toBe(a2[5]);
+   });
+
+
+
+    it('can get an instance of IPropertyObserverProxyPairFactoryList', () => {
+      const actual = InjectionContainer.getAll(
+         RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryList
+      );
+
+      expect(actual.length).toEqual(4);
+      expect(actual[0]).toBeInstanceOf(NonIterableObjectPropertyObserverProxyPairFactory);
+      expect(actual[1]).toBeInstanceOf(ArrayItemObserverProxyPairFactory);
+      expect(actual[2]).toBeInstanceOf(MapItemObserverProxyPairFactory);
+      expect(actual[3]).toBeInstanceOf(SetItemObserverProxyPairFactory);
+   });
+
+   it('IPropertyObserverProxyPairFactoryList instance is a singelton', () => {
+      const a1 = InjectionContainer.getAll(
+         RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryList
+      );
+      const a2 = InjectionContainer.getAll(
+         RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryList
+      );
+      expect(a1[0]).toBe(a2[0]);
+      expect(a1[1]).toBe(a2[1]);
+      expect(a1[2]).toBe(a2[2]);
+      expect(a1[3]).toBe(a2[3]);
    });
 
 
@@ -481,43 +508,7 @@ describe('RsXStateManagerModule', () => {
       expect(a1).toBe(a2);
    });
 
-   it('can get an instance of IPropertyObserverProxyPairFactoryProvider', () => {
-      const actual = InjectionContainer.get(
-         RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryProvider
-      );
-      expect(actual).toBeInstanceOf(PropertyObserverProxyPairFactoryProvider);
-   });
-
-   it('IPropertyObserverProxyPairFactoryProvider instance is a singelton', () => {
-      const a1 = InjectionContainer.get(
-         RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryProvider
-      );
-      const a2 = InjectionContainer.get(
-         RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryProvider
-      );
-      expect(a1).toBe(a2);
-   });
-
-   it('can get an instance of IPropertyObserverProxyPairFactoryProviderFactory', () => {
-      const factory: () => void = InjectionContainer.get(
-         RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryProviderFactory
-      );
-      expect(factory).toBeInstanceOf(Function);
-
-      const actual = factory();
-      expect(actual).toBeInstanceOf(PropertyObserverProxyPairFactoryProvider);
-   });
-
-   it('IPropertyObserverProxyPairFactoryProviderFactory instance is a singelton', () => {
-      const a1 = InjectionContainer.get(
-         RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryProviderFactory
-      );
-      const a2 = InjectionContainer.get(
-         RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryProviderFactory
-      );
-      expect(a1).toBe(a2);
-   });
-
+ 
    it('can get an instance of IMustProxifyItemHandlerFactory', () => {
       const actual = InjectionContainer.get(
          RsXStateManagerInjectionTokens.IMustProxifyItemHandlerFactory

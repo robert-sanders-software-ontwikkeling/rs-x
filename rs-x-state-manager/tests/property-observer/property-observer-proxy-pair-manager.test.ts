@@ -20,7 +20,7 @@ describe('PropertyObserverProxyPairManager tests', () => {
       ];
 
       propertyObserverManager = new ObjectPropertyObserverProxyPairManager(
-         () => ({ factories: observerFactories })
+         observerFactories
       ).create(object).instance;
    });
 
