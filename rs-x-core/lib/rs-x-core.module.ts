@@ -10,23 +10,16 @@ import { IEqualityService } from './equality-service/equality-service.interface'
 import { ErrorLog } from './error-log/error-log';
 import { IErrorLog } from './error-log/error-log.interface';
 import { ArrayIndexAccessor } from './index-value-accessor/array-index-accessor';
-import { IArrayIndexAccessor } from './index-value-accessor/array-index-accessor.type';
 import { IndexValueAccessor } from './index-value-accessor/index-value-accessor';
 import { IIndexValueAccessor } from './index-value-accessor/index-value-accessor.interface';
 import { IndexValueAccessorProvider } from './index-value-accessor/index-value-accessor.provider';
 import { IIndexValueAccessorProvider } from './index-value-accessor/index-value-accessor.provider.interface';
 import { MapKeyAccessor } from './index-value-accessor/map-key-accessor';
-import { IMapKeyAccessor } from './index-value-accessor/map-key-accessor.type';
 import { MethodAccessor } from './index-value-accessor/method-accessor';
-import { IMethodAccessor } from './index-value-accessor/method-accessor.type';
 import { ObservableAccessor } from './index-value-accessor/observable-accessor';
-import { IObservableAccessor } from './index-value-accessor/observable-accessor.interface';
 import { PromiseAccessor } from './index-value-accessor/promise-accessor';
-import { IPromiseAccessor } from './index-value-accessor/promise-accessor.interface';
 import { PropertyValueAccessor } from './index-value-accessor/property-value-accessor';
-import { IPropertyValueAccessor } from './index-value-accessor/property-value-accessor.type';
 import { SetKeyAccessor } from './index-value-accessor/set-key-accessor';
-import { ISetKeyAccessor } from './index-value-accessor/set-key-accessor.type';
 import { RsXCoreInjectionTokens } from './rs-x-core.injection-tokens';
 
 export const RsXCoreModule = new ContainerModule((options) => {
