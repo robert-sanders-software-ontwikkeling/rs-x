@@ -50,25 +50,27 @@ describe('ArrayProxy tests', () => {
    });
 
    it('create will register the array proxy to the proxy registry', () => {
+      const array = [];
       const proxyRegistry = new ProxyRegistryMock();
       const setProxyFactory = new ArrayProxyFactory(proxyRegistry);
-      const { proxy } = setProxyFactory.create({ array: [] }).instance;
+      const { proxy } = setProxyFactory.create({ array }).instance;
 
       expect(proxyRegistry.register).toHaveBeenCalledTimes(1);
-      expect(proxyRegistry.register.mock.calls[0][0]).toBe(proxy);
+      expect(proxyRegistry.register.mock.calls[0][0]).toBe(array);
+      expect(proxyRegistry.register.mock.calls[0][1]).toBe(proxy);
    });
 
    it('dispose will unregister the array proxy to the proxy registry', () => {
+       const array = [];
       const proxyRegistry = new ProxyRegistryMock();
       const setProxyFactory = new ArrayProxyFactory(proxyRegistry);
-      const { proxy, observer } = setProxyFactory.create({
-         array: [],
-      }).instance;
+      const { observer } = setProxyFactory.create({array}).instance;
 
       observer.dispose();
 
       expect(proxyRegistry.unregister).toHaveBeenCalledTimes(1);
-      expect(proxyRegistry.unregister.mock.calls[0][0]).toBe(proxy);
+      expect(proxyRegistry.unregister).toHaveBeenCalledWith(array)
+     
    });
 
    it('items are proxified when array proxy is initialized and mustProxify return true for an item', () => {
