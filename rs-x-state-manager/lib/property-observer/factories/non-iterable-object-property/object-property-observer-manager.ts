@@ -6,6 +6,7 @@ import {
    PropertyDescriptorType,
    SingletonFactory,
    Type,
+   Inject,
 } from '@rs-x/core';
 import { Subject } from 'rxjs';
 import { AbstractObserver } from '../../../abstract-observer';
@@ -17,6 +18,8 @@ import {
    IPropertyObserverInfo,
    IPropertyObserverManager,
 } from './object-property-observer-manager.type';
+import { IProxyRegistry } from '../../../proxies';
+import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
 
 class PropertObserver extends AbstractObserver {
    private _value: unknown;
@@ -27,7 +30,8 @@ class PropertObserver extends AbstractObserver {
       owner: IDisposableOwner,
       target: object,
       propertyName: string,
-      initialValue: unknown
+      initialValue: unknown,
+      private readonly _proxyRegister: IProxyRegistry
    ) {
       super(
          owner,
@@ -40,7 +44,7 @@ class PropertObserver extends AbstractObserver {
       this.patch(propertyName);
    }
 
-   protected disposeInternal(): void {
+   protected override disposeInternal(): void {
       const propertyName = this.id as string;
       const value = this.target[propertyName];
       //to prevent errors if is was non configurable
@@ -56,7 +60,7 @@ class PropertObserver extends AbstractObserver {
          this._propertyDescriptorWithTarget.type !==
          PropertyDescriptorType.Function
       ) {
-         this.target[propertyName] = value;
+         this.target[propertyName] = this._proxyRegister.getProxyTarget( value) ?? value
       }
 
       this._value = undefined;
@@ -184,6 +188,7 @@ class PropertyObserverManager
 {
    constructor(
       private readonly _object: object,
+      private readonly _proxyRegister: IProxyRegistry,
       private readonly releaseObject: () => void
    ) {
       super();
@@ -208,7 +213,8 @@ class PropertyObserverManager
          },
          this._object,
          data.index,
-         data.initialValue
+         data.initialValue,
+         this._proxyRegister
       );
    }
 
@@ -226,7 +232,9 @@ export class ObjectPropertyObserverManager
    extends SingletonFactory<object, object, IPropertyObserverManager>
    implements IObjectPropertyObserverManager
 {
-   constructor() {
+   constructor( 
+      @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
+      private readonly _proxyRegister: IProxyRegistry) {
       super();
    }
 
@@ -241,7 +249,7 @@ export class ObjectPropertyObserverManager
    protected override createInstance(
       context: object
    ): IPropertyObserverManager {
-      return new PropertyObserverManager(context, () => this.release(context));
+      return new PropertyObserverManager(context, this._proxyRegister, () => this.release(context));
    }
 
    protected override releaseInstance(

@@ -1,5 +1,7 @@
 export interface IProxyRegistry {
-   register(proxy: unknown): void;
-   unregister(proxy: unknown): void;
+   getProxyTarget<T>(proxyToFind: unknown): T;
+   getProxy<T>(proxyTarget: unknown): T;
+   register(proxyTarget: unknown, proxy: unknown): void
+   unregister(proxyTarget: unknown): void;
    isProxy(object: unknown): boolean;
 }

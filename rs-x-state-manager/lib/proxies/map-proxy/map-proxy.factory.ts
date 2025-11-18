@@ -45,7 +45,7 @@ export class MapProxy extends AbstractObserver<
       this.proxifyItem = proxifyItem ?? echo;
       this.unproxifyItem = unproxifyItem ?? echo;
       this.target = new Proxy(initialValue, this);
-      this._proxyRegistry.register(this.target);
+      this._proxyRegistry.register(initialValue, this.target);
    }
 
    public override init(): void {
@@ -75,7 +75,7 @@ export class MapProxy extends AbstractObserver<
    }
 
    protected override disposeInternal(): void {
-      this._proxyRegistry.unregister(this.target);
+      this._proxyRegistry.unregister(this.initialValue);
       this.restoreOrginalMap();
    }
 

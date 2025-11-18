@@ -63,7 +63,7 @@ export abstract class AbstractObserver<
       this._owner?.release?.();
    }
 
-   protected abstract disposeInternal(): void;
+   protected  disposeInternal(): void {}
 
    protected emitChange(change: IPropertyChange): void {
       this._changed.next(change);

@@ -7,7 +7,7 @@ import {
 import { IArrayProxyFactory } from '../../../..//lib/proxies/array-proxy/array-proxy.factory.type';
 import { IObserverProxyPair } from '../../../../lib/object-property-observer-proxy-pair-manager.type';
 import { IObserver } from '../../../../lib/observer.interface';
-import { IPropertyObserverProxyPairFactory } from '../../../../lib/property-observer/property-observer-proxy-pair.factory.interface';
+import { IIndexObserverProxyPairFactory } from '../../../../lib/property-observer/index-observer-proxy-pair.factory.interface';
 import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
 import { DisposableOwnerMock } from '../../../../lib/testing/disposable-owner.mock';
@@ -16,7 +16,7 @@ describe('ArrayItemObserverProxyPairFactory tests', () => {
    let observer: IObserver;
    let disposableOwner: DisposableOwnerMock;
    let arrayProxyFactory: IArrayProxyFactory;
-   let arrayItemObserverFactory: IPropertyObserverProxyPairFactory;
+   let arrayItemObserverFactory: IIndexObserverProxyPairFactory;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXStateManagerModule);

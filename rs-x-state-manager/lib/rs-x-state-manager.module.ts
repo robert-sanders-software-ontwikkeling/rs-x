@@ -141,10 +141,6 @@ export const RsXStateManagerModule = new ContainerModule((options) => {
       .to(SetItemObserverManager)
       .inSingletonScope();
 
-
-
-
-
    options
       .bind<IMustProxifyItemHandlerFactory>(
          RsXStateManagerInjectionTokens.IMustProxifyItemHandlerFactory

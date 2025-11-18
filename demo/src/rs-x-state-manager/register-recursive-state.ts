@@ -20,6 +20,7 @@ const stateManager: IStateManager = InjectionContainer.get(
 console.log('Initial value:');
 stateManager.changed.subscribe((change: IStateChange) => {
     console.log(structuredClone(change.newValue));
+    console.log('\n');
 });
 
 // We register recursive state by passing in

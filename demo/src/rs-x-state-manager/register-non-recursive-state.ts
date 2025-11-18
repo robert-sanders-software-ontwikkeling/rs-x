@@ -20,6 +20,7 @@
     console.log('Initial value:');
     stateManager.changed.subscribe((change: IStateChange) => {
         console.log(change.newValue);
+        console.log('\n');
     });
 
     // This will emit the new value { y: 10 }
