@@ -4,9 +4,6 @@ import { runDemo } from '../../demo/run-demo';
 describe('Statemanager demos', () => {
     beforeEach(() => {
         jest.resetModules();
-        console.log = (...args: unknown[]) => {
-            process.stdout.write(args.map(a => String(a)).join(' ') + '\n');
-        };
     });
 
     it('register-non-recursive-state.ts', async () => {
