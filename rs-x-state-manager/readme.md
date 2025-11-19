@@ -1,24 +1,147 @@
-# rx-x-state-manager
+# State-manager
 
-The **State Manager** provides an efficient way to observe and synchronize state changes across your application. State always lives on on a certain context and is identified by and index:
+The **State Manager** provides an efficient way to observe and synchronize state changes across your application.  
+State always lives on a certain **context** and is identified by an **index**:
 
-- Object property or field. The index is the property or field name
-- Array item. The index is a number refering to the position in an array
-- Map item. The index is the belonging map key
+- Object property or field → index = property/field name  
+- Array item → index = numeric position  
+- Map item → index = the map key  
 
-State item is defined by two determinants. A context and index but the statemanegr doesn' really know how to resolve an detect changes for the value for it given the context and indes. It uses two service for that:
+A state item is always determined by **(context, index)**.  
+The state manager does **not** automatically know how to detect changes for every data type, so it uses two services:
 
-- A service implementing the interface ```IObjectPropertyObserverProxyPairManager```. This service is responsible for creating a observer for the state and proxified the value if needed
+- A service implementing `IObjectPropertyObserverProxyPairManager`  
+  Responsible for creating an observer and proxying values if needed.
 
-- A service implementing the interface ```IIndexValueAccessor```. This servive is used to get the current value
-
-
-### Get an instance of the state manager
-
-The statem manage has been register as singleton service and the following example show how to get an instance of it
+- A service implementing `IIndexValueAccessor`  
+  Responsible for retrieving the current value.
 
 
-- Make sure you have loaded the state manager module into the injectioon container
+The **State Manager** has the followng interface:
+```ts
+export interface IStateManager {
+    readonly changed: Observable<IStateChange>;
+    readonly contextChanged: Observable<IContextChanged>;
+    readonly startChangeCycly: Observable<void>;
+    readonly endChangeCycly: Observable<void>;
+
+    isRegistered(
+        context: unknown,
+        index: unknown,
+        mustProxify?: MustProxify
+    ): boolean;
+
+    register(
+        context: unknown,
+        index: unknown,
+        mustProxify?: MustProxify
+    ): unknown;
+
+    unregister(
+        context: unknown,
+        index: unknown,
+        mustProxify?: MustProxify
+    ): void;
+
+    getState(
+        context: unknown,
+        index: unknown
+    ): unknown;
+
+    clear(): void;
+}
+```
+
+---
+
+## Members
+
+### **changed**
+**Type:** `Observable<IStateChange>`  
+Emits whenever a state value changes.
+
+---
+
+### **contextChanged**
+**Type:** `Observable<IContextChanged>`  
+Emits whenever an entire context is replaced. Happes for example when you replaces a nested object.
+
+---
+
+### **startChangeCycly**
+**Type:** `Observable<void>`  
+Emits at the start of handling a state change.
+
+---
+
+### **endChangeCycly**
+**Type:** `Observable<void>`  
+Emits at the end of handling a state change.
+
+---
+
+### **isRegistered(context, index, mustProxify?)**
+Returns whether the given `(context, index)` pair is already registered.
+
+| Parameter       | Type                       | Description                                               |
+| --------------- | -------------------------- | --------------------------------------------------------- |
+| **context**     | `unknown`                  | The object holding the property or promise being tracked. |
+| **index**       | `unknown`                  | The index identifying the state on the passed in.         |
+| **mustProxify** | `MustProxify` *(optional)* | Controls whether the value should be proxified.           |
+
+**Returns:** `boolean`
+
+---
+
+### **register(context, index, mustProxify?)**
+Registers a `(context, index)` pair so its value is proxified and tracked.
+
+| Parameter       | Type                       | Description                                                 |
+| --------------- | -------------------------- | ----------------------------------------------------------- |
+| **context**     | `unknown`                  | The state context.                                          |
+| **index**       | `unknown`                  | The index identifying the state on the passed in.           |
+| **mustProxify** | `MustProxify` *(optional)* | Predicate to determine whether the value must be proxified. |
+
+**Returns:** `unknown` (the proxified value)
+
+---
+
+### **unregister(context, index, mustProxify?)**
+Unregisters a previously registered state field.
+
+| Parameter       | Type                       | Description                                          |
+| --------------- | -------------------------- | ---------------------------------------------------- |
+| **context**     | `unknown`                  | The state context.                                   |
+| **index**       | `unknown`                  | The index identifying the state on the passed in.    |
+| **mustProxify** | `MustProxify` *(optional)* | Reference to the predicate passed into `register()`. |
+
+**Returns:** `void`
+
+---
+
+### **getState(context, index)**
+Retrieves the currently tracked value for `(context, index)`.
+
+| Parameter   | Type      | Description                                                |
+| ----------- | --------- | ---------------------------------------------------------- |
+| **context** | `unknown` | The state context.                                         |
+| **index**   | `unknown` | The index identifying the state on the passed in context . |
+
+**Returns:** `unknown`
+
+---
+
+### **clear()**
+Clears all registered state values.
+
+**Returns:** `void`
+
+---
+
+## Get an instance of the State Manager
+
+The state manager is registered as a **singleton service**.  
+You must load the module into your injection container.
 
 ```ts
 import { InjectionContainer } from '@rs-x/core';
@@ -26,255 +149,837 @@ import { RsXStateManagerModule } from '@rs-x/state-manager';
 
 InjectionContainer.load(RsXStateManagerModule);
 ```
-- Two way to get an instance:
-  1. Use the injection container to get an instance
-        ```ts
-        import { InjectionContainer } from '@rs-x/core';
-        import { IIStateManager, RsXStateManagerInjectionTokens } from '@rs-x/state-manager';
 
-        const stateManager: IIStateManager  = InjectionContainer.get(
-            RsXStateManagerInjectionTokens.IStateManager
-        );
-        ```
-     
-  2. Use the Inject decorator to inject the instance into your class constrructor
+There are two ways to get an instance:
 
-        ```ts
-        import { Inject } from '@rs-x/core';
-        import { IIStateManager, RsXStateManagerInjectionTokens } from '@rs-x/state-manager';
+### 1. Using the injection container
 
-        export class MyClass {
+```ts
+import { InjectionContainer } from '@rs-x/core';
+import { IIStateManager, RsXStateManagerInjectionTokens } from '@rs-x/state-manager';
 
-            constructor(
-                @Inject(RsXStateManagerInjectionTokens.IStateManager)
-                private readonly _stateManager: IIStateManager
-            ) {
+const stateManager: IIStateManager = InjectionContainer.get(
+    RsXStateManagerInjectionTokens.IStateManager
+);
+```
 
+### 2. Using the `@Inject` decorator
+
+```ts
+import { Inject } from '@rs-x/core';
+import { IIStateManager, RsXStateManagerInjectionTokens } from '@rs-x/state-manager';
+
+export class MyClass {
+
+    constructor(
+        @Inject(RsXStateManagerInjectionTokens.IStateManager)
+        private readonly _stateManager: IIStateManager
+    ) {}
+}
+```
+
+---
+
+## Register state
+
+There are two variants:
+
+### Non-recursive  
+Monitors only assignment of a **new value** to the index.
+
+```ts
+import { InjectionContainer } from '@rs-x/core';
+import {
+    IStateChange,
+    IStateManager,
+    RsXStateManagerInjectionTokens,
+    RsXStateManagerModule
+} from '@rs-x/state-manager';
+
+
+InjectionContainer.load(RsXStateManagerModule);
+
+const stateManager: IStateManager = InjectionContainer.get(
+    RsXStateManagerInjectionTokens.IStateManager
+);
+
+function printValue(object: unknown): void {
+    console.log(JSON.stringify(object, null, 4).replaceAll('"', ''));
+}
+
+const stateContext = {
+    x: { y: 10 }
+};
+
+
+console.log('Initial value:');
+stateManager.changed.subscribe((change: IStateChange) => {
+    printValue(change.newValue);
+});
+
+// This will emit the new value { y: 10 }
+stateManager.register(stateContext, 'x');
+
+
+console.log('Changed value:');
+// This will emit the new value { y: 10 }
+stateContext.x = {
+    y: 20
+};
+
+console.log(`Latest value:`);
+printValue(stateManager.getState(stateContext, 'x'));
+
+// This will emit no change because the state is not recursive.
+console.log('\nstateContext.x.y = 30 will not emit any change:\n---\n');
+stateContext.x.y = 30;
+
+```
+
+**Output:**
+
+```console
+Initial value:
+10
+
+Changed value:
+20
+```
+
+---
+
+### Recursive  
+Monitors assignments **and** changes *inside* the value.  
+Example: if the value is an object, internal object changes are also observed.
+
+```ts
+import { InjectionContainer, truePredicate } from '@rs-x/core';
+import {
+    IStateChange,
+    IStateManager,
+    RsXStateManagerInjectionTokens,
+    RsXStateManagerModule
+} from '@rs-x/state-manager';
+
+
+InjectionContainer.load(RsXStateManagerModule);
+
+
+const stateManager: IStateManager = InjectionContainer.get(
+    RsXStateManagerInjectionTokens.IStateManager
+);
+
+function printValue(object: unknown): void {
+    console.log(JSON.stringify(object, null, 4).replaceAll('"', ''));
+}
+
+const stateContext = {
+    x: { y: 10 }
+};
+
+
+console.log('Initial value:');
+stateManager.changed.subscribe((change: IStateChange) => {
+    printValue(change.newValue)
+});
+
+// We register recursive state by passing in
+// a predicate as the third argument.
+// This will emit an initial value { y: 10 }
+stateManager.register(stateContext, 'x', truePredicate);
+
+
+console.log('Changed value:');
+// This will emit the new value { y: 10 }
+stateContext.x = {
+    y: 20
+};
+
+console.log('Changed (recursive) value:');
+// This will emit the new value { y: 30 } because x 
+// is registered as a recursive state.
+stateContext.x.y = 30;
+
+console.log(`Latest value:`);
+printValue(stateManager.getState(stateContext, 'x'));
+```
+
+**Output:**
+
+```console
+Initial value:
+{ y: 10 }
+
+Changed value:
+{ y: 20 }
+
+Changed (recursive) value:
+{ y: 30 }
+```
+
+---
+
+### State registration is idempotent
+
+You can register the same state multiple times.  
+Never assume a state is already registered—always register if you depend on it.  
+Otherwise the state may disappear when another part of the system unregisters it.
+
+When done, unregister the state:
+
+```ts
+import { InjectionContainer } from '@rs-x/core';
+import {
+    IStateChange,
+    IStateManager,
+    RsXStateManagerInjectionTokens,
+    RsXStateManagerModule
+} from '@rs-x/state-manager';
+
+
+// Load the state manager module into the injection container
+InjectionContainer.load(RsXStateManagerModule);
+
+const stateManager: IStateManager = InjectionContainer.get(
+    RsXStateManagerInjectionTokens.IStateManager
+);
+
+function printValue(object: unknown): void {
+    console.log(JSON.stringify(object, null, 4).replaceAll('"', ''));
+}
+
+const stateContext = {
+    x: { y: 10 }
+};
+
+stateManager.changed.subscribe((change: IStateChange) => {
+   printValue(change.newValue);
+});
+
+// Register is idempotent: you can register the same state multiple times.
+// For every register call, make sure you call unregister when you're done.
+console.log('Initial value:');
+stateManager.register(stateContext, 'x');
+stateManager.register(stateContext, 'x');
+
+console.log('Changed value:');
+stateContext.x = { y: 20 };
+
+stateManager.unregister(stateContext, 'x');
+
+console.log('Changed event is still emitted after unregister because one observer remains.');
+console.log('Changed value:');
+stateContext.x = { y: 30 };
+
+stateManager.unregister(stateContext, 'x');
+
+console.log('Changed event is no longer emitted after the last observer unregisters.');
+console.log('Changed value:');
+console.log('---');
+stateContext.x = { y: 30 };
+```
+
+**Output:**
+
+```console
+Initial value:
+{ y: 10 }
+
+Changed value:
+{ y: 20 }
+
+Changed event is still emitted after unregister because one observer remains.
+Changed value:
+{ y: 30 }
+```
+
+---
+
+## Support data types
+
+The state manager works by creating **observers** based on the data type of the registered state.  
+It uses a chain of **observer factories**, each capable of determining whether it supports a particular type.  
+The **first factory** that returns `true` is used.
+
+You can override this factory list by providing your own custom provider service.
+
+### Built-in supported types
+
+| Type        | Index          | Implementation         | example                          |
+| ----------- | -------------- | ---------------------- | -------------------------------- |
+| Object      | field/property | Patching               | [example](#object-propertyfield) |
+| Array       | number         | Proxy                  | [example](#array)                |
+| Map         | any            | Proxy                  | [example](#map)                  |
+| Set         | Not indexable  | Proxy                  | [example](#set)                  |  |
+| Promise     | Not indexable  | Attach `.then` handler | [example](#promise)              |
+| Observable  | Not indexable  | Subscribe              | [example](#observable)           |
+| Custom type | user defined   | user defined           | [example](#customtype)           |
+
+State consists of **context** and **index**.  
+The manager checks each observer factory to determine support based on these two values.
+
+Behavior:
+
+- Both recursive and non-recursive observers monitor **assignment** of a new value.
+- Recursive observers additionally monitor **internal changes** of the value.
+
+The following example illustrates the different state types:
+
+### Object property/field
+**Example**
+```ts
+import { InjectionContainer, truePredicate } from '@rs-x/core';
+import {
+    IStateChange,
+    IStateManager,
+    RsXStateManagerInjectionTokens,
+    RsXStateManagerModule
+} from '@rs-x/state-manager';
+
+// Load the state manager module into the injection container
+InjectionContainer.load(RsXStateManagerModule);
+
+const stateManager: IStateManager = InjectionContainer.get(
+    RsXStateManagerInjectionTokens.IStateManager
+);
+
+function printValue(object: unknown): void {
+    console.log(JSON.stringify(object, null, 4).replaceAll('"', ''));
+}
+
+interface INestStateConext {
+    a: number;
+    nested?: INestStateConext;
+}
+
+class StateContext {
+    private _b: INestStateConext = {
+        a: 10,
+        nested: {
+            a: 20,
+            nested: {
+                a: 30,
+                nested: {
+                    a: 40
+                }
             }
         }
-        ```
+    };
 
-### Register state
+    public get b(): INestStateConext {
+        return this._b;
+    }
 
-There are two variants
+    public set b(value: INestStateConext) {
+        this._b = value;
+    }
+}
 
-- Non-recursive: will only monitor the setting the value for the the index
-    ```ts
-        import { InjectionContainer } from '@rs-x/core';
-        import {
-            IStateChange,
-            IStateManager,
-            RsXStateManagerInjectionTokens,
-            RsXStateManagerModule
-        } from '@rs-x/state-manager';
+const stateContext = new StateContext();
+
+const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+    printValue(change.newValue);
+});
+
+try {
+    // Observe property `b` recursively.
+    // Otherwise, only assigning a new value to stateContext.b would emit a change event.
+    // This will emit a change event with the initial (current) value.
+    console.log('Initial value:');
+    stateManager.register(stateContext, 'b', truePredicate);
+
+    console.log('\nReplacing stateContext.b.nested.nested will emit a change event');
+    console.log('Changed value:');
+
+    stateContext.b.nested.nested = {
+        a: -30,
+        nested: {
+            a: -40
+        }
+    };
+
+     console.log(`Latest value:`);
+     printValue(stateManager.getState(stateContext, 'b'));
+
+} finally {
+    changeSubscription.unsubscribe();
+    stateManager.unregister(stateContext, 'b', truePredicate);
+}
+```
+**Output:**
+```console
+Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-property.ts
+Initial value:
+{
+    a: 10,
+    nested: {
+        a: 20,
+        nested: {
+            a: 30,
+            nested: {
+                a: 40
+            }
+        }
+    }
+}
+
+Replacing stateContext.b.nested.nested will emit a change event
+Changed value:
+{
+    a: 10,
+    nested: {
+        a: 20,
+        nested: {
+            a: -30,
+            nested: {
+                a: -40
+            }
+        }
+    }
+}
+Latest value:
+{
+    a: 10,
+    nested: {
+        a: 20,
+        nested: {
+            a: -30,
+            nested: {
+                a: -40
+            }
+        }
+    }
+}
+```
+
+### Array
+**Example**
+```ts
+import { InjectionContainer, truePredicate, WaitForEvent } from '@rs-x/core';
+import {
+    IStateChange,
+    IStateManager,
+    RsXStateManagerInjectionTokens,
+    RsXStateManagerModule
+} from '@rs-x/state-manager';
+
+// Load the state manager module into the injection container
+InjectionContainer.load(RsXStateManagerModule);
+
+const stateManager: IStateManager = InjectionContainer.get(
+    RsXStateManagerInjectionTokens.IStateManager
+);
+
+function printValue(object: unknown): void {
+    console.log(JSON.stringify(object, null, 4).replaceAll('"', ''));
+}
+
+const stateContext = {
+    array: [
+        [1, 2],
+        [3, 4]
+    ]
+};
+
+const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+    printValue(change.newValue);
+});
+
+try {
+    // Otherwise, only assigning a new value to stateContext.array would emit a change event.
+    // This will emit a change event with the initial (current) value.
+    console.log('Initial value:');
+
+    stateManager.register(stateContext, 'array', truePredicate);
+
+    console.log('Changed value:');
+    stateContext.array[1].push(5);
+
+    console.log('Latest value:');
+    printValue(stateManager.getState(stateContext,'array'));
+
+} finally {
+    changeSubscription.unsubscribe();
+    stateManager.unregister(stateContext, 'array', truePredicate);
+}
+```
+**Output:**
+```console
+Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-array.ts
+Initial value:
+[
+    [
+        1,
+        2
+    ],
+    [
+        3,
+        4
+    ]
+]
+Changed value:
+[
+    [
+        1,
+        2
+    ],
+    [
+        3,
+        4,
+        5
+    ]
+]
+Latest value:
+[
+    [
+        1,
+        2
+    ],
+    [
+        3,
+        4,
+        5
+    ]
+]
+```
+
+### Map
+**Example**
+```ts
+import { InjectionContainer, truePredicate, WaitForEvent } from '@rs-x/core';
+import {
+    IStateChange,
+    IStateManager,
+    RsXStateManagerInjectionTokens,
+    RsXStateManagerModule
+} from '@rs-x/state-manager';
+
+// Load the state manager module into the injection container
+InjectionContainer.load(RsXStateManagerModule);
+
+const stateManager: IStateManager = InjectionContainer.get(
+    RsXStateManagerInjectionTokens.IStateManager
+);
+
+function printMap(map: Map<string, number[]>): void {
+    console.log(JSON.stringify(Array.from(map.entries()), null, 4).replaceAll('"', ''));
+}
+
+const stateContext = {
+    map: new Map([
+        ['a', [1, 2]],
+        ['b', [3, 4]]
+    ])
+};
+
+const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+    printMap(change.newValue as Map<string, number[]>);
+});
+
+try {
+    // Otherwise, only assigning a new value to stateContext.map would emit a change event.
+    // This will emit a change event with the initial (current) value.
+    console.log('Initial value:');
+
+    stateManager.register(stateContext, 'map', truePredicate);
+
+    console.log('Changed value:');
+    stateContext.map.get('b').push(5);
+
+    console.log('Latest value:');
+    printMap(stateManager.getState(stateContext,'map') as Map<string, number[]>);
+
+} finally {
+    changeSubscription.unsubscribe();
+    stateManager.unregister(stateContext, 'array', truePredicate);
+}
+```
+**Output:**
+```console
+Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-map.ts
+Initial value:
+[
+    [
+        a,
+        [
+            1,
+            2
+        ]
+    ],
+    [
+        b,
+        [
+            3,
+            4
+        ]
+    ]
+]
+Changed value:
+[
+    [
+        a,
+        [
+            1,
+            2
+        ]
+    ],
+    [
+        b,
+        [
+            3,
+            4,
+            5
+        ]
+    ]
+]
+Latest value:
+[
+    [
+        a,
+        [
+            1,
+            2
+        ]
+    ],
+    [
+        b,
+        [
+            3,
+            4,
+            5
+        ]
+    ]
+]
+```
+
+### Set
+**Example**
+```ts
+import { InjectionContainer, truePredicate, WaitForEvent } from '@rs-x/core';
+import {
+    IProxyRegistry,
+    IStateChange,
+    IStateManager,
+    RsXStateManagerInjectionTokens,
+    RsXStateManagerModule
+} from '@rs-x/state-manager';
+
+// Load the state manager module into the injection container
+InjectionContainer.load(RsXStateManagerModule);
+
+const stateManager: IStateManager = InjectionContainer.get(
+    RsXStateManagerInjectionTokens.IStateManager
+);
+
+function printSet(set: Set<number[]>): void {
+    console.log(JSON.stringify(Array.from(set.values()), null, 4).replaceAll('"', ''));
+}
+
+const item1 = [1, 2];
+const item2 = [3, 4];
+const stateContext = {
+    set: new Set([item1, item2])
+};
+
+const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+    printSet(change.newValue as Set<number[]>);
+});
+
+try {
+    // Otherwise, only assigning a new value to stateContext.map would emit a change event.
+    // This will emit a change event with the initial (current) value.
+    console.log('Initial value:');
+
+    stateManager.register(stateContext, 'set', truePredicate);
+
+    console.log('Changed value:');
+
+    const proxyRegister: IProxyRegistry = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
+    proxyRegister.getProxy<number[]>(item2).push(5);
 
 
-        InjectionContainer.load(RsXStateManagerModule);
+    console.log('Latest value:');
+    printSet(stateManager.getState(stateContext,'set') as Set<number[]>);
 
-        const stateContext = {
-            x: {y: 10}
-        };
+} finally {
+    changeSubscription.unsubscribe();
+    stateManager.unregister(stateContext, 'array', truePredicate);
+}
+```
+**Output:**
+```console
+Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-set.ts
+Initial value:
+[
+    [
+        1,
+        2
+    ],
+    [
+        3,
+        4
+    ]
+]
+Changed value:
+[
+    [
+        1,
+        2
+    ],
+    [
+        3,
+        4,
+        5
+    ]
+]
+Latest value:
+[
+    [
+        1,
+        2
+    ],
+    [
+        3,
+        4,
+        5
+    ]
+]
+```
 
-        const stateManager: IStateManager = InjectionContainer.get(
-            RsXStateManagerInjectionTokens.IStateManager
-        );
+### Promise
+**Example**
+```ts
+import { InjectionContainer, truePredicate, WaitForEvent } from '@rs-x/core';
+import {
+    IStateChange,
+    IStateManager,
+    RsXStateManagerInjectionTokens,
+    RsXStateManagerModule
+} from '@rs-x/state-manager';
 
+// Load the state manager module into the injection container
+InjectionContainer.load(RsXStateManagerModule);
+
+const stateManager: IStateManager = InjectionContainer.get(
+    RsXStateManagerInjectionTokens.IStateManager
+);
+
+const stateContext = {
+    promise: Promise.resolve(10)
+};
+
+export const run = (async () => {
+    const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+        console.log(change.newValue);
+    });
+
+    try {
         console.log('Initial value:');
-        stateManager.changed.subscribe((change: IStateChange) => {
-            console.log(change.newValue);
-            console.log('\n');
+
+        await new WaitForEvent(stateManager, 'changed').wait(() => {
+            stateManager.register(stateContext, 'promise');
         });
 
-        // This will emit the new value { y: 10 }
-        stateManager.register(stateContext, 'x');
+        console.log('Changed value:');
 
+
+        await new WaitForEvent(stateManager, 'changed').wait(() => {
+            let resolveHandler: (value: number) => void;
+            stateContext.promise = new Promise((resolve) => { resolveHandler = resolve; });
+            resolveHandler(30);
+        });
+
+        console.log(`Latest value: ${stateManager.getState(stateContext, 'promise')}`);
+    } finally {
+        changeSubscription.unsubscribe();
+        stateManager.unregister(stateContext, 'promise');
+    }
+})();
+```
+**Output:**
+```console
+Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-promise.ts
+Initial value:
+10
+Changed value:
+30
+Latest value: 30
+```
+
+### Observable
+**Example**
+```ts
+import { InjectionContainer, truePredicate, WaitForEvent } from '@rs-x/core';
+import {
+    IStateChange,
+    IStateManager,
+    RsXStateManagerInjectionTokens,
+    RsXStateManagerModule
+} from '@rs-x/state-manager';
+import { of, Subject } from 'rxjs';
+
+// Load the state manager module into the injection container
+InjectionContainer.load(RsXStateManagerModule);
+
+const stateManager: IStateManager = InjectionContainer.get(
+    RsXStateManagerInjectionTokens.IStateManager
+);
+
+const stateContext = {
+    observable: of(10)
+};
+
+export const run = (async () => {
+    const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+        console.log(change.newValue);
+    });
+
+    try {
+        // Observe the observable.
+        // Will emit a change event with the initial value.
+        console.log('Initial value:');
+
+        // We need to wait here until the event is emitted,
+        // otherwise the demo will exit before the change event occurs.
+        await new WaitForEvent(stateManager, 'changed').wait(() => {
+            stateManager.register(stateContext, 'observable');
+        });
 
         console.log('Changed value:');
-        // This will emit the new value { y: 10 }
-        stateContext.x = {
-            y:20
-        };
 
-        // This will emit no change because the state is not recursive.
-        stateContext.x.y = 30
-    ```
-
-    ```
-    #### Output
-
-    ```console
-    Initial value:
-    10
-
-    Changed value:
-    20
-    ```
-
-- Recursive: will monitor both the setting of the value and the change of the value it self. For example if the index value is an object it will monitor changed for the object
+        await new WaitForEvent(stateManager, 'changed').wait(() => {
+            const subject = new Subject<number>();
+            stateContext.observable = subject
+            subject.next(30);
+        });
 
 
-    ```ts
-    import { InjectionContainer, truePredicate } from '@rs-x/core';
-    import {
-        IStateChange,
-        IStateManager,
-        RsXStateManagerInjectionTokens,
-        RsXStateManagerModule
-    } from '@rs-x/state-manager';
+        console.log(`Latest value: ${stateManager.getState(stateContext, 'observable')}`);
 
+    } finally {
+        changeSubscription.unsubscribe();
+        stateManager.unregister(stateContext, 'observable');
+    }
+})();
+```
+**Output:**
+```console
+Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-observable.ts
+Initial value:
+10
+Changed value:
+30
+Latest value: 30
+```
 
-    InjectionContainer.load(RsXStateManagerModule);
+### Custom type
+1. Create an accessor to retrieve index values on your type.  
+2. Create a factory to create an observer for your data type.  
+3. Create a factory to create an observer for an index on your data instance.
 
-    const stateContext = {
-        x: { y: 10 }
-    };
+The following example demonstrates adding support for a custom `TextDocument` class:
 
-    const stateManager: IStateManager = InjectionContainer.get(
-        RsXStateManagerInjectionTokens.IStateManager
-    );
-
-    console.log('Initial value:');
-    stateManager.changed.subscribe((change: IStateChange) => {
-        console.log(structuredClone(change.newValue));
-        console.log('\n');
-    });
-
-    // We register recursive state by passing in
-    // a predicate as the third argument.
-    // This will emit an initial value { y: 10 }
-    stateManager.register(stateContext, 'x', truePredicate);
-
-
-    console.log('Changed value:');
-    // This will emit the new value { y: 10 }
-    stateContext.x = {
-        y: 20
-    };
-
-    console.log('Changed (recursive) value:');
-    // This will emit the new value { y: 30 } because x 
-    // is registered as a recursive state.
-    stateContext.x.y = 30;
-    ```
-
-    #### Output
-
-    ```console
-    Initial value:
-    { y: 10 }
-
-    Changed value:
-    { y: 20 }
-
-    Changed (recursive) value:
-    { y: 30 }
-    ```
-
-- **Registering state is idempotent**, meaning you can register the same state multiple times.
-You should never assume a state is already registered—always register it if you depend on it.
-Otherwise, the state may unexpectedly disappear when another part of the system unregisters it.
-
-    When you are done, **unregister the state**.
-
-
-    ```ts
-    import { InjectionContainer } from '@rs-x/core';
-    import {
-        IStateChange,
-        IStateManager,
-        RsXStateManagerInjectionTokens,
-        RsXStateManagerModule
-    } from '@rs-x/state-manager';
-
-
-    InjectionContainer.load(RsXStateManagerModule);
-
-    const stateContext = {
-        x: { y: 10 }
-    };
-
-    const stateManager: IStateManager = InjectionContainer.get(
-        RsXStateManagerInjectionTokens.IStateManager
-    );
-
-    stateManager.changed.subscribe((change: IStateChange) => {
-        console.log(structuredClone(change.newValue));
-        console.log('\n');
-    });
-
-    // Register is idempotent: you can register the same state multiple times.
-    // For every register call, make sure you call unregister when you're done.
-    console.log('Initial value:');
-    stateManager.register(stateContext, 'x');
-    stateManager.register(stateContext, 'x');
-
-    console.log('Changed value:');
-    stateContext.x = { y: 20 };
-
-    stateManager.unregister(stateContext, 'x');
-
-    console.log('Changed event is still emitted after unregister because one observer remains.');
-    console.log('Changed value:');
-    stateContext.x = { y: 30 };
-
-    stateManager.unregister(stateContext, 'x');
-
-    console.log('Changed event is no longer emitted after the last observer unregisters.');
-    console.log('Changed value:');
-    console.log('-');
-    stateContext.x = { y: 30 };
-
-    ```
-
-    #### Output
-
-    ```console
-    Initial value:
-    { y: 10 }
-
-    Changed value:
-    { y: 20 }
-
-    Changed event is still emitted after unregister because one observer remains.
-    Changed value:
-    { y: 30 }
-    ```
-### Customize the State Manager
-
-The state manager works by creating **observers** based on the **data type of the state you register**. This allows it to detect changes. However, it does **not magically know** how to observe every type. Internally, it uses a list of **observer factories**.  
-Each factory can answer whether it supports a given state’s data type.  
-The state manager uses **the first factory that reports support** to create the observer.
-
-You can **override this factory list** by providing your own factory provider service.  
-Before explaining how to do that, let’s first look at which data types are supported out of the box:
-
-| Context      | Index          | Implementation              |
-| ------------ | -------------- | --------------------------- |
-| Plain object | field/property | Patching                    |
-| Array        | number         | Proxy                       |
-| Map          | any            | Proxy                       |
-| Set          | Not indexable  | Proxy                       |
-| Promise      | Not indexable  | Attach `then` handler       |
-| Observable   | Not indexable  | Subscribe to the observable |
-
-As mentioned before, state has two components: **context** and **index**.  
-The state manager uses these two values to ask each observer factory whether it supports the state. A factory checks the data type and returns **true** or **false**.
-
-If the factory returns **true**, the state manager uses that factory to create the observer. So the state manager will use **the first observer factory** that returns `true`
-
-Depending on whether the observer is **recursive**, it will do the following:
-
-- For both recursive and non-recursive observers, monitor whether a **new value is assigned** to the index.
-- For recursive observers only, also monitor **changes inside the indexed value itself**.
-
-To add support for a custom data type we have do the following:
-
-- create an acccessor to access indexes on your data instance type
-- create a factory to create an observer for your data type
-- create a factory to create an observer for an  index on your data instance type
-
-The following example shows a example where we create simply class presenting a text document and how we can extends the state manager to support this data type:
-
+**Example**
 ```ts
 import { IErrorLog, IIndexValueAccessor, IndexAccessor, Inject, Injectable, InjectionContainer, IPropertyChange, RsXCoreInjectionTokens, SingletonFactory, truePredicate, WaitForEvent } from '@rs-x/core';
 import {
@@ -639,68 +1344,126 @@ const stateContext = {
         ]
     ])
 };
+
+// Load the state manager module into the injection container
 const stateManager: IStateManager = InjectionContainer.get(
     RsXStateManagerInjectionTokens.IStateManager
 );
-const bookSubscription = stateManager.changed.subscribe((change: IStateChange) => {
-    console.log('My book after change:');
-    console.log(stateContext.myBook.toString());
 
-    console.log(`index ${change.key}`);
-});
+function testMonitorTextDocument(): void {
+    const bookSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+        console.log(stateContext.myBook.toString());
 
-// We observe the whole book
-// This will use TextDocumentObserverProxyPairFactory
-try {
-    console.log('***********************************************');
-    console.log('My initial book:');
-    stateManager.register(stateContext, 'myBook', truePredicate);
-
-    console.log('Update second line on the first page:');
-    stateContext.myBook.setLine({ pageIndex: 0, lineIndex: 1 }, 'In a far far away land');
-
-} finally {
-    // Stop monitoring the whole book
-    stateManager.unregister(stateContext, 'myBook', truePredicate);
-    bookSubscription.unsubscribe();
-}
-
-const line3OnPage1Index = { pageIndex: 0, lineIndex: 2 };
-const lineSubscription = stateManager.changed.subscribe((change: IStateChange) => {
-    const documentIndex = change.key as ITextDocumentIndex;
-    console.log(`Line ${documentIndex.lineIndex + 1} on page ${documentIndex.pageIndex + 1} has changed to '${change.newValue}'`);
-    console.log('\n');
-    console.log('My book after change:');
-    console.log(stateContext.myBook.toString());
-    console.log('\n');
-});
-
-try {
-    // Here we only watch line 3 on page 1. 
-    // Notice that the line does not have to exist yet.
-    // The initial book does not have a line 3 on page 1.
-    //
-    // TextDocumentInxdexObserverProxyPairFactory is used here
-
-    console.log('***********************************************');
-    console.log("Start watching line 3 on page 1");
-    stateManager.register(stateContext.myBook, line3OnPage1Index);
-
-    const proxRegistry: IProxyRegistry = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
-    const bookProxy: TextDocument = proxRegistry.getProxy(stateContext.myBook);
-
-    console.log("Add line 3 on page 1:");
-    bookProxy.setLine(line3OnPage1Index, 'a prince was born');
-
-    console.log('Changing line 1 on page 1 does not emit change:');
-    const result = await new WaitForEvent(stateManager, 'changed').wait(() => {
-        bookProxy.setLine({ pageIndex: 0, lineIndex: 0 }, 'a troll was born');
     });
-    console.log(result ? 'No change was emitted' : 'Oops — unexpected change was emitted');
 
-} finally {
-    // Stop monitoring line 3 on page 1. 
-    stateManager.unregister(stateContext.myBook, line3OnPage1Index);
-    lineSubscription.unsubscribe();
+    // We observe the whole book
+    // This will use TextDocumentObserverProxyPairFactory
+    try {
+        console.log('\n***********************************************');
+        console.log("Start watching the whole book\n");
+        console.log('My initial book:\n');
+        stateManager.register(stateContext, 'myBook', truePredicate);
+
+        console.log('\nUpdate second line on the first page:\n');
+        console.log('My book after change:\n');
+        stateContext.myBook.setLine({ pageIndex: 0, lineIndex: 1 }, 'In a far far away land');
+
+    } finally {
+        // Stop monitoring the whole book
+        stateManager.unregister(stateContext, 'myBook', truePredicate);
+        bookSubscription.unsubscribe();
+    }
+
 }
+
+function testMonitoreSpecificLineInDocument():void {
+    const line3OnPage1Index = { pageIndex: 0, lineIndex: 2 };
+    const lineSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+        const documentIndex = change.key as ITextDocumentIndex;
+        console.log(`Line ${documentIndex.lineIndex + 1} on page ${documentIndex.pageIndex + 1} has changed to '${change.newValue}'`);
+        console.log('My book after change:\n');
+        console.log(stateContext.myBook.toString());
+    });
+
+    try {
+        // Here we only watch line 3 on page 1. 
+        // Notice that the line does not have to exist yet.
+        // The initial book does not have a line 3 on page 1.
+        //
+        // TextDocumentInxdexObserverProxyPairFactory is used here
+
+        console.log('\n***********************************************');
+        console.log("Start watching line 3 on page 1\n");
+        stateManager.register(stateContext.myBook, line3OnPage1Index);
+
+        const proxRegistry: IProxyRegistry = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
+        const bookProxy: TextDocument = proxRegistry.getProxy(stateContext.myBook);
+
+        bookProxy.setLine(line3OnPage1Index, 'a prince was born');
+
+        console.log('\nChanging line 1 on page 1 does not emit change:');
+        console.log('---');
+        bookProxy.setLine({ pageIndex: 0, lineIndex: 0 }, 'a troll was born');
+
+    } finally {
+        // Stop monitoring line 3 on page 1. 
+        stateManager.unregister(stateContext.myBook, line3OnPage1Index);
+        lineSubscription.unsubscribe();
+    }
+}
+
+testMonitorTextDocument();
+testMonitoreSpecificLineInDocument();
+```nclude_relative ../demo/src/rs-x-state-manager/register-set.ts %}
 ```
+**Output:**
+```console
+Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/state-manager-customize.ts
+
+***********************************************
+Start watching the whole book
+
+My initial book:
+
+Page 0:
+    0: Once upon a time
+    1: bla bla
+
+Page 1:
+    0: bla bla
+    1: They lived happily ever after.
+    2: The end
+
+Update second line on the first page:
+
+My book after change:
+
+Page 0:
+    0: Once upon a time
+    1: In a far far away land
+
+Page 1:
+    0: bla bla
+    1: They lived happily ever after.
+    2: The end
+
+***********************************************
+Start watching line 3 on page 1
+
+Line 3 on page 1 has changed to 'a prince was born'
+My book after change:
+
+Page 0:
+    0: Once upon a time
+    1: In a far far away land
+    2: a prince was born
+
+Page 1:
+    0: bla bla
+    1: They lived happily ever after.
+    2: The end
+
+Changing line 1 on page 1 does not emit change:
+---
+```
+

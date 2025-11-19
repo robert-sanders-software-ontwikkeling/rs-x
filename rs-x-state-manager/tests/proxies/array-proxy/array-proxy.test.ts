@@ -406,6 +406,19 @@ describe('ArrayProxy tests', () => {
    });
 
    describe('Change event', () => {
+      it('push will no trigger more change events than added elements', async () => {
+
+         const actual = await new WaitForEvent(
+            observerProxyPair.observer,
+            'changed',
+            { count: 3 }
+         ).wait(() => {
+            observerProxyPair.proxy.push(10, 11);
+         });
+
+         expect(actual).toBeNull();
+      });
+
       it('push will trigger change event for all added elements', async () => {
          const actual = await new WaitForEvent(
             observerProxyPair.observer,

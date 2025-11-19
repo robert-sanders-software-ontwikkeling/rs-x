@@ -126,7 +126,7 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
       this.emitSetForRange(
          orginalArray,
          startIndex,
-         orginalArray.length,
+         args.length,
          oldLength
       );
       return orginalArray.length;

@@ -9,18 +9,23 @@ import {
 
 InjectionContainer.load(RsXStateManagerModule);
 
-const stateContext = {
-    x: { y: 10 }
-};
 
 const stateManager: IStateManager = InjectionContainer.get(
     RsXStateManagerInjectionTokens.IStateManager
 );
 
+function printValue(object: unknown): void {
+    console.log(JSON.stringify(object, null, 4).replaceAll('"', ''));
+}
+
+const stateContext = {
+    x: { y: 10 }
+};
+
+
 console.log('Initial value:');
 stateManager.changed.subscribe((change: IStateChange) => {
-    console.log(structuredClone(change.newValue));
-    console.log('\n');
+    printValue(change.newValue)
 });
 
 // We register recursive state by passing in
@@ -39,3 +44,6 @@ console.log('Changed (recursive) value:');
 // This will emit the new value { y: 30 } because x 
 // is registered as a recursive state.
 stateContext.x.y = 30;
+
+console.log(`Latest value:`);
+printValue(stateManager.getState(stateContext, 'x'));

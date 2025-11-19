@@ -66,6 +66,9 @@ importers:
       babel-plugin-transform-es2015-modules-commonjs:
         specifier: ^6.26.2
         version: 6.26.2
+      dedent:
+        specifier: ^1.7.0
+        version: 1.7.0
       es-builder:
         specifier: ^0.5.0
         version: 0.5.0
@@ -131,19 +134,6 @@ importers:
         version: 8.5.1(jiti@2.6.1)(postcss@8.5.6)(typescript@5.9.3)
       typescript:
         specifier: ^5.8.2
-        version: 5.9.3
-
-  demo:
-    dependencies:
-      '@rs-x/core':
-        specifier: workspace:*
-        version: link:../rs-x-core
-      '@rs-x/state-manager':
-        specifier: workspace:*
-        version: link:../rs-x-state-manager
-    devDependencies:
-      typescript:
-        specifier: ^5.6.3
         version: 5.9.3
 
   rs-x-core:

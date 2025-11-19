@@ -1,4 +1,4 @@
-import { IErrorLog, IIndexValueAccessor, IndexAccessor, Inject, Injectable, InjectionContainer, IPropertyChange, RsXCoreInjectionTokens, SingletonFactory, truePredicate, WaitForEvent } from '@rs-x/core';
+import { IErrorLog, IIndexValueAccessor, IndexAccessor, Inject, Injectable, InjectionContainer, IPropertyChange, RsXCoreInjectionTokens, SingletonFactory, truePredicate } from '@rs-x/core';
 import {
     AbstractObserver,
     IDisposableOwner,
@@ -361,27 +361,28 @@ const stateContext = {
         ]
     ])
 };
+
+// Load the state manager module into the injection container
 const stateManager: IStateManager = InjectionContainer.get(
     RsXStateManagerInjectionTokens.IStateManager
 );
 
-
 function testMonitorTextDocument(): void {
-    const bookSubscription = stateManager.changed.subscribe((change: IStateChange) => {
-        console.log('My book after change:');
+    const bookSubscription = stateManager.changed.subscribe(() => {
         console.log(stateContext.myBook.toString());
 
-        console.log(`index ${change.key}`);
     });
 
     // We observe the whole book
     // This will use TextDocumentObserverProxyPairFactory
     try {
-        console.log('***********************************************');
-        console.log('My initial book:');
+        console.log('\n***********************************************');
+        console.log("Start watching the whole book\n");
+        console.log('My initial book:\n');
         stateManager.register(stateContext, 'myBook', truePredicate);
 
-        console.log('Update second line on the first page:');
+        console.log('\nUpdate second line on the first page:\n');
+        console.log('My book after change:\n');
         stateContext.myBook.setLine({ pageIndex: 0, lineIndex: 1 }, 'In a far far away land');
 
     } finally {
@@ -392,15 +393,13 @@ function testMonitorTextDocument(): void {
 
 }
 
-async function testMonitoreSpecificLineInDocument(): Promise<void> {
+function testMonitoreSpecificLineInDocument():void {
     const line3OnPage1Index = { pageIndex: 0, lineIndex: 2 };
     const lineSubscription = stateManager.changed.subscribe((change: IStateChange) => {
         const documentIndex = change.key as ITextDocumentIndex;
         console.log(`Line ${documentIndex.lineIndex + 1} on page ${documentIndex.pageIndex + 1} has changed to '${change.newValue}'`);
-        console.log('\n');
-        console.log('My book after change:');
+        console.log('My book after change:\n');
         console.log(stateContext.myBook.toString());
-        console.log('\n');
     });
 
     try {
@@ -410,21 +409,18 @@ async function testMonitoreSpecificLineInDocument(): Promise<void> {
         //
         // TextDocumentInxdexObserverProxyPairFactory is used here
 
-        console.log('***********************************************');
-        console.log("Start watching line 3 on page 1");
+        console.log('\n***********************************************');
+        console.log("Start watching line 3 on page 1\n");
         stateManager.register(stateContext.myBook, line3OnPage1Index);
 
         const proxRegistry: IProxyRegistry = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
         const bookProxy: TextDocument = proxRegistry.getProxy(stateContext.myBook);
 
-        console.log("Add line 3 on page 1:");
         bookProxy.setLine(line3OnPage1Index, 'a prince was born');
 
-        console.log('Changing line 1 on page 1 does not emit change:');
-        const result = await new WaitForEvent(stateManager, 'changed').wait(() => {
-            bookProxy.setLine({ pageIndex: 0, lineIndex: 0 }, 'a troll was born');
-        });
-        console.log(result ? 'No change was emitted' : 'Oops — unexpected change was emitted');
+        console.log('\nChanging line 1 on page 1 does not emit change:');
+        console.log('---');
+        bookProxy.setLine({ pageIndex: 0, lineIndex: 0 }, 'a troll was born');
 
     } finally {
         // Stop monitoring line 3 on page 1. 

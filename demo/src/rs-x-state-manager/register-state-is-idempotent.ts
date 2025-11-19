@@ -7,19 +7,23 @@ import {
 } from '@rs-x/state-manager';
 
 
+// Load the state manager module into the injection container
 InjectionContainer.load(RsXStateManagerModule);
-
-const stateContext = {
-    x: { y: 10 }
-};
 
 const stateManager: IStateManager = InjectionContainer.get(
     RsXStateManagerInjectionTokens.IStateManager
 );
 
+function printValue(object: unknown): void {
+    console.log(JSON.stringify(object, null, 4).replaceAll('"', ''));
+}
+
+const stateContext = {
+    x: { y: 10 }
+};
+
 stateManager.changed.subscribe((change: IStateChange) => {
-    console.log(structuredClone(change.newValue));
-    console.log('\n');
+   printValue(change.newValue);
 });
 
 // Register is idempotent: you can register the same state multiple times.
@@ -41,5 +45,5 @@ stateManager.unregister(stateContext, 'x');
 
 console.log('Changed event is no longer emitted after the last observer unregisters.');
 console.log('Changed value:');
-console.log('-');
+console.log('---');
 stateContext.x = { y: 30 };

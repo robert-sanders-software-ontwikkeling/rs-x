@@ -145,10 +145,10 @@ const toDeepEqualCircular: MatcherFunction<[expected: unknown]> = function (
       message: () =>
          pass
             ? this.utils.matcherHint('.not.toDeepEqualCircularWithDiff') +
-              '\n\nExpected values not to be deeply equal, but they were.'
+            '\n\nExpected values not to be deeply equal, but they were.'
             : this.utils.matcherHint('.toDeepEqualCircularWithDiff') +
-              '\n\nFound the following differences:\n\n' +
-              diffs.map((d) => `  • ${d}`).join('\n'),
+            '\n\nFound the following differences:\n\n' +
+            diffs.map((d) => `  • ${d}`).join('\n'),
    };
 };
 
@@ -173,4 +173,64 @@ export function observerEqualTo(
    }
 }
 
-export const customMatchers = { toDeepEqualCircular, observerEqualTo };
+
+
+expect.extend({
+   toOutput(receivedFn: () => unknown, expected: string) {
+      let output = "";
+      const originalWrite = process.stdout.write;
+
+      // Capture stdout
+      (process.stdout.write) = (chunk: unknown) => {
+         output += chunk;
+         return true;
+      };
+
+      try {
+         receivedFn(); // run user code
+      } finally {
+         process.stdout.write = originalWrite;
+      }
+
+      const pass = output.trim() === expected.trim();
+
+      return {
+         pass,
+         message: () =>
+            pass
+               ? `Expected output not to equal:\n${expected}`
+               : `Expected output:\n${expected}\n\nReceived:\n${output}`
+      };
+   },
+
+   async toOutputAsync(receivedFn: () => Promise<unknown>, expected: string) {
+      let output = "";
+      const originalWrite = process.stdout.write;
+
+      (process.stdout.write) = (chunk: unknown) => {
+         output += chunk;
+         return true;
+      };
+
+      try {
+         await receivedFn();
+      } finally {
+         process.stdout.write = originalWrite;
+      }
+
+      const pass = output.trim() === expected.trim();
+
+      return {
+         pass,
+         message: () =>
+            pass
+               ? `Expected async output not to equal:\n${expected}`
+               : `Expected async output:\n${expected}\n\nReceived:\n${output}`
+      };
+   }
+});
+
+export const customMatchers = { 
+   toDeepEqualCircular, 
+   observerEqualTo 
+};
