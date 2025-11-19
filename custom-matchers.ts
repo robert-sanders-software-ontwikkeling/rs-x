@@ -177,40 +177,33 @@ export function observerEqualTo(
 
 function normalize(str: string): string {
     return str
-        .replace(/\r\n/g, "\n")      // normalize CRLF → LF
-        .replace(/[ \t]+$/gm, "")    // remove trailing whitespace
-        .trim();                     // trim surrounding whitespace
+        .replace(/\r\n/g, "\n")      // Normalize CRLF → LF
+        .replace(/[ \t]+$/gm, "")    // Remove trailing spaces
+        .trim();                     // Trim outer whitespace
+}
+
+function makeDiff(expected: string, received: string): string {
+    const exp = expected.split("\n");
+    const rec = received.split("\n");
+
+    const lines = [];
+    const len = Math.max(exp.length, rec.length);
+
+    for (let i = 0; i < len; i++) {
+        const e = exp[i] ?? "";
+        const r = rec[i] ?? "";
+
+        if (e === r) {
+            lines.push(`  ${e}`);
+        } else {
+            lines.push(`- ${e}`);
+            lines.push(`+ ${r}`);
+        }
+    }
+    return lines.join("\n");
 }
 
 expect.extend({
-    toOutput(receivedFn: () => unknown, expected: string) {
-        let output = "";
-        const originalWrite = process.stdout.write;
-
-        process.stdout.write = (chunk: unknown) => {
-            output += String(chunk);
-            return true;
-        };
-
-        try {
-            receivedFn();
-        } finally {
-            process.stdout.write = originalWrite;
-        }
-
-        const receivedNorm = normalize(output);
-        const expectedNorm = normalize(expected);
-        const pass = receivedNorm === expectedNorm;
-
-        return {
-            pass,
-            message: () =>
-                pass
-                    ? `Expected output NOT to equal:\n${expected}`
-                    : `Expected output:\n${expectedNorm}\n\nReceived:\n${receivedNorm}`
-        };
-    },
-
     async toOutputAsync(receivedFn: () => Promise<unknown>, expected: string) {
         let output = "";
         const originalWrite = process.stdout.write;
@@ -228,14 +221,20 @@ expect.extend({
 
         const receivedNorm = normalize(output);
         const expectedNorm = normalize(expected);
+
         const pass = receivedNorm === expectedNorm;
 
         return {
             pass,
-            message: () =>
-                pass
-                    ? `Expected async output NOT to equal:\n${expected}`
-                    : `Expected async output:\n${expectedNorm}\n\nReceived:\n${receivedNorm}`
+            message: () => {
+                const diff = makeDiff(expectedNorm, receivedNorm);
+                return (
+                    "❌ Output mismatch\n\n" +
+                    "=== Diff ===\n" +
+                    diff +
+                    "\n============"
+                );
+            }
         };
     }
 });
