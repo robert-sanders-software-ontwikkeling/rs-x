@@ -299,9 +299,7 @@ describe('Statemanager demos', () => {
         `;
 
         await expect(() => runDemo('rs-x-state-manager/register-set.ts')).toOutputAsync(expected);
-
     });
-
 
     it('state-manager-customize.ts', async () => {
         const expected = dedent`
