@@ -8,7 +8,7 @@ describe('Statemanager demos', () => {
 
     it('register-non-recursive-state.ts', async () => {
         const expected = dedent`
-            Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-non-recursive-state.ts
+            Running demo: demo/src/rs-x-state-manager/register-non-recursive-state.ts
             Initial value:
             {
                 y: 10
@@ -31,7 +31,7 @@ describe('Statemanager demos', () => {
 
     it('register-recursive-state.ts', async () => {
         const expected = dedent`
-            Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-recursive-state.ts
+            Running demo: demo/src/rs-x-state-manager/register-recursive-state.ts
             Initial value:
             {
                 y: 10
@@ -54,7 +54,7 @@ describe('Statemanager demos', () => {
 
     it('register-state-is-idempotent.ts', async () => {
         const expected = dedent`
-            Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-state-is-idempotent.ts
+            Running demo: demo/src/rs-x-state-manager/register-state-is-idempotent.ts
             Initial value:
             {
                 y: 10
@@ -78,7 +78,7 @@ describe('Statemanager demos', () => {
 
     it('register-property.ts', async () => {
         const expected = dedent`
-            Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-property.ts
+            Running demo: demo/src/rs-x-state-manager/register-property.ts
             Initial value:
             {
                 a: 10,
@@ -127,7 +127,7 @@ describe('Statemanager demos', () => {
 
     it('register-promise.ts', async () => {
         const expected = dedent`
-            Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-promise.ts
+            Running demo: demo/src/rs-x-state-manager/register-promise.ts
             Initial value:
             10
             Changed value:
@@ -140,7 +140,7 @@ describe('Statemanager demos', () => {
 
     it('register-observable.ts', async () => {
         const expected = dedent`
-            Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-observable.ts
+            Running demo: demo/src/rs-x-state-manager/register-observable.ts
             Initial value:
             10
             Changed value:
@@ -153,7 +153,7 @@ describe('Statemanager demos', () => {
 
     it('register-array.ts', async () => {
         const expected = dedent`
-            Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-array.ts
+            Running demo: demo/src/rs-x-state-manager/register-array.ts
             Initial value:
             [
                 [
@@ -196,7 +196,7 @@ describe('Statemanager demos', () => {
 
     it('register-map.ts', async () => {
         const expected = dedent`
-            Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-map.ts
+            Running demo: demo/src/rs-x-state-manager/register-map.ts
             Initial value:
             [
                 [
@@ -257,7 +257,7 @@ describe('Statemanager demos', () => {
 
     it('register-set.ts', async () => {
         const expected = dedent`
-            Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-set.ts
+            Running demo: demo/src/rs-x-state-manager/register-set.ts
             Initial value:
             [
                 [
@@ -300,7 +300,7 @@ describe('Statemanager demos', () => {
 
     it('state-manager-customize.ts', async () => {
         const expected = dedent`
-            Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/state-manager-customize.ts
+            Running demo: demo/src/rs-x-state-manager/state-manager-customize.ts
 
             ***********************************************
             Start watching the whole book

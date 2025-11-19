@@ -179,25 +179,16 @@ expect.extend({
   async toOutputAsync(receivedFn: () => Promise<unknown>, expected: string) {
     let output = '';
 
-    const originalWrite = process.stdout.write;
-    const originalConsoleLog = console.log;
-
-    // Capture process.stdout.write
-    (process.stdout.write as any) = (chunk: any) => {
-      output += chunk;
-      return true;
-    };
-
-    // Also capture console.log
+    // Patch console.log temporarily
+    const originalLog = console.log;
     console.log = (...args: unknown[]) => {
       output += args.map(a => String(a)).join(' ') + '\n';
     };
 
     try {
-      await receivedFn();
+      await receivedFn(); // await the demo fully
     } finally {
-      process.stdout.write = originalWrite;
-      console.log = originalConsoleLog;
+      console.log = originalLog; // restore
     }
 
     const pass = output.trim() === expected.trim();
