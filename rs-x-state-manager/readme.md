@@ -555,7 +555,7 @@ Latest value:
 ### Array
 **Example**
 ```ts
-import { InjectionContainer, truePredicate, WaitForEvent } from '@rs-x/core';
+import { InjectionContainer, truePredicate } from '@rs-x/core';
 import {
     IStateChange,
     IStateManager,
@@ -646,7 +646,7 @@ Latest value:
 ### Map
 **Example**
 ```ts
-import { InjectionContainer, truePredicate, WaitForEvent } from '@rs-x/core';
+import { InjectionContainer, truePredicate } from '@rs-x/core';
 import {
     IStateChange,
     IStateManager,
@@ -755,7 +755,7 @@ Latest value:
 ### Set
 **Example**
 ```ts
-import { InjectionContainer, truePredicate, WaitForEvent } from '@rs-x/core';
+import { InjectionContainer, truePredicate } from '@rs-x/core';
 import {
     IProxyRegistry,
     IStateChange,
@@ -849,7 +849,7 @@ Latest value:
 ### Promise
 **Example**
 ```ts
-import { InjectionContainer, truePredicate, WaitForEvent } from '@rs-x/core';
+import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
     IStateChange,
     IStateManager,
@@ -909,7 +909,7 @@ Latest value: 30
 ### Observable
 **Example**
 ```ts
-import { InjectionContainer, truePredicate, WaitForEvent } from '@rs-x/core';
+import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
     IStateChange,
     IStateManager,
@@ -981,7 +981,7 @@ The following example demonstrates adding support for a custom `TextDocument` cl
 
 **Example**
 ```ts
-import { IErrorLog, IIndexValueAccessor, IndexAccessor, Inject, Injectable, InjectionContainer, IPropertyChange, RsXCoreInjectionTokens, SingletonFactory, truePredicate, WaitForEvent } from '@rs-x/core';
+import { IErrorLog, IIndexValueAccessor, IndexAccessor, Inject, Injectable, InjectionContainer, IPropertyChange, RsXCoreInjectionTokens, SingletonFactory, truePredicate } from '@rs-x/core';
 import {
     AbstractObserver,
     IDisposableOwner,
@@ -1351,7 +1351,7 @@ const stateManager: IStateManager = InjectionContainer.get(
 );
 
 function testMonitorTextDocument(): void {
-    const bookSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+    const bookSubscription = stateManager.changed.subscribe(() => {
         console.log(stateContext.myBook.toString());
 
     });
