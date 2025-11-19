@@ -13,7 +13,7 @@ import {
    IPropertyObserverProxyPairManager,
    MustProxify,
 } from './object-property-observer-proxy-pair-manager.type';
-import { IPropertyObserverProxyPairFactory } from './property-observer/property-observer-proxy-pair.factory.interface';
+import { IIndexObserverProxyPairFactory } from './property-observer/index-observer-proxy-pair.factory.interface';
 import { RsXStateManagerInjectionTokens } from './rs-x-state-manager-injection-tokes';
 
 class PropertyObserverProxyPairManager
@@ -25,7 +25,7 @@ class PropertyObserverProxyPairManager
    implements IPropertyObserverProxyPairManager {
    constructor(
       private readonly _object: unknown,
-      private readonly _observerFactories: readonly IPropertyObserverProxyPairFactory[],
+      private readonly _observerFactories: readonly IIndexObserverProxyPairFactory[],
       private readonly releaseContext: () => void
    ) {
       super();
@@ -68,7 +68,7 @@ class PropertyObserverProxyPairManager
 
    private getObserverFactory(
       propertyInfo: IPropertyInfo
-   ): IPropertyObserverProxyPairFactory {
+   ): IIndexObserverProxyPairFactory {
       const observerFactory = this._observerFactories.find((observerFactory) =>
          observerFactory.applies(this._object, propertyInfo)
       );
@@ -91,7 +91,7 @@ export class ObjectPropertyObserverProxyPairManager
       @MultiInject(
          RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryList
       )
-      private readonly _factories: IPropertyObserverProxyPairFactory[]
+      private readonly _factories: IIndexObserverProxyPairFactory[]
    ) {
       super();
    }

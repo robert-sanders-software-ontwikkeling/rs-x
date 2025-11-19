@@ -44,25 +44,26 @@ describe('SetProxy tests', () => {
    });
 
    it('create will register the set proxy to the proxy registry', () => {
+      const set = new Set();
       const proxyRegistry = new ProxyRegistryMock();
       const setProxyFactory = new SetProxyFactory(proxyRegistry);
-      const { proxy } = setProxyFactory.create({ set: new Set() }).instance;
+      const { proxy } = setProxyFactory.create({ set }).instance;
 
       expect(proxyRegistry.register).toHaveBeenCalledTimes(1);
-      expect(proxyRegistry.register.mock.calls[0][0]).toBe(proxy);
+      expect(proxyRegistry.register.mock.calls[0][0]).toBe(set);
+      expect(proxyRegistry.register.mock.calls[0][1]).toBe(proxy);
    });
 
    it('dispose will unregister the set proxy to the proxy registry', () => {
+      const set =  new Set();
       const proxyRegistry = new ProxyRegistryMock();
       const setProxyFactory = new SetProxyFactory(proxyRegistry);
-      const { proxy, observer } = setProxyFactory.create({
-         set: new Set(),
-      }).instance;
+      const { observer } = setProxyFactory.create({set}).instance;
 
       observer.dispose();
 
       expect(proxyRegistry.unregister).toHaveBeenCalledTimes(1);
-      expect(proxyRegistry.unregister.mock.calls[0][0]).toBe(proxy);
+      expect(proxyRegistry.unregister).toHaveBeenCalledWith(set);
    });
 
    it('items are proxified when set proxy is created and initialized  when mustProxify returns true', () => {

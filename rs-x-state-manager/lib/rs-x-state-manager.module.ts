@@ -1,4 +1,4 @@
-import { ContainerModule, InjectionContainer, RsXCoreModule } from '@rs-x/core';
+import { ContainerModule, InjectionContainer, registerMultiInjectServices, RsXCoreModule } from '@rs-x/core';
 import { ArrayObserverProxyPairFactory } from './object-observer/factories/array-observer-proxy-pair.factory';
 import { MapObserverProxyPairFactory } from './object-observer/factories/map-observer-proxy-pair.factory';
 import { ObservableObserverProxyPairFactory } from './object-observer/factories/observable-observer-proxy-pair.factory';
@@ -84,28 +84,26 @@ export const RsXStateManagerModule = new ContainerModule((options) => {
       .to(ObjectPropertyObserverProxyPairManager)
       .inSingletonScope();
 
+   registerMultiInjectServices(options, RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList,
+      [
+         { target: PlainObjectObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.PlainObjectObserverProxyPairFactory },
+         { target: ArrayObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.IArrayObserverProxyPairFactory },
+         { target: PromiseObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.PromiseObserverProxyPairFactory },
+         { target: ObservableObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.ObservableObserverProxyPairFactory },
+         { target: MapObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.IMapObserverProxyPairFactory },
+         { target: SetObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.ISetObserverProxyPairFactory },
+      ]
+   );
 
-   options.bind(PlainObjectObserverProxyPairFactory).to(PlainObjectObserverProxyPairFactory).inSingletonScope();
-   options.bind(ArrayObserverProxyPairFactory).to(ArrayObserverProxyPairFactory).inSingletonScope();
-   options.bind(PromiseObserverProxyPairFactory).to(PromiseObserverProxyPairFactory).inSingletonScope();
-   options.bind(ObservableObserverProxyPairFactory).to(ObservableObserverProxyPairFactory).inSingletonScope();
-   options.bind(MapObserverProxyPairFactory).to(MapObserverProxyPairFactory).inSingletonScope();
-   options.bind(SetObserverProxyPairFactory).to(SetObserverProxyPairFactory).inSingletonScope();
+   registerMultiInjectServices(options, RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryList,
+      [
+         { target: NonIterableObjectPropertyObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.NonIterableObjectPropertyObserverProxyPairFactory },
+         { target: ArrayItemObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.ArrayItemObserverProxyPairFactory },
+         { target: MapItemObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.MapItemObserverProxyPairFactory },
+         { target: SetItemObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.SetItemObserverProxyPairFactory },
+      ]
+   );
 
-   options.bind(RsXStateManagerInjectionTokens.PlainObjectObserverProxyPairFactory).toService(PlainObjectObserverProxyPairFactory);
-   options.bind(RsXStateManagerInjectionTokens.IArrayObserverProxyPairFactory).toService(ArrayObserverProxyPairFactory);
-   options.bind(RsXStateManagerInjectionTokens.PromiseObserverProxyPairFactory).toService(PromiseObserverProxyPairFactory);
-   options.bind(RsXStateManagerInjectionTokens.ObservableObserverProxyPairFactory).toService(ObservableObserverProxyPairFactory);
-   options.bind(RsXStateManagerInjectionTokens.IMapObserverProxyPairFactory).toService(MapObserverProxyPairFactory);
-   options.bind(RsXStateManagerInjectionTokens.ISetObserverProxyPairFactory).toService(SetObserverProxyPairFactory);
-
-   options.bind(RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList).toService(PlainObjectObserverProxyPairFactory);
-   options.bind(RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList).toService(ArrayObserverProxyPairFactory);
-   options.bind(RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList ).toService(PromiseObserverProxyPairFactory);
-   options.bind(RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList).toService(ObservableObserverProxyPairFactory);
-   options.bind(RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList).toService(MapObserverProxyPairFactory);
-   options.bind(RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList).toService(SetObserverProxyPairFactory);
-   
    options
       .bind<IObjectObserverProxyPairFactoryProvider>(
          RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryProvider
@@ -143,23 +141,6 @@ export const RsXStateManagerModule = new ContainerModule((options) => {
       .to(SetItemObserverManager)
       .inSingletonScope();
 
-
-   options.bind(NonIterableObjectPropertyObserverProxyPairFactory).to(NonIterableObjectPropertyObserverProxyPairFactory).inSingletonScope();
-   options.bind(ArrayItemObserverProxyPairFactory).to(ArrayItemObserverProxyPairFactory).inSingletonScope();
-   options.bind(MapItemObserverProxyPairFactory).to(MapItemObserverProxyPairFactory).inSingletonScope();
-   options.bind(SetItemObserverProxyPairFactory).to(SetItemObserverProxyPairFactory).inSingletonScope();
-  
-   options.bind(RsXStateManagerInjectionTokens.NonIterableObjectPropertyObserverProxyPairFactory).toService(NonIterableObjectPropertyObserverProxyPairFactory);
-   options.bind(RsXStateManagerInjectionTokens.ArrayItemObserverProxyPairFactory).toService(ArrayItemObserverProxyPairFactory)
-   options.bind(RsXStateManagerInjectionTokens.MapItemObserverProxyPairFactory).toService(MapItemObserverProxyPairFactory)
-   options.bind(RsXStateManagerInjectionTokens.SetItemObserverProxyPairFactory).toService(SetItemObserverProxyPairFactory);
-     
-   options.bind(RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryList).toService(NonIterableObjectPropertyObserverProxyPairFactory);
-   options.bind(RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryList).toService(ArrayItemObserverProxyPairFactory)
-   options.bind(RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryList).toService(MapItemObserverProxyPairFactory)
-   options.bind(RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryList).toService(SetItemObserverProxyPairFactory)
-    
-
    options
       .bind<IMustProxifyItemHandlerFactory>(
          RsXStateManagerInjectionTokens.IMustProxifyItemHandlerFactory
@@ -188,7 +169,7 @@ export const RsXStateManagerModule = new ContainerModule((options) => {
       .to(StateManager)
       .inSingletonScope();
 
-   
+
 });
 
 export async function unloadRsXStateManagerModule(): Promise<void> {

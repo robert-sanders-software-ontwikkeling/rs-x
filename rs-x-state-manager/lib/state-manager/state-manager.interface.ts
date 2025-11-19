@@ -18,11 +18,11 @@ export interface IStateManager {
    readonly endChangeCycly: Observable<void>;
    isRegistered(
       context: unknown,
-      key: unknown,
+      index: unknown,
       mustProxify?: MustProxify
    ): boolean;
-   register(context: unknown, key: unknown, mustProxify?: MustProxify): unknown;
-   unregister(oontext: unknown, key: unknown, mustProxify?: MustProxify): void;
-   getState(context: unknown, key: unknown): unknown;
+   register(context: unknown, index: unknown, mustProxify?: MustProxify): unknown;
+   unregister(oontext: unknown, index: unknown, mustProxify?: MustProxify): void;
+   getState(context: unknown, index: unknown): unknown;
    clear(): void;
 }

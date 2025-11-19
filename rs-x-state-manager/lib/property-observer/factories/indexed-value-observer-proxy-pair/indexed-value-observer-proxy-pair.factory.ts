@@ -14,14 +14,14 @@ import {
 } from '../../../object-property-observer-proxy-pair-manager.type';
 import { ObserverGroup } from '../../../observer-group';
 import { IObserver } from '../../../observer.interface';
-import { IPropertyObserverProxyPairFactory } from '../../property-observer-proxy-pair.factory.interface';
+import { IIndexObserverProxyPairFactory } from '../../index-observer-proxy-pair.factory.interface';
 import {
    IIndexSetObserverManager,
    IndexChangeSubscriptionManager,
 } from './index-change-subscription-manager';
 
 export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
-   implements IPropertyObserverProxyPairFactory
+   implements IIndexObserverProxyPairFactory
 {
    private readonly _indexChangeSubscriptionManager: IndexChangeSubscriptionManager<TIndex>;
 

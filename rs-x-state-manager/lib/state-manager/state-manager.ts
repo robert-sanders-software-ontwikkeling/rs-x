@@ -80,7 +80,7 @@ export class StateManager implements IStateManager {
 
    public isRegistered(
       context: unknown,
-      key: unknown,
+      index: unknown,
       mustProxify: MustProxify
    ): boolean {
       const stateChangeSubscriptionsForContextManager =
@@ -91,7 +91,7 @@ export class StateManager implements IStateManager {
       }
 
       const id = stateChangeSubscriptionsForContextManager.getId({
-         key,
+         key: index,
          mustProxify,
       });
       return stateChangeSubscriptionsForContextManager.has(id);
@@ -99,50 +99,50 @@ export class StateManager implements IStateManager {
 
    public register(
       context: unknown,
-      key: unknown,
+      index: unknown,
       mustProxify?: MustProxify
    ): unknown {
-      if (!this.isRegistered(context, key, mustProxify)) {
-         this.tryToSubscribeToChange(context, key, mustProxify);
+      if (!this.isRegistered(context, index, mustProxify)) {
+         this.tryToSubscribeToChange(context, index, mustProxify);
          return undefined;
       } else {
-         return this.increaseStateReferenceCount(context, key);
+         return this.increaseStateReferenceCount(context, index);
       }
    }
 
    public unregister(
       context: unknown,
-      key: unknown,
+      index: unknown,
       mustProxify: MustProxify
    ): void {
-      if (!this._objectStateManager.getFromId(context)?.has(key)) {
+      if (!this._objectStateManager.getFromId(context)?.has(index)) {
          return;
       }
 
-      this.internalUnregister(context, key, mustProxify);
+      this.internalUnregister(context, index, mustProxify);
    }
 
    public clear(): void {
       this._stateChangeSubscriptionManager.dispose();
    }
 
-   public getState(context: unknown, key: unknown): unknown {
-      return this._objectStateManager.getFromId(context)?.getFromId(key)?.value;
+   public getState(context: unknown, index: unknown): unknown {
+      return this._objectStateManager.getFromId(context)?.getFromId(index)?.value;
    }
 
-   private getOldValue(context: unknown, key: unknown): unknown {
-      return this._objectStateManager.getFromId(context)?.getFromId(key)
+   private getOldValue(context: unknown, index: unknown): unknown {
+      return this._objectStateManager.getFromId(context)?.getFromId(index)
          ?.valueCopy;
    }
 
    private unnsubscribeToObserverEvents(
       context: unknown,
-      key: unknown,
+      index: unknown,
       mustProxify: MustProxify
    ): void {
       const subscriptionsForKey =
          this._stateChangeSubscriptionManager.getFromId(context);
-      const observer = subscriptionsForKey?.getFromData({ key, mustProxify });
+      const observer = subscriptionsForKey?.getFromData({ key: index, mustProxify });
       if (!observer) {
          return;
       }
@@ -152,17 +152,17 @@ export class StateManager implements IStateManager {
 
    private internalUnregister(
       context: unknown,
-      key: unknown,
+      index: unknown,
       mustProxify: MustProxify
    ): void {
-      if (this.releaseState(context, key)) {
-         this.unnsubscribeToObserverEvents(context, key, mustProxify);
+      if (this.releaseState(context, index)) {
+         this.unnsubscribeToObserverEvents(context, index, mustProxify);
       }
    }
 
    private emitChange(
       context: unknown,
-      key: unknown,
+      index: unknown,
       newValue: unknown,
       oldValue: unknown,
       oldContext?: unknown
@@ -173,7 +173,7 @@ export class StateManager implements IStateManager {
       this._changed.next({
          oldContext: oldContext ?? context,
          context,
-         key,
+         key: index,
          oldValue,
          newValue,
       });
@@ -182,11 +182,11 @@ export class StateManager implements IStateManager {
    private updateState(
       newContext: unknown,
       oldContext: unknown,
-      key: unknown,
+      index: unknown,
       newValue: unknown
    ): void {
       this._objectStateManager.replaceState(
-         key,
+         index,
          newContext,
          newValue,
          oldContext
@@ -202,30 +202,30 @@ export class StateManager implements IStateManager {
 
    private increaseStateReferenceCount(
       context: unknown,
-      key: unknown
+      index: unknown
    ): unknown {
-      const state = this.getState(context, key);
+      const state = this.getState(context, index);
       this._objectStateManager
          .create(context)
-         .instance.create({ value: state, key });
+         .instance.create({ value: state, key: index });
       return state;
    }
 
    private tryToSubscribeToChange(
       context: unknown,
-      key: unknown,
+      index: unknown,
       mustProxify: MustProxify,
       transferedValue?: ITransferedValue
    ): void {
       this._stateChangeSubscriptionManager.create(context).instance.create({
-         key,
+         key: index,
          mustProxify,
          onChanged: (change) => this.onChange(change, mustProxify),
          init: (observer) => {
             if (observer.initialValue !== undefined) {
                this.setInitialValue(
                   context,
-                  key,
+                  index,
                   observer.initialValue,
                   transferedValue
                );
@@ -311,7 +311,7 @@ export class StateManager implements IStateManager {
 
    private setInitialValue(
       context: unknown,
-      key: unknown,
+      index: unknown,
       initialValue: unknown,
       transferedValue: ITransferedValue
    ): void {
@@ -319,13 +319,13 @@ export class StateManager implements IStateManager {
          this.updateState(
             context,
             transferedValue?.context ?? context,
-            key,
+            index,
             initialValue
          );
 
          this.emitChange(
             context,
-            key,
+            index,
             initialValue,
             transferedValue?.value,
             transferedValue?.context

@@ -5,7 +5,7 @@ import {
 } from '../object-property-observer-proxy-pair-manager.type';
 import { IDisposableOwner } from '../disposable-owner.interface';
 
-export interface IPropertyObserverProxyPairFactory<
+export interface IIndexObserverProxyPairFactory<
    TProxy = unknown,
    TId = unknown,
 > extends IDisposable {

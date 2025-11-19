@@ -6,7 +6,7 @@ import {
 } from '@rs-x/core';
 import { of } from 'rxjs';
 import { IObserver } from '../../../../lib/observer.interface';
-import { IPropertyObserverProxyPairFactory } from '../../../../lib/property-observer/property-observer-proxy-pair.factory.interface';
+import { IIndexObserverProxyPairFactory } from '../../../../lib/property-observer/index-observer-proxy-pair.factory.interface';
 import { IArrayProxyFactory } from '../../../../lib/proxies/array-proxy/array-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
@@ -18,12 +18,12 @@ describe('non iterableObjectPropertyObserverFactory', () => {
    let recursiveObserver: IObserver;
    let nonRecursiveObserver: IObserver;
    let arrayProxyFactory: IArrayProxyFactory;
-   let nonIterableObjectPropertyObserverFactory: IPropertyObserverProxyPairFactory;
+   let nonIterableObjectPropertyObserverFactory: IIndexObserverProxyPairFactory;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXStateManagerModule);
       nonIterableObjectPropertyObserverFactory =
-         InjectionContainer.get<IPropertyObserverProxyPairFactory>(
+         InjectionContainer.get<IIndexObserverProxyPairFactory>(
             RsXStateManagerInjectionTokens.NonIterableObjectPropertyObserverProxyPairFactory
          );
       arrayProxyFactory = InjectionContainer.get<IArrayProxyFactory>(

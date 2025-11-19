@@ -124,7 +124,7 @@ export class ObserverGroup extends AbstractObserver {
       this._observers.splice(index, 1);
    }
 
-   protected disposeInternal(): void {
+   protected override disposeInternal(): void {
       this.rootObserver?.dispose();
       this.unsubscribeToObservers();
    }

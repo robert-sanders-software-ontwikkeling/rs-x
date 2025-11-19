@@ -39,25 +39,26 @@ describe('MapProxy tests', () => {
    });
 
    it('create will register the array proxy to the proxy registry', () => {
+      const map = new Map();
       const proxyRegistry = new ProxyRegistryMock();
       const setProxyFactory = new MapProxyFactory(proxyRegistry);
-      const { proxy } = setProxyFactory.create({ map: new Map() }).instance;
+      const { proxy } = setProxyFactory.create({ map }).instance;
 
       expect(proxyRegistry.register).toHaveBeenCalledTimes(1);
-      expect(proxyRegistry.register.mock.calls[0][0]).toBe(proxy);
+      expect(proxyRegistry.register.mock.calls[0][0]).toBe(map);
+      expect(proxyRegistry.register.mock.calls[0][1]).toBe(proxy);
    });
 
    it('dispose will unregister the array proxy to the proxy registry', () => {
+      const map = new Map();
       const proxyRegistry = new ProxyRegistryMock();
       const setProxyFactory = new MapProxyFactory(proxyRegistry);
-      const { proxy, observer } = setProxyFactory.create({
-         map: new Map(),
-      }).instance;
+      const { observer } = setProxyFactory.create({ map }).instance;
 
       observer.dispose();
 
       expect(proxyRegistry.unregister).toHaveBeenCalledTimes(1);
-      expect(proxyRegistry.register.mock.calls[0][0]).toBe(proxy);
+      expect(proxyRegistry.unregister).toHaveBeenCalledWith(map);
    });
 
    it('items are proxified when map proxy is initialized and mustProxify return true for an item', () => {

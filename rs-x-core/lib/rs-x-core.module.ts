@@ -4,6 +4,7 @@ import {
    Container,
    ContainerModule,
    InjectionContainer,
+   registerMultiInjectServices
 } from './dependency-injection';
 import { EqualityService } from './equality-service/equality-service';
 import { IEqualityService } from './equality-service/equality-service.interface';
@@ -30,46 +31,19 @@ export const RsXCoreModule = new ContainerModule((options) => {
       .bind<IErrorLog>(RsXCoreInjectionTokens.IErrorLog)
       .to(ErrorLog)
       .inSingletonScope();
-      
-   options.bind(PropertyValueAccessor).to(PropertyValueAccessor).inSingletonScope();
-   options.bind(MethodAccessor).to(MethodAccessor).inSingletonScope();
-   options.bind(ArrayIndexAccessor).to(ArrayIndexAccessor).inSingletonScope();
-   options.bind(MapKeyAccessor).to(MapKeyAccessor).inSingletonScope();
-   options.bind(SetKeyAccessor).to(SetKeyAccessor).inSingletonScope();
-   options.bind(ObservableAccessor).to(ObservableAccessor).inSingletonScope();
-   options.bind(PromiseAccessor).to(PromiseAccessor).inSingletonScope();
 
-
-   options.bind(RsXCoreInjectionTokens.IPropertyValueAccessor).toService(PropertyValueAccessor);
-   options.bind(RsXCoreInjectionTokens.IMethodAccessor).toService(MethodAccessor);
-   options.bind(RsXCoreInjectionTokens.IArrayIndexAccessor).toService(ArrayIndexAccessor);
-   options.bind(RsXCoreInjectionTokens.IMapKeyAccessor).toService(MapKeyAccessor);
-   options.bind(RsXCoreInjectionTokens.ISetKeyAccessor).toService(SetKeyAccessor);
-   options.bind(RsXCoreInjectionTokens.IObservableAccessor).toService(ObservableAccessor);
-   options.bind(RsXCoreInjectionTokens.IPromiseAccessor).toService(PromiseAccessor);
-
-   options
-      .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
-      .toService(PropertyValueAccessor);
-   options
-      .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
-      .toService(MethodAccessor);
-   options
-      .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
-      .toService(ArrayIndexAccessor);
-   options
-      .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
-      .toService(MapKeyAccessor);
-   options
-      .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
-      .toService(SetKeyAccessor);
-   options
-      .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
-      .toService(ObservableAccessor);
-   options
-      .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessorList)
-      .toService(PromiseAccessor)
-
+   registerMultiInjectServices(options, RsXCoreInjectionTokens.IIndexValueAccessorList,
+      [
+         {target: PropertyValueAccessor,  token: RsXCoreInjectionTokens.IPropertyValueAccessor},
+         {target: MethodAccessor,  token: RsXCoreInjectionTokens.IMethodAccessor},
+         {target: ArrayIndexAccessor,  token: RsXCoreInjectionTokens.IArrayIndexAccessor},
+         {target: MapKeyAccessor,  token: RsXCoreInjectionTokens.IMapKeyAccessor},
+         {target: SetKeyAccessor,  token: RsXCoreInjectionTokens.ISetKeyAccessor},
+         {target: ObservableAccessor,  token: RsXCoreInjectionTokens.IObservableAccessor},
+         {target: PromiseAccessor,  token: RsXCoreInjectionTokens.IPromiseAccessor}
+      ]
+   );
+   
    options
       .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessor)
       .to(IndexValueAccessor)

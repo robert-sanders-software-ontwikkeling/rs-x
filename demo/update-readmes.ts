@@ -32,8 +32,10 @@ function updateReadme(readmePath: string) {
       return `// FILE NOT FOUND: ${demoPath}`;
     }
 
-    // Use indentation of code block marker (```ts) or none
-    const indentation = '';
+    // Detect indentation before "{% include_relative ..."
+    const indentMatch = line.match(/^(\s*)\{\%/);
+    const indentation = indentMatch ? indentMatch[1] : '';
+
     const indentedCode = demoCode
       .split('\n')
       .map((l) => (l.trim() === '' ? '' : indentation + l))

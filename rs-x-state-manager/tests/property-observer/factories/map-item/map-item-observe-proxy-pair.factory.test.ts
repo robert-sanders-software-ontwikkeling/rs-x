@@ -5,7 +5,7 @@ import {
    WaitForEvent,
 } from '@rs-x/core';
 import { IObserver } from '../../../../lib/observer.interface';
-import { IPropertyObserverProxyPairFactory } from '../../../../lib/property-observer/property-observer-proxy-pair.factory.interface';
+import { IIndexObserverProxyPairFactory } from '../../../../lib/property-observer/index-observer-proxy-pair.factory.interface';
 import { IMapProxyFactory } from '../../../../lib/proxies/map-proxy/map-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
@@ -15,7 +15,7 @@ describe('MapItemObserverProxyPairFactory tests', () => {
    let disposableOwner: DisposableOwnerMock;
    let observer: IObserver;
    let mapProxyFactory: IMapProxyFactory;
-   let mapItemObserverFactory: IPropertyObserverProxyPairFactory;
+   let mapItemObserverFactory: IIndexObserverProxyPairFactory;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXStateManagerModule);

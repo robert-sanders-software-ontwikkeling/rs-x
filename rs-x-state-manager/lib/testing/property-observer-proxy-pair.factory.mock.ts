@@ -1,7 +1,7 @@
-import { IPropertyObserverProxyPairFactory } from '../property-observer/property-observer-proxy-pair.factory.interface';
+import { IIndexObserverProxyPairFactory } from '../property-observer/index-observer-proxy-pair.factory.interface';
 
 export class PropertyObserverProxyPairFactoryMock
-   implements IPropertyObserverProxyPairFactory
+   implements IIndexObserverProxyPairFactory
 {
    public readonly dispose = jest.fn();
    public readonly create = jest.fn();

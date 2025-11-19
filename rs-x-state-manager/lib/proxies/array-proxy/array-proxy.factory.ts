@@ -62,7 +62,7 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
       this.unproxifyItem = unproxifyItem ?? echo;
 
       this.target = new Proxy(initialValue, this);
-      this._proxyRegistry.register(this.target);
+      this._proxyRegistry.register(initialValue, this.target);
    }
 
    public override init(): void {
@@ -111,8 +111,8 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
       return true;
    }
 
-   protected disposeInternal(): void {
-      this._proxyRegistry.unregister(this.target);
+   protected override disposeInternal(): void {
+      this._proxyRegistry.unregister(this.initialValue);
       this.restoreOrginalArray();
       this.target = null;
    }
@@ -126,7 +126,7 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
       this.emitSetForRange(
          orginalArray,
          startIndex,
-         orginalArray.length,
+         args.length,
          oldLength
       );
       return orginalArray.length;

@@ -145,10 +145,10 @@ const toDeepEqualCircular: MatcherFunction<[expected: unknown]> = function (
       message: () =>
          pass
             ? this.utils.matcherHint('.not.toDeepEqualCircularWithDiff') +
-              '\n\nExpected values not to be deeply equal, but they were.'
+            '\n\nExpected values not to be deeply equal, but they were.'
             : this.utils.matcherHint('.toDeepEqualCircularWithDiff') +
-              '\n\nFound the following differences:\n\n' +
-              diffs.map((d) => `  • ${d}`).join('\n'),
+            '\n\nFound the following differences:\n\n' +
+            diffs.map((d) => `  • ${d}`).join('\n'),
    };
 };
 
@@ -173,4 +173,37 @@ export function observerEqualTo(
    }
 }
 
-export const customMatchers = { toDeepEqualCircular, observerEqualTo };
+
+
+expect.extend({
+  async toOutputAsync(receivedFn: () => Promise<unknown>, expected: string) {
+    let output = '';
+
+    // Patch console.log temporarily
+    const originalLog = console.log;
+    console.log = (...args: unknown[]) => {
+      output += args.map(a => String(a)).join(' ') + '\n';
+    };
+
+    try {
+      await receivedFn(); // await the demo fully
+    } finally {
+      console.log = originalLog; // restore
+    }
+
+    const pass = output.trim() === expected.trim();
+
+    return {
+      pass,
+      message: () =>
+        pass
+          ? `Expected async output not to equal:\n${expected}`
+          : `Expected async output:\n${expected}\n\nReceived:\n${output}`,
+    };
+  },
+});
+
+export const customMatchers = { 
+   toDeepEqualCircular, 
+   observerEqualTo 
+};

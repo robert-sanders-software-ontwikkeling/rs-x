@@ -3,19 +3,25 @@ import { IProxyRegistry } from './proxy-registry.interface';
 
 @Injectable()
 export class ProxyRegistry implements IProxyRegistry {
-   private readonly _proxies = new Set<unknown>();
+   private readonly _proxies = new Map<unknown,unknown>();
 
-   public register(proxy: unknown): void {
-      if (!this._proxies.has(proxy)) {
-         this._proxies.add(proxy);
-      }
+   public getProxyTarget<T>(proxyToFind: unknown): T {
+       return Array.from(this._proxies.entries()).find(([_, proxy]) => proxy === proxyToFind )?.[0] as T
    }
 
-   public unregister(proxy: unknown): void {
-      this._proxies.delete(proxy);
+   public getProxy<T>(proxyTarget: unknown): T {
+      return this._proxies.get(proxyTarget) as T;
+   }
+
+   public register(proxyTarget: unknown, proxy: unknown): void {
+      this._proxies.set(proxyTarget, proxy)
+   }
+
+   public unregister(proxyTarget: unknown): void {
+      this._proxies.delete(proxyTarget);
    }
 
    public isProxy(object: unknown): boolean {
-      return this._proxies.has(object);
+      return !!this.getProxyTarget(object);
    }
 }

@@ -48,7 +48,7 @@ class MapItemObserver extends AbstractObserver<Map<unknown, unknown>> {
       });
    }
 
-   protected disposeInternal(): void {
+   protected override disposeInternal(): void {
       this._mapChangeSubscription.unsubscribe();
    }
 

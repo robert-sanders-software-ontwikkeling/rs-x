@@ -1,5 +1,6 @@
 export * from './array-index-accessor';
 export * from './array-index-accessor.type';
+export * from './index-accessor.decorator';
 export * from './index-value-accessor.interface';
 export * from './index-value-accessor.provider.interface';
 export * from './index-value-accessor.provider';
