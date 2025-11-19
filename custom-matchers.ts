@@ -175,59 +175,69 @@ export function observerEqualTo(
 
 
 
+function normalize(str: string): string {
+    return str
+        .replace(/\r\n/g, "\n")      // normalize CRLF → LF
+        .replace(/[ \t]+$/gm, "")    // remove trailing whitespace
+        .trim();                     // trim surrounding whitespace
+}
+
 expect.extend({
-   toOutput(receivedFn: () => unknown, expected: string) {
-      let output = "";
-      const originalWrite = process.stdout.write;
+    toOutput(receivedFn: () => unknown, expected: string) {
+        let output = "";
+        const originalWrite = process.stdout.write;
 
-      // Capture stdout
-      (process.stdout.write) = (chunk: unknown) => {
-         output += chunk;
-         return true;
-      };
+        process.stdout.write = (chunk: unknown) => {
+            output += String(chunk);
+            return true;
+        };
 
-      try {
-         receivedFn(); // run user code
-      } finally {
-         process.stdout.write = originalWrite;
-      }
+        try {
+            receivedFn();
+        } finally {
+            process.stdout.write = originalWrite;
+        }
 
-      const pass = output.trim() === expected.trim();
+        const receivedNorm = normalize(output);
+        const expectedNorm = normalize(expected);
+        const pass = receivedNorm === expectedNorm;
 
-      return {
-         pass,
-         message: () =>
-            pass
-               ? `Expected output not to equal:\n${expected}`
-               : `Expected output:\n${expected}\n\nReceived:\n${output}`
-      };
-   },
+        return {
+            pass,
+            message: () =>
+                pass
+                    ? `Expected output NOT to equal:\n${expected}`
+                    : `Expected output:\n${expectedNorm}\n\nReceived:\n${receivedNorm}`
+        };
+    },
 
-   async toOutputAsync(receivedFn: () => Promise<unknown>, expected: string) {
-      let output = "";
-      const originalWrite = process.stdout.write;
+    async toOutputAsync(receivedFn: () => Promise<unknown>, expected: string) {
+        let output = "";
+        const originalWrite = process.stdout.write;
 
-      (process.stdout.write) = (chunk: unknown) => {
-         output += chunk;
-         return true;
-      };
+        process.stdout.write = (chunk: unknown) => {
+            output += String(chunk);
+            return true;
+        };
 
-      try {
-         await receivedFn();
-      } finally {
-         process.stdout.write = originalWrite;
-      }
+        try {
+            await receivedFn();
+        } finally {
+            process.stdout.write = originalWrite;
+        }
 
-      const pass = output.trim() === expected.trim();
+        const receivedNorm = normalize(output);
+        const expectedNorm = normalize(expected);
+        const pass = receivedNorm === expectedNorm;
 
-      return {
-         pass,
-         message: () =>
-            pass
-               ? `Expected async output not to equal:\n${expected}`
-               : `Expected async output:\n${expected}\n\nReceived:\n${output}`
-      };
-   }
+        return {
+            pass,
+            message: () =>
+                pass
+                    ? `Expected async output NOT to equal:\n${expected}`
+                    : `Expected async output:\n${expectedNorm}\n\nReceived:\n${receivedNorm}`
+        };
+    }
 });
 
 export const customMatchers = { 
