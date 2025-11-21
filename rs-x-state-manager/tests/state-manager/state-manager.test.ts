@@ -14,6 +14,7 @@ import {
    IStateChange,
    IStateManager,
 } from '../../lib/state-manager/state-manager.interface';
+import { IProxyRegistry } from '../../lib';
 
 interface IPrivateIStateManager extends IStateManager {
    _changed: Observable<IStateChange>;
@@ -387,6 +388,162 @@ describe('StateManager tests', () => {
 
          expect(actual).toEqual(expected);
       });
+   });
+
+
+   describe('register a date property', () => {
+
+      let proxyRegistry: IProxyRegistry;
+
+      beforeAll(() => {
+         proxyRegistry = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
+      });
+
+      it('register will initialise state', async () => {
+         const object = { x: new Date(2021, 2, 3) };
+
+         await new WaitForEvent(stateManager, 'changed').wait(() => {
+            stateManager.register(object, 'x');
+         });
+
+         expect(stateManager.getState(object, 'x')).toEqual(new Date(2021, 2, 3));
+      });
+
+      it('after register change event will emit initial value', async () => {
+         const object = { x: new Date(2021, 2, 3) };;
+
+         const actual = await new WaitForEvent(stateManager, 'changed').wait(
+            () => {
+               stateManager.register(object, 'x');
+            }
+         );
+
+         const expected: IStateChange = {
+            context: object,
+            oldContext: object,
+            key: 'x',
+            oldValue: undefined,
+            newValue: new Date(2021, 2, 3),
+         };
+
+         expect(actual).toEqual(expected);
+      });
+
+      it('replacing date property will emit change event', async () => {
+         const object = { x: new Date(2021, 2, 3) };;
+
+         await new WaitForEvent(stateManager, 'changed').wait(() => {
+            stateManager.register(object, 'x');
+         });
+
+         const actual = await new WaitForEvent(stateManager, 'changed').wait(
+            () => {
+               object.x = new Date(2023, 2, 3)
+            }
+         );
+
+         const expected: IStateChange = {
+            context: object,
+            oldContext: object,
+            key: 'x',
+            oldValue: new Date(2021, 2, 3),
+            newValue: new Date(2023, 2, 3),
+         };
+         expect(actual).toEqual(expected);
+      });
+
+      it('changing date property will not emit change event if not recursive', async () => {
+         const object = { x: new Date(2021, 2, 3) };;
+
+         await new WaitForEvent(stateManager, 'changed').wait(() => {
+            stateManager.register(object, 'x');
+         });
+
+         const actual = await new WaitForEvent(stateManager, 'changed').wait(
+            () => {
+               object.x.setFullYear(2024)
+            }
+         );
+
+         expect(actual).toBeNull();
+      });
+
+      it('changing date property will emit change event if recursive', async () => {
+         const object = { x: new Date(2021, 2, 3) };;
+
+         await new WaitForEvent(stateManager, 'changed').wait(() => {
+            stateManager.register(object, 'x', truePredicate);
+         });
+
+         const actual = await new WaitForEvent(stateManager, 'changed').wait(
+            () => {
+               object.x.setFullYear(2024)
+            }
+         );
+
+         const expected: IStateChange = {
+            context: object,
+            oldContext: object,
+            key: 'x',
+            oldValue: new Date(2021, 2, 3),
+            newValue: new Date(2024, 2, 3),
+         };
+         expect(actual).toDeepEqualCircular(expected);
+      });
+
+      it('register date property will initialise state', async () => {
+         const date = new Date(2021, 2, 3)
+
+         await new WaitForEvent(stateManager, 'changed').wait(() => {
+            stateManager.register(date, 'year');
+         });
+
+         expect(stateManager.getState(date, 'year')).toEqual(2021);
+      });
+
+      it('after register date property change event will emit initial value', async () => {
+         const date = new Date(2021, 2, 3)
+
+         const actual = await new WaitForEvent(stateManager, 'changed').wait(
+            () => {
+               stateManager.register(date, 'year');
+            }
+         );
+
+         const expected: IStateChange = {
+            context: date,
+            oldContext: date,
+            key: 'year',
+            oldValue: undefined,
+            newValue: 2021,
+         };
+
+         expect(actual).toEqual(expected);
+      });
+
+      it('changing date property will emit change evenet', async () => {
+         const date = new Date(2021, 2, 3)
+
+         stateManager.register(date, 'year');
+
+         const actual = await new WaitForEvent(stateManager, 'changed').wait(
+            () => {
+               const dataProxy = proxyRegistry.getProxy<Date>(date);
+               dataProxy.setFullYear(2023)
+            }
+         );
+
+         const expected: IStateChange = {
+            context: date,
+            oldContext: date,
+            key: 'year',
+            oldValue: 2021,
+            newValue: 2023,
+         };
+
+         expect(actual).toEqual(expected);
+      });
+
    });
 
    describe('register promise property', () => {

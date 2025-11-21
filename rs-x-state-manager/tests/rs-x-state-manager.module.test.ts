@@ -1,5 +1,6 @@
 import { InjectionContainer } from '@rs-x/core';
 import { ArrayObserverProxyPairFactory } from '../lib/object-observer/factories/array-observer-proxy-pair.factory';
+import { DateObserverProxyPairFactory } from '../lib/object-observer/factories/date-observer-proxy-pair.factory';
 import { MapObserverProxyPairFactory } from '../lib/object-observer/factories/map-observer-proxy-pair.factory';
 import { ObservableObserverProxyPairFactory } from '../lib/object-observer/factories/observable-observer-proxy-pair.factory';
 import { PlainObjectObserverProxyPairFactory } from '../lib/object-observer/factories/plain-object-observer-proxy-pair.factory';
@@ -10,6 +11,7 @@ import { ObjectObserverProxyPairManager } from '../lib/object-observer/object-ob
 import { ObjectPropertyObserverProxyPairManager } from '../lib/object-property-observer-proxy-pair-manager';
 import { ArrayItemObserverProxyPairFactory } from '../lib/property-observer/factories/array-item/array-item-observe-proxy-pair.factory';
 import { ArrayItemObserverManager } from '../lib/property-observer/factories/array-item/array-item-observer-manager';
+import { DatePropertyObserverManager } from '../lib/property-observer/factories/date-property/data-property-observer-manager';
 import { MapItemObserverManager } from '../lib/property-observer/factories/map-item/map-item-observer-manager';
 import { MapItemObserverProxyPairFactory } from '../lib/property-observer/factories/map-item/map-item-observer-proxy-pair.factory';
 import { NonIterableObjectPropertyObserverProxyPairFactory } from '../lib/property-observer/factories/non-iterable-object-property';
@@ -18,6 +20,7 @@ import { SetItemObserverManager } from '../lib/property-observer/factories/set-i
 import { SetItemObserverProxyPairFactory } from '../lib/property-observer/factories/set-item/set-item-observer-proxy-pair.factory';
 import { MustProxifyItemHandlerFactory } from '../lib/property-observer/must-proxify-item-handler.factory';
 import { ArrayProxyFactory } from '../lib/proxies/array-proxy/array-proxy.factory';
+import { DateProxyFactory } from '../lib/proxies/date-proxy/date-proxy.factory';
 import { MapProxyFactory } from '../lib/proxies/map-proxy/map-proxy.factory';
 import { ObservableProxyFactory } from '../lib/proxies/observable-proxy/observable-proxy.factory';
 import { PromiseProxyFactory } from '../lib/proxies/promise-proxy/promise-proxy.factory';
@@ -30,6 +33,7 @@ import {
 } from '../lib/rs-x-state-manager.module';
 import { ObjectStateManager } from '../lib/state-manager/object-state-manager';
 import { StateManager } from '../lib/state-manager/state-manager';
+import { DatePropertyObserverProxyPairFactory } from '../lib/property-observer/factories/date-property/date-property-observer-proxy-pair.factory';
 
 describe('RsXStateManagerModule', () => {
    beforeAll(async () => {
@@ -87,6 +91,24 @@ describe('RsXStateManagerModule', () => {
       );
       const a2 = InjectionContainer.get(
          RsXStateManagerInjectionTokens.ISetProxyFactory
+      );
+      expect(a1).toBe(a2);
+   });
+
+
+   it('can get a instance of IDateProxyFactory', () => {
+      const actual = InjectionContainer.get(
+         RsXStateManagerInjectionTokens.IDateProxyFactory
+      );
+      expect(actual).toBeInstanceOf(DateProxyFactory);
+   });
+
+   it('instance of IDateProxyFactory is a singelton', () => {
+      const a1 = InjectionContainer.get(
+         RsXStateManagerInjectionTokens.IDateProxyFactory
+      );
+      const a2 = InjectionContainer.get(
+         RsXStateManagerInjectionTokens.IDateProxyFactory
       );
       expect(a1).toBe(a2);
    });
@@ -244,19 +266,22 @@ describe('RsXStateManagerModule', () => {
       expect(a1).toBe(a2);
    });
 
-
+  
     it('can get an instance of IObjectObserverProxyPairFactoryList', () => {
       const actual = InjectionContainer.getAll(
          RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
       );
 
-      expect(actual.length).toEqual(6);
+      expect(actual.length).toEqual(7);
       expect(actual[0]).toBeInstanceOf(PlainObjectObserverProxyPairFactory);
-      expect(actual[1]).toBeInstanceOf(ArrayObserverProxyPairFactory);
-      expect(actual[2]).toBeInstanceOf(PromiseObserverProxyPairFactory);
-      expect(actual[3]).toBeInstanceOf(ObservableObserverProxyPairFactory);
-      expect(actual[4]).toBeInstanceOf(MapObserverProxyPairFactory);
-      expect(actual[5]).toBeInstanceOf(SetObserverProxyPairFactory);
+      expect(actual[1]).toBeInstanceOf(DateObserverProxyPairFactory);
+      expect(actual[2]).toBeInstanceOf(ArrayObserverProxyPairFactory);
+      expect(actual[3]).toBeInstanceOf(PromiseObserverProxyPairFactory);
+      expect(actual[4]).toBeInstanceOf(ObservableObserverProxyPairFactory);
+      expect(actual[5]).toBeInstanceOf(MapObserverProxyPairFactory);
+      expect(actual[6]).toBeInstanceOf(SetObserverProxyPairFactory);
+
+    
    });
 
    it('IObjectObserverProxyPairFactoryList instance is a singelton', () => {
@@ -272,6 +297,7 @@ describe('RsXStateManagerModule', () => {
       expect(a1[3]).toBe(a2[3]);
       expect(a1[4]).toBe(a2[4]);
       expect(a1[5]).toBe(a2[5]);
+      expect(a1[6]).toBe(a2[6]);
    });
 
 
@@ -281,11 +307,13 @@ describe('RsXStateManagerModule', () => {
          RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryList
       );
 
-      expect(actual.length).toEqual(4);
+      expect(actual.length).toEqual(5);
       expect(actual[0]).toBeInstanceOf(NonIterableObjectPropertyObserverProxyPairFactory);
       expect(actual[1]).toBeInstanceOf(ArrayItemObserverProxyPairFactory);
       expect(actual[2]).toBeInstanceOf(MapItemObserverProxyPairFactory);
       expect(actual[3]).toBeInstanceOf(SetItemObserverProxyPairFactory);
+      expect(actual[4]).toBeInstanceOf(DatePropertyObserverProxyPairFactory);
+      
    });
 
    it('IPropertyObserverProxyPairFactoryList instance is a singelton', () => {
@@ -299,6 +327,7 @@ describe('RsXStateManagerModule', () => {
       expect(a1[1]).toBe(a2[1]);
       expect(a1[2]).toBe(a2[2]);
       expect(a1[3]).toBe(a2[3]);
+      expect(a1[4]).toBe(a2[4]);
    });
 
 
@@ -404,6 +433,25 @@ describe('RsXStateManagerModule', () => {
       expect(a1).toBe(a2);
    });
 
+
+   it('can get an instance of IDatePropertyObserverManager', () => {
+      const actual = InjectionContainer.get(
+         RsXStateManagerInjectionTokens.IDatePropertyObserverManager
+      );
+      expect(actual).toBeInstanceOf(DatePropertyObserverManager);
+   });
+
+   it('IDatePropertyObserverManager instance is a singelton', () => {
+      const a1 = InjectionContainer.get(
+         RsXStateManagerInjectionTokens.IDatePropertyObserverManager
+      );
+      const a2 = InjectionContainer.get(
+         RsXStateManagerInjectionTokens.IDatePropertyObserverManager
+      );
+      expect(a1).toBe(a2);
+   });
+
+
    it('can get an instance of NonIterableObjectPropertyObserverProxyPairFactory', () => {
       const actual = InjectionContainer.get(
          RsXStateManagerInjectionTokens.NonIterableObjectPropertyObserverProxyPairFactory
@@ -487,6 +535,24 @@ describe('RsXStateManagerModule', () => {
       );
       const a2 = InjectionContainer.get(
          RsXStateManagerInjectionTokens.SetItemObserverProxyPairFactory
+      );
+      expect(a1).toBe(a2);
+   });
+
+
+   it('can get an instance of IDatePropertyObserverProxyPairFactory', () => {
+      const actual = InjectionContainer.get(
+         RsXStateManagerInjectionTokens.IDatePropertyObserverProxyPairFactory
+      );
+      expect(actual).toBeInstanceOf(DatePropertyObserverProxyPairFactory);
+   });
+
+   it('IDatePropertyObserverProxyPairFactory instance is a singelton', () => {
+      const a1 = InjectionContainer.get(
+         RsXStateManagerInjectionTokens.IDatePropertyObserverProxyPairFactory
+      );
+      const a2 = InjectionContainer.get(
+         RsXStateManagerInjectionTokens.IDatePropertyObserverProxyPairFactory
       );
       expect(a1).toBe(a2);
    });

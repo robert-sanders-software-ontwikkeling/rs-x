@@ -57,7 +57,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
       expect(actual).toEqual(false);
    });
 
-   it('create will create a map proxy', async () => {
+   it('create will create a array proxy', async () => {
       const array = [];
       const observerProxyPair = arrayObserverProxyPairFactory.create(
          disposableOwner,

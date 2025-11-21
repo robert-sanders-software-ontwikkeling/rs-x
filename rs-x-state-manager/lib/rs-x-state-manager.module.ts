@@ -43,6 +43,12 @@ import { ObjectStateManager } from './state-manager/object-state-manager';
 import { IObjectStateManager } from './state-manager/object-state-manager.interface';
 import { StateManager } from './state-manager/state-manager';
 import { IStateManager } from './state-manager/state-manager.interface';
+import { IDateProxyFactory } from './proxies/date-proxy/date-proxy.factory.type';
+import { DateProxyFactory } from './proxies/date-proxy/date-proxy.factory';
+import { DateObserverProxyPairFactory } from './object-observer/factories/date-observer-proxy-pair.factory';
+import { IDatePropertyObserverManager } from './property-observer/factories/date-property/date-property-observer-manager.type';
+import { DatePropertyObserverManager } from './property-observer/factories/date-property/data-property-observer-manager';
+import { DatePropertyObserverProxyPairFactory } from './property-observer/factories/date-property/date-property-observer-proxy-pair.factory';
 
 InjectionContainer.load(RsXCoreModule);
 
@@ -61,6 +67,11 @@ export const RsXStateManagerModule = new ContainerModule((options) => {
       .bind<ISetProxyFactory>(RsXStateManagerInjectionTokens.ISetProxyFactory)
       .to(SetProxyFactory)
       .inSingletonScope();
+   options
+      .bind<IDateProxyFactory>(RsXStateManagerInjectionTokens.IDateProxyFactory)
+      .to(DateProxyFactory)
+      .inSingletonScope();
+
    options
       .bind<IPromiseProxyFactory>(
          RsXStateManagerInjectionTokens.IPromiseProxyFactory
@@ -87,11 +98,14 @@ export const RsXStateManagerModule = new ContainerModule((options) => {
    registerMultiInjectServices(options, RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList,
       [
          { target: PlainObjectObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.PlainObjectObserverProxyPairFactory },
+         { target: DateObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.IDateObserverProxyPairFactory },
          { target: ArrayObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.IArrayObserverProxyPairFactory },
          { target: PromiseObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.PromiseObserverProxyPairFactory },
          { target: ObservableObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.ObservableObserverProxyPairFactory },
          { target: MapObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.IMapObserverProxyPairFactory },
          { target: SetObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.ISetObserverProxyPairFactory },
+        
+         
       ]
    );
 
@@ -101,6 +115,8 @@ export const RsXStateManagerModule = new ContainerModule((options) => {
          { target: ArrayItemObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.ArrayItemObserverProxyPairFactory },
          { target: MapItemObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.MapItemObserverProxyPairFactory },
          { target: SetItemObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.SetItemObserverProxyPairFactory },
+         { target: DatePropertyObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.IDatePropertyObserverProxyPairFactory },
+
       ]
    );
 
@@ -140,7 +156,12 @@ export const RsXStateManagerModule = new ContainerModule((options) => {
       )
       .to(SetItemObserverManager)
       .inSingletonScope();
-
+   options
+      .bind<IDatePropertyObserverManager>(
+         RsXStateManagerInjectionTokens.IDatePropertyObserverManager
+      )
+      .to(DatePropertyObserverManager)
+      .inSingletonScope();
    options
       .bind<IMustProxifyItemHandlerFactory>(
          RsXStateManagerInjectionTokens.IMustProxifyItemHandlerFactory

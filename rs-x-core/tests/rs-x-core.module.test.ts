@@ -3,6 +3,7 @@ import { InjectionContainer } from '../lib/dependency-injection';
 import { EqualityService } from '../lib/equality-service/equality-service';
 import { ErrorLog } from '../lib/error-log/error-log';
 import { ArrayIndexAccessor } from '../lib/index-value-accessor/array-index-accessor';
+import { DatePropertyAccessor } from '../lib/index-value-accessor/date-property-accessor';
 import { IndexValueAccessor } from '../lib/index-value-accessor/index-value-accessor';
 import { IndexValueAccessorProvider } from '../lib/index-value-accessor/index-value-accessor.provider';
 import { MapKeyAccessor } from '../lib/index-value-accessor/map-key-accessor';
@@ -23,7 +24,6 @@ describe('rs-x core module', () => {
    afterAll(async () => {
       await InjectionContainer.unload(RsXCoreModule);
    });
-
 
    it('can get a injection container instance', () => {
       const actual = InjectionContainer.get(
@@ -166,7 +166,7 @@ describe('rs-x core module', () => {
          RsXCoreInjectionTokens.IIndexValueAccessorList
       );
 
-      expect(actual.length).toEqual(7);
+      expect(actual.length).toEqual(8);
 
       expect(actual[0]).toBeInstanceOf(PropertyValueAccessor);
       expect(actual[1]).toBeInstanceOf(MethodAccessor);
@@ -175,6 +175,7 @@ describe('rs-x core module', () => {
       expect(actual[4]).toBeInstanceOf(SetKeyAccessor);
       expect(actual[5]).toBeInstanceOf(ObservableAccessor);
       expect(actual[6]).toBeInstanceOf(PromiseAccessor);
+      expect(actual[7]).toBeInstanceOf(DatePropertyAccessor);
    });
 
    it('IIndexValueAccessorList instance is a singelton', () => {
@@ -191,6 +192,7 @@ describe('rs-x core module', () => {
       expect(a1[4]).toBe(a2[4]);
       expect(a1[5]).toBe(a2[5]);
       expect(a1[6]).toBe(a2[6]);
+      expect(a1[7]).toBe(a2[7]);
    });
 
    it('can get instance of IDeepClone', () => {

@@ -63,26 +63,29 @@ describe('IMapItemObserverManager tests', () => {
       expect(mapProxyFactory.getFromData({ map })).toBeUndefined();
    });
 
-   it('will release observers when disposing observed index', async () => {
+   it('will release observers when all references have nee disposed', async () => {
       const map = new Map([
          ['a', 1],
          ['b', 2],
       ]);
-      const observer = mapItemObserverManager
-         .create(map)
-         .instance.create({ index: 'a' }).instance;
-      mapItemObserverManager.create(map).instance.create({ index: 'b' });
 
-      const mapKeyObserverManager = mapItemObserverManager.getFromId(map);
+      const mapKeyObserverManager = mapItemObserverManager.create(map)
 
-      expect(mapKeyObserverManager).toBeDefined();
-      expect(mapKeyObserverManager.getFromId('a')).toBeDefined();
+      const observer1 = mapKeyObserverManager.instance.create({ index: 'a' }).instance;
+      const observer2 = mapKeyObserverManager.instance.create({ index: 'a' }).instance
 
-      observer.dispose();
+      observer1.dispose();
 
       expect(mapItemObserverManager.getFromId(map)).toBeDefined();
-
       expect(mapProxyFactory.getFromData({ map })).toBeDefined();
+
+      expect(mapItemObserverManager.getFromId(map)).toBeDefined();
+      expect(mapProxyFactory.getFromData({ map })).toBeDefined();
+
+      observer2.dispose();
+
+      expect(mapItemObserverManager.getFromId(map)).toBeUndefined();
+      expect(mapProxyFactory.getFromData({ map })).toBeUndefined();
    });
 
    describe('change event', () => {
