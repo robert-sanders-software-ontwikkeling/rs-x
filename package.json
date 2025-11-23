@@ -10,7 +10,7 @@
       "publish:state-manager": "cd rs-x-state-manager && pnpm publish --access public",
       "publish:expression-parser": "cd expression-parser && pnpm publish --access public",
       "release": "pnpm changeset && pnpm changeset version && pnpm build:all && pnpm changeset publish",
-      "test": "npx  jest --runInBand --no-cache --config jest.config.ts",
+      "test": "set TZ=UTC && npx  jest --runInBand --no-cache --config jest.config.ts",
       "test-coverage": "npx jest --coverage",
       "lint": "eslint . --ext .ts",
       "lint:fix": "npm run lint -- --fix"
