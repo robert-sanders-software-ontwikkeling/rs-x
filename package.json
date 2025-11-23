@@ -15,7 +15,9 @@
       "test": "cross-env TZ=UTC pnpm jest --runInBand --no-cache --config jest.config.ts",
       "test-coverage": "cross-env TZ=UTC pnpm jest --coverage",
       "lint": "eslint . --ext .ts",
-      "lint:fix": "eslint . --ext .ts --fix"
+      "lint:fix": "eslint . --ext .ts --fix",
+      "readme": "pnpm ts-node demo/update-readmes.ts"
+
    },
    "dependencies": {
       "astring": "^1.9.0",

@@ -341,7 +341,32 @@ Latest value:
 ```
 **Output:**
 ```console
-``
+Running demo: demo/src/rs-x-state-manager/register-date.ts
+
+******************************************
+* Watching date
+******************************************
+
+Initial value:
+date: Fri, 05 Mar 2021 00:00:00 GMT
+Changed value:
+date: Sun, 05 Mar 2023 00:00:00 GMT
+Set value:
+date: Thu, 06 Jun 2024 00:00:00 GMT
+Latest value:
+Thu, 06 Jun 2024 00:00:00 GMT
+
+******************************************
+* Watching year
+******************************************
+
+Initial value:
+2021
+Changed value:
+2023
+Latest value:
+2023
+```
 
 ### Array
 **Example**

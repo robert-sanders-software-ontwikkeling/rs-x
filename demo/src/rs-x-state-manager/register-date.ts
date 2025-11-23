@@ -13,8 +13,6 @@ const stateManager: IStateManager = InjectionContainer.get(
     RsXStateManagerInjectionTokens.IStateManager
 );
 
-
-
 function watchDate() {
     console.log('\n******************************************');
     console.log('* Watching date');
@@ -38,8 +36,6 @@ function watchDate() {
 
         console.log('Latest value:');
         console.log(stateManager.getState<Date>(stateContext, 'date').toUTCString());
-
-
     } finally {
         changeSubscription.unsubscribe();
         stateManager.unregister(stateContext, 'date', truePredicate);
