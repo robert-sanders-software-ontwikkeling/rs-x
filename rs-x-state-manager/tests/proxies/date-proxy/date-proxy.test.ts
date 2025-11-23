@@ -154,7 +154,7 @@ describe('DateProxy tests', () => {
 
          const timestamp = proxy.setUTCDate(4);
 
-         expect(new Date(timestamp)).toEqual(new Date(2021, 0, 5))
+         expect(new Date(timestamp)).toEqual(new Date(Date.UTC(2021, 0, 5)))
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(0);
          expect(proxy.getDate()).toEqual(5);
@@ -192,7 +192,7 @@ describe('DateProxy tests', () => {
 
          const timestamp = proxy.setUTCHours(3);
 
-         expect(new Date(timestamp)).toEqual(new Date(2021, 0, 1, 4))
+         expect(new Date(timestamp)).toEqual(new Date(Date.UTC(2021, 0, 1, 4)))
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(0);
          expect(proxy.getDate()).toEqual(1);
@@ -231,7 +231,7 @@ describe('DateProxy tests', () => {
 
          const timestamp = proxy.setUTCMinutes(3);
 
-         expect(new Date(timestamp)).toEqual(new Date(2021, 0, 2, 0, 3))
+         expect(new Date(timestamp)).toEqual(new Date(Date.UTC(2021, 0, 2, 0, 3)))
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(0);
          expect(proxy.getDate()).toEqual(2);
@@ -250,7 +250,7 @@ describe('DateProxy tests', () => {
 
          const timestamp = proxy.setSeconds(3);
 
-         expect(new Date(timestamp)).toEqual(new Date(2021, 0, 2, 0, 0, 3))
+         expect(new Date(timestamp)).toEqual(new Date(Date.UTC(2021, 0, 2, 0, 0, 3)))
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(0);
          expect(proxy.getDate()).toEqual(2);
@@ -269,7 +269,7 @@ describe('DateProxy tests', () => {
 
          const timestamp = proxy.setUTCSeconds(3);
 
-         expect(new Date(timestamp)).toEqual(new Date(2021, 0, 2, 0, 0, 3))
+         expect(new Date(timestamp)).toEqual(new Date(Date.UTC(2021, 0, 2, 0, 0, 3)))
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(0);
          expect(proxy.getDate()).toEqual(2);
@@ -288,7 +288,7 @@ describe('DateProxy tests', () => {
 
          const timestamp = proxy.setMilliseconds(3);
 
-         expect(new Date(timestamp)).toEqual(new Date(2021, 0, 2, 0, 0, 0, 3))
+         expect(new Date(timestamp)).toEqual(new Date(Date.UTC(2021, 0, 2, 0, 0, 0, 3)))
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(0);
          expect(proxy.getDate()).toEqual(2);
@@ -307,7 +307,7 @@ describe('DateProxy tests', () => {
 
          const timestamp = proxy.setUTCMilliseconds(3);
 
-         expect(new Date(timestamp)).toEqual(new Date(2021, 0, 2, 0, 0, 0, 3))
+         expect(new Date(timestamp)).toEqual(new Date(Date.UTC(2021, 0, 2, 0, 0, 0, 3)))
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(0);
          expect(proxy.getDate()).toEqual(2);
@@ -326,7 +326,7 @@ describe('DateProxy tests', () => {
 
          const timestamp = proxy.setTime(1612137600000);
 
-         expect(new Date(timestamp)).toEqual(new Date(2021, 1, 1, 1))
+         expect(new Date(timestamp)).toEqual(new Date(Date.UTC(2021, 1, 1, 1)))
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(1);
          expect(proxy.getDate()).toEqual(1);
