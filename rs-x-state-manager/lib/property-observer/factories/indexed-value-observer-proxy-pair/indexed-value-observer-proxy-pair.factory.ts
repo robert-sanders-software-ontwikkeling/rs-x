@@ -21,7 +21,7 @@ import {
 } from './index-change-subscription-manager';
 
 export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
-   implements IIndexObserverProxyPairFactory
+   implements IIndexObserverProxyPairFactory<TContext,TIndex>
 {
    private readonly _indexChangeSubscriptionManager: IndexChangeSubscriptionManager<TIndex>;
 
@@ -29,7 +29,7 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
       private readonly _objectObserveryManager: IObjectObserverProxyPairManager,
       indexSetObserverManager: IIndexSetObserverManager<TIndex>,
       errorLog: IErrorLog,
-      private readonly _indexValueAccessor: IIndexValueAccessor,
+      protected readonly _indexValueAccessor: IIndexValueAccessor,
       private readonly mustHandleChange?: (change: IPropertyChange) => boolean
    ) {
       this._indexChangeSubscriptionManager =
@@ -52,7 +52,7 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
       owner: IDisposableOwner,
       object: TContext,
       propertyInfo: IPropertyInfo
-   ): IObserverProxyPair {
+   ): IObserverProxyPair<TContext, TIndex> {
       const index = propertyInfo.key as TIndex;
       const valueAtIndex = this._indexValueAccessor.getValue(object, index);
       const mustProxify = this.getMustProxifyHandler(
@@ -90,9 +90,9 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
       );
       return {
          observer: groupObserver,
-         proxy: indexValueObserverProxyPair?.proxy,
+         proxy: indexValueObserverProxyPair?.proxy as TContext,
          emitChangeWhenSet,
-         proxyTarget: valueAtIndex,
+         proxyTarget: valueAtIndex as TContext,
          id: undefined,
       };
    }

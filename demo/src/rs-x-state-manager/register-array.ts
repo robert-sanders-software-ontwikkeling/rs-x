@@ -32,7 +32,6 @@ try {
     // Otherwise, only assigning a new value to stateContext.array would emit a change event.
     // This will emit a change event with the initial (current) value.
     console.log('Initial value:');
-
     stateManager.register(stateContext, 'array', truePredicate);
 
     console.log('Changed value:');

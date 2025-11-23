@@ -262,17 +262,16 @@ The **first factory** that returns `true` is used.
 
 You can override this factory list by providing your own custom provider service.
 
-### Built-in supported types
-
-| Type        | Index          | Implementation         | example                          |
-| ----------- | -------------- | ---------------------- | -------------------------------- |
-| Object      | field/property | Patching               | [example](#object-propertyfield) |
-| Array       | number         | Proxy                  | [example](#array)                |
-| Map         | any            | Proxy                  | [example](#map)                  |
-| Set         | Not indexable  | Proxy                  | [example](#set)                  |  |
-| Promise     | Not indexable  | Attach `.then` handler | [example](#promise)              |
-| Observable  | Not indexable  | Subscribe              | [example](#observable)           |
-| Custom type | user defined   | user defined           | [example](#customtype)           |
+| Type        | Index                                                                                                                                                                        | Implementation         | example                          |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | -------------------------------- |
+| Object      | any field/property                                                                                                                                                           | Patching               | [example](#object-propertyfield) |
+| Date        | - year, utcYear<br>- month, utcMonth<br>- date, utcDate<br>- hours, utcHours<br>- minutes, utcMinutes<br>- seconds, utcSeconds<br>- milliseconds, utcMilliseconds<br>- times | Proxy                  | [example](#date)                 |
+| Array       | number                                                                                                                                                                       | Proxy                  | [example](#array)                |
+| Map         | any                                                                                                                                                                          | Proxy                  | [example](#map)                  |
+| Set         | Not indexable                                                                                                                                                                | Proxy                  | [example](#set)                  |
+| Promise     | Not indexable                                                                                                                                                                | Attach `.then` handler | [example](#promise)              |
+| Observable  | Not indexable                                                                                                                                                                | Subscribe              | [example](#observable)           |
+| Custom type | user defined                                                                                                                                                                 | user defined           | [example](#customtype)           |
 
 State consists of **context** and **index**.  
 The manager checks each observer factory to determine support based on these two values.
@@ -333,6 +332,40 @@ Latest value:
         }
     }
 }
+```
+
+### Date
+**Example**
+```ts
+{% include_relative ../demo/src/rs-x-state-manager/register-date.ts %}
+```
+**Output:**
+```console
+Running demo: demo/src/rs-x-state-manager/register-date.ts
+
+******************************************
+* Watching date
+******************************************
+
+Initial value:
+date: Fri, 05 Mar 2021 00:00:00 GMT
+Changed value:
+date: Sun, 05 Mar 2023 00:00:00 GMT
+Set value:
+date: Thu, 06 Jun 2024 00:00:00 GMT
+Latest value:
+Thu, 06 Jun 2024 00:00:00 GMT
+
+******************************************
+* Watching year
+******************************************
+
+Initial value:
+2021
+Changed value:
+2023
+Latest value:
+2023
 ```
 
 ### Array

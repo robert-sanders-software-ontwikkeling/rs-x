@@ -11,6 +11,7 @@ import { IEqualityService } from './equality-service/equality-service.interface'
 import { ErrorLog } from './error-log/error-log';
 import { IErrorLog } from './error-log/error-log.interface';
 import { ArrayIndexAccessor } from './index-value-accessor/array-index-accessor';
+import { DatePropertyAccessor } from './index-value-accessor/date-property-accessor';
 import { IndexValueAccessor } from './index-value-accessor/index-value-accessor';
 import { IIndexValueAccessor } from './index-value-accessor/index-value-accessor.interface';
 import { IndexValueAccessorProvider } from './index-value-accessor/index-value-accessor.provider';
@@ -40,7 +41,8 @@ export const RsXCoreModule = new ContainerModule((options) => {
          {target: MapKeyAccessor,  token: RsXCoreInjectionTokens.IMapKeyAccessor},
          {target: SetKeyAccessor,  token: RsXCoreInjectionTokens.ISetKeyAccessor},
          {target: ObservableAccessor,  token: RsXCoreInjectionTokens.IObservableAccessor},
-         {target: PromiseAccessor,  token: RsXCoreInjectionTokens.IPromiseAccessor}
+         {target: PromiseAccessor,  token: RsXCoreInjectionTokens.IPromiseAccessor},
+         {target: DatePropertyAccessor,  token: RsXCoreInjectionTokens.IDatePropertyAccessor}
       ]
    );
    

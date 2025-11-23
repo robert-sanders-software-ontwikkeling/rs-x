@@ -49,6 +49,7 @@ class MapItemObserver extends AbstractObserver<Map<unknown, unknown>> {
    }
 
    protected override disposeInternal(): void {
+      this._mapObserver.dispose();
       this._mapChangeSubscription.unsubscribe();
    }
 
@@ -113,10 +114,7 @@ class MapKeyObserverManager
       return new MapItemObserver(
          {
             canDispose: () => this.getReferenceCount(id) === 1,
-            release: () => {
-               mapObserver.dispose();
-               this.release(id);
-            },
+            release: () => this.release(id)
          },
          this._map,
          data.index,

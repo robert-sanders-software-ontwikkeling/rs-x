@@ -5,3 +5,4 @@ export * from './property-descriptor-type.enum';
 export * from './property-descriptor.interface';
 export * from './set';
 export * from './type';
+export * from './utc-date';

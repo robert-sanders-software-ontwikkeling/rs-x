@@ -403,17 +403,16 @@ The **first factory** that returns `true` is used.
 
 You can override this factory list by providing your own custom provider service.
 
-### Built-in supported types
-
-| Type        | Index          | Implementation         | example                          |
-| ----------- | -------------- | ---------------------- | -------------------------------- |
-| Object      | field/property | Patching               | [example](#object-propertyfield) |
-| Array       | number         | Proxy                  | [example](#array)                |
-| Map         | any            | Proxy                  | [example](#map)                  |
-| Set         | Not indexable  | Proxy                  | [example](#set)                  |  |
-| Promise     | Not indexable  | Attach `.then` handler | [example](#promise)              |
-| Observable  | Not indexable  | Subscribe              | [example](#observable)           |
-| Custom type | user defined   | user defined           | [example](#customtype)           |
+| Type        | Index                                                                                                                                                                        | Implementation         | example                          |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | -------------------------------- |
+| Object      | any field/property                                                                                                                                                           | Patching               | [example](#object-propertyfield) |
+| Date        | - year, utcYear<br>- month, utcMonth<br>- date, utcDate<br>- hours, utcHours<br>- minutes, utcMinutes<br>- seconds, utcSeconds<br>- milliseconds, utcMilliseconds<br>- times | Proxy                  | [example](#date)                 |
+| Array       | number                                                                                                                                                                       | Proxy                  | [example](#array)                |
+| Map         | any                                                                                                                                                                          | Proxy                  | [example](#map)                  |
+| Set         | Not indexable                                                                                                                                                                | Proxy                  | [example](#set)                  |
+| Promise     | Not indexable                                                                                                                                                                | Attach `.then` handler | [example](#promise)              |
+| Observable  | Not indexable                                                                                                                                                                | Subscribe              | [example](#observable)           |
+| Custom type | user defined                                                                                                                                                                 | user defined           | [example](#customtype)           |
 
 State consists of **context** and **index**.  
 The manager checks each observer factory to determine support based on these two values.
@@ -552,10 +551,115 @@ Latest value:
 }
 ```
 
+### Date
+**Example**
+```ts
+import { InjectionContainer, truePredicate, utCDate } from '@rs-x/core';
+import {
+    IProxyRegistry,
+    IStateChange,
+    IStateManager,
+    RsXStateManagerInjectionTokens,
+    RsXStateManagerModule
+} from '@rs-x/state-manager';
+
+// Load the state manager module into the injection container
+InjectionContainer.load(RsXStateManagerModule);
+const stateManager: IStateManager = InjectionContainer.get(
+    RsXStateManagerInjectionTokens.IStateManager
+);
+
+function watchDate() {
+    console.log('\n******************************************');
+    console.log('* Watching date');
+    console.log('******************************************\n');
+
+    const stateContext = {
+        date: utCDate(2021, 2, 5)
+    };
+    const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+        console.log(`${change.key}: ${(change.newValue as Date).toUTCString()}`);
+    });
+    try {
+        console.log('Initial value:');
+        stateManager.register(stateContext, 'date', truePredicate);
+
+        console.log('Changed value:');
+        stateContext.date.setFullYear(2023);
+
+        console.log('Set value:');
+        stateContext.date = new Date(2024, 5, 6);
+
+        console.log('Latest value:');
+        console.log(stateManager.getState<Date>(stateContext, 'date').toUTCString());
+    } finally {
+        changeSubscription.unsubscribe();
+        stateManager.unregister(stateContext, 'date', truePredicate);
+    }
+}
+
+function watchDateProperty() {
+    console.log('\n******************************************');
+    console.log('* Watching year');
+    console.log('******************************************\n');
+    const date = utCDate(2021, 2, 5);
+    const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+        console.log(change.newValue);
+    });
+    try {
+        console.log('Initial value:');
+        stateManager.register(date, 'year');
+
+        const proxyRegister: IProxyRegistry = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
+        const dateProxy = proxyRegister.getProxy<Date>(date);
+        console.log('Changed value:');
+        dateProxy.setFullYear(2023);
+
+        console.log('Latest value:');
+        console.log(stateManager.getState(date, 'year'));
+
+    } finally {
+        changeSubscription.unsubscribe();
+        stateManager.unregister(date, 'year');
+    }
+}
+
+watchDate();
+watchDateProperty();
+```
+**Output:**
+```console
+Running demo: demo/src/rs-x-state-manager/register-date.ts
+
+******************************************
+* Watching date
+******************************************
+
+Initial value:
+date: Fri, 05 Mar 2021 00:00:00 GMT
+Changed value:
+date: Sun, 05 Mar 2023 00:00:00 GMT
+Set value:
+date: Thu, 06 Jun 2024 00:00:00 GMT
+Latest value:
+Thu, 06 Jun 2024 00:00:00 GMT
+
+******************************************
+* Watching year
+******************************************
+
+Initial value:
+2021
+Changed value:
+2023
+Latest value:
+2023
+```
+
 ### Array
 **Example**
 ```ts
-import { InjectionContainer, truePredicate, WaitForEvent } from '@rs-x/core';
+import { InjectionContainer, truePredicate } from '@rs-x/core';
 import {
     IStateChange,
     IStateManager,
@@ -589,7 +693,6 @@ try {
     // Otherwise, only assigning a new value to stateContext.array would emit a change event.
     // This will emit a change event with the initial (current) value.
     console.log('Initial value:');
-
     stateManager.register(stateContext, 'array', truePredicate);
 
     console.log('Changed value:');
@@ -646,7 +749,7 @@ Latest value:
 ### Map
 **Example**
 ```ts
-import { InjectionContainer, truePredicate, WaitForEvent } from '@rs-x/core';
+import { InjectionContainer, truePredicate } from '@rs-x/core';
 import {
     IStateChange,
     IStateManager,
@@ -755,7 +858,7 @@ Latest value:
 ### Set
 **Example**
 ```ts
-import { InjectionContainer, truePredicate, WaitForEvent } from '@rs-x/core';
+import { InjectionContainer, truePredicate } from '@rs-x/core';
 import {
     IProxyRegistry,
     IStateChange,
@@ -849,7 +952,7 @@ Latest value:
 ### Promise
 **Example**
 ```ts
-import { InjectionContainer, truePredicate, WaitForEvent } from '@rs-x/core';
+import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
     IStateChange,
     IStateManager,
@@ -909,7 +1012,7 @@ Latest value: 30
 ### Observable
 **Example**
 ```ts
-import { InjectionContainer, truePredicate, WaitForEvent } from '@rs-x/core';
+import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
     IStateChange,
     IStateManager,
@@ -981,7 +1084,7 @@ The following example demonstrates adding support for a custom `TextDocument` cl
 
 **Example**
 ```ts
-import { IErrorLog, IIndexValueAccessor, IndexAccessor, Inject, Injectable, InjectionContainer, IPropertyChange, RsXCoreInjectionTokens, SingletonFactory, truePredicate, WaitForEvent } from '@rs-x/core';
+import { IErrorLog, IIndexValueAccessor, IndexAccessor, Inject, Injectable, InjectionContainer, IPropertyChange, RsXCoreInjectionTokens, SingletonFactory, truePredicate } from '@rs-x/core';
 import {
     AbstractObserver,
     IDisposableOwner,
@@ -1351,7 +1454,7 @@ const stateManager: IStateManager = InjectionContainer.get(
 );
 
 function testMonitorTextDocument(): void {
-    const bookSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+    const bookSubscription = stateManager.changed.subscribe(() => {
         console.log(stateContext.myBook.toString());
 
     });

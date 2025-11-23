@@ -39,6 +39,7 @@ export class NonIterableObjectPropertyObserverProxyPairFactory extends IndexObse
       return (
          !(
             Array.isArray(object) ||
+            object instanceof Date ||
             object instanceof Map ||
             object instanceof Set
          ) && Type.isString(propertyInfo.key)

@@ -55,9 +55,11 @@ export abstract class ObjectObserverProxyPairFactory<
       owner: IDisposableOwner,
       data: TData
    ): IDisposableOwner;
+
    protected abstract createRootObserver(
       data: TData
    ): IObserverProxyPair<TTarget, TId>;
+   
    protected onObserverGroupCreate(
       _target: TTarget,
       _observerGroup: ObserverGroup

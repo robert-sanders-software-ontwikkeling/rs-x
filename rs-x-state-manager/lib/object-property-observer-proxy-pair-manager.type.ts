@@ -10,7 +10,7 @@ export interface IObserverProxyPair<TProxy = unknown, TId = unknown> {
    id: TId;
 }
 
-export type MustProxify = (index: unknown, target: unknown) => boolean;
+export type MustProxify = (index: unknown, target?: unknown) => boolean;
 
 export interface IPropertyIdInfo {
    key: unknown;

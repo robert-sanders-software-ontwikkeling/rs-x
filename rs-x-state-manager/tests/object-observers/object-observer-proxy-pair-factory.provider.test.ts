@@ -23,13 +23,13 @@ describe('ObjectObserverProxyPairFactoryProvider tests', () => {
       const expected = InjectionContainer.getAll(
          RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
       );
-
-      expect(objectObserverFactoryProvider.factories.length).toEqual(6)
+      expect(expected.length).toEqual(7);
       expect(objectObserverFactoryProvider.factories[0]).toBe(expected[0]);
       expect(objectObserverFactoryProvider.factories[1]).toBe(expected[1]);
       expect(objectObserverFactoryProvider.factories[2]).toBe(expected[2]);
       expect(objectObserverFactoryProvider.factories[3]).toBe(expected[3]);
       expect(objectObserverFactoryProvider.factories[4]).toBe(expected[4]);
       expect(objectObserverFactoryProvider.factories[5]).toBe(expected[5]);
+      expect(objectObserverFactoryProvider.factories[6]).toBe(expected[6]);
    });
 });

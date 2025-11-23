@@ -8,6 +8,7 @@ export const RsXCoreInjectionTokens = {
    IArrayIndexAccessor: Symbol('IArrayIndexAccessor'),
    IPropertyValueAccessor: Symbol('IPropertyValueAccessor'),
    IMethodAccessor: Symbol('IPropertyValueAccessor'),
+   IDatePropertyAccessor: Symbol('IDatePropertyAccessor'),
    IDeepClone: Symbol('IDeepClone'),
    IEqualityService: Symbol('IEqualityService'),
    IObservableAccessor: Symbol('IObservableAccessor'),

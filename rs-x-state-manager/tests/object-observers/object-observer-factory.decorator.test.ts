@@ -13,11 +13,12 @@ import { PromiseObserverProxyPairFactory } from '../../lib/object-observer/facto
 import { ObservableObserverProxyPairFactory } from '../../lib/object-observer/factories/observable-observer-proxy-pair.factory';
 import { MapObserverProxyPairFactory } from '../../lib/object-observer/factories/map-observer-proxy-pair.factory';
 import { SetObserverProxyPairFactory } from '../../lib/object-observer/factories/set-observer-proxy-pair.factory';
+import { DateObserverProxyPairFactory } from '../../lib/object-observer/factories/date-observer-proxy-pair.factory';
 
 describe('ObjectObserverFactory test', () => {
 
     @ObjectObserverFactory()
-    class CustomObjectObserverFactory1  implements IObjectObserverProxyPairFactory{
+    class CustomObjectObserverFactory1 implements IObjectObserverProxyPairFactory {
         public create(_owner: IDisposableOwner, _proxyTarget: IProxyTarget<unknown>): IObserverProxyPair<unknown, unknown> {
             throw new Error('Method not implemented.');
         }
@@ -29,7 +30,7 @@ describe('ObjectObserverFactory test', () => {
     }
 
     @ObjectObserverFactory()
-    class CustomObjectObserverFactory2  implements IObjectObserverProxyPairFactory{
+    class CustomObjectObserverFactory2 implements IObjectObserverProxyPairFactory {
         public create(_owner: IDisposableOwner, _proxyTarget: IProxyTarget<unknown>): IObserverProxyPair<unknown, unknown> {
             throw new Error('Method not implemented.');
         }
@@ -43,21 +44,23 @@ describe('ObjectObserverFactory test', () => {
         await InjectionContainer.load(RsXStateManagerModule);
     })
 
-    afterAll(async() => {
-       await InjectionContainer.unbindAll()
+    afterAll(async () => {
+        await InjectionContainer.unbindAll()
     });
 
-    it('can bind new IObjectObserverProxyPairFactory' ,() => {
+    it('can bind new IObjectObserverProxyPairFactory', () => {
         const actual = InjectionContainer.getAll(RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList);
 
-        expect(actual.length).toEqual(8);
+        expect(actual.length).toEqual(9);
         expect(actual[0]).toBeInstanceOf(CustomObjectObserverFactory1);
         expect(actual[1]).toBeInstanceOf(CustomObjectObserverFactory2);
         expect(actual[2]).toBeInstanceOf(PlainObjectObserverProxyPairFactory);
-        expect(actual[3]).toBeInstanceOf(ArrayObserverProxyPairFactory);
-        expect(actual[4]).toBeInstanceOf(PromiseObserverProxyPairFactory);
-        expect(actual[5]).toBeInstanceOf(ObservableObserverProxyPairFactory);
-        expect(actual[6]).toBeInstanceOf(MapObserverProxyPairFactory);
-        expect(actual[7]).toBeInstanceOf(SetObserverProxyPairFactory);
+        expect(actual[3]).toBeInstanceOf(DateObserverProxyPairFactory);
+        expect(actual[4]).toBeInstanceOf(ArrayObserverProxyPairFactory);
+        expect(actual[5]).toBeInstanceOf(PromiseObserverProxyPairFactory);
+        expect(actual[6]).toBeInstanceOf(ObservableObserverProxyPairFactory);
+        expect(actual[7]).toBeInstanceOf(MapObserverProxyPairFactory);
+        expect(actual[8]).toBeInstanceOf(SetObserverProxyPairFactory);
+
     });
 })
