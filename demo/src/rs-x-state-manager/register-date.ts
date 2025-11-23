@@ -1,4 +1,4 @@
-import { InjectionContainer, truePredicate } from '@rs-x/core';
+import { InjectionContainer, truePredicate, utCDate } from '@rs-x/core';
 import {
     IProxyRegistry,
     IStateChange,
@@ -21,7 +21,7 @@ function watchDate() {
     console.log('******************************************\n');
 
     const stateContext = {
-        date: new Date(2021, 2, 5)
+        date: utCDate(2021, 2, 5)
     };
     const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
         console.log(`${change.key}: ${(change.newValue as Date).toUTCString()}`);
@@ -50,7 +50,7 @@ function watchDateProperty() {
     console.log('\n******************************************');
     console.log('* Watching year');
     console.log('******************************************\n');
-    const date = new Date(2021, 2, 5);
+    const date = utCDate(2021, 2, 5);
     const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
         console.log(change.newValue);
     });

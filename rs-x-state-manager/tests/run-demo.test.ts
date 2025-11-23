@@ -6,6 +6,10 @@ describe('Statemanager demos', () => {
         jest.resetModules();
     });
 
+    it('Node timezone is UTC', () => {
+        expect(process.env.TZ).toEqual('UTC');
+    });
+
     it('register-non-recursive-state.ts', async () => {
         const expected = dedent`
             Running demo: demo/src/rs-x-state-manager/register-non-recursive-state.ts
@@ -122,7 +126,7 @@ describe('Statemanager demos', () => {
             }
         `;
 
-         await expect(() => runDemo('rs-x-state-manager/register-property.ts')).toOutputAsync(expected);
+        await expect(() => runDemo('rs-x-state-manager/register-property.ts')).toOutputAsync(expected);
     });
 
     it('register-date.ts', async () => {
@@ -134,13 +138,13 @@ describe('Statemanager demos', () => {
             ******************************************
 
             Initial value:
-            date: Thu, 04 Mar 2021 23:00:00 GMT
+            date: Fri, 05 Mar 2021 00:00:00 GMT
             Changed value:
-            date: Sat, 04 Mar 2023 23:00:00 GMT
+            date: Sun, 05 Mar 2023 00:00:00 GMT
             Set value:
-            date: Wed, 05 Jun 2024 22:00:00 GMT
+            date: Thu, 06 Jun 2024 00:00:00 GMT
             Latest value:
-            Wed, 05 Jun 2024 22:00:00 GMT
+            Thu, 06 Jun 2024 00:00:00 GMT
 
             ******************************************
             * Watching year
@@ -154,7 +158,7 @@ describe('Statemanager demos', () => {
             2023
         `;
 
-         await expect(() => runDemo('rs-x-state-manager/register-date.ts')).toOutputAsync(expected);
+        await expect(() => runDemo('rs-x-state-manager/register-date.ts')).toOutputAsync(expected);
     });
 
     it('register-promise.ts', async () => {

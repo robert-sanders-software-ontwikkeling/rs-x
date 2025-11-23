@@ -1,8 +1,12 @@
-import { IPropertyChange, truePredicate, WaitForEvent } from '@rs-x/core';
+import { IPropertyChange, truePredicate, utCDate, WaitForEvent } from '@rs-x/core';
 import { DateProxyFactory } from '../../../lib/proxies/date-proxy/date-proxy.factory';
 import { ProxyRegistryMock } from '../../../lib/testing/proxies/proxy-registry.mock';
 
 describe('DateProxy tests', () => {
+   it('Node timezone is UTC', () => {
+      expect(process.env.TZ).toEqual('UTC');
+   });
+
    it('create will register the data proxy to the proxy registry', () => {
       const date = new Date()
       const proxyRegistry = new ProxyRegistryMock();
@@ -54,13 +58,13 @@ describe('DateProxy tests', () => {
       it('setFullYear', () => {
          const { proxy } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 0, 2)
+               date: utCDate(2021, 0, 2)
             }
          ).instance;
 
          const timestamp = proxy.setFullYear(2022);
 
-         expect(new Date(timestamp)).toEqual(new Date(2022, 0, 2))
+         expect(new Date(timestamp)).toEqual(utCDate(2022, 0, 2));
          expect(proxy.getFullYear()).toEqual(2022);
          expect(proxy.getMonth()).toEqual(0);
          expect(proxy.getDate()).toEqual(2);
@@ -73,13 +77,13 @@ describe('DateProxy tests', () => {
       it('setUTCFullYear', () => {
          const { proxy } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 0, 2)
+               date: utCDate(2021, 0, 2)
             }
          ).instance;
 
          const timestamp = proxy.setUTCFullYear(2022);
 
-         expect(new Date(timestamp)).toEqual(new Date(2022, 0, 2))
+         expect(new Date(timestamp)).toEqual(utCDate(2022, 0, 2));
          expect(proxy.getFullYear()).toEqual(2022);
          expect(proxy.getMonth()).toEqual(0);
          expect(proxy.getDate()).toEqual(2);
@@ -92,13 +96,13 @@ describe('DateProxy tests', () => {
       it('setMonth', () => {
          const { proxy } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 0, 2)
+               date: utCDate(2021, 0, 2)
             }
          ).instance;
 
          const timestamp = proxy.setMonth(1);
 
-         expect(new Date(timestamp)).toEqual(new Date(2021, 1, 2))
+         expect(new Date(timestamp)).toEqual(utCDate(2021, 1, 2));
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(1);
          expect(proxy.getDate()).toEqual(2);
@@ -111,12 +115,12 @@ describe('DateProxy tests', () => {
       it('setUTCMonth', () => {
          const { proxy } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 0, 2)
+               date: utCDate(2021, 0, 2)
             }
          ).instance;
          const timestamp = proxy.setUTCMonth(1);
 
-         expect(new Date(timestamp)).toEqual(new Date(2021, 1, 2))
+         expect(new Date(timestamp)).toEqual(utCDate(2021, 1, 2));
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(1);
          expect(proxy.getDate()).toEqual(2);
@@ -148,16 +152,16 @@ describe('DateProxy tests', () => {
       it('setUTCDate', () => {
          const { proxy } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 0, 2)
+               date: utCDate(2021, 0, 2)
             }
          ).instance;
 
          const timestamp = proxy.setUTCDate(4);
 
-         expect(new Date(timestamp)).toEqual(new Date(Date.UTC(2021, 0, 5)))
+         expect(new Date(timestamp)).toEqual(utCDate(2021, 0, 4));
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(0);
-         expect(proxy.getDate()).toEqual(5);
+         expect(proxy.getDate()).toEqual(4);
          expect(proxy.getHours()).toEqual(0);
          expect(proxy.getMinutes()).toEqual(0);
          expect(proxy.getSeconds()).toEqual(0);
@@ -186,17 +190,17 @@ describe('DateProxy tests', () => {
       it('seUTCtHours', () => {
          const { proxy } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 0, 2)
+               date: utCDate(2021, 0, 2)
             }
          ).instance;
 
          const timestamp = proxy.setUTCHours(3);
 
-         expect(new Date(timestamp)).toEqual(new Date(Date.UTC(2021, 0, 1, 4)))
+         expect(new Date(timestamp)).toEqual(utCDate(2021, 0, 2, 3));
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(0);
-         expect(proxy.getDate()).toEqual(1);
-         expect(proxy.getHours()).toEqual(4);
+         expect(proxy.getDate()).toEqual(2);
+         expect(proxy.getHours()).toEqual(3);
          expect(proxy.getMinutes()).toEqual(0);
          expect(proxy.getSeconds()).toEqual(0);
          expect(proxy.getMilliseconds()).toEqual(0);
@@ -225,13 +229,13 @@ describe('DateProxy tests', () => {
       it('setUTCMinutes', () => {
          const { proxy } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 0, 2)
+               date: utCDate(2021, 0, 2)
             }
          ).instance;
 
          const timestamp = proxy.setUTCMinutes(3);
 
-         expect(new Date(timestamp)).toEqual(new Date(Date.UTC(2021, 0, 2, 0, 3)))
+         expect(new Date(timestamp)).toEqual(utCDate(2021, 0, 2, 0, 3));
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(0);
          expect(proxy.getDate()).toEqual(2);
@@ -250,7 +254,7 @@ describe('DateProxy tests', () => {
 
          const timestamp = proxy.setSeconds(3);
 
-         expect(new Date(timestamp)).toEqual(new Date(Date.UTC(2021, 0, 2, 0, 0, 3)))
+         expect(new Date(timestamp)).toEqual(utCDate(2021, 0, 2, 0, 0, 3));
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(0);
          expect(proxy.getDate()).toEqual(2);
@@ -263,13 +267,13 @@ describe('DateProxy tests', () => {
       it('setUTCSeconds', () => {
          const { proxy } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 0, 2)
+               date: utCDate(2021, 0, 2)
             }
          ).instance;
 
          const timestamp = proxy.setUTCSeconds(3);
 
-         expect(new Date(timestamp)).toEqual(new Date(Date.UTC(2021, 0, 2, 0, 0, 3)))
+         expect(new Date(timestamp)).toEqual(utCDate(2021, 0, 2, 0, 0, 3));
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(0);
          expect(proxy.getDate()).toEqual(2);
@@ -282,13 +286,13 @@ describe('DateProxy tests', () => {
       it('setMilliseconds', () => {
          const { proxy } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 0, 2)
+               date: utCDate(2021, 0, 2)
             }
          ).instance;
 
          const timestamp = proxy.setMilliseconds(3);
 
-         expect(new Date(timestamp)).toEqual(new Date(Date.UTC(2021, 0, 2, 0, 0, 0, 3)))
+         expect(new Date(timestamp)).toEqual(utCDate(2021, 0, 2, 0, 0, 0, 3));
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(0);
          expect(proxy.getDate()).toEqual(2);
@@ -301,13 +305,13 @@ describe('DateProxy tests', () => {
       it('setUTCMilliseconds', () => {
          const { proxy } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 0, 2)
+               date: utCDate(2021, 0, 2)
             }
          ).instance;
 
          const timestamp = proxy.setUTCMilliseconds(3);
 
-         expect(new Date(timestamp)).toEqual(new Date(Date.UTC(2021, 0, 2, 0, 0, 0, 3)))
+         expect(new Date(timestamp)).toEqual(utCDate(2021, 0, 2, 0, 0, 0, 3));
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(0);
          expect(proxy.getDate()).toEqual(2);
@@ -320,17 +324,17 @@ describe('DateProxy tests', () => {
       it('setTime', () => {
          const { proxy } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2022, 1, 2)
+               date: utCDate(2022, 1, 2)
             }
          ).instance;
 
          const timestamp = proxy.setTime(1612137600000);
 
-         expect(new Date(timestamp)).toEqual(new Date(Date.UTC(2021, 1, 1, 1)))
+         expect(new Date(timestamp)).toEqual(utCDate(2021, 1, 1));
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(1);
          expect(proxy.getDate()).toEqual(1);
-         expect(proxy.getHours()).toEqual(1);
+         expect(proxy.getHours()).toEqual(0);
          expect(proxy.getMinutes()).toEqual(0);
          expect(proxy.getSeconds()).toEqual(0);
          expect(proxy.getMilliseconds()).toEqual(0);
@@ -652,7 +656,7 @@ describe('DateProxy tests', () => {
 
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 1, 2),
+               date: utCDate(2021, 1, 2),
             }
          ).instance;
          const actual = await new WaitForEvent(
@@ -666,7 +670,7 @@ describe('DateProxy tests', () => {
             arguments: [],
             chain: [{ object: proxyTarget, id: 'year' }],
             id: 'year',
-            newValue: new Date(2022, 1,2),
+            newValue: utCDate(2022, 1, 2),
             target: proxyTarget,
          }
 
@@ -675,7 +679,7 @@ describe('DateProxy tests', () => {
       it('setFullYear will emit change event for every change property', async () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 1, 2),
+               date: utCDate(2021, 1, 2),
                mustProxify: truePredicate
             }
          ).instance;
@@ -717,7 +721,7 @@ describe('DateProxy tests', () => {
       it('setMonth will emit change event for every change property', async () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 1, 2),
+               date: utCDate(2021, 1, 2),
                mustProxify: truePredicate
             }
          ).instance;
@@ -748,7 +752,7 @@ describe('DateProxy tests', () => {
                arguments: [],
                chain: [{ object: proxyTarget, id: 'time' }],
                id: 'time',
-               newValue: new Date(2021, 2, 2).getTime(),
+               newValue: utCDate(2021, 2, 2).getTime(),
                target: proxyTarget,
             },
          ];
@@ -758,7 +762,7 @@ describe('DateProxy tests', () => {
       it('setDate will emit change event for every change property', async () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 1, 2),
+               date: utCDate(2021, 1, 2),
                mustProxify: truePredicate
             }
          ).instance;
@@ -782,14 +786,14 @@ describe('DateProxy tests', () => {
                arguments: [],
                chain: [{ object: proxyTarget, id: 'utcDate' }],
                id: 'utcDate',
-               newValue: 2,
+               newValue: 3,
                target: proxyTarget,
             },
             {
                arguments: [],
                chain: [{ object: proxyTarget, id: 'time' }],
                id: 'time',
-               newValue: new Date(2021, 1, 3).getTime(),
+               newValue: utCDate(2021, 1, 3).getTime(),
                target: proxyTarget,
             },
          ];
@@ -799,29 +803,20 @@ describe('DateProxy tests', () => {
       it('setHours will emit change event for every change property', async () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 1, 2),
+               date: utCDate(2021, 1, 2),
                mustProxify: truePredicate
             }
          ).instance;
          const actual = await new WaitForEvent(
             observer,
             'changed',
-            { count: 4 }
+            { count: 3 }
          ).wait(() => {
             proxy.setHours(3);
          });
 
-         'Mon, 01 Feb 2021 23:00:00 GMT'
-         'Tue, 02 Feb 2021 02:00:00 GMT'
 
          const expected: IPropertyChange[] = [
-            {
-               arguments: [],
-               chain: [{ object: proxyTarget, id: 'utcDate' }],
-               id: 'utcDate',
-               newValue: 2,
-               target: proxyTarget,
-            },
             {
                arguments: [],
                chain: [{ object: proxyTarget, id: 'hours' }],
@@ -833,14 +828,14 @@ describe('DateProxy tests', () => {
                arguments: [],
                chain: [{ object: proxyTarget, id: 'utcHours' }],
                id: 'utcHours',
-               newValue: 2,
+               newValue: 3,
                target: proxyTarget,
             },
             {
                arguments: [],
                chain: [{ object: proxyTarget, id: 'time' }],
                id: 'time',
-               newValue: new Date(2021, 1, 2, 3).getTime(),
+               newValue: utCDate(2021, 1, 2, 3).getTime(),
                target: proxyTarget,
             },
          ];
@@ -850,7 +845,7 @@ describe('DateProxy tests', () => {
       it('setMinutes will emit change event', async () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 1, 2),
+               date: utCDate(2021, 1, 2),
                mustProxify: truePredicate
             }
          ).instance;
@@ -881,7 +876,7 @@ describe('DateProxy tests', () => {
                arguments: [],
                chain: [{ object: proxyTarget, id: 'time' }],
                id: 'time',
-               newValue: new Date(2021, 1, 2, 0, 3).getTime(),
+               newValue: utCDate(2021, 1, 2, 0, 3).getTime(),
                target: proxyTarget,
             },
          ];
@@ -891,7 +886,7 @@ describe('DateProxy tests', () => {
       it('setSeconds will emit change event', async () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 1, 2),
+               date: utCDate(2021, 1, 2),
                mustProxify: truePredicate
             }
          ).instance;
@@ -922,7 +917,7 @@ describe('DateProxy tests', () => {
                arguments: [],
                chain: [{ object: proxyTarget, id: 'time' }],
                id: 'time',
-               newValue: new Date(2021, 1, 2, 0, 0, 3).getTime(),
+               newValue: utCDate(2021, 1, 2, 0, 0, 3).getTime(),
                target: proxyTarget,
             },
          ];
@@ -933,7 +928,7 @@ describe('DateProxy tests', () => {
       it('setMilliseconds will emit change event for every change property', async () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 1, 2),
+               date: utCDate(2021, 1, 2),
                mustProxify: truePredicate
             }
          ).instance;
@@ -964,7 +959,7 @@ describe('DateProxy tests', () => {
                arguments: [],
                chain: [{ object: proxyTarget, id: 'time' }],
                id: 'time',
-               newValue: new Date(2021, 1, 2, 0, 0, 0, 3).getTime(),
+               newValue: utCDate(2021, 1, 2, 0, 0, 0, 3).getTime(),
                target: proxyTarget,
             },
 
@@ -1037,7 +1032,7 @@ describe('DateProxy tests', () => {
                arguments: [],
                chain: [{ object: proxyTarget, id: 'hours' }],
                id: 'hours',
-               newValue: 9,
+               newValue: 8,
                target: proxyTarget,
             },
             {
@@ -1103,7 +1098,7 @@ describe('DateProxy tests', () => {
       it('will not emit change event if date does not change', async () => {
          const { observer, proxy } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 1, 2),
+               date: utCDate(2021, 1, 2),
                mustProxify: truePredicate
             }
          ).instance;
