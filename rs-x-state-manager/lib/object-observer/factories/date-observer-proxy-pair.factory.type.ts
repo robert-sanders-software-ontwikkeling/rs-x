@@ -2,5 +2,5 @@ import { IObjectObserverProxyPairFactory } from '../object-observer-proxy-pair.f
 
 export type IDateObserverProxyPairFactory = IObjectObserverProxyPairFactory<
    Date,
-   Date
+   string
 >;

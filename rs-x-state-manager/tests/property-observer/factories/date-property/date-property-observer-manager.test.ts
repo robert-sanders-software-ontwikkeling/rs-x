@@ -1,19 +1,19 @@
 import { InjectionContainer, IPropertyChange, WaitForEvent } from '@rs-x/core';
-import { IDateProxyFactory } from '../../../../lib';
+
 import { IDatePropertyObserverManager } from '../../../../lib/property-observer/factories/date-property/date-property-observer-manager.type';
 import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
+import { IProxyRegistry } from '../../../../lib/proxies/proxy-registry/proxy-registry.interface';
 
 describe('IDatePropertyObserverManager tests', () => {
    let datePropertyObserverManager: IDatePropertyObserverManager;
-   let dateProxyFactory: IDateProxyFactory;
+   let proxyRegister: IProxyRegistry;
+
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXStateManagerModule);
 
-      dateProxyFactory = InjectionContainer.get(
-         RsXStateManagerInjectionTokens.IDateProxyFactory
-      );
+      proxyRegister = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
       datePropertyObserverManager = InjectionContainer.get(
          RsXStateManagerInjectionTokens.IDatePropertyObserverManager
       );
@@ -32,7 +32,7 @@ describe('IDatePropertyObserverManager tests', () => {
       const observer = datePropertyObserverManager
          .create(date)
          .instance.create({ index: 'year' }).instance;
-      const dateProxy = dateProxyFactory.getFromData({ date }).proxy
+      const dateProxy = proxyRegister.getProxy<Date>(date);
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
          dateProxy.setMonth(4)
@@ -47,11 +47,11 @@ describe('IDatePropertyObserverManager tests', () => {
          .create(date)
          .instance.create({ index: 'year' }).instance;
 
-      expect(dateProxyFactory.getFromData({ date })).toBeDefined();
+      expect(proxyRegister.getProxy(date)).toBeDefined();
 
       observer.dispose();
 
-      expect(dateProxyFactory.getFromData({ date })).toBeUndefined();
+      expect(proxyRegister.getProxy(date)).toBeUndefined();
    });
 
    it('will release observers when all references have nee disposed', async () => {
@@ -67,12 +67,12 @@ describe('IDatePropertyObserverManager tests', () => {
       observer1.dispose();
 
       expect(datePropertyObserverManager.getFromId(date)).toBeDefined();
-      expect(dateProxyFactory.getFromData({ date })).toBeDefined();
+      expect(proxyRegister.getProxy(date)).toBeDefined();
 
       observer2.dispose();
 
       expect(datePropertyObserverManager.getFromId(date)).toBeUndefined();
-      expect(dateProxyFactory.getFromData({ date })).toBeUndefined();
+      expect(proxyRegister.getProxy(date)).toBeUndefined();
    });
 
    describe('change event', () => {
@@ -81,7 +81,7 @@ describe('IDatePropertyObserverManager tests', () => {
          const observer = datePropertyObserverManager
             .create(date)
             .instance.create({ index: 'year' }).instance;
-         const dateProxy = dateProxyFactory.getFromData({ date }).proxy;
+         const dateProxy = proxyRegister.getProxy<Date>(date);
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
             dateProxy.setMonth(3)
@@ -95,7 +95,7 @@ describe('IDatePropertyObserverManager tests', () => {
          const observer = datePropertyObserverManager
             .create(date)
             .instance.create({ index: 'year' }).instance;
-         const dateProxy = dateProxyFactory.getFromData({ date }).proxy;
+         const dateProxy = proxyRegister.getProxy<Date>(date);
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
             dateProxy.setFullYear(2024)
@@ -116,7 +116,7 @@ describe('IDatePropertyObserverManager tests', () => {
          const observer = datePropertyObserverManager
             .create(date)
             .instance.create({ index: 'year' }).instance;
-         const dateProxy = dateProxyFactory.getFromData({ date }).proxy;
+         const dateProxy = proxyRegister.getProxy<Date>(date);
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
             dateProxy.setFullYear(2021)

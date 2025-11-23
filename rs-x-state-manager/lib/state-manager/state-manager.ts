@@ -126,8 +126,8 @@ export class StateManager implements IStateManager {
       this._stateChangeSubscriptionManager.dispose();
    }
 
-   public getState(context: unknown, index: unknown): unknown {
-      return this._objectStateManager.getFromId(context)?.getFromId(index)?.value;
+   public getState<T>(context: unknown, index: unknown): T {
+      return this._objectStateManager.getFromId(context)?.getFromId(index)?.value as T;
    }
 
    private getOldValue(context: unknown, index: unknown): unknown {

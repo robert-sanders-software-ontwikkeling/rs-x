@@ -3,14 +3,15 @@ import {
     DateProperty,
     Inject,
     Injectable,
-    SingletonFactory
+    SingletonFactoryWithGuid
 } from '@rs-x/core';
 import { Subject } from 'rxjs';
 import { AbstractObserver } from '../../abstract-observer';
 import { IDisposableOwner } from '../../disposable-owner.interface';
+import { MustProxify } from '../../object-property-observer-proxy-pair-manager.type';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
 import { IProxyRegistry } from '../proxy-registry/proxy-registry.interface';
-import { IDateObserverProxyPair, IDateProxyData, IDateProxyFactory } from './date-proxy.factory.type';
+import { IDateObserverProxyPair, IDateProxyData, IDateProxyFactory, IDateProxyIdData } from './date-proxy.factory.type';
 
 type DateSetterName = CheckValidKey<
     Date,
@@ -146,7 +147,7 @@ class DateProxy extends AbstractObserver<Date, Date, undefined> {
                 setterName: 'setSeconds'
             }
         ],
-         [
+        [
             'setUTCSeconds',
             {
                 name: 'utcSeconds',
@@ -162,7 +163,7 @@ class DateProxy extends AbstractObserver<Date, Date, undefined> {
                 setterName: 'setMilliseconds'
             }
         ],
-         [
+        [
             'setUTCMilliseconds',
             {
                 name: 'utcMilliseconds',
@@ -180,7 +181,11 @@ class DateProxy extends AbstractObserver<Date, Date, undefined> {
         ]
     ]);
 
-    constructor(owner: IDisposableOwner, initialValue: Date, private readonly _proxyRegistry: IProxyRegistry) {
+    constructor(
+        owner: IDisposableOwner,
+        initialValue: Date,
+        private readonly _proxyRegistry: IProxyRegistry,
+        private readonly _filter?: (propertyName: DateProperty) => boolean) {
         super(owner, null, initialValue, new Subject(), undefined);
 
         this.target = new Proxy(initialValue, this);
@@ -201,7 +206,7 @@ class DateProxy extends AbstractObserver<Date, Date, undefined> {
                 const setter = value as (...args: unknown[]) => unknown;
                 const result = setter.apply(target, args);
                 if (oldTimeStamp !== target.getTime()) {
-                    this.emitChanges(oldTimeStamp, target);
+                    this.emitChanges(oldTimeStamp, target, setterMetadata.name);
                 }
                 return result;
             };
@@ -209,10 +214,25 @@ class DateProxy extends AbstractObserver<Date, Date, undefined> {
         return value;
     }
 
-    private emitChanges(oldTimestamp: number, newDate: Date): void {
+    private emitChanges(oldTimestamp: number, newDate: Date, propertyName: string): void {
         const oldDate = new Date(oldTimestamp);
 
+        if (!this._filter) {
+            this.emitChange({
+                arguments: [],
+                chain: [{ object: newDate, id: propertyName }],
+                id: propertyName,
+                target: newDate,
+                newValue: newDate
+            });
+            return;
+        }
+
+
         for (const setterMetaData of this._dateSetterMetadata.values()) {
+            if (!this._filter(setterMetaData.name)) {
+                continue
+            }
             const oldValue = oldDate[setterMetaData.getterName].call(oldDate);
             const newValue = newDate[setterMetaData.getterName].call(newDate);
             if (oldValue !== newValue) {
@@ -247,13 +267,12 @@ class DateProxy extends AbstractObserver<Date, Date, undefined> {
         this.target = null;
     }
 }
-
 @Injectable()
 export class DateProxyFactory
-    extends SingletonFactory<
-        Date,
+    extends SingletonFactoryWithGuid<
         IDateProxyData,
-        IDateObserverProxyPair
+        IDateObserverProxyPair,
+        IDateProxyIdData
     >
     implements IDateProxyFactory {
 
@@ -264,11 +283,15 @@ export class DateProxyFactory
         super();
     }
 
-    public override getId(dateProxyData: IDateProxyData): Date {
-        return dateProxyData.date;
+    protected override getGroupId(data: IDateProxyIdData): Date {
+        return data.date;
     }
 
-    protected override createInstance(dateProxyData: IDateProxyData, id: Date): IDateObserverProxyPair {
+    protected override getGroupMemberId(data: IDateProxyIdData): MustProxify {
+        return data.mustProxify;
+    }
+
+    protected override createInstance(dateProxyData: IDateProxyData, id: string): IDateObserverProxyPair {
         const observer = new DateProxy(
             {
                 canDispose: () => this.getReferenceCount(id) === 1,
@@ -278,7 +301,8 @@ export class DateProxyFactory
                 },
             },
             dateProxyData.date,
-            this._proxyRegistry
+            this._proxyRegistry,
+            dateProxyData.mustProxify
         );
         return {
             observer,
@@ -287,9 +311,5 @@ export class DateProxyFactory
             emitChangeWhenSet: true,
             id,
         };
-    }
-
-    protected override createId(dateProxyData: IDateProxyData): Date {
-        return dateProxyData.date;
     }
 }

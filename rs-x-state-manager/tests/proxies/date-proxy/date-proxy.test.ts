@@ -1,4 +1,4 @@
-import { IPropertyChange, WaitForEvent } from '@rs-x/core';
+import { IPropertyChange, truePredicate, WaitForEvent } from '@rs-x/core';
 import { DateProxyFactory } from '../../../lib/proxies/date-proxy/date-proxy.factory';
 import { ProxyRegistryMock } from '../../../lib/testing/proxies/proxy-registry.mock';
 
@@ -51,7 +51,6 @@ describe('DateProxy tests', () => {
    });
 
    describe('all date operation still work as before', () => {
-
       it('setFullYear', () => {
          const { proxy } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
@@ -648,10 +647,36 @@ describe('DateProxy tests', () => {
    });
 
    describe('Change event', () => {
+
+      it('if not mustProxify have been set set only only event with the changed date will be emitted', async () => {
+
+         const { observer, proxy, proxyTarget } = new DateProxyFactory(new ProxyRegistryMock()).create(
+            {
+               date: new Date(2021, 1, 2),
+            }
+         ).instance;
+         const actual = await new WaitForEvent(
+            observer,
+            'changed'
+         ).wait(() => {
+            proxy.setFullYear(2022);
+         });
+
+         const expected = {
+            arguments: [],
+            chain: [{ object: proxyTarget, id: 'year' }],
+            id: 'year',
+            newValue: new Date(2022, 1,2),
+            target: proxyTarget,
+         }
+
+         expect(actual).toEqual(expected);
+      });
       it('setFullYear will emit change event for every change property', async () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 1, 2)
+               date: new Date(2021, 1, 2),
+               mustProxify: truePredicate
             }
          ).instance;
          const actual = await new WaitForEvent(
@@ -692,7 +717,8 @@ describe('DateProxy tests', () => {
       it('setMonth will emit change event for every change property', async () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 1, 2)
+               date: new Date(2021, 1, 2),
+               mustProxify: truePredicate
             }
          ).instance;
          const actual = await new WaitForEvent(
@@ -732,7 +758,8 @@ describe('DateProxy tests', () => {
       it('setDate will emit change event for every change property', async () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 1, 2)
+               date: new Date(2021, 1, 2),
+               mustProxify: truePredicate
             }
          ).instance;
          const actual = await new WaitForEvent(
@@ -772,7 +799,8 @@ describe('DateProxy tests', () => {
       it('setHours will emit change event for every change property', async () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 1, 2)
+               date: new Date(2021, 1, 2),
+               mustProxify: truePredicate
             }
          ).instance;
          const actual = await new WaitForEvent(
@@ -822,7 +850,8 @@ describe('DateProxy tests', () => {
       it('setMinutes will emit change event', async () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 1, 2)
+               date: new Date(2021, 1, 2),
+               mustProxify: truePredicate
             }
          ).instance;
          const actual = await new WaitForEvent(
@@ -862,7 +891,8 @@ describe('DateProxy tests', () => {
       it('setSeconds will emit change event', async () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 1, 2)
+               date: new Date(2021, 1, 2),
+               mustProxify: truePredicate
             }
          ).instance;
          const actual = await new WaitForEvent(
@@ -903,7 +933,8 @@ describe('DateProxy tests', () => {
       it('setMilliseconds will emit change event for every change property', async () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 1, 2)
+               date: new Date(2021, 1, 2),
+               mustProxify: truePredicate
             }
          ).instance;
          const actual = await new WaitForEvent(
@@ -945,7 +976,8 @@ describe('DateProxy tests', () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
                // Mon Jan 07 2030 07:23:45
-               date: new Date(1893997425123)
+               date: new Date(1893997425123),
+               mustProxify: truePredicate
             }
          ).instance;
          const actual = await new WaitForEvent(
@@ -1071,7 +1103,8 @@ describe('DateProxy tests', () => {
       it('will not emit change event if date does not change', async () => {
          const { observer, proxy } = new DateProxyFactory(new ProxyRegistryMock()).create(
             {
-               date: new Date(2021, 1, 2)
+               date: new Date(2021, 1, 2),
+               mustProxify: truePredicate
             }
          ).instance;
          const actual = await new WaitForEvent(

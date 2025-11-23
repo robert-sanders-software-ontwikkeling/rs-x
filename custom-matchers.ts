@@ -173,22 +173,21 @@ export function observerEqualTo(
    }
 }
 
-
-
 expect.extend({
   async toOutputAsync(receivedFn: () => Promise<unknown>, expected: string) {
     let output = '';
 
-    // Patch console.log temporarily
+    // Patch console.log before calling the function
     const originalLog = console.log;
     console.log = (...args: unknown[]) => {
       output += args.map(a => String(a)).join(' ') + '\n';
     };
 
     try {
-      await receivedFn(); // await the demo fully
+      // Await the function fully (runDemo in your case)
+      await receivedFn();
     } finally {
-      console.log = originalLog; // restore
+      console.log = originalLog; // Restore console.log after execution
     }
 
     const pass = output.trim() === expected.trim();
@@ -203,7 +202,7 @@ expect.extend({
   },
 });
 
-export const customMatchers = { 
-   toDeepEqualCircular, 
-   observerEqualTo 
+export const customMatchers = {
+   toDeepEqualCircular,
+   observerEqualTo
 };

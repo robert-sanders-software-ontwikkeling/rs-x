@@ -122,7 +122,39 @@ describe('Statemanager demos', () => {
             }
         `;
 
-        await expect(() => runDemo('rs-x-state-manager/register-property.ts')).toOutputAsync(expected);
+         await expect(() => runDemo('rs-x-state-manager/register-property.ts')).toOutputAsync(expected);
+    });
+
+    it('register-date.ts', async () => {
+        const expected = dedent`
+            Running demo: demo/src/rs-x-state-manager/register-date.ts
+
+            ******************************************
+            * Watching date
+            ******************************************
+
+            Initial value:
+            date: Thu, 04 Mar 2021 23:00:00 GMT
+            Changed value:
+            date: Sat, 04 Mar 2023 23:00:00 GMT
+            Set value:
+            date: Wed, 05 Jun 2024 22:00:00 GMT
+            Latest value:
+            Wed, 05 Jun 2024 22:00:00 GMT
+
+            ******************************************
+            * Watching year
+            ******************************************
+
+            Initial value:
+            2021
+            Changed value:
+            2023
+            Latest value:
+            2023
+        `;
+
+         await expect(() => runDemo('rs-x-state-manager/register-date.ts')).toOutputAsync(expected);
     });
 
     it('register-promise.ts', async () => {

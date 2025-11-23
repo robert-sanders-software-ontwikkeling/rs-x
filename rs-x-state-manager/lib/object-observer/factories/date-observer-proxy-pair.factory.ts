@@ -18,7 +18,8 @@ export class DateObserverProxyPairFactory implements IDateObserverProxyPairFacto
    
    ) {
    }
-   public create(owner: IDisposableOwner, proxyTarget: IProxyTarget<Date>): IObserverProxyPair<Date, Date> {
+   
+   public create(owner: IDisposableOwner, proxyTarget: IProxyTarget<Date>): IObserverProxyPair<Date, string> {
       return this._dateProxyFactory.create({
          owner,
          date: proxyTarget.target

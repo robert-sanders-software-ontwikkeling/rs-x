@@ -3,9 +3,9 @@ import {
    IPropertyChange,
    WaitForEvent
 } from '@rs-x/core';
+import { IProxyRegistry } from '../../../../lib';
 import { IObserver } from '../../../../lib/observer.interface';
 import { IDatePropertyObserverProxyPairFactory } from '../../../../lib/property-observer/factories/date-property/date-property-observer-proxy-pair.factory.type';
-import { IDateProxyFactory } from '../../../../lib/proxies/date-proxy/date-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
 import { DisposableOwnerMock } from '../../../../lib/testing/disposable-owner.mock';
@@ -13,14 +13,13 @@ import { DisposableOwnerMock } from '../../../../lib/testing/disposable-owner.mo
 describe('IDatePropertyObserverProxyPairFactory tests', () => {
    let disposableOwner: DisposableOwnerMock;
    let observer: IObserver;
-   let dateProxyFactory: IDateProxyFactory;
+   let proxyRegistry: IProxyRegistry;
    let datePropertyObserverProxyPairFactory: IDatePropertyObserverProxyPairFactory;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXStateManagerModule);
-      dateProxyFactory = InjectionContainer.get(
-         RsXStateManagerInjectionTokens.IDateProxyFactory
-      );
+
+      proxyRegistry = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
       datePropertyObserverProxyPairFactory = InjectionContainer.get(
          RsXStateManagerInjectionTokens.IDatePropertyObserverProxyPairFactory
       );
@@ -43,14 +42,14 @@ describe('IDatePropertyObserverProxyPairFactory tests', () => {
 
    it('will emit change when set date property to a new value', async () => {
       const date = new Date(2021, 2, 3)
-      const {observer} = datePropertyObserverProxyPairFactory.create(
+      const { observer } = datePropertyObserverProxyPairFactory.create(
          disposableOwner,
          date,
          { key: 'year' }
       );
 
-      const dateProxy = dateProxyFactory.getFromId(date).proxy;
-   
+      const dateProxy = proxyRegistry.getProxy<Date>(date);
+
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
          dateProxy.setFullYear(2024)
       });

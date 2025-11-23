@@ -14,6 +14,7 @@ import { IObserver } from '../../../observer.interface';
 import { IDateProxyFactory } from '../../../proxies/date-proxy/date-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
 import { IDatePropertyObserverIdInfo, IDatePropertyObserverInfo, IDatePropertyObserverManager, IProperForDataObserverManager } from './date-property-observer-manager.type';
+import { IMustProxifyItemHandlerFactory } from '../../must-proxify-item-handler.factory.type';
 
 
 class DatePropertybserver extends AbstractObserver<Date> {
@@ -71,6 +72,7 @@ class ProperForDataObserverManager
         private readonly _dateProxyFactory: IDateProxyFactory,
         private readonly _datePropertyAccessor: IDatePropertyAccessor,
         private readonly _errorLog: IErrorLog,
+        private readonly _mustProxifyItemHandlerFactory: IMustProxifyItemHandlerFactory,
         private readonly releaseObject: () => void
     ) {
         super();
@@ -92,6 +94,7 @@ class ProperForDataObserverManager
     ): IObserver {
         const dateObserver = this._dateProxyFactory.create({
             date: this._date,
+            mustProxify: this._mustProxifyItemHandlerFactory.create(id).instance
         }).instance.observer;
         return new DatePropertybserver(
             {
@@ -129,7 +132,9 @@ export class DatePropertyObserverManager
         @Inject(RsXCoreInjectionTokens.IErrorLog)
         private readonly _errorLog: IErrorLog,
         @Inject(RsXCoreInjectionTokens.IDatePropertyAccessor)
-        private readonly _datePropertyAccessor: IDatePropertyAccessor
+        private readonly _datePropertyAccessor: IDatePropertyAccessor,
+        @Inject(RsXStateManagerInjectionTokens.IMustProxifyItemHandlerFactory)
+        private readonly _mustProxifyItemHandlerFactory: IMustProxifyItemHandlerFactory
     ) {
         super();
     }
@@ -154,6 +159,7 @@ export class DatePropertyObserverManager
             this._dateProxyFactory,
             this._datePropertyAccessor,
             this._errorLog,
+            this._mustProxifyItemHandlerFactory,
             () => this.release(date)
         );
     }

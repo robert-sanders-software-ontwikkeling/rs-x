@@ -23,6 +23,6 @@ export interface IStateManager {
    ): boolean;
    register(context: unknown, index: unknown, mustProxify?: MustProxify): unknown;
    unregister(oontext: unknown, index: unknown, mustProxify?: MustProxify): void;
-   getState(context: unknown, index: unknown): unknown;
+   getState<T>(context: unknown, index: unknown): T;
    clear(): void;
 }
