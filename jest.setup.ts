@@ -1,6 +1,8 @@
 import { customMatchers } from './custom-matchers';
 import structuredCloneModule from '@ungap/structured-clone';
 
+process.env.TZ = "UTC";
+
 class ResizeObserverMock {
    public disconnect = jest.fn();
    public observe = jest.fn();
