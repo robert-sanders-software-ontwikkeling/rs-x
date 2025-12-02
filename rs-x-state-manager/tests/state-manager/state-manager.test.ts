@@ -8,13 +8,13 @@ import { ObservableMock } from '@rs-x/core/testing';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { IArrayProxyFactory } from '../../lib/proxies/array-proxy/array-proxy.factory.type';
 import { IMapProxyFactory } from '../../lib/proxies/map-proxy/map-proxy.factory.type';
+import { IProxyRegistry } from '../../lib/proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerInjectionTokens } from '../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../lib/rs-x-state-manager.module';
 import {
    IStateChange,
    IStateManager,
 } from '../../lib/state-manager/state-manager.interface';
-import { IProxyRegistry } from '../../lib';
 
 interface IPrivateIStateManager extends IStateManager {
    _changed: Observable<IStateChange>;
