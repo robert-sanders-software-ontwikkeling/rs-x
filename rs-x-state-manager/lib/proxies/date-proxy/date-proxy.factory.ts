@@ -308,7 +308,6 @@ export class DateProxyFactory
             observer,
             proxy: observer.target,
             proxyTarget: dateProxyData.date,
-            emitChangeWhenSet: true,
             id,
         };
     }

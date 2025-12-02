@@ -6,7 +6,6 @@ export interface IObserverProxyPair<TProxy = unknown, TId = unknown> {
    observer: IObserver;
    proxy?: TProxy;
    proxyTarget: TProxy;
-   emitChangeWhenSet: boolean;
    id: TId;
 }
 

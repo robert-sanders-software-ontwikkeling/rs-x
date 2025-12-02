@@ -43,12 +43,7 @@ export abstract class ObjectObserverProxyPairFactory<
          proxy: rootObserver.proxy,
          proxyTarget: rootObserver.proxyTarget,
          id: rootObserver.id,
-         emitChangeWhenSet: this.emitChangeWhenSet,
       };
-   }
-
-   protected get emitChangeWhenSet(): boolean {
-      return true;
    }
 
    protected abstract createDisposableOwner(

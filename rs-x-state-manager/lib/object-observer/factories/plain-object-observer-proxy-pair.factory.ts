@@ -64,7 +64,6 @@ export class PlainObjectObserverProxyPairFactory
          observer,
          proxy: object,
          proxyTarget: object,
-         emitChangeWhenSet: true,
          id: object,
       };
    }

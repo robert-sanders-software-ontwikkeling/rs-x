@@ -212,7 +212,6 @@ export class SetProxyFactory
       return {
          observer,
          proxy: observer.target,
-         emitChangeWhenSet: true,
          proxyTarget: data.set,
          id,
       };

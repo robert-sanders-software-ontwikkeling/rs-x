@@ -82,6 +82,7 @@ export class StateChangeSubscriptionManager
    }
 
    public isRegistered(context: unknown, key: unknown): boolean {
+      
       const stateChangeSubscriptionsForContextManager = this.getFromId(context);
       if (!stateChangeSubscriptionsForContextManager) {
          return false;
@@ -95,11 +96,12 @@ export class StateChangeSubscriptionManager
    }
 
    protected override createInstance(
-      context: unknown
+      context: unknown,
+      id: unknown
    ): IStateChangeSubscriptionsForContextManager {
       return new StateChangeSubscriptionsForContextManager(
          context,
-         () => this.release(context),
+         () => this.release(id),
          this._objectObserverManager,
          this._errorLog
       );

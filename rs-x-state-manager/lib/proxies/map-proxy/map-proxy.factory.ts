@@ -221,7 +221,6 @@ export class MapProxyFactory
          observer,
          proxy: observer.target,
          proxyTarget: data.map,
-         emitChangeWhenSet: true,
          id,
       };
    }

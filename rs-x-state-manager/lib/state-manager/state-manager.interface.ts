@@ -14,8 +14,8 @@ export interface IStateChange extends IContextChanged {
 export interface IStateManager {
    readonly changed: Observable<IStateChange>;
    readonly contextChanged: Observable<IContextChanged>;
-   readonly startChangeCycly: Observable<void>;
-   readonly endChangeCycly: Observable<void>;
+   readonly startChangeCycle: Observable<void>;
+   readonly endChangeCycle: Observable<void>;
    isRegistered(
       context: unknown,
       index: unknown,

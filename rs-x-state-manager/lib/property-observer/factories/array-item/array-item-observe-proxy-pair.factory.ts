@@ -15,6 +15,7 @@ import {
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
 import { IndexObserverProxyPairFactory } from '../indexed-value-observer-proxy-pair/indexed-value-observer-proxy-pair.factory';
 import { IArrayItemObserverManager } from './array-item-observer-manager.type';
+import { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
 
 @Injectable()
 export class ArrayItemObserverProxyPairFactory extends IndexObserverProxyPairFactory<
@@ -29,13 +30,16 @@ export class ArrayItemObserverProxyPairFactory extends IndexObserverProxyPairFac
       @Inject(RsXCoreInjectionTokens.IErrorLog)
       errorLog: IErrorLog,
       @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
-      indexValueAccessor: IIndexValueAccessor
+      indexValueAccessor: IIndexValueAccessor,
+      @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
+      proxyRegister: IProxyRegistry
    ) {
       super(
          objectObserverManager,
          arrayItemObserverManager,
          errorLog,
          indexValueAccessor,
+         proxyRegister,
          truePredicate
       );
    }

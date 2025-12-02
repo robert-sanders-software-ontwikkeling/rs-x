@@ -343,7 +343,6 @@ export class ArrayProxyFactory
          observer,
          proxy: observer.target,
          proxyTarget: data.array,
-         emitChangeWhenSet: true,
          id,
       };
    }

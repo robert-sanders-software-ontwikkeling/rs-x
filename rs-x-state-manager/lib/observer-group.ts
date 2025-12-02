@@ -83,20 +83,14 @@ export class ObserverGroup extends AbstractObserver {
       return this;
    }
 
-   public setValue(
-      newValue: unknown,
-      observers: IObserver[],
-      emitChange: boolean
-   ): void {
+
+   public replaceObserver( observers: IObserver[]): void {
       this.unsubscribeToObservers();
       this.addObservers(observers);
 
       this._observers.forEach((observer) => observer.init());
-
-      if (!emitChange) {
-         return;
-      }
-
+   }
+   public emitValue(newValue: unknown): void {
       this.emitChange({
          arguments: [],
          target: this.target,

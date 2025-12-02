@@ -22,7 +22,6 @@ export interface ISubscriptionIdInfo<TIndex> {
 export interface ISubscriptionInfo<TIndex>
    extends ISubscriptionIdInfo<TIndex>,
       IChangeSubscriptionsCreateMethods {
-   emitChangeWhenSet?: boolean;
    initialValue?: unknown;
    indexValueObserver?: IObserver;
    owner: IDisposableOwner;

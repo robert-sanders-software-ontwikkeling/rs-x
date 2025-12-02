@@ -90,7 +90,6 @@ export class PromiseProxyFactory
          observer,
          proxy: undefined,
          proxyTarget: data.promise,
-         emitChangeWhenSet: false,
          id,
       };
    }

@@ -38,8 +38,8 @@ interface IChainPartChange extends IChainPart {
 export class StateManager implements IStateManager {
    private readonly _changed = new Subject<IStateChange>();
    private readonly _contextChanged = new Subject<IContextChanged>();
-   private readonly _startChangeCycly = new Subject<void>();
-   private readonly _endChangeCycly = new Subject<void>();
+   private readonly _startChangeCycle = new Subject<void>();
+   private readonly _endChangeCycle = new Subject<void>();
    private readonly _stateChangeSubscriptionManager: StateChangeSubscriptionManager;
 
    constructor(
@@ -70,12 +70,16 @@ export class StateManager implements IStateManager {
       return this._contextChanged;
    }
 
-   public get startChangeCycly(): Observable<void> {
-      return this._startChangeCycly;
+   public get startChangeCycle(): Observable<void> {
+      return this._startChangeCycle;
    }
 
-   public get endChangeCycly(): Observable<void> {
-      return this._endChangeCycly;
+   public get endChangeCycle(): Observable<void> {
+      return this._endChangeCycle;
+   }
+
+   public toString(): string {
+      return this._objectStateManager.toString();
    }
 
    public isRegistered(
@@ -83,6 +87,7 @@ export class StateManager implements IStateManager {
       index: unknown,
       mustProxify: MustProxify
    ): boolean {
+
       const stateChangeSubscriptionsForContextManager =
          this._stateChangeSubscriptionManager.getFromId(context);
 
@@ -349,33 +354,36 @@ export class StateManager implements IStateManager {
    }
 
    private onChange(change: IPropertyChange, mustProxify: MustProxify): void {
-      this._startChangeCycly.next();
-
       const chainChanges = this.getChainChanges(change.chain);
       if (chainChanges.length === 0) {
          return;
       }
 
-      const chainLeaf = chainChanges[chainChanges.length - 1];
-      const currentValue = this.getState(chainLeaf.object, chainLeaf.id);
+      this._startChangeCycle.next();
 
-      this.tryRebindingNestedState(change, currentValue, mustProxify);
-      this.updateState(
-         chainLeaf.object,
-         chainLeaf.object,
-         chainLeaf.id,
-         chainLeaf.value
-      );
+      try {
+         const chainLeaf = chainChanges[chainChanges.length - 1];
+         const currentValue = this.getState(chainLeaf.object, chainLeaf.id);
 
-      chainChanges.forEach((chainChange) =>
-         this.emitChange(
-            chainChange.object,
-            chainChange.id,
-            chainChange.value,
-            chainChange.oldValue
-         )
-      );
+         this.tryRebindingNestedState(change, currentValue, mustProxify);
+         this.updateState(
+            chainLeaf.object,
+            chainLeaf.object,
+            chainLeaf.id,
+            chainLeaf.value
+         );
 
-      this._endChangeCycly.next();
+         chainChanges.forEach((chainChange) =>
+            this.emitChange(
+               chainChange.object,
+               chainChange.id,
+               chainChange.value,
+               chainChange.oldValue
+            )
+         );
+      }
+      finally {
+         this._endChangeCycle.next();
+      }
    }
 }
