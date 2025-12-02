@@ -9,7 +9,7 @@ export type SetFunction<T> = (value: T) => void;
 
 export const emptyValue = Symbol('empty');
 export type AnyFunction = (...args: unknown[]) => unknown;
-export const emptyFunction = () => {};
+export const emptyFunction = () => { };
 export const truePredicate = () => true;
 export const echo = (value) => value;
 
@@ -44,8 +44,8 @@ export class Type {
       );
    }
 
-  
-  
+
+
 
 
 
@@ -83,13 +83,12 @@ export class Type {
       }
    }
 
- 
 
    public static cast<T>(instance: unknown): T {
       return instance as T;
    }
 
-  
+
    public static isFunction(value: unknown): value is AnyFunction {
       return typeof value === 'function';
    }
@@ -118,7 +117,6 @@ export class Type {
          (Array.isArray(value) && value.length === 0)
       );
    }
-
 
    public static isPlainObject(object: unknown): boolean {
       if (object !== null && typeof object === 'object') {
@@ -216,4 +214,5 @@ export class Type {
          `${root.constructor.name} does not have a property, method or field with name '${String(name)}'`
       );
    }
+
 }

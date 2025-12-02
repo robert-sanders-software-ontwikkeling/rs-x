@@ -1,4 +1,6 @@
 import { PreDestroy } from '../dependency-injection';
+import { PrettyPrinter } from '../error-log/pretty-printer';
+import { Type } from '../types/type';
 import { ISingletonFactory } from './singleton.factory.interface';
 
 export abstract class SingletonFactory<
@@ -6,12 +8,11 @@ export abstract class SingletonFactory<
    TData extends TIdData,
    TInstance,
    TIdData = TData,
-> implements ISingletonFactory<TId, TData, TInstance, TIdData>
-{
+> implements ISingletonFactory<TId, TData, TInstance, TIdData> {
    private readonly _instances = new Map<TId, TInstance>();
    private readonly _referenceCounts = new Map<TId, number>();
 
-   protected constructor() {}
+   protected constructor() { }
 
    public exists(target: TInstance): boolean {
       for (const instance of this._instances.values()) {
@@ -21,6 +22,37 @@ export abstract class SingletonFactory<
       }
 
       return false;
+   }
+
+   public toLines(indent: number = 4, level: number = 0): string[] {
+      const lines: string[] = [];
+      const spaces = ' '.repeat(indent * level);
+      const spacesNext = ' '.repeat(indent * (level + 1));
+
+      const prettyPrinter = new PrettyPrinter();
+
+      lines.push(spaces + '___________________________________________________________');
+      lines.push(spaces + `${this.constructor.name}`);
+
+      for (const [key, instance] of this._instances.entries()) {
+         lines.push(spacesNext + '___________________________________________________________');
+         lines.push(spacesNext + `key (ref. count = ${this._referenceCounts.get(key)}):`);
+
+         // key printed at next indent
+         const keyLines = prettyPrinter.toLines(key,  level + 2, false);
+         lines.push(...keyLines);
+
+         lines.push(spacesNext + 'instance:');
+         const instanceLines = prettyPrinter.toLines(instance, level + 2, false);
+         lines.push(...instanceLines);
+      }
+
+      return lines;
+   }
+
+   // provide compatibility method if something calls toString
+   public toString(indent = 4, level = 0): string {
+      return this.toLines(indent, level).map(l => ' '.repeat(indent * level) + l).join('\n');
    }
 
    public get isEmpty(): boolean {
@@ -119,10 +151,10 @@ export abstract class SingletonFactory<
 
    protected abstract createInstance(data: TData, id: TId): TInstance;
    protected abstract createId(data: TIdData): TId;
-   protected onDipose(): void {}
-   protected onReleased(): void {}
-   protected releaseInstance(_instance: TInstance, _id: TId): void {}
-   protected onInstanceCreated(_instance: TInstance, _data: TData): void {}
+   protected onDipose(): void { }
+   protected onReleased(): void { }
+   protected releaseInstance(_instance: TInstance, _id: TId): void { }
+   protected onInstanceCreated(_instance: TInstance, _data: TData): void { }
 
    protected getOrCreateId(data: TIdData): TId {
       return this.getId(data) ?? this.createId(data);
