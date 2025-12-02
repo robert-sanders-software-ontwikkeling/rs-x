@@ -1,6 +1,6 @@
 import { InjectionContainer } from '@rs-x/core';
 import { ExpressionManager } from '../lib/expression-manager/expression-manager';
-
+import { ExpressionChangeTransactionManager } from '../lib/expresion-change-transaction-manager';
 import { ArrayIndexOwnerResolver } from '../lib/index-value-observer-manager/array-index-owner-resolver';
 import { DefaultIdentifierOwnerResolver } from '../lib/index-value-observer-manager/default-identifier-owner-resolver';
 import { IndexValueObserverManager } from '../lib/index-value-observer-manager/index-value-observer-manager';
@@ -38,6 +38,26 @@ describe('RsXExpressionParserModule tests', () => {
       );
       expect(a1).toBe(a2);
    });
+
+    it('can get instance of IExpressionChangeTransactionManager', () => {
+      const actual = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager
+      );
+      expect(actual).toBeInstanceOf(ExpressionChangeTransactionManager);
+   });
+
+   it('IExpressionChangeTransactionManager instance is a singleton', () => {
+      const a1 = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager
+      );
+      const a2 = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager
+      );
+      expect(a1).toBe(a2);
+   });
+
+
+   
 
    it('can get instance of IIdentifierValueManager', () => {
       const actual = InjectionContainer.get(

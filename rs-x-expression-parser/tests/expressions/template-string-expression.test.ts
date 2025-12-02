@@ -51,6 +51,8 @@ describe('TemplateStringExpression tests', () => {
    it('will emit change event when operands changes', async () => {
       const context = { name: 'Robert' };
       expression = jsParser.parse(context, '`Hello ${name}`');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,

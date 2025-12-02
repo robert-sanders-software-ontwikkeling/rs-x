@@ -12,7 +12,6 @@ export class ArrayExpression extends CollectionExpression<unknown[]> {
    }
 
    protected override evaluateExpression(
-      _: AbstractExpression,
       ...args: unknown[]
    ): unknown[] {
       const array = [];

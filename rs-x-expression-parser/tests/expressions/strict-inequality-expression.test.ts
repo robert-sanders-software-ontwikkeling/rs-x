@@ -63,6 +63,8 @@ describe('StrictInequalityExpression tests', () => {
    it('will emit change event when operands changes', async () => {
       const context = { a: 1, b: 2 };
       expression = jsParser.parse(context, 'a !== b');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,

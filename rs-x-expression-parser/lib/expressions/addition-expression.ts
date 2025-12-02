@@ -17,7 +17,6 @@ export class AdditionExpression extends BinaryExpression<number, number> {
    }
 
    protected override evaluateExpression(
-      _: AbstractExpression,
       a: number,
       b: number
    ): number {

@@ -14,7 +14,6 @@ export class BitwiseNotExpression extends ParameterizedExpression<
    }
 
    protected override evaluateExpression(
-      _: AbstractExpression,
       a: number
    ): number {
       return ~a;

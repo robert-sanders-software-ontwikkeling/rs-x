@@ -1,15 +1,16 @@
-import { emptyFunction, IIndexValueAccessor, truePredicate } from '@rs-x/core';
+import { emptyFunction, IIndexValueAccessor, PENDING, truePredicate, Type } from '@rs-x/core';
 import {
    IMustProxifyItemHandlerFactory,
    MustProxify,
 } from '@rs-x/state-manager';
 import { Subscription } from 'rxjs';
+import { IExpressionChangeCommitHandler, IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 import { IIndexValueObserverManager } from '../index-value-observer-manager/index-value-manager-observer.type';
 import {
    AbstractExpression,
    IExpressionInitializeConfig,
 } from './abstract-expression';
-import { IdentifierExpression } from './identifier-expression';
+import { IdentifierExpression, IIdentifierInitializeConfig } from './identifier-expression';
 import { ExpressionType } from './interfaces';
 
 interface IMustProxifyHandler {
@@ -31,13 +32,15 @@ export class MemberExpression extends AbstractExpression {
       ISlotChangeSubscription
    >();
    private _rebindingSlot = false;
+   private readonly _initializeQueue = new Map<AbstractExpression, () => void>();
 
    constructor(
       expressionString: string,
       private readonly _pathSeqments: AbstractExpression[],
       private readonly _indexValueAccessor: IIndexValueAccessor,
       private readonly _indexValueObserverManager: IIndexValueObserverManager,
-      private readonly _mustProxifyItemHandlerFactory: IMustProxifyItemHandlerFactory
+      private readonly _mustProxifyItemHandlerFactory: IMustProxifyItemHandlerFactory,
+      private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
    ) {
       super(ExpressionType.Member, expressionString);
 
@@ -69,91 +72,140 @@ export class MemberExpression extends AbstractExpression {
          this.disposeSlotObserver(slotObserver);
       }
       this._slotObservers.clear();
+      this._initializeQueue.clear();
    }
 
-   public resetChainFrom(from: AbstractExpression): void {
-      for (
-         let i = this._pathSeqments.indexOf(from) + 1;
-         i < this._pathSeqments.length;
-         i++
-      ) {
-         if (!this.isCalculated(this._pathSeqments[i])) {
-            AbstractExpression.clearValue(this._pathSeqments[i]);
+   protected override prepareReevaluation(sender: AbstractExpression, root: AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
+      const senderIndex = this._pathSeqments.indexOf(this.isCalculated(root) ? root : sender);
+      if (senderIndex < 0) {
+         return false;
+      }
+
+      if (this.shouldCancelEvaluate(senderIndex, pendingCommits)) {
+         return false;
+      }
+
+      const pathSeqments = this._pathSeqments;
+      for (let i = senderIndex + 1; i < pathSeqments.length; i++) {
+         if (!this.isCalculated(pathSeqments[i]) && !this.isPending(pathSeqments[i], pendingCommits)) {
+            AbstractExpression.clearValue(pathSeqments[i])
          }
       }
+
+      return true;
    }
 
-   protected evaluateExpression(sender: AbstractExpression): unknown {
-      const senderIndex = this._pathSeqments.indexOf(sender);
-      if (senderIndex < 0) {
-         return undefined;
-      }
-
+   protected override evaluate(sender: AbstractExpression, root: AbstractExpression): unknown {
+      const senderIndex = this._pathSeqments.indexOf(root.type === ExpressionType.Index ? root : sender);
       const senderExpr = this._pathSeqments[senderIndex];
       if (senderExpr?.value === undefined) {
          return undefined;
       }
-
-      let context = senderExpr.value;
-      const startIndex = this.isCalculated(sender)
+      const startIndex = this.isCalculated(this._pathSeqments[senderIndex])
          ? senderIndex - 1
          : senderIndex + 1;
 
-      let previousContext = this._pathSeqments[startIndex - 1]?.value;
+      let previousPathSegmentValue = this._pathSeqments[startIndex - 1]?.value;
+
+      if (startIndex > 0 && Type.isNullOrUndefined(previousPathSegmentValue)) {
+         return PENDING;
+      }
 
       for (let i = startIndex; i < this._pathSeqments.length; i++) {
-         const current = this._pathSeqments[i];
-         const mustProxifyInfo = this.getMustProxifyHandler(i);
-
-         if (!mustProxifyInfo.valid) {
-            return undefined;
-         }
-
-         const newContext = this.resolveContext(
-            current,
-            previousContext,
-            context,
+         const currentPathSegment = this._pathSeqments[i];
+         const currentPathSegmentValue = this.resolvePathSegment(
+            currentPathSegment,
+            previousPathSegmentValue,
             i,
-            mustProxifyInfo
          );
-         if (newContext === undefined) {
-            return undefined;
+
+         if (currentPathSegmentValue === PENDING) {
+            return currentPathSegmentValue;
          }
 
-         previousContext = context = newContext;
+         previousPathSegmentValue = currentPathSegmentValue;
       }
 
-      return context;
+      return previousPathSegmentValue;
    }
 
-   private resolveContext(
-      current: AbstractExpression,
-      previousContext: unknown,
-      context: unknown,
-      index: number,
-      mustProxifyInfo: IMustProxifyHandler
+   protected override isCommitTarget(sender: AbstractExpression): boolean {
+      return super.isCommitTarget(sender) ||
+         (this.isCalculated(sender) && this._pathSeqments[this._pathSeqments.length - 1] === sender);
+   }
+
+   private isPending(pathSegement: AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
+      for (const commit of pendingCommits) {
+         if (commit.owner === pathSegement) {
+            return true;
+         }
+      }
+      return false;
+   }
+
+   private shouldCancelEvaluate(senderIndex: number, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
+      for (const commit of pendingCommits) {
+         const index = this._pathSeqments.indexOf(commit.owner);
+         if (index >= 0 && index < senderIndex) {
+            return true;
+         }
+      }
+      return false;
+   }
+
+   private initializePathSegement(pathSegment: AbstractExpression, settings: IIdentifierInitializeConfig, initialize?: () => void): void {
+      this._initializeQueue.set(pathSegment, initialize ?? (() => pathSegment.initialize(settings)));
+      // Must run after the current evaluate() finishes.
+      // Running this code block immediately could trigger a nested evaluate(),
+      // so we defer it until the current evaluate has fully returned.
+      queueMicrotask(() => {
+         this._initializeQueue.get(pathSegment)?.();
+         this._initializeQueue.delete(pathSegment);
+      });
+   }
+
+   private resolvePathSegment(
+      pathSegment: AbstractExpression,
+      previousPathSegmentValue: unknown,
+      pathSegmentIndex: number,
    ): unknown {
-      if (this.isCalculated(current)) {
+      const mustProxifyInfo = this.getMustProxifyHandler(pathSegmentIndex);
+      if (!mustProxifyInfo.valid) {
+         return PENDING;
+      }
+
+      if (pathSegment.value === undefined) {
+         this.initializePathSegement(pathSegment, {
+            context: previousPathSegmentValue,
+            mustProxifyHandler: mustProxifyInfo,
+         });
+         return PENDING
+      }
+
+      if (this.isCalculated(pathSegment)) {
          return this.resolveCalculated(
-            current,
-            previousContext,
-            context,
-            index,
+            pathSegment,
+            previousPathSegmentValue,
+            pathSegmentIndex,
             mustProxifyInfo
          );
       }
 
-      if (current.value !== undefined) {
-         return current.value;
+      if (pathSegment.value !== undefined) {
+         return pathSegment.value;
       }
 
-      return this.resolveInitialized(current, previousContext, mustProxifyInfo);
+      this.initializePathSegement(pathSegment, {
+         context: previousPathSegmentValue,
+         mustProxifyHandler: mustProxifyInfo,
+      });
+
+      return PENDING;
    }
 
    private resolveCalculated(
       current: AbstractExpression,
       previousContext: unknown,
-      context: unknown,
       index: number,
       mustProxifyInfo: IMustProxifyHandler
    ): unknown {
@@ -163,7 +215,7 @@ export class MemberExpression extends AbstractExpression {
       }
 
       const resolved = this._indexValueAccessor.getResolvedValue(
-         context,
+         previousContext,
          value
       );
       this.observeSlot(
@@ -174,24 +226,6 @@ export class MemberExpression extends AbstractExpression {
          mustProxifyInfo
       );
       return resolved;
-   }
-
-   private resolveInitialized(
-      current: AbstractExpression,
-      previousContext: unknown,
-      mustProxifyInfo: IMustProxifyHandler
-   ): unknown {
-      current.initialize({
-         stateManager: undefined,
-         context: previousContext,
-         mustProxifyHandler: mustProxifyInfo,
-      });
-
-      if (current.value === undefined) {
-         return undefined;
-      }
-
-      return current.value;
    }
 
    private disposeSlotObserver(
@@ -210,12 +244,18 @@ export class MemberExpression extends AbstractExpression {
 
       if (nextExpression.type === ExpressionType.Identifier) {
          const isLast = nextExpression === this._pathSeqments.at(-1);
-         return this.createMustProxifyHandler(
-            isLast ? truePredicate : undefined
-         );
+         return {
+            releaseMustProxifyHandler: isLast
+               ? emptyFunction
+               : () => this._mustProxifyItemHandlerFactory.release(nextExpression.expressionString),
+            createMustProxifyHandler: isLast
+               ? () => truePredicate
+               : () => this._mustProxifyItemHandlerFactory.create(nextExpression.expressionString).instance,
+            valid: true,
+         };
       }
 
-      if (nextExpression.value !== undefined) {
+      if ((nextExpression.value !== undefined && this.isCalculated(nextExpression))) {
          return {
             releaseMustProxifyHandler: () =>
                this._mustProxifyItemHandlerFactory.release(
@@ -267,29 +307,42 @@ export class MemberExpression extends AbstractExpression {
          this._indexValueObserverManager,
          emptyFunction,
          '',
+         this._expressionChangeTransactionManager,
          dynamicIndexExpression.value
       );
-      // AbstractExpression.setParent(staticIndexExpression, this);
-      const changeSubscription = staticIndexExpression.changed.subscribe(() =>
-         this.onSlotChanged(dynamicIndexExpression)
-      );
-      staticIndexExpression.initialize({
-         stateManager: undefined,
-         currentValue: value,
-         mustProxifyHandler: mustProxifyHandler,
-      });
-      this._slotObservers.set(dynamicIndexExpression, {
+
+      this.initializePathSegement(
          staticIndexExpression,
-         changeSubscription,
-         index: dynamicIndexExpression.value,
-         pathSegmentIndex,
-      });
-      this._rebindingSlot = false;
+         {
+            currentValue: value,
+            mustProxifyHandler: mustProxifyHandler,
+         },
+         () => {
+            let initialized = false
+            const changeSubscription = staticIndexExpression.changed.subscribe(() => {
+               if (initialized) {
+                  this.onSlotChanged(staticIndexExpression);
+               }
+               initialized = true;
+            });
+            staticIndexExpression.initialize({
+               currentValue: value,
+               mustProxifyHandler: mustProxifyHandler,
+            });
+            this._slotObservers.set(dynamicIndexExpression, {
+               staticIndexExpression,
+               changeSubscription,
+               index: dynamicIndexExpression.value,
+               pathSegmentIndex,
+            });
+            this._rebindingSlot = false;
+         }
+      );
    }
 
-   private onSlotChanged(dynamicIndexExpression: AbstractExpression): void {
+   private onSlotChanged(sender: AbstractExpression): void {
       if (!this._rebindingSlot) {
-         this.evaluate(dynamicIndexExpression);
+         this.evaluateBottomToTop(sender, this.root);
       }
    }
 

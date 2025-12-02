@@ -45,7 +45,7 @@ describe('Memmber expression tests', () => {
          expression = jsParser.parse(context, 'array[1]');
 
          const actual = (await new WaitForEvent(expression, 'changed').wait(
-            () => {}
+            () => { }
          )) as IExpression;
 
          expect(actual.value).toEqual(21);
@@ -63,13 +63,41 @@ describe('Memmber expression tests', () => {
          };
          expression = jsParser.parse(context, 'nestedA.nestedB.array[a + 1]');
 
-         const actual = (await new WaitForEvent(expression, 'changed').wait(
-            () => {}
-         )) as IExpression;
+         const actual = (await new WaitForEvent(expression, 'changed').wait(() => { })) as IExpression;
 
          expect(actual.value).toEqual(1200);
          expect(actual).toBe(expression);
       });
+
+      it('dynamic index on root array: emit change event for initial value',async () => {
+         const context = {
+            index: 0,
+            a: ['1', 1],
+         };
+         expression = jsParser.parse(context, 'a[index]');
+
+         const actual = (await new WaitForEvent(expression, 'changed').wait(() => { })) as IExpression;
+
+         expect(actual.value).toEqual('1');
+         expect(actual).toBe(expression);
+      })
+
+       it('dynamic index on root array: emit value when dynamic index changes',async () => {
+         const context = {
+            index: 0,
+            a: ['1', 1],
+         };
+         expression = jsParser.parse(context, 'a[index]');
+         // Wait till the expression has been initialized before changing value
+         await new WaitForEvent(expression, 'changed').wait(() => { });
+
+         const actual = (await new WaitForEvent(expression, 'changed', {ignoreInitialValue: true}).wait(() => { 
+            context.index = 1;
+         })) as IExpression;
+
+         expect(actual.value).toEqual(1);
+         expect(actual).toBe(expression);
+      })
 
       it('Emits a changed value for a member expression with a calculated array index when the index is set to a new value', async () => {
          const context = {
@@ -83,9 +111,10 @@ describe('Memmber expression tests', () => {
 
          expression = jsParser.parse(context, 'nestedA.nestedB.array[a + 1]');
 
-         const actual = (await new WaitForEvent(expression, 'changed', {
-            ignoreInitialValue: true,
-         }).wait(() => {
+         // Wait till the expression has been initialized before changing value
+         await new WaitForEvent(expression, 'changed').wait(() => { });
+
+         const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
             context.nestedA.nestedB.array[2] = 10;
          })) as IExpression;
 
@@ -104,9 +133,12 @@ describe('Memmber expression tests', () => {
          };
          expression = jsParser.parse(context, 'nestedA.nestedB.array[a + 1]');
 
-         const actual = (await new WaitForEvent(expression, 'changed', {
-            ignoreInitialValue: true,
-         }).wait(() => {
+         // Wait till the expression has been initialized before changing value
+         await new WaitForEvent(expression, 'changed').wait(() => { });
+
+         expect(expression.value).toEqual(1200);
+
+         const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
             context.a = 2;
          })) as IExpression;
 
@@ -125,9 +157,10 @@ describe('Memmber expression tests', () => {
          };
          expression = jsParser.parse(context, 'nestedA.nestedB.array[a + 1]');
 
-         const actual = (await new WaitForEvent(expression, 'changed', {
-            ignoreInitialValue: true,
-         }).wait(() => {
+         // Wait till the expression has been initialized before changing value
+         await new WaitForEvent(expression, 'changed').wait(() => { });
+
+         const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
             context.nestedA.nestedB = {
                array: [-1, -2, -3, -4],
             };
@@ -150,14 +183,14 @@ describe('Memmber expression tests', () => {
          expression = jsParser.parse(context, 'map["b"]');
 
          const actual = (await new WaitForEvent(expression, 'changed').wait(
-            () => {}
+            () => { }
          )) as IExpression;
 
          expect(actual.value).toEqual(2);
          expect(actual).toBe(expression);
       });
 
-      it('Emits the initial value for a member expression with a calculated array index', async () => {
+      it('Emits the initial value for a member expression with a calculated map key', async () => {
          const context = {
             key: 'c',
             nestedA: {
@@ -171,7 +204,7 @@ describe('Memmber expression tests', () => {
          expression = jsParser.parse(context, 'nestedA.map[key]');
 
          const actual = (await new WaitForEvent(expression, 'changed').wait(
-            () => {}
+            () => { }
          )) as IExpression;
 
          expect(actual.value).toEqual(3);
@@ -192,9 +225,11 @@ describe('Memmber expression tests', () => {
 
          expression = jsParser.parse(context, 'nestedA.map[key]');
 
-         const actual = (await new WaitForEvent(expression, 'changed', {
-            ignoreInitialValue: true,
-         }).wait(() => {
+         // Wait till the expression has been initialized before changing value
+         await new WaitForEvent(expression, 'changed').wait(() => { });
+
+
+         const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
             context.nestedA.map.set('c', 30);
          })) as IExpression;
 
@@ -202,7 +237,7 @@ describe('Memmber expression tests', () => {
          expect(actual).toBe(expression);
       });
 
-      it('Emits a changed value for a member expression with a calculated map key when the calcuulated key chanhes', async () => {
+      it('Emits a changed value for a member expression with a calculated map key when the calcuulated key changed', async () => {
          const context = {
             key: 'c',
             nestedA: {
@@ -216,13 +251,42 @@ describe('Memmber expression tests', () => {
 
          expression = jsParser.parse(context, 'nestedA.map[key]');
 
-         const actual = (await new WaitForEvent(expression, 'changed', {
-            ignoreInitialValue: true,
-         }).wait(() => {
+         // Wait till the expression has been initialized before changing value
+         await new WaitForEvent(expression, 'changed').wait(() => { });
+
+
+         const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
             context.key = 'b';
          })) as IExpression;
 
          expect(actual.value).toEqual(2);
+         expect(actual).toBe(expression);
+      });
+
+      it('Emits a changed value for a member expression  when replacing a parent object directly', async () => {
+         const context = {
+            key: 'c',
+            nestedA: {
+               map: new Map([
+                  ['a', 1],
+                  ['b', 2],
+                  ['c', 3],
+               ]),
+            },
+         };
+         expression = jsParser.parse(context, 'nestedA.map[key]');
+
+         const actual = await new WaitForEvent(expression, 'changed',).wait(() => {
+            context.nestedA = {
+               map: new Map([
+                  ['a', -1],
+                  ['b', -2],
+                  ['c', -3],
+               ]),
+            };
+         }) as IExpression;
+
+         expect(actual.value).toEqual(-3);
          expect(actual).toBe(expression);
       });
 
@@ -239,9 +303,10 @@ describe('Memmber expression tests', () => {
          };
          expression = jsParser.parse(context, 'nestedA.map[key]');
 
-         const actual = (await new WaitForEvent(expression, 'changed', {
-            ignoreInitialValue: true,
-         }).wait(() => {
+         // Wait till the expression has been initialized before changing value
+         await new WaitForEvent(expression, 'changed').wait(() => { });
+
+         const actual = await new WaitForEvent(expression, 'changed').wait(() => {
             context.nestedA = {
                map: new Map([
                   ['a', -1],
@@ -249,7 +314,7 @@ describe('Memmber expression tests', () => {
                   ['c', -3],
                ]),
             };
-         })) as IExpression;
+         }) as IExpression;
 
          expect(actual.value).toEqual(-3);
          expect(actual).toBe(expression);
@@ -269,7 +334,7 @@ describe('Memmber expression tests', () => {
          expression = jsParser.parse(context, 'x.y.z');
 
          const actual = (await new WaitForEvent(expression, 'changed').wait(
-            () => {}
+            () => { }
          )) as IExpression;
 
          expect(actual.value).toEqual(100);
@@ -288,14 +353,14 @@ describe('Memmber expression tests', () => {
          expression = jsParser.parse(context, 'x.y.z');
 
          const actual = (await new WaitForEvent(expression, 'changed').wait(
-            () => {}
+            () => { }
          )) as IExpression;
 
-         expect(actual.value).toEqual(100);
+         expect(expression.value).toEqual(100);
          expect(actual).toBe(expression);
       });
 
-      it('will emit change event when changing obserable', async () => {
+      it('will emit change event when changing observable', async () => {
          const context = {
             x: of({
                y: {
@@ -306,13 +371,10 @@ describe('Memmber expression tests', () => {
 
          expression = jsParser.parse(context, 'x.y.z');
 
-         await new WaitForEvent(expression, 'changed', {
-            ignoreInitialValue: true,
-         }).wait(() => {});
+         // Wait till the expression has been initialized before changing value
+         await new WaitForEvent(expression, 'changed').wait(() => { });
 
-         const actual = (await new WaitForEvent(expression, 'changed', {
-            ignoreInitialValue: true,
-         }).wait(() => {
+         const actual = (await new WaitForEvent(expression, 'changed', {}).wait(() => {
             context.x = of({
                y: { z: of(200) },
             });
@@ -334,13 +396,10 @@ describe('Memmber expression tests', () => {
 
          expression = jsParser.parse(context, 'x.y.z');
 
-         await new WaitForEvent(expression, 'changed', {
-            ignoreInitialValue: true,
-         }).wait(() => {});
+         // Wait till the expression has been initialized before changing value
+         await new WaitForEvent(expression, 'changed').wait(() => { });
 
-         const actual = (await new WaitForEvent(expression, 'changed', {
-            ignoreInitialValue: true,
-         }).wait(() => {
+         const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
             nestedContext.y.z.next(200);
          })) as IExpression;
 
@@ -359,13 +418,10 @@ describe('Memmber expression tests', () => {
 
          expression = jsParser.parse(context, 'x.y.z');
 
-         await new WaitForEvent(expression, 'changed', {
-            ignoreInitialValue: true,
-         }).wait(() => {});
+         // Wait till the expression has been initialized before changing value
+         await new WaitForEvent(expression, 'changed').wait(() => { });
 
-         const actual = (await new WaitForEvent(expression, 'changed', {
-            ignoreInitialValue: true,
-         }).wait(() => {
+         const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
             context.x.next({
                y: {
                   z: of(200),
@@ -391,7 +447,7 @@ describe('Memmber expression tests', () => {
          expression = jsParser.parse(context, 'x.y.z');
 
          const actual = (await new WaitForEvent(expression, 'changed').wait(
-            () => {}
+            () => { }
          )) as IExpression;
 
          expect(actual.value).toEqual(100);
@@ -410,7 +466,7 @@ describe('Memmber expression tests', () => {
          expression = jsParser.parse(context, 'x.y.z');
 
          const actual = (await new WaitForEvent(expression, 'changed').wait(
-            () => {}
+            () => { }
          )) as IExpression;
 
          expect(actual.value).toEqual(100);
@@ -428,13 +484,11 @@ describe('Memmber expression tests', () => {
 
          expression = jsParser.parse(context, 'x.y.z');
 
-         await new WaitForEvent(expression, 'changed', {
-            ignoreInitialValue: true,
-         }).wait(() => {});
+         // Wait till the expression has been initialized before changing value
+         await new WaitForEvent(expression, 'changed').wait(() => { });
 
-         const actual = (await new WaitForEvent(expression, 'changed', {
-            ignoreInitialValue: true,
-         }).wait(() => {
+
+         const actual = (await new WaitForEvent(expression, 'changed', {ignoreInitialValue: true}).wait(() => {
             context.x = Promise.resolve({
                y: { z: Promise.resolve(200) },
             });
@@ -442,6 +496,212 @@ describe('Memmber expression tests', () => {
 
          expect(actual.value).toEqual(200);
          expect(actual).toBe(expression);
+      });
+   });
+
+   describe('member expression with object array', () => {
+
+      it(`initial value of 'a.b[1].c.d')`, async () => {
+         const expressionContext = {
+            a: {
+               b: [
+                  {
+                     c: {
+                        d: 10
+                     }
+                  },
+                  {
+                     c: {
+                        d: 11
+                     }
+                  },
+               ]
+            },
+            x: { y: 1 }
+         };
+
+         const expression = jsParser.parse(expressionContext, 'a.b[1].c.d');
+
+         await new WaitForEvent(expression, 'changed').wait(() => { });
+
+         expect(expression.value).toEqual(11)
+
+      });
+
+      it(`value of 'a.b[1].c.d') after changing a to '{b: [{ c: { d: 100}},{ c: { d: 110}}}`, async () => {
+         const expressionContext = {
+            a: {
+               b: [
+                  {
+                     c: {
+                        d: 10
+                     }
+                  },
+                  {
+                     c: {
+                        d: 11
+                     }
+                  },
+               ]
+            },
+            x: { y: 1 }
+         };
+         const expression = jsParser.parse(expressionContext, 'a.b[1].c.d');
+
+         // Wait till the expression has been initialized before changing value
+         await new WaitForEvent(expression, 'changed').wait(() => { });
+
+
+         await new WaitForEvent(expression, 'changed').wait(() => {
+            expressionContext.a = {
+               b: [
+                  {
+                     c: {
+                        d: 100
+                     }
+                  },
+                  {
+                     c: {
+                        d: 110
+                     }
+                  },
+               ]
+            };
+         });
+
+         expect(expression.value).toEqual(110)
+
+      });
+
+      it(`value of 'a.b[1].c.d' after changing b[1] to '{ c: { d: 120}}`, async () => {
+         const expressionContext = {
+            a: {
+               b: [
+                  {
+                     c: {
+                        d: 10
+                     }
+                  },
+                  {
+                     c: {
+                        d: 11
+                     }
+                  },
+               ]
+            },
+            x: { y: 1 }
+         };
+         const expression = jsParser.parse(expressionContext, 'a.b[1].c.d');
+
+         // Wait till the expression has been initialized before changing value
+         await new WaitForEvent(expression, 'changed').wait(() => { });
+
+         await new WaitForEvent(expression, 'changed').wait(() => {
+            expressionContext.a.b[1] = {
+               c: {
+                  d: 120
+               }
+            };
+         });
+
+         expect(expression.value).toEqual(120)
+      });
+
+      it(`value of 'a.b[1].c.d' after changing b[1].c to '{d: 220}`, async () => {
+         const expressionContext = {
+            a: {
+               b: [
+                  {
+                     c: {
+                        d: 10
+                     }
+                  },
+                  {
+                     c: {
+                        d: 11
+                     }
+                  },
+               ]
+            },
+            x: { y: 1 }
+         };
+         const expression = jsParser.parse(expressionContext, 'a.b[1].c.d');
+
+         // Wait till the expression has been initialized before changing value
+         await new WaitForEvent(expression, 'changed').wait(() => { });
+
+         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
+            expressionContext.a.b[1].c = { d: 220 };
+         });
+
+         expect(expression.value).toEqual(220)
+      });
+
+      it(`Value of a.b[1].c.d after first changing path segements.`, async () => {
+         const expressionContext = {
+            a: {
+               b: [
+                  {
+                     c: {
+                        d: 10
+                     }
+                  },
+                  {
+                     c: {
+                        d: 11
+                     }
+                  },
+               ]
+            },
+            x: { y: 1 }
+         };
+         const expression = jsParser.parse(expressionContext, 'a.b[1].c.d');
+
+         await new WaitForEvent(expression, 'changed').wait(() => { });
+
+         expect(expression.value).toEqual(11);
+
+         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true, timeout: 600000000 }).wait(() => {
+            expressionContext.a = {
+               b: [
+                  {
+                     c: {
+                        d: 100
+                     }
+                  },
+                  {
+                     c: {
+                        d: 110
+                     }
+                  },
+               ]
+            };
+         });
+
+         expect(expression.value).toEqual(110);
+
+         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
+            expressionContext.a.b[1] = {
+               c: {
+                  d: 120
+               }
+            };
+         });
+
+         expect(expression.value).toEqual(120);
+
+         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
+            expressionContext.a.b[1].c = { d: 130 };
+         });
+
+         expect(expression.value).toEqual(130);
+
+
+         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
+            expressionContext.a.b[1].c.d = 140
+         });
+
+         expect(expression.value).toEqual(140);
       });
    });
 });

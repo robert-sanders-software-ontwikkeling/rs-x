@@ -8,7 +8,6 @@ export class TypeofExpression extends ParameterizedExpression<string> {
    }
 
    protected override evaluateExpression(
-      _sender: AbstractExpression,
       value: unknown
    ): string {
       return typeof value;

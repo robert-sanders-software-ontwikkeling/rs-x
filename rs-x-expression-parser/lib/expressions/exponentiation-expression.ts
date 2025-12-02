@@ -17,7 +17,6 @@ export class ExponentiationExpression extends BinaryExpression<number, number> {
    }
 
    protected override evaluateExpression(
-      _: AbstractExpression,
       base: number,
       exponent: number
    ): number {

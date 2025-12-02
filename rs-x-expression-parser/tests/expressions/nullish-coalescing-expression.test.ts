@@ -60,6 +60,8 @@ describe('NullishCoalescingExpression tests', () => {
          b: 10,
       };
       expression = jsParser.parse(context, 'a ?? b');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,

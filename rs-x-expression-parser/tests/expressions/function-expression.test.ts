@@ -92,6 +92,9 @@ describe('FunctionExpression tests', () => {
    it('method on root object: change event is emitted when arguments changes', async () => {
       const context = { a: 10, multiplWithTwo: (a: number) => 2 * a };
       expression = jsParser.parse(context, 'multiplWithTwo(a)');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
+
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,
@@ -103,7 +106,7 @@ describe('FunctionExpression tests', () => {
       expect(actual).toBe(expression);
    });
 
-   it('method on root object: change event is emitted when arguments changes', async () => {
+   it('computed method on nested object: change event is emitted when arguments changes', async () => {
       const context = {
          a: 10,
          b: {
@@ -115,6 +118,8 @@ describe('FunctionExpression tests', () => {
          },
       };
       expression = jsParser.parse(context, 'b[b.methodName](a)');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
          context.a = 20;
@@ -136,6 +141,8 @@ describe('FunctionExpression tests', () => {
          },
       };
       expression = jsParser.parse(context, 'b[b.methodName](a)');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
          context.b = {
@@ -166,6 +173,8 @@ describe('FunctionExpression tests', () => {
          },
       };
       expression = jsParser.parse(context, 'b[b.methodName](a)');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
          context.b.methodName = 'add';

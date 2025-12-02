@@ -17,7 +17,6 @@ export class EqualityExpression extends BinaryExpression<boolean> {
    }
 
    protected override evaluateExpression(
-      _: AbstractExpression,
       a: unknown,
       b: unknown
    ): boolean {

@@ -2,13 +2,12 @@ import { AbstractExpression } from './abstract-expression';
 import { ExpressionType } from './interfaces';
 import { ParameterizedExpression } from './parameterized-abstract-expression';
 
-export class ConvertToNumberExpression extends ParameterizedExpression<number> {
+export class UnaryPlusExpression extends ParameterizedExpression<number> {
    constructor(expressionString: string, expression: AbstractExpression) {
-      super(ExpressionType.ConvertToNumber, expressionString, expression);
+      super(ExpressionType.UnaryPlus, expressionString, expression);
    }
 
    protected override evaluateExpression(
-      _: AbstractExpression,
       a: unknown
    ): number {
       return +a;

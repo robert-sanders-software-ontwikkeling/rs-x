@@ -17,7 +17,6 @@ export class ObjectExpression extends ParameterizedExpression<object> {
    }
 
    protected evaluateExpression(
-      _sender: AbstractExpression,
       ...args: unknown[]
    ): object {
       return Object.assign({}, ...args);

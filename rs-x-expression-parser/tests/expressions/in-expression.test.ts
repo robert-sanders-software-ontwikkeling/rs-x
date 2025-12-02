@@ -36,7 +36,7 @@ describe('InExpression tests', () => {
             hello: 'hi',
          },
       };
-      expression = jsParser.parse(context, ' "hello" in b');
+      expression = jsParser.parse(context, '"hello" in b');
       expect(expression.type).toEqual(ExpressionType.In);
    });
 
@@ -80,6 +80,8 @@ describe('InExpression tests', () => {
          },
       };
       expression = jsParser.parse(context, ' propertyName in b');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,

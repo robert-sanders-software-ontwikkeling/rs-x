@@ -63,6 +63,9 @@ describe('ConditionalExpression tests', () => {
    it('will return emit change event when condition changes', async () => {
       const context = { a: 1, b: 2, c: 100, d: 200 };
       expression = jsParser.parse(context, 'a > b ? c : d');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
+
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,
@@ -77,6 +80,9 @@ describe('ConditionalExpression tests', () => {
    it('will emit change event if consequent changes', async () => {
       const context = { a: 10, b: 2, c: 100, d: 200 };
       expression = jsParser.parse(context, 'a > b ? c : d');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
+
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,
@@ -91,6 +97,9 @@ describe('ConditionalExpression tests', () => {
    it('will not emit change event if condition is true and changing alternate', async () => {
       const context = { a: 10, b: 2, c: 100, d: 200 };
       expression = jsParser.parse(context, 'a > b ? c : d');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
+
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,
@@ -104,6 +113,9 @@ describe('ConditionalExpression tests', () => {
    it('will emit change event if alternate changes', async () => {
       const context = { a: 1, b: 2, c: 100, d: 200 };
       expression = jsParser.parse(context, 'a > b ? c : d');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
+
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,
@@ -118,6 +130,9 @@ describe('ConditionalExpression tests', () => {
    it('will not emit change event if condition is false and changing consequent', async () => {
       const context = { a: 1, b: 2, c: 100, d: 200 };
       expression = jsParser.parse(context, 'a > b ? c : d');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
+
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,

@@ -17,7 +17,6 @@ export class StrictInequalityExpression extends BinaryExpression<boolean> {
    }
 
    protected override evaluateExpression(
-      _sender: AbstractExpression,
       a: unknown,
       b: unknown
    ): boolean {

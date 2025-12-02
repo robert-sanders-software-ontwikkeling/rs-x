@@ -13,10 +13,18 @@ import { PropertyOwnerResolver } from './index-value-observer-manager/property-o
 import { ArrayIndexOwnerResolver } from './index-value-observer-manager/array-index-owner-resolver';
 import { MapKeyOwnerResolver } from './index-value-observer-manager/map-key-owner-resolver';
 import { DefaultIdentifierOwnerResolver } from './index-value-observer-manager/default-identifier-owner-resolver';
+import { IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
+import { ExpressionChangeTransactionManager } from './expresion-change-transaction-manager';
 
 InjectionContainer.load(RsXStateManagerModule);
 
 export const RsXExpressionParserModule = new ContainerModule((options) => {
+   options
+      .bind<IExpressionChangeTransactionManager>(
+         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager
+      )
+      .to(ExpressionChangeTransactionManager)
+      .inSingletonScope();
    options
       .bind<IExpressionParser>(
          RsXExpressionParserInjectionTokens.IExpressionParser

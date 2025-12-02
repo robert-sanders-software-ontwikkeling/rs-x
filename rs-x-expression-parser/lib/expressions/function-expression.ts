@@ -6,6 +6,7 @@ import {
 import { ArrayExpression } from './array-expression';
 import { ConstantNullExpression } from './constant-null-expression';
 import { ExpressionType } from './interfaces';
+import { IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 
 export class FunctionExpression extends AbstractExpression {
    private _context: unknown;
@@ -17,12 +18,13 @@ export class FunctionExpression extends AbstractExpression {
       public readonly objectExpression: AbstractExpression<object>,
       public readonly argumentsExpression: ArrayExpression,
       public readonly computed: boolean,
-      public readonly optional: boolean
+      public readonly optional: boolean,
+      expressionChangeTransactionManager: IExpressionChangeTransactionManager
    ) {
       super(
          ExpressionType.Function,
          expressionString,
-         objectExpression ?? new ConstantNullExpression(),
+         objectExpression ?? new ConstantNullExpression(expressionChangeTransactionManager),
          functionExpression,
          argumentsExpression
       );
@@ -47,17 +49,22 @@ export class FunctionExpression extends AbstractExpression {
       return this;
    }
 
-   protected override evaluateExpression(sender: AbstractExpression): unknown {
+   protected override evaluate(sender: AbstractExpression): unknown {
       if (
          sender === this.objectExpression &&
          this.objectExpression.value &&
          !this.computed
       ) {
-         this.functionExpression.initialize({
-            context: this.objectExpression.value,
-            stateManager: undefined,
+         // Must run after the current evaluate() finishes.
+         // Running this.functionExpression.initialize() immediately could trigger a nested evaluate(),
+         // so we defer it until the current call has fully returned.
+         queueMicrotask(() => {
+            this.functionExpression.initialize({
+               context: this.objectExpression.value,
+            });
          });
-         return;
+
+         return undefined
       }
 
       const {

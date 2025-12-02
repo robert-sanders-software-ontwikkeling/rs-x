@@ -18,7 +18,6 @@ export class NewExpression extends ParameterizedExpression {
    }
 
    protected evaluateExpression(
-      _sender: AbstractExpression,
       constructorFunction: ConstructorType,
       ...args: unknown[]
    ): unknown {

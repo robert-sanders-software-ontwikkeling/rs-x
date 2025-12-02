@@ -10,7 +10,7 @@ import {
    unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 
-describe('ConvertToNumberExpression tests', () => {
+describe('Unar tests', () => {
    let jsParser: IExpressionParser;
    let expression: IExpression;
 
@@ -33,7 +33,7 @@ describe('ConvertToNumberExpression tests', () => {
    it('type', () => {
       const context = { a: '2' };
       expression = jsParser.parse(context, '+a');
-      expect(expression.type).toEqual(ExpressionType.ConvertToNumber);
+      expect(expression.type).toEqual(ExpressionType.UnaryPlus);
    });
 
    it('will emit change event for initial value', async () => {
@@ -51,6 +51,8 @@ describe('ConvertToNumberExpression tests', () => {
    it('will emit change event when operands changes', async () => {
       const context = { a: '2' };
       expression = jsParser.parse(context, '+a');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,

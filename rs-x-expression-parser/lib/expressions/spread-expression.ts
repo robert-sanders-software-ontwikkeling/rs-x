@@ -19,7 +19,6 @@ export class SpreadExpression extends ParameterizedExpression<
    }
 
    protected override evaluateExpression(
-      _: AbstractExpression,
       ...args: unknown[]
    ): unknown[] | object {
       return args[0] as unknown[] | object;

@@ -18,7 +18,7 @@ export * from './constant-null-expression';
 export * from './constant-number-expression';
 export * from './constant-regexp-expression';
 export * from './constant-string-expression';
-export * from './convert-to-number-expression';
+export * from './unary-plus-expression';
 export * from './division-expression';
 export * from './equality-expression';
 export * from './exponentiation-expression';

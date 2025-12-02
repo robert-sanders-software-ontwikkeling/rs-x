@@ -10,32 +10,45 @@ import {
 } from './abstract-expression';
 import { ExpressionType } from './interfaces';
 import { MemberExpression } from './member-expression';
+import { IExpressionChangeCommitHandler, IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 
 export interface IIdentifierInitializeConfig
    extends IExpressionInitializeConfig {
-   currentValue: unknown;
+   currentValue?: unknown;
 }
 
 export class IdentifierExpression extends AbstractExpression {
    private _changeSubscription: Subscription;
-   private _identifierValue: unknown;
+   private _isInitialized = false;
    private _indexValueObserver: IIndexValueObserver;
    private releaseMustProxifyHandler: () => void;
+   private _commitAfterInitialized: boolean;
+
+   private readonly _commitHandler: IExpressionChangeCommitHandler;
 
    constructor(
       private readonly _rootContext: unknown,
       private readonly _indexValueObserverManager: IIndexValueObserverManager,
       private readonly onDispose: () => void,
       expressionString: string,
-      private readonly _indexValue?: unknown
+      private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
+      private readonly _indexValue?: unknown,
    ) {
       super(ExpressionType.Identifier, expressionString);
+
+
+      this._commitHandler = {
+         owner: this,
+         commit: this.commit
+      };
    }
 
    public override initialize(
       settings: IIdentifierInitializeConfig
    ): AbstractExpression {
       super.initialize(settings);
+
+      this._commitAfterInitialized = settings.context !== this._rootContext;
       this._value = settings.currentValue;
       if (!this._indexValueObserver) {
          this.observeChange(settings);
@@ -47,6 +60,8 @@ export class IdentifierExpression extends AbstractExpression {
             )
          );
       }
+
+      this._isInitialized = true;
 
       return this;
    }
@@ -65,8 +80,8 @@ export class IdentifierExpression extends AbstractExpression {
       }
    }
 
-   protected override evaluateExpression(): unknown {
-      return this._identifierValue;
+   protected override evaluate(): unknown {
+      return this._value;
    }
 
    private observeChange(settings: IIdentifierInitializeConfig): void {
@@ -112,11 +127,18 @@ export class IdentifierExpression extends AbstractExpression {
       this._indexValueObserver = undefined;
    }
 
+   private commit = (root:AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>) => this.reevaluated(this, root, pendingCommits);
+
    private onValueChanged = (stateChange: IStateChange) => {
       if (this.value === stateChange.newValue) {
          return;
       }
-      this._identifierValue = stateChange.newValue;
-      this.evaluate(this, stateChange);
+      this._value = stateChange.newValue;
+     
+      this._expressionChangeTransactionManager.registerChange(this.root, this._commitHandler);
+
+      if(!this._isInitialized && this._commitAfterInitialized) {
+          this._expressionChangeTransactionManager.commit();
+      }
    };
 }

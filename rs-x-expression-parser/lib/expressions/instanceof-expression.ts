@@ -21,7 +21,6 @@ export class InstanceofExpression extends BinaryExpression<
    }
 
    protected override evaluateExpression(
-      _: AbstractExpression,
       object: object,
       type: ConstructorType
    ): boolean {

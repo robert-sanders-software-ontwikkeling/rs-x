@@ -8,7 +8,6 @@ export class TemplateStringExpression extends CollectionExpression<string> {
    }
 
    protected override evaluateExpression(
-      _sender: AbstractExpression,
       ...segments: unknown[]
    ): string {
       return segments.join('');
