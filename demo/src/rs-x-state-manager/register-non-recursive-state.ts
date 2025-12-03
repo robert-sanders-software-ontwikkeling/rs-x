@@ -1,4 +1,4 @@
-import { InjectionContainer } from '@rs-x/core';
+import { InjectionContainer, printValue } from '@rs-x/core';
 import {
     IStateChange,
     IStateManager,
@@ -8,14 +8,9 @@ import {
 
 
 InjectionContainer.load(RsXStateManagerModule);
-
 const stateManager: IStateManager = InjectionContainer.get(
     RsXStateManagerInjectionTokens.IStateManager
 );
-
-function printValue(object: unknown): void {
-    console.log(JSON.stringify(object, null, 4).replaceAll('"', ''));
-}
 
 const stateContext = {
     x: { y: 10 }

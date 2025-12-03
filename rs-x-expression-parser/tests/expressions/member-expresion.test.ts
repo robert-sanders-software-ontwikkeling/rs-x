@@ -661,7 +661,7 @@ describe('Memmber expression tests', () => {
 
          expect(expression.value).toEqual(11);
 
-         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true, timeout: 600000000 }).wait(() => {
+         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true}).wait(() => {
             expressionContext.a = {
                b: [
                   {

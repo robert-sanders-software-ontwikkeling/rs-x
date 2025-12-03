@@ -23,13 +23,13 @@ export class IdentifierExpression extends AbstractExpression {
    private _indexValueObserver: IIndexValueObserver;
    private releaseMustProxifyHandler: () => void;
    private _commitAfterInitialized: boolean;
-
+ 
    private readonly _commitHandler: IExpressionChangeCommitHandler;
 
    constructor(
       private readonly _rootContext: unknown,
       private readonly _indexValueObserverManager: IIndexValueObserverManager,
-      private readonly onDispose: () => void,
+    
       expressionString: string,
       private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
       private readonly _indexValue?: unknown,
@@ -66,18 +66,11 @@ export class IdentifierExpression extends AbstractExpression {
       return this;
    }
 
-   public override dispose(): void {
-      if (!this._changeSubscription) {
-         return;
-      }
-
+   protected override internalDispose(): void {
+      super.internalDispose();
       this.releaseMustProxifyHandler?.();
-
-      super.dispose();
       this.disposeObserver();
-      if (this.onDispose) {
-         this.onDispose();
-      }
+     
    }
 
    protected override evaluate(): unknown {

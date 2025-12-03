@@ -12,7 +12,7 @@ export type IExpressionForContextManager = ISingletonFactory<
    AbstractExpression
 >;
 export type IExpressionManager = ISingletonFactory<
-   string,
-   IExpressionInfo,
+   object,
+   object,
    IExpressionForContextManager
 >;

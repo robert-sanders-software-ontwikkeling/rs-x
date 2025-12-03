@@ -1,22 +1,19 @@
 import {
    Inject,
    Injectable,
-   SingletonFactory,
-   SingletonFactoryWithGuid,
+   SingletonFactory
 } from '@rs-x/core';
 import { AbstractExpression } from '../expressions/abstract-expression';
 import { IExpressionParser } from '../expressions/interfaces';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
 import {
    IExpressionForContextManager,
-   IExpressionInfo,
-   IExpressionManager,
+   IExpressionManager
 } from './expression-manager.type';
 
 class ExpressionForContextManager
    extends SingletonFactory<string, string, AbstractExpression>
-   implements IExpressionForContextManager
-{
+   implements IExpressionForContextManager {
    constructor(
       private readonly _expressionParser: IExpressionParser,
       private readonly _context: object,
@@ -33,9 +30,11 @@ class ExpressionForContextManager
       return expression;
    }
 
-   protected override createInstance(expression: string): AbstractExpression {
-      return this._expressionParser.parse(this._context, expression, () =>
-         this.release(expression)
+   protected override createInstance(expression: string, id: string): AbstractExpression {
+      return this._expressionParser.parse(this._context, expression, {
+         release: () => this.release(id),
+         canDispose: () => this.getReferenceCount(id) === 1
+      }
       );
    }
 
@@ -48,12 +47,18 @@ class ExpressionForContextManager
 
 @Injectable()
 export class ExpressionManager
-   extends SingletonFactoryWithGuid<
-      IExpressionInfo,
+   extends SingletonFactory<
+      object,
+      object,
       IExpressionForContextManager
    >
-   implements IExpressionManager
-{
+   implements IExpressionManager {
+   public override getId(context: object): object {
+      return this.createId(context);
+   }
+   protected override createId(context: object): object {
+      return context;
+   }
    constructor(
       @Inject(RsXExpressionParserInjectionTokens.IExpressionParser)
       private readonly _expressionParser: IExpressionParser
@@ -61,21 +66,14 @@ export class ExpressionManager
       super();
    }
 
-   protected getGroupId(data: IExpressionInfo): unknown {
-      return data.context;
-   }
-
-   protected getGroupMemberId(data: IExpressionInfo): unknown {
-      return data.expression;
-   }
 
    protected createInstance(
-      expressionInfo: IExpressionInfo,
-      id: string
+      context: object,
+      id: object
    ): IExpressionForContextManager {
       return new ExpressionForContextManager(
          this._expressionParser,
-         expressionInfo.context,
+         context,
          () => this.release(id)
       );
    }

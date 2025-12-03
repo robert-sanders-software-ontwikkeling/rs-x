@@ -65,8 +65,8 @@ export class MemberExpression extends AbstractExpression {
       return this;
    }
 
-   public override dispose(): void {
-      super.dispose();
+   protected override internalDispose(): void {
+      super.internalDispose();
 
       for (const slotObserver of this._slotObservers.values()) {
          this.disposeSlotObserver(slotObserver);
@@ -305,7 +305,6 @@ export class MemberExpression extends AbstractExpression {
       const staticIndexExpression = new IdentifierExpression(
          context,
          this._indexValueObserverManager,
-         emptyFunction,
          '',
          this._expressionChangeTransactionManager,
          dynamicIndexExpression.value

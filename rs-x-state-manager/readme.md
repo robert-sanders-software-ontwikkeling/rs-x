@@ -1299,10 +1299,7 @@ export class TextDocumentObserverProxyPairFactory implements IObjectObserverProx
             observer,
             proxy: observer.target as TextDocument,
             proxyTarget: proxyTarget.target,
-            id: proxyTarget.target,
-            // This should normally only be set to false when the value
-            // is async. For example when the property is a Promise
-            emitChangeWhenSet: true
+            id: proxyTarget.target
         };
     }
 

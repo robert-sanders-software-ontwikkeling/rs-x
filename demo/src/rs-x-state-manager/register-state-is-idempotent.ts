@@ -9,7 +9,6 @@ import {
 
 // Load the state manager module into the injection container
 InjectionContainer.load(RsXStateManagerModule);
-
 const stateManager: IStateManager = InjectionContainer.get(
     RsXStateManagerInjectionTokens.IStateManager
 );

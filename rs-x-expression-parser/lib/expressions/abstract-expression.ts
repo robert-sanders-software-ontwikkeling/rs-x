@@ -1,8 +1,9 @@
-import { PENDING } from '@rs-x/core';
+import { emptyFunction, PENDING } from '@rs-x/core';
 import { MustProxify } from '@rs-x/state-manager';
 import { Observable, ReplaySubject, Subscription } from 'rxjs';
 import { IExpressionChangeCommitHandler, IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 import { ExpressionType, IExpression } from './interfaces';
+import { IDisposableOwner } from '@rs-x/state-manager';
 
 export interface IMustProxifyHandler {
    createMustProxifyHandler: () => MustProxify;
@@ -13,6 +14,7 @@ export interface IExpressionInitializeConfig {
    context?: unknown;
    mustProxifyHandler?: IMustProxifyHandler;
    transactionManager?: IExpressionChangeTransactionManager
+   owner?: IDisposableOwner
 }
 
 export abstract class AbstractExpression<T = unknown, PT = unknown>
@@ -25,6 +27,7 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
    private _isDisposed = false;
    private _oldValue: unknown;
    private _commitedSubscription: Subscription;
+   private _owner: IDisposableOwner;
 
    protected constructor(
       public readonly type: ExpressionType,
@@ -43,7 +46,9 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
       settings: IExpressionInitializeConfig
    ): AbstractExpression {
 
+
       if (!this._parent && settings.transactionManager) {
+         this._owner = settings.owner;
          this._commitedSubscription = settings.transactionManager.commited.subscribe(this.onCommited);
       }
 
@@ -75,12 +80,13 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
       if (this._isDisposed) {
          return;
       }
-      this._isDisposed = true;
-      this._commitedSubscription?.unsubscribe();
-      this._commitedSubscription = undefined;
-      this._childExpressions.forEach((childExpression) =>
-         childExpression.dispose()
-      );
+
+      if (!this._owner?.canDispose || this._owner?.canDispose()) {
+         this.internalDispose();
+      }
+
+      this._owner?.release?.();
+
    }
 
    public toString(): string {
@@ -109,22 +115,31 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
       expression._value = undefined;
    }
 
-   protected abstract evaluate(sender: AbstractExpression, root:AbstractExpression): T;
+   protected abstract evaluate(sender: AbstractExpression, root: AbstractExpression): T;
 
-   protected prepareReevaluation(sender: AbstractExpression, root:AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
+   protected internalDispose(): void {
+      this._commitedSubscription?.unsubscribe();
+      this._commitedSubscription = undefined;
+      this._childExpressions.forEach((childExpression) =>
+         childExpression.dispose()
+      );
+      this._isDisposed = true;
+   }
+
+   protected prepareReevaluation(sender: AbstractExpression, root: AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
       if (this._parent) {
-           return this._parent.prepareReevaluation(sender,root, pendingCommits);
+         return this._parent.prepareReevaluation(sender, root, pendingCommits);
       }
       return true;
    }
 
-   protected reevaluated(sender: AbstractExpression, root:AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
+   protected reevaluated(sender: AbstractExpression, root: AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
       return this.prepareReevaluation(sender, root, pendingCommits)
          ? this.evaluateBottomToTop(sender, root)
          : false;
    }
 
-   protected evaluateBottomToTop(sender: AbstractExpression, root:AbstractExpression, ): boolean {
+   protected evaluateBottomToTop(sender: AbstractExpression, root: AbstractExpression,): boolean {
       const value = this.evaluate(sender, root);
       if (value === PENDING) {
          return false;

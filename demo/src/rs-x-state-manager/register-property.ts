@@ -1,4 +1,4 @@
-import { InjectionContainer, truePredicate } from '@rs-x/core';
+import { InjectionContainer, printValue, truePredicate } from '@rs-x/core';
 import {
     IStateChange,
     IStateManager,
@@ -8,14 +8,9 @@ import {
 
 // Load the state manager module into the injection container
 InjectionContainer.load(RsXStateManagerModule);
-
 const stateManager: IStateManager = InjectionContainer.get(
     RsXStateManagerInjectionTokens.IStateManager
 );
-
-function printValue(object: unknown): void {
-    console.log(JSON.stringify(object, null, 4).replaceAll('"', ''));
-}
 
 interface INestStateConext {
     a: number;

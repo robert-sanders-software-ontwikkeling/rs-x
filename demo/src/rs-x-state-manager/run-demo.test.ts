@@ -1,5 +1,5 @@
 import dedent from 'dedent';
-import { runDemo } from '../../demo/run-demo';
+import { runDemo } from '../../run-demo';
 
 describe('Statemanager demos', () => {
     beforeEach(() => {

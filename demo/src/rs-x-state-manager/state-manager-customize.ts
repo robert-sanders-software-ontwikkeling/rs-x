@@ -182,13 +182,16 @@ export class TextDocumentInxdexObserverProxyPairFactory extends IndexObserverPro
         @Inject(RsXCoreInjectionTokens.IErrorLog)
         errorLog: IErrorLog,
         @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
-        indexValueAccessor: IIndexValueAccessor
+        indexValueAccessor: IIndexValueAccessor,
+        @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
+        proxyRegister: IProxyRegistry
     ) {
         super(
             objectObserverManager,
             textDocumenIndexObserverManager,
             errorLog,
-            indexValueAccessor
+            indexValueAccessor,
+            proxyRegister
         );
     }
 
@@ -214,9 +217,6 @@ export class TextDocumentObserverProxyPairFactory implements IObjectObserverProx
             proxy: observer.target as TextDocument,
             proxyTarget: proxyTarget.target,
             id: proxyTarget.target,
-            // This should normally only be set to false when the value
-            // is async. For example when the property is a Promise
-            emitChangeWhenSet: true
         };
     }
 
@@ -393,7 +393,7 @@ function testMonitorTextDocument(): void {
 
 }
 
-function testMonitoreSpecificLineInDocument():void {
+function testMonitoreSpecificLineInDocument(): void {
     const line3OnPage1Index = { pageIndex: 0, lineIndex: 2 };
     const lineSubscription = stateManager.changed.subscribe((change: IStateChange) => {
         const documentIndex = change.key as ITextDocumentIndex;
