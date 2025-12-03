@@ -1,6 +1,5 @@
 import { PreDestroy } from '../dependency-injection';
 import { PrettyPrinter } from '../error-log/pretty-printer';
-import { Type } from '../types/type';
 import { ISingletonFactory } from './singleton.factory.interface';
 
 export abstract class SingletonFactory<

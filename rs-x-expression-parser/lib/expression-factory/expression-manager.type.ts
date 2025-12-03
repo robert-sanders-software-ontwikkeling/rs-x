@@ -1,5 +1,5 @@
 import { ISingletonFactory } from '@rs-x/core';
-import { AbstractExpression } from '../expressions/abstract-expression';
+import { IExpression } from '../expressions';
 
 export interface IExpressionInfo {
    context: object;
@@ -9,7 +9,7 @@ export interface IExpressionInfo {
 export type IExpressionForContextManager = ISingletonFactory<
    string,
    string,
-   AbstractExpression
+   IExpression
 >;
 export type IExpressionManager = ISingletonFactory<
    object,

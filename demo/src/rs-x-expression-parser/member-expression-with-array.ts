@@ -1,6 +1,6 @@
 import { emptyFunction, InjectionContainer, printValue, WaitForEvent } from '@rs-x/core';
 import {
-    IExpressionManager,
+    IExpressionFactory,
     RsXExpressionParserInjectionTokens,
     RsXExpressionParserModule
 } from '@rs-x/expression-parser';
@@ -8,7 +8,7 @@ import {
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionManager: IExpressionManager = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionManager);
+const expressionFactory: IExpressionFactory = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionFactory);
 
 export const run = (async () => {
     const expressionContext = {
@@ -29,7 +29,7 @@ export const run = (async () => {
         x: { y: 1 }
     };
 
-    const expression = expressionManager.create(expressionContext).instance.create('a.b[1].c.d').instance;
+    const expression = expressionFactory.create(expressionContext, 'a.b[1].c.d');
 
     try {
         // Wait until the expression has been resolved (has a value)

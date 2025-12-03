@@ -3,8 +3,7 @@ import {
    Injectable,
    SingletonFactory
 } from '@rs-x/core';
-import { AbstractExpression } from '../expressions/abstract-expression';
-import { IExpressionParser } from '../expressions/interfaces';
+import { IExpression, IExpressionParser } from '../expressions/interfaces';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
 import {
    IExpressionForContextManager,
@@ -12,7 +11,7 @@ import {
 } from './expression-manager.type';
 
 class ExpressionForContextManager
-   extends SingletonFactory<string, string, AbstractExpression>
+   extends SingletonFactory<string, string, IExpression>
    implements IExpressionForContextManager {
    constructor(
       private readonly _expressionParser: IExpressionParser,
@@ -30,7 +29,7 @@ class ExpressionForContextManager
       return expression;
    }
 
-   protected override createInstance(expression: string, id: string): AbstractExpression {
+   protected override createInstance(expression: string, id: string): IExpression {
       return this._expressionParser.parse(this._context, expression, {
          release: () => this.release(id),
          canDispose: () => this.getReferenceCount(id) === 1

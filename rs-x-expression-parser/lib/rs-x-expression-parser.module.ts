@@ -1,8 +1,6 @@
 import { ContainerModule, InjectionContainer } from '@rs-x/core';
 import { RsXStateManagerModule } from '@rs-x/state-manager';
-import { ExpressionManager } from './expression-manager/expression-manager';
-import { IExpressionManager } from './expression-manager/expression-manager.type';
-import { IExpressionParser } from './expressions/interfaces';
+
 
 import { JsEspreeExpressionParser } from './js-espree-expression-parser';
 import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
@@ -15,6 +13,11 @@ import { MapKeyOwnerResolver } from './index-value-observer-manager/map-key-owne
 import { DefaultIdentifierOwnerResolver } from './index-value-observer-manager/default-identifier-owner-resolver';
 import { IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
 import { ExpressionChangeTransactionManager } from './expresion-change-transaction-manager';
+import { ExpressionManager } from './expression-factory/expression-manager';
+import { IExpressionParser } from './expressions/interfaces';
+import { IExpressionManager } from './expression-factory/expression-manager.type';
+import { IExpressionFactory } from './expression-factory/expression-factory.interface';
+import { ExpressionFactory } from './expression-factory/expression-factory';
 
 InjectionContainer.load(RsXStateManagerModule);
 
@@ -66,6 +69,13 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
          RsXExpressionParserInjectionTokens.IdentifierOwnerResolver
       )
       .to(DefaultIdentifierOwnerResolver)
+      .inSingletonScope();
+
+   options
+      .bind<IExpressionFactory>(
+         RsXExpressionParserInjectionTokens.IExpressionFactory
+      )
+      .to(ExpressionFactory)
       .inSingletonScope();
 });
 

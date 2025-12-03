@@ -1,11 +1,11 @@
-import { DateProperty, IDatePropertyAccessor, IErrorLog, IIndexValueAccessor, Inject, Injectable, RsXCoreInjectionTokens, truePredicate } from '@rs-x/core';
-import { IndexObserverProxyPairFactory } from '../indexed-value-observer-proxy-pair/indexed-value-observer-proxy-pair.factory';
-import { IDatePropertyObserverManager } from './date-property-observer-manager.type';
-import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
+import { DateProperty, IErrorLog, IIndexValueAccessor, Inject, Injectable, RsXCoreInjectionTokens, truePredicate } from '@rs-x/core';
 import { IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
 import { IPropertyInfo } from '../../../object-property-observer-proxy-pair-manager.type';
-import { IDatePropertyObserverProxyPairFactory } from './date-property-observer-proxy-pair.factory.type';
 import { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
+import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
+import { IndexObserverProxyPairFactory } from '../indexed-value-observer-proxy-pair/indexed-value-observer-proxy-pair.factory';
+import { IDatePropertyObserverManager } from './date-property-observer-manager.type';
+import { IDatePropertyObserverProxyPairFactory } from './date-property-observer-proxy-pair.factory.type';
 
 
 @Injectable()

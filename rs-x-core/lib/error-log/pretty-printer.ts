@@ -1,11 +1,18 @@
-interface CustomToString {
+
+interface ICustomToString {
     toString(indent: number, level: number): string | string[];
+}
+
+interface IToLines {
+    toLines(indent: number, level: number): string[]
 }
 
 type Handler = {
     predicate: (value: unknown) => boolean;
-    action: (value: unknown, level: number, quoteStrings: boolean) => string[];
+    action: (value: unknown, level: number, quoteStrings?: boolean) => string[];
 };
+
+
 
 export class PrettyPrinter {
     private readonly indent: number;
@@ -66,12 +73,12 @@ export class PrettyPrinter {
             },
             {
                 predicate: (v) => this.hasToLines(v),
-                action: (v: any, level) => v.toLines(this.indent, level)
+                action: (v: unknown, level: number) => (v as IToLines).toLines(this.indent, level)
             },
             {
                 predicate: (v) => this.isCustomToString(v),
-                action: (v: any, level) => {
-                    const raw = v.toString(this.indent, level);
+                action: (v: unknown, level) => {
+                    const raw = (v as ICustomToString).toString(this.indent, level);
                     return Array.isArray(raw) ? raw.map(l => this.spaces(level) + l)
                                                : String(raw).split('\n').map(l => this.spaces(level) + l);
                 }
@@ -122,10 +129,10 @@ export class PrettyPrinter {
     }
 
     private hasToLines(value: unknown): value is { toLines(indent: number, level: number): string[] } {
-        return typeof value === 'object' && value !== null && typeof (value as any).toLines === 'function';
+        return typeof value === 'object' && value !== null && typeof ((value as IToLines)).toLines === 'function';
     }
 
-    private isCustomToString(value: unknown): value is CustomToString {
+    private isCustomToString(value: unknown): value is ICustomToString {
         if (typeof value !== 'object' || value === null) return false;
         const proto = Object.getPrototypeOf(value);
         if (!proto) return false;

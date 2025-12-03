@@ -77,8 +77,7 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
       // value should be undefined and the resolved value will be emitted later
       const initialValue = indexValueObserverProxyPair
          ? indexValueObserverProxyPair.observer.initialValue
-         : valueAtIndex;
-      const isAsync = this._indexValueAccessor.isAsync(object, index);
+         : valueAtIndex;;
       const groupObserver = this.createGroupObserver(
          owner,
          object,

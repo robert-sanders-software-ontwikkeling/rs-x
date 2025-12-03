@@ -7,5 +7,6 @@ export const RsXExpressionParserInjectionTokens = {
    IExpressionManager: Symbol('IExpressionManager'),
    IExpressionChangeTransactionManager: Symbol('IExpressionChangeTransactionManager'),
    IExpressionParser: Symbol('IExpressionParser'),
+   IExpressionFactory:  Symbol('IExpressionFactory')
 
 };

@@ -1,4 +1,3 @@
-import { AbstractExpression } from './abstract-expression';
 import { ArrayExpression } from './array-expression';
 import { IdentifierExpression } from './identifier-expression';
 import { ExpressionType } from './interfaces';

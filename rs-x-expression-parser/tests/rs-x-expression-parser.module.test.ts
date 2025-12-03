@@ -1,6 +1,7 @@
 import { InjectionContainer } from '@rs-x/core';
-import { ExpressionManager } from '../lib/expression-manager/expression-manager';
 import { ExpressionChangeTransactionManager } from '../lib/expresion-change-transaction-manager';
+import { ExpressionFactory } from '../lib/expression-factory/expression-factory';
+import { ExpressionManager } from '../lib/expression-factory/expression-manager';
 import { ArrayIndexOwnerResolver } from '../lib/index-value-observer-manager/array-index-owner-resolver';
 import { DefaultIdentifierOwnerResolver } from '../lib/index-value-observer-manager/default-identifier-owner-resolver';
 import { IndexValueObserverManager } from '../lib/index-value-observer-manager/index-value-observer-manager';
@@ -35,6 +36,23 @@ describe('RsXExpressionParserModule tests', () => {
       );
       const a2 = InjectionContainer.get(
          RsXExpressionParserInjectionTokens.IExpressionManager
+      );
+      expect(a1).toBe(a2);
+   });
+
+   it('can get instance of IExpressionFactory', () => {
+      const actual = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionFactory
+      );
+      expect(actual).toBeInstanceOf(ExpressionFactory);
+   });
+
+   it('IExpressionFactory instance is a singleton', () => {
+      const a1 = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionFactory
+      );
+      const a2 = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionFactory
       );
       expect(a1).toBe(a2);
    });
