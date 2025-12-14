@@ -9,7 +9,5 @@ export interface IPropertyChange {
    id?: unknown;
    newValue?: unknown;
    arguments?: unknown[];
-   hasRebindNested?: boolean;
-   isNew?: boolean;
    setValue?: (value: unknown) => void;
 }

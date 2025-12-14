@@ -10,11 +10,8 @@ export interface IProxyTarget<TTarget> {
    mustProxify?: MustProxify;
 }
 
-export type IObjectObserverProxyPairManager<
-   TTarget = unknown,
-   TId = unknown,
-> = ISingletonFactory<
+export type IObjectObserverProxyPairManager<TTarget = unknown> = ISingletonFactory<
    unknown,
    IProxyTarget<TTarget>,
-   IObserverProxyPair<TTarget, TId>
+   IObserverProxyPair<TTarget>
 >;

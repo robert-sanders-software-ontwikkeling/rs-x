@@ -84,7 +84,6 @@ class IndexChangeSubscriptionsForContextManager<TIndex>
       const indexSetObserver = this._indexSetObserverManager
          .create(context)
          .instance.create({
-            mustProxify: data.mustProxify,
             index: data.index,
             initialValue: data.initialValue,
          }).instance;

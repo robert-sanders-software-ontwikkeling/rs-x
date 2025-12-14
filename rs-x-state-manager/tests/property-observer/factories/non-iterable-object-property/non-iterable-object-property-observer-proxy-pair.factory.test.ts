@@ -101,7 +101,6 @@ describe('non iterableObjectPropertyObserverFactory', () => {
 
       const expected = arrayProxyFactory.getFromData({
          array,
-         mustProxify: truePredicate,
       }).proxy;
       expect(actual).toBe(expected);
    });
@@ -129,7 +128,6 @@ describe('non iterableObjectPropertyObserverFactory', () => {
 
       const expected = arrayProxyFactory.getFromData({
          array,
-         mustProxify: truePredicate,
       }).proxy;
       expect(object.x).toBe(expected);
    });
@@ -148,7 +146,6 @@ describe('non iterableObjectPropertyObserverFactory', () => {
 
       const expected = arrayProxyFactory.getFromData({
          array: newArray,
-         mustProxify: truePredicate,
       }).proxy;
       expect(object.x).toBe(expected);
    });
@@ -165,7 +162,6 @@ describe('non iterableObjectPropertyObserverFactory', () => {
       expect(
          arrayProxyFactory.getFromData({
             array: oldArray,
-            mustProxify: truePredicate,
          })
       ).toBeDefined();
 
@@ -175,20 +171,17 @@ describe('non iterableObjectPropertyObserverFactory', () => {
       expect(
          arrayProxyFactory.getFromData({
             array: oldArray,
-            mustProxify: truePredicate,
          })
       ).toBeUndefined();
 
       expect(
          arrayProxyFactory.getFromData({
             array: newArray,
-            mustProxify: truePredicate,
          })
       ).toBeDefined();
       expect(object.x).toBe(
          arrayProxyFactory.getFromData({
             array: newArray,
-            mustProxify: truePredicate,
          }).proxy
       );
    });
@@ -262,8 +255,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
          ],
          id: 3,
          newValue: 4,
-         target: object.x,
-         isNew: true,
+         target: object.x
       };
 
       expect(actual).toEqual(expected);
@@ -289,8 +281,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
          ],
          id: 0,
          newValue: 1,
-         target: object.x,
-         isNew: true,
+         target: object.x
       };
 
       expect(actual).toEqual(expected);
@@ -363,7 +354,6 @@ describe('non iterableObjectPropertyObserverFactory', () => {
       let expected: IPropertyChange = {
          arguments: [],
          chain: [{ object, id: 'x' }],
-         hasRebindNested: true,
          id: 'x',
          newValue: [1],
          target: object,
@@ -380,7 +370,6 @@ describe('non iterableObjectPropertyObserverFactory', () => {
          arguments: [],
          chain: [{ object, id: 'x' }],
          id: 'x',
-         hasRebindNested: false,
          newValue: [2],
          target: object,
       };
@@ -414,8 +403,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
          ],
          id: 0,
          newValue: 1,
-         target: object.x,
-         isNew: true,
+         target: object.x
       };
 
       expect(actual).toEqual(expected);

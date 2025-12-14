@@ -263,7 +263,7 @@ class DateProxy extends AbstractObserver<Date, Date, undefined> {
     }
 
     protected override disposeInternal(): void {
-        this._proxyRegistry.unregister(this.initialValue);
+        this._proxyRegistry.unregister(this.value);
         this.target = null;
     }
 }
@@ -308,7 +308,6 @@ export class DateProxyFactory
             observer,
             proxy: observer.target,
             proxyTarget: dateProxyData.date,
-            id,
         };
     }
 }

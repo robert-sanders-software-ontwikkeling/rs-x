@@ -2,18 +2,17 @@ import { ISingletonFactory } from '@rs-x/core';
 import { IDisposableOwner } from './disposable-owner.interface';
 import { IObserver } from './observer.interface';
 
-export interface IObserverProxyPair<TProxy = unknown, TId = unknown> {
+export interface IObserverProxyPair<TProxy = unknown> {
    observer: IObserver;
    proxy?: TProxy;
-   proxyTarget: TProxy;
-   id: TId;
+   proxyTarget?: TProxy;
 }
 
 export type MustProxify = (index: unknown, target?: unknown) => boolean;
 
 export interface IPropertyIdInfo {
    key: unknown;
-   mustProxify?: MustProxify;
+   mustProxify?: MustProxify
 }
 
 export interface IPropertyInfo extends IPropertyIdInfo {

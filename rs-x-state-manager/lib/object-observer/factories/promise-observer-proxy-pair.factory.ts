@@ -11,12 +11,11 @@ import { IObjectObserverProxyPairFactory } from '../object-observer-proxy-pair.f
 @Injectable()
 export class PromiseObserverProxyPairFactory
    implements
-      IObjectObserverProxyPairFactory<Promise<unknown>, Promise<unknown>>
-{
+   IObjectObserverProxyPairFactory<Promise<unknown>> {
    constructor(
       @Inject(RsXStateManagerInjectionTokens.IPromiseProxyFactory)
       private readonly _promiseProxyFactory: IPromiseProxyFactory
-   ) {}
+   ) { }
 
    public create(
       owner: IDisposableOwner,

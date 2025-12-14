@@ -35,7 +35,7 @@ export class ObjectObserverProxyPairManager
 
    public override create(data: IProxyTarget<unknown>): {
       referenceCount: number;
-      instance: IObserverProxyPair<unknown, unknown>;
+      instance: IObserverProxyPair<unknown>;
       id: unknown;
    } {
       if (this._proxyRegistry.isProxy(data.target)) {

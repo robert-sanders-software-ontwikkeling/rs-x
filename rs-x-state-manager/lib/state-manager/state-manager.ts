@@ -227,11 +227,11 @@ export class StateManager implements IStateManager {
          mustProxify,
          onChanged: (change) => this.onChange(change, mustProxify),
          init: (observer) => {
-            if (observer.initialValue !== undefined) {
+            if (observer.value !== undefined) {
                this.setInitialValue(
                   context,
                   index,
-                  observer.initialValue,
+                  observer.value,
                   transferedValue
                );
             }

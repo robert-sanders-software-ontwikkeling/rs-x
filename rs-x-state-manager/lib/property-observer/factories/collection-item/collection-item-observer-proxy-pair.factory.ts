@@ -5,28 +5,23 @@ import {
    Injectable,
    RsXCoreInjectionTokens,
    truePredicate,
-   Type,
 } from '@rs-x/core';
 import { IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
-import {
-   IPropertyInfo,
-   MustProxify,
-} from '../../../object-property-observer-proxy-pair-manager.type';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
 import { IndexObserverProxyPairFactory } from '../indexed-value-observer-proxy-pair/indexed-value-observer-proxy-pair.factory';
-import { IArrayItemObserverManager } from './array-item-observer-manager.type';
+import { Collection, ICollectionItemObserverManager } from './collection-item-observer-manager.type';
 import { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
 
 @Injectable()
-export class ArrayItemObserverProxyPairFactory extends IndexObserverProxyPairFactory<
-   unknown[],
-   number | MustProxify
+export class CollectionItemObserverProxyPairFactory extends IndexObserverProxyPairFactory<
+   Collection,
+   unknown
 > {
    constructor(
       @Inject(RsXStateManagerInjectionTokens.IObjectObserverProxyPairManager)
       objectObserverManager: IObjectObserverProxyPairManager,
-      @Inject(RsXStateManagerInjectionTokens.IArrayItemObserverManager)
-      arrayItemObserverManager: IArrayItemObserverManager,
+      @Inject(RsXStateManagerInjectionTokens.ICollectionItemObserverManager)
+      collectionItemObserverManager: ICollectionItemObserverManager,
       @Inject(RsXCoreInjectionTokens.IErrorLog)
       errorLog: IErrorLog,
       @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
@@ -36,7 +31,7 @@ export class ArrayItemObserverProxyPairFactory extends IndexObserverProxyPairFac
    ) {
       super(
          objectObserverManager,
-         arrayItemObserverManager,
+         collectionItemObserverManager,
          errorLog,
          indexValueAccessor,
          proxyRegister,
@@ -44,10 +39,7 @@ export class ArrayItemObserverProxyPairFactory extends IndexObserverProxyPairFac
       );
    }
 
-   public override applies(
-      object: unknown,
-      propertyInfo: IPropertyInfo
-   ): boolean {
-      return Array.isArray(object) && Type.isPositiveInteger(propertyInfo.key);
+   public override applies(object: unknown): boolean {
+      return object instanceof Map || object instanceof Array || object instanceof Set;
    }
 }

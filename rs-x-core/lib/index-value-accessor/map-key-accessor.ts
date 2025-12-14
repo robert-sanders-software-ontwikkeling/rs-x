@@ -3,8 +3,16 @@ import { IMapKeyAccessor } from './map-key-accessor.type';
 
 @Injectable()
 export class MapKeyAccessor implements IMapKeyAccessor {
+   public getIndexes(map: Map<unknown, unknown>): IterableIterator<unknown, unknown, unknown> {
+     return map.keys();
+   }
+
    public isAsync(): boolean {
       return false;
+   }
+
+   public hasValue(map: Map<unknown, unknown>, key: unknown): boolean {
+      return map.has(key);
    }
 
    public getResolvedValue(map: Map<unknown, unknown>, key: unknown): unknown {

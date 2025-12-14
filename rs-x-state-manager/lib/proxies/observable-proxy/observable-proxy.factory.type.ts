@@ -8,10 +8,7 @@ export interface IObservableProxyData {
    observable: Observable<unknown>;
 }
 
-export type IObservableObserverProxyPair = IObserverProxyPair<
-   Observable<unknown>,
-   Observable<unknown>
->;
+export type IObservableObserverProxyPair = IObserverProxyPair<Observable<unknown>>;
 export type IObservableProxyFactory = ISingletonFactory<
    Observable<unknown>,
    IObservableProxyData,

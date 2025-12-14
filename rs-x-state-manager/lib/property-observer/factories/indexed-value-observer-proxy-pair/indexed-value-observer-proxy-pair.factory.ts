@@ -14,15 +14,15 @@ import {
 } from '../../../object-property-observer-proxy-pair-manager.type';
 import { ObserverGroup } from '../../../observer-group';
 import { IObserver } from '../../../observer.interface';
+import { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
 import { IIndexObserverProxyPairFactory } from '../../index-observer-proxy-pair.factory.interface';
 import {
    IIndexSetObserverManager,
    IndexChangeSubscriptionManager,
 } from './index-change-subscription-manager';
-import { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
 
 export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
-   implements IIndexObserverProxyPairFactory<TContext, TIndex> {
+   implements IIndexObserverProxyPairFactory<TContext> {
    private readonly _indexChangeSubscriptionManager: IndexChangeSubscriptionManager<TIndex>;
 
    protected constructor(
@@ -54,7 +54,7 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
       owner: IDisposableOwner,
       object: TContext,
       propertyInfo: IPropertyInfo
-   ): IObserverProxyPair<TContext, TIndex> {
+   ): IObserverProxyPair<TContext> {
       const index = propertyInfo.key as TIndex;
       const valueAtIndex = this._indexValueAccessor.getValue(object, index);
       const mustProxify = this.getMustProxifyHandler(
@@ -76,7 +76,7 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
       // will be a promise and the value should be the resolved value. In this case the initial
       // value should be undefined and the resolved value will be emitted later
       const initialValue = indexValueObserverProxyPair
-         ? indexValueObserverProxyPair.observer.initialValue
+         ? indexValueObserverProxyPair.observer.value
          : valueAtIndex;;
       const groupObserver = this.createGroupObserver(
          owner,
@@ -91,7 +91,6 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
          observer: groupObserver,
          proxy: indexValueObserverProxyPair?.proxy as TContext,
          proxyTarget: valueAtIndex as TContext,
-         id: undefined,
       };
    }
 
@@ -172,7 +171,7 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
          mustProxify
       );
 
-      observerGroup.replaceObserver(observers);
+      observerGroup.replaceObservers(observers);
    }
 
    private getNestedObservers(

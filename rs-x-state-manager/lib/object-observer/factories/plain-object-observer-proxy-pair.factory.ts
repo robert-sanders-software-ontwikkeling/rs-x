@@ -2,73 +2,72 @@ import {
    IErrorLog,
    Inject,
    Injectable,
+   IPropertyValueAccessor,
    RsXCoreInjectionTokens,
    truePredicate,
-   Type,
+   Type
 } from '@rs-x/core';
-import { IDisposableOwner } from '../../disposable-owner.interface';
 import {
    IObjectPropertyObserverProxyPairManager,
-   IObserverProxyPair,
+   IObserverProxyPair
 } from '../../object-property-observer-proxy-pair-manager.type';
 import { ObserverGroup } from '../../observer-group';
+import { IObserver } from '../../observer.interface';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
 import { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
-import { IObjectObserverProxyPairFactory } from '../object-observer-proxy-pair.factory.interface';
+import { ObjectObserverProxyPairFactory } from './object-observer-proxy-pair.factory';
+import { IPlainObjectObserverProxyPairFactory } from './plain-object-observer-proxy-pair.factory.type';
 
 @Injectable()
 export class PlainObjectObserverProxyPairFactory
-   implements IObjectObserverProxyPairFactory
-{
+   extends ObjectObserverProxyPairFactory<Record<string, unknown>>
+   implements IPlainObjectObserverProxyPairFactory {
    constructor(
-      @Inject(
-         RsXStateManagerInjectionTokens.IObjectPropertyObserverProxyPairManager
-      )
-      private readonly _objectPropertyObserverProxyPairManager: IObjectPropertyObserverProxyPairManager,
       @Inject(RsXCoreInjectionTokens.IErrorLog)
-      private readonly _errorLog: IErrorLog
-   ) {}
-
-   public create(
-      owner: IDisposableOwner,
-      proxyTarget: IProxyTarget<Record<string, unknown>>
-   ): IObserverProxyPair {
-      const object = proxyTarget.target;
-      const objectPropertyManager =
-         this._objectPropertyObserverProxyPairManager.create(object).instance;
-      const observers = Object.keys(object)
-         .map(
-            (key) =>
-               objectPropertyManager.create({
-                  key,
-                  mustProxify: proxyTarget.mustProxify,
-                  initializeManually: proxyTarget.initializeManually,
-               }).instance
-         )
-         .filter((observerProxyPair) => observerProxyPair)
-         .map((observerProxyPair) => observerProxyPair.observer);
-
-      const observer = new ObserverGroup(
-         owner,
-         object,
-         object,
-         truePredicate,
-         this._errorLog
-      ).addObservers(observers);
-
-      if (!proxyTarget.initializeManually) {
-         observer.init();
-      }
-
-      return {
-         observer,
-         proxy: object,
-         proxyTarget: object,
-         id: object,
-      };
+      errorLog: IErrorLog,
+      @Inject(RsXCoreInjectionTokens.IPropertyValueAccessor)
+      propertyValueAccessor: IPropertyValueAccessor,
+      @Inject(RsXStateManagerInjectionTokens.IObjectPropertyObserverProxyPairManager)
+      objectPropertyObserverProxyPairManager: IObjectPropertyObserverProxyPairManager
+   ) {
+      super(true, errorLog, propertyValueAccessor, objectPropertyObserverProxyPairManager);
    }
 
    public applies(object: object): boolean {
       return Type.isPlainObject(object);
    }
+
+   protected override createRootObserver(data: IProxyTarget<Record<string, unknown>>): IObserverProxyPair<Record<string, unknown>> {
+      if(data.mustProxify) {
+         return undefined;
+      }
+     
+      const target = data.target;
+      const observers: IObserver[] = [];
+
+      for (const index of this._indexAccessor.getIndexes(target)) {
+         const { observer } = this._objectPropertyObserverProxyPairManager.create(target).instance.create({
+            key: index,
+         }).instance;
+         observers.push(observer);
+      }
+
+      if (observers.length === 0) {
+         return undefined;
+      }
+
+      const observerGroup = new ObserverGroup(
+         undefined,
+         data.target,
+         data.target,
+         truePredicate,
+         this._errorLog,
+      );
+
+      observerGroup.replaceObservers(observers);
+      return {
+         observer: observerGroup,
+      };
+   }
 }
+

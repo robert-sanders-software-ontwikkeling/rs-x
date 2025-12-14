@@ -60,7 +60,6 @@ describe('IDatePropertyObserverProxyPairFactory tests', () => {
          target: date,
          id: 'year',
          newValue: 2024,
-         hasRebindNested: false,
       };
       expect(actual).toEqual(expected);
    });

@@ -5,6 +5,6 @@ export interface IObserver<T = unknown> extends IDisposable {
    target: T;
    id?: unknown;
    readonly changed: Observable<IPropertyChange>;
-   readonly initialValue: unknown;
+   readonly value: unknown;
    init(): void;
 }

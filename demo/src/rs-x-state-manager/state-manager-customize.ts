@@ -323,7 +323,7 @@ class TextDocumentObserver extends AbstractObserver<TextDocument> {
     }
 
     protected override disposeInternal(): void {
-        this._proxyRegister.unregister(this.initialValue);
+        this._proxyRegister.unregister(this.value);
     }
 
     public get(

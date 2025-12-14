@@ -1,25 +1,19 @@
-import {
-   ErrorLog,
-   InjectionContainer,
-   IPropertyChange,
-   truePredicate,
-   WaitForEvent,
-} from '@rs-x/core';
+import { ErrorLog, InjectionContainer, IPropertyChange, truePredicate, WaitForEvent } from '@rs-x/core';
 import { IMapObserverProxyPairFactory } from '../../../lib/object-observer/factories/map-observer-proxy-pair.factory.type';
 import { IObjectPropertyObserverProxyPairManager } from '../../../lib/object-property-observer-proxy-pair-manager.type';
 import { ObserverGroup } from '../../../lib/observer-group';
 import { IObserver } from '../../../lib/observer.interface';
-import { IMustProxifyItemHandlerFactory } from '../../../lib/property-observer/must-proxify-item-handler.factory.type';
-import { IMapProxyFactory } from '../../../lib/proxies/map-proxy/map-proxy.factory.type';
+import { IMapObserverProxyPair, IMapProxyFactory } from '../../../lib/proxies/map-proxy/map-proxy.factory.type';
+import { IProxyRegistry } from '../../../lib/proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
 import { DisposableOwnerMock } from '../../../lib/testing/disposable-owner.mock';
 
-describe('IMapObserverProxyPairFactory tests', () => {
+describe('MapObserverProxyPairFactory tests', () => {
+   let mapObserverProxyPairFactory: IMapObserverProxyPairFactory;
    let mapProxyFactory: IMapProxyFactory;
    let disposableOwner: DisposableOwnerMock;
    let observer: IObserver;
-   let mapObserverProxyPairFactory: IMapObserverProxyPairFactory;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXStateManagerModule);
@@ -47,17 +41,17 @@ describe('IMapObserverProxyPairFactory tests', () => {
       }
    });
 
-   it('applies will return true when passed in value is map', async () => {
+   it('applies will return true when passed in value is Map', async () => {
       const actual = mapObserverProxyPairFactory.applies(new Map());
       expect(actual).toEqual(true);
    });
 
-   it('applies will return false when passed in value is not map', async () => {
+   it('applies will return false when passed in value is not Map', async () => {
       const actual = mapObserverProxyPairFactory.applies({});
       expect(actual).toEqual(false);
    });
 
-   it('create will create a map proxy', async () => {
+   it('create will create a Map proxy', async () => {
       const map = new Map();
       const observerProxyPair = mapObserverProxyPairFactory.create(
          disposableOwner,
@@ -72,7 +66,7 @@ describe('IMapObserverProxyPairFactory tests', () => {
       expect(observerProxyPair.proxy).toBe(expected);
    });
 
-   it('create will return  Observergroup without item observers for non-recursive observer', async () => {
+   it('create will return Observergroup', async () => {
       const objectMap = new Map([
          ['a', { x: 1 }],
          ['b', { x: 2 }],
@@ -95,22 +89,18 @@ describe('IMapObserverProxyPairFactory tests', () => {
          () => mapProxyFactory.getFromId(mapProxyId).observer,
          true
       );
+
       expect(observer).observerEqualTo(expected);
    });
 
-   it('create will return  an Observergroup with item observers for recursive observer', async () => {
-      const mustProxifyHandlerFactory =
-         InjectionContainer.get<IMustProxifyItemHandlerFactory>(
-            RsXStateManagerInjectionTokens.IMustProxifyItemHandlerFactory
-         );
+   it('create will return  an Observergroup with item observers when setting mustProxify', async () => {
       const objectMap = new Map([
          ['a', { x: 1 }],
          ['b', { x: 2 }],
       ]);
-
       observer = mapObserverProxyPairFactory.create(disposableOwner, {
          target: objectMap,
-         mustProxify: truePredicate,
+         mustProxify: truePredicate
       }).observer;
 
       const objectPropertyObserverProxyPairManager =
@@ -124,15 +114,14 @@ describe('IMapObserverProxyPairFactory tests', () => {
 
       const item1Id = propertyObserverProxyPairManager.getId({
          key: 'a',
-         mustProxify: mustProxifyHandlerFactory.getFromId('a'),
+         mustProxify: truePredicate,
       });
       const item2Id = propertyObserverProxyPairManager.getId({
          key: 'b',
-         mustProxify: mustProxifyHandlerFactory.getFromId('b'),
+         mustProxify: truePredicate,
       });
       const mapProxyId = mapProxyFactory.getId({
          map: objectMap,
-         mustProxify: truePredicate,
       });
 
       const expected = new ObserverGroup(
@@ -151,91 +140,32 @@ describe('IMapObserverProxyPairFactory tests', () => {
       expect(observer).observerEqualTo(expected);
    });
 
-   it('set will emit change event', async () => {
-      const objectMap = new Map([
-         ['a', { x: 1 }],
-         ['b', { x: 2 }],
-      ]);
-      observer = mapObserverProxyPairFactory.create(disposableOwner, {
-         target: objectMap,
-      }).observer;
-      const mapProxyId = mapProxyFactory.getId({
-         map: objectMap,
-      });
-      const mapProxy = mapProxyFactory.getFromId(mapProxyId).proxy;
-
-      const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-         mapProxy.set('c', { x: 3 });
-      });
-
-      const expected: IPropertyChange = {
-         arguments: [],
-         chain: [{ object: observer.target, id: 'c' }],
-         id: 'c',
-         newValue: { x: 3 },
-         target: observer.target,
-         isNew: true,
-      };
-
-      expect(actual).toEqual(expected);
-   });
-
-   it('items will not be observed when creating not-recursive observer', () => {
+   it('dispose will release the Map proxy', async () => {
       const objectMap = new Map([
          ['a', { x: 1 }],
          ['b', { x: 2 }],
       ]);
 
-      const observerProxyPair = mapObserverProxyPairFactory.create(
+      observer = mapObserverProxyPairFactory.create(
          disposableOwner,
          { target: objectMap }
-      );
-      observer = observerProxyPair.observer;
+      ).observer;
+
       disposableOwner.canDispose.mockReturnValue(true);
 
-      const objectPropertyObserverProxyPairManager =
-         InjectionContainer.get<IObjectPropertyObserverProxyPairManager>(
-            RsXStateManagerInjectionTokens.IObjectPropertyObserverProxyPairManager
-         );
-      const propertyObserverProxyPairManager =
-         objectPropertyObserverProxyPairManager.getFromId(objectMap);
-
-      expect(mapProxyFactory.getFromId(observerProxyPair.id)).toBeDefined();
-      expect(propertyObserverProxyPairManager).toBeUndefined();
-   });
-
-   it('dispose will release the map', async () => {
-      const objectMap = new Map([
-         ['a', { x: 1 }],
-         ['b', { x: 2 }],
-      ]);
-      const observerProxyPair = mapObserverProxyPairFactory.create(
-         disposableOwner,
-         {
-            target: objectMap,
-         }
-      );
-      observer = observerProxyPair.observer;
-      disposableOwner.canDispose.mockReturnValue(true);
-
-      expect(mapProxyFactory.getFromId(observerProxyPair.id)).toBeDefined();
+      expect(mapProxyFactory.getFromId(objectMap)).toBeDefined();
 
       observer.dispose();
 
-      expect(mapProxyFactory.getFromId(observerProxyPair.id)).toBeUndefined();
+      expect(mapProxyFactory.getFromId(objectMap)).toBeUndefined();
    });
 
-   it('dispose will release the item for recurive observer', async () => {
-      const mustProxifyHandlerFactory =
-         InjectionContainer.get<IMustProxifyItemHandlerFactory>(
-            RsXStateManagerInjectionTokens.IMustProxifyItemHandlerFactory
-         );
+   it('dispose will release the items for recursive observer', async () => {
       const objectMap = new Map([
          ['a', { x: 1 }],
          ['b', { x: 2 }],
       ]);
-
-      const observerProxyPair = mapObserverProxyPairFactory.create(
+      const observerProxyPair: IMapObserverProxyPair = mapObserverProxyPairFactory.create(
          disposableOwner,
          { target: objectMap, mustProxify: truePredicate }
       );
@@ -250,25 +180,220 @@ describe('IMapObserverProxyPairFactory tests', () => {
          objectPropertyObserverProxyPairManager.getFromId(objectMap);
       const item1Id = propertyObserverProxyPairManager.getId({
          key: 'a',
-         mustProxify: mustProxifyHandlerFactory.getFromId('a'),
+         mustProxify: truePredicate
       });
       const item2Id = propertyObserverProxyPairManager.getId({
          key: 'b',
-         mustProxify: mustProxifyHandlerFactory.getFromId('b'),
+         mustProxify: truePredicate
       });
 
-      expect(mapProxyFactory.getFromId(observerProxyPair.id)).toBeDefined();
+      expect(mapProxyFactory.getFromId(objectMap)).toBeDefined();
       expect(propertyObserverProxyPairManager.getFromId(item1Id)).toBeDefined();
       expect(propertyObserverProxyPairManager.getFromId(item2Id)).toBeDefined();
+      expect(objectMap.get('a')).isWritableProperty('x');
+      expect(objectMap.get('b')).isWritableProperty('x')
 
       observer.dispose();
 
-      expect(mapProxyFactory.getFromId(observerProxyPair.id)).toBeUndefined();
+      expect(mapProxyFactory.getFromId(objectMap)).toBeUndefined();
       expect(
          propertyObserverProxyPairManager.getFromId(item1Id)
       ).toBeUndefined();
       expect(
          propertyObserverProxyPairManager.getFromId(item2Id)
       ).toBeUndefined();
+      expect(objectMap.get('a')).not.isWritableProperty('x');
+      expect(objectMap.get('b')).not.isWritableProperty('x')
+   });
+
+   it('will only proxify items for which mustProxify returns true', () => {
+      const objectMap = new Map([
+         ['a', { x: 1 }],
+         ['b', { x: 2 }],
+         ['c', { x: 3 }],
+      ]);
+
+      const mustProxify = jest.fn();
+      mustProxify.mockImplementation((index: string) => index === 'a' || index === 'c' || index === 'x');
+
+      const observerProxyPair: IMapObserverProxyPair = mapObserverProxyPairFactory.create(
+         disposableOwner,
+         { target: objectMap, mustProxify }
+      );
+      observer = observerProxyPair.observer;
+
+      expect(mustProxify).toHaveBeenCalledTimes(5);
+      expect(mustProxify).toHaveBeenNthCalledWith(1, 'a', objectMap);
+      expect(mustProxify).toHaveBeenNthCalledWith(2, 'x', objectMap.get('a'));
+      expect(mustProxify).toHaveBeenNthCalledWith(3, 'b', objectMap);
+      expect(mustProxify).toHaveBeenNthCalledWith(4, 'c', objectMap);
+      expect(mustProxify).toHaveBeenNthCalledWith(5, 'x', objectMap.get('c'));
+      expect(objectMap.get('a')).isWritableProperty('x');
+      expect(objectMap.get('b')).not.isWritableProperty('x');
+      expect(objectMap.get('c')).isWritableProperty('x');
+   });
+
+   describe(`change event for recursive observer for  '[{ x: 1 }, { x: 2 }]'`, () => {
+      let proxyRegister: IProxyRegistry;
+
+      beforeEach(() => {
+         proxyRegister = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
+      })
+
+      it('change event is emitted when adding Map item', async () => {
+         const objectMap = new Map([
+            ['a', { x: 1 }],
+            ['b', { x: 2 }],
+         ]);
+         observer = mapObserverProxyPairFactory.create(disposableOwner, {
+            target: objectMap,
+            mustProxify: truePredicate
+         }).observer;
+
+         const actual = await new WaitForEvent(observer, 'changed').wait(() => {
+            const mapProxy = proxyRegister.getProxy<Map<string, { x: number }>>(objectMap)
+            mapProxy.set('c', { x: 3 });
+         });
+
+         const expected: IPropertyChange = {
+            arguments: [],
+            chain: [{ object: objectMap, id: 'c' }],
+            id: 'c',
+            newValue: { x: 3 },
+            target: objectMap
+         };
+
+         expect(actual).toEqual(expected);
+      });
+
+      it('change event is emitted when deleting Map item', async () => {
+         const objectMap = new Map([
+            ['a', { x: 1 }],
+            ['b', { x: 2 }],
+         ]);
+         observer = mapObserverProxyPairFactory.create(disposableOwner, {
+            target: objectMap,
+            mustProxify: truePredicate
+         }).observer;
+
+         const actual = await new WaitForEvent(observer, 'changed').wait(() => {
+            const mapProxy = proxyRegister.getProxy<Map<string, { x: number }>>(objectMap)
+            mapProxy.delete('b');
+         });
+
+         const expected: IPropertyChange = {
+            arguments: [],
+            chain: [{ object: objectMap, id: 'b' }],
+            id: 'b',
+            newValue: undefined,
+            target: objectMap
+         };
+
+         expect(actual).toEqual(expected);
+      });
+
+      it('change event is emitted when changing Map item', async () => {
+         const objectMap = new Map([
+            ['a', { x: 1 }],
+            ['b', { x: 2 }],
+         ]);
+         observer = mapObserverProxyPairFactory.create(disposableOwner, {
+            target: objectMap,
+            mustProxify: truePredicate
+         }).observer;
+
+         const actual = await new WaitForEvent(observer, 'changed').wait(() => {
+            objectMap.get('b').x = 200
+         });
+
+         const expected: IPropertyChange = {
+            arguments: [],
+            chain: [
+               { object: objectMap, id: 'b' },
+               { object: objectMap.get('b'), id: 'x' }
+            ],
+            id: 'x',
+            newValue: 200,
+            target: objectMap.get('b')
+         };
+
+         expect(actual).toEqual(expected);
+      });
+   });
+
+   describe(`change event for non-recursive observer for  '[{ x: 1 }, { x: 2 }]'`, () => {
+      let proxyRegister: IProxyRegistry;
+
+      beforeEach(() => {
+         proxyRegister = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
+      })
+
+      it('change event is emitted when adding Map item', async () => {
+         const objectMap = new Map([
+            ['a', { x: 1 }],
+            ['b', { x: 2 }],
+         ]);
+         observer = mapObserverProxyPairFactory.create(disposableOwner, {
+            target: objectMap,
+         }).observer;
+
+         const actual = await new WaitForEvent(observer, 'changed').wait(() => {
+            const mapProxy = proxyRegister.getProxy<Map<string, { x: number }>>(objectMap)
+            mapProxy.set('c', { x: 3 });
+         });
+
+         const expected: IPropertyChange = {
+            arguments: [],
+            chain: [{ object: objectMap, id: 'c' }],
+            id: 'c',
+            newValue: { x: 3 },
+            target: objectMap
+         };
+
+         expect(actual).toEqual(expected);
+      });
+
+      it('change event is emitted when deleting Map item', async () => {
+         const objectMap = new Map([
+            ['a', { x: 1 }],
+            ['b', { x: 2 }],
+         ]);
+         observer = mapObserverProxyPairFactory.create(disposableOwner, {
+            target: objectMap,
+         }).observer;
+
+         const actual = await new WaitForEvent(observer, 'changed').wait(() => {
+            const mapProxy = proxyRegister.getProxy<Map<string, { x: number }>>(objectMap)
+            mapProxy.delete('b');
+         });
+
+         const expected: IPropertyChange = {
+            arguments: [],
+            chain: [{ object: objectMap, id: 'b' }],
+            id: 'b',
+            newValue: undefined,
+            target: objectMap
+         };
+
+         expect(actual).toEqual(expected);
+      });
+      it('change event is not emitted when changing map item', async () => {
+         const objectMap = new Map([
+            ['a', { x: 1 }],
+            ['b', { x: 2 }],
+         ]);
+         observer = mapObserverProxyPairFactory.create(disposableOwner, {
+            target: objectMap,
+         }).observer;
+
+         const actual = await new WaitForEvent(observer, 'changed').wait(() => {
+            objectMap.get('b').x = 200
+         });
+
+         expect(actual).toBeNull();
+      });
    });
 });
+
+
+

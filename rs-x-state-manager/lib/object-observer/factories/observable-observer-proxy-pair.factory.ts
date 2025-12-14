@@ -12,7 +12,7 @@ import { IObjectObserverProxyPairFactory } from '../object-observer-proxy-pair.f
 @Injectable()
 export class ObservableObserverProxyPairFactory
    implements
-      IObjectObserverProxyPairFactory<Observable<unknown>, Observable<unknown>>
+      IObjectObserverProxyPairFactory<Observable<unknown>>
 {
    constructor(
       @Inject(RsXStateManagerInjectionTokens.IObservableProxyFactory)

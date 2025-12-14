@@ -10,8 +10,6 @@ describe('MapProxyFactory tests', () => {
    it('will  create an instance of map proxy', () => {
       const actual = mapProxyFactory.create({
          map: new Map(),
-         proxifyItem: jest.fn(),
-         unproxifyItem: jest.fn(),
       }).instance;
 
       expect(actual).toBeDefined();

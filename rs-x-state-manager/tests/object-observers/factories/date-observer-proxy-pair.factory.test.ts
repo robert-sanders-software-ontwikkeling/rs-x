@@ -75,10 +75,13 @@ describe('DateObserverProxyPairFactory tests', () => {
       observer = observerProxyPair.observer;
       disposableOwner.canDispose.mockReturnValue(true);
 
-      expect(dateProxyFactory.getFromId(observerProxyPair.id)).toBeDefined();
+      const id =   dateProxyFactory.getId({ date });
+      expect(id).toBeDefined();
+
+      expect(dateProxyFactory.getFromId(id)).toBeDefined();
 
       observer.dispose();
 
-      expect(dateProxyFactory.getFromId(observerProxyPair.id)).toBeUndefined();
+      expect(dateProxyFactory.getFromId(id)).toBeUndefined();
    });
 });

@@ -22,7 +22,6 @@ import { IProxyRegistry } from '../../../proxies';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
 
 class PropertObserver extends AbstractObserver {
-   private _value: unknown;
    private _emitingChange = false;
    private _propertyDescriptorWithTarget: IPropertyDescriptor;
 
@@ -63,7 +62,7 @@ class PropertObserver extends AbstractObserver {
          this.target[propertyName] = this._proxyRegister.getProxyTarget( value) ?? value
       }
 
-      this._value = undefined;
+      this.value = undefined;
       this._propertyDescriptorWithTarget = undefined;
    }
 
@@ -106,7 +105,7 @@ class PropertObserver extends AbstractObserver {
             ...args
          );
 
-         if (newValue === undefined || this._value !== newValue) {
+         if (newValue === undefined || this.value !== newValue) {
             this.emitChanged({
                newValue,
                arguments: args,
@@ -118,11 +117,11 @@ class PropertObserver extends AbstractObserver {
    }
 
    private setValue = (value) => {
-      this._value = value;
+      this.value = value;
    };
 
    protected emitChanged(change: Partial<IPropertyChange>) {
-      this._value = change.newValue;
+      this.value = change.newValue;
 
       if (!this._emitingChange) {
          this._emitingChange = true;
@@ -143,17 +142,17 @@ class PropertObserver extends AbstractObserver {
    ): PropertyDescriptor {
       const newDescriptor = { ...descriptorWithTarget.descriptor };
 
-      newDescriptor.get = () => this._value;
+      newDescriptor.get = () => this.value;
       delete newDescriptor.writable;
       delete newDescriptor.value;
 
       newDescriptor.set = (value) => {
-         if (value !== this._value) {
+         if (value !== this.value) {
             this.emitChanged({ newValue: value });
          }
       };
 
-      this._value = this.target[this.id as string];
+      this.value = this.target[this.id as string];
 
       return newDescriptor;
    }
@@ -171,7 +170,7 @@ class PropertObserver extends AbstractObserver {
          }
       };
 
-      this._value = this.target[this.id as string];
+      this.value = this.target[this.id as string];
 
       return newDescriptor;
    }

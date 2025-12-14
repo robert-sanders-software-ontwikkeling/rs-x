@@ -19,7 +19,7 @@ describe('ObjectObserverFactory test', () => {
 
     @ObjectObserverFactory()
     class CustomObjectObserverFactory1 implements IObjectObserverProxyPairFactory {
-        public create(_owner: IDisposableOwner, _proxyTarget: IProxyTarget<unknown>): IObserverProxyPair<unknown, unknown> {
+        public create(_owner: IDisposableOwner, _proxyTarget: IProxyTarget<unknown>): IObserverProxyPair<unknown> {
             throw new Error('Method not implemented.');
         }
 
@@ -31,7 +31,7 @@ describe('ObjectObserverFactory test', () => {
 
     @ObjectObserverFactory()
     class CustomObjectObserverFactory2 implements IObjectObserverProxyPairFactory {
-        public create(_owner: IDisposableOwner, _proxyTarget: IProxyTarget<unknown>): IObserverProxyPair<unknown, unknown> {
+        public create(_owner: IDisposableOwner, _proxyTarget: IProxyTarget<unknown>): IObserverProxyPair<unknown> {
             throw new Error('Method not implemented.');
         }
 

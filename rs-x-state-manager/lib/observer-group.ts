@@ -84,19 +84,19 @@ export class ObserverGroup extends AbstractObserver {
    }
 
 
-   public replaceObserver( observers: IObserver[]): void {
+   public replaceObservers( observers: IObserver[]): void {
       this.unsubscribeToObservers();
       this.addObservers(observers);
 
       this._observers.forEach((observer) => observer.init());
    }
+   
    public emitValue(newValue: unknown): void {
       this.emitChange({
          arguments: [],
          target: this.target,
          chain: [{ object: this.target, id: this.id }],
          id: this.id,
-         hasRebindNested: this._observers.length > 0,
          newValue,
       });
    }

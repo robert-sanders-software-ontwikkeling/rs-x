@@ -110,7 +110,6 @@ export class ObservableProxyFactory
          observer,
          proxy: undefined,
          proxyTarget: data.observable,
-         id,
       };
    }
 

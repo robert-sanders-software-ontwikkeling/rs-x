@@ -9,11 +9,12 @@ import { IArrayObserverProxyPairFactory } from '../../../lib/object-observer/fac
 import { IObjectPropertyObserverProxyPairManager } from '../../../lib/object-property-observer-proxy-pair-manager.type';
 import { ObserverGroup } from '../../../lib/observer-group';
 import { IObserver } from '../../../lib/observer.interface';
-import { IArrayProxyFactory } from '../../../lib/proxies/array-proxy/array-proxy.factory.type';
+import { IArrayObserverProxyPair, IArrayProxyFactory } from '../../../lib/proxies/array-proxy/array-proxy.factory.type';
+import { IProxyRegistry } from '../../../lib/proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
-import { DisposableOwnerMock } from '../../../lib/testing';
-import { IMustProxifyItemHandlerFactory } from '../../../lib/property-observer/must-proxify-item-handler.factory.type';
+import { DisposableOwnerMock } from '../../../lib/testing/disposable-owner.mock';
+
 
 describe('ArrayObserverProxyPairFactory tests', () => {
    let arrayObserverProxyPairFactory: IArrayObserverProxyPairFactory;
@@ -72,7 +73,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
       expect(observerProxyPair.proxy).toBe(expected);
    });
 
-   it('create will return  Observergroup without item observers wwithout setting mustProxify', async () => {
+   it('create will return  Observergroup', async () => {
       const objectArray = [{ x: 1 }, { x: 2 }];
       observer = arrayObserverProxyPairFactory.create(disposableOwner, {
          target: objectArray,
@@ -97,14 +98,10 @@ describe('ArrayObserverProxyPairFactory tests', () => {
    });
 
    it('create will return  an Observergroup with item observers when setting mustProxify', async () => {
-      const mustProxifyHandlerFactory =
-         InjectionContainer.get<IMustProxifyItemHandlerFactory>(
-            RsXStateManagerInjectionTokens.IMustProxifyItemHandlerFactory
-         );
       const objectArray = [{ x: 1 }, { x: 2 }];
       observer = arrayObserverProxyPairFactory.create(disposableOwner, {
          target: objectArray,
-         mustProxify: truePredicate,
+         mustProxify: truePredicate
       }).observer;
 
       const objectPropertyObserverProxyPairManager =
@@ -118,15 +115,14 @@ describe('ArrayObserverProxyPairFactory tests', () => {
 
       const item1Id = propertyObserverProxyPairManager.getId({
          key: 0,
-         mustProxify: mustProxifyHandlerFactory.getFromId(0),
+         mustProxify: truePredicate,
       });
       const item2Id = propertyObserverProxyPairManager.getId({
          key: 1,
-         mustProxify: mustProxifyHandlerFactory.getFromId(1),
+         mustProxify: truePredicate,
       });
       const arrayProxyId = arrayProxyFactory.getId({
          array: objectArray,
-         mustProxify: truePredicate,
       });
 
       const expected = new ObserverGroup(
@@ -145,79 +141,26 @@ describe('ArrayObserverProxyPairFactory tests', () => {
       expect(observer).observerEqualTo(expected);
    });
 
-   it('change array will emit change event', async () => {
-      const numberArray = [1, 2, 3, 4];
-      observer = arrayObserverProxyPairFactory.create(disposableOwner, {
-         target: numberArray,
-      }).observer;
-      const arrayProxyId = arrayProxyFactory.getId({
-         array: numberArray,
-      });
-      const arrayProxy = arrayProxyFactory.getFromId(arrayProxyId)
-         .proxy as number[];
-
-      const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-         arrayProxy.push(5);
-      });
-
-      const expected: IPropertyChange = {
-         arguments: [],
-         chain: [{ object: observer.target, id: 4 }],
-         id: 4,
-         newValue: 5,
-         target: observer.target,
-         isNew: true,
-      };
-
-      expect(actual).toEqual(expected);
-   });
-
-   it('items will not be observed when mustProxify is not set', () => {
+   it('dispose will release the array proxy', async () => {
       const objectArray = [{ x: 1 }, { x: 2 }];
 
-      const observerProxyPair = arrayObserverProxyPairFactory.create(
+      observer = arrayObserverProxyPairFactory.create(
          disposableOwner,
          { target: objectArray }
-      );
-      observer = observerProxyPair.observer;
-      disposableOwner.canDispose.mockReturnValue(true);
-      const objectPropertyObserverProxyPairManager =
-         InjectionContainer.get<IObjectPropertyObserverProxyPairManager>(
-            RsXStateManagerInjectionTokens.IObjectPropertyObserverProxyPairManager
-         );
+      ).observer;
 
-      const propertyObserverProxyPairManager =
-         objectPropertyObserverProxyPairManager.getFromId(objectArray);
-
-      expect(arrayProxyFactory.getFromId(observerProxyPair.id)).toBeDefined();
-      expect(propertyObserverProxyPairManager).toBeUndefined();
-   });
-
-   it('dispose will release the array', async () => {
-      const objectArray = [{ x: 1 }, { x: 2 }];
-
-      const observerProxyPair = arrayObserverProxyPairFactory.create(
-         disposableOwner,
-         { target: objectArray }
-      );
-      observer = observerProxyPair.observer;
       disposableOwner.canDispose.mockReturnValue(true);
 
-      expect(arrayProxyFactory.getFromId(observerProxyPair.id)).toBeDefined();
+      expect(arrayProxyFactory.getFromId(objectArray)).toBeDefined();
 
       observer.dispose();
 
-      expect(arrayProxyFactory.getFromId(observerProxyPair.id)).toBeUndefined();
+      expect(arrayProxyFactory.getFromId(objectArray)).toBeUndefined();
    });
 
-   it('dispose will release the item for recurive observer', async () => {
-      const mustProxifyHandlerFactory =
-         InjectionContainer.get<IMustProxifyItemHandlerFactory>(
-            RsXStateManagerInjectionTokens.IMustProxifyItemHandlerFactory
-         );
+   it('dispose will release the items for recursive observer', async () => {
       const objectArray = [{ x: 1 }, { x: 2 }];
-
-      const observerProxyPair = arrayObserverProxyPairFactory.create(
+      const observerProxyPair: IArrayObserverProxyPair = arrayObserverProxyPairFactory.create(
          disposableOwner,
          { target: objectArray, mustProxify: truePredicate }
       );
@@ -232,25 +175,196 @@ describe('ArrayObserverProxyPairFactory tests', () => {
          objectPropertyObserverProxyPairManager.getFromId(objectArray);
       const item1Id = propertyObserverProxyPairManager.getId({
          key: 0,
-         mustProxify: mustProxifyHandlerFactory.getFromId(0),
+         mustProxify: truePredicate
       });
       const item2Id = propertyObserverProxyPairManager.getId({
          key: 1,
-         mustProxify: mustProxifyHandlerFactory.getFromId(1),
+         mustProxify: truePredicate
       });
 
-      expect(arrayProxyFactory.getFromId(observerProxyPair.id)).toBeDefined();
+      expect(arrayProxyFactory.getFromId(objectArray)).toBeDefined();
       expect(propertyObserverProxyPairManager.getFromId(item1Id)).toBeDefined();
       expect(propertyObserverProxyPairManager.getFromId(item2Id)).toBeDefined();
+      expect(objectArray[0]).isWritableProperty('x');
+      expect(objectArray[1]).isWritableProperty('x')
 
       observer.dispose();
 
-      expect(arrayProxyFactory.getFromId(observerProxyPair.id)).toBeUndefined();
+      expect(arrayProxyFactory.getFromId(objectArray)).toBeUndefined();
       expect(
          propertyObserverProxyPairManager.getFromId(item1Id)
       ).toBeUndefined();
       expect(
          propertyObserverProxyPairManager.getFromId(item2Id)
       ).toBeUndefined();
+      expect(objectArray[0]).not.isWritableProperty('x');
+      expect(objectArray[1]).not.isWritableProperty('x')
+   });
+
+   it('will only proxify items for which mustProxify returns true', () => {
+      const objectArray = [{ x: 1 }, { x: 2 }, { x: 3 }];
+
+      const mustProxify = jest.fn();
+      mustProxify.mockImplementation((index: number|string) => index === 0 || index === 2 || index === 'x');
+
+      const observerProxyPair: IArrayObserverProxyPair = arrayObserverProxyPairFactory.create(
+         disposableOwner,
+         { target: objectArray, mustProxify }
+      );
+      observer = observerProxyPair.observer;
+
+      expect(mustProxify).toHaveBeenCalledTimes(5);
+      expect(mustProxify).toHaveBeenNthCalledWith(1, 0, objectArray);
+      expect(mustProxify).toHaveBeenNthCalledWith(2, 'x', objectArray[0]);
+      expect(mustProxify).toHaveBeenNthCalledWith(3, 1, objectArray);
+      expect(mustProxify).toHaveBeenNthCalledWith(4, 2, objectArray);
+      expect(mustProxify).toHaveBeenNthCalledWith(5, 'x', objectArray[2]);
+      expect(objectArray[0]).isWritableProperty('x');
+      expect(objectArray[1]).not.isWritableProperty('x');
+      expect(objectArray[2]).isWritableProperty('x');
+   });
+
+   describe(`change event for recursive observer for  '[{ x: 1 }, { x: 2 }]'`, () => {
+      let proxyRegister: IProxyRegistry;
+
+      beforeEach(() => {
+         proxyRegister = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
+      })
+
+      it('change event is emitted when adding array item', async () => {
+         const array = [{ x: 1 }, { x: 2 }];
+         observer = arrayObserverProxyPairFactory.create(disposableOwner, {
+            target: array,
+            mustProxify: truePredicate
+         }).observer;
+
+         const actual = await new WaitForEvent(observer, 'changed').wait(() => {
+            const arrayProxy = proxyRegister.getProxy<({ x: number })[]>(array)
+            arrayProxy.push({ x: 3 });;
+         });
+
+         const expected: IPropertyChange = {
+            arguments: [],
+            chain: [{ object: array, id: 2 }],
+            id: 2,
+            newValue: { x: 3 },
+            target: array
+         };
+
+         expect(actual).toEqual(expected);
+      });
+
+      it('change event is emitted when deleting array item', async () => {
+         const array = [{ x: 1 }, { x: 2 }];
+         observer = arrayObserverProxyPairFactory.create(disposableOwner, {
+            target: array,
+            mustProxify: truePredicate
+         }).observer;
+
+         const actual = await new WaitForEvent(observer, 'changed').wait(() => {
+            const arrayProxy = proxyRegister.getProxy<({ x: number })[]>(array)
+            arrayProxy.splice(1, 1);
+         });
+
+         const expected: IPropertyChange = {
+            arguments: [],
+            chain: [{ object: array, id: 1 }],
+            id: 1,
+            newValue: undefined,
+            target: array
+         };
+
+         expect(actual).toEqual(expected);
+      });
+
+      it('change event is emitted when changing array item', async () => {
+         const array = [{ x: 1 }, { x: 2 }];
+         observer = arrayObserverProxyPairFactory.create(disposableOwner, {
+            target: array,
+            mustProxify: truePredicate
+         }).observer;
+
+         const actual = await new WaitForEvent(observer, 'changed').wait(() => {
+            array[1].x = 200
+         });
+
+         const expected: IPropertyChange = {
+            arguments: [],
+            chain: [
+               { object: array, id: 1 },
+               { object: array[1], id: 'x' }
+            ],
+            id: 'x',
+            newValue: 200,
+            target: array[1]
+         };
+
+         expect(actual).toEqual(expected);
+      });
+   });
+
+   describe(`change event for non-recursive observer for  '[{ x: 1 }, { x: 2 }]'`, () => {
+      let proxyRegister: IProxyRegistry;
+
+      beforeEach(() => {
+         proxyRegister = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
+      })
+
+      it('change event is emitted when adding array item', async () => {
+         const array = [{ x: 1 }, { x: 2 }];
+         observer = arrayObserverProxyPairFactory.create(disposableOwner, {
+            target: array,
+         }).observer;
+
+         const actual = await new WaitForEvent(observer, 'changed').wait(() => {
+            const arrayProxy = proxyRegister.getProxy<({ x: number })[]>(array)
+            arrayProxy.push({ x: 3 });;
+         });
+
+         const expected: IPropertyChange = {
+            arguments: [],
+            chain: [{ object: array, id: 2 }],
+            id: 2,
+            newValue: { x: 3 },
+            target: array
+         };
+
+         expect(actual).toEqual(expected);
+      });
+
+      it('change event is emitted when deleting array item', async () => {
+         const array = [{ x: 1 }, { x: 2 }];
+         observer = arrayObserverProxyPairFactory.create(disposableOwner, {
+            target: array,
+         }).observer;
+
+         const actual = await new WaitForEvent(observer, 'changed').wait(() => {
+            const arrayProxy = proxyRegister.getProxy<({ x: number })[]>(array)
+            arrayProxy.splice(1, 1);
+         });
+
+         const expected: IPropertyChange = {
+            arguments: [],
+            chain: [{ object: array, id: 1 }],
+            id: 1,
+            newValue: undefined,
+            target: array
+         };
+
+         expect(actual).toEqual(expected);
+      });
+
+      it('change event is not emitted when changing array item', async () => {
+         const array = [{ x: 1 }, { x: 2 }];
+         observer = arrayObserverProxyPairFactory.create(disposableOwner, {
+            target: array,
+         }).observer;
+
+         const actual = await new WaitForEvent(observer, 'changed').wait(() => {
+            array[1].x = 200
+         });
+
+         expect(actual).toBeNull();
+      });
    });
 });

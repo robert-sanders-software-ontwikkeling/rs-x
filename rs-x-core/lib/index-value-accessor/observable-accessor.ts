@@ -11,6 +11,10 @@ import { PENDING } from './pending';
 export class ObservableAccessor implements IObservableAccessor {
    private readonly _lastValues = new WeakMap<LastValuObservable, unknown>();
 
+   public getIndexes(): IterableIterator<string> {
+      return [].values()
+   }
+
    public isAsync(): boolean {
       return true;
    }
@@ -19,6 +23,11 @@ export class ObservableAccessor implements IObservableAccessor {
       return context instanceof BehaviorSubject
          ? context.value
          : (this._lastValues.get(context[index]) ?? PENDING);
+   }
+
+
+   public hasValue(context: LastValuObservable, index: string): boolean {
+      return this.getResolvedValue(context, index) !== PENDING
    }
 
    public getValue(context: unknown, index: string): unknown {

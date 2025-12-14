@@ -7,8 +7,16 @@ import { PENDING } from './pending';
 export class PromiseAccessor implements IPromiseAccessor {
    private readonly _lastValues = new WeakMap<Promise<unknown>, unknown>();
 
+   public getIndexes(): IterableIterator<string> {
+      return [].values()
+   }
+
    public isAsync(): boolean {
       return true;
+   }
+
+   public hasValue(context: Promise<unknown>, index: string): boolean {
+      return this.getResolvedValue(context, index) !== PENDING
    }
 
    public getResolvedValue(context: unknown, index: string): unknown {

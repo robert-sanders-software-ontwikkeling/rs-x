@@ -1,22 +1,20 @@
 import { ISingletonFactory } from '@rs-x/core';
+import { IDisposableOwner } from '../../disposable-owner.interface';
 import {
-   IObserverProxyPair,
-   MustProxify,
+   IObserverProxyPair
 } from '../../object-property-observer-proxy-pair-manager.type';
-import { ProcessSetItem } from './process-set-item.type';
 
 export interface ISetProxifyIdData {
    set: Set<unknown>;
-   mustProxify?: MustProxify;
+
 }
 export interface ISetProxifyData extends ISetProxifyIdData {
-   proxifyItem?: ProcessSetItem;
-   unproxifyItem?: ProcessSetItem;
+   owner?: IDisposableOwner;
 }
 
-export type ISetObserverProxyPair = IObserverProxyPair<Set<unknown>, string>;
+export type ISetObserverProxyPair = IObserverProxyPair<Set<unknown>>;
 export type ISetProxyFactory = ISingletonFactory<
-   string,
+   Set<unknown>,
    ISetProxifyData,
    ISetObserverProxyPair,
    ISetProxifyIdData

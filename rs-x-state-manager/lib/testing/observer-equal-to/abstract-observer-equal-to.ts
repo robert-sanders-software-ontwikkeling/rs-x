@@ -15,9 +15,9 @@ export function abstractObserverEqualTo(x: IObserver, y: IObserver): boolean {
       return false;
    }
 
-   if (x.initialValue !== y.initialValue) {
+   if (x.value !== y.value) {
       console.log(
-         `${x.constructor.name}  initialValue '${x.initialValue}' is not egual to comparing initial value '${y.initialValue}' `
+         `${x.constructor.name}  initialValue '${x.value}' is not egual to comparing initial value '${y.value}' `
       );
       return false;
    }

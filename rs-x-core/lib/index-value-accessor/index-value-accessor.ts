@@ -8,12 +8,25 @@ export class IndexValueAccessor implements IIndexValueAccessor {
    constructor(
       @Inject(RsXCoreInjectionTokens.IIndexValueAccessorProvider)
       private readonly _indexValueAcessorProvider: IIndexValueAccessorProvider
-   ) {}
+   ) { }
+
+
+   public getIndexes(context: unknown, index: unknown): IterableIterator<unknown> {
+     return this._indexValueAcessorProvider
+         .get(context, index)
+         .getIndexes(context, index);
+   }
 
    public isAsync(context: unknown, index: unknown): boolean {
       return this._indexValueAcessorProvider
          .get(context, index)
          .isAsync(context, index);
+   }
+
+   public hasValue(context: unknown, index: unknown): boolean {
+      return this._indexValueAcessorProvider
+         .get(context, index)
+         .hasValue(context, index);
    }
 
    public getResolvedValue(context: unknown, index: unknown): unknown {

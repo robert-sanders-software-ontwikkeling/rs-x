@@ -7,6 +7,14 @@ export class ArrayIndexAccessor implements IArrayIndexAccessor {
       return false;
    }
 
+   public getIndexes(array: unknown[]): IterableIterator<number> {
+      return  array.keys();
+   }
+
+   public hasValue(array: unknown[], index: number): boolean {
+     return this.getValue(array, index) !== undefined;
+   }
+
    public getResolvedValue(array: unknown[], index: number): unknown {
       return array[index];
    }

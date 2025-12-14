@@ -8,7 +8,6 @@ export interface IPromiseProxyData {
 }
 
 export type IPromiseObserverProxyPair = IObserverProxyPair<
-   Promise<unknown>,
    Promise<unknown>
 >;
 export type IPromiseProxyFactory = ISingletonFactory<

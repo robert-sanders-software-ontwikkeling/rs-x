@@ -1,14 +1,12 @@
 import {
-   echo,
    Inject,
    Injectable,
-   SingletonFactoryWithGuid,
-   Type,
+   SingletonFactory,
+   Type
 } from '@rs-x/core';
 import { Subject } from 'rxjs';
 import { AbstractObserver } from '../../abstract-observer';
 import { IDisposableOwner } from '../../disposable-owner.interface';
-import { MustProxify } from '../../object-property-observer-proxy-pair-manager.type';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
 import { IProxyRegistry } from '../proxy-registry/proxy-registry.interface';
 import {
@@ -17,7 +15,6 @@ import {
    IArrayProxyFactory,
    IArrayProxyIdData,
 } from './array-proxy.factory.type';
-import { ProcessArrayItem } from './process-array-item.type';
 
 type ArrayMethodKeys =
    | 'push'
@@ -30,8 +27,6 @@ type ArrayMethodKeys =
    | 'pop';
 
 class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
-   private readonly proxifyItem: ProcessArrayItem;
-   private readonly unproxifyItem: ProcessArrayItem;
    private _patching = false;
    private readonly updateArray: Record<
       ArrayMethodKeys,
@@ -41,8 +36,6 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
    constructor(
       owner: IDisposableOwner,
       initialValue: unknown[],
-      proxifyItem: ProcessArrayItem,
-      unproxifyItem: ProcessArrayItem,
       private readonly _proxyRegistry: IProxyRegistry
    ) {
       super(owner, null, initialValue, new Subject(), undefined);
@@ -58,17 +51,8 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
          fill: this.fillArray,
       };
 
-      this.proxifyItem = proxifyItem ?? echo;
-      this.unproxifyItem = unproxifyItem ?? echo;
-
       this.target = new Proxy(initialValue, this);
       this._proxyRegistry.register(initialValue, this.target);
-   }
-
-   public override init(): void {
-      if (this.proxifyItem !== echo) {
-         this.proxifyItems(this.initialValue, 0, this.initialValue.length);
-      }
    }
 
    public get(
@@ -96,14 +80,9 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
             this.setLength(originalArray, value as number);
          } else if (Type.isPositiveInteger(property)) {
             const index = Number(property);
-            this.unproxifyItem(originalArray[property], originalArray, index);
-            originalArray[property] = value;
-            originalArray[property] = this.proxifyItem(
-               value,
-               originalArray,
-               index
-            );
-            this.emitSet(originalArray, Number(property), value);
+            originalArray[index] = value;
+
+            this.emitSet(originalArray,index, value);
          } else {
             Reflect.set(originalArray, property, value, receiver);
          }
@@ -112,22 +91,18 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
    }
 
    protected override disposeInternal(): void {
-      this._proxyRegistry.unregister(this.initialValue);
-      this.restoreOrginalArray();
+      this._proxyRegistry.unregister(this.value);
       this.target = null;
    }
 
    private pushArray = (orginalArray: unknown[], ...args: unknown[]) => {
-      const oldLength = orginalArray.length;
       const startIndex = orginalArray.length;
       orginalArray.push(...args);
-      this.proxifyItems(orginalArray, startIndex, args.length);
 
       this.emitSetForRange(
          orginalArray,
          startIndex,
          args.length,
-         oldLength
       );
       return orginalArray.length;
    };
@@ -137,13 +112,7 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
       const itemsToAdd = args.length > 2 ? args.slice(2) : [];
       const deleteCount = args[1] as number;
       const before = originalArray.slice();
-      const removed = originalArray
-         .splice(startIndex, deleteCount, ...itemsToAdd)
-         .map((removedItem, index) =>
-            this.unproxifyItem(removedItem, originalArray, startIndex + index)
-         );
-
-      this.proxifyItems(originalArray, startIndex, itemsToAdd.length);
+      const removed = originalArray.splice(startIndex, deleteCount, ...itemsToAdd);
 
       const after = originalArray;
       const maxLength = Math.max(before.length, after.length);
@@ -152,8 +121,7 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
             this.emitSet(
                originalArray,
                i,
-               after[i],
-               after.length > before.length && i >= before.length
+               after[i]
             );
          }
       }
@@ -165,22 +133,20 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
       const index = orginalArray.length - 1;
       const removedItem = orginalArray.pop();
       this.emitSet(orginalArray, index);
-      return this.unproxifyItem(removedItem, orginalArray, index);
+      return removedItem;
    };
 
    private shiftArray = (orginalArray: unknown[]) => {
       const oldLength = orginalArray.length;
-      const removedItem = orginalArray.shift();
-      this.emitSetForRange(orginalArray, 0, orginalArray.length, oldLength);
+      const result = orginalArray.shift();
+      this.emitSetForRange(orginalArray, 0, orginalArray.length);
       this.emitSet(orginalArray, oldLength - 1);
-      return this.unproxifyItem(removedItem, orginalArray, 0);
+      return result;
    };
 
    private unshiftArray = (orginalArray: unknown[], ...args: unknown[]) => {
-      const oldLength = orginalArray.length;
       orginalArray.unshift(...args);
-      this.proxifyItems(orginalArray, 0, args.length);
-      this.emitSetForRange(orginalArray, 0, orginalArray.length, oldLength);
+      this.emitSetForRange(orginalArray, 0, orginalArray.length);
       return orginalArray.length;
    };
 
@@ -190,7 +156,6 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
          orginalArray,
          0,
          orginalArray.length,
-         orginalArray.length
       );
       return result;
    };
@@ -204,17 +169,16 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
          orginalArray,
          0,
          orginalArray.length,
-         orginalArray.length
       );
       return result;
    };
+
    private fillArray = (orginalArray: unknown[], ...args: unknown[]) => {
       const start = (args[1] ?? 0) as number;
       const end = (args[2] ?? orginalArray.length) as number;
       for (let i = start; i < end; i++) {
          orginalArray[i] = structuredClone(args[0]);
          this.emitSet(orginalArray, i, orginalArray[i]);
-         orginalArray[i] = this.proxifyItem(orginalArray[i], orginalArray, i);
       }
       return orginalArray;
    };
@@ -227,33 +191,10 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
       }
    }
 
-   private restoreOrginalArray(): void {
-      this.initialValue.forEach((item, index) => {
-         const unproxifyItem = this.unproxifyItem(
-            item,
-            this.initialValue,
-            index
-         );
-         this.initialValue[index] = unproxifyItem;
-      });
-   }
-
-   private proxifyItems(
-      array: unknown[],
-      startIndex: number,
-      length: number
-   ): void {
-      const endIndex = startIndex + length;
-      for (let i = startIndex; i < endIndex; i++) {
-         array[i] = this.proxifyItem(array[i], array, i);
-      }
-   }
-
    private emitSet(
       originaArray: unknown[],
       index: number,
-      value?: unknown,
-      isNew?: boolean
+      value?: unknown
    ): void {
       this.emitChange({
          arguments: [],
@@ -261,7 +202,6 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
          id: index,
          target: originaArray,
          newValue: value,
-         isNew: !!isNew,
       });
    }
 
@@ -269,24 +209,24 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
       originaArray: unknown[],
       startIndex: number,
       length: number,
-      oldLength: number
    ): void {
       const endIndex = startIndex + length;
       for (let i = startIndex; i < endIndex; i++) {
-         this.emitSet(originaArray, i, originaArray[i], i >= oldLength);
+         this.emitSet(originaArray, i, originaArray[i]);
       }
    }
 }
 
 @Injectable()
 export class ArrayProxyFactory
-   extends SingletonFactoryWithGuid<
+   extends SingletonFactory<
+      unknown[],
       IArrayProxyData,
       IArrayObserverProxyPair,
       IArrayProxyIdData
    >
-   implements IArrayProxyFactory
-{
+   implements IArrayProxyFactory {
+
    constructor(
       @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
       private readonly _proxyRegistry: IProxyRegistry
@@ -294,17 +234,17 @@ export class ArrayProxyFactory
       super();
    }
 
-   protected override getGroupId(data: IArrayProxyIdData): unknown[] {
+   public override getId(data: IArrayProxyIdData): unknown[] {
       return data.array;
    }
 
-   protected override getGroupMemberId(data: IArrayProxyIdData): MustProxify {
-      return data.mustProxify;
+   protected override createId(data: IArrayProxyIdData): unknown[] {
+       return data.array;
    }
 
    protected override createInstance(
       data: IArrayProxyData,
-      id: string
+      id: unknown[]
    ): IArrayObserverProxyPair {
       const observer = new ArrayProxy(
          {
@@ -315,63 +255,19 @@ export class ArrayProxyFactory
             },
          },
          data.array,
-         data.proxifyItem && data.mustProxify
-            ? (item: unknown, array: unknown[], index: number) => {
-                 return this.proxifyItem(
-                    item,
-                    array,
-                    index,
-                    data.proxifyItem,
-                    data.mustProxify
-                 );
-              }
-            : undefined,
-         data.unproxifyItem && data.mustProxify
-            ? (item: unknown, array: unknown[], index: number) => {
-                 return this.unproxifyItem(
-                    item,
-                    array,
-                    index,
-                    data.unproxifyItem,
-                    data.mustProxify
-                 );
-              }
-            : undefined,
          this._proxyRegistry
       );
       return {
          observer,
          proxy: observer.target,
          proxyTarget: data.array,
-         id,
       };
    }
 
-   private proxifyItem(
-      item: unknown,
-      array: unknown[],
-      index: number,
-      proxifyItem: ProcessArrayItem,
-      mustProxify: MustProxify
-   ): unknown {
-      return mustProxify(index, array) ? proxifyItem(item, array, index) : item;
-   }
-
-   private unproxifyItem(
-      item: unknown,
-      array: unknown[],
-      index: number,
-      unproxifyItem: ProcessArrayItem,
-      mustProxify: MustProxify
-   ): unknown {
-      return mustProxify(index, array)
-         ? unproxifyItem(item, array, index)
-         : item;
-   }
 
    protected override releaseInstance(
       arrayObserverWithProxy: IArrayObserverProxyPair,
-      id: string
+      id: unknown[]
    ): void {
       super.releaseInstance(arrayObserverWithProxy, id);
       arrayObserverWithProxy.observer.dispose();

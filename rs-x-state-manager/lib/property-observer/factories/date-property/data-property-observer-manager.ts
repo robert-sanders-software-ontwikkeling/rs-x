@@ -31,7 +31,7 @@ class DatePropertybserver extends AbstractObserver<Date> {
     ) {
         super(owner, target, datePropertyAccessor.getValue(target, propertyName), undefined, propertyName);
 
-        this._oldValue = this.initialValue;
+        this._oldValue = this.value;
         this._mapChangeSubscription = this._datebserver.changed.subscribe({
             next: this.onDateChanged,
             error: (e) =>

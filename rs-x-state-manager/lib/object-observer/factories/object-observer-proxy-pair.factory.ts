@@ -1,27 +1,28 @@
-import { IErrorLog, truePredicate } from '@rs-x/core';
+import { IErrorLog, IIndexValueAccessor, truePredicate } from '@rs-x/core';
 import { IDisposableOwner } from '../../disposable-owner.interface';
-import { IObserverProxyPair } from '../../object-property-observer-proxy-pair-manager.type';
+import { IObjectPropertyObserverProxyPairManager, IObserverProxyPair, MustProxify } from '../../object-property-observer-proxy-pair-manager.type';
 import { ObserverGroup } from '../../observer-group';
+import { IObserver } from '../../observer.interface';
 import { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
 import { IObjectObserverProxyPairFactory } from '../object-observer-proxy-pair.factory.interface';
 
 export abstract class ObjectObserverProxyPairFactory<
    TTarget,
-   TId,
    TData extends IProxyTarget<TTarget> = IProxyTarget<TTarget>,
-> implements IObjectObserverProxyPairFactory<TTarget, TId>
-{
+> implements IObjectObserverProxyPairFactory<TTarget> {
    protected constructor(
       private readonly _observerRootObserver: boolean,
-      private readonly _errorLog: IErrorLog
-   ) {}
+      protected readonly _errorLog: IErrorLog,
+      protected readonly _indexAccessor: IIndexValueAccessor,
+      protected readonly _objectPropertyObserverProxyPairManager: IObjectPropertyObserverProxyPairManager
+   ) { }
 
    public abstract applies(object: object): boolean;
 
    public create(
       owner: IDisposableOwner,
       data: TData
-   ): IObserverProxyPair<TTarget, TId> {
+   ): IObserverProxyPair<TTarget> {
       const observerGroup = new ObserverGroup(
          this.createDisposableOwner(owner, data),
          data.target,
@@ -29,40 +30,59 @@ export abstract class ObjectObserverProxyPairFactory<
          truePredicate,
          this._errorLog,
          undefined,
-         () => rootObserver.observer,
+         () => rootObserver?.observer,
          this._observerRootObserver
       );
-      this.onObserverGroupCreate(data.target, observerGroup);
-      const rootObserver = this.createRootObserverInternal(data);
+      this.onObserverGroupCreate(data.target, observerGroup, data.mustProxify);
+      const rootObserver = this.createRootObserver(data);
       if (!data.initializeManually) {
          observerGroup.init();
       }
 
       return {
          observer: observerGroup,
-         proxy: rootObserver.proxy,
-         proxyTarget: rootObserver.proxyTarget,
-         id: rootObserver.id,
+         proxy: rootObserver?.proxy,
+         proxyTarget: rootObserver?.proxyTarget,
       };
    }
 
-   protected abstract createDisposableOwner(
+   protected createDisposableOwner(
       owner: IDisposableOwner,
-      data: TData
-   ): IDisposableOwner;
+      _data: TData
+   ): IDisposableOwner {
+      return owner;
+   }
 
    protected abstract createRootObserver(
       data: TData
-   ): IObserverProxyPair<TTarget, TId>;
-   
-   protected onObserverGroupCreate(
-      _target: TTarget,
-      _observerGroup: ObserverGroup
-   ): void {}
+   ): IObserverProxyPair<TTarget>;
 
-   private createRootObserverInternal(
-      data: TData
-   ): IObserverProxyPair<TTarget, TId> {
-      return this.createRootObserver(data);
+
+   protected onObserverGroupCreate(
+      target: TTarget,
+      observerGroup: ObserverGroup,
+      mustProxify: MustProxify
+   ): void {
+
+      if(!mustProxify) {
+         return;
+      }
+
+      const observers: IObserver[] = [];
+
+      const indexes = this._indexAccessor.getIndexes(target);
+      for (const index of indexes) {
+         if (!mustProxify(index, target)) {
+            continue;
+         }
+         const { observer } = this._objectPropertyObserverProxyPairManager.create(target).instance.create({
+            key: index,
+            mustProxify,
+
+         }).instance;
+         observers.push(observer);
+      }
+
+      observerGroup.replaceObservers(observers);
    }
 }

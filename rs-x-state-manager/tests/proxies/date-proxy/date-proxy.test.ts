@@ -34,24 +34,26 @@ describe('DateProxy tests', () => {
       const dateProxyFactory = new DateProxyFactory(new ProxyRegistryMock());
       const date = new Date()
 
-      const { observer: observer1, id: id1 } = dateProxyFactory.create({
+      const { observer: observer1} = dateProxyFactory.create({
          date,
       }).instance;
-      const { observer: observer2, id: id2 } = dateProxyFactory.create({
+      const { observer: observer2 } = dateProxyFactory.create({
          date,
       }).instance;
 
+      const id = dateProxyFactory.getId({date});
+      expect(id).toBeDefined();
+
       expect(observer1).toBe(observer2);
-      expect(id1).toBe(id2);
-      expect(dateProxyFactory.getFromId(id1)).toBeDefined();
+      expect(dateProxyFactory.getFromId(id)).toBeDefined();
 
       observer1.dispose();
 
-      expect(dateProxyFactory.getFromId(id2)).toBeDefined();
+      expect(dateProxyFactory.getFromId(id)).toBeDefined();
 
       observer2.dispose();
 
-      expect(dateProxyFactory.getFromId(id2)).toBeUndefined();
+      expect(dateProxyFactory.getFromId(id)).toBeUndefined();
    });
 
    describe('all date operation still work as before', () => {
