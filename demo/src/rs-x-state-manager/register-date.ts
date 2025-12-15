@@ -9,11 +9,8 @@ import {
 
 // Load the state manager module into the injection container
 InjectionContainer.load(RsXStateManagerModule);
-const stateManager: IStateManager = InjectionContainer.get(
-    RsXStateManagerInjectionTokens.IStateManager
-);
 
-function watchDate() {
+function watchDate(stateManager: IStateManager) {
     console.log('\n******************************************');
     console.log('* Watching date');
     console.log('******************************************\n');
@@ -42,7 +39,7 @@ function watchDate() {
     }
 }
 
-function watchDateProperty() {
+function watchDateProperty(stateManager: IStateManager) {
     console.log('\n******************************************');
     console.log('* Watching year');
     console.log('******************************************\n');
@@ -51,6 +48,7 @@ function watchDateProperty() {
         console.log(change.newValue);
     });
     try {
+        // This will emit a change event with the initial (current) value.
         console.log('Initial value:');
         stateManager.register(date, 'year');
 
@@ -68,5 +66,10 @@ function watchDateProperty() {
     }
 }
 
-watchDate();
-watchDateProperty();
+export const run = (() => {
+    const stateManager: IStateManager = InjectionContainer.get(
+        RsXStateManagerInjectionTokens.IStateManager
+    );
+    watchDate(stateManager);
+    watchDateProperty(stateManager);
+})();

@@ -23,7 +23,7 @@ export class PrettyPrinter {
 
         this.handlers = [
             {
-                predicate: (v) => v === null || ['string','number','boolean','bigint','symbol','undefined'].includes(typeof v),
+                predicate: (v) => v === null || ['string', 'number', 'boolean', 'bigint', 'symbol', 'undefined'].includes(typeof v),
                 action: (v, level, quoteStrings) => [this.spaces(level) + this.formatPrimitive(v, quoteStrings)]
             },
             {
@@ -33,13 +33,20 @@ export class PrettyPrinter {
             {
                 predicate: Array.isArray,
                 action: (v: unknown[], level, quoteStrings) => {
-                    if (v.length === 0) return [this.spaces(level) + '[]'];
-                    const lines: string[] = [this.spaces(level) + '['];
-                    for (const item of v) {
-                        const nested = this.toLines(item, level + 1, quoteStrings);
-                        lines.push(...nested.map(l => l + ','));
+                    if (v.length === 0) {
+                        return [this.spaces(level) + '[]'];
                     }
-                    lines[lines.length - 1] = lines[lines.length - 1].replace(/,$/, '');
+
+                    const lines: string[] = [this.spaces(level) + '['];
+
+                    for (let i = 0; i < v.length; i++) {
+                        const nested = this.toLines(v[i], level + 1, quoteStrings);
+                        lines.push(...nested);
+                        if (i < v.length - 1) {
+                            lines[lines.length - 1] += ',';
+                        }
+                    }
+
                     lines.push(this.spaces(level) + ']');
                     return lines;
                 }
@@ -80,7 +87,7 @@ export class PrettyPrinter {
                 action: (v: unknown, level) => {
                     const raw = (v as ICustomToString).toString(this.indent, level);
                     return Array.isArray(raw) ? raw.map(l => this.spaces(level) + l)
-                                               : String(raw).split('\n').map(l => this.spaces(level) + l);
+                        : String(raw).split('\n').map(l => this.spaces(level) + l);
                 }
             },
             {

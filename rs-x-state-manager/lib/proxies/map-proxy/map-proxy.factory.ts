@@ -1,5 +1,4 @@
-import { Inject, Injectable } from '@rs-x/core';
-import { SingletonFactory } from '../../../../rs-x-core/dist';
+import { Inject, Injectable, SingletonFactory } from '@rs-x/core';
 import { AbstractObserver } from '../../abstract-observer';
 import { IDisposableOwner } from '../../disposable-owner.interface';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';

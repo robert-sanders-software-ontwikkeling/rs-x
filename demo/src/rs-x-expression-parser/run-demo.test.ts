@@ -164,7 +164,6 @@ describe('Expression parser demos', () => {
         await expect(() => runDemo('rs-x-expression-parser/bitwise-unsigned-right-shift-expression.ts')).toOutputAsync(expected);
     });
 
-
     it('bitwise-xor-expression.ts', async () => {
         const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/bitwise-xor-expression.ts
@@ -457,6 +456,27 @@ describe('Expression parser demos', () => {
         `;
 
         await expect(() => runDemo('rs-x-expression-parser/member-expression-with-array.ts')).toOutputAsync(expected);
+    });
+
+
+    it('member-expression-with-map.ts', async () => {
+        const expected = dedent`
+            Running demo: demo/src/rs-x-expression-parser/member-expression-with-map.ts
+            Initial value of 'a.b['b'].c.d':
+            2
+            Value of 'a.b['b'].c.d' after changing a to '{ b: new Map([['a', { c: { d: 11 } }], ['b', { c: { d: 21 } }]]) }':
+            21
+            Value of 'a.b['b'].c.d' after changing b['b'] to '{ c: { d: 120 } }':
+            120
+            Value of 'a.b['b'].c.d' after changing b['b'].c to '{ d: 220 }':
+            220
+            Value of 'a.b['b'].c.d' after changing b[1].c.d to '330':
+            330
+            Final value of 'a.b['b'].c.d':
+            330
+        `;
+
+        await expect(() => runDemo('rs-x-expression-parser/member-expression-with-map.ts')).toOutputAsync(expected);
     });
 
 });

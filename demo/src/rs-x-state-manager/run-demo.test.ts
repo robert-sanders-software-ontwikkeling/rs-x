@@ -85,11 +85,11 @@ describe('Statemanager demos', () => {
             Running demo: demo/src/rs-x-state-manager/register-property.ts
             Initial value:
             {
-                a: 10,
+                a: 10
                 nested: {
-                    a: 20,
+                    a: 20
                     nested: {
-                        a: 30,
+                        a: 30
                         nested: {
                             a: 40
                         }
@@ -100,11 +100,11 @@ describe('Statemanager demos', () => {
             Replacing stateContext.b.nested.nested will emit a change event
             Changed value:
             {
-                a: 10,
+                a: 10
                 nested: {
-                    a: 20,
+                    a: 20
                     nested: {
-                        a: -30,
+                        a: -30
                         nested: {
                             a: -40
                         }
@@ -113,11 +113,11 @@ describe('Statemanager demos', () => {
             }
             Latest value:
             {
-                a: 10,
+                a: 10
                 nested: {
-                    a: 20,
+                    a: 20
                     nested: {
-                        a: -30,
+                        a: -30
                         nested: {
                             a: -40
                         }
@@ -234,58 +234,40 @@ describe('Statemanager demos', () => {
         const expected = dedent`
             Running demo: demo/src/rs-x-state-manager/register-map.ts
             Initial value:
-            [
-                [
-                    a,
-                    [
-                        1,
-                        2
-                    ]
-                ],
-                [
-                    b,
-                    [
-                        3,
-                        4
-                    ]
+            {
+                a: [
+                    1,
+                    2
                 ]
-            ]
+                b: [
+                    3,
+                    4
+                ]
+            }
             Changed value:
-            [
-                [
-                    a,
-                    [
-                        1,
-                        2
-                    ]
-                ],
-                [
-                    b,
-                    [
-                        3,
-                        4,
-                        5
-                    ]
+            {
+                a: [
+                    1,
+                    2
                 ]
-            ]
+                b: [
+                    3,
+                    4,
+                    5
+                ]
+            }
             Latest value:
-            [
-                [
-                    a,
-                    [
-                        1,
-                        2
-                    ]
-                ],
-                [
-                    b,
-                    [
-                        3,
-                        4,
-                        5
-                    ]
+            {
+                a: [
+                    1,
+                    2
                 ]
-            ]
+                b: [
+                    3,
+                    4,
+                    5
+                ]
+            }
         `;
 
         await expect(() => runDemo('rs-x-state-manager/register-map.ts')).toOutputAsync(expected);
@@ -295,40 +277,40 @@ describe('Statemanager demos', () => {
         const expected = dedent`
             Running demo: demo/src/rs-x-state-manager/register-set.ts
             Initial value:
-            [
+            {
                 [
                     1,
                     2
-                ],
+                ]
                 [
                     3,
                     4
                 ]
-            ]
+            }
             Changed value:
-            [
+            {
                 [
                     1,
                     2
-                ],
+                ]
                 [
                     3,
                     4,
                     5
                 ]
-            ]
+            }
             Latest value:
-            [
+            {
                 [
                     1,
                     2
-                ],
+                ]
                 [
                     3,
                     4,
                     5
                 ]
-            ]
+            }
         `;
 
         await expect(() => runDemo('rs-x-state-manager/register-set.ts')).toOutputAsync(expected);

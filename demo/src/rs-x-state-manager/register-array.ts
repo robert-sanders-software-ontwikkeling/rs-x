@@ -8,34 +8,36 @@ import {
 
 // Load the state manager module into the injection container
 InjectionContainer.load(RsXStateManagerModule);
-const stateManager: IStateManager = InjectionContainer.get(
-    RsXStateManagerInjectionTokens.IStateManager
-);
 
-const stateContext = {
-    array: [
-        [1, 2],
-        [3, 4]
-    ]
-};
+export const run = (() => {
+    const stateManager: IStateManager = InjectionContainer.get(
+        RsXStateManagerInjectionTokens.IStateManager
+    );
 
-const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
-    printValue(change.newValue);
-});
+    const stateContext = {
+        array: [
+            [1, 2],
+            [3, 4]
+        ]
+    };
 
-try {
-    // Otherwise, only assigning a new value to stateContext.array would emit a change event.
-    // This will emit a change event with the initial (current) value.
-    console.log('Initial value:');
-    stateManager.register(stateContext, 'array', truePredicate);
+    const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+        printValue(change.newValue);
+    });
 
-    console.log('Changed value:');
-    stateContext.array[1].push(5);
+    try {
+        // This will emit a change event with the initial (current) value.
+        console.log('Initial value:');
+        stateManager.register(stateContext, 'array', truePredicate);
 
-    console.log('Latest value:');
-    printValue(stateManager.getState(stateContext,'array'));
+        console.log('Changed value:');
+        stateContext.array[1].push(5);
 
-} finally {
-    changeSubscription.unsubscribe();
-    stateManager.unregister(stateContext, 'array', truePredicate);
-}
+        console.log('Latest value:');
+        printValue(stateManager.getState(stateContext, 'array'));
+
+    } finally {
+        changeSubscription.unsubscribe();
+        stateManager.unregister(stateContext, 'array', truePredicate);
+    }
+})();

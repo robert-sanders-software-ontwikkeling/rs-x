@@ -6,35 +6,37 @@ import {
     RsXStateManagerModule
 } from '@rs-x/state-manager';
 
-
+// Load the state manager module into the injection container
 InjectionContainer.load(RsXStateManagerModule);
-const stateManager: IStateManager = InjectionContainer.get(
-    RsXStateManagerInjectionTokens.IStateManager
-);
 
-const stateContext = {
-    x: { y: 10 }
-};
+export const run = (() => {
+    const stateManager: IStateManager = InjectionContainer.get(
+        RsXStateManagerInjectionTokens.IStateManager
+    );
 
+    const stateContext = {
+        x: { y: 10 }
+    };
 
-console.log('Initial value:');
-stateManager.changed.subscribe((change: IStateChange) => {
-    printValue(change.newValue);
-});
+    // This will emit a change event with the initial (current) value.
+    console.log('Initial value:');
+    stateManager.changed.subscribe((change: IStateChange) => {
+        printValue(change.newValue);
+    });
 
-// This will emit the new value { y: 10 }
-stateManager.register(stateContext, 'x');
+    // This will emit the new value { y: 10 }
+    stateManager.register(stateContext, 'x');
 
+    console.log('Changed value:');
+    // This will emit the new value { y: 10 }
+    stateContext.x = {
+        y: 20
+    };
 
-console.log('Changed value:');
-// This will emit the new value { y: 10 }
-stateContext.x = {
-    y: 20
-};
+    console.log(`Latest value:`);
+    printValue(stateManager.getState(stateContext, 'x'));
 
-console.log(`Latest value:`);
-printValue(stateManager.getState(stateContext, 'x'));
-
-// This will emit no change because the state is not recursive.
-console.log('\nstateContext.x.y = 30 will not emit any change:\n---\n');
-stateContext.x.y = 30;
+    // This will emit no change because the state is not recursive.
+    console.log('\nstateContext.x.y = 30 will not emit any change:\n---\n');
+    stateContext.x.y = 30;
+})();

@@ -4,7 +4,7 @@ import { IMethodAccessor } from './method-accessor.type';
 
 export class MethodAccessor implements IMethodAccessor {
    public getIndexes(): IterableIterator<string> {
-      return [].values()
+      return [].values();
    }
 
    public isAsync(): boolean {
