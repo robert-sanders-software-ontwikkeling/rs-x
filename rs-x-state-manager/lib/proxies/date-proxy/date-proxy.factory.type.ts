@@ -1,5 +1,4 @@
-import { ISingletonFactory } from '@rs-x/core';
-import { IDisposableOwner } from '../../disposable-owner.interface';
+import { IDisposableOwner, ISingletonFactory } from '@rs-x/core';
 import {
    IObserverProxyPair,
    MustProxify

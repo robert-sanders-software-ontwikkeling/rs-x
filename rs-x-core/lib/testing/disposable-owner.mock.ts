@@ -1,4 +1,5 @@
-import { IDisposableOwner } from '../disposable-owner.interface';
+import { IDisposableOwner } from '../singleton-factory/disposable-owner.interface';
+
 
 export class DisposableOwnerMock implements IDisposableOwner {
    public readonly release = jest.fn();

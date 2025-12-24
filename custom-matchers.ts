@@ -176,18 +176,15 @@ export function observerEqualTo(
 expect.extend({
    async toOutputAsync(receivedFn: () => Promise<unknown>, expected: string) {
       let output = '';
-
-      // Patch console.log before calling the function
       const originalLog = console.log;
       console.log = (...args: unknown[]) => {
          output += args.map(a => String(a)).join(' ') + '\n';
       };
 
       try {
-         // Await the function fully (runDemo in your case)
          await receivedFn();
       } finally {
-         console.log = originalLog; // Restore console.log after execution
+         console.log = originalLog;
       }
 
       const pass = output.trim() === expected.trim();

@@ -4,12 +4,12 @@ import {
    truePredicate,
    WaitForEvent,
 } from '@rs-x/core';
+import { DisposableOwnerMock } from '@rs-x/core/testing';
 import { IObserver } from '../../../../lib/observer.interface';
 import { ICollectionItemObserverProxyPairFactory } from '../../../../lib/property-observer/factories/collection-item/collection-item-observer-proxy-pair.factory.type';
 import { IProxyRegistry } from '../../../../lib/proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
-import { DisposableOwnerMock } from '../../../../lib/testing/disposable-owner.mock';
 
 describe('CollectionItemObserverProxyPairFactory tests', () => {
    let observer1: IObserver;

@@ -38,7 +38,7 @@ export abstract class SingletonFactory<
          lines.push(spacesNext + `key (ref. count = ${this._referenceCounts.get(key)}):`);
 
          // key printed at next indent
-         const keyLines = prettyPrinter.toLines(key,  level + 2, false);
+         const keyLines = prettyPrinter.toLines(key, level + 2, false);
          lines.push(...keyLines);
 
          lines.push(spacesNext + 'instance:');
@@ -52,6 +52,10 @@ export abstract class SingletonFactory<
    // provide compatibility method if something calls toString
    public toString(indent = 4, level = 0): string {
       return this.toLines(indent, level).map(l => ' '.repeat(indent * level) + l).join('\n');
+   }
+
+   [Symbol.for('nodejs.util.inspect.custom')]() {
+      return `${this.constructor.name}`;
    }
 
    public get isEmpty(): boolean {
@@ -89,6 +93,7 @@ export abstract class SingletonFactory<
       this.onDipose();
    }
 
+   
    public getOrCreate(data: TData): TInstance {
       let instance = this.getFromId(this.getOrCreateId(data));
       if (instance === undefined) {

@@ -146,7 +146,7 @@ export const RsXStateManagerModule = new ContainerModule((options) => {
          RsXStateManagerInjectionTokens.IObjectStateManager
       )
       .to(ObjectStateManager)
-      .inSingletonScope();
+      .inTransientScope();
    options
       .bind<
          () => IObjectObserverProxyPairFactoryProvider

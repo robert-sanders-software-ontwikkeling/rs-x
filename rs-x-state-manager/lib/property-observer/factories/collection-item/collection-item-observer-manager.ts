@@ -1,4 +1,5 @@
 import {
+   IDisposableOwner,
    IEqualityService,
    IErrorLog,
    IIndexValueAccessor,
@@ -10,7 +11,6 @@ import {
 } from '@rs-x/core';
 import { Subscription } from 'rxjs';
 import { AbstractObserver } from '../../../abstract-observer';
-import { IDisposableOwner } from '../../../disposable-owner.interface';
 import { IObjectObserverProxyPairManager } from '../../../object-observer';
 import { IObserver } from '../../../observer.interface';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';

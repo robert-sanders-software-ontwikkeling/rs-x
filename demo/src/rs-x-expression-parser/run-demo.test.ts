@@ -479,4 +479,88 @@ describe('Expression parser demos', () => {
         await expect(() => runDemo('rs-x-expression-parser/member-expression-with-map.ts')).toOutputAsync(expected);
     });
 
+    it('member-expression-with-set.ts', async () => {
+        const expected = dedent`
+            Running demo: demo/src/rs-x-expression-parser/member-expression-with-set.ts
+            Initial value of 'a.b':
+            {
+                1
+                2
+            }
+            Value of 'a.b' after setting a to '{ b: new Set([10,20,30]) }'
+            {
+                10
+                20
+                30
+            }
+            Value of 'a.b' after changing b to 'new Set([100, 200])':
+            {
+                100
+                200
+            }
+            Value of 'a.b' after adding 300 to b':
+            {
+                100
+                200
+                300
+            }
+            Value of 'a.b' after deleting 200 from b':
+            Final value of 'a.b':
+            {
+                100
+                300
+            }
+        `;
+
+        await expect(() => runDemo('rs-x-expression-parser/member-expression-with-set.ts')).toOutputAsync(expected);
+    });
+
+
+    it('member-expression-with-method.ts', async () => {
+        const expected = dedent`
+            Running demo: demo/src/rs-x-expression-parser/member-expression-with-method.ts
+            Initial value of 'a.b.mail(message, subject).messageWithSubject':
+            message: Hello, subject: Message
+            Value of 'a.b.mail(message, subject).messageWithSubject' after changing 'message' to 'hi'
+            message: hi, subject: Message
+            Value of 'a.b.mail(message, subject).messageWithSubject' after changing 'subject' to 'urgent message'
+            message: hi, subject: urgent message
+            Final value of 'a.b.mail(message, subject).messageWithSubject':
+            message: hi, subject: urgent message
+        `;
+
+        await expect(() => runDemo('rs-x-expression-parser/member-expression-with-method.ts')).toOutputAsync(expected);
+    });
+
+
+    it('member-expression-with-promise.ts', async () => {
+        const expected = dedent`
+            Running demo: demo/src/rs-x-expression-parser/member-expression-with-promise.ts
+            Initial value of 'a.b.c.d':
+            20
+            Value of 'a.b.c.d' after changing a to '{ b: Promise.resolve({ c: Promise.resolve({ d: 200 }) }) }':
+            200
+            Final value of 'a.b.c.d':
+            200
+        `;
+
+        await expect(() => runDemo('rs-x-expression-parser/member-expression-with-promise.ts')).toOutputAsync(expected);
+    });
+
+
+     it('member-expression-with-observer.ts', async () => {
+        const expected = dedent`
+            Running demo: demo/src/rs-x-expression-parser/member-expression-with-promise.ts
+            Initial value of 'a.b.c.d':
+            20
+            Value of 'a.b.c.d' after changing a to '{ b: Promise.resolve({ c: Promise.resolve({ d: 200 }) }) }':
+            200
+            Final value of 'a.b.c.d':
+            200
+        `;
+
+        await expect(() => runDemo('rs-x-expression-parser/member-expression-with-observable.ts')).toOutputAsync(expected);
+    });
+
+
 });

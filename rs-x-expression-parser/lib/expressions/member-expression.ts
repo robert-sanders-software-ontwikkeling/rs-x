@@ -12,6 +12,7 @@ import {
 } from './abstract-expression';
 import { IdentifierExpression, IIdentifierInitializeConfig } from './identifier-expression';
 import { ExpressionType } from './interfaces';
+import { FunctionExpression } from './function-expression';
 
 interface IMustProxifyHandler {
    createMustProxifyHandler: () => MustProxify;
@@ -25,6 +26,8 @@ interface ISlotChangeSubscription {
    index: unknown;
    pathSegmentIndex: number;
 }
+
+
 
 export class MemberExpression extends AbstractExpression {
    private _slotObservers = new Map<
@@ -71,7 +74,9 @@ export class MemberExpression extends AbstractExpression {
       for (const slotObserver of this._slotObservers.values()) {
          this.disposeSlotObserver(slotObserver);
       }
-      this._slotObservers.clear();
+       this._slotObservers.clear();
+
+   
       this._initializeQueue.clear();
    }
 
@@ -81,6 +86,7 @@ export class MemberExpression extends AbstractExpression {
          return false;
       }
 
+   
       if (this.shouldCancelEvaluate(senderIndex, pendingCommits)) {
          return false;
       }
@@ -169,10 +175,13 @@ export class MemberExpression extends AbstractExpression {
       previousPathSegmentValue: unknown,
       pathSegmentIndex: number,
    ): unknown {
+
+   
       const mustProxifyInfo = this.getMustProxifyHandler(pathSegmentIndex);
       if (!mustProxifyInfo.valid) {
          return PENDING;
       }
+
 
       if (pathSegment.value === undefined) {
          this.initializePathSegement(pathSegment, {
@@ -235,6 +244,14 @@ export class MemberExpression extends AbstractExpression {
       slotChangeSubscription.staticIndexExpression.dispose();
    }
 
+   private mustObserveRecursively(expresssion): boolean {
+      if(this.parent instanceof FunctionExpression && this.parent.objectExpression === this) {
+         return false;
+      }  
+
+      return expresssion === this._pathSeqments.at(-1);
+   }
+
    private getMustProxifyHandler(currentIndex: number): IMustProxifyHandler {
       const nextExpression = this._pathSeqments[currentIndex + 1];
 
@@ -243,12 +260,12 @@ export class MemberExpression extends AbstractExpression {
       }
 
       if (nextExpression.type === ExpressionType.Identifier) {
-         const isLast = nextExpression === this._pathSeqments.at(-1);
+         const mustObserveRecursively = this.mustObserveRecursively(nextExpression);
          return {
-            releaseMustProxifyHandler: isLast
+            releaseMustProxifyHandler: mustObserveRecursively
                ? emptyFunction
                : () => this._mustProxifyItemHandlerFactory.release(nextExpression.expressionString),
-            createMustProxifyHandler: isLast
+            createMustProxifyHandler: mustObserveRecursively
                ? () => truePredicate
                : () => this._mustProxifyItemHandlerFactory.create(nextExpression.expressionString).instance,
             valid: true,
@@ -324,10 +341,10 @@ export class MemberExpression extends AbstractExpression {
                }
                initialized = true;
             });
-            staticIndexExpression.initialize({
-               currentValue: value,
-               mustProxifyHandler: mustProxifyHandler,
-            });
+            // staticIndexExpression.initialize({
+            //    currentValue: value,
+            //    mustProxifyHandler: mustProxifyHandler,
+            // });
             this._slotObservers.set(dynamicIndexExpression, {
                staticIndexExpression,
                changeSubscription,
@@ -344,6 +361,7 @@ export class MemberExpression extends AbstractExpression {
          this.evaluateBottomToTop(sender, this.root);
       }
    }
+
 
    private isCalculated(expression: AbstractExpression): boolean {
       return expression.type === ExpressionType.Index;

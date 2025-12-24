@@ -53,7 +53,7 @@ export const run = (() => {
         // Otherwise, only assigning a new value to stateContext.b would emit a change event.
         // This will emit a change event with the initial (current) value.
         console.log('Initial value:');
-        stateManager.register(stateContext, 'b', truePredicate);
+        stateManager.watchState(stateContext, 'b', truePredicate);
 
         console.log('\nReplacing stateContext.b.nested.nested will emit a change event');
         console.log('Changed value:');
@@ -70,6 +70,6 @@ export const run = (() => {
 
     } finally {
         changeSubscription.unsubscribe();
-        stateManager.unregister(stateContext, 'b', truePredicate);
+        stateManager.releaseState(stateContext, 'b', truePredicate);
     }
 })();

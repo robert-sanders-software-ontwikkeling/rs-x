@@ -28,7 +28,7 @@ export const run = (() => {
     try {
         // This will emit a change event with the initial (current) value.
         console.log('Initial value:');
-        stateManager.register(stateContext, 'set', truePredicate);
+        stateManager.watchState(stateContext, 'set', truePredicate);
 
         console.log('Changed value:');
         const proxyRegister: IProxyRegistry = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
@@ -39,6 +39,6 @@ export const run = (() => {
 
     } finally {
         changeSubscription.unsubscribe();
-        stateManager.unregister(stateContext, 'array', truePredicate);
+        stateManager.releaseState(stateContext, 'array', truePredicate);
     }
 })();

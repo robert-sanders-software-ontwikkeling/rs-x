@@ -1,19 +1,17 @@
-import { InjectionContainer } from '@rs-x/core';
-
-import { ObjectObserverFactory } from '../../lib/object-observer/object-observer-factory.decorator';
-import { IObjectObserverProxyPairFactory } from '../../lib/object-observer/object-observer-proxy-pair.factory.interface';
-import { IDisposableOwner } from '../../lib/disposable-owner.interface';
-import { IProxyTarget } from '../../lib/object-observer/object-observer-proxy-pair-manager.type';
-import { IObserverProxyPair } from '../../lib/object-property-observer-proxy-pair-manager.type';
-import { RsXStateManagerModule } from '../../lib/rs-x-state-manager.module';
-import { RsXStateManagerInjectionTokens } from '../../lib/rs-x-state-manager-injection-tokes';
-import { PlainObjectObserverProxyPairFactory } from '../../lib/object-observer/factories/plain-object-observer-proxy-pair.factory';
+import { IDisposableOwner, InjectionContainer } from '@rs-x/core';
 import { ArrayObserverProxyPairFactory } from '../../lib/object-observer/factories/array-observer-proxy-pair.factory';
-import { PromiseObserverProxyPairFactory } from '../../lib/object-observer/factories/promise-observer-proxy-pair.factory';
-import { ObservableObserverProxyPairFactory } from '../../lib/object-observer/factories/observable-observer-proxy-pair.factory';
-import { MapObserverProxyPairFactory } from '../../lib/object-observer/factories/map-observer-proxy-pair.factory';
-import { SetObserverProxyPairFactory } from '../../lib/object-observer/factories/set-observer-proxy-pair.factory';
 import { DateObserverProxyPairFactory } from '../../lib/object-observer/factories/date-observer-proxy-pair.factory';
+import { MapObserverProxyPairFactory } from '../../lib/object-observer/factories/map-observer-proxy-pair.factory';
+import { ObservableObserverProxyPairFactory } from '../../lib/object-observer/factories/observable-observer-proxy-pair.factory';
+import { PlainObjectObserverProxyPairFactory } from '../../lib/object-observer/factories/plain-object-observer-proxy-pair.factory';
+import { PromiseObserverProxyPairFactory } from '../../lib/object-observer/factories/promise-observer-proxy-pair.factory';
+import { SetObserverProxyPairFactory } from '../../lib/object-observer/factories/set-observer-proxy-pair.factory';
+import { ObjectObserverFactory } from '../../lib/object-observer/object-observer-factory.decorator';
+import { IProxyTarget } from '../../lib/object-observer/object-observer-proxy-pair-manager.type';
+import { IObjectObserverProxyPairFactory } from '../../lib/object-observer/object-observer-proxy-pair.factory.interface';
+import { IObserverProxyPair } from '../../lib/object-property-observer-proxy-pair-manager.type';
+import { RsXStateManagerInjectionTokens } from '../../lib/rs-x-state-manager-injection-tokes';
+import { RsXStateManagerModule } from '../../lib/rs-x-state-manager.module';
 
 describe('ObjectObserverFactory test', () => {
 

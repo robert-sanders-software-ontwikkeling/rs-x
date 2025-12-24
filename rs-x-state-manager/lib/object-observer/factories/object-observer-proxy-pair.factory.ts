@@ -1,5 +1,4 @@
-import { IErrorLog, IIndexValueAccessor, truePredicate } from '@rs-x/core';
-import { IDisposableOwner } from '../../disposable-owner.interface';
+import { IDisposableOwner, IErrorLog, IIndexValueAccessor, truePredicate } from '@rs-x/core';
 import { IObjectPropertyObserverProxyPairManager, IObserverProxyPair, MustProxify } from '../../object-property-observer-proxy-pair-manager.type';
 import { ObserverGroup } from '../../observer-group';
 import { IObserver } from '../../observer.interface';

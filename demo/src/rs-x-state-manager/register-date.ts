@@ -23,7 +23,7 @@ function watchDate(stateManager: IStateManager) {
     });
     try {
         console.log('Initial value:');
-        stateManager.register(stateContext, 'date', truePredicate);
+        stateManager.watchState(stateContext, 'date', truePredicate);
 
         console.log('Changed value:');
         stateContext.date.setFullYear(2023);
@@ -35,7 +35,7 @@ function watchDate(stateManager: IStateManager) {
         console.log(stateManager.getState<Date>(stateContext, 'date').toUTCString());
     } finally {
         changeSubscription.unsubscribe();
-        stateManager.unregister(stateContext, 'date', truePredicate);
+        stateManager.releaseState(stateContext, 'date', truePredicate);
     }
 }
 
@@ -50,7 +50,7 @@ function watchDateProperty(stateManager: IStateManager) {
     try {
         // This will emit a change event with the initial (current) value.
         console.log('Initial value:');
-        stateManager.register(date, 'year');
+        stateManager.watchState(date, 'year');
 
         const proxyRegister: IProxyRegistry = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
         const dateProxy = proxyRegister.getProxy<Date>(date);
@@ -62,7 +62,7 @@ function watchDateProperty(stateManager: IStateManager) {
 
     } finally {
         changeSubscription.unsubscribe();
-        stateManager.unregister(date, 'year');
+        stateManager.releaseState(date, 'year');
     }
 }
 

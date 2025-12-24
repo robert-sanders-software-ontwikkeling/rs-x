@@ -162,6 +162,7 @@ export class Type {
 
       return false;
    }
+
    public static getPropertyDescriptorType(
       target: unknown,
       name: string,
@@ -177,7 +178,10 @@ export class Type {
 
       if (
          Type.isFunction(propertyDescriptor.value) &&
-         Type.hasOwnPropertyInPrototypeChain(target, name)
+         (
+            Type.hasProperty(target, name) ||
+            Type.hasOwnPropertyInPrototypeChain(target, name)
+         )
       ) {
          return PropertyDescriptorType.Function;
       }

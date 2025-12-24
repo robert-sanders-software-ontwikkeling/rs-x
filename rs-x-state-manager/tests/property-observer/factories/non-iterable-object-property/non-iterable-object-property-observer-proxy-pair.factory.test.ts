@@ -4,13 +4,13 @@ import {
    truePredicate,
    WaitForEvent,
 } from '@rs-x/core';
+import { DisposableOwnerMock } from '@rs-x/core/testing';
 import { of } from 'rxjs';
 import { IObserver } from '../../../../lib/observer.interface';
 import { IIndexObserverProxyPairFactory } from '../../../../lib/property-observer/index-observer-proxy-pair.factory.interface';
 import { IArrayProxyFactory } from '../../../../lib/proxies/array-proxy/array-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
-import { DisposableOwnerMock } from '../../../../lib/testing/disposable-owner.mock';
 
 describe('non iterableObjectPropertyObserverFactory', () => {
    let disposableOwner: DisposableOwnerMock;

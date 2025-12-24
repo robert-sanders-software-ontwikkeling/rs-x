@@ -42,7 +42,7 @@ class IndexValueObserver implements IIndexValueObserver {
 
       this._contextChangeSubscription =
          this._stateManager.contextChanged.subscribe(this.onContextCHanged);
-      this._stateManager.register(this._context, this._key, mustProxify);
+      this._stateManager.watchState(this._context, this._key, mustProxify);
    }
 
    public get changed(): Observable<IStateChange> {
@@ -55,7 +55,7 @@ class IndexValueObserver implements IIndexValueObserver {
       }
       this._changeSubscription.unsubscribe();
       this._contextChangeSubscription.unsubscribe();
-      this._stateManager.unregister(this._context, this._key);
+      this._stateManager.releaseState(this._context, this._key);
       this._isDisposed = true;
       this.onDisposed();
    }

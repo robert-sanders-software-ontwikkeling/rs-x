@@ -82,7 +82,6 @@ export class StateChangeSubscriptionManager
    }
 
    public isRegistered(context: unknown, key: unknown): boolean {
-      
       const stateChangeSubscriptionsForContextManager = this.getFromId(context);
       if (!stateChangeSubscriptionsForContextManager) {
          return false;

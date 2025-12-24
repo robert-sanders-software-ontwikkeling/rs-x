@@ -1,9 +1,8 @@
-import { IDisposable } from '@rs-x/core';
+import { IDisposable, IDisposableOwner } from '@rs-x/core';
 import {
    IObserverProxyPair,
    IPropertyInfo,
 } from '../object-property-observer-proxy-pair-manager.type';
-import { IDisposableOwner } from '../disposable-owner.interface';
 
 export interface IIndexObserverProxyPairFactory<TProxy = unknown> extends IDisposable {
    create(

@@ -1,15 +1,17 @@
 import {
    AnyFunction,
+   IDisposableOwner,
    IIndexValueAccessor,
    Inject,
    Injectable,
    ParserException,
    RsXCoreInjectionTokens,
    Type,
-   UnsupportedException,
+   UnsupportedException
 } from '@rs-x/core';
 import {
    IMustProxifyItemHandlerFactory,
+   IStateManager,
    RsXStateManagerInjectionTokens
 } from '@rs-x/state-manager';
 import { generate as astToString } from 'astring';
@@ -46,6 +48,7 @@ import type {
    UnaryExpression,
    UnaryOperator,
 } from 'estree';
+import { IGuidFactory } from '../../rs-x-core/lib/guid/guid.factory.interface';
 import { IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
 import { IndexExpression } from './expressions';
 import { AbstractExpression } from './expressions/abstract-expression';
@@ -103,7 +106,7 @@ import { UnaryNegationExpression } from './expressions/unary-negation-expression
 import { UnaryPlusExpression } from './expressions/unary-plus-expression';
 import { IIndexValueObserverManager } from './index-value-observer-manager/index-value-manager-observer.type';
 import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
-import { IDisposableOwner } from '@rs-x/state-manager';
+
 
 enum EspreeExpressionType {
    UnaryExpression = 'UnaryExpression',
@@ -191,6 +194,10 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       private readonly _mustProxifyItemHandlerFactory: IMustProxifyItemHandlerFactory,
       @Inject(RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager)
       private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
+      @Inject(RsXStateManagerInjectionTokens.IStateManager)
+      private readonly _stateManager: IStateManager,
+      @Inject(RsXCoreInjectionTokens.IGuidFactory)
+      private readonly _guidFactory: IGuidFactory,
    ) {
       this.expressionFactories = {
          [EspreeExpressionType.UnaryExpression]: this.createUnaryExpression,
@@ -279,14 +286,14 @@ export class JsEspreeExpressionParser implements IExpressionParser {
          throw new ParserException(expressionString, e.message);
       }
 
-       expression.initialize({
-            context, 
-            transactionManager: this._expressionChangeTransactionManager,
-            owner
-         });
-       this._expressionChangeTransactionManager.commit();
+      expression.initialize({
+         context,
+         transactionManager: this._expressionChangeTransactionManager,
+         owner
+      });
+      this._expressionChangeTransactionManager.commit();
 
-       return expression
+      return expression
    }
 
    private tryParse(expressionString: string): Expression {
@@ -452,8 +459,8 @@ export class JsEspreeExpressionParser implements IExpressionParser {
    ): AbstractExpression => {
       return new SpreadExpression(
          this.createExpression(expression.argument, context) as
-            | ArrayExpression
-            | ObjectExpression
+         | ArrayExpression
+         | ObjectExpression
       );
    };
 
@@ -510,7 +517,10 @@ export class JsEspreeExpressionParser implements IExpressionParser {
          new ArrayExpression(argumentExpressions),
          Type.cast<{ computed: boolean }>(expression.callee).computed,
          Type.cast<{ optional: boolean }>(expression.callee).optional,
-         this._expressionChangeTransactionManager
+         this._expressionChangeTransactionManager,
+         this._stateManager,
+         this._guidFactory
+      
       );
    };
 
@@ -578,7 +588,9 @@ export class JsEspreeExpressionParser implements IExpressionParser {
          ]),
          false,
          false,
-         this._expressionChangeTransactionManager
+         this._expressionChangeTransactionManager,
+         this._stateManager,
+         this._guidFactory
       );
    };
 
@@ -935,8 +947,8 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       const propertyExpressions = objectExpression.properties.map(
          (property) =>
             this.createExpression(property, context) as
-               | PropertyExpression
-               | SpreadExpression
+            | PropertyExpression
+            | SpreadExpression
       );
       return new ObjectExpression(
          astToString(objectExpression),
@@ -951,9 +963,9 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       const keyExpression =
          propertyExpression.key.type === EspreeExpressionType.Identifier
             ? new ConstantStringExpression(
-                 Type.cast<Identifier>(propertyExpression.key).name,
-                 this._expressionChangeTransactionManager
-              )
+               Type.cast<Identifier>(propertyExpression.key).name,
+               this._expressionChangeTransactionManager
+            )
             : this.createExpression(propertyExpression.key, context);
 
       return new PropertyExpression(
@@ -1027,24 +1039,25 @@ export class JsEspreeExpressionParser implements IExpressionParser {
 
       function walk(node: MemberExpressionSegmentType): void {
          switch (node.type) {
-            case 'MemberExpression':
-               // push the property once (do NOT recurse into it)
+            case EspreeExpressionType.MemberExpression:
+               // first resolve the object
+               walk(node.object as MemberExpressionSegmentType);
+
+               // then push the property
                result.push({
                   expression: node.property,
                   computed: node.computed,
                });
-
-               // continue with object
-               walk(node.object);
                break;
 
-            case 'CallExpression':
+            case EspreeExpressionType.CallExpression:
+               // CallExpression is a single semantic segment
                result.push({
                   expression: node,
                   computed: false,
                });
-               walk(node.callee as MemberExpressionSegmentType);
                break;
+
             default:
                result.push({
                   expression: node,
@@ -1054,6 +1067,6 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       }
 
       walk(expr);
-      return result.reverse();
+      return result;
    }
 }

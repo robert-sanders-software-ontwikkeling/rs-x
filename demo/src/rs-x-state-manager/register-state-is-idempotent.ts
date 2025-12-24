@@ -29,19 +29,19 @@ export const run = (() => {
     // Register is idempotent: you can register the same state multiple times.
     // For every register call, make sure you call unregister when you're done.
     console.log('Initial value:');
-    stateManager.register(stateContext, 'x');
-    stateManager.register(stateContext, 'x');
+    stateManager.watchState(stateContext, 'x');
+    stateManager.watchState(stateContext, 'x');
 
     console.log('Changed value:');
     stateContext.x = { y: 20 };
 
-    stateManager.unregister(stateContext, 'x');
+    stateManager.releaseState(stateContext, 'x');
 
     console.log('Changed event is still emitted after unregister because one observer remains.');
     console.log('Changed value:');
     stateContext.x = { y: 30 };
 
-    stateManager.unregister(stateContext, 'x');
+    stateManager.releaseState(stateContext, 'x');
 
     console.log('Changed event is no longer emitted after the last observer unregisters.');
     console.log('Changed value:');

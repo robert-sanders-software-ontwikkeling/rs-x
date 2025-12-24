@@ -1,7 +1,18 @@
-import { IErrorLog, IIndexValueAccessor, IndexAccessor, Inject, Injectable, InjectionContainer, IPropertyChange, RsXCoreInjectionTokens, SingletonFactory, truePredicate } from '@rs-x/core';
+import {
+    IDisposableOwner,
+    IErrorLog,
+    IIndexValueAccessor,
+    IndexAccessor,
+    Inject,
+    Injectable,
+    InjectionContainer,
+    IPropertyChange,
+    RsXCoreInjectionTokens,
+    SingletonFactory,
+    truePredicate
+} from '@rs-x/core';
 import {
     AbstractObserver,
-    IDisposableOwner,
     IIndexObserverInfo,
     IndexObserverFactory,
     IndexObserverProxyPairFactory,
@@ -362,7 +373,7 @@ function testMonitorTextDocument(stateManager: IStateManager, stateContext: { my
         console.log('\n***********************************************');
         console.log("Start watching the whole book\n");
         console.log('My initial book:\n');
-        stateManager.register(stateContext, 'myBook', truePredicate);
+        stateManager.watchState(stateContext, 'myBook', truePredicate);
 
         console.log('\nUpdate second line on the first page:\n');
         console.log('My book after change:\n');
@@ -370,7 +381,7 @@ function testMonitorTextDocument(stateManager: IStateManager, stateContext: { my
 
     } finally {
         // Stop monitoring the whole book
-        stateManager.unregister(stateContext, 'myBook', truePredicate);
+        stateManager.releaseState(stateContext, 'myBook', truePredicate);
         bookSubscription.unsubscribe();
     }
 }
@@ -393,7 +404,7 @@ function testMonitoreSpecificLineInDocument(stateManager: IStateManager, stateCo
 
         console.log('\n***********************************************');
         console.log("Start watching line 3 on page 1\n");
-        stateManager.register(stateContext.myBook, line3OnPage1Index);
+        stateManager.watchState(stateContext.myBook, line3OnPage1Index);
 
         const proxRegistry: IProxyRegistry = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
         const bookProxy: TextDocument = proxRegistry.getProxy(stateContext.myBook);
@@ -406,7 +417,7 @@ function testMonitoreSpecificLineInDocument(stateManager: IStateManager, stateCo
 
     } finally {
         // Stop monitoring line 3 on page 1. 
-        stateManager.unregister(stateContext.myBook, line3OnPage1Index);
+        stateManager.releaseState(stateContext.myBook, line3OnPage1Index);
         lineSubscription.unsubscribe();
     }
 }

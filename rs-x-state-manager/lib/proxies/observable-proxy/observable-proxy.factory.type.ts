@@ -1,6 +1,5 @@
-import { ISingletonFactory } from '@rs-x/core';
+import { IDisposableOwner, ISingletonFactory } from '@rs-x/core';
 import { Observable } from 'rxjs';
-import { IDisposableOwner } from '../../disposable-owner.interface';
 import { IObserverProxyPair } from '../../object-property-observer-proxy-pair-manager.type';
 
 export interface IObservableProxyData {

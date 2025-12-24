@@ -1,8 +1,8 @@
 import {
+   IDisposableOwner,
    Inject,
    Injectable
 } from '@rs-x/core';
-import { IDisposableOwner } from '../../disposable-owner.interface';
 import { IDateProxyFactory } from '../../proxies/date-proxy/date-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
 import { IProxyTarget } from '../object-observer-proxy-pair-manager.type';

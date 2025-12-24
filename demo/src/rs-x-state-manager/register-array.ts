@@ -28,7 +28,7 @@ export const run = (() => {
     try {
         // This will emit a change event with the initial (current) value.
         console.log('Initial value:');
-        stateManager.register(stateContext, 'array', truePredicate);
+        stateManager.watchState(stateContext, 'array', truePredicate);
 
         console.log('Changed value:');
         stateContext.array[1].push(5);
@@ -38,6 +38,6 @@ export const run = (() => {
 
     } finally {
         changeSubscription.unsubscribe();
-        stateManager.unregister(stateContext, 'array', truePredicate);
+        stateManager.releaseState(stateContext, 'array', truePredicate);
     }
 })();

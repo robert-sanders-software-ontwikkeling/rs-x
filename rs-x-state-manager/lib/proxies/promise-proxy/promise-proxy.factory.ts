@@ -1,4 +1,5 @@
 import {
+   IDisposableOwner,
    Inject,
    Injectable,
    IPromiseAccessor,
@@ -8,7 +9,6 @@ import {
 } from '@rs-x/core';
 import { ReplaySubject } from 'rxjs';
 import { AbstractObserver } from '../../abstract-observer';
-import { IDisposableOwner } from '../../disposable-owner.interface';
 import {
    IPromiseObserverProxyPair,
    IPromiseProxyData,

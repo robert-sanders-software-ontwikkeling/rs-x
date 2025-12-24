@@ -5,6 +5,7 @@ import {
    truePredicate,
    WaitForEvent,
 } from '@rs-x/core';
+import { DisposableOwnerMock } from '@rs-x/core/testing';
 import { IArrayObserverProxyPairFactory } from '../../../lib/object-observer/factories/array-observer-proxy-pair.factory.type';
 import { IObjectPropertyObserverProxyPairManager } from '../../../lib/object-property-observer-proxy-pair-manager.type';
 import { ObserverGroup } from '../../../lib/observer-group';
@@ -13,7 +14,7 @@ import { IArrayObserverProxyPair, IArrayProxyFactory } from '../../../lib/proxie
 import { IProxyRegistry } from '../../../lib/proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
-import { DisposableOwnerMock } from '../../../lib/testing/disposable-owner.mock';
+
 
 
 describe('ArrayObserverProxyPairFactory tests', () => {

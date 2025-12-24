@@ -1,5 +1,4 @@
 export * from './abstract-observer';
-export * from './disposable-owner.interface';
 export * from './grouped-change-subscriptions-for-context-manager';
 export * from './object-change.interface';
 export * from './object-observer';
@@ -12,3 +11,4 @@ export * from './proxies';
 export * from './rs-x-state-manager-injection-tokes';
 export * from './rs-x-state-manager.module';
 export * from './state-manager';
+

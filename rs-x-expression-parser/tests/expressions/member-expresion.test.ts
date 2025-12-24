@@ -1,4 +1,4 @@
-import { InjectionContainer, WaitForEvent } from '@rs-x/core';
+import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import { BehaviorSubject, of } from 'rxjs';
 import {
    ExpressionType,
@@ -69,7 +69,7 @@ describe('Memmber expression tests', () => {
          expect(actual).toBe(expression);
       });
 
-      it('dynamic index on root array: emit change event for initial value',async () => {
+      it('dynamic index on root array: emit change event for initial value', async () => {
          const context = {
             index: 0,
             a: ['1', 1],
@@ -82,7 +82,7 @@ describe('Memmber expression tests', () => {
          expect(actual).toBe(expression);
       })
 
-       it('dynamic index on root array: emit value when dynamic index changes',async () => {
+      it('dynamic index on root array: emit value when dynamic index changes', async () => {
          const context = {
             index: 0,
             a: ['1', 1],
@@ -91,7 +91,7 @@ describe('Memmber expression tests', () => {
          // Wait till the expression has been initialized before changing value
          await new WaitForEvent(expression, 'changed').wait(() => { });
 
-         const actual = (await new WaitForEvent(expression, 'changed', {ignoreInitialValue: true}).wait(() => { 
+         const actual = (await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
             context.index = 1;
          })) as IExpression;
 
@@ -488,7 +488,7 @@ describe('Memmber expression tests', () => {
          await new WaitForEvent(expression, 'changed').wait(() => { });
 
 
-         const actual = (await new WaitForEvent(expression, 'changed', {ignoreInitialValue: true}).wait(() => {
+         const actual = (await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
             context.x = Promise.resolve({
                y: { z: Promise.resolve(200) },
             });
@@ -497,10 +497,83 @@ describe('Memmber expression tests', () => {
          expect(actual.value).toEqual(200);
          expect(actual).toBe(expression);
       });
+
+      it('will emit change event when changing object with nested promise', async () => {
+         const context = {
+            a: {
+               b: Promise.resolve({
+                  c: Promise.resolve({
+                     d: 20
+                  })
+               })
+            }
+         };
+
+         /*
+               {
+                    b: Promise.resolve({
+                     c: Promise.resolve({
+                        d: 20
+                     })
+                  }
+               }
+
+               b -> 
+               {
+                     c: Promise.resolve({
+                        d: 20
+                     })
+               }
+               c ->
+               {
+                  d: 20
+               }
+            ___________________________________________
+               a -> 
+               {
+                    b: Promise.resolve({
+                     c: Promise.resolve({
+                        d: 200
+                     })
+                  }
+               }
+
+               b -> 
+               {
+                     c: Promise.resolve({
+                        d: 200
+                     })
+               }
+               c ->
+               {
+                  d: 200
+               }
+             
+
+         */
+
+         expression = jsParser.parse(context, 'a.b.c.d');
+
+         // Wait till the expression has been initialized before changing value
+         await new WaitForEvent(expression, 'changed').wait(() => { });
+
+
+         const actual = (await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
+            context.a = {
+               b: Promise.resolve({
+                  c: Promise.resolve({
+                     d: 200
+                  })
+               })
+            };
+         })) as IExpression;
+
+         expect(actual.value).toEqual(200);
+         expect(actual).toBe(expression);
+      });
    });
 
    describe('member expression with object array', () => {
-
       it(`initial value of 'a.b[1].c.d')`, async () => {
          const expressionContext = {
             a: {
@@ -661,7 +734,7 @@ describe('Memmber expression tests', () => {
 
          expect(expression.value).toEqual(11);
 
-         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true}).wait(() => {
+         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
             expressionContext.a = {
                b: [
                   {
@@ -704,4 +777,58 @@ describe('Memmber expression tests', () => {
          expect(expression.value).toEqual(140);
       });
    });
+
+   describe('member expression with method', () => {
+      it(`will emit initial value for 'a.b.mail(message, subject).messageWithSubject'`, async () => {
+         const expressionContext = {
+            message: 'Hello',
+            subject: 'Message',
+            a: {
+               b: {
+                  mail: (message: string, subject: string) => {
+                     return {
+                        messageWithSubject: `message: ${message}, subject: ${subject}`
+                     };
+
+                  }
+               }
+            }
+         };
+
+         const expression = jsParser.parse(expressionContext, 'a.b.mail(message, subject).messageWithSubject');
+         const actual = await new WaitForEvent(expression, 'changed').wait(emptyFunction) as IExpression;
+
+         expect(actual.value).toEqual('message: Hello, subject: Message');
+
+      });
+
+      it(`will emit change for 'a.b.mail(message, subject).messageWithSubject' when setting 'message'`, async () => {
+         const expressionContext = {
+            message: 'Hello',
+            subject: 'Message',
+            a: {
+               b: {
+                  mail: (message: string, subject: string) => {
+                     return {
+                        messageWithSubject: `message: ${message}, subject: ${subject}`
+                     };
+
+                  }
+               }
+            }
+         };
+
+         const expression = jsParser.parse(expressionContext, 'a.b.mail(message, subject).messageWithSubject');
+         await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+
+         const actual = await new WaitForEvent(expression, 'changed').wait(() => {
+            expressionContext.message = 'hi'
+         }) as IExpression;
+
+
+         expect(actual.value).toEqual('message: hi, subject: Message');
+
+      })
+   })
 });

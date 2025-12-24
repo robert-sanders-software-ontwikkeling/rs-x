@@ -1,5 +1,4 @@
-import { Inject, Injectable } from '@rs-x/core';
-import { IDisposableOwner } from '../../disposable-owner.interface';
+import { IDisposableOwner, Inject, Injectable } from '@rs-x/core';
 import {
    IPromiseObserverProxyPair,
    IPromiseProxyFactory,

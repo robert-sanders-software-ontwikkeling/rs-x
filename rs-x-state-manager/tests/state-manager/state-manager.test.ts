@@ -43,58 +43,143 @@ describe('StateManager tests', () => {
       stateManager.clear();
    });
 
-   it('first time register will return undefined', () => {
+   it('Watching state first time will return undefined.', () => {
       const object = {
          x: 10,
       };
 
-      const actual = stateManager.register(object, 'x');
+      const actual = stateManager.watchState(object, 'x');
       expect(actual).toBeUndefined();
    });
 
-   it('if state is already registered it will return the current state', () => {
+   it('If state is already watched it will return the current state.', () => {
       const object = {
          x: 10,
       };
 
-      stateManager.register(object, 'x');
-      const actual = stateManager.register(object, 'x');
+      stateManager.watchState(object, 'x');
+      const actual = stateManager.watchState(object, 'x');
       expect(actual).toEqual(10);
    });
 
-   it('state will be release when reference count goes to zero', () => {
+   it('State will be release when reference count goes to zero.', () => {
       const object = {
          x: 10,
       };
-      stateManager.register(object, 'x');
-      stateManager.register(object, 'x');
+      stateManager.watchState(object, 'x');
+      stateManager.watchState(object, 'x');
 
-      stateManager.unregister(object, 'x');
+      stateManager.releaseState(object, 'x');
       expect(stateManager.getState(object, 'x')).toEqual(10);
 
-      stateManager.unregister(object, 'x');
+      stateManager.releaseState(object, 'x');
       expect(stateManager.getState(object, 'x')).toBeUndefined();
    });
 
-   describe('register property of an object', () => {
-      it('register will initialise state', () => {
+   describe('Set state', () => {
+
+      it('Set state', () => {
+
+         const context = {};
+
+         stateManager.setState(context, 'x', 10);
+
+         const actual = stateManager.getState(context, 'x');
+         expect(actual).toEqual(10);
+      });
+
+      it('Replacing unwatched state will emit changes for nested  states ', async () => {
+         const context = {};
+         const value = {
+            x: 10,
+            nested: {
+               y: 20,
+               z: 30
+            }
+         };
+
+         stateManager.setState(context, 'root', value);
+         stateManager.watchState(value, 'x');
+         stateManager.watchState(value, 'nested');
+         stateManager.watchState(value.nested, 'y');
+         stateManager.setState(value.nested, 'z', value.nested.z);
+
+         const newValue = {
+            x: 100,
+            nested: {
+               y: 200,
+               z: 300
+            }
+         };
+         const actual = await new WaitForEvent(stateManager, 'changed', { count: 5 }).wait(() => {
+            stateManager.setState(context, 'root', newValue);
+         })
+
+         const expected: IStateChange[] = [
+            {
+               context: newValue,
+               oldContext: value,
+               key: 'x',
+               newValue: 100,
+               oldValue: 10,
+
+            },
+            {
+               context:newValue,
+               oldContext: value,
+               key: 'nested',
+               newValue:  {y: 200, z: 300},
+               oldValue: {y: 20, z: 30},
+
+            },
+             {
+               context:newValue.nested,
+               oldContext: value.nested,
+               key: 'y',
+               newValue:  200,
+               oldValue:20,
+
+            },
+             {
+               context:newValue.nested,
+               oldContext: value.nested,
+               key: 'z',
+               newValue:  300,
+               oldValue: 30,
+
+            },
+            {
+               context,
+               oldContext: context,
+               key: 'root',
+               newValue,
+               oldValue: value
+            }
+         ]
+
+         expect(actual).toEqual(expected);
+      });
+   })
+
+   describe('watch property of an object', () => {
+      it('Watch will initialise state', () => {
          const object = {
             x: 10,
          };
 
-         stateManager.register(object, 'x');
+         stateManager.watchState(object, 'x');
 
          expect(stateManager.getState(object, 'x')).toEqual(10);
       });
 
-      it('after register change event will emit initial value', async () => {
+      it('When the state is watched, its initial value is emitted.', async () => {
          const object = {
             x: 10,
          };
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
-               stateManager.register(object, 'x');
+               stateManager.watchState(object, 'x');
             }
          );
 
@@ -108,9 +193,9 @@ describe('StateManager tests', () => {
          expect(actual).toEqual(expected);
       });
 
-      it('set a new value for a registered field will emit change event', async () => {
+      it('Setting a new value for a watched field will emit a change event.', async () => {
          const object = { x: 10 };
-         stateManager.register(object, 'x');
+         stateManager.watchState(object, 'x');
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
@@ -128,9 +213,9 @@ describe('StateManager tests', () => {
          expect(actual).toEqual(expected);
       });
 
-      it('set a new value for an unregistered field will not emit change event', async () => {
+      it('Setting a new value for a field that is not watched will not emit a change event.', async () => {
          const object = { x: 10, y: 20 };
-         stateManager.register(object, 'x');
+         stateManager.watchState(object, 'x');
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
@@ -141,9 +226,9 @@ describe('StateManager tests', () => {
          expect(actual).toBeNull();
       });
 
-      it('state will be update when property changed', async () => {
+      it('State will be updated when belonging watched property changes.', async () => {
          const object = { x: 10 };
-         stateManager.register(object, 'x');
+         stateManager.watchState(object, 'x');
 
          object.x = 20;
 
@@ -151,7 +236,7 @@ describe('StateManager tests', () => {
       });
    });
 
-   describe('register an item in an array', () => {
+   describe('Watch an item in an array', () => {
       let arrayProxyFactory: IArrayProxyFactory;
 
       beforeAll(() => {
@@ -160,20 +245,20 @@ describe('StateManager tests', () => {
          );
       });
 
-      it('register will initialise state', () => {
+      it('Watch will initialise state', () => {
          const array = [1, 2];
 
-         stateManager.register(array, 1);
+         stateManager.watchState(array, 1);
 
          expect(stateManager.getState(array, 1)).toEqual(2);
       });
 
-      it('after register change event will emit initial value', async () => {
+      it('When the state is watched, its initial value is emitted.', async () => {
          const array = [1, 2];
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
-               stateManager.register(array, 1);
+               stateManager.watchState(array, 1);
             }
          );
 
@@ -187,9 +272,9 @@ describe('StateManager tests', () => {
          expect(actual).toEqual(expected);
       });
 
-      it('set a new value for a registered index will emit change event', async () => {
+      it('Setting a new value for a watched index, will emit change event.', async () => {
          const array = [1, 2];
-         stateManager.register(array, 1);
+         stateManager.watchState(array, 1);
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
@@ -207,9 +292,9 @@ describe('StateManager tests', () => {
          expect(actual).toEqual(expected);
       });
 
-      it('set a new value for an unregistered index will not emit change event', async () => {
+      it('Setting a new value for an index not watched, will not emit a change event.', async () => {
          const array = [1, 2];
-         stateManager.register(array, 1);
+         stateManager.watchState(array, 1);
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
@@ -220,18 +305,18 @@ describe('StateManager tests', () => {
          expect(actual).toBeNull();
       });
 
-      it('state will be update when property changed', async () => {
+      it('State will be updated when belonging property changes.', async () => {
          const array = [1, 2];
-         stateManager.register(array, 1);
+         stateManager.watchState(array, 1);
 
          arrayProxyFactory.getFromData({ array }).proxy[1] = 20;
 
          expect(stateManager.getState(array, 1)).toEqual(20);
       });
 
-      it('set array length to a value lesser or equal to given index will emit change event', async () => {
+      it('Setting array length to a value lesser or equal to watched index will emit a change event.', async () => {
          const array = [1, 2];
-         stateManager.register(array, 1);
+         stateManager.watchState(array, 1);
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
@@ -251,11 +336,11 @@ describe('StateManager tests', () => {
          expect(actual).toEqual(expected);
       });
 
-      it('a registered index will be unregistered when array length changes to a length lesser or equal to given index', async () => {
+      it('A watched index will be unwatched when array length changes to a length lesser or equal to watched index', async () => {
          const array = [1, 2];
 
-         stateManager.register(array, 0);
-         stateManager.register(array, 1);
+         stateManager.watchState(array, 0);
+         stateManager.watchState(array, 1);
 
          expect(stateManager.getState(array, 1)).toEqual(2);
          expect(arrayProxyFactory.getFromData({ array })).toBeDefined();
@@ -269,7 +354,7 @@ describe('StateManager tests', () => {
       });
    });
 
-   describe('register an item in a map', () => {
+   describe('Watch a key in a map', () => {
       let mapProxyFactory: IMapProxyFactory;
 
       beforeAll(() => {
@@ -278,18 +363,18 @@ describe('StateManager tests', () => {
          );
       });
 
-      it('register will initialise state', () => {
+      it('Watch will initialise state', () => {
          const map = new Map<string, number>([
             ['a', 1],
             ['b', 2],
          ]);
 
-         stateManager.register(map, 'b');
+         stateManager.watchState(map, 'b');
 
          expect(stateManager.getState(map, 'b')).toEqual(2);
       });
 
-      it('after register change event will emit initial value', async () => {
+      it('When the state is watched, its initial value is emitted.', async () => {
          const map = new Map<string, number>([
             ['a', 1],
             ['b', 2],
@@ -297,7 +382,7 @@ describe('StateManager tests', () => {
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
-               stateManager.register(map, 'b');
+               stateManager.watchState(map, 'b');
             }
          );
 
@@ -311,12 +396,12 @@ describe('StateManager tests', () => {
          expect(actual).toEqual(expected);
       });
 
-      it('set a new value for a registered key will emit change event', async () => {
+      it('Setting a new value for a watched key will emit a change event.', async () => {
          const map = new Map<string, number>([
             ['a', 1],
             ['b', 2],
          ]);
-         stateManager.register(map, 'b');
+         stateManager.watchState(map, 'b');
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
@@ -334,12 +419,12 @@ describe('StateManager tests', () => {
          expect(actual).toEqual(expected);
       });
 
-      it('set a new value for an unregistered key will not emit change event', async () => {
+      it('Setting a new value for an watched key will not emit change event', async () => {
          const map = new Map<string, number>([
             ['a', 1],
             ['b', 2],
          ]);
-         stateManager.register(map, 'b');
+         stateManager.watchState(map, 'b');
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
@@ -350,12 +435,12 @@ describe('StateManager tests', () => {
          expect(actual).toBeNull();
       });
 
-      it('state will be update when property changed', async () => {
+      it('State will be updated when belonging value for watched key changes', async () => {
          const map = new Map<string, number>([
             ['a', 1],
             ['b', 2],
          ]);
-         stateManager.register(map, 'b');
+         stateManager.watchState(map, 'b');
 
          Type.cast<Map<string, number>>(
             mapProxyFactory.getFromData({ map }).proxy
@@ -364,13 +449,13 @@ describe('StateManager tests', () => {
          expect(stateManager.getState(map, 'b')).toEqual(20);
       });
 
-      it('delete an item will emit change event', async () => {
+      it('Delete an watched item will emit a change event', async () => {
          const map = new Map<string, number>([
             ['a', 1],
             ['b', 2],
          ]);
 
-         stateManager.register(map, 'b');
+         stateManager.watchState(map, 'b');
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
@@ -391,72 +476,49 @@ describe('StateManager tests', () => {
    });
 
 
-   describe('register a date property', () => {
-
+   describe('Watch a date property', () => {
       let proxyRegistry: IProxyRegistry;
 
       beforeAll(() => {
          proxyRegistry = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
       });
 
-      it('register will initialise state', async () => {
-         const object = { x: new Date(2021, 2, 3) };
+      it('Watch date property will initialise state', async () => {
+         const date = new Date(2021, 2, 3)
 
          await new WaitForEvent(stateManager, 'changed').wait(() => {
-            stateManager.register(object, 'x');
+            stateManager.watchState(date, 'year');
          });
 
-         expect(stateManager.getState(object, 'x')).toEqual(new Date(2021, 2, 3));
+         expect(stateManager.getState(date, 'year')).toEqual(2021);
       });
 
-      it('after register change event will emit initial value', async () => {
-         const object = { x: new Date(2021, 2, 3) };;
+
+      it('When the state is watched, its initial value is emitted.', async () => {
+         const date = new Date(2021, 2, 3)
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
-               stateManager.register(object, 'x');
+               stateManager.watchState(date, 'year');
             }
          );
 
          const expected: IStateChange = {
-            context: object,
-            oldContext: object,
-            key: 'x',
+            context: date,
+            oldContext: date,
+            key: 'year',
             oldValue: undefined,
-            newValue: new Date(2021, 2, 3),
+            newValue: 2021,
          };
 
          expect(actual).toEqual(expected);
       });
 
-      it('replacing date property will emit change event', async () => {
+      it('Changing watched  property of type Date will not emit a change event if not recursive', async () => {
          const object = { x: new Date(2021, 2, 3) };;
 
          await new WaitForEvent(stateManager, 'changed').wait(() => {
-            stateManager.register(object, 'x');
-         });
-
-         const actual = await new WaitForEvent(stateManager, 'changed').wait(
-            () => {
-               object.x = new Date(2023, 2, 3)
-            }
-         );
-
-         const expected: IStateChange = {
-            context: object,
-            oldContext: object,
-            key: 'x',
-            oldValue: new Date(2021, 2, 3),
-            newValue: new Date(2023, 2, 3),
-         };
-         expect(actual).toEqual(expected);
-      });
-
-      it('changing date property will not emit change event if not recursive', async () => {
-         const object = { x: new Date(2021, 2, 3) };;
-
-         await new WaitForEvent(stateManager, 'changed').wait(() => {
-            stateManager.register(object, 'x');
+            stateManager.watchState(object, 'x');
          });
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
@@ -468,11 +530,11 @@ describe('StateManager tests', () => {
          expect(actual).toBeNull();
       });
 
-      it('changing date property will emit change event if recursive', async () => {
+      it('Changing watched date property will emit a change event if recursive', async () => {
          const object = { x: new Date(2021, 2, 3) };;
 
          await new WaitForEvent(stateManager, 'changed').wait(() => {
-            stateManager.register(object, 'x', truePredicate);
+            stateManager.watchState(object, 'x', truePredicate);
          });
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
@@ -491,40 +553,10 @@ describe('StateManager tests', () => {
          expect(actual).toDeepEqualCircular(expected);
       });
 
-      it('register date property will initialise state', async () => {
+      it('Changing watched date property will emit a change evenet', async () => {
          const date = new Date(2021, 2, 3)
 
-         await new WaitForEvent(stateManager, 'changed').wait(() => {
-            stateManager.register(date, 'year');
-         });
-
-         expect(stateManager.getState(date, 'year')).toEqual(2021);
-      });
-
-      it('after register date property change event will emit initial value', async () => {
-         const date = new Date(2021, 2, 3)
-
-         const actual = await new WaitForEvent(stateManager, 'changed').wait(
-            () => {
-               stateManager.register(date, 'year');
-            }
-         );
-
-         const expected: IStateChange = {
-            context: date,
-            oldContext: date,
-            key: 'year',
-            oldValue: undefined,
-            newValue: 2021,
-         };
-
-         expect(actual).toEqual(expected);
-      });
-
-      it('changing date property will emit change evenet', async () => {
-         const date = new Date(2021, 2, 3)
-
-         stateManager.register(date, 'year');
+         stateManager.watchState(date, 'year');
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
@@ -546,23 +578,23 @@ describe('StateManager tests', () => {
 
    });
 
-   describe('register promise property', () => {
-      it('register will initialise state', async () => {
+   describe('Watch promise property', () => {
+      it('Watch will initialise state', async () => {
          const object = { x: Promise.resolve(2) };
 
          await new WaitForEvent(stateManager, 'changed').wait(() => {
-            stateManager.register(object, 'x');
+            stateManager.watchState(object, 'x');
          });
 
          expect(stateManager.getState(object, 'x')).toEqual(2);
       });
 
-      it('after register change event will emit initial value', async () => {
+      it('When the state is watched, its initial value is emitted.', async () => {
          const object = { x: Promise.resolve(2) };
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
-               stateManager.register(object, 'x');
+               stateManager.watchState(object, 'x');
             }
          );
 
@@ -577,11 +609,11 @@ describe('StateManager tests', () => {
          expect(actual).toEqual(expected);
       });
 
-      it('replacing promise property with null will emit change event', async () => {
+      it('Replacing watched promise property with null will emit change event', async () => {
          const object = { x: Promise.resolve(2) };
 
          await new WaitForEvent(stateManager, 'changed').wait(() => {
-            stateManager.register(object, 'x');
+            stateManager.watchState(object, 'x');
          });
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
@@ -600,10 +632,10 @@ describe('StateManager tests', () => {
          expect(actual).toEqual(expected);
       });
 
-      it('set initial value from null to promise will  emit change event', async () => {
+      it('Setting initial value from null to promise will emit a change event.', async () => {
          const object = { x: null };
          await new WaitForEvent(stateManager, 'changed').wait(() => {
-            stateManager.register(object, 'x');
+            stateManager.watchState(object, 'x');
          });
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
@@ -622,10 +654,10 @@ describe('StateManager tests', () => {
          expect(actual).toEqual(expected);
       });
 
-      it('replacing promise will emit change event', async () => {
+      it('Replacing promise will emit a change event', async () => {
          const object = { x: Promise.resolve(2) };
          await new WaitForEvent(stateManager, 'changed').wait(() => {
-            stateManager.register(object, 'x');
+            stateManager.watchState(object, 'x');
          });
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
@@ -645,11 +677,11 @@ describe('StateManager tests', () => {
          expect(actual).toEqual(expected);
       });
 
-      it('replacing promise will update state', async () => {
+      it('Replacing promise will update state', async () => {
          const object = { x: Promise.resolve(2) };
 
          await new WaitForEvent(stateManager, 'changed').wait(() => {
-            stateManager.register(object, 'x');
+            stateManager.watchState(object, 'x');
          });
 
          await new WaitForEvent(stateManager, 'changed').wait(() => {
@@ -660,23 +692,23 @@ describe('StateManager tests', () => {
       });
    });
 
-   describe('register observable property', () => {
-      it('register will initialise state', async () => {
+   describe('Watch observable property', () => {
+      it('Watch will initialise state.', async () => {
          const object = { x: of(2) };
 
          await new WaitForEvent(stateManager, 'changed').wait(() => {
-            stateManager.register(object, 'x');
+            stateManager.watchState(object, 'x');
          });
 
          expect(stateManager.getState(object, 'x')).toEqual(2);
       });
 
-      it('after register change event will emit initial value', async () => {
+      it('When the state is watched, its initial value is emitted.', async () => {
          const object = { x: of(2) };
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
-               stateManager.register(object, 'x');
+               stateManager.watchState(object, 'x');
             }
          );
 
@@ -691,11 +723,11 @@ describe('StateManager tests', () => {
          expect(actual).toEqual(expected);
       });
 
-      it('replacing observable property with null will emit change event', async () => {
+      it('Replacing observable property with null will emit a change event.', async () => {
          const object = { x: of(2) };
 
          await new WaitForEvent(stateManager, 'changed').wait(() => {
-            stateManager.register(object, 'x');
+            stateManager.watchState(object, 'x');
          });
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
@@ -715,11 +747,11 @@ describe('StateManager tests', () => {
          expect(actual).toEqual(expected);
       });
 
-      it('set initial value from null to a observable will emit change event', async () => {
+      it('Setting initial value from null to a observable will emit a change event.', async () => {
          const object = { x: null };
 
          await new WaitForEvent(stateManager, 'changed').wait(() => {
-            stateManager.register(object, 'x');
+            stateManager.watchState(object, 'x');
          });
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
@@ -738,10 +770,10 @@ describe('StateManager tests', () => {
          expect(actual).toEqual(expected);
       });
 
-      it('replacing observable will emit change event', async () => {
+      it('Replacing observable will emit a change event', async () => {
          const object = { x: of(2) };
          await new WaitForEvent(stateManager, 'changed').wait(() => {
-            stateManager.register(object, 'x');
+            stateManager.watchState(object, 'x');
          });
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
@@ -760,11 +792,11 @@ describe('StateManager tests', () => {
          expect(actual).toEqual(expected);
       });
 
-      it('replacing observable will update state', async () => {
+      it('Replacing observable will update state.', async () => {
          const object = { x: of(2) };
 
          await new WaitForEvent(stateManager, 'changed').wait(() => {
-            stateManager.register(object, 'x');
+            stateManager.watchState(object, 'x');
          });
 
          await new WaitForEvent(stateManager, 'changed').wait(() => {
@@ -774,9 +806,9 @@ describe('StateManager tests', () => {
          expect(stateManager.getState(object, 'x')).toEqual(3);
       });
 
-      it('will emit change event when observable emits new value', async () => {
+      it('Will emit a change event when observable emits a new value.', async () => {
          const object = { x: new BehaviorSubject(2) };
-         stateManager.register(object, 'x');
+         stateManager.watchState(object, 'x');
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
@@ -795,9 +827,9 @@ describe('StateManager tests', () => {
          expect(actual).toEqual(expected);
       });
 
-      it('will update state  when observable emits new value', async () => {
+      it('Will update state when observable emits a new value', async () => {
          const object = { x: new BehaviorSubject(2) };
-         stateManager.register(object, 'x');
+         stateManager.watchState(object, 'x');
 
          await new WaitForEvent(stateManager, 'changed').wait(() => {
             object.x.next(3);
@@ -807,8 +839,8 @@ describe('StateManager tests', () => {
       });
    });
 
-   describe('updating nested state', () => {
-      it('replace root state will emit event for all changed  states', async () => {
+   describe('Updating nested state', () => {
+      it('Replacing root state will emit a change event for all changed  states', async () => {
          const object = {
             nested: {
                value: 2,
@@ -818,10 +850,10 @@ describe('StateManager tests', () => {
             },
          };
 
-         stateManager.register(object, 'nested');
-         stateManager.register(object.nested, 'value');
-         stateManager.register(object.nested, 'nested');
-         stateManager.register(object.nested.nested, 'value');
+         stateManager.watchState(object, 'nested');
+         stateManager.watchState(object.nested, 'value');
+         stateManager.watchState(object.nested, 'nested');
+         stateManager.watchState(object.nested.nested, 'value');
 
          const actual = await new WaitForEvent(stateManager, 'changed', {
             count: 3,
@@ -901,7 +933,7 @@ describe('StateManager tests', () => {
          ];
          expect(actual).toEqual(expected);
       });
-      it('replace root state will update all registered nested state', async () => {
+      it('Replacing root state will update all registered nested states.', async () => {
          const object = {
             nested: {
                value: 2,
@@ -911,10 +943,10 @@ describe('StateManager tests', () => {
             },
          };
 
-         stateManager.register(object, 'nested');
-         stateManager.register(object.nested, 'value');
-         stateManager.register(object.nested, 'nested');
-         stateManager.register(object.nested.nested, 'value');
+         stateManager.watchState(object, 'nested');
+         stateManager.watchState(object.nested, 'value');
+         stateManager.watchState(object.nested, 'nested');
+         stateManager.watchState(object.nested.nested, 'value');
 
          await new WaitForEvent(stateManager, 'changed', {
             count: 4,
@@ -945,7 +977,7 @@ describe('StateManager tests', () => {
          );
       });
 
-      it('replace nested object will emit correct number of changed events', async () => {
+      it('Replacing nested object will emit a correct number of change events', async () => {
          const oldContext = {
             value: 2,
             nested: {
@@ -955,10 +987,10 @@ describe('StateManager tests', () => {
          const object = {
             nested: oldContext,
          };
-         stateManager.register(object, 'nested');
-         stateManager.register(object.nested, 'value');
-         stateManager.register(object.nested, 'nested');
-         stateManager.register(object.nested.nested, 'value');
+         stateManager.watchState(object, 'nested');
+         stateManager.watchState(object.nested, 'value');
+         stateManager.watchState(object.nested, 'nested');
+         stateManager.watchState(object.nested.nested, 'value');
          const changed = new ObservableMock();
          stateManager._changed = changed;
 
@@ -976,7 +1008,7 @@ describe('StateManager tests', () => {
          expect(changed.next).toHaveBeenCalledTimes(4);
       });
 
-      it('replace nested object will emit change event fo every change', async () => {
+      it('Replacing nested object will emit a change event fo every change', async () => {
          const oldContext = {
             value: 2,
             nested: {
@@ -986,10 +1018,10 @@ describe('StateManager tests', () => {
          const object = {
             nested: oldContext,
          };
-         stateManager.register(object, 'nested');
-         stateManager.register(object.nested, 'value');
-         stateManager.register(object.nested, 'nested');
-         stateManager.register(object.nested.nested, 'value');
+         stateManager.watchState(object, 'nested');
+         stateManager.watchState(object.nested, 'value');
+         stateManager.watchState(object.nested, 'nested');
+         stateManager.watchState(object.nested.nested, 'value');
          const newContext = {
             value: 12,
             nested: {
@@ -1042,7 +1074,7 @@ describe('StateManager tests', () => {
       });
    });
 
-   it('when changing a nested state a change event will be also emitted for registed parent states', async () => {
+   it('When changing a nested state a change event will be also emitted for registed parent states.', async () => {
       const object = {
          nested: {
             value: 2,
@@ -1052,8 +1084,8 @@ describe('StateManager tests', () => {
          },
       };
 
-      stateManager.register(object, 'nested', truePredicate);
-      stateManager.register(object.nested.nested, 'value');
+      stateManager.watchState(object, 'nested', truePredicate);
+      stateManager.watchState(object.nested.nested, 'value');
 
       const actual = await new WaitForEvent(stateManager, 'changed', {
          count: 2,

@@ -1,0 +1,25 @@
+import { IISequenceWithIdData } from '../sequence-id/sequence-id-factory.interface';
+import { IDisposable } from '../types';
+
+
+export interface  IFunctionCallIndexData {
+    readonly context: unknown;
+    readonly functionName: string;
+    readonly arguments: unknown[];
+}
+
+export interface IFunctionCallIndex  {
+      readonly context: unknown;
+      readonly functionName: string;
+      readonly argumentsId: IISequenceWithIdData;
+      readonly id: string;
+}
+
+
+export interface IDisposableFunctionCallIndex extends IFunctionCallIndex, IDisposable {
+      readonly context: unknown;
+      readonly functionName: string;
+      readonly argumentsId: IISequenceWithIdData;
+      readonly id: string;
+}
+

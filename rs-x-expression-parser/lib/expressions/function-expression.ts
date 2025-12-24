@@ -1,4 +1,7 @@
-import { AnyFunction, Assertion } from '@rs-x/core';
+import { AnyFunction, Assertion, PENDING } from '@rs-x/core';
+import { IGuidFactory } from '../../../rs-x-core/lib/guid';
+import { IStateManager } from '../../../rs-x-state-manager/lib';
+import { IExpressionChangeCommitHandler, IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 import {
    AbstractExpression,
    IExpressionInitializeConfig,
@@ -6,10 +9,12 @@ import {
 import { ArrayExpression } from './array-expression';
 import { ConstantNullExpression } from './constant-null-expression';
 import { ExpressionType } from './interfaces';
-import { IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 
 export class FunctionExpression extends AbstractExpression {
    private _context: unknown;
+   private _functionContext: unknown;
+   private readonly _functionId: string;
+
    constructor(
       expressionString: string,
       public readonly functionExpression: AbstractExpression<
@@ -19,7 +24,9 @@ export class FunctionExpression extends AbstractExpression {
       public readonly argumentsExpression: ArrayExpression,
       public readonly computed: boolean,
       public readonly optional: boolean,
-      expressionChangeTransactionManager: IExpressionChangeTransactionManager
+      expressionChangeTransactionManager: IExpressionChangeTransactionManager,
+      private readonly _stateManager: IStateManager,
+      guidFactory: IGuidFactory
    ) {
       super(
          ExpressionType.Function,
@@ -28,6 +35,8 @@ export class FunctionExpression extends AbstractExpression {
          functionExpression,
          argumentsExpression
       );
+
+      this._functionId = guidFactory.create();
    }
 
    public override initialize(
@@ -49,42 +58,58 @@ export class FunctionExpression extends AbstractExpression {
       return this;
    }
 
-   protected override evaluate(sender: AbstractExpression): unknown {
-      if (
-         sender === this.objectExpression &&
-         this.objectExpression.value &&
-         !this.computed
-      ) {
-         // Must run after the current evaluate() finishes.
-         // Running this.functionExpression.initialize() immediately could trigger a nested evaluate(),
-         // so we defer it until the current call has fully returned.
-         queueMicrotask(() => {
-            this.functionExpression.initialize({
-               context: this.objectExpression.value,
-            });
-         });
+   protected override internalDispose(): void {
+      this._stateManager.releaseState(this._functionContext, this._functionId);
+   }
 
-         return undefined
+   protected override prepareReevaluation(sender: AbstractExpression, root: AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
+      if (sender === this.functionExpression
+         || sender === this.objectExpression ||
+         sender === this.argumentsExpression) {
+         super.prepareReevaluation(this, root, pendingCommits);
+         return true
       }
 
-      const {
-         functionExpression,
-         argumentsExpression,
-         objectExpression,
-         _context,
-      } = this;
+      return super.prepareReevaluation(sender, root, pendingCommits);
+   }
 
-      const context = objectExpression?.value ?? _context;
-      const func = this.computed
-         ? (context?.[functionExpression.value as string] as AnyFunction)
-         : (functionExpression.value as AnyFunction);
-      const args = argumentsExpression.value;
-
-      if (!func || !args || !context) {
+   protected override evaluate(): unknown {
+      const functionContext = this.objectExpression ? this.objectExpression?.value : this._context;
+      if (!functionContext) {
          return;
       }
 
+      if (this._functionContext !== functionContext) {
+         this._functionContext = functionContext;
+      }
+
+      const {
+         functionName,
+         argumentsExpression,
+      } = this;
+
+
+      const args = argumentsExpression.value;
+
+      if (!functionName || !args || !functionContext) {
+         return PENDING;
+      }
+
+      const func = functionContext[functionName];
       Assertion.assertIsFunction(func, func.name);
-      return func.call(context, ...args);
+
+      return this.registerResult(func.call(functionContext, ...args));
+   }
+
+   private get functionName(): string {
+      return this.computed
+         ? this.functionExpression.value as string
+         : this.functionExpression.expressionString;
+   }
+
+  
+   private registerResult(result: unknown): unknown {
+      this._stateManager.setState(this._functionContext, this._functionId, result);
+      return result
    }
 }

@@ -15,7 +15,7 @@ describe('ObjectStateManager tests', () => {
          },
       };
 
-      objectStateManager.create(object).instance.set('x', object.x);
+      objectStateManager.create(object).instance.set('x', object.x, false);
       const { value, valueCopy } = objectStateManager
          .getFromId(object)
          .getFromId('x');
@@ -36,9 +36,9 @@ describe('ObjectStateManager tests', () => {
          },
       };
 
-      objectStateManager.create(oldObject).instance.set('x', oldObject.x);
+      objectStateManager.create(oldObject).instance.set('x', oldObject.x, false);
 
-      objectStateManager.replaceState('x', newObject, newObject.x, oldObject);
+      objectStateManager.replaceState('x', newObject, newObject.x, oldObject, false);
 
       expect(objectStateManager.has(oldObject)).toEqual(false);
       expect(objectStateManager.has(newObject)).toEqual(true);
@@ -55,9 +55,9 @@ describe('ObjectStateManager tests', () => {
             y: 1,
          },
       };
-      objectStateManager.create(object).instance.set('x', object.x);
+      objectStateManager.create(object).instance.set('x', object.x, false);
 
-      objectStateManager.replaceState('x', object, { y: 2 }, object);
+      objectStateManager.replaceState('x', object, { y: 2 }, object, false);
 
       expect(objectStateManager.has(object)).toEqual(true);
       expect(objectStateManager.getFromId(object).getFromId('x').value).toEqual(
@@ -74,7 +74,7 @@ describe('ObjectStateManager tests', () => {
          },
       };
 
-      objectStateManager.replaceState('x', object, { y: 2 }, object);
+      objectStateManager.replaceState('x', object, { y: 2 }, object, false);
       expect(objectStateManager.has(object)).toEqual(true);
       expect(objectStateManager.getFromId(object).getFromId('x').value).toEqual(
          {

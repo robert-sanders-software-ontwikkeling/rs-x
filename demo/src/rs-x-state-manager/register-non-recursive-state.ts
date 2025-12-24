@@ -25,7 +25,7 @@ export const run = (() => {
     });
 
     // This will emit the new value { y: 10 }
-    stateManager.register(stateContext, 'x');
+    stateManager.watchState(stateContext, 'x');
 
     console.log('Changed value:');
     // This will emit the new value { y: 10 }

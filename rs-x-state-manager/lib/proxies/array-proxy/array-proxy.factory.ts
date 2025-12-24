@@ -1,4 +1,5 @@
 import {
+   IDisposableOwner,
    Inject,
    Injectable,
    SingletonFactory,
@@ -6,7 +7,6 @@ import {
 } from '@rs-x/core';
 import { Subject } from 'rxjs';
 import { AbstractObserver } from '../../abstract-observer';
-import { IDisposableOwner } from '../../disposable-owner.interface';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
 import { IProxyRegistry } from '../proxy-registry/proxy-registry.interface';
 import {

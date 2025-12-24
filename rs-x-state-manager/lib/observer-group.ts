@@ -1,7 +1,6 @@
-import { IErrorLog, IPropertyChange, Type } from '@rs-x/core';
+import { IDisposableOwner, IErrorLog, IPropertyChange, Type } from '@rs-x/core';
 import { ReplaySubject, Subscription } from 'rxjs';
 import { AbstractObserver } from './abstract-observer';
-import { IDisposableOwner } from './disposable-owner.interface';
 import { IObserver } from './observer.interface';
 
 export class ObserverGroup extends AbstractObserver {

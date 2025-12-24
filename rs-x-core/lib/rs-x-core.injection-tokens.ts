@@ -14,4 +14,8 @@ export const RsXCoreInjectionTokens = {
    IObservableAccessor: Symbol('IObservableAccessor'),
    IPromiseAccessor: Symbol('IPromiseAccessor'),
    IIndexValueAccessorList:  Symbol('IIndexValueAccessorList'),
+   ISequenceIdFactory:  Symbol('ISequenceIdFactory'),
+   IFunctionCallIndexFactory: Symbol('IFunctionCallIndexFactory'),
+   IFunctionCallResultCacheFactory: Symbol('IFunctionCallResultCacheFactory'),
+   IGuidFactory: Symbol('IGuidFactory')
 };

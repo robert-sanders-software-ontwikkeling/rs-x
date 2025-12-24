@@ -41,6 +41,7 @@ export class StateManager implements IStateManager {
    private readonly _startChangeCycle = new Subject<void>();
    private readonly _endChangeCycle = new Subject<void>();
    private readonly _stateChangeSubscriptionManager: StateChangeSubscriptionManager;
+   private readonly _pending = new Map<unknown, unknown>();
 
    constructor(
       @Inject(
@@ -54,7 +55,7 @@ export class StateManager implements IStateManager {
       @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
       private readonly _indexValueAccessor: IIndexValueAccessor,
       @Inject(RsXCoreInjectionTokens.IEqualityService)
-      private readonly _qualityService: IEqualityService
+      private readonly _equalityService: IEqualityService,
    ) {
       this._stateChangeSubscriptionManager = new StateChangeSubscriptionManager(
          objectObserverManager,
@@ -102,7 +103,7 @@ export class StateManager implements IStateManager {
       return stateChangeSubscriptionsForContextManager.has(id);
    }
 
-   public register(
+   public watchState(
       context: unknown,
       index: unknown,
       mustProxify?: MustProxify
@@ -111,11 +112,11 @@ export class StateManager implements IStateManager {
          this.tryToSubscribeToChange(context, index, mustProxify);
          return undefined;
       } else {
-         return this.increaseStateReferenceCount(context, index);
+         return this.increaseStateReferenceCount(context, index, true);
       }
    }
 
-   public unregister(
+   public releaseState(
       context: unknown,
       index: unknown,
       mustProxify: MustProxify
@@ -129,10 +130,30 @@ export class StateManager implements IStateManager {
 
    public clear(): void {
       this._stateChangeSubscriptionManager.dispose();
+      this._objectStateManager.dispose();
    }
 
    public getState<T>(context: unknown, index: unknown): T {
       return this._objectStateManager.getFromId(context)?.getFromId(index)?.value as T;
+   }
+
+   public setState<T>(context: unknown, index: unknown, value: T): void {
+      try {
+         this.internalSetState(context, index, value, {
+         context,
+         value: this.getState(context, index)
+      });
+      
+      } finally {
+         this._endChangeCycle.next();
+      } 
+   }
+
+   private internalSetState(context: unknown, index: unknown, value: unknown, transferValue: ITransferedValue) {
+      this._startChangeCycle.next();
+      this.tryRebindingNestedState(value, transferValue.value)
+      this._objectStateManager.replaceState(index, context, value, transferValue.context, false);
+      this.emitChange(context, index, value, transferValue.value, transferValue.context);
    }
 
    private getOldValue(context: unknown, index: unknown): unknown {
@@ -160,7 +181,7 @@ export class StateManager implements IStateManager {
       index: unknown,
       mustProxify: MustProxify
    ): void {
-      if (this.releaseState(context, index)) {
+      if (this.internalReleaseState(context, index)) {
          this.unnsubscribeToObserverEvents(context, index, mustProxify);
       }
    }
@@ -172,7 +193,7 @@ export class StateManager implements IStateManager {
       oldValue: unknown,
       oldContext?: unknown
    ): void {
-      if (this._qualityService.isEqual(newValue, oldValue)) {
+      if (this._equalityService.isEqual(newValue, oldValue)) {
          return;
       }
       this._changed.next({
@@ -188,17 +209,19 @@ export class StateManager implements IStateManager {
       newContext: unknown,
       oldContext: unknown,
       index: unknown,
-      newValue: unknown
+      newValue: unknown,
+      watched: boolean
    ): void {
       this._objectStateManager.replaceState(
          index,
          newContext,
          newValue,
-         oldContext
+         oldContext,
+         watched
       );
    }
 
-   private releaseState(context: unknown, key: unknown): boolean {
+   private internalReleaseState(context: unknown, key: unknown): boolean {
       return (
          this._objectStateManager.getFromId(context)?.release(key)
             .referenceCount === 0
@@ -207,12 +230,13 @@ export class StateManager implements IStateManager {
 
    private increaseStateReferenceCount(
       context: unknown,
-      index: unknown
+      index: unknown,
+      watched: boolean
    ): unknown {
       const state = this.getState(context, index);
       this._objectStateManager
          .create(context)
-         .instance.create({ value: state, key: index });
+         .instance.create({ value: state, key: index, watched });
       return state;
    }
 
@@ -225,14 +249,16 @@ export class StateManager implements IStateManager {
       this._stateChangeSubscriptionManager.create(context).instance.create({
          key: index,
          mustProxify,
-         onChanged: (change) => this.onChange(change, mustProxify),
+         onChanged: (change) => this.onChange(change, mustProxify, true),
          init: (observer) => {
             if (observer.value !== undefined) {
                this.setInitialValue(
                   context,
                   index,
                   observer.value,
-                  transferedValue
+                  transferedValue,
+                  true,
+
                );
             }
             observer.init();
@@ -255,17 +281,27 @@ export class StateManager implements IStateManager {
 
       return Array.from(oldState.ids())
          .map((id) => {
-            const oldValue = oldState.getFromId(id).value;
+            const { value: oldValue, watched } = oldState.getFromId(id);
             const newValue = this.getValue(newContext, id);
 
-            if (this._qualityService.isEqual(oldValue, newValue)) {
+            if (oldContext === newContext && this._equalityService.isEqual(oldValue, newValue)) {
                return [];
+            }
+
+
+            let pendingId: string;
+            if (newValue === PENDING) {
+
+               this._pending.set(newContext, oldValue);
+
             }
             const stateInfo = {
                oldContext,
                context: newContext,
                key: id,
                oldValue,
+               newValue: pendingId ?? newValue,
+               watched
             };
             return newValue === PENDING
                ? [stateInfo]
@@ -275,19 +311,20 @@ export class StateManager implements IStateManager {
    }
 
    private tryRebindingNestedState(
-      change: IPropertyChange,
+      newValue: unknown,
       oldValue: unknown,
-      mustProxify: MustProxify
+      mustProxify?: MustProxify,
    ): void {
-      const stateChanges = this.getStateChanges(oldValue, change.newValue);
+      const stateChanges = this.getStateChanges(oldValue, newValue);
 
-      stateChanges.forEach((stateChange) => {
-         this.internalUnregister(
-            stateChange.oldContext,
-            stateChange.key,
-            mustProxify
-         );
-      });
+      stateChanges
+         .forEach((stateChange) => {
+            this.internalUnregister(
+               stateChange.oldContext,
+               stateChange.key,
+               mustProxify
+            );
+         });
 
       stateChanges
          .filter(
@@ -301,33 +338,52 @@ export class StateManager implements IStateManager {
             })
          );
 
-      stateChanges.forEach((stateChange) =>
-         this.tryToSubscribeToChange(
-            stateChange.context,
-            stateChange.key,
-            mustProxify,
-            {
+
+      stateChanges
+         .filter(stateChange => stateChange.watched && stateChange.newValue === PENDING)
+         .forEach((stateChange) =>
+            this._objectStateManager.replaceState(stateChange.key, stateChange.context, stateChange.newValue, stateChange.oldContext, false)
+         );
+
+      stateChanges
+         .filter(stateChange => stateChange.watched)
+         .forEach((stateChange) =>
+            this.tryToSubscribeToChange(
+               stateChange.context,
+               stateChange.key,
+               mustProxify,
+               {
+                  context: stateChange.oldContext,
+                  value: stateChange.oldValue,
+               }
+            )
+         );
+
+      stateChanges
+         .filter(stateChange => !stateChange.watched)
+         .forEach((stateChange) =>
+            this.internalSetState(stateChange.context, stateChange.key, stateChange.newValue, {
                context: stateChange.oldContext,
-               value: stateChange.oldValue,
-            }
-         )
-      );
+               value: stateChange.oldValue
+            })
+         );
    }
 
    private setInitialValue(
       context: unknown,
       index: unknown,
       initialValue: unknown,
-      transferedValue: ITransferedValue
+      transferedValue: ITransferedValue,
+      watched: boolean,
    ): void {
       if (initialValue !== transferedValue?.value) {
          this.updateState(
             context,
             transferedValue?.context ?? context,
             index,
-            initialValue
+            initialValue,
+            watched
          );
-
          this.emitChange(
             context,
             index,
@@ -353,7 +409,17 @@ export class StateManager implements IStateManager {
       }));
    }
 
-   private onChange(change: IPropertyChange, mustProxify: MustProxify): void {
+   private getCurrentValue(context: unknown, id: unknown): unknown {
+      const value = this._pending.get(context);
+      if (value !== undefined) {
+         this._pending.delete(context);
+         return value;
+      }
+
+      return this.getState(context, id);
+   }
+
+   private onChange(change: IPropertyChange, mustProxify: MustProxify, watched: boolean): void {
       const chainChanges = this.getChainChanges(change.chain);
       if (chainChanges.length === 0) {
          return;
@@ -363,14 +429,15 @@ export class StateManager implements IStateManager {
 
       try {
          const chainLeaf = chainChanges[chainChanges.length - 1];
-         const currentValue = this.getState(chainLeaf.object, chainLeaf.id);
+         const currentValue = this.getCurrentValue(chainLeaf.object, chainLeaf.id);
 
-         this.tryRebindingNestedState(change, currentValue, mustProxify);
+         this.tryRebindingNestedState(change.newValue, currentValue, mustProxify);
          this.updateState(
             chainLeaf.object,
             chainLeaf.object,
             chainLeaf.id,
-            chainLeaf.value
+            chainLeaf.value,
+            watched
          );
 
          chainChanges.forEach((chainChange) =>

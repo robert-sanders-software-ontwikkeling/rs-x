@@ -27,7 +27,7 @@ export const run = (() => {
     // a predicate as the third argument.
     // This will emit an initial value { y: 10 }
     console.log('Initial value:');
-    stateManager.register(stateContext, 'x', truePredicate);
+    stateManager.watchState(stateContext, 'x', truePredicate);
 
     console.log('Changed value:');
     // This will emit the new value { y: 10 }

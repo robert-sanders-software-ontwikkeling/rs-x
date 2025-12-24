@@ -29,7 +29,7 @@ export const run = (async () => {
         await new WaitForEvent(stateManager, 'changed').wait(() => {
              // This will emit a change event with the initial (current) value.
             console.log('Initial value:');
-            stateManager.register(stateContext, 'observable');
+            stateManager.watchState(stateContext, 'observable');
         });
 
         await new WaitForEvent(stateManager, 'changed').wait(() => {
@@ -43,6 +43,6 @@ export const run = (async () => {
 
     } finally {
         changeSubscription.unsubscribe();
-        stateManager.unregister(stateContext, 'observable');
+        stateManager.releaseState(stateContext, 'observable');
     }
 })();
