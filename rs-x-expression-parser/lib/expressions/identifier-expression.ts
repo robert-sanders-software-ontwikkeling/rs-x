@@ -70,7 +70,6 @@ export class IdentifierExpression extends AbstractExpression {
       super.internalDispose();
       this.releaseMustProxifyHandler?.();
       this.disposeObserver();
-     
    }
 
    protected override evaluate(): unknown {
