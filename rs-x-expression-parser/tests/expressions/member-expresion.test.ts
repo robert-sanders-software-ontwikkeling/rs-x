@@ -255,7 +255,7 @@ describe('Memmber expression tests', () => {
          await new WaitForEvent(expression, 'changed').wait(() => { });
 
 
-         const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
+         const actual = (await new WaitForEvent(expression, 'changed', {ignoreInitialValue: true}, ).wait(() => {
             context.key = 'b';
          })) as IExpression;
 
@@ -276,7 +276,9 @@ describe('Memmber expression tests', () => {
          };
          expression = jsParser.parse(context, 'nestedA.map[key]');
 
-         const actual = await new WaitForEvent(expression, 'changed',).wait(() => {
+         await new WaitForEvent(expression, 'changed', {ignoreInitialValue: true}).wait(emptyFunction);
+
+         const actual = await new WaitForEvent(expression, 'changed', {ignoreInitialValue: true}).wait(() => {
             context.nestedA = {
                map: new Map([
                   ['a', -1],
@@ -432,6 +434,41 @@ describe('Memmber expression tests', () => {
          expect(actual.value).toEqual(200);
          expect(actual).toBe(expression);
       });
+
+      it('multiple nested obserable emit new value', async () => {
+         const nestedObservable = new BehaviorSubject({ d: 200 });
+         const rootObservable = new BehaviorSubject({ c: nestedObservable });
+         const expressionContext = {
+            a: {
+               b: new BehaviorSubject(
+                  {
+                     c: new BehaviorSubject({ d: 20 })
+                  }
+               )
+            }
+         };
+         const expression = jsParser.parse(expressionContext, `a.b.c.d`);
+
+         await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+         expect(expression.value).toEqual(20);
+
+         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
+            expressionContext.a = { b: rootObservable }
+         });
+         expect(expression.value).toEqual(200);
+
+         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
+            nestedObservable.next({ d: 300 });
+         });
+         expect(expression.value).toEqual(300);
+
+         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
+            rootObservable.next({
+               c: new BehaviorSubject({ d: 400 })
+            })
+         });
+         expect(expression.value).toEqual(400);
+      });
    });
 
    describe('member expression with promises', () => {
@@ -508,49 +545,6 @@ describe('Memmber expression tests', () => {
                })
             }
          };
-
-         /*
-               {
-                    b: Promise.resolve({
-                     c: Promise.resolve({
-                        d: 20
-                     })
-                  }
-               }
-
-               b -> 
-               {
-                     c: Promise.resolve({
-                        d: 20
-                     })
-               }
-               c ->
-               {
-                  d: 20
-               }
-            ___________________________________________
-               a -> 
-               {
-                    b: Promise.resolve({
-                     c: Promise.resolve({
-                        d: 200
-                     })
-                  }
-               }
-
-               b -> 
-               {
-                     c: Promise.resolve({
-                        d: 200
-                     })
-               }
-               c ->
-               {
-                  d: 200
-               }
-             
-
-         */
 
          expression = jsParser.parse(context, 'a.b.c.d');
 
@@ -828,7 +822,6 @@ describe('Memmber expression tests', () => {
 
 
          expect(actual.value).toEqual('message: hi, subject: Message');
-
-      })
+      });
    })
 });

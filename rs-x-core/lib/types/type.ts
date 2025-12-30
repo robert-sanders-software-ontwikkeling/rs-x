@@ -93,6 +93,11 @@ export class Type {
       return typeof value === 'function';
    }
 
+   public static  isMethod(value:object ): boolean {
+      return typeof value === 'function' && !("prototype" in value);
+
+   }
+
    public static isArrowFunction(
       object: unknown
    ): object is (...args: unknown[]) => unknown {
@@ -164,8 +169,8 @@ export class Type {
    }
 
    public static getPropertyDescriptorType(
-      target: unknown,
-      name: string,
+      // target: unknown,
+      // name: string,
       propertyDescriptor: PropertyDescriptor
    ): PropertyDescriptorType {
       if (propertyDescriptor.set) {
@@ -177,11 +182,11 @@ export class Type {
       }
 
       if (
-         Type.isFunction(propertyDescriptor.value) &&
-         (
-            Type.hasProperty(target, name) ||
-            Type.hasOwnPropertyInPrototypeChain(target, name)
-         )
+         Type.isMethod(propertyDescriptor.value) //&&
+         // (
+         //    Type.hasProperty(target, name) ||
+         //    Type.hasOwnPropertyInPrototypeChain(target, name)
+         // )
       ) {
          return PropertyDescriptorType.Function;
       }
@@ -205,8 +210,8 @@ export class Type {
          if (propertyDescriptor) {
             return {
                type: Type.getPropertyDescriptorType(
-                  root,
-                  name as string,
+                  // root,
+                  // name as string,
                   propertyDescriptor
                ),
                descriptor: propertyDescriptor,

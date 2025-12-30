@@ -8,7 +8,7 @@ export class ConstantExpression<T> extends AbstractExpression<T> {
    constructor(
       type: ExpressionType,
       expressionString: string,
-      private readonly _constValue: T,
+      constValue: T,
       private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
 
       
@@ -18,9 +18,10 @@ export class ConstantExpression<T> extends AbstractExpression<T> {
          owner: this,
          commit: this.commit
       };
+      this._value = constValue;
    }
 
-   override initialize(settings: IExpressionInitializeConfig): AbstractExpression {
+   public override initialize(settings: IExpressionInitializeConfig): AbstractExpression {
       super.initialize(settings);
       this._expressionChangeTransactionManager.registerChange(this.root, this._commitHandler);
       return this;
@@ -28,7 +29,7 @@ export class ConstantExpression<T> extends AbstractExpression<T> {
    }
 
    protected override evaluate(): T {
-      return this._constValue;
+      return this._value;
    }
 
    private commit = (root:AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>) => this.reevaluated(this, root, pendingCommits);

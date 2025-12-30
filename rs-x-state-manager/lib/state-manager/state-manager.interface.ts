@@ -19,7 +19,7 @@ export interface IStateManager {
    readonly contextChanged: Observable<IContextChanged>;
    readonly startChangeCycle: Observable<void>;
    readonly endChangeCycle: Observable<void>;
-   isRegistered(
+   isWatched(
       context: unknown,
       index: unknown,
       mustProxify?: MustProxify

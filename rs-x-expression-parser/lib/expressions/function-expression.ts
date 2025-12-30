@@ -42,6 +42,7 @@ export class FunctionExpression extends AbstractExpression {
    public override initialize(
       settings: IExpressionInitializeConfig
    ): AbstractExpression {
+      this._context = settings.context;
       super.initialize(settings);
       if (this.objectExpression) {
          this.objectExpression.initialize(settings);
@@ -49,7 +50,6 @@ export class FunctionExpression extends AbstractExpression {
             this.functionExpression.initialize(settings);
          }
       } else {
-         this._context = settings.context;
          this.functionExpression.initialize(settings);
       }
 
@@ -59,7 +59,7 @@ export class FunctionExpression extends AbstractExpression {
    }
 
    protected override internalDispose(): void {
-      this._stateManager.releaseState(this._functionContext, this._functionId);
+      this.releaseResult();
    }
 
    protected override prepareReevaluation(sender: AbstractExpression, root: AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
@@ -76,7 +76,7 @@ export class FunctionExpression extends AbstractExpression {
    protected override evaluate(): unknown {
       const functionContext = this.objectExpression ? this.objectExpression?.value : this._context;
       if (!functionContext) {
-         return;
+         return PENDING;
       }
 
       if (this._functionContext !== functionContext) {
@@ -107,7 +107,12 @@ export class FunctionExpression extends AbstractExpression {
          : this.functionExpression.expressionString;
    }
 
-  
+   private releaseResult(): void {
+      this._stateManager.releaseState(this._functionContext, this._functionId);
+      this._functionContext = undefined;
+   }
+
+
    private registerResult(result: unknown): unknown {
       this._stateManager.setState(this._functionContext, this._functionId, result);
       return result

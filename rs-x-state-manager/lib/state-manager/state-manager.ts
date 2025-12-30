@@ -83,7 +83,7 @@ export class StateManager implements IStateManager {
       return this._objectStateManager.toString();
    }
 
-   public isRegistered(
+   public isWatched(
       context: unknown,
       index: unknown,
       mustProxify: MustProxify
@@ -108,7 +108,7 @@ export class StateManager implements IStateManager {
       index: unknown,
       mustProxify?: MustProxify
    ): unknown {
-      if (!this.isRegistered(context, index, mustProxify)) {
+      if (!this.isWatched(context, index, mustProxify)) {
          this.tryToSubscribeToChange(context, index, mustProxify);
          return undefined;
       } else {
@@ -138,19 +138,13 @@ export class StateManager implements IStateManager {
    }
 
    public setState<T>(context: unknown, index: unknown, value: T): void {
-      try {
          this.internalSetState(context, index, value, {
          context,
          value: this.getState(context, index)
       });
-      
-      } finally {
-         this._endChangeCycle.next();
-      } 
    }
 
    private internalSetState(context: unknown, index: unknown, value: unknown, transferValue: ITransferedValue) {
-      this._startChangeCycle.next();
       this.tryRebindingNestedState(value, transferValue.value)
       this._objectStateManager.replaceState(index, context, value, transferValue.context, false);
       this.emitChange(context, index, value, transferValue.value, transferValue.context);
@@ -267,7 +261,11 @@ export class StateManager implements IStateManager {
    }
 
    private getValue(context: unknown, key: unknown): unknown {
-      return this._indexValueAccessor.getResolvedValue(context, key);
+      try {
+          return this._indexValueAccessor.getResolvedValue(context, key);
+      } catch {
+         return this.getState(context, key)
+      }
    }
 
    private getStateChanges(
@@ -291,9 +289,7 @@ export class StateManager implements IStateManager {
 
             let pendingId: string;
             if (newValue === PENDING) {
-
                this._pending.set(newContext, oldValue);
-
             }
             const stateInfo = {
                oldContext,
@@ -336,13 +332,6 @@ export class StateManager implements IStateManager {
                oldContext: stateChange.oldContext,
                key: stateChange.key,
             })
-         );
-
-
-      stateChanges
-         .filter(stateChange => stateChange.watched && stateChange.newValue === PENDING)
-         .forEach((stateChange) =>
-            this._objectStateManager.replaceState(stateChange.key, stateChange.context, stateChange.newValue, stateChange.oldContext, false)
          );
 
       stateChanges

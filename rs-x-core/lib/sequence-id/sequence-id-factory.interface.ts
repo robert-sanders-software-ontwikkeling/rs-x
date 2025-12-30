@@ -1,6 +1,4 @@
-import { ISingletonFactory } from '../singleton-factory/singleton.factory.interface';
 import { IDisposable } from '../types';
-
 
 export interface IISequenceWithIdData {
      sequence: readonly unknown[];

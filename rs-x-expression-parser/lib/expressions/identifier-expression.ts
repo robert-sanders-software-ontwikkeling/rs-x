@@ -1,6 +1,7 @@
 import { emptyFunction, truePredicate } from '@rs-x/core';
 import { IStateChange } from '@rs-x/state-manager';
 import { Subscription } from 'rxjs';
+import { IExpressionChangeCommitHandler, IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 import { IIndexValueObserverManager } from '../index-value-observer-manager/index-value-manager-observer.type';
 import { IIndexValueObserver } from '../index-value-observer-manager/index-value-observer.interface';
 import {
@@ -8,9 +9,9 @@ import {
    IExpressionInitializeConfig,
    IMustProxifyHandler,
 } from './abstract-expression';
+import { FunctionExpression } from './function-expression';
 import { ExpressionType } from './interfaces';
 import { MemberExpression } from './member-expression';
-import { IExpressionChangeCommitHandler, IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 
 export interface IIdentifierInitializeConfig
    extends IExpressionInitializeConfig {
@@ -36,7 +37,6 @@ export class IdentifierExpression extends AbstractExpression {
    ) {
       super(ExpressionType.Identifier, expressionString);
 
-
       this._commitHandler = {
          owner: this,
          commit: this.commit
@@ -51,7 +51,7 @@ export class IdentifierExpression extends AbstractExpression {
       this._commitAfterInitialized = settings.context !== this._rootContext;
       this._value = settings.currentValue;
       if (!this._indexValueObserver) {
-         this.observeChange(settings);
+            this.observeChange(settings);
       } else {
          AbstractExpression.setValue(this, () =>
             this._indexValueObserver.getValue(
@@ -97,7 +97,7 @@ export class IdentifierExpression extends AbstractExpression {
    }
 
    private getDefaultMustProxifyHandler(): IMustProxifyHandler {
-      if (!this.parent || !(this.parent instanceof MemberExpression)) {
+      if (!this.parent || !(this.parent instanceof MemberExpression || this.parent instanceof FunctionExpression)) {
          return {
             createMustProxifyHandler: () => truePredicate,
             releaseMustProxifyHandler: emptyFunction,

@@ -550,17 +550,19 @@ describe('Expression parser demos', () => {
 
      it('member-expression-with-observer.ts', async () => {
         const expected = dedent`
-            Running demo: demo/src/rs-x-expression-parser/member-expression-with-promise.ts
+            Running demo: demo/src/rs-x-expression-parser/member-expression-with-observable.ts
             Initial value of 'a.b.c.d':
             20
-            Value of 'a.b.c.d' after changing a to '{ b: Promise.resolve({ c: Promise.resolve({ d: 200 }) }) }':
+            Value of 'a.b.c.d' after changing a to '{ b: BehaviorSubject({ c: BehaviorSubject({ d: 200 }) }) }':
             200
+            Value of 'a.b.c.d' after emitting a new value '{ d: 300 }' for c':
+            300
+            Value of 'a.b.c.d' after emitting a new value '{ c: new BehaviorSubject({ d: 400 }) }' for b':
+            400
             Final value of 'a.b.c.d':
-            200
+            400
         `;
 
         await expect(() => runDemo('rs-x-expression-parser/member-expression-with-observable.ts')).toOutputAsync(expected);
     });
-
-
 });

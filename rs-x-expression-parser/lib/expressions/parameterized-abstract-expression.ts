@@ -1,5 +1,3 @@
-import { send } from 'process';
-import { IExpressionChangeCommitHandler } from '../expresion-change-transaction-manager.interface';
 import {
    AbstractExpression,
    IExpressionInitializeConfig,
@@ -30,14 +28,14 @@ export abstract class ParameterizedExpression<
 
    protected abstract evaluateExpression(...args: unknown[]): T;
 
-   protected override prepareReevaluation(_sender: AbstractExpression, root: AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
+   protected override prepareReevaluation(): boolean {
       const args = this._childExpressions.map(childExpression => childExpression.value);
 
       if (args.some(arg => arg === undefined)) {
          return false;
       }
 
-      return super.prepareReevaluation(this,root, pendingCommits);
+      return true;
    }
 
    protected override evaluate(): T {

@@ -49,7 +49,6 @@ export class ExpressionChangeTransactionManager implements IExpressionChangeTran
         this._changes.clear();
     }
 
-
     private tryCommit(root: AbstractExpression, previousCommited: boolean): void  {
         const commitHandlers =this._changes.get(root)
         
