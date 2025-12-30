@@ -24,13 +24,11 @@ export class IdentifierExpression extends AbstractExpression {
    private _indexValueObserver: IIndexValueObserver;
    private releaseMustProxifyHandler: () => void;
    private _commitAfterInitialized: boolean;
- 
    private readonly _commitHandler: IExpressionChangeCommitHandler;
 
    constructor(
       private readonly _rootContext: unknown,
       private readonly _indexValueObserverManager: IIndexValueObserverManager,
-    
       expressionString: string,
       private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
       private readonly _indexValue?: unknown,
