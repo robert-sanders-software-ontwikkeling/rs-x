@@ -515,7 +515,6 @@ describe('Expression parser demos', () => {
         await expect(() => runDemo('rs-x-expression-parser/member-expression-with-set.ts')).toOutputAsync(expected);
     });
 
-
     it('member-expression-with-method.ts', async () => {
         const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/member-expression-with-method.ts
@@ -532,7 +531,6 @@ describe('Expression parser demos', () => {
         await expect(() => runDemo('rs-x-expression-parser/member-expression-with-method.ts')).toOutputAsync(expected);
     });
 
-
     it('member-expression-with-promise.ts', async () => {
         const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/member-expression-with-promise.ts
@@ -547,8 +545,7 @@ describe('Expression parser demos', () => {
         await expect(() => runDemo('rs-x-expression-parser/member-expression-with-promise.ts')).toOutputAsync(expected);
     });
 
-
-     it('member-expression-with-observable.ts', async () => {
+    it('member-expression-with-observable.ts', async () => {
         const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/member-expression-with-observable.ts
             Initial value of 'a.b.c.d':
@@ -564,5 +561,22 @@ describe('Expression parser demos', () => {
         `;
 
         await expect(() => runDemo('rs-x-expression-parser/member-expression-with-observable.ts')).toOutputAsync(expected);
+    });
+
+
+     it('multiplication-expression.ts', async () => {
+        const expected = dedent`
+            Running demo: demo/src/rs-x-expression-parser/multiplication-expression.ts
+            Initial value of 'a * b':
+            3
+            Value of 'a * b' after changing a to '6':
+            18
+            Value of 'a * b' after changing b to '4':
+            24
+            Final value of 'a * b':
+            24
+        `;
+
+        await expect(() => runDemo('rs-x-expression-parser/multiplication-expression.ts')).toOutputAsync(expected);
     });
 });
