@@ -595,7 +595,7 @@ describe('Memmber expression tests', () => {
 
       });
 
-      it(`value of 'a.b[1].c.d') after changing a to '{b: [{ c: { d: 100}},{ c: { d: 110}}}`, async () => {
+      it(`value of 'a.b[1].c.d') after changing 'a' to '{b: [{ c: { d: 100}},{ c: { d: 110}}}`, async () => {
          const expressionContext = {
             a: {
                b: [

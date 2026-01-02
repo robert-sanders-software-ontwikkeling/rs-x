@@ -26,10 +26,10 @@ export const run = (async () => {
             console.log(change.value);
         });
 
-        console.log(`Value of 'a instanceof type' after changing a to 'new Number(2)':`);
+        console.log(`Value of 'a instanceof type' after changing 'a' to 'new Number(2)':`);
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.a = Type.cast(new Number(2)); });
 
-        console.log(`Value of 'a instanceof type' after changing type to 'Number':`)
+        console.log(`Value of 'a instanceof type' after changing 'type' to 'Number':`)
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.type = Type.cast(Number); });
 
         console.log(`Final value of 'a instanceof type':`)

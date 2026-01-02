@@ -34,7 +34,7 @@ export const run = (async () => {
             };
         });
 
-        console.log(`Value of 'a.b' after changing b to 'new Set([100, 200])':`);
+        console.log(`Value of 'a.b' after changing 'b' to 'new Set([100, 200])':`);
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
             expressionContext.a.b = new Set([100, 200]);
         });

@@ -34,7 +34,7 @@ export const run = (async () => {
         });
 
 
-        console.log(`Value of 'a.b.c.d' after changing a to '{ b: BehaviorSubject({ c: BehaviorSubject({ d: 200 }) }) }':`);
+        console.log(`Value of 'a.b.c.d' after changing 'a' to '{ b: BehaviorSubject({ c: BehaviorSubject({ d: 200 }) }) }':`);
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
             expressionContext.a = { b: rootObservable }
 

@@ -99,7 +99,7 @@ import { SequenceExpression } from './expressions/sequence-expression';
 import { SpreadExpression } from './expressions/spread-expression';
 import { StrictEqualityExpression } from './expressions/strict-equality-expression';
 import { StrictInequalityExpression } from './expressions/strict-inequality-expression';
-import { SubtractionExpression } from './expressions/subtraction-expression';
+import { SubtractionExpression as SubstractionExpression } from './expressions/substraction-expression';
 import { TemplateStringExpression } from './expressions/template-string-expression';
 import { TypeofExpression } from './expressions/typeof-expression';
 import { UnaryNegationExpression } from './expressions/unary-negation-expression';
@@ -831,7 +831,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       expression: BinaryExpression,
       context: unknown
    ): AbstractExpression => {
-      return new SubtractionExpression(
+      return new SubstractionExpression(
          astToString(expression),
          Type.cast(this.createExpression(expression.left, context)),
          Type.cast(this.createExpression(expression.right, context))

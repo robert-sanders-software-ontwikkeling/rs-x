@@ -31,7 +31,7 @@ export const run = (async () => {
             printValue(change.value);
         });
 
-        console.log(`Value of 'a.b['b'].c.d' after changing a to '{ b: new Map([['a', { c: { d: 11 } }], ['b', { c: { d: 21 } }]]) }':`);
+        console.log(`Value of 'a.b['b'].c.d' after changing 'a' to '{ b: new Map([['a', { c: { d: 11 } }], ['b', { c: { d: 21 } }]]) }':`);
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
             expressionContext.a = {
                 b: new Map([

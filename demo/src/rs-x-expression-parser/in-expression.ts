@@ -28,10 +28,10 @@ export const run = (async () => {
             console.log(change.value);
         });
 
-        console.log(`Value of 'propertyName in b' after changing a to 'x':`);
+        console.log(`Value of 'propertyName in b' after changing 'a' to 'x':`);
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.propertyName = 'x'; });
 
-        console.log(`Value of 'propertyName in b' after changing b to '{x: 1}':`)
+        console.log(`Value of 'propertyName in b' after changing 'b' to '{x: 1}':`)
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.b = Type.cast({ x: 1 }); });
 
         console.log(`Final value of 'propertyName in b':`)

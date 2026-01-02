@@ -48,7 +48,7 @@ export * from './sequence-expression';
 export * from './spread-expression';
 export * from './strict-equality-expression';
 export * from './strict-inequality-expression';
-export * from './subtraction-expression';
+export * from './substraction-expression';
 export * from './template-string-expression';
 export * from './typeof-expression';
 export * from './unary-negation-expression';

@@ -32,7 +32,7 @@ export const run = (async () => {
             printValue(change.value);
         });
 
-        console.log(`Value of 'a.b.c.d' after changing a to '{ b: Promise.resolve({ c: Promise.resolve({ d: 200 }) }) }':`);
+        console.log(`Value of 'a.b.c.d' after changing 'a' to '{ b: Promise.resolve({ c: Promise.resolve({ d: 200 }) }) }':`);
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
             expressionContext.a =   { b: Promise.resolve({ c: Promise.resolve({ d: 200 }) }) };
         });

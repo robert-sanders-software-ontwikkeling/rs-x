@@ -11,27 +11,29 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(RsXExpressi
 
 export const run = (async () => {
     const expressionContext = {
-        a: false
+        index: 0,
+        a: ['1', 1],
     };
 
-   const expression = expressionFactory.create(expressionContext, '!a');
+    const expression = expressionFactory.create(expressionContext, 'typeof a[index]');
 
     try {
         // Wait until the expression has been resolved (has a value)
         await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-        console.log(`Initial value of '!a':`)
+        console.log(`Initial value of 'typeof a[index]':`);
         expression.changed.subscribe((change) => {
             console.log(change.value);
         });
 
-        console.log(`Value of !a' after changing 'a' to 'true':`);
-        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.a = true; });
+        console.log(`Value of 'typeof a[index]' after changing 'index' to '1':`);
+        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.index = 1; })
 
-        console.log(`Final value of '!a':`)
+        console.log(`Final value of 'typeof a[index]':`)
         console.log(expression.value);
     } finally {
         // Always dispose of expressions after use.
         expression.dispose();
     }
 })();
+

@@ -11,27 +11,32 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(RsXExpressi
 
 export const run = (async () => {
     const expressionContext = {
-        a: false
+        a: 2 as string | number,
+        b: 2 as string | number
     };
 
-   const expression = expressionFactory.create(expressionContext, '!a');
+    const expression = expressionFactory.create(expressionContext, 'a !== b');
 
     try {
         // Wait until the expression has been resolved (has a value)
         await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-        console.log(`Initial value of '!a':`)
+        console.log(`Initial value of 'a !== b':`)
         expression.changed.subscribe((change) => {
             console.log(change.value);
         });
 
-        console.log(`Value of !a' after changing 'a' to 'true':`);
-        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.a = true; });
+        console.log(`Value of 'a !== b' after changing 'a' to '"2"':`);
+        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.a = '2'; });
 
-        console.log(`Final value of '!a':`)
+        console.log(`Value of 'a !== b' after changing 'b' to '"2"':`)
+        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.b = '2'; });
+
+        console.log(`Final value of 'a !== b':`)
         console.log(expression.value);
     } finally {
         // Always dispose of expressions after use.
         expression.dispose();
     }
 })();
+

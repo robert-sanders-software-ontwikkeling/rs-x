@@ -26,10 +26,10 @@ export const run = (async () => {
             console.log(change.value);
         });
 
-        console.log(`Value of 'a || b' after changing a to 'false':`);
+        console.log(`Value of 'a || b' after changing 'a' to 'false':`);
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.a = false; });
 
-        console.log(`Value of 'a || b' after changing b to 'true':`)
+        console.log(`Value of 'a || b' after changing 'b' to 'true':`)
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.b = true; });
 
         console.log(`Final value of 'a || b':`)

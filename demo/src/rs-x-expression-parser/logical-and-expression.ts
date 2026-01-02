@@ -26,10 +26,10 @@ export const run = (async () => {
             console.log(change.value);
         });
 
-        console.log(`Value of 'a && b' after changing a to 'true':`);
+        console.log(`Value of 'a && b' after changing 'a' to 'true':`);
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.a = true; });
 
-        console.log(`Value of 'a && b' after changing b to 'false':`)
+        console.log(`Value of 'a && b' after changing 'b' to 'false':`)
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.b = false; });
 
         console.log(`Final value of 'a && b':`)

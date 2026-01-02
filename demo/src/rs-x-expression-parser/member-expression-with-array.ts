@@ -40,7 +40,7 @@ export const run = (async () => {
             printValue(change.value);
         });
 
-        console.log(`Value of 'a.b.c' after changing a to '{b: [{ c: { d: 100}},{ c: { d: 110}}}':`);
+        console.log(`Value of 'a.b.c' after changing 'a' to '{b: [{ c: { d: 100}},{ c: { d: 110}}}':`);
         await new WaitForEvent(expression, 'changed', {ignoreInitialValue: true}).wait(() => {
             expressionContext.a = {
                 b: [
