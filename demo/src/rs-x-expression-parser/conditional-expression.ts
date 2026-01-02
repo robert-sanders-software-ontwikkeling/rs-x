@@ -31,13 +31,13 @@ export const run = (async () => {
         console.log(`Value of 'a > b ? c : d' after changing d to '300':`);
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.d = 300; });
 
-        console.log(`Value of 'a > b ? c : d' after changing a to '3':`)
+        console.log(`Value of 'a > b ? c : d' after changing 'a' to '3':`)
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.a = 3; });
 
         console.log(`Value of 'a > b ? c : d' after changing c to '2000':`)
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.c = 2000; });
 
-        console.log(`Value of 'a > b ? c : d' after changing b to '4':`)
+        console.log(`Value of 'a > b ? c : d' after changing 'b' to '4':`)
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.b = 4; });
 
         console.log(`Final value of 'a > b ? c : d':`)

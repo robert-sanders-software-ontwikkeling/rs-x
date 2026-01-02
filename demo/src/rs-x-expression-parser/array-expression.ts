@@ -26,13 +26,13 @@ export const run = (async () => {
             printValue(change.value);
         });
 
-        console.log(`Value of [a, ...array, 100]' after changing a to '6':`);
+        console.log(`Value of [a, ...array, 100]' after changing 'a' to '6':`);
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.a = 6; });
 
-        console.log(`Value of '[a, ...array, 100]' after changing array to '[1, 2, 3]':`)
+        console.log(`Value of '[a, ...array, 100]' after changing 'array' to '[1, 2, 3]':`)
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.array.push(3); });
 
-        console.log(`Value of '[a, ...array, 100]' after setting array to '[100, 200]':`)
+        console.log(`Value of '[a, ...array, 100]' after setting 'array' to '[100, 200]':`)
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.array = [100, 200]; });
 
         console.log(`Final value of '[a, ...array, 100]':`)

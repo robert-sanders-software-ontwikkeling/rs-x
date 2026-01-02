@@ -26,7 +26,7 @@ export const run = (async () => {
             console.log(change.value);
         });
 
-        console.log(`Value of ~a' after changing a to '3':`);
+        console.log(`Value of ~a' after changing 'a' to '3':`);
          await new WaitForEvent(expression, 'changed', {ignoreInitialValue: true}).wait(() => {expressionContext.a = 3;});
 
         console.log(`Final value of '~a':`)

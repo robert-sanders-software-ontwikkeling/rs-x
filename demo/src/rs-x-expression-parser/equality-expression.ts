@@ -26,10 +26,10 @@ export const run = (async () => {
             console.log(change.value);
         });
 
-        console.log(`Value of 'a == b' after changing a to '2':`);
+        console.log(`Value of 'a == b' after changing 'a' to '2':`);
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.a = 2; });
 
-        console.log(`Value of 'a == b' after changing b to '4':`)
+        console.log(`Value of 'a == b' after changing 'b' to '4':`)
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.b = 4; });
 
         console.log(`Final value of 'a == b':`)
