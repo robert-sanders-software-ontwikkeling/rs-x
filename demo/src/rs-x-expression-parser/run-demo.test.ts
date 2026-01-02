@@ -607,4 +607,55 @@ describe('Expression parser demos', () => {
 
         await expect(() => runDemo('rs-x-expression-parser/new-expression.ts')).toOutputAsync(expected);
     });
+
+
+    it('nullish-coalescing-expression.ts', async () => {
+        const expected = dedent`
+            Running demo: demo/src/rs-x-expression-parser/nullish-coalescing-expression.ts
+            Initial value of 'a ?? b':
+            10
+            Value of 'a ?? b' after changing 'b' to '6':
+            6
+            Value of 'a ?? b' after changing 'a' to '10':
+            10
+            Value of 'a ?? b' after changing 'a' to 'null':
+            6
+            Final value of 'a ?? b'':
+            6
+        `;
+
+        await expect(() => runDemo('rs-x-expression-parser/nullish-coalescing-expression.ts')).toOutputAsync(expected);
+    });
+
+    it('object-expression.ts', async () => {
+        const expected = dedent`
+            Running demo: demo/src/rs-x-expression-parser/object-expression.ts
+            Initial value of '({ a: x, b: y })':
+            {
+                a: 10
+                b: 20
+            }
+            Value of '({ a: x, b: y })' after changing 'x' to '100':
+            {
+                a: 100
+                b: 20
+            }
+            Value of '({ a: x, b: y })' after changing 'y' to '200':
+            {
+                a: 100
+                b: 200
+            }
+            Final value of '({ a: x, b: y })':
+            {
+                a: 100
+                b: 200
+            }
+        `;
+
+        await expect(() => runDemo('rs-x-expression-parser/object-expression.ts')).toOutputAsync(expected);
+    });
+
+
+
+
 });
