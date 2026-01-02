@@ -564,7 +564,7 @@ describe('Expression parser demos', () => {
     });
 
 
-     it('multiplication-expression.ts', async () => {
+    it('multiplication-expression.ts', async () => {
         const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/multiplication-expression.ts
             Initial value of 'a * b':
@@ -578,5 +578,33 @@ describe('Expression parser demos', () => {
         `;
 
         await expect(() => runDemo('rs-x-expression-parser/multiplication-expression.ts')).toOutputAsync(expected);
+    });
+
+    it('new-expression.ts', async () => {
+        const expected = dedent`
+            Running demo: demo/src/rs-x-expression-parser/new-expression.ts
+            Initial value of 'new type(value)':
+            Value
+            {
+                value: 10
+            }
+            Value of 'new type(value)' after changing 'value' to '20':
+            Value
+            {
+                value: 20
+            }
+            Value of 'new type(value)' after changing 'type' to 'Add10':
+            Add10
+            {
+                value: 30
+            }
+            Final value of 'new type(value)':
+            Add10
+            {
+                value: 30
+            }
+        `;
+
+        await expect(() => runDemo('rs-x-expression-parser/new-expression.ts')).toOutputAsync(expected);
     });
 });
