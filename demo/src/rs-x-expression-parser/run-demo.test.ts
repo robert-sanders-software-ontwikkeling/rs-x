@@ -655,7 +655,19 @@ describe('Expression parser demos', () => {
         await expect(() => runDemo('rs-x-expression-parser/object-expression.ts')).toOutputAsync(expected);
     });
 
+    it('remainder-expression.ts', async () => {
+        const expected = dedent`
+            Running demo: demo/src/rs-x-expression-parser/remainder-expression.ts
+            Initial value of a % b':
+            1
+            Value of 'a % b' after changing a to '6':
+            0
+            Value of 'a % b after changing b to '4':
+            2
+            Final value of 'a % b':
+            2
+        `;
 
-
-
+        await expect(() => runDemo('rs-x-expression-parser/remainder-expression.ts')).toOutputAsync(expected);
+    });
 });
