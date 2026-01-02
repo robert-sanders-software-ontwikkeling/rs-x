@@ -1,4 +1,4 @@
-import { ConstructorType, emptyFunction, InjectionContainer, printValue, WaitForEvent } from '@rs-x/core';
+import { emptyFunction, InjectionContainer, printValue, WaitForEvent } from '@rs-x/core';
 import {
     IExpressionFactory,
     RsXExpressionParserInjectionTokens,
