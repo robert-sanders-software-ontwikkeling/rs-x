@@ -2,11 +2,10 @@ import { InjectionContainer } from '@rs-x/core';
 import { ExpressionChangeTransactionManager } from '../lib/expresion-change-transaction-manager';
 import { ExpressionFactory } from '../lib/expression-factory/expression-factory';
 import { ExpressionManager } from '../lib/expression-factory/expression-manager';
-import { ArrayIndexOwnerResolver } from '../lib/index-value-observer-manager/array-index-owner-resolver';
-import { DefaultIdentifierOwnerResolver } from '../lib/index-value-observer-manager/default-identifier-owner-resolver';
-import { IndexValueObserverManager } from '../lib/index-value-observer-manager/index-value-observer-manager';
-import { MapKeyOwnerResolver } from '../lib/index-value-observer-manager/map-key-owner-resolver';
-import { PropertyOwnerResolver } from '../lib/index-value-observer-manager/property-owner-resolver';
+import { ArrayIndexOwnerResolver } from '../lib/identifier-owner-resolver/array-index-owner-resolver';
+import { DefaultIdentifierOwnerResolver } from '../lib/identifier-owner-resolver/default-identifier-owner-resolver';
+import { MapKeyOwnerResolver } from '../lib/identifier-owner-resolver/map-key-owner-resolver';
+import { PropertyOwnerResolver } from '../lib/identifier-owner-resolver/property-owner-resolver';
 import { JsEspreeExpressionParser } from '../lib/js-espree-expression-parser';
 import { RsXExpressionParserInjectionTokens } from '../lib/rs-x-expression-parser-injection-tokes';
 import {
@@ -57,7 +56,7 @@ describe('RsXExpressionParserModule tests', () => {
       expect(a1).toBe(a2);
    });
 
-    it('can get instance of IExpressionChangeTransactionManager', () => {
+   it('can get instance of IExpressionChangeTransactionManager', () => {
       const actual = InjectionContainer.get(
          RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager
       );
@@ -70,26 +69,6 @@ describe('RsXExpressionParserModule tests', () => {
       );
       const a2 = InjectionContainer.get(
          RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager
-      );
-      expect(a1).toBe(a2);
-   });
-
-
-   
-
-   it('can get instance of IIdentifierValueManager', () => {
-      const actual = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IIndexValueObserverManager
-      );
-      expect(actual).toBeInstanceOf(IndexValueObserverManager);
-   });
-
-   it('IIdentifierValueManager instance is a singleton', () => {
-      const a1 = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IIndexValueObserverManager
-      );
-      const a2 = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IIndexValueObserverManager
       );
       expect(a1).toBe(a2);
    });
@@ -177,5 +156,30 @@ describe('RsXExpressionParserModule tests', () => {
          RsXExpressionParserInjectionTokens.IdentifierOwnerResolver
       );
       expect(a1).toBe(a2);
+   });
+
+
+   it('can get an instance of IIdentifierOwnerResolverList', () => {
+      const actual = InjectionContainer.getAll(
+         RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList
+      );
+
+      expect(actual.length).toEqual(3);
+
+      expect(actual[0]).toBeInstanceOf(PropertyOwnerResolver);
+      expect(actual[1]).toBeInstanceOf(ArrayIndexOwnerResolver);
+      expect(actual[2]).toBeInstanceOf(MapKeyOwnerResolver);
+   });
+
+   it('IIdentifierOwnerResolverList instance is a singelton', () => {
+      const a1 = InjectionContainer.getAll(
+         RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList
+      );
+      const a2 = InjectionContainer.getAll(
+         RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList
+      );
+      expect(a1[0]).toBe(a2[0]);
+      expect(a1[1]).toBe(a2[1]);
+      expect(a1[2]).toBe(a2[2]);
    });
 });

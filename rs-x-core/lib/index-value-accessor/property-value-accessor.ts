@@ -8,7 +8,7 @@ export class PropertyValueAccessor implements IPropertyValueAccessor {
    }
 
    public getIndexes(context: object): IterableIterator<string> {
-      return Object.keys(context).values();
+      return Array.from(Object.keys(context).values()).filter(key => !Type.isMethod(context[key])).values();
    }
 
    public hasValue(context: object, index: string): boolean {

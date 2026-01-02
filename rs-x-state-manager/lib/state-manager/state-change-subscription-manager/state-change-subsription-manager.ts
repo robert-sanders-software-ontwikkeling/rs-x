@@ -1,4 +1,4 @@
-import { IErrorLog, SingletonFactory } from '@rs-x/core';
+import { IErrorLog, IGuidFactory, SingletonFactory } from '@rs-x/core';
 import { GroupedChangeSubscriptionsForContextManager } from '../../grouped-change-subscriptions-for-context-manager';
 import {
    IObjectPropertyObserverProxyPairManager,
@@ -24,9 +24,10 @@ class StateChangeSubscriptionsForContextManager
       context: unknown,
       releaseContext: () => void,
       private readonly _objectObserverManager: IObjectPropertyObserverProxyPairManager,
-      errorLog: IErrorLog
+      errorLog: IErrorLog,
+      guidFactory: IGuidFactory,
    ) {
-      super(context, releaseContext, errorLog);
+      super(context, releaseContext, errorLog, guidFactory);
    }
 
    protected getGroupId(data: IStateChangeSubscriptionIdInfo): unknown {
@@ -72,7 +73,8 @@ export class StateChangeSubscriptionManager
 {
    constructor(
       private readonly _objectObserverManager: IObjectPropertyObserverProxyPairManager,
-      private readonly _errorLog: IErrorLog
+      private readonly _errorLog: IErrorLog,
+      private readonly _guidFactory: IGuidFactory,
    ) {
       super();
    }
@@ -102,7 +104,8 @@ export class StateChangeSubscriptionManager
          context,
          () => this.release(id),
          this._objectObserverManager,
-         this._errorLog
+         this._errorLog,
+         this._guidFactory
       );
    }
 

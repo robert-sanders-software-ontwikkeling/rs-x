@@ -5,6 +5,7 @@ export * from './error-log';
 export * from './exceptions';
 export * from './function-call-index';
 export * from './function-call-result-cache';
+export * from './guid';
 export * from './index-value-accessor';
 export * from './rs-x-core.injection-tokens';
 export * from './rs-x-core.module';

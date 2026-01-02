@@ -49,7 +49,7 @@ export class FunctionExpression extends AbstractExpression {
          if (this.computed) {
             this.functionExpression.initialize(settings);
          }
-      } else {
+      } else if(this.functionExpression.type !== ExpressionType.Identifier) {
          this.functionExpression.initialize(settings);
       }
 

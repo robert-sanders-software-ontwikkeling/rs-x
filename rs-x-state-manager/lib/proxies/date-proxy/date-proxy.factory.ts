@@ -2,8 +2,10 @@ import {
     CheckValidKey,
     DateProperty,
     IDisposableOwner,
+    IGuidFactory,
     Inject,
     Injectable,
+    RsXCoreInjectionTokens,
     SingletonFactoryWithGuid
 } from '@rs-x/core';
 import { Subject } from 'rxjs';
@@ -277,10 +279,12 @@ export class DateProxyFactory
     implements IDateProxyFactory {
 
     constructor(
+        @Inject(RsXCoreInjectionTokens.IGuidFactory)
+        guidFactory: IGuidFactory,
         @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
         private readonly _proxyRegistry: IProxyRegistry
     ) {
-        super();
+        super(guidFactory);
     }
 
     protected override getGroupId(data: IDateProxyIdData): Date {

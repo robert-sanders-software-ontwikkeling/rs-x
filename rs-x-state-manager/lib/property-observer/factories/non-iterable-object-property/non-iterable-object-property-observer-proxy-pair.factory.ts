@@ -1,5 +1,6 @@
 import {
    IErrorLog,
+   IGuidFactory,
    IIndexValueAccessor,
    Inject,
    Injectable,
@@ -25,6 +26,8 @@ export class NonIterableObjectPropertyObserverProxyPairFactory extends IndexObse
       objectPropertyObserverManager: IObjectPropertyObserverManager,
       @Inject(RsXCoreInjectionTokens.IErrorLog)
       errorLog: IErrorLog,
+      @Inject(RsXCoreInjectionTokens.IGuidFactory)
+      guidFactory: IGuidFactory,
       @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
       indexValueAccessor: IIndexValueAccessor,
       @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
@@ -34,6 +37,7 @@ export class NonIterableObjectPropertyObserverProxyPairFactory extends IndexObse
          objectObserveryManager,
          objectPropertyObserverManager,
          errorLog,
+         guidFactory,
          indexValueAccessor,
          proxyRegister
       );
@@ -45,8 +49,10 @@ export class NonIterableObjectPropertyObserverProxyPairFactory extends IndexObse
             Array.isArray(object) ||
             object instanceof Date ||
             object instanceof Map ||
-            object instanceof Set
-         ) && Type.isString(propertyInfo.key)
+            object instanceof Set 
+         ) 
+         && Type.isString(propertyInfo.key) 
+         && !Type.isMethod(object[propertyInfo.key])
       );
    }
 

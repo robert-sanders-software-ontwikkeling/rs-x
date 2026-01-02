@@ -1,6 +1,7 @@
 import {
    IDisposableOwner,
    IErrorLog,
+   IGuidFactory,
    IPropertyChange,
    ISingletonFactory,
    SingletonFactory,
@@ -63,9 +64,10 @@ class IndexChangeSubscriptionsForContextManager<TIndex>
       context: unknown,
       releaseContext: () => void,
       private readonly _indexSetObserverManager: IIndexSetObserverManager<unknown>,
-      errorLog: IErrorLog
+      errorLog: IErrorLog,
+      guidFactory: IGuidFactory,
    ) {
-      super(context, releaseContext, errorLog);
+      super(context, releaseContext, errorLog, guidFactory);
    }
 
    protected getGroupId(data: ISubscriptionIdInfo<TIndex>): TIndex {
@@ -129,7 +131,8 @@ export class IndexChangeSubscriptionManager<TIndex> extends SingletonFactory<
 > {
    constructor(
       private readonly _indexSetObserverManager: IIndexSetObserverManager<unknown>,
-      private readonly _errorLog: IErrorLog
+      private readonly _errorLog: IErrorLog,
+      private readonly _guidFactory: IGuidFactory,
    ) {
       super();
    }
@@ -149,7 +152,8 @@ export class IndexChangeSubscriptionManager<TIndex> extends SingletonFactory<
          context,
          () => this.release(context),
          this._indexSetObserverManager,
-         this._errorLog
+         this._errorLog,
+         this._guidFactory
       );
    }
 

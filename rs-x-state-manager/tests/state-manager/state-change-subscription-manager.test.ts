@@ -1,6 +1,7 @@
 import {
    emptyFunction,
    ErrorLog,
+   GuidFactory,
    InjectionContainer,
    IPropertyChange,
    truePredicate,
@@ -27,7 +28,8 @@ describe('StateChangeSubscriptionManager tests', () => {
          InjectionContainer.get(
             RsXStateManagerInjectionTokens.IObjectPropertyObserverProxyPairManager
          ),
-         new ErrorLog()
+         new ErrorLog(),
+         new GuidFactory()
       );
    });
 

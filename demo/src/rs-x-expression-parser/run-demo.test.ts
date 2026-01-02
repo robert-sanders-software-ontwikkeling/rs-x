@@ -548,7 +548,7 @@ describe('Expression parser demos', () => {
     });
 
 
-     it('member-expression-with-observer.ts', async () => {
+     it('member-expression-with-observable.ts', async () => {
         const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/member-expression-with-observable.ts
             Initial value of 'a.b.c.d':

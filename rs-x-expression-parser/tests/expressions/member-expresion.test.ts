@@ -255,7 +255,7 @@ describe('Memmber expression tests', () => {
          await new WaitForEvent(expression, 'changed').wait(() => { });
 
 
-         const actual = (await new WaitForEvent(expression, 'changed', {ignoreInitialValue: true}, ).wait(() => {
+         const actual = (await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true },).wait(() => {
             context.key = 'b';
          })) as IExpression;
 
@@ -276,9 +276,9 @@ describe('Memmber expression tests', () => {
          };
          expression = jsParser.parse(context, 'nestedA.map[key]');
 
-         await new WaitForEvent(expression, 'changed', {ignoreInitialValue: true}).wait(emptyFunction);
+         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(emptyFunction);
 
-         const actual = await new WaitForEvent(expression, 'changed', {ignoreInitialValue: true}).wait(() => {
+         const actual = await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
             context.nestedA = {
                map: new Map([
                   ['a', -1],
@@ -823,5 +823,118 @@ describe('Memmber expression tests', () => {
 
          expect(actual.value).toEqual('message: hi, subject: Message');
       });
-   })
+   });
+
+
+   it('Only relevant identifiers will be observed.', async () => {
+      const expressionContext = {
+         a: {
+            b: {
+               c: 10,
+               d: 20,
+            },
+            e: 30
+         },
+         f: 40
+      };
+      const expression = jsParser.parse(expressionContext, 'a.b');
+      await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+      expect(expressionContext).isWritableProperty('a');
+      expect(expressionContext.a).isWritableProperty('b');
+      expect(expressionContext.a.b).isWritableProperty('c');
+      expect(expressionContext.a.b).isWritableProperty('d');
+      expect(expressionContext.a).not.isWritableProperty('e');
+      expect(expressionContext).not.isWritableProperty('f');
+   });
+
+   it('Watched identifiers will be released when the associated expressions are disposed.', async () => {
+      const expressionContext = {
+         a: {
+            b: {
+               c: 10,
+               d: 20,
+            },
+            e: 30
+         },
+         f: 40
+      };
+      const expression = jsParser.parse(expressionContext, 'a.b');
+      await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+      expect(expressionContext).isWritableProperty('a');
+      expect(expressionContext.a).isWritableProperty('b');
+      expect(expressionContext.a.b).isWritableProperty('c');
+      expect(expressionContext.a.b).isWritableProperty('d');
+      expect(expressionContext.a).not.isWritableProperty('e');
+      expect(expressionContext).not.isWritableProperty('f');
+
+
+      expression.dispose();
+
+
+      expect(expressionContext).not.isWritableProperty('a');
+      expect(expressionContext.a).not.isWritableProperty('b');
+      expect(expressionContext.a.b).not.isWritableProperty('c');
+      expect(expressionContext.a.b).not.isWritableProperty('d');
+      expect(expressionContext.a).not.isWritableProperty('e');
+      expect(expressionContext).not.isWritableProperty('f');
+   });
+
+   it('When creating expressions with shared identifiers, the expressions will be observed until all associated expressions have been released.',async  () => {
+       const expressionContext = {
+         a: {
+            b: {
+               c: 10,
+               d: 20,
+            },
+            e: 30
+         },
+         f: 40
+      };
+
+      const expression1 = jsParser.parse(expressionContext, 'a.b');
+      await new WaitForEvent(expression1, 'changed').wait(emptyFunction);
+      const expression2 = jsParser.parse(expressionContext, 'a.b');
+      await new WaitForEvent(expression2, 'changed').wait(emptyFunction);
+      const expression3 =  jsParser.parse(expressionContext.a.b, 'c');
+      await new WaitForEvent(expression3, 'changed').wait(emptyFunction);
+
+      expect(expressionContext).isWritableProperty('a');
+      expect(expressionContext.a).isWritableProperty('b');
+      expect(expressionContext.a.b).isWritableProperty('c');
+      expect(expressionContext.a.b).isWritableProperty('d');
+      expect(expressionContext.a).not.isWritableProperty('e');
+      expect(expressionContext).not.isWritableProperty('f');
+
+      expression1.dispose();
+
+      expect(expressionContext).isWritableProperty('a');
+      expect(expressionContext.a).isWritableProperty('b');
+      expect(expressionContext.a.b).isWritableProperty('c');
+      expect(expressionContext.a.b).isWritableProperty('d');
+      expect(expressionContext.a).not.isWritableProperty('e');
+      expect(expressionContext).not.isWritableProperty('f');
+
+      expression2.dispose();
+
+      expect(expressionContext).not.isWritableProperty('a');
+      expect(expressionContext.a).not.isWritableProperty('b');
+      expect(expressionContext.a.b).isWritableProperty('c');
+      expect(expressionContext.a.b).not.isWritableProperty('d');
+      expect(expressionContext.a).not.isWritableProperty('e');
+      expect(expressionContext).not.isWritableProperty('f');
+
+      expression3.dispose();
+
+
+      expect(expressionContext).not.isWritableProperty('a');
+      expect(expressionContext.a).not.isWritableProperty('b');
+      expect(expressionContext.a.b).not.isWritableProperty('c');
+      expect(expressionContext.a.b).not.isWritableProperty('d');
+      expect(expressionContext.a).not.isWritableProperty('e');
+      expect(expressionContext).not.isWritableProperty('f');
+
+
+   });
 });

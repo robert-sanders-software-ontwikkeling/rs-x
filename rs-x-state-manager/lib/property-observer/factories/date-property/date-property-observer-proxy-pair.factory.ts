@@ -1,4 +1,4 @@
-import { DateProperty, IErrorLog, IIndexValueAccessor, Inject, Injectable, RsXCoreInjectionTokens, truePredicate } from '@rs-x/core';
+import { DateProperty, IErrorLog, IGuidFactory, IIndexValueAccessor, Inject, Injectable, RsXCoreInjectionTokens, truePredicate } from '@rs-x/core';
 import { IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
 import { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
@@ -18,6 +18,8 @@ export class DatePropertyObserverProxyPairFactory
         datePropertyObserverManager: IDatePropertyObserverManager,
         @Inject(RsXCoreInjectionTokens.IErrorLog)
         errorLog: IErrorLog,
+        @Inject(RsXCoreInjectionTokens.IGuidFactory)
+        guidFactory: IGuidFactory,
         @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
         datePropertyAccessor: IIndexValueAccessor,
         @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
@@ -27,6 +29,7 @@ export class DatePropertyObserverProxyPairFactory
             objectObserverManager,
             datePropertyObserverManager,
             errorLog,
+            guidFactory,
             datePropertyAccessor,
             proxyRegister,
             truePredicate

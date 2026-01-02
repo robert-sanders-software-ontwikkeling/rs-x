@@ -1,9 +1,7 @@
 import { emptyFunction, truePredicate } from '@rs-x/core';
-import { IStateChange } from '@rs-x/state-manager';
-import { Subscription } from 'rxjs';
+import { IContextChanged, IStateChange, IStateManager, MustProxify } from '@rs-x/state-manager';
+import { Observable, ReplaySubject, Subscription } from 'rxjs';
 import { IExpressionChangeCommitHandler, IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
-import { IIndexValueObserverManager } from '../index-value-observer-manager/index-value-manager-observer.type';
-import { IIndexValueObserver } from '../index-value-observer-manager/index-value-observer.interface';
 import {
    AbstractExpression,
    IExpressionInitializeConfig,
@@ -13,6 +11,74 @@ import { FunctionExpression } from './function-expression';
 import { ExpressionType } from './interfaces';
 import { MemberExpression } from './member-expression';
 
+
+export class IndexValueObserver {
+   private readonly _changeSubscription: Subscription;
+   private readonly _contextChangeSubscription: Subscription;
+   private readonly _changed = new ReplaySubject<IStateChange>(1);
+   private _isDisposed = false;
+
+   constructor(
+      private _context: unknown,
+      private readonly _key: unknown,
+      private readonly _mustProxify: MustProxify,
+      private readonly _stateManager: IStateManager,
+   ) {
+      this._changeSubscription = this._stateManager.changed.subscribe(
+         this.emitChange
+      );
+
+      this._contextChangeSubscription =
+         this._stateManager.contextChanged.subscribe(this.onContextCHanged);
+      const value = this._stateManager.watchState(this._context, this._key, _mustProxify);
+
+      if(value !== undefined) {
+         this.emitChange({
+            key: this._key,
+            context: this._context,
+            oldContext: this._context,
+            oldValue: undefined,
+            newValue: value
+         });
+      }
+   }
+
+   public get changed(): Observable<IStateChange> {
+      return this._changed;
+   }
+
+   public dispose(): void {
+      if (this._isDisposed) {
+         return;
+      }
+      this._changeSubscription.unsubscribe();
+      this._contextChangeSubscription.unsubscribe();
+      this._stateManager.releaseState(this._context, this._key, this._mustProxify);
+      this._isDisposed = true;
+   }
+
+   public getValue(context: unknown, key: unknown): unknown {
+      return this._stateManager.getState(context, key);
+   }
+
+   public setValue(_context: unknown, _key: unknown, _value: unknown): void {
+      // TODO implement
+   }
+
+   private onContextCHanged = (change: IContextChanged) => {
+      if (this._context === change.oldContext && change.key === this._key) {
+         this._context = change.context;
+      }
+   };
+
+   private emitChange = (change: IStateChange) => {
+      if (this._context === change.context && change.key === this._key) {
+         this._changed.next(change);
+      }
+   };
+}
+
+
 export interface IIdentifierInitializeConfig
    extends IExpressionInitializeConfig {
    currentValue?: unknown;
@@ -21,14 +87,14 @@ export interface IIdentifierInitializeConfig
 export class IdentifierExpression extends AbstractExpression {
    private _changeSubscription: Subscription;
    private _isInitialized = false;
-   private _indexValueObserver: IIndexValueObserver;
+   private _indexValueObserver: IndexValueObserver;
    private releaseMustProxifyHandler: () => void;
    private _commitAfterInitialized: boolean;
    private readonly _commitHandler: IExpressionChangeCommitHandler;
 
    constructor(
       private readonly _rootContext: unknown,
-      private readonly _indexValueObserverManager: IIndexValueObserverManager,
+       private readonly _stateManager: IStateManager,
       expressionString: string,
       private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
       private readonly _indexValue?: unknown,
@@ -81,12 +147,13 @@ export class IdentifierExpression extends AbstractExpression {
          mustProxifyHandler?.releaseMustProxifyHandler;
       const index = this._indexValue ?? this.expressionString;
 
-      this._indexValueObserver = this._indexValueObserverManager
-         .create({ context: settings.context ?? this._rootContext, index })
-         .instance.create({
-            index,
-            mustProxify: mustProxifyHandler?.createMustProxifyHandler?.(),
-         }).instance;
+      this._indexValueObserver = new IndexValueObserver(
+         settings.context ?? this._rootContext,
+         index,
+         mustProxifyHandler?.createMustProxifyHandler?.(),
+         this._stateManager,
+      );
+
 
       this._changeSubscription = this._indexValueObserver.changed.subscribe(
          this.onValueChanged

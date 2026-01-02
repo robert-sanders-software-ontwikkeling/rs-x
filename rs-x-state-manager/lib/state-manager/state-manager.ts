@@ -2,6 +2,7 @@ import {
    IChainPart,
    IEqualityService,
    IErrorLog,
+   IGuidFactory,
    IIndexValueAccessor,
    Inject,
    Injectable,
@@ -52,6 +53,8 @@ export class StateManager implements IStateManager {
       private readonly _objectStateManager: IObjectStateManager,
       @Inject(RsXCoreInjectionTokens.IErrorLog)
       errorLog: IErrorLog,
+      @Inject(RsXCoreInjectionTokens.IGuidFactory)
+      guidFactory: IGuidFactory,
       @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
       private readonly _indexValueAccessor: IIndexValueAccessor,
       @Inject(RsXCoreInjectionTokens.IEqualityService)
@@ -59,7 +62,8 @@ export class StateManager implements IStateManager {
    ) {
       this._stateChangeSubscriptionManager = new StateChangeSubscriptionManager(
          objectObserverManager,
-         errorLog
+         errorLog,
+         guidFactory
       );
    }
 
@@ -175,7 +179,7 @@ export class StateManager implements IStateManager {
       index: unknown,
       mustProxify: MustProxify
    ): void {
-      if (this.internalReleaseState(context, index)) {
+      if (this.canReleaseState(context, index)) {
          this.unnsubscribeToObserverEvents(context, index, mustProxify);
       }
    }
@@ -215,7 +219,7 @@ export class StateManager implements IStateManager {
       );
    }
 
-   private internalReleaseState(context: unknown, key: unknown): boolean {
+   private canReleaseState(context: unknown, key: unknown): boolean {
       return (
          this._objectStateManager.getFromId(context)?.release(key)
             .referenceCount === 0

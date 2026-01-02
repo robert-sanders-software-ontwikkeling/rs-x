@@ -1,6 +1,7 @@
 import {
    IDisposableOwner,
    IErrorLog,
+   IGuidFactory,
    IIndexValueAccessor,
    IPropertyChange,
    truePredicate,
@@ -29,6 +30,7 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
       private readonly _objectObserveryManager: IObjectObserverProxyPairManager,
       indexSetObserverManager: IIndexSetObserverManager<TIndex>,
       errorLog: IErrorLog,
+      guidFactory: IGuidFactory,
       protected readonly _indexValueAccessor: IIndexValueAccessor,
       private readonly _proxyRegister: IProxyRegistry,
       private readonly mustHandleChange?: (change: IPropertyChange) => boolean,
@@ -37,7 +39,8 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
       this._indexChangeSubscriptionManager =
          new IndexChangeSubscriptionManager<TIndex>(
             indexSetObserverManager,
-            errorLog
+            errorLog,
+            guidFactory
          );
    }
 

@@ -1,11 +1,11 @@
 import { emptyFunction, IIndexValueAccessor, PENDING, truePredicate, Type } from '@rs-x/core';
 import {
    IMustProxifyItemHandlerFactory,
+   IStateManager,
    MustProxify,
 } from '@rs-x/state-manager';
 import { Subscription } from 'rxjs';
 import { IExpressionChangeCommitHandler, IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
-import { IIndexValueObserverManager } from '../index-value-observer-manager/index-value-manager-observer.type';
 import {
    AbstractExpression,
    IExpressionInitializeConfig,
@@ -36,15 +36,13 @@ export class MemberExpression extends AbstractExpression {
 
    constructor(
       expressionString: string,
-      private readonly _pathSeqments: AbstractExpression[],
+      pathSeqments: AbstractExpression[],
       private readonly _indexValueAccessor: IIndexValueAccessor,
-      private readonly _indexValueObserverManager: IIndexValueObserverManager,
+      private readonly _stateManager: IStateManager,
       private readonly _mustProxifyItemHandlerFactory: IMustProxifyItemHandlerFactory,
       private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
    ) {
-      super(ExpressionType.Member, expressionString);
-
-      _pathSeqments.forEach((e) => AbstractExpression.setParent(e, this));
+      super(ExpressionType.Member, expressionString, ...pathSeqments);
    }
 
    public override initialize(
@@ -52,8 +50,8 @@ export class MemberExpression extends AbstractExpression {
    ): AbstractExpression {
       super.initialize(settings);
 
-      for (let i = 0; i < this._pathSeqments.length; i++) {
-         const currentSegment = this._pathSeqments[i];
+      for (let i = 0; i < this._childExpressions.length; i++) {
+         const currentSegment = this._childExpressions[i];
          if (i === 0 || this.isCalculated(currentSegment)) {
             currentSegment.initialize({
                ...settings,
@@ -78,7 +76,7 @@ export class MemberExpression extends AbstractExpression {
    }
 
    protected override prepareReevaluation(sender: AbstractExpression, root: AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
-      const senderIndex = this._pathSeqments.indexOf(this.isCalculated(root) ? root : sender);
+      const senderIndex = this._childExpressions.indexOf(this.isCalculated(root) ? root : sender);
       if (senderIndex < 0) {
          return false;
       }
@@ -88,7 +86,7 @@ export class MemberExpression extends AbstractExpression {
          return false;
       }
 
-      const pathSeqments = this._pathSeqments;
+      const pathSeqments = this._childExpressions;
       for (let i = senderIndex + 1; i < pathSeqments.length; i++) {
          if (!this.isCalculated(pathSeqments[i]) && !this.isPending(pathSeqments[i], pendingCommits)) {
             AbstractExpression.clearValue(pathSeqments[i])
@@ -99,23 +97,23 @@ export class MemberExpression extends AbstractExpression {
    }
 
    protected override evaluate(sender: AbstractExpression, root: AbstractExpression): unknown {
-      const senderIndex = this._pathSeqments.indexOf(root.type === ExpressionType.Index ? root : sender);
-      const senderExpr = this._pathSeqments[senderIndex];
+      const senderIndex = this._childExpressions.indexOf(root.type === ExpressionType.Index ? root : sender);
+      const senderExpr = this._childExpressions[senderIndex];
       if (senderExpr?.value === undefined) {
          return undefined;
       }
-      const startIndex = this.isCalculated(this._pathSeqments[senderIndex])
+      const startIndex = this.isCalculated(this._childExpressions[senderIndex])
          ? senderIndex - 1
          : senderIndex + 1;
 
-      let previousPathSegmentValue = this._pathSeqments[startIndex - 1]?.value;
+      let previousPathSegmentValue = this._childExpressions[startIndex - 1]?.value;
 
       if (startIndex > 0 && Type.isNullOrUndefined(previousPathSegmentValue)) {
          return PENDING;
       }
 
-      for (let i = startIndex; i < this._pathSeqments.length; i++) {
-         const currentPathSegment = this._pathSeqments[i];
+      for (let i = startIndex; i < this._childExpressions.length; i++) {
+         const currentPathSegment = this._childExpressions[i];
          const currentPathSegmentValue = this.resolvePathSegment(
             currentPathSegment,
             previousPathSegmentValue,
@@ -134,7 +132,7 @@ export class MemberExpression extends AbstractExpression {
 
    protected override isCommitTarget(sender: AbstractExpression): boolean {
       return super.isCommitTarget(sender) ||
-         (this.isCalculated(sender) && this._pathSeqments[this._pathSeqments.length - 1] === sender);
+         (this.isCalculated(sender) && this._childExpressions[this._childExpressions.length - 1] === sender);
    }
 
    private isPending(pathSegement: AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
@@ -148,7 +146,7 @@ export class MemberExpression extends AbstractExpression {
 
    private shouldCancelEvaluate(senderIndex: number, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
       for (const commit of pendingCommits) {
-         const index = this._pathSeqments.indexOf(commit.owner);
+         const index = this._childExpressions.indexOf(commit.owner);
          if (index >= 0 && index < senderIndex) {
             return true;
          }
@@ -239,7 +237,7 @@ export class MemberExpression extends AbstractExpression {
    }
 
    private getMustProxifyHandler(currentIndex: number): IMustProxifyHandler {
-       const nextExpression = this._pathSeqments[currentIndex + 1];
+       const nextExpression = this._childExpressions[currentIndex + 1];
       
       if (nextExpression === undefined) {
          return this.createMustProxifyHandler(truePredicate);
@@ -302,7 +300,7 @@ export class MemberExpression extends AbstractExpression {
 
       const staticIndexExpression = new IdentifierExpression(
          context,
-         this._indexValueObserverManager,
+         this._stateManager,
          '',
          this._expressionChangeTransactionManager,
          dynamicIndexExpression.value

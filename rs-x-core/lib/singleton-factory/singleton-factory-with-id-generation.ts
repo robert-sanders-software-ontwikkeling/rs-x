@@ -1,16 +1,16 @@
 import { InvalidOperationException } from '../exceptions';
+import { IGuidFactory } from '../guid';
 import { ISingletonFactoryWithIdGeneration } from './singleton-factory-with-id-generation.interface';
 import { SingletonFactory } from './singleton.factory';
 
 export abstract class SingletonFactoryWithIdGeneration<
-      TId,
-      TData extends TIdData,
-      TInstance,
-      TIdData = TData,
-   >
+   TId,
+   TData extends TIdData,
+   TInstance,
+   TIdData = TData,
+>
    extends SingletonFactory<TId, TData, TInstance, TIdData>
-   implements ISingletonFactoryWithIdGeneration<TId, TData, TInstance, TIdData>
-{
+   implements ISingletonFactoryWithIdGeneration<TId, TData, TInstance, TIdData> {
    private readonly _groupedData = new Map<unknown, Map<unknown, TId>>();
 
    public getId(data: TIdData): TId {
@@ -88,7 +88,15 @@ export abstract class SingletonFactoryWithGuid<
    TInstance,
    TIdData = TData,
 > extends SingletonFactoryWithIdGeneration<string, TData, TInstance, TIdData> {
+
+   protected constructor(
+      private readonly _guidFactory: IGuidFactory
+   ) {
+      super();
+
+   }
    protected createUniqueId(_data: TData): string {
-      return crypto.randomUUID();
+      return this._guidFactory.create();
+
    }
 }

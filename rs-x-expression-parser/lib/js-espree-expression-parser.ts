@@ -104,7 +104,6 @@ import { TemplateStringExpression } from './expressions/template-string-expressi
 import { TypeofExpression } from './expressions/typeof-expression';
 import { UnaryNegationExpression } from './expressions/unary-negation-expression';
 import { UnaryPlusExpression } from './expressions/unary-plus-expression';
-import { IIndexValueObserverManager } from './index-value-observer-manager/index-value-manager-observer.type';
 import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
 
 
@@ -186,8 +185,6 @@ export class JsEspreeExpressionParser implements IExpressionParser {
    >;
 
    constructor(
-      @Inject(RsXExpressionParserInjectionTokens.IIndexValueObserverManager)
-      private readonly _identifierValueObserverManager: IIndexValueObserverManager,
       @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
       private readonly _indexValueAccessor: IIndexValueAccessor,
       @Inject(RsXStateManagerInjectionTokens.IMustProxifyItemHandlerFactory)
@@ -412,7 +409,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
          astToString(expression),
          pathSegments,
          this._indexValueAccessor,
-         this._identifierValueObserverManager,
+         this._stateManager,
          this._mustProxifyItemHandlerFactory,
          this._expressionChangeTransactionManager
       );
@@ -436,7 +433,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
    ): AbstractExpression => {
       return new IdentifierExpression(
          context,
-         this._identifierValueObserverManager,
+         this._stateManager,
          expression.name,
          this._expressionChangeTransactionManager
       );

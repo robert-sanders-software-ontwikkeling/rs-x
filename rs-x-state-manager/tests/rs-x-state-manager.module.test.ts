@@ -498,14 +498,14 @@ describe('RsXStateManagerModule', () => {
       expect(actual).toBeInstanceOf(ObjectStateManager);
    });
 
-   it('IObjectStateManager instance is a singelton', () => {
+   it('IObjectStateManager instance is a transient', () => {
       const a1 = InjectionContainer.get(
          RsXStateManagerInjectionTokens.IObjectStateManager
       );
       const a2 = InjectionContainer.get(
          RsXStateManagerInjectionTokens.IObjectStateManager
       );
-      expect(a1).toBe(a2);
+      expect(a1).not.toBe(a2);
    });
 
 

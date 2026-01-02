@@ -2,7 +2,6 @@ export * from './expresion-change-transaction-manager.interface';
 export * from './expresion-change-transaction-manager';
 export * from './expression-factory';
 export * from './expressions';
-export * from './index-value-observer-manager';
 export * from './js-espree-expression-parser';
 export * from './rs-x-expression-parser-injection-tokes';
 export * from './rs-x-expression-parser.module';

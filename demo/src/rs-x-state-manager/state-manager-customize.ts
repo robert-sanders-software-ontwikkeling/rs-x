@@ -1,6 +1,7 @@
 import {
     IDisposableOwner,
     IErrorLog,
+    IGuidFactory,
     IIndexValueAccessor,
     IndexAccessor,
     Inject,
@@ -194,6 +195,8 @@ export class TextDocumentInxdexObserverProxyPairFactory extends IndexObserverPro
         textDocumenIndexObserverManager: TextDocumenIndexObserverManager,
         @Inject(RsXCoreInjectionTokens.IErrorLog)
         errorLog: IErrorLog,
+        @Inject(RsXCoreInjectionTokens.IGuidFactory)
+        guidFactory: IGuidFactory,
         @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
         indexValueAccessor: IIndexValueAccessor,
         @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
@@ -203,6 +206,7 @@ export class TextDocumentInxdexObserverProxyPairFactory extends IndexObserverPro
             objectObserverManager,
             textDocumenIndexObserverManager,
             errorLog,
+            guidFactory,
             indexValueAccessor,
             proxyRegister
         );
