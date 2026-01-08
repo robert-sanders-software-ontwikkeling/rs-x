@@ -1,4 +1,4 @@
-import { InjectionContainer } from '@rs-x/core';
+import { InjectionContainer, printValue } from '@rs-x/core';
 import {
     IStateChange,
     IStateManager,
@@ -13,38 +13,37 @@ export const run = (() => {
     const stateManager: IStateManager = InjectionContainer.get(
         RsXStateManagerInjectionTokens.IStateManager
     );
-
-    function printValue(object: unknown): void {
-        console.log(JSON.stringify(object, null, 4).replaceAll('"', ''));
-    }
-
     const stateContext = {
         x: { y: 10 }
     };
-
-    stateManager.changed.subscribe((change: IStateChange) => {
+    const changedSubscription = stateManager.changed.subscribe((change: IStateChange) => {
         printValue(change.newValue);
     });
 
-    // Register is idempotent: you can register the same state multiple times.
-    // For every register call, make sure you call unregister when you're done.
-    console.log('Initial value:');
-    stateManager.watchState(stateContext, 'x');
-    stateManager.watchState(stateContext, 'x');
+    try {
+        // Register is idempotent: you can register the same state multiple times.
+        // For every register call, make sure you call unregister when you're done.
+        console.log('Initial value:');
+        stateManager.watchState(stateContext, 'x');
+        stateManager.watchState(stateContext, 'x');
 
-    console.log('Changed value:');
-    stateContext.x = { y: 20 };
+        console.log('Changed value:');
+        stateContext.x = { y: 20 };
 
-    stateManager.releaseState(stateContext, 'x');
+        stateManager.releaseState(stateContext, 'x');
 
-    console.log('Changed event is still emitted after unregister because one observer remains.');
-    console.log('Changed value:');
-    stateContext.x = { y: 30 };
+        console.log('Changed event is still emitted after unregister because one observer remains.');
+        console.log('Changed value:');
+        stateContext.x = { y: 30 };
 
-    stateManager.releaseState(stateContext, 'x');
+        stateManager.releaseState(stateContext, 'x');
 
-    console.log('Changed event is no longer emitted after the last observer unregisters.');
-    console.log('Changed value:');
-    console.log('---');
-    stateContext.x = { y: 30 };
+        console.log('Changed event is no longer emitted after the last observer unregisters.');
+        console.log('Changed value:');
+        console.log('---');
+        stateContext.x = { y: 30 };
+
+    } finally {
+        changedSubscription.unsubscribe();
+    }
 })();

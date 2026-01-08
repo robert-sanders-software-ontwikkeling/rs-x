@@ -1,17 +1,20 @@
 # State-manager
 
-The **State Manager** provides an efficient way to observe and synchronize state changes across your application.  
-State always lives on a certain **context** and is identified by an **index**:
+The **State Manager** provides an efficient way to observe and synchronize state changes across your application.
 
-- Object property or field → index = property/field name  
+A state item is defined by a **context** and an **index**.  
+A context can be an object, and an index can be a property name — but it is not limited to that. It can be **any value**. The context is used as an identifier to group a set of state indexes.
+
+Examples of state indexes:
+
+- Object property or field → index = property or field name  
 - Array item → index = numeric position  
-- Map item → index = the map key  
+- Map item → index = map key  
 
-A state item is always determined by **(context, index)**.  
-The state manager does **not** automatically know how to detect changes for every data type, so it uses two services:
+The State Manager does **not** automatically know how to detect changes for every state value data type, nor how to patch the corresponding state setter. Therefore, it relies on two services:
 
 - A service implementing `IObjectPropertyObserverProxyPairManager`  
-  Responsible for creating an observer and proxying values if needed.
+  Responsible for creating observers and proxying values when needed.
 
 - A service implementing `IIndexValueAccessor`  
   Responsible for retrieving the current value.
@@ -22,31 +25,37 @@ The **State Manager** has the followng interface:
 export interface IStateManager {
     readonly changed: Observable<IStateChange>;
     readonly contextChanged: Observable<IContextChanged>;
-    readonly startChangeCycly: Observable<void>;
-    readonly endChangeCycly: Observable<void>;
+    readonly startChangeCycle: Observable<void>;
+    readonly endChangeCycle: Observable<void>;
 
-    isRegistered(
+    isWatched(
         context: unknown,
         index: unknown,
-        mustProxify?: MustProxify
+        mustProxify: MustProxify
     ): boolean;
 
-    register(
-        context: unknown,
-        index: unknown,
+    watchState(
+        context: unknown, 
+        index: unknown, 
         mustProxify?: MustProxify
     ): unknown;
 
-    unregister(
-        context: unknown,
-        index: unknown,
+    releaseState(
+        oontext: unknown, 
+        index: unknown, 
         mustProxify?: MustProxify
     ): void;
 
-    getState(
-        context: unknown,
+    getState<T>(
+        context: unknown, 
         index: unknown
-    ): unknown;
+    ): T;
+
+    setState<T>(
+        context: unknown, 
+        index: unknown, 
+        value: T
+    ): void;
 
     clear(): void;
 }
@@ -58,81 +67,98 @@ export interface IStateManager {
 
 ### **changed**
 **Type:** `Observable<IStateChange>`  
-Emits whenever a state value changes.
+Emits whenever a state item value changes.
 
 ---
 
 ### **contextChanged**
 **Type:** `Observable<IContextChanged>`  
-Emits whenever an entire context is replaced. Happes for example when you replaces a nested object.
+Emits whenever an entire context is replaced.  
+This happens, for example, when a nested object is replaced.
 
 ---
 
-### **startChangeCycly**
+### **startChangeCycle**
 **Type:** `Observable<void>`  
-Emits at the start of handling a state change.
+Emits at the start of processing a state item change.
 
 ---
 
-### **endChangeCycly**
+### **endChangeCycle**
 **Type:** `Observable<void>`  
-Emits at the end of handling a state change.
+Emits at the end of processing a state item change.
 
 ---
 
-### **isRegistered(context, index, mustProxify?)**
-Returns whether the given `(context, index)` pair is already registered.
+### **isWatched(context, index, mustProxify)**
+Returns whether the state item identified by the `(context, index, mustProxify)` triplet is currently being watched.
 
-| Parameter       | Type                       | Description                                               |
-| --------------- | -------------------------- | --------------------------------------------------------- |
-| **context**     | `unknown`                  | The object holding the property or promise being tracked. |
-| **index**       | `unknown`                  | The index identifying the state on the passed in.         |
-| **mustProxify** | `MustProxify` *(optional)* | Controls whether the value should be proxified.           |
+| Parameter       | Type                       | Description                                                     |
+| --------------- | -------------------------- | --------------------------------------------------------------- |
+| **context**     | `unknown`                  | The context to which the state index belongs.                   |
+| **index**       | `unknown`                  | The index identifying the state on the given context.           |
+| **mustProxify** | `MustProxify` *(optional)* | Predicate determining whether a nested state value must be proxified. It should be the same predicate that was passed to `watchState`.               |
 
 **Returns:** `boolean`
 
 ---
 
-### **register(context, index, mustProxify?)**
-Registers a `(context, index)` pair so its value is proxified and tracked.
+### **watchState(context, index, mustProxify?)**
+Watches a state item identified by the `(context, index, mustProxify)` triplet so that its value is proxified and tracked.
 
-| Parameter       | Type                       | Description                                                 |
-| --------------- | -------------------------- | ----------------------------------------------------------- |
-| **context**     | `unknown`                  | The state context.                                          |
-| **index**       | `unknown`                  | The index identifying the state on the passed in.           |
-| **mustProxify** | `MustProxify` *(optional)* | Predicate to determine whether the value must be proxified. |
+| Parameter       | Type                       | Description                                                     |
+| --------------- | -------------------------- | --------------------------------------------------------------- |
+| **context**     | `unknown`                  | The state context.                                              |
+| **index**       | `unknown`                  | The index identifying the state on the given context.           |
+| **mustProxify** | `MustProxify` *(optional)* | Predicate determining whether a nested state value must be proxified.|
 
-**Returns:** `unknown` (the proxified value)
+**Returns:**  
+`unknown` — the state item value if it was already being watched; otherwise `undefined`.
 
 ---
 
-### **unregister(context, index, mustProxify?)**
-Unregisters a previously registered state field.
+### **releaseState(context, index, mustProxify?)**
+Releases the state item identified by the `(context, index, mustProxify)` triplet.  
+Each call to `watchState` should have a corresponding `releaseState` call to ensure the state item is released when it is no longer needed.
 
-| Parameter       | Type                       | Description                                          |
-| --------------- | -------------------------- | ---------------------------------------------------- |
-| **context**     | `unknown`                  | The state context.                                   |
-| **index**       | `unknown`                  | The index identifying the state on the passed in.    |
-| **mustProxify** | `MustProxify` *(optional)* | Reference to the predicate passed into `register()`. |
+| Parameter       | Type                       | Description                                                     |
+| --------------- | -------------------------- | --------------------------------------------------------------- |
+| **context**     | `unknown`                  | The state context.                                              |
+| **index**       | `unknown`                  | The index identifying the state on the given context.           |
+| **mustProxify** | `MustProxify` *(optional)* | Predicate determining whether a nested state value must be proxified. It should be the same predicate that was passed to `watchState`. .              |
 
 **Returns:** `void`
 
 ---
 
 ### **getState(context, index)**
-Retrieves the currently tracked value for `(context, index)`.
+Retrieves the current state item value identified by the `(context, index)` pair.
 
-| Parameter   | Type      | Description                                                |
-| ----------- | --------- | ---------------------------------------------------------- |
-| **context** | `unknown` | The state context.                                         |
-| **index**   | `unknown` | The index identifying the state on the passed in context . |
+| Parameter   | Type      | Description                                                     |
+| ----------- | --------- | --------------------------------------------------------------- |
+| **context** | `unknown` | The state context.                                              |
+| **index**   | `unknown` | The index identifying the state on the given context.           |
 
 **Returns:** `unknown`
 
 ---
 
+### **setState(context, index, value)**
+Sets the value of the state item identified by the `(context, index)` pair.
+
+Unlike `watchState`, `setState` does **not** track changes. It does not patch setters or proxify values.  
+A change event is emitted on the first `setState` call and again whenever the value changes in subsequent calls.
+
+| Parameter   | Type      | Description                                                     |
+| ----------- | --------- | --------------------------------------------------------------- |
+| **context** | `unknown` | The state context.                                              |
+| **index**   | `unknown` | The index identifying the state on the given context.           |
+| **value**   | `unknown` | The state value.                                                |
+
+---
+
 ### **clear()**
-Clears all registered state values.
+Releases all registered state items.
 
 **Returns:** `void`
 
@@ -141,7 +167,8 @@ Clears all registered state values.
 ## Get an instance of the State Manager
 
 The state manager is registered as a **singleton service**.  
-You must load the module into your injection container.
+You must load the module into the injection container if you went
+to use it.
 
 ```ts
 import { InjectionContainer } from '@rs-x/core';
@@ -188,7 +215,7 @@ There are two variants:
 Monitors only assignment of a **new value** to the index.
 
 ```ts
-import { InjectionContainer } from '@rs-x/core';
+import { InjectionContainer, printValue } from '@rs-x/core';
 import {
     IStateChange,
     IStateManager,
@@ -196,64 +223,79 @@ import {
     RsXStateManagerModule
 } from '@rs-x/state-manager';
 
-
+// Load the state manager module into the injection container
 InjectionContainer.load(RsXStateManagerModule);
 
-const stateManager: IStateManager = InjectionContainer.get(
-    RsXStateManagerInjectionTokens.IStateManager
-);
+export const run = (() => {
+    const stateManager: IStateManager = InjectionContainer.get(
+        RsXStateManagerInjectionTokens.IStateManager
+    );
 
-function printValue(object: unknown): void {
-    console.log(JSON.stringify(object, null, 4).replaceAll('"', ''));
-}
+    const stateContext = {
+        x: { y: 10 }
+    };
 
-const stateContext = {
-    x: { y: 10 }
-};
+    // This will emit a change event with the initial (current) value.
+    console.log('Initial value:');
+    const changedSubsription = stateManager.changed.subscribe((change: IStateChange) => {
+        printValue(change.newValue);
+    });
 
+    try {
+        // This will emit the new value { y: 10 }
+        stateManager.watchState(stateContext, 'x');
 
-console.log('Initial value:');
-stateManager.changed.subscribe((change: IStateChange) => {
-    printValue(change.newValue);
-});
+        console.log('Changed value:');
+        // This will emit the new value { y: 10 }
+        stateContext.x = {
+            y: 20
+        };
 
-// This will emit the new value { y: 10 }
-stateManager.register(stateContext, 'x');
+        console.log(`Latest value:`);
+        printValue(stateManager.getState(stateContext, 'x'));
 
+        // This will emit no change because the state is not recursive.
+        console.log('\nstateContext.x.y = 30 will not emit any change:\n---\n');
+        stateContext.x.y = 30;
 
-console.log('Changed value:');
-// This will emit the new value { y: 10 }
-stateContext.x = {
-    y: 20
-};
-
-console.log(`Latest value:`);
-printValue(stateManager.getState(stateContext, 'x'));
-
-// This will emit no change because the state is not recursive.
-console.log('\nstateContext.x.y = 30 will not emit any change:\n---\n');
-stateContext.x.y = 30;
+    } finally {
+        changedSubsription.unsubscribe();
+        // Always release the state when it is no longer needed.
+        stateManager.releaseState(stateContext, 'x');
+    }
+})();
 
 ```
 
 **Output:**
 
 ```console
+Running demo: demo/src/rs-x-state-manager/register-non-recursive-state.ts
 Initial value:
-10
-
+{
+    y: 10
+}
 Changed value:
-20
+{
+    y: 20
+}
+Latest value:
+{
+    y: 20
+}
+
+stateContext.x.y = 30 will not emit any change:
+---
 ```
 
 ---
 
 ### Recursive  
 Monitors assignments **and** changes *inside* the value.  
-Example: if the value is an object, internal object changes are also observed.
+Example: if the value is an object, internal object changes are also observed. You can make a state item recursive by passing in a **mustProxify** predicate to a **watchState** call. The mustProxify will be called for every nested index. If you return true it will watch the index otherwise not.
 
 ```ts
-import { InjectionContainer, truePredicate } from '@rs-x/core';
+import { InjectionContainer, printValue, truePredicate } from '@rs-x/core';
 import {
     IStateChange,
     IStateManager,
@@ -261,47 +303,49 @@ import {
     RsXStateManagerModule
 } from '@rs-x/state-manager';
 
-
+// Load the state manager module into the injection container
 InjectionContainer.load(RsXStateManagerModule);
 
+export const run = (() => {
+    const stateManager: IStateManager = InjectionContainer.get(
+        RsXStateManagerInjectionTokens.IStateManager
+    );
+    const stateContext = {
+        x: { y: 10 }
+    };
+    const changedSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+        printValue(change.newValue)
+    });
 
-const stateManager: IStateManager = InjectionContainer.get(
-    RsXStateManagerInjectionTokens.IStateManager
-);
+    try {
+        // We register recursive state by passing
+        // a predicate as the third argument.
+        // In this case, we want to watch the entire value,
+        // so we pass a predicate that always returns true.
+        // This will emit an initial value { y: 10 }
+        console.log('Initial value:');
+        stateManager.watchState(stateContext, 'x', truePredicate);
 
-function printValue(object: unknown): void {
-    console.log(JSON.stringify(object, null, 4).replaceAll('"', ''));
-}
+        console.log('Changed value:');
+        // This will emit the new value { y: 10 }
+        stateContext.x = {
+            y: 20
+        };
 
-const stateContext = {
-    x: { y: 10 }
-};
+        console.log('Changed (recursive) value:');
+        // This will emit the new value { y: 30 } because x 
+        // is registered as a recursive state.
+        stateContext.x.y = 30;
 
+        console.log(`Latest value:`);
+        printValue(stateManager.getState(stateContext, 'x'));
 
-console.log('Initial value:');
-stateManager.changed.subscribe((change: IStateChange) => {
-    printValue(change.newValue)
-});
-
-// We register recursive state by passing in
-// a predicate as the third argument.
-// This will emit an initial value { y: 10 }
-stateManager.register(stateContext, 'x', truePredicate);
-
-
-console.log('Changed value:');
-// This will emit the new value { y: 10 }
-stateContext.x = {
-    y: 20
-};
-
-console.log('Changed (recursive) value:');
-// This will emit the new value { y: 30 } because x 
-// is registered as a recursive state.
-stateContext.x.y = 30;
-
-console.log(`Latest value:`);
-printValue(stateManager.getState(stateContext, 'x'));
+    } finally {
+        changedSubscription.unsubscribe();
+         // Always release the state when it is no longer needed.
+        stateManager.releaseState(stateContext, 'x', truePredicate);
+    }
+})();
 ```
 
 **Output:**
@@ -319,16 +363,12 @@ Changed (recursive) value:
 
 ---
 
-### State registration is idempotent
+### Manually setting state
 
-You can register the same state multiple times.  
-Never assume a state is already registered—always register if you depend on it.  
-Otherwise the state may disappear when another part of the system unregisters it.
-
-When done, unregister the state:
+Besides that you can register a watched stated (calling `watchedState`) you can register an unwatched state using `setState`. An example for using `setState` might be an readonly property:
 
 ```ts
-import { InjectionContainer } from '@rs-x/core';
+import { InjectionContainer, printValue } from '@rs-x/core';
 import {
     IStateChange,
     IStateManager,
@@ -336,47 +376,153 @@ import {
     RsXStateManagerModule
 } from '@rs-x/state-manager';
 
+// Load the state manager module into the injection container
+InjectionContainer.load(RsXStateManagerModule);
+
+export const run = (() => {
+    const stateManager: IStateManager = InjectionContainer.get(
+        RsXStateManagerInjectionTokens.IStateManager
+    );
+
+    class StateContext {
+        private readonly _aPlusBId = 'a+b';
+        private _a = 10;
+        private _b = 20;
+
+        constructor() {
+            this.setAPlusB();
+        }
+
+        public dispose(): void {
+            return stateManager.releaseState(this, this._aPlusBId);
+        }
+
+        public get aPlusB(): number {
+            return stateManager.getState(this, this._aPlusBId);
+        }
+
+        public get a(): number {
+            return this._a;
+        }
+
+        public set a(value: number) {
+            this._a = value;
+            this.setAPlusB();
+        }
+
+        public get b(): number {
+            return this._b;
+        }
+
+        public set b(value: number) {
+            this._b = value;
+            this.setAPlusB();
+        }
+
+        private setAPlusB(): void {
+            stateManager.setState(this, this._aPlusBId, this._a + this._b)
+        }
+    }
+
+    const stateContext = new StateContext();
+    const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+        printValue(change.newValue);
+    });
+
+    try {
+        console.log(`Initial value for readonly property 'aPlusB':`);
+        console.log(stateContext.aPlusB);
+
+        console.log(`set 'stateContext.a' to '100' will emit a change event for readonly property 'aPlusB'`);
+        console.log(`Changed value for readonly property 'aPlusB':`);
+        stateContext.a = 100;
+
+        console.log(`set 'stateContext.b' to '200' will emit a change event for readonly property 'aPlusB'`);
+        console.log(`Changed value for readonly property 'aPlusB':`);
+        stateContext.b = 200;
+
+    } finally {
+        changeSubscription.unsubscribe();
+        // Always release the state when it is no longer needed.
+        stateContext.dispose();
+    }
+})();
+```
+
+**Output:**
+
+```console
+Running demo: demo/src/rs-x-state-manager/register-readonly-property.ts
+Initial value for readonly property 'aPlusB':
+30
+set 'stateContext.a' to '100' will emit a change event for readonly property 'aPlusB'
+Changed value for readonly property 'aPlusB':
+120
+set 'stateContext.b' to '200' will emit a change event for readonly property 'aPlusB'
+Changed value for readonly property 'aPlusB':
+300
+```
+
+---
+
+### State registration is idempotent
+
+You can register the same state item multiple times.  
+Never assume a state is already registered. Always register it if you depend on it.  
+Otherwise the state may disappear when another part of the system unregisters it. The state manager keeps track of a reference count and will release the state when it goes to zero.
+
+When done, release the state:
+
+```ts
+import { InjectionContainer, printValue } from '@rs-x/core';
+import {
+    IStateChange,
+    IStateManager,
+    RsXStateManagerInjectionTokens,
+    RsXStateManagerModule
+} from '@rs-x/state-manager';
 
 // Load the state manager module into the injection container
 InjectionContainer.load(RsXStateManagerModule);
 
-const stateManager: IStateManager = InjectionContainer.get(
-    RsXStateManagerInjectionTokens.IStateManager
-);
+export const run = (() => {
+    const stateManager: IStateManager = InjectionContainer.get(
+        RsXStateManagerInjectionTokens.IStateManager
+    );
+    const stateContext = {
+        x: { y: 10 }
+    };
+    const changedSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+        printValue(change.newValue);
+    });
 
-function printValue(object: unknown): void {
-    console.log(JSON.stringify(object, null, 4).replaceAll('"', ''));
-}
+    try {
+        // Register is idempotent: you can register the same state multiple times.
+        // For every register call, make sure you call unregister when you're done.
+        console.log('Initial value:');
+        stateManager.watchState(stateContext, 'x');
+        stateManager.watchState(stateContext, 'x');
 
-const stateContext = {
-    x: { y: 10 }
-};
+        console.log('Changed value:');
+        stateContext.x = { y: 20 };
 
-stateManager.changed.subscribe((change: IStateChange) => {
-   printValue(change.newValue);
-});
+        stateManager.releaseState(stateContext, 'x');
 
-// Register is idempotent: you can register the same state multiple times.
-// For every register call, make sure you call unregister when you're done.
-console.log('Initial value:');
-stateManager.register(stateContext, 'x');
-stateManager.register(stateContext, 'x');
+        console.log('Changed event is still emitted after unregister because one observer remains.');
+        console.log('Changed value:');
+        stateContext.x = { y: 30 };
 
-console.log('Changed value:');
-stateContext.x = { y: 20 };
+        stateManager.releaseState(stateContext, 'x');
 
-stateManager.unregister(stateContext, 'x');
+        console.log('Changed event is no longer emitted after the last observer unregisters.');
+        console.log('Changed value:');
+        console.log('---');
+        stateContext.x = { y: 30 };
 
-console.log('Changed event is still emitted after unregister because one observer remains.');
-console.log('Changed value:');
-stateContext.x = { y: 30 };
-
-stateManager.unregister(stateContext, 'x');
-
-console.log('Changed event is no longer emitted after the last observer unregisters.');
-console.log('Changed value:');
-console.log('---');
-stateContext.x = { y: 30 };
+    } finally {
+        changedSubscription.unsubscribe();
+    }
+})();
 ```
 
 **Output:**
@@ -414,20 +560,20 @@ You can override this factory list by providing your own custom provider service
 | Observable  | Not indexable                                                                                                                                                                | Subscribe              | [example](#observable)           |
 | Custom type | user defined                                                                                                                                                                 | user defined           | [example](#customtype)           |
 
-State consists of **context** and **index**.  
-The manager checks each observer factory to determine support based on these two values.
+State item is identified by a **context**,  **index** and **mustProxify** predicate for a recursive state item
+The manager checks each observer factory to determine support based on the **context** and **index**.
 
 Behavior:
 
 - Both recursive and non-recursive observers monitor **assignment** of a new value.
-- Recursive observers additionally monitor **internal changes** of the value.
+- Recursive observers additionally monitor **internal changes** of the value. The nested values you want to monitor are determine by the **mustProxify** predicate.
 
 The following example illustrates the different state types:
 
 ### Object property/field
 **Example**
 ```ts
-import { InjectionContainer, truePredicate } from '@rs-x/core';
+import { InjectionContainer, printValue, truePredicate } from '@rs-x/core';
 import {
     IStateChange,
     IStateManager,
@@ -437,14 +583,6 @@ import {
 
 // Load the state manager module into the injection container
 InjectionContainer.load(RsXStateManagerModule);
-
-const stateManager: IStateManager = InjectionContainer.get(
-    RsXStateManagerInjectionTokens.IStateManager
-);
-
-function printValue(object: unknown): void {
-    console.log(JSON.stringify(object, null, 4).replaceAll('"', ''));
-}
 
 interface INestStateConext {
     a: number;
@@ -474,36 +612,43 @@ class StateContext {
     }
 }
 
-const stateContext = new StateContext();
+export const run = (() => {
+    const stateManager: IStateManager = InjectionContainer.get(
+        RsXStateManagerInjectionTokens.IStateManager
+    );
 
-const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
-    printValue(change.newValue);
-});
+    const stateContext = new StateContext();
 
-try {
-    // Observe property `b` recursively.
-    // Otherwise, only assigning a new value to stateContext.b would emit a change event.
-    // This will emit a change event with the initial (current) value.
-    console.log('Initial value:');
-    stateManager.register(stateContext, 'b', truePredicate);
+    const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+        printValue(change.newValue);
+    });
 
-    console.log('\nReplacing stateContext.b.nested.nested will emit a change event');
-    console.log('Changed value:');
+    try {
+        // Observe property `b` recursively.
+        // Otherwise, only assigning a new value to stateContext.b would emit a change event.
+        // This will emit a change event with the initial (current) value.
+        console.log('Initial value:');
+        stateManager.watchState(stateContext, 'b', truePredicate);
 
-    stateContext.b.nested.nested = {
-        a: -30,
-        nested: {
-            a: -40
-        }
-    };
+        console.log('\nReplacing stateContext.b.nested.nested will emit a change event');
+        console.log('Changed value:');
 
-     console.log(`Latest value:`);
-     printValue(stateManager.getState(stateContext, 'b'));
+        stateContext.b.nested.nested = {
+            a: -30,
+            nested: {
+                a: -40
+            }
+        };
 
-} finally {
-    changeSubscription.unsubscribe();
-    stateManager.unregister(stateContext, 'b', truePredicate);
-}
+        console.log(`Latest value:`);
+        printValue(stateManager.getState(stateContext, 'b'));
+
+    } finally {
+        changeSubscription.unsubscribe();
+        // Always release the state when it is no longer needed.
+        stateManager.releaseState(stateContext, 'b', truePredicate);
+    }
+})();
 ```
 **Output:**
 ```console
@@ -565,11 +710,8 @@ import {
 
 // Load the state manager module into the injection container
 InjectionContainer.load(RsXStateManagerModule);
-const stateManager: IStateManager = InjectionContainer.get(
-    RsXStateManagerInjectionTokens.IStateManager
-);
 
-function watchDate() {
+function watchDate(stateManager: IStateManager) {
     console.log('\n******************************************');
     console.log('* Watching date');
     console.log('******************************************\n');
@@ -582,7 +724,7 @@ function watchDate() {
     });
     try {
         console.log('Initial value:');
-        stateManager.register(stateContext, 'date', truePredicate);
+        stateManager.watchState(stateContext, 'date', truePredicate);
 
         console.log('Changed value:');
         stateContext.date.setFullYear(2023);
@@ -594,11 +736,12 @@ function watchDate() {
         console.log(stateManager.getState<Date>(stateContext, 'date').toUTCString());
     } finally {
         changeSubscription.unsubscribe();
-        stateManager.unregister(stateContext, 'date', truePredicate);
+        // Always release the state when it is no longer needed.
+        stateManager.releaseState(stateContext, 'date', truePredicate);
     }
 }
 
-function watchDateProperty() {
+function watchDateProperty(stateManager: IStateManager) {
     console.log('\n******************************************');
     console.log('* Watching year');
     console.log('******************************************\n');
@@ -607,8 +750,9 @@ function watchDateProperty() {
         console.log(change.newValue);
     });
     try {
+        // This will emit a change event with the initial (current) value.
         console.log('Initial value:');
-        stateManager.register(date, 'year');
+        stateManager.watchState(date, 'year');
 
         const proxyRegister: IProxyRegistry = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
         const dateProxy = proxyRegister.getProxy<Date>(date);
@@ -620,12 +764,17 @@ function watchDateProperty() {
 
     } finally {
         changeSubscription.unsubscribe();
-        stateManager.unregister(date, 'year');
+        stateManager.releaseState(date, 'year');
     }
 }
 
-watchDate();
-watchDateProperty();
+export const run = (() => {
+    const stateManager: IStateManager = InjectionContainer.get(
+        RsXStateManagerInjectionTokens.IStateManager
+    );
+    watchDate(stateManager);
+    watchDateProperty(stateManager);
+})();
 ```
 **Output:**
 ```console
@@ -659,7 +808,7 @@ Latest value:
 ### Array
 **Example**
 ```ts
-import { InjectionContainer, truePredicate } from '@rs-x/core';
+import { InjectionContainer, printValue, truePredicate } from '@rs-x/core';
 import {
     IStateChange,
     IStateManager,
@@ -670,41 +819,39 @@ import {
 // Load the state manager module into the injection container
 InjectionContainer.load(RsXStateManagerModule);
 
-const stateManager: IStateManager = InjectionContainer.get(
-    RsXStateManagerInjectionTokens.IStateManager
-);
+export const run = (() => {
+    const stateManager: IStateManager = InjectionContainer.get(
+        RsXStateManagerInjectionTokens.IStateManager
+    );
 
-function printValue(object: unknown): void {
-    console.log(JSON.stringify(object, null, 4).replaceAll('"', ''));
-}
+    const stateContext = {
+        array: [
+            [1, 2],
+            [3, 4]
+        ]
+    };
 
-const stateContext = {
-    array: [
-        [1, 2],
-        [3, 4]
-    ]
-};
+    const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+        printValue(change.newValue);
+    });
 
-const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
-    printValue(change.newValue);
-});
+    try {
+        // This will emit a change event with the initial (current) value.
+        console.log('Initial value:');
+        stateManager.watchState(stateContext, 'array', truePredicate);
 
-try {
-    // Otherwise, only assigning a new value to stateContext.array would emit a change event.
-    // This will emit a change event with the initial (current) value.
-    console.log('Initial value:');
-    stateManager.register(stateContext, 'array', truePredicate);
+        console.log('Changed value:');
+        stateContext.array[1].push(5);
 
-    console.log('Changed value:');
-    stateContext.array[1].push(5);
+        console.log('Latest value:');
+        printValue(stateManager.getState(stateContext, 'array'));
 
-    console.log('Latest value:');
-    printValue(stateManager.getState(stateContext,'array'));
-
-} finally {
-    changeSubscription.unsubscribe();
-    stateManager.unregister(stateContext, 'array', truePredicate);
-}
+    } finally {
+        changeSubscription.unsubscribe();
+        // Always release the state when it is no longer needed.
+        stateManager.releaseState(stateContext, 'array', truePredicate);
+    }
+})();
 ```
 **Output:**
 ```console
@@ -749,7 +896,7 @@ Latest value:
 ### Map
 **Example**
 ```ts
-import { InjectionContainer, truePredicate } from '@rs-x/core';
+import { InjectionContainer, printValue, truePredicate } from '@rs-x/core';
 import {
     IStateChange,
     IStateManager,
@@ -764,38 +911,35 @@ const stateManager: IStateManager = InjectionContainer.get(
     RsXStateManagerInjectionTokens.IStateManager
 );
 
-function printMap(map: Map<string, number[]>): void {
-    console.log(JSON.stringify(Array.from(map.entries()), null, 4).replaceAll('"', ''));
-}
+export const run = (() => {
+    const stateContext = {
+        map: new Map([
+            ['a', [1, 2]],
+            ['b', [3, 4]]
+        ])
+    };
 
-const stateContext = {
-    map: new Map([
-        ['a', [1, 2]],
-        ['b', [3, 4]]
-    ])
-};
+    const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+        printValue(change.newValue);
+    });
 
-const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
-    printMap(change.newValue as Map<string, number[]>);
-});
+    try {
+        // This will emit a change event with the initial (current) value.
+        console.log('Initial value:');
+        stateManager.watchState(stateContext, 'map', truePredicate);
 
-try {
-    // Otherwise, only assigning a new value to stateContext.map would emit a change event.
-    // This will emit a change event with the initial (current) value.
-    console.log('Initial value:');
+        console.log('Changed value:');
+        stateContext.map.get('b').push(5);
 
-    stateManager.register(stateContext, 'map', truePredicate);
+        console.log('Latest value:');
+        printValue(stateManager.getState(stateContext, 'map'))
 
-    console.log('Changed value:');
-    stateContext.map.get('b').push(5);
-
-    console.log('Latest value:');
-    printMap(stateManager.getState(stateContext,'map') as Map<string, number[]>);
-
-} finally {
-    changeSubscription.unsubscribe();
-    stateManager.unregister(stateContext, 'array', truePredicate);
-}
+    } finally {
+        changeSubscription.unsubscribe();
+        // Always release the state when it is no longer needed.
+        stateManager.releaseState(stateContext, 'array', truePredicate);
+    }
+})();
 ```
 **Output:**
 ```console
@@ -858,7 +1002,7 @@ Latest value:
 ### Set
 **Example**
 ```ts
-import { InjectionContainer, truePredicate } from '@rs-x/core';
+import { InjectionContainer, printValue, truePredicate } from '@rs-x/core';
 import {
     IProxyRegistry,
     IStateChange,
@@ -870,44 +1014,37 @@ import {
 // Load the state manager module into the injection container
 InjectionContainer.load(RsXStateManagerModule);
 
-const stateManager: IStateManager = InjectionContainer.get(
-    RsXStateManagerInjectionTokens.IStateManager
-);
+export const run = (() => {
+    const stateManager: IStateManager = InjectionContainer.get(
+        RsXStateManagerInjectionTokens.IStateManager
+    );
+    const item1 = [1, 2];
+    const item2 = [3, 4];
+    const stateContext = {
+        set: new Set([item1, item2])
+    };
+    const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+        printValue(change.newValue);
+    });
 
-function printSet(set: Set<number[]>): void {
-    console.log(JSON.stringify(Array.from(set.values()), null, 4).replaceAll('"', ''));
-}
+    try {
+        // This will emit a change event with the initial (current) value.
+        console.log('Initial value:');
+        stateManager.watchState(stateContext, 'set', truePredicate);
 
-const item1 = [1, 2];
-const item2 = [3, 4];
-const stateContext = {
-    set: new Set([item1, item2])
-};
+        console.log('Changed value:');
+        const proxyRegister: IProxyRegistry = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
+        proxyRegister.getProxy<number[]>(item2).push(5);
 
-const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
-    printSet(change.newValue as Set<number[]>);
-});
+        console.log('Latest value:');
+        printValue(stateManager.getState(stateContext, 'set'));
 
-try {
-    // Otherwise, only assigning a new value to stateContext.map would emit a change event.
-    // This will emit a change event with the initial (current) value.
-    console.log('Initial value:');
-
-    stateManager.register(stateContext, 'set', truePredicate);
-
-    console.log('Changed value:');
-
-    const proxyRegister: IProxyRegistry = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
-    proxyRegister.getProxy<number[]>(item2).push(5);
-
-
-    console.log('Latest value:');
-    printSet(stateManager.getState(stateContext,'set') as Set<number[]>);
-
-} finally {
-    changeSubscription.unsubscribe();
-    stateManager.unregister(stateContext, 'array', truePredicate);
-}
+    } finally {
+        changeSubscription.unsubscribe();
+        // Always release the state when it is no longer needed.
+        stateManager.releaseState(stateContext, 'set', truePredicate);
+    }
+})();
 ```
 **Output:**
 ```console
@@ -963,30 +1100,27 @@ import {
 // Load the state manager module into the injection container
 InjectionContainer.load(RsXStateManagerModule);
 
-const stateManager: IStateManager = InjectionContainer.get(
-    RsXStateManagerInjectionTokens.IStateManager
-);
-
-const stateContext = {
-    promise: Promise.resolve(10)
-};
-
 export const run = (async () => {
+    const stateManager: IStateManager = InjectionContainer.get(
+        RsXStateManagerInjectionTokens.IStateManager
+    );
+
+    const stateContext = {
+        promise: Promise.resolve(10)
+    };
     const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
         console.log(change.newValue);
     });
 
     try {
-        console.log('Initial value:');
-
         await new WaitForEvent(stateManager, 'changed').wait(() => {
-            stateManager.register(stateContext, 'promise');
+            // This will emit a change event with the initial (current) value.
+            console.log('Initial value:');
+            stateManager.watchState(stateContext, 'promise');
         });
 
-        console.log('Changed value:');
-
-
         await new WaitForEvent(stateManager, 'changed').wait(() => {
+            console.log('Changed value:');
             let resolveHandler: (value: number) => void;
             stateContext.promise = new Promise((resolve) => { resolveHandler = resolve; });
             resolveHandler(30);
@@ -995,7 +1129,8 @@ export const run = (async () => {
         console.log(`Latest value: ${stateManager.getState(stateContext, 'promise')}`);
     } finally {
         changeSubscription.unsubscribe();
-        stateManager.unregister(stateContext, 'promise');
+        // Always release the state when it is no longer needed.
+        stateManager.releaseState(stateContext, 'promise');
     }
 })();
 ```
@@ -1024,44 +1159,41 @@ import { of, Subject } from 'rxjs';
 // Load the state manager module into the injection container
 InjectionContainer.load(RsXStateManagerModule);
 
-const stateManager: IStateManager = InjectionContainer.get(
-    RsXStateManagerInjectionTokens.IStateManager
-);
-
-const stateContext = {
-    observable: of(10)
-};
-
 export const run = (async () => {
+    const stateManager: IStateManager = InjectionContainer.get(
+        RsXStateManagerInjectionTokens.IStateManager
+    );
+
+    const stateContext = {
+        observable: of(10)
+    };
+
     const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
         console.log(change.newValue);
     });
 
     try {
-        // Observe the observable.
-        // Will emit a change event with the initial value.
-        console.log('Initial value:');
-
         // We need to wait here until the event is emitted,
         // otherwise the demo will exit before the change event occurs.
         await new WaitForEvent(stateManager, 'changed').wait(() => {
-            stateManager.register(stateContext, 'observable');
+            // This will emit a change event with the initial (current) value.
+            console.log('Initial value:');
+            stateManager.watchState(stateContext, 'observable');
         });
 
-        console.log('Changed value:');
-
         await new WaitForEvent(stateManager, 'changed').wait(() => {
+            console.log('Changed value:');
             const subject = new Subject<number>();
             stateContext.observable = subject
             subject.next(30);
         });
 
-
         console.log(`Latest value: ${stateManager.getState(stateContext, 'observable')}`);
 
     } finally {
         changeSubscription.unsubscribe();
-        stateManager.unregister(stateContext, 'observable');
+        // Always release the state when it is no longer needed.
+        stateManager.releaseState(stateContext, 'observable');
     }
 })();
 ```
@@ -1084,10 +1216,22 @@ The following example demonstrates adding support for a custom `TextDocument` cl
 
 **Example**
 ```ts
-import { IErrorLog, IIndexValueAccessor, IndexAccessor, Inject, Injectable, InjectionContainer, IPropertyChange, RsXCoreInjectionTokens, SingletonFactory, truePredicate } from '@rs-x/core';
+import {
+    IDisposableOwner,
+    IErrorLog,
+    IGuidFactory,
+    IIndexValueAccessor,
+    IndexAccessor,
+    Inject,
+    Injectable,
+    InjectionContainer,
+    IPropertyChange,
+    RsXCoreInjectionTokens,
+    SingletonFactory,
+    truePredicate
+} from '@rs-x/core';
 import {
     AbstractObserver,
-    IDisposableOwner,
     IIndexObserverInfo,
     IndexObserverFactory,
     IndexObserverProxyPairFactory,
@@ -1099,7 +1243,6 @@ import {
     IProxyTarget,
     IStateChange,
     IStateManager,
-    MustProxify,
     ObjectObserverFactory,
     RsXStateManagerInjectionTokens,
     RsXStateManagerModule
@@ -1111,10 +1254,9 @@ InjectionContainer.load(RsXStateManagerModule);
 
 class IndexForTextDocumentxObserverManager
     extends SingletonFactory<
-        number | MustProxify,
+        number,
         IIndexObserverInfo<ITextDocumentIndex>,
         TextDocumentIndexObserver> {
-
     constructor(
         private readonly _textDocument: TextDocument,
         private readonly _textDocumentObserverManager: TextDocumentObserverManager,
@@ -1123,12 +1265,11 @@ class IndexForTextDocumentxObserverManager
         super();
     }
 
-
-    public override getId(indexObserverInfo: IIndexObserverInfo<ITextDocumentIndex>): number | MustProxify {
+    public override getId(indexObserverInfo: IIndexObserverInfo<ITextDocumentIndex>): number {
         return this.createId(indexObserverInfo);
     }
 
-    protected override createInstance(indexObserverInfo: IIndexObserverInfo<ITextDocumentIndex>, id: number | MustProxify): TextDocumentIndexObserver {
+    protected override createInstance(indexObserverInfo: IIndexObserverInfo<ITextDocumentIndex>, id: number): TextDocumentIndexObserver {
         const textDocumentObserver = this._textDocumentObserverManager.create(this._textDocument).instance;
         return new TextDocumentIndexObserver(
             {
@@ -1142,11 +1283,7 @@ class IndexForTextDocumentxObserverManager
         );
     }
 
-    protected override createId(indexObserverInfo: IIndexObserverInfo<ITextDocumentIndex>): number | MustProxify {
-
-        if (indexObserverInfo.mustProxify) {
-            return indexObserverInfo.mustProxify;
-        }
+    protected override createId(indexObserverInfo: IIndexObserverInfo<ITextDocumentIndex>): number {
         // Using Cantor pairing to create a unique id from page and line index
         const { pageIndex, lineIndex } = indexObserverInfo.index;
         return ((pageIndex + lineIndex) * (pageIndex + lineIndex + 1)) / 2 + lineIndex;
@@ -1227,12 +1364,21 @@ export class TextDocumenIndexObserverManager
 
 // Normally we would create our own module
 // But for simplicity we bind our services directly to the injection container
-
 InjectionContainer.bind(TextDocumentObserverManager).to(TextDocumentObserverManager).inSingletonScope();
 InjectionContainer.bind(TextDocumenIndexObserverManager).to(TextDocumenIndexObserverManager).inSingletonScope();
 
 @IndexAccessor()
 export class TextDocumentIndexAccessor implements IIndexValueAccessor<TextDocument, ITextDocumentIndex> {
+
+    public hasValue(context: TextDocument, index: ITextDocumentIndex): boolean {
+        return context.getLine(index) !== undefined;
+    }
+
+    // We don’t have any properties that can be iterated through.
+    public getIndexes(_context: TextDocument, _index?: ITextDocumentIndex): IterableIterator<ITextDocumentIndex> {
+        return [].values();
+    }
+
     // Indicate whether the value is async. For example when the value is a Promise
     public isAsync(_context: TextDocument, _index: ITextDocumentIndex): boolean {
         return false;
@@ -1267,14 +1413,20 @@ export class TextDocumentInxdexObserverProxyPairFactory extends IndexObserverPro
         textDocumenIndexObserverManager: TextDocumenIndexObserverManager,
         @Inject(RsXCoreInjectionTokens.IErrorLog)
         errorLog: IErrorLog,
+        @Inject(RsXCoreInjectionTokens.IGuidFactory)
+        guidFactory: IGuidFactory,
         @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
-        indexValueAccessor: IIndexValueAccessor
+        indexValueAccessor: IIndexValueAccessor,
+        @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
+        proxyRegister: IProxyRegistry
     ) {
         super(
             objectObserverManager,
             textDocumenIndexObserverManager,
             errorLog,
-            indexValueAccessor
+            guidFactory,
+            indexValueAccessor,
+            proxyRegister
         );
     }
 
@@ -1292,14 +1444,13 @@ export class TextDocumentObserverProxyPairFactory implements IObjectObserverProx
 
     public create(
         _: IDisposableOwner,
-        proxyTarget: IProxyTarget<TextDocument>): IObserverProxyPair<TextDocument, TextDocument> {
+        proxyTarget: IProxyTarget<TextDocument>): IObserverProxyPair<TextDocument> {
 
         const observer = this._textDocumentObserverManager.create(proxyTarget.target).instance;
         return {
             observer,
             proxy: observer.target as TextDocument,
             proxyTarget: proxyTarget.target,
-            id: proxyTarget.target
         };
     }
 
@@ -1337,7 +1488,9 @@ class TextDocument {
 
         for (const pageIndex of sortedPageIndexes) {
             const page = this._pages.get(pageIndex);
-            if (!page) continue;
+            if (!page) {
+                continue;
+            }
 
             // Sort lines by lineIndex
             const sortedLineIndexes = Array.from(page.keys()).sort((a, b) => a - b);
@@ -1406,7 +1559,7 @@ class TextDocumentObserver extends AbstractObserver<TextDocument> {
     }
 
     protected override disposeInternal(): void {
-        this._proxyRegister.unregister(this.initialValue);
+        this._proxyRegister.unregister(this.value);
     }
 
     public get(
@@ -1431,29 +1584,9 @@ class TextDocumentObserver extends AbstractObserver<TextDocument> {
     }
 }
 
-const stateContext = {
-    myBook: new TextDocument([
-        [
-            'Once upon a time',
-            'bla bla'
-        ],
-        [
-            'bla bla',
-            'They lived happily ever after.',
-            'The end'
-        ]
-    ])
-};
-
-// Load the state manager module into the injection container
-const stateManager: IStateManager = InjectionContainer.get(
-    RsXStateManagerInjectionTokens.IStateManager
-);
-
-function testMonitorTextDocument(): void {
+function testMonitorTextDocument(stateManager: IStateManager, stateContext: { myBook: TextDocument }): void {
     const bookSubscription = stateManager.changed.subscribe(() => {
         console.log(stateContext.myBook.toString());
-
     });
 
     // We observe the whole book
@@ -1462,7 +1595,7 @@ function testMonitorTextDocument(): void {
         console.log('\n***********************************************');
         console.log("Start watching the whole book\n");
         console.log('My initial book:\n');
-        stateManager.register(stateContext, 'myBook', truePredicate);
+        stateManager.watchState(stateContext, 'myBook', truePredicate);
 
         console.log('\nUpdate second line on the first page:\n');
         console.log('My book after change:\n');
@@ -1470,13 +1603,12 @@ function testMonitorTextDocument(): void {
 
     } finally {
         // Stop monitoring the whole book
-        stateManager.unregister(stateContext, 'myBook', truePredicate);
+        stateManager.releaseState(stateContext, 'myBook', truePredicate);
         bookSubscription.unsubscribe();
     }
-
 }
 
-function testMonitoreSpecificLineInDocument():void {
+function testMonitoreSpecificLineInDocument(stateManager: IStateManager, stateContext: { myBook: TextDocument }): void {
     const line3OnPage1Index = { pageIndex: 0, lineIndex: 2 };
     const lineSubscription = stateManager.changed.subscribe((change: IStateChange) => {
         const documentIndex = change.key as ITextDocumentIndex;
@@ -1494,7 +1626,7 @@ function testMonitoreSpecificLineInDocument():void {
 
         console.log('\n***********************************************');
         console.log("Start watching line 3 on page 1\n");
-        stateManager.register(stateContext.myBook, line3OnPage1Index);
+        stateManager.watchState(stateContext.myBook, line3OnPage1Index);
 
         const proxRegistry: IProxyRegistry = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
         const bookProxy: TextDocument = proxRegistry.getProxy(stateContext.myBook);
@@ -1507,13 +1639,31 @@ function testMonitoreSpecificLineInDocument():void {
 
     } finally {
         // Stop monitoring line 3 on page 1. 
-        stateManager.unregister(stateContext.myBook, line3OnPage1Index);
+        stateManager.releaseState(stateContext.myBook, line3OnPage1Index);
         lineSubscription.unsubscribe();
     }
 }
 
-testMonitorTextDocument();
-testMonitoreSpecificLineInDocument();
+export const run = (() => {
+    const stateManager: IStateManager = InjectionContainer.get(
+        RsXStateManagerInjectionTokens.IStateManager
+    );
+    const stateContext = {
+        myBook: new TextDocument([
+            [
+                'Once upon a time',
+                'bla bla'
+            ],
+            [
+                'bla bla',
+                'They lived happily ever after.',
+                'The end'
+            ]
+        ])
+    };
+    testMonitorTextDocument(stateManager, stateContext);
+    testMonitoreSpecificLineInDocument(stateManager, stateContext);
+})();
 ```nclude_relative ../demo/src/rs-x-state-manager/register-set.ts %}
 ```
 **Output:**

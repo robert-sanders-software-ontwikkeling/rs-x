@@ -10,10 +10,10 @@ export class DefaultIdentifierOwnerResolver
       private readonly _identifierOwnerResolvers: readonly IIdentifierOwnerResolver[]
    ) { }
    
-   public resolve(key: unknown, context?: unknown): object {
+   public resolve(index: unknown, context?: unknown): object {
       const resolvers = this._identifierOwnerResolvers
       for (let i = 0; i < resolvers.length; i++) {
-         const result = resolvers[i].resolve(context, key);
+         const result = resolvers[i].resolve(context, index);
          if (result) {
             return result;
          }

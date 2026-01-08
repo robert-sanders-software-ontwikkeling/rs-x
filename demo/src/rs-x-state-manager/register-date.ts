@@ -35,6 +35,7 @@ function watchDate(stateManager: IStateManager) {
         console.log(stateManager.getState<Date>(stateContext, 'date').toUTCString());
     } finally {
         changeSubscription.unsubscribe();
+        // Always release the state when it is no longer needed.
         stateManager.releaseState(stateContext, 'date', truePredicate);
     }
 }

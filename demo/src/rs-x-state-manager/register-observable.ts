@@ -27,7 +27,7 @@ export const run = (async () => {
         // We need to wait here until the event is emitted,
         // otherwise the demo will exit before the change event occurs.
         await new WaitForEvent(stateManager, 'changed').wait(() => {
-             // This will emit a change event with the initial (current) value.
+            // This will emit a change event with the initial (current) value.
             console.log('Initial value:');
             stateManager.watchState(stateContext, 'observable');
         });
@@ -43,6 +43,7 @@ export const run = (async () => {
 
     } finally {
         changeSubscription.unsubscribe();
+        // Always release the state when it is no longer needed.
         stateManager.releaseState(stateContext, 'observable');
     }
 })();

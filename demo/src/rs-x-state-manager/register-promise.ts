@@ -22,8 +22,6 @@ export const run = (async () => {
     });
 
     try {
-       
-
         await new WaitForEvent(stateManager, 'changed').wait(() => {
             // This will emit a change event with the initial (current) value.
             console.log('Initial value:');
@@ -40,6 +38,7 @@ export const run = (async () => {
         console.log(`Latest value: ${stateManager.getState(stateContext, 'promise')}`);
     } finally {
         changeSubscription.unsubscribe();
+        // Always release the state when it is no longer needed.
         stateManager.releaseState(stateContext, 'promise');
     }
 })();

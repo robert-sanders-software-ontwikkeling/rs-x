@@ -1,5 +1,78 @@
 # RS-X
 
+## Getting started
+
+1. Install NodeJs
+2. Install GIT
+3. execute `npm i`
+4. When using Visual Studio Code, install extensions.
+For example, the [Jest](https://marketplace.visualstudio.com/items?itemName=Orta.vscode-jest) extension is very useful for executing and debugging tests.
+
+## Commands
+
+* Build commands:
+  * `pnmp build:core` : builds **rs-x-core** project
+  * `pnmp build:state-manager` : builds **rs-x-state-manager** project
+  * `pnmp build:expression-parser` : builds **rs-x-expression-parser** project
+  * `pnmp build:all` : build all projects
+* Release commands
+
+
+## Release a new version
+
+1. run command `pnpm changeset` . This will ask which packages you want to include. For example
+
+    ```console
+    🦋  Which packages would you like to include? … 
+    ◯ changed packages
+      ◯ @rs-x/expression-parser
+      ◯ @rs-x/state-manager
+      ◯ @rs-x/core
+    ```
+
+     Controls
+      *	↑ / ↓ → move up and down
+      *	Space → select / deselect an item
+      *	Enter → confirm your selection
+
+    Options explained
+
+    * changed packages
+      * Automatically selects packages that Git detects as changed
+      * Best choice most of the time
+      * Safer and faster
+
+      ✅ Recommended unless you have a specific reason not to.
+
+
+    * Individual packages
+
+      Select these if:
+      * You want to bump a package without code changes.
+      * You want to include multiple packages.
+      * Git didn’t detect changes correctly.
+  
+    **What happens next**
+
+    After selecting packages, Changesets will ask
+    1. What type of change?
+        * patch – bug fix
+        * minor – backward-compatible feature
+        *	major – breaking change
+    2.	Summary
+        * Short description (goes into CHANGELOG)
+
+    Then it will create a file like:
+
+    `.changeset/my-release-fix.md`
+
+2.  Commit and push the changes
+3.  Run the release pipeline in github
+  
+---
+
+## Projects
+
 This mono-repository contains the implementation of a SPA framework designed to solve the change detection problem and make data binding transparent. Work is still in progress.
 
 Currently, it contains the following projects:
@@ -14,6 +87,9 @@ Currently, it contains the following projects:
 
 - **Equality Service**  
   - Uses [fast-equals](https://github.com/planttheidea/fast-equals) for deep equality
+  
+- **Guid Factory**
+  - Uses crypto.randomUUID() to create GUIDs
 
 - **Dependency Injection**  
   - Implemented with [Inversify](https://github.com/inversify/InversifyJS)
@@ -92,3 +168,4 @@ The **JavaScript Expression Parser** translates a JavaScript expression string i
 
     
     ```
+

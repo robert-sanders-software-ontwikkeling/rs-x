@@ -90,7 +90,7 @@ export class StateManager implements IStateManager {
    public isWatched(
       context: unknown,
       index: unknown,
-      mustProxify: MustProxify
+      mustProxify?: MustProxify
    ): boolean {
 
       const stateChangeSubscriptionsForContextManager =

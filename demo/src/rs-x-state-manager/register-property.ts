@@ -70,6 +70,7 @@ export const run = (() => {
 
     } finally {
         changeSubscription.unsubscribe();
+        // Always release the state when it is no longer needed.
         stateManager.releaseState(stateContext, 'b', truePredicate);
     }
 })();

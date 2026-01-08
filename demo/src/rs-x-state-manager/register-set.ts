@@ -14,13 +14,11 @@ export const run = (() => {
     const stateManager: IStateManager = InjectionContainer.get(
         RsXStateManagerInjectionTokens.IStateManager
     );
-
     const item1 = [1, 2];
     const item2 = [3, 4];
     const stateContext = {
         set: new Set([item1, item2])
     };
-
     const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
         printValue(change.newValue);
     });
@@ -39,6 +37,7 @@ export const run = (() => {
 
     } finally {
         changeSubscription.unsubscribe();
-        stateManager.releaseState(stateContext, 'array', truePredicate);
+        // Always release the state when it is no longer needed.
+        stateManager.releaseState(stateContext, 'set', truePredicate);
     }
 })();

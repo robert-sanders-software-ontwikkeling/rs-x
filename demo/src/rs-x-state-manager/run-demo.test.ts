@@ -316,6 +316,23 @@ describe('Statemanager demos', () => {
         await expect(() => runDemo('rs-x-state-manager/register-set.ts')).toOutputAsync(expected);
     });
 
+
+    it('register-readonly-property.ts', async () => {
+        const expected = dedent`
+            Running demo: demo/src/rs-x-state-manager/register-readonly-property.ts
+            Initial value for readonly property 'aPlusB':
+            30
+            set 'stateContext.a' to '100' will emit a change event for readonly property 'aPlusB'
+            Changed value for readonly property 'aPlusB':
+            120
+            set 'stateContext.b' to '200' will emit a change event for readonly property 'aPlusB'
+            Changed value for readonly property 'aPlusB':
+            300
+        `;
+
+        await expect(() => runDemo('rs-x-state-manager/register-readonly-property.ts')).toOutputAsync(expected);
+    });
+
     it('state-manager-customize.ts', async () => {
         const expected = dedent`
             Running demo: demo/src/rs-x-state-manager/state-manager-customize.ts
