@@ -1,9 +1,8 @@
 # Expression parser
 
-The **JavaScript Expression Parser** translates a JavaScript expression string into an **observable expression tree**. It automatically registers identifiers in the expression tree to the **State Manager**. Identifiers are resolved using an **Identifier Resolver** service, which can be replaced by a custom implementation if needed. This parser forms the core of the **data binding implementation** for the SPA framework and allows mixing **synchronous** and **asynchronous** data transparently. 
+The **JavaScript Expression Parser** translates a JavaScript expression string into an **observable expression tree**. It automatically registers identifiers in the expression tree to the **State Manager**. Identifiers are resolved using an **Identifier Owner Resolver** service, which can be replaced by a custom implementation if needed. This parser forms the core of the **data binding implementation** for the SPA framework and allows mixing **synchronous** and **asynchronous** data transparently. 
 
 ### Examples
-
 
 - Expression with a promise: ``promise + 2`` (where `promise` resolves to a number)
 - Expression with an observable: ``observable + 2`` (where `observable` emits a number)
@@ -91,7 +90,63 @@ There are two ways to get an instance:
     }
     ```
 
+---
+
+## Resolving Identifier Owner
+
+Expressions resolve to data values for there leaves. These values may be constants (such as numbers or strings), but more commonly they are stored as **indexes** within a given **context**. For example, when the context is an object instance, indexes refer to properties or fields; when the context is a `Map`, indexes refer to map keys.
+
+The interface responsible for resolving the owner of an identifier is defined as follows:
+```ts
+export interface IIdentifierOwnerResolver {
+    resolve(index: unknown, context: unknown): object | null;
+}
+```
+
+The default resolution mechanism uses a list of identifier owner resolvers. Each resolver is evaluated in order until one returns a non-`null` context, which is then considered the owner of the identifier.
+
+In `rs-x-expression-parser.module.ts`, the default resolver list is configured as shown below:
+
+```ts
+registerMultiInjectServices(
+    options,
+    RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList,
+    [
+    { target: PropertyOwnerResolver, token: RsXExpressionParserInjectionTokens.PropertyOwnerResolver },
+    { target: ArrayIndexOwnerResolver, token: RsXExpressionParserInjectionTokens.ArrayIndexOwnerResolver },
+    { target: MapKeyOwnerResolver, token: RsXExpressionParserInjectionTokens.MapKeyOwnerResolver },
+    ]
+);
+```
+
+The default configuration includes the following resolvers:
+
+- **PropertyOwnerResolver**  
+  Resolves the identifier if the specified index corresponds to a property or field on the provided context. Returns the context if resolved; otherwise, returns `null`.
+
+- **ArrayIndexOwnerResolver**  
+  Resolves the identifier if the context is an array and the specified index is a valid array index. Returns the context if resolved; otherwise, returns `null`.
+
+- **MapKeyOwnerResolver**  
+  Resolves the identifier if the context is a `Map` and the specified index exists as a key in that map. Returns the context if resolved; otherwise, returns `null`.
+
+The default resolver list may be overridden by registering a custom list in a consuming module:
+
+    registerMultiInjectServices(
+      options,
+      RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList,
+      CUSTOM_LIST
+    );
+
+A common use case for a custom resolver occurs during data binding. In such scenarios, the initial context is the HTML element on which the data-binding expression is declared, while the identifier may be defined on an ancestor element (for example, a custom element). In this case, the resolver must traverse the parent chain until an element defining the identifier is found. The resolved context is then that element.
+
+This behavior can be implemented by providing a custom `IIdentifierOwnerResolver` that encapsulates the required traversal logic.
+
+---
+
 ## Supported Expresssion types
+
+All non-assignment JavaScript expressions are supported. These expressions can be combined to form more complex expressions. The following expressions are the basic supported expressions:
 
 ### Addition expression
 
