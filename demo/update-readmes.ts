@@ -4,13 +4,19 @@ import { join, dirname } from 'path';
 const EXCLUDED_DIRS = ['node_modules', 'dist', '.git'];
 
 function walkDir(dir: string, callback: (filePath: string) => void) {
-  if (EXCLUDED_DIRS.some((ex) => dir.includes(ex))) return;
+  if (EXCLUDED_DIRS.some((ex) => dir.includes(ex))) {
+    return;
+  }
 
   for (const entry of readdirSync(dir)) {
     const fullPath = join(dir, entry);
     const stats = statSync(fullPath);
-    if (stats.isDirectory()) walkDir(fullPath, callback);
-    else if (entry.toLowerCase() === '_readme.md') callback(fullPath);
+    if (stats.isDirectory()) {
+      walkDir(fullPath, callback);
+    }
+    else if (entry.toLowerCase() === '_readme.md') {
+      callback(fullPath);
+    }
   }
 }
 
@@ -20,7 +26,9 @@ function updateReadme(readmePath: string) {
 
   const updatedLines = lines.map((line) => {
     const match = line.match(/\{\%\s*include_relative\s+(.+?)\s*\%\}/);
-    if (!match) return line;
+    if (!match) {
+      return line;
+    }
 
     const demoPath = match[1].trim();
     const absDemoPath = join(dirname(readmePath), demoPath);

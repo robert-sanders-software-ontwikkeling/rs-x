@@ -21,8 +21,6 @@ import { ArrayIndexAccessor } from './index-value-accessor/array-index-accessor'
 import { DatePropertyAccessor } from './index-value-accessor/date-property-accessor';
 import { IndexValueAccessor } from './index-value-accessor/index-value-accessor';
 import { IIndexValueAccessor } from './index-value-accessor/index-value-accessor.interface';
-import { IndexValueAccessorProvider } from './index-value-accessor/index-value-accessor.provider';
-import { IIndexValueAccessorProvider } from './index-value-accessor/index-value-accessor.provider.interface';
 import { MapKeyAccessor } from './index-value-accessor/map-key-accessor';
 import { MethodAccessor } from './index-value-accessor/method-accessor';
 import { ObservableAccessor } from './index-value-accessor/observable-accessor';
@@ -58,12 +56,6 @@ export const RsXCoreModule = new ContainerModule((options) => {
    options
       .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessor)
       .to(IndexValueAccessor)
-      .inSingletonScope();
-   options
-      .bind<IIndexValueAccessorProvider>(
-         RsXCoreInjectionTokens.IIndexValueAccessorProvider
-      )
-      .to(IndexValueAccessorProvider)
       .inSingletonScope();
    options
       .bind<IDeepClone>(RsXCoreInjectionTokens.IDeepClone)

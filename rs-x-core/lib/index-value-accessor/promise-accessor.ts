@@ -5,6 +5,7 @@ import { PENDING } from './pending';
 
 @injectable()
 export class PromiseAccessor implements IPromiseAccessor {
+   public readonly priority = 1;
    private readonly _lastValues = new WeakMap<Promise<unknown>, unknown>();
 
    public getIndexes(): IterableIterator<string> {

@@ -37,7 +37,34 @@ The **JavaScript Expression Parser** translates a JavaScript expression string i
     });
     ```
 
-___
+## Use cases
+
+**Data binding for SPA frameworks and change detection** is the primary reason the expression parser was developed. However, it is a generic solution and can be used in any scenario where actions need to be triggered when data or an expression changes. Below are a few example use cases:
+
+- **Logging and alert conditions**  
+  Trigger alerts based on runtime conditions:  
+  - Monitoring systems
+  - Health checks
+  - Observability tools
+  
+- **UI logic outside data binding**  
+  Declarative UI behavior without relying on a full framework.
+
+- **Workflow and automation engines**  
+  - CI/CD pipelines
+  - Job schedulers
+  - Business process automation
+  
+- **Game logic and simulation**  
+  - AI decision trees
+  - Ability unlock rules
+  - Physics toggles
+- **Spreadsheet-like calculations**  
+  - Financial dashboards
+  - Pricing calculators
+  - Quotation systems
+- **Validation engines**  
+  Field validation based on the values of other fields.
 
 ## Get an instance of the Expression Parser Factory
 
@@ -90,8 +117,6 @@ There are two ways to get an instance:
     }
     ```
 
----
-
 ## Resolving Identifier Owner
 
 Expressions resolve to data values for there leaves. These values may be constants (such as numbers or strings), but more commonly they are stored as **indexes** within a given **context**. For example, when the context is an object instance, indexes refer to properties or fields; when the context is a `Map`, indexes refer to map keys.
@@ -112,9 +137,9 @@ registerMultiInjectServices(
     options,
     RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList,
     [
-    { target: PropertyOwnerResolver, token: RsXExpressionParserInjectionTokens.PropertyOwnerResolver },
-    { target: ArrayIndexOwnerResolver, token: RsXExpressionParserInjectionTokens.ArrayIndexOwnerResolver },
-    { target: MapKeyOwnerResolver, token: RsXExpressionParserInjectionTokens.MapKeyOwnerResolver },
+        { target: PropertyOwnerResolver, token: RsXExpressionParserInjectionTokens.PropertyOwnerResolver },
+        { target: ArrayIndexOwnerResolver, token: RsXExpressionParserInjectionTokens.ArrayIndexOwnerResolver },
+        { target: MapKeyOwnerResolver, token: RsXExpressionParserInjectionTokens.MapKeyOwnerResolver },
     ]
 );
 ```
@@ -142,7 +167,6 @@ A common use case for a custom resolver occurs during data binding. In such scen
 
 This behavior can be implemented by providing a custom `IIdentifierOwnerResolver` that encapsulates the required traversal logic.
 
----
 
 ## Supported Expresssion types
 

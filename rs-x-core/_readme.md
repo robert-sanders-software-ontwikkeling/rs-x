@@ -1,11 +1,15 @@
 # Core
 
+Provides shared core functionality for the RS-X project:
 
-
-- **WaitForEvent class**
-
-   The **WaitForEvent** class is a handy utility to wait for an **Observable** to emit a value.  
-    It is currently used extensively in unit tests to simplify asynchronous testing.
+*  [Dependency Injection](#dependency-injection)
+*  [Deep Clone](#deep-clone) 
+*  [Deep Equality](#deep-equality)
+*  [Guid Factory](#guid-factory)
+*  [Index Value Accessor](#index-value-accessor)
+*  [Singleton factory](#singleton-factory)
+*  [Error Log](#error-log)
+*  [WaitForEvent](#waitforevent)
 
 ## Dependency Injection
 
@@ -87,7 +91,7 @@ Overrides an existing multi-inject list, removing any previous bindings for the 
 - Ensures that `container.getAll(multiInjectToken)` returns only the new services without duplicates.
 
 
-## Deep Clone Service
+## Deep Clone
 
  - Uses [structuredClone](https://developer.mozilla.org/en-US/docs/Web/API/Window/structuredClone) by default  
 - Falls back to [Lodash `cloneDeepWith`](https://lodash.com/docs/4.17.15#cloneDeepWith) for unsupported types
@@ -144,31 +148,7 @@ There are two ways to get an instance:
 The following example shows how to use deep clone service:
 
 ```ts
-import {
-    IDeepClone,
-    InjectionContainer,
-    printValue,
-    RsXCoreInjectionTokens,
-    RsXCoreModule
-} from '@rs-x/core';
-
-// Load the core module into the injection container
-InjectionContainer.load(RsXCoreModule);
-const deepClone: IDeepClone = InjectionContainer.get(RsXCoreInjectionTokens.IDeepClone);
-
-export const run = (() => {
-    const object = {
-        a: 10,
-        nested: {
-            b: 20
-        }
-    };
-    const clone = deepClone.clone(object);
-
-    console.log(`Clone is a copy of the cloned object: ${object !== clone}`)
-    console.log('Cloned object');
-    printValue(clone);
-})();
+{% include_relative ../demo/src/rs-x-core/deep-clone.ts %}
 ```
 
 **Output:**
@@ -184,7 +164,7 @@ Cloned object
 }
 ```
 
-## Equality Service
+## Deep Equality
 
 Uses [fast-equals](https://github.com/planttheidea/fast-equals) for deep equality
 
@@ -240,39 +220,7 @@ There are two ways to get an instance:
 The following example shows how to use equality service
 
 ```ts
-import {
-    IEqualityService,
-    InjectionContainer,
-    printValue,
-    RsXCoreInjectionTokens,
-    RsXCoreModule
-} from '@rs-x/core';
-
-// Load the core module into the injection container
-InjectionContainer.load(RsXCoreModule);
-const equalityService: IEqualityService = InjectionContainer.get(RsXCoreInjectionTokens.IEqualityService);
-
-export const run = (() => {
-    const object1 = {
-        a: 10,
-        nested: {
-            b: 20
-        }
-    };
-    const object2 = {
-        a: 10,
-        nested: {
-            b: 20
-        }
-    };
-
-    printValue(object1);
-    console.log('is equal to')
-    printValue(object2);
-
-    const result = equalityService.isEqual(object1, object2);
-    console.log(`Result: ${result}`)
-})();
+{% include_relative ../demo/src/rs-x-core/equality-service.ts %}
 ```
 
 **Output:**
@@ -350,21 +298,7 @@ There are two ways to get an instance:
 The following example shows how to use the guid factory
 
 ```ts
-import {
-    IGuidFactory,
-    InjectionContainer,
-    RsXCoreInjectionTokens,
-    RsXCoreModule
-} from '@rs-x/core';
-
-// Load the core module into the injection container
-InjectionContainer.load(RsXCoreModule);
-const guidFactory: IGuidFactory = InjectionContainer.get(RsXCoreInjectionTokens.IGuidFactory);
-
-export const run = (() => {
-    const guid = guidFactory.create();
-    console.log(`Created guid ${guid}`)
-})();
+{% include_relative ../demo/src/rs-x-core/guid-factory.ts %}
 ```
 
 **Output:**
@@ -592,126 +526,11 @@ There are two ways to customize the index value accessor list.
 1. You want add new index value accessor list. Use the `@IndexAccessor` decorator:
 
     ```ts
-    import {
-        IIndexValueAccessor,
-        IndexAccessor,
-        InjectionContainer,
-        RsXCoreInjectionTokens,
-        RsXCoreModule
-    } from '@rs-x/core';
-
-    interface ICustomContext {
-        '1': number;
-        '2': number;
-    }
-
-    const customIndexContext = Symbol('CustomIndexContext');
-    type CustomIndex = '1'| '2';
-
-    @IndexAccessor()
-    export class CustomIndexAccessor implements IIndexValueAccessor<ICustomContext, CustomIndex> {
-        public readonly priority = 100;
-        private readonly _values = new Map<CustomIndex, number>([
-            ['1', 100],
-            ['2', 200],
-
-        ]);
-
-        public hasValue(context: ICustomContext, index: CustomIndex): boolean {
-            return context[index] !== undefined
-        }
-
-        public getIndexes(): IterableIterator<CustomIndex> {
-            return ['1', '2'].values() as IterableIterator<CustomIndex>;
-        }
-
-        public isAsync(): boolean {
-            return false;
-        }
-
-        public getResolvedValue(context: ICustomContext, index: CustomIndex): number {
-            return this.getValue(context, index);
-        }
-
-        public getValue(_: ICustomContext, index: CustomIndex): number {
-            return  this._values.get(index);
-        }
-
-        public setValue(_: ICustomContext, index: CustomIndex, value: number): void {
-            this._values.set(index, value);
-        }
-
-        public applies(context: unknown, index: CustomIndex): boolean {
-            return context  === customIndexContext && index === '1' || index === '2'
-        }
-    }
-
-    // Load the core module into the injection container
-    InjectionContainer.load(RsXCoreModule);
-    const indexValueAccessor: IIndexValueAccessor =  InjectionContainer.get(RsXCoreInjectionTokens.IIndexValueAccessor);
-
-    export const run = (() => {
-        const initialValue = indexValueAccessor.getValue(customIndexContext, '2');
-        console.log(`Initial value for index '2': ${initialValue}`);
-
-        indexValueAccessor.setValue(customIndexContext, '2', 2000);
-        const changedValue = indexValueAccessor.getValue(customIndexContext, '2');
-        console.log(`value for index '2' after setting it to 2000: ${changedValue}` );
-
-    })();
-
+    {% include_relative ../demo/src/rs-x-core/add-custom-index-value-accessor.ts %}
     ```
 2. Redefine index value accessor list:
     ```ts
-    import {
-        ArrayIndexAccessor,
-        ContainerModule,
-        IIndexValueAccessor,
-        InjectionContainer,
-        overrideMultiInjectServices,
-        PropertyValueAccessor,
-        RsXCoreInjectionTokens,
-        RsXCoreModule
-    } from '@rs-x/core';
-
-    // Load the core module into the injection container
-    InjectionContainer.load(RsXCoreModule);
-
-    export const MyModule = new ContainerModule((options) => {
-        overrideMultiInjectServices(options, RsXCoreInjectionTokens.IIndexValueAccessorList,
-            [
-                { target: PropertyValueAccessor, token: RsXCoreInjectionTokens.IPropertyValueAccessor },
-                { target: ArrayIndexAccessor, token: RsXCoreInjectionTokens.IArrayIndexAccessor },
-            ]
-        );
-    });
-
-    InjectionContainer.load(MyModule);
-    const indexValueAccessor: IIndexValueAccessor = InjectionContainer.get(RsXCoreInjectionTokens.IIndexValueAccessor);
-
-    export const run = (() => {
-        const object = {
-            a: 10,
-            array: [1, 2],
-            map: new Map([['x', 300]])
-        };
-        const aValue = indexValueAccessor.getValue(object, 'a');
-        console.log(`Value of field 'a': ${aValue} `);
-
-        const arrayValue = indexValueAccessor.getValue(object.array, 1);
-        console.log(`Value of 'array[1]': ${arrayValue} `);
-
-        let errrThrown = false;
-        try {
-             indexValueAccessor.getValue(object.map, 'x')
-        } catch {
-            errrThrown = true
-        }
-
-        console.log(`Value of 'map['x'] will throw error: ${errrThrown}`);
-
-    })();
-
+    {% include_relative ../demo/src/rs-x-core/redefine-custom-index-value-accessor-list.ts %}
     ```
 
 ## Singleton factory
@@ -721,255 +540,7 @@ Besides static singleton services registered via the dependency injection framew
 For example, suppose we have a service that patches a property on an object so it can emit an event whenever the property value changes. In this scenario, we want to ensure that the property is patched **only once**. The example below shows how we can use `SingletonFactory` to implement this:
 
 ```ts
-import {
-    IDisposable,
-    IDisposableOwner,
-    InvalidOperationException,
-    IPropertyChange,
-    IPropertyDescriptor,
-    PropertyDescriptorType,
-    SingletonFactory,
-    Type,
-    UnsupportedException
-} from '@rs-x/core';
-import { Observable, Subject } from 'rxjs';
-
-interface IObserver extends IDisposable {
-    changed: Observable<IPropertyChange>;
-}
-
-class PropertObserver implements IObserver {
-    private _isDisposed = false;
-    private _value: unknown;
-    private _propertyDescriptorWithTarget: IPropertyDescriptor;
-    private readonly _changed = new Subject<IPropertyChange>();
-
-    constructor(
-        private readonly _owner: IDisposableOwner,
-        private readonly _target: object,
-        private readonly _propertyName: string,
-    ) {
-        this.patch();
-    }
-
-    public get changed(): Observable<IPropertyChange> {
-        return this._changed;
-    }
-
-    public dispose(): void {
-        if (this._isDisposed) {
-            return;
-        }
-
-        if (!this._owner?.canDispose || this._owner.canDispose()) {
-            const propertyName = this._propertyName as string;
-            const value = this._target[propertyName];
-            //to prevent errors if is was non configurable
-            delete this._target[propertyName];
-
-            if (
-                this._propertyDescriptorWithTarget.type !==
-                PropertyDescriptorType.Function
-            ) {
-                this._target[propertyName] = value
-            }
-
-            this._propertyDescriptorWithTarget = undefined;
-        }
-
-        this._owner?.release?.();
-    }
-
-    private patch(): void {
-        const descriptorWithTarget = Type.getPropertyDescriptor(
-            this._target,
-            this._propertyName
-        );
-        const descriptor = descriptorWithTarget.descriptor;
-        let newDescriptor: PropertyDescriptor;
-
-        if (descriptorWithTarget.type === PropertyDescriptorType.Function) {
-            throw new UnsupportedException('Methods are not supported')
-        } else if (!descriptor.get && !descriptor.set) {
-            newDescriptor =
-                this.createFieldPropertyDescriptor(descriptorWithTarget);
-        } else if (descriptor.set) {
-            newDescriptor =
-                this.createWritablePropertyDescriptor(descriptorWithTarget);
-        } else {
-            throw new InvalidOperationException(
-                `Property '${this._propertyName}' can not be watched because it is readonly`
-            );
-        }
-
-        Object.defineProperty(this._target, this._propertyName, newDescriptor);
-
-        this._propertyDescriptorWithTarget = descriptorWithTarget;
-    }
-
-    private emitChange(change: Partial<IPropertyChange>, id: unknown) {
-        this._value = change.newValue;
-
-        this._changed.next({
-            arguments: [],
-            ...change,
-            chain: [{ object: this._target, id: this._propertyName }],
-            target: this._target,
-            id,
-        });
-    }
-
-    private createFieldPropertyDescriptor(
-        descriptorWithTarget: IPropertyDescriptor
-    ): PropertyDescriptor {
-        const newDescriptor = { ...descriptorWithTarget.descriptor };
-
-        newDescriptor.get = () => this._value;
-        delete newDescriptor.writable;
-        delete newDescriptor.value;
-
-        newDescriptor.set = (value) => {
-            if (value !== this._value) {
-                this.emitChange({ newValue: value, }, this._propertyName);
-            }
-        };
-
-        this._value = this._target[this._propertyName];
-
-        return newDescriptor;
-    }
-
-    private createWritablePropertyDescriptor(
-        descriptorWithTarget: IPropertyDescriptor
-    ): PropertyDescriptor {
-        const newDescriptor = { ...descriptorWithTarget.descriptor };
-        const oldSetter = descriptorWithTarget.descriptor.set;
-        newDescriptor.set = (value) => {
-            const oldValue = this._target[this._propertyName];
-            if (value !== oldValue) {
-                oldSetter.call(this._target, value);
-                this.emitChange({ newValue: value }, this._propertyName);
-            }
-        };
-
-        this._value = this._target[this._propertyName];
-
-        return newDescriptor;
-    }
-}
-
-class PropertyObserverManager
-    extends SingletonFactory<
-        string,
-        string,
-        IObserver,
-        string
-    > {
-    constructor(
-        private readonly _object: object,
-        private readonly releaseObject: () => void
-    ) {
-        super();
-    }
-
-    public override getId(propertyName: string): string {
-        return propertyName;
-    }
-
-    protected override createId(propertyName: string): string {
-        return propertyName;
-    }
-
-    protected override createInstance(
-        propertyName: string,
-        id: string
-    ): IObserver {
-        return new PropertObserver(
-            {
-                canDispose: () => this.getReferenceCount(id) === 1,
-                release: () => this.release(id),
-            },
-            this._object,
-            propertyName
-        );
-    }
-
-    protected override onReleased(): void {
-        this.releaseObject();
-    }
-
-    protected override releaseInstance(observer: IObserver): void {
-        observer.dispose();
-    }
-}
-
-class ObjectPropertyObserverManager
-    extends SingletonFactory<object, object, PropertyObserverManager> {
-    constructor() { super(); }
-
-    public override getId(context: object): object {
-        return context;
-    }
-
-    protected override createId(context: object): object {
-        return context;
-    }
-
-    protected override createInstance(
-        context: object
-    ): PropertyObserverManager {
-        return new PropertyObserverManager(
-            context,
-            () => this.release(context)
-        );
-    }
-    protected override releaseInstance(propertyObserverManager: PropertyObserverManager): void {
-        propertyObserverManager.dispose();
-    }
-}
-
-class PropertyObserverFactory {
-    private readonly _objectPropertyObserverManager = new ObjectPropertyObserverManager();
-
-    public create(context: object, propertyName: string): IObserver {
-        return this._objectPropertyObserverManager
-            .create(context).instance
-            .create(propertyName).instance;
-    }
-}
-
-export const run = (() => {
-    const context = {
-        a: 10
-    };
-    const propertyObserverFactory = new PropertyObserverFactory();
-
-    const aObserver1 = propertyObserverFactory.create(context, 'a');
-    const aObserver2 = propertyObserverFactory.create(context, 'a');
-
-    const changeSubsription1 = aObserver1.changed.subscribe((change) => {
-        console.log('Observer 1:')
-        console.log(change.newValue)
-    });
-    const changeSubsription2 = aObserver1.changed.subscribe((change) => {
-        console.log('Observer 2:')
-        console.log(change.newValue)
-    });
-
-    console.log('You can observe the same property multiple times but only one observer will be create:');
-    console.log(aObserver1 === aObserver2);
-
-    console.log('Changing value to 20:')
-
-    context.a = 20;
-
-    // Dispose of the observers 
-    aObserver1.dispose();
-    aObserver2.dispose();
-    // Unsubsribe to the changed event
-    changeSubsription1.unsubscribe();
-    changeSubsription2.unsubscribe();
-})();
+{% include_relative ../demo/src/rs-x-core/implementation-of-singleton-factory.ts %}
 ```
 
 **Output:**
@@ -1014,7 +585,7 @@ export interface IErrorLog {
 
 ### Members
 
-#### **error**
+### **error**
 **Type:** `Observable<IError>`  
 event emitted when error is added
 
@@ -1094,39 +665,7 @@ There are two ways to get an instance:
 The following example shows how to use the error log
 
 ```ts
-import {
-    IErrorLog,
-    InjectionContainer,
-    printValue,
-    RsXCoreInjectionTokens,
-    RsXCoreModule
-} from '@rs-x/core';
-
-// Load the core module into the injection container
-InjectionContainer.load(RsXCoreModule);
-const errorLog: IErrorLog = InjectionContainer.get(RsXCoreInjectionTokens.IErrorLog);
-
-export const run = (() => {
-    const context = {
-        name: 'My error context'
-    };
-    const changeSubscription = errorLog.error.subscribe(e => {
-        console.log('Emmitted error');
-        printValue(e);
-    });
-
-    try {
-        throw new Error('Oops an error');
-    } catch (e) {
-        errorLog.add({
-            exception: e,
-            message: 'Oops',
-            context,
-        });
-    } finally {
-        changeSubscription.unsubscribe();
-    }
-})();
+{% include_relative ../demo/src/rs-x-core/error-log.ts %}
 ```
 
 **Output:**
@@ -1190,7 +729,7 @@ Configuration options for waiting.
 ---            
 
  
-### Members
+### Methods
 
 #### **wait(trigger)**
 
@@ -1208,35 +747,7 @@ Waits for the observable to emit the specified number of events after running th
 ### Example
 
 ```ts
-import {
-    printValue,
-    WaitForEvent,
-
-} from '@rs-x/core';
-import { Observable, Subject } from 'rxjs';
-
-export const run = (async () => {
-    class MyEventContext {
-        private readonly _message = new Subject<string>();
-
-
-        public get message(): Observable<string> {
-            return this._message;
-        }
-
-        public emitMessage(message: string): void {
-            this._message.next(message);
-        }
-    }
-
-    const eventContext = new MyEventContext();
-    const result = await new WaitForEvent(eventContext, 'message', { count: 2 }).wait(() => {
-        eventContext.emitMessage('Hello');
-        eventContext.emitMessage('hi');
-    });
-    console.log('Emitted events:');
-    printValue(result);
-})();
+{% include_relative ../demo/src/rs-x-core/wait-for-event.ts %}
 ```
 
 **Output:**

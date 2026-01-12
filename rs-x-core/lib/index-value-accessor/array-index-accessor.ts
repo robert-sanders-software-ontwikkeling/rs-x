@@ -3,6 +3,8 @@ import { IArrayIndexAccessor } from './array-index-accessor.type';
 
 @Injectable()
 export class ArrayIndexAccessor implements IArrayIndexAccessor {
+   public readonly priority = 5;
+
    public isAsync(): boolean {
       return false;
    }

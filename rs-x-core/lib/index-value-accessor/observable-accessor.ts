@@ -9,6 +9,7 @@ import { PENDING } from './pending';
 
 @injectable()
 export class ObservableAccessor implements IObservableAccessor {
+   public readonly priority = 2;
    private readonly _lastValues = new WeakMap<LastValuObservable, unknown>();
 
    public getIndexes(): IterableIterator<string> {

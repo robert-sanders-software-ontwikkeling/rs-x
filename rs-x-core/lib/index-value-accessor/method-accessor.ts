@@ -9,6 +9,8 @@ import { IMethodAccessor } from './method-accessor.type';
 
 @Injectable()
 export class MethodAccessor implements IMethodAccessor {
+   public readonly priority = 6;
+
    constructor(
       @Inject(RsXCoreInjectionTokens.IFunctionCallResultCacheFactory)
       private readonly _functionCallResultCacheFactory: IFunctionCallResultCacheFactory

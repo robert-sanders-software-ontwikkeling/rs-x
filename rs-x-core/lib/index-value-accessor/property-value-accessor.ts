@@ -3,6 +3,8 @@ import { Type } from '../types/type';
 import { IPropertyValueAccessor } from './property-value-accessor.type';
 
 export class PropertyValueAccessor implements IPropertyValueAccessor {
+   public readonly priority = 7;
+   
    public isAsync(): boolean {
       return false;
    }

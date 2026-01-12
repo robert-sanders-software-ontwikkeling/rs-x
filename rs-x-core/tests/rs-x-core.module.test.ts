@@ -8,7 +8,6 @@ import { GuidFactory } from '../lib/guid/guid.factory';
 import { ArrayIndexAccessor } from '../lib/index-value-accessor/array-index-accessor';
 import { DatePropertyAccessor } from '../lib/index-value-accessor/date-property-accessor';
 import { IndexValueAccessor } from '../lib/index-value-accessor/index-value-accessor';
-import { IndexValueAccessorProvider } from '../lib/index-value-accessor/index-value-accessor.provider';
 import { MapKeyAccessor } from '../lib/index-value-accessor/map-key-accessor';
 import { MethodAccessor } from '../lib/index-value-accessor/method-accessor';
 import { ObservableAccessor } from '../lib/index-value-accessor/observable-accessor';
@@ -129,22 +128,6 @@ describe('rs-x core module', () => {
       expect(a1).toBe(a2);
    });
 
-   it('can get instance of IIndexValueAcessorProvider', () => {
-      const actual = InjectionContainer.get(
-         RsXCoreInjectionTokens.IIndexValueAccessorProvider
-      );
-      expect(actual).toBeInstanceOf(IndexValueAccessorProvider);
-   });
-
-   it('IIndexValueAccessorProvider instance is a singleton', () => {
-      const a1 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IIndexValueAccessorProvider
-      );
-      const a2 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IIndexValueAccessorProvider
-      );
-      expect(a1).toBe(a2);
-   });
 
    it('can get instance of IIndexValueAccessor', () => {
       const actual = InjectionContainer.get(

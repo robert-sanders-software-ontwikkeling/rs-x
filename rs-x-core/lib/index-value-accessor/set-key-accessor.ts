@@ -4,6 +4,8 @@ import { ISetKeyAccessor } from './set-key-accessor.type';
 
 @Injectable()
 export class SetKeyAccessor implements ISetKeyAccessor {
+   public readonly priority = 3;
+
    public getIndexes(set: Set<unknown>): IterableIterator<unknown> {
      return new Set(set).values()
    }

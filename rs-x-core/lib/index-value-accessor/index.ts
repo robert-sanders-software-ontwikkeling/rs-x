@@ -4,8 +4,6 @@ export * from './date-property-accessor.interface';
 export * from './date-property-accessor';
 export * from './index-accessor.decorator';
 export * from './index-value-accessor.interface';
-export * from './index-value-accessor.provider.interface';
-export * from './index-value-accessor.provider';
 export * from './index-value-accessor';
 export * from './map-key-accessor';
 export * from './map-key-accessor.type';

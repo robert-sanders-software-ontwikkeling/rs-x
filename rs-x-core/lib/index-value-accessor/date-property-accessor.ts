@@ -3,7 +3,7 @@ import { dataProperties, DateProperty, IDatePropertyAccessor } from './date-prop
 
 @Injectable()
 export class DatePropertyAccessor implements IDatePropertyAccessor {
-
+    public readonly priority = 0;
     private readonly _setter = {
         year: (date, value) => date.setFullYear(value),
         utcYear: (date, value) => date.setUTCFullYear(value),

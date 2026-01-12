@@ -3,6 +3,8 @@ import { IMapKeyAccessor } from './map-key-accessor.type';
 
 @Injectable()
 export class MapKeyAccessor implements IMapKeyAccessor {
+   public readonly priority = 4;
+
    public getIndexes(map: Map<unknown, unknown>): IterableIterator<unknown, unknown, unknown> {
      return map.keys();
    }

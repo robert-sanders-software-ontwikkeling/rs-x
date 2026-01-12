@@ -6,7 +6,7 @@ import { IError } from './error.interface';
 @Injectable()
 export class ErrorLog implements IErrorLog {
    private readonly _error: Subject<IError>;
-
+x
    constructor() {
       this._error = new Subject();
    }
