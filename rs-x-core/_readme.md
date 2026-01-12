@@ -12,16 +12,15 @@ Provides shared core functionality for the RS-X project:
 *  [WaitForEvent](#waitforevent)
 
 ## Dependency Injection
-
-Implemented with [Inversify](https://github.com/inversify/InversifyJS)
+Implemented with [Inversify](https://github.com/inversify/InversifyJS).
 
 The following aliases were added to make them consistent with the code style used throughout the project:
 
-* `inject` renamed to `Inject`,
-* `multiInject` renamed to  `MultiInject`,
-* `injectable` renamed to  `Injectable`,
-* `unmanaged` renamed to  `Unmanaged`,
-* `preDestroy` renamed to  `PreDestroy`
+* `inject` renamed to `Inject`
+* `multiInject` renamed to `MultiInject`
+* `injectable` renamed to `Injectable`
+* `unmanaged` renamed to `Unmanaged`
+* `preDestroy` renamed to `PreDestroy`
 
 In addition, the following extensions were added to Inversify:
 
@@ -44,6 +43,7 @@ Registers multiple services under a single multi-inject token.
 | `services`         | `MultiInjectService[]`       | Array of service definitions to register. Each service must define a `target` (class) and optional `token` (symbol). |
 
 **Behavior:**
+
 - Iterates through the list of services and registers each using `registerMultiInjectService`.
 - Each service is bound to the container and added to the multi-inject token.
 
@@ -62,6 +62,7 @@ Registers a single service under a multi-inject token.
 | `options`   | `IMultiInjectTokens`                      | Object containing: `multiInjectToken` (symbol) and optional `serviceToken` (symbol). |
 
 **Behavior:**
+
 - Binds the class itself as a singleton.
 - Optionally binds a service token to the class.
 - Adds the class to the multi-inject token.
@@ -81,14 +82,17 @@ Overrides an existing multi-inject list, removing any previous bindings for the 
 | `services`         | `MultiInjectService[]`                    | Array of service definitions to register. |
 
 **Behavior:**
+
 - Removes all previous bindings for the given `multiInjectToken`.
 - Binds each service in the list to the container as a singleton.
 - Binds optional service tokens if provided.
 - Ensures no duplicate classes are added to the multi-inject token.
 
 **Usage Notes:**
+
 - Use this function when you want to completely replace the multi-inject service list.
 - Ensures that `container.getAll(multiInjectToken)` returns only the new services without duplicates.
+
 
 
 ## Deep Clone
@@ -99,7 +103,7 @@ Overrides an existing multi-inject list, removing any previous bindings for the 
 ### Get an instance of the Deep clone service
 
 The deep clone service is registered as a **singleton service**.  
-You must load the core module into the injection container if you went
+You must load the core module into the injection container if you want
 to use it.
 
 ```ts
@@ -171,7 +175,7 @@ Uses [fast-equals](https://github.com/planttheidea/fast-equals) for deep equalit
 ### Get an instance of the Equality Service
 
 The equality service is registered as a **singleton service**.  
-You must load the core module into the injection container if you went
+You must load the core module into the injection container if you want
 to use it.
 
 ```ts
@@ -249,7 +253,7 @@ Uses crypto.randomUUID() to create GUIDs
 ### Get an instance of a Guid Factory
 
 The guid factory is registered as a **singleton service**.  
-You must load the core module into the injection container if you went
+You must load the core module into the injection container if you want
 to use it.
 
 ```ts
@@ -473,7 +477,7 @@ If no suitable index value accessor can be found, an `UnsupportedException` is t
 ### Get an instance of the Index Value Accessor Service
 
 The  index value accessor service is registered as a **singleton service**.  
-You must load the core module into the injection container if you went
+You must load the core module into the injection container if you want
 to use it.
 
 ```ts
@@ -616,7 +620,7 @@ The default implementation uses `console.error` to log an error.
 ### Get an instance of the Error Log
 
 The error log is registered as a **singleton service**.  
-You must load the core module into the injection container if you went
+You must load the core module into the injection container if you want
 to use it.
 
 ```ts
