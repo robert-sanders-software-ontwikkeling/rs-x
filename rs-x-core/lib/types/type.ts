@@ -13,6 +13,8 @@ export const emptyFunction = () => { };
 export const truePredicate = () => true;
 export const echo = (value) => value;
 
+
+
 export class Type {
    public static isPositiveIntegerString(value: unknown): boolean {
       if (typeof value !== 'string' || value.length === 0) {

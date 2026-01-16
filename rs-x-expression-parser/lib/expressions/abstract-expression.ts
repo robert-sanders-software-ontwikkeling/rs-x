@@ -54,7 +54,6 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
       return this;
    }
 
-
    public get value(): T {
       return this._value;
    }
@@ -85,7 +84,6 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
       }
 
       this._owner?.release?.();
-
    }
 
    public toString(): string {
@@ -134,11 +132,11 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
 
    protected reevaluated(sender: AbstractExpression, root: AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
       return this.prepareReevaluation(sender, root, pendingCommits)
-         ? this.evaluateBottomToTop(sender, root)
+         ? this.evaluateBottomToTop(sender, root, pendingCommits)
          : false;
    }
 
-   protected evaluateBottomToTop(sender: AbstractExpression, root: AbstractExpression,): boolean {
+   protected evaluateBottomToTop(sender: AbstractExpression, root: AbstractExpression,  pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
       const value = this.evaluate(sender, root);
       if (value === PENDING) {
          return false;
@@ -146,7 +144,7 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
       this._value = value;
 
       if (this.parent) {
-         return this.parent.evaluateBottomToTop(this, root)
+         return this.parent.reevaluated(this, root, pendingCommits)
       }
       return true;
    }

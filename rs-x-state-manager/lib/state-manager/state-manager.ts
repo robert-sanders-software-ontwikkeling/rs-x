@@ -113,8 +113,10 @@ export class StateManager implements IStateManager {
       mustProxify?: MustProxify
    ): unknown {
       if (!this.isWatched(context, index, mustProxify)) {
+
+         const value = this.getState(context, index);
          this.tryToSubscribeToChange(context, index, mustProxify);
-         return undefined;
+         return value;
       } else {
          return this.increaseStateReferenceCount(context, index, true);
       }
@@ -142,7 +144,7 @@ export class StateManager implements IStateManager {
    }
 
    public setState<T>(context: unknown, index: unknown, value: T): void {
-         this.internalSetState(context, index, value, {
+      this.internalSetState(context, index, value, {
          context,
          value: this.getState(context, index)
       });
@@ -266,7 +268,7 @@ export class StateManager implements IStateManager {
 
    private getValue(context: unknown, key: unknown): unknown {
       try {
-          return this._indexValueAccessor.getResolvedValue(context, key);
+         return this._indexValueAccessor.getResolvedValue(context, key);
       } catch {
          return this.getState(context, key)
       }
@@ -369,22 +371,20 @@ export class StateManager implements IStateManager {
       transferedValue: ITransferedValue,
       watched: boolean,
    ): void {
-      if (initialValue !== transferedValue?.value) {
-         this.updateState(
-            context,
-            transferedValue?.context ?? context,
-            index,
-            initialValue,
-            watched
-         );
-         this.emitChange(
-            context,
-            index,
-            initialValue,
-            transferedValue?.value,
-            transferedValue?.context
-         );
-      }
+      this.updateState(
+         context,
+         transferedValue?.context ?? context,
+         index,
+         initialValue,
+         watched
+      );
+      this.emitChange(
+         context,
+         index,
+         initialValue,
+         transferedValue?.value,
+         transferedValue?.context
+      );
    }
 
    private getChainChanges(chain: IChainPart[]): IChainPartChange[] {

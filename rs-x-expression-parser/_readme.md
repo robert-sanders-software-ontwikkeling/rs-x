@@ -59,10 +59,12 @@ The **JavaScript Expression Parser** translates a JavaScript expression string i
   - AI decision trees
   - Ability unlock rules
   - Physics toggles
+  
 - **Spreadsheet-like calculations**  
   - Financial dashboards
   - Pricing calculators
   - Quotation systems
+  - 
 - **Validation engines**  
   Field validation based on the values of other fields.
 

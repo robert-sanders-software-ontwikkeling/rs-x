@@ -12,7 +12,6 @@ import { ErrorLog } from './error-log/error-log';
 import { IErrorLog } from './error-log/error-log.interface';
 import { FunctionCallIndexFactory } from './function-call-index/function-call-index.factory';
 import { IFunctionCallIndexFactory } from './function-call-index/function-call-index.factory.type';
-
 import { FunctionCallResultCacheFactory } from './function-call-result-cache/function-call-result-cache.factory';
 import { IFunctionCallResultCacheFactory } from './function-call-result-cache/function-call-result-cache.factory.interface';
 import { GuidFactory } from './guid/guid.factory';

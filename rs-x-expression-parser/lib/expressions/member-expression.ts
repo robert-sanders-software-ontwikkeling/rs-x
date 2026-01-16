@@ -80,7 +80,6 @@ export class MemberExpression extends AbstractExpression {
       if (senderIndex < 0) {
          return false;
       }
-
    
       if (this.shouldCancelEvaluate(senderIndex, pendingCommits)) {
          return false;
@@ -333,7 +332,7 @@ export class MemberExpression extends AbstractExpression {
 
    private onSlotChanged(sender: AbstractExpression): void {
       if (!this._rebindingSlot) {
-         this.evaluateBottomToTop(sender, this.root);
+         this.evaluateBottomToTop(sender, this.root, new Set());
       }
    }
 

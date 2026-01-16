@@ -151,6 +151,7 @@ InjectionContainer.bind(TextDocumenIndexObserverManager).to(TextDocumenIndexObse
 
 @IndexAccessor()
 export class TextDocumentIndexAccessor implements IIndexValueAccessor<TextDocument, ITextDocumentIndex> {
+    public readonly priority: 200;
 
     public hasValue(context: TextDocument, index: ITextDocumentIndex): boolean {
         return context.getLine(index) !== undefined;

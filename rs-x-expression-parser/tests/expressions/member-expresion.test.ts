@@ -619,7 +619,7 @@ describe('Memmber expression tests', () => {
          await new WaitForEvent(expression, 'changed').wait(() => { });
 
 
-         await new WaitForEvent(expression, 'changed').wait(() => {
+         await new WaitForEvent(expression, 'changed', {ignoreInitialValue: true}).wait(() => {
             expressionContext.a = {
                b: [
                   {
@@ -661,9 +661,9 @@ describe('Memmber expression tests', () => {
          const expression = jsParser.parse(expressionContext, 'a.b[1].c.d');
 
          // Wait till the expression has been initialized before changing value
-         await new WaitForEvent(expression, 'changed').wait(() => { });
+         await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-         await new WaitForEvent(expression, 'changed').wait(() => {
+         await new WaitForEvent(expression, 'changed', {ignoreInitialValue: true}).wait(() => {
             expressionContext.a.b[1] = {
                c: {
                   d: 120
@@ -825,6 +825,45 @@ describe('Memmber expression tests', () => {
       });
    });
 
+   describe('member expression with complex expression with observabble', () => {
+      it('initial value', async () => {
+         const expressionContext = {
+            parameters: new BehaviorSubject({
+               a: 10,
+               b: 20
+            })
+         };
+
+         expression = jsParser.parse(expressionContext, 'parameters.a + parameters.b');
+
+         await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+         expect(expression.value).toEqual(30);
+      });
+
+      it('will emit change event when new parameters have been emitted', async () => {
+         const expressionContext = {
+            parameters: new BehaviorSubject({
+               a: 10,
+               b: 20
+            })
+         };
+
+         expression = jsParser.parse(expressionContext, 'parameters.a + parameters.b');
+
+         await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+         await new WaitForEvent(expression, 'changed', { count: 2 }).wait(() => {
+            expressionContext.parameters.next({
+               a: 5,
+               b: 20
+            })
+         });
+
+         expect(expression.value).toEqual(25);
+      });
+
+   })
 
    it('Only relevant identifiers will be observed.', async () => {
       const expressionContext = {
@@ -881,8 +920,8 @@ describe('Memmber expression tests', () => {
       expect(expressionContext).not.isWritableProperty('f');
    });
 
-   it('When creating expressions with shared identifiers, the expressions will be observed until all associated expressions have been released.',async  () => {
-       const expressionContext = {
+   it('When creating expressions with shared identifiers, the expressions will be observed until all associated expressions have been released.', async () => {
+      const expressionContext = {
          a: {
             b: {
                c: 10,
@@ -897,7 +936,7 @@ describe('Memmber expression tests', () => {
       await new WaitForEvent(expression1, 'changed').wait(emptyFunction);
       const expression2 = jsParser.parse(expressionContext, 'a.b');
       await new WaitForEvent(expression2, 'changed').wait(emptyFunction);
-      const expression3 =  jsParser.parse(expressionContext.a.b, 'c');
+      const expression3 = jsParser.parse(expressionContext.a.b, 'c');
       await new WaitForEvent(expression3, 'changed').wait(emptyFunction);
 
       expect(expressionContext).isWritableProperty('a');

@@ -1,6 +1,6 @@
 import { emptyFunction, truePredicate } from '@rs-x/core';
 import { IContextChanged, IStateChange, IStateManager, MustProxify } from '@rs-x/state-manager';
-import { Observable, ReplaySubject, Subscription } from 'rxjs';
+import { Observable, ReplaySubject, Subject, Subscription } from 'rxjs';
 import { IExpressionChangeCommitHandler, IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 import {
    AbstractExpression,
@@ -16,6 +16,7 @@ export class IndexValueObserver {
    private readonly _changeSubscription: Subscription;
    private readonly _contextChangeSubscription: Subscription;
    private readonly _changed = new ReplaySubject<IStateChange>(1);
+   private readonly _contextChanged = new Subject<IContextChanged>();
    private _isDisposed = false;
 
    constructor(
@@ -32,7 +33,7 @@ export class IndexValueObserver {
          this._stateManager.contextChanged.subscribe(this.onContextCHanged);
       const value = this._stateManager.watchState(this._context, this._key, _mustProxify);
 
-      if(value !== undefined) {
+      if (value !== undefined) {
          this.emitChange({
             key: this._key,
             context: this._context,
@@ -45,6 +46,10 @@ export class IndexValueObserver {
 
    public get changed(): Observable<IStateChange> {
       return this._changed;
+   }
+
+   public get contextChanged(): Observable<IContextChanged> {
+      return this._contextChanged;
    }
 
    public dispose(): void {
@@ -61,13 +66,10 @@ export class IndexValueObserver {
       return this._stateManager.getState(context, key);
    }
 
-   public setValue(_context: unknown, _key: unknown, _value: unknown): void {
-      // TODO implement
-   }
-
    private onContextCHanged = (change: IContextChanged) => {
       if (this._context === change.oldContext && change.key === this._key) {
          this._context = change.context;
+         this._contextChanged.next(change);
       }
    };
 
@@ -94,7 +96,7 @@ export class IdentifierExpression extends AbstractExpression {
 
    constructor(
       private readonly _rootContext: unknown,
-       private readonly _stateManager: IStateManager,
+      private readonly _stateManager: IStateManager,
       expressionString: string,
       private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
       private readonly _indexValue?: unknown,
@@ -110,23 +112,27 @@ export class IdentifierExpression extends AbstractExpression {
    public override initialize(
       settings: IIdentifierInitializeConfig
    ): AbstractExpression {
+      this._isInitialized = false;
       super.initialize(settings);
 
       this._commitAfterInitialized = settings.context !== this._rootContext;
-      this._value = settings.currentValue;
+
       if (!this._indexValueObserver) {
-            this.observeChange(settings);
+         this.observeChange(settings);
       } else {
-         AbstractExpression.setValue(this, () =>
-            this._indexValueObserver.getValue(
-               settings.context,
-               this._indexValue ?? this.expressionString
-            )
+         const newValue = this._indexValueObserver.getValue(
+            settings.context,
+            this._indexValue ?? this.expressionString
          );
+         this.onValueChanged({
+            key: this._indexValue ?? this.expressionString,
+            context: settings.context,
+            oldValue: this._value,
+            newValue,
+            oldContext: settings.context,
+         });
       }
-
       this._isInitialized = true;
-
       return this;
    }
 
@@ -184,18 +190,18 @@ export class IdentifierExpression extends AbstractExpression {
       this._indexValueObserver = undefined;
    }
 
-   private commit = (root:AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>) => this.reevaluated(this, root, pendingCommits);
+   private commit = (root: AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>) => this.reevaluated(this, root, pendingCommits);
 
    private onValueChanged = (stateChange: IStateChange) => {
       if (this.value === stateChange.newValue) {
          return;
       }
       this._value = stateChange.newValue;
-     
+
       this._expressionChangeTransactionManager.registerChange(this.root, this._commitHandler);
 
-      if(!this._isInitialized && this._commitAfterInitialized) {
-          this._expressionChangeTransactionManager.commit();
+      if (!this._isInitialized && this._commitAfterInitialized) {
+         this._expressionChangeTransactionManager.commit();
       }
    };
 }
