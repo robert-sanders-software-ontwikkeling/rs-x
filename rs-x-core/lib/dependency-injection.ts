@@ -44,7 +44,7 @@ export interface IMultiInjectTokens {
 }
 
 
-export interface MultiInjectService {
+export interface IMultiInjectService {
    target: Newable<unknown>;
    token: symbol;
 }
@@ -52,7 +52,7 @@ export interface MultiInjectService {
 export function registerMultiInjectServices(
    options: ContainerModuleLoadOptions,
    multiInjectToken: symbol,
-   services: MultiInjectService[]
+   services: readonly IMultiInjectService[]
 ) {
 
    services.forEach(service =>
@@ -83,7 +83,7 @@ export function registerMultiInjectService(
 export function overrideMultiInjectServices(
     container: Container | ContainerModuleLoadOptions,
     multiInjectToken: symbol,
-    services: MultiInjectService[]
+    services: IMultiInjectService[]
 ) {
     // Remove previous multiInject token bindings
     if (container.isBound(multiInjectToken)) {

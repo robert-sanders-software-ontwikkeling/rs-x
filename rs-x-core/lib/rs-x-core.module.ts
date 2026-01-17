@@ -4,6 +4,7 @@ import {
    Container,
    ContainerModule,
    InjectionContainer,
+   IMultiInjectService,
    registerMultiInjectServices
 } from './dependency-injection';
 import { EqualityService } from './equality-service/equality-service';
@@ -30,6 +31,17 @@ import { RsXCoreInjectionTokens } from './rs-x-core.injection-tokens';
 import { ISequenceIdFactory } from './sequence-id/sequence-id-factory.interface';
 import { SequenceIdFactory } from './sequence-id/sequence-id.factory';
 
+export const defaultIIndexValueAccessorList: readonly IMultiInjectService[] = [
+   { target: PropertyValueAccessor, token: RsXCoreInjectionTokens.IPropertyValueAccessor },
+   { target: MethodAccessor, token: RsXCoreInjectionTokens.IMethodAccessor },
+   { target: ArrayIndexAccessor, token: RsXCoreInjectionTokens.IArrayIndexAccessor },
+   { target: MapKeyAccessor, token: RsXCoreInjectionTokens.IMapKeyAccessor },
+   { target: SetKeyAccessor, token: RsXCoreInjectionTokens.ISetKeyAccessor },
+   { target: ObservableAccessor, token: RsXCoreInjectionTokens.IObservableAccessor },
+   { target: PromiseAccessor, token: RsXCoreInjectionTokens.IPromiseAccessor },
+   { target: DatePropertyAccessor, token: RsXCoreInjectionTokens.IDatePropertyAccessor }
+];
+
 export const RsXCoreModule = new ContainerModule((options) => {
    options
       .bind<Container>(RsXCoreInjectionTokens.IInjectionContainer)
@@ -39,17 +51,10 @@ export const RsXCoreModule = new ContainerModule((options) => {
       .to(ErrorLog)
       .inSingletonScope();
 
-   registerMultiInjectServices(options, RsXCoreInjectionTokens.IIndexValueAccessorList,
-      [
-         { target: PropertyValueAccessor, token: RsXCoreInjectionTokens.IPropertyValueAccessor },
-         { target: MethodAccessor, token: RsXCoreInjectionTokens.IMethodAccessor },
-         { target: ArrayIndexAccessor, token: RsXCoreInjectionTokens.IArrayIndexAccessor },
-         { target: MapKeyAccessor, token: RsXCoreInjectionTokens.IMapKeyAccessor },
-         { target: SetKeyAccessor, token: RsXCoreInjectionTokens.ISetKeyAccessor },
-         { target: ObservableAccessor, token: RsXCoreInjectionTokens.IObservableAccessor },
-         { target: PromiseAccessor, token: RsXCoreInjectionTokens.IPromiseAccessor },
-         { target: DatePropertyAccessor, token: RsXCoreInjectionTokens.IDatePropertyAccessor }
-      ]
+   registerMultiInjectServices(
+      options,
+      RsXCoreInjectionTokens.IIndexValueAccessorList,
+      defaultIIndexValueAccessorList
    );
 
    options
