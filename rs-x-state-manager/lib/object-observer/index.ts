@@ -1,5 +1,4 @@
 export * from './factories';
-export * from './object-observer-factory.decorator';
 export * from './object-observer-proxy-pair-factory.provider.interface';
 export * from './object-observer-proxy-pair-factory.provider';
 export * from './object-observer-proxy-pair-manager';

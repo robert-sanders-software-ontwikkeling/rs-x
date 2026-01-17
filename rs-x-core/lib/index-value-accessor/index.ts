@@ -16,5 +16,7 @@ export * from './promise-accessor.interface';
 export * from './promise-accessor';
 export * from './property-value-accessor';
 export * from './property-value-accessor.type';
+export * from './resolved-value-cache.interface';
+export * from './resolved-value-cache';
 export * from './set-key-accessor';
 export * from './set-key-accessor.type';

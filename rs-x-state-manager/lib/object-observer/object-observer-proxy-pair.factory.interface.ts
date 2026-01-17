@@ -6,6 +6,7 @@ import { IProxyTarget } from './object-observer-proxy-pair-manager.type';
 export interface IObjectObserverProxyPairFactory<
    TTarget = unknown,
 > {
+   readonly priority: number;
    create(
       owner: IDisposableOwner,
       proxyTarget: IProxyTarget<TTarget>

@@ -11,14 +11,15 @@ import {
 } from '../../proxies/set-proxy/set-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
 import { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
-import { ObjectObserverProxyPairFactory } from './object-observer-proxy-pair.factory';
+import { AbstractObjectObserverProxyPairFactory } from './abstract-object-observer-proxy-pair.factory';
 import { ISetObserverProxyPairFactory } from './set-observer-proxy-pair.factory.type';
 import { IObjectPropertyObserverProxyPairManager } from '../../object-property-observer-proxy-pair-manager.type';
 
 @Injectable()
 export class SetObserverProxyPairFactory
-   extends ObjectObserverProxyPairFactory<Set<unknown>>
+   extends AbstractObjectObserverProxyPairFactory<Set<unknown>>
    implements ISetObserverProxyPairFactory {
+
    constructor(
       @Inject(RsXStateManagerInjectionTokens.ISetProxyFactory)
       private readonly _setProxyFactory: ISetProxyFactory,
@@ -30,7 +31,7 @@ export class SetObserverProxyPairFactory
       objectPropertyObserverProxyPairManager: IObjectPropertyObserverProxyPairManager
      
    ) {
-      super(true,errorLog, setKeyAccessor, objectPropertyObserverProxyPairManager);
+      super(1, true,errorLog, setKeyAccessor, objectPropertyObserverProxyPairManager);
    }
 
    public override applies(object: unknown): boolean {

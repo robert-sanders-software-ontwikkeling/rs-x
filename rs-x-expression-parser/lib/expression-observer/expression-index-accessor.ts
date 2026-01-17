@@ -1,12 +1,13 @@
 import {
-    IndexAccessor,
+    Injectable,
     Type,
     UnsupportedException
 } from '@rs-x/core';
 import { AbstractExpression, IExpression } from '../expressions';
 import { IExpressionIndexAccessor } from './expression-index-accessor.type';
 
-@IndexAccessor()
+
+@Injectable()
 export class ExpressionIndexAccessor implements IExpressionIndexAccessor {
     public readonly priority: 300;
 
@@ -15,7 +16,7 @@ export class ExpressionIndexAccessor implements IExpressionIndexAccessor {
     }
 
     public getResolvedValue(context: unknown, index: string): unknown {
-        return this.getValue(context, index);
+        return Type.cast<IExpression>(context[index])?.value;
     }
     
     public hasValue(context: unknown, index: string): boolean {
@@ -23,7 +24,7 @@ export class ExpressionIndexAccessor implements IExpressionIndexAccessor {
     }
 
     public getValue(context: unknown, index: string): unknown {
-        return Type.cast<IExpression>(context[index])?.value;
+        return context[index];
     }
 
     public setValue(): void {
@@ -34,8 +35,7 @@ export class ExpressionIndexAccessor implements IExpressionIndexAccessor {
         return [].values();
     }
 
-    public applies(_: unknown, index: unknown): boolean {
-        return index instanceof AbstractExpression;
+    public applies(context: unknown, index: string): boolean {
+        return context[index] instanceof AbstractExpression;
     }
-
 }

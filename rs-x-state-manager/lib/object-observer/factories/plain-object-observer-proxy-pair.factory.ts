@@ -15,13 +15,14 @@ import { ObserverGroup } from '../../observer-group';
 import { IObserver } from '../../observer.interface';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
 import { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
-import { ObjectObserverProxyPairFactory } from './object-observer-proxy-pair.factory';
+import { AbstractObjectObserverProxyPairFactory } from './abstract-object-observer-proxy-pair.factory';
 import { IPlainObjectObserverProxyPairFactory } from './plain-object-observer-proxy-pair.factory.type';
 
 @Injectable()
 export class PlainObjectObserverProxyPairFactory
-   extends ObjectObserverProxyPairFactory<Record<string, unknown>>
+   extends AbstractObjectObserverProxyPairFactory<Record<string, unknown>>
    implements IPlainObjectObserverProxyPairFactory {
+      
    constructor(
       @Inject(RsXCoreInjectionTokens.IErrorLog)
       errorLog: IErrorLog,
@@ -30,7 +31,7 @@ export class PlainObjectObserverProxyPairFactory
       @Inject(RsXStateManagerInjectionTokens.IObjectPropertyObserverProxyPairManager)
       objectPropertyObserverProxyPairManager: IObjectPropertyObserverProxyPairManager
    ) {
-      super(true, errorLog, propertyValueAccessor, objectPropertyObserverProxyPairManager);
+      super(7, true, errorLog, propertyValueAccessor, objectPropertyObserverProxyPairManager);
    }
 
    public applies(object: object): boolean {

@@ -2,11 +2,20 @@ import { injectable } from 'inversify';
 import { UnsupportedException } from '../exceptions';
 import { IPromiseAccessor } from './promise-accessor.interface';
 import { PENDING } from './pending';
+import { IResolvedValueCache } from './resolved-value-cache.interface';
+import { Inject } from '../dependency-injection';
+import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
 
 @injectable()
 export class PromiseAccessor implements IPromiseAccessor {
    public readonly priority = 1;
-   private readonly _lastValues = new WeakMap<Promise<unknown>, unknown>();
+   
+   constructor(
+      @Inject(RsXCoreInjectionTokens.IResolvedValueCache)
+      private readonly _resolvedValueCache:IResolvedValueCache
+   ) {
+      
+   }
 
    public getIndexes(): IterableIterator<string> {
       return [].values()
@@ -21,7 +30,7 @@ export class PromiseAccessor implements IPromiseAccessor {
    }
 
    public getResolvedValue(context: unknown, index: string): unknown {
-      return this._lastValues.get(context[index]) ?? PENDING;
+      return this._resolvedValueCache.get(context[index]) ?? PENDING;
    }
 
    public getValue(context: unknown, index: string): unknown {
@@ -37,10 +46,10 @@ export class PromiseAccessor implements IPromiseAccessor {
    }
 
    public setLastValue(promise: Promise<unknown>, value: unknown): void {
-      this._lastValues.set(promise, value);
+      this._resolvedValueCache.set(promise, value);
    }
 
    public clearLastValue(promise: Promise<unknown>): void {
-      this._lastValues.delete(promise);
+      this._resolvedValueCache.delete(promise);
    }
 }

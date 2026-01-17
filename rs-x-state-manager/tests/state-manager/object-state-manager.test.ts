@@ -1,11 +1,21 @@
-import { DeepClone } from '@rs-x/core';
-import { ObjectStateManager } from '../../lib/state-manager/object-state-manager';
+import { InjectionContainer } from '@rs-x/core';
+import { RsXStateManagerInjectionTokens } from '../../lib/rs-x-state-manager-injection-tokes';
+import { RsXStateManagerModule, unloadRsXStateManagerModule } from '../../lib/rs-x-state-manager.module';
+import { IObjectStateManager } from '../../lib/state-manager/object-state-manager.interface';
+
 
 describe('ObjectStateManager tests', () => {
-   let objectStateManager: ObjectStateManager;
+   let objectStateManager: IObjectStateManager;
+   beforeAll(async () => {
+      await InjectionContainer.load(RsXStateManagerModule);
+      objectStateManager = InjectionContainer.get(RsXStateManagerInjectionTokens.IObjectStateManager)
+   })
+   afterAll(async() => {
+      await unloadRsXStateManagerModule();
+   })
 
-   beforeEach(() => {
-      objectStateManager = new ObjectStateManager(new DeepClone());
+   afterEach(() => {
+     objectStateManager.dispose();
    });
 
    it('set state will create a copy of a value', () => {

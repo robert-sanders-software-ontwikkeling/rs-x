@@ -11,6 +11,9 @@ import { IObjectObserverProxyPairFactory } from '../object-observer-proxy-pair.f
 export class PromiseObserverProxyPairFactory
    implements
    IObjectObserverProxyPairFactory<Promise<unknown>> {
+
+   public readonly priority = 4;
+   
    constructor(
       @Inject(RsXStateManagerInjectionTokens.IPromiseProxyFactory)
       private readonly _promiseProxyFactory: IPromiseProxyFactory

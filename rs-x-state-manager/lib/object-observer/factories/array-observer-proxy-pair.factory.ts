@@ -9,13 +9,14 @@ import { IArrayObserverProxyPair, IArrayProxyFactory } from '../../proxies/array
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
 import { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
 import { IArrayObserverProxyPairFactory } from './array-observer-proxy-pair.factory.type';
-import { ObjectObserverProxyPairFactory } from './object-observer-proxy-pair.factory';
+import { AbstractObjectObserverProxyPairFactory } from './abstract-object-observer-proxy-pair.factory';
 import { IObjectPropertyObserverProxyPairManager } from '../../object-property-observer-proxy-pair-manager.type';
 
 @Injectable()
 export class ArrayObserverProxyPairFactory
-   extends ObjectObserverProxyPairFactory<unknown[]>
+   extends AbstractObjectObserverProxyPairFactory<unknown[]>
    implements IArrayObserverProxyPairFactory {
+
    constructor(
       @Inject(RsXStateManagerInjectionTokens.IArrayProxyFactory)
       private readonly _arrayProxyFactory: IArrayProxyFactory,
@@ -27,7 +28,7 @@ export class ArrayObserverProxyPairFactory
       objectPropertyObserverProxyPairManager: IObjectPropertyObserverProxyPairManager
       
    ) {
-      super(true,errorLog, arrayIndexAccessor, objectPropertyObserverProxyPairManager);
+      super(5, true,errorLog, arrayIndexAccessor, objectPropertyObserverProxyPairManager);
    }
 
    public override applies(object: unknown): boolean {

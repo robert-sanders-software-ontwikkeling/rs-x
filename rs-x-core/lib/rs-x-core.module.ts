@@ -1,10 +1,14 @@
-import { DeepClone } from './deep-clone/deep-clone';
+import { DeepCloneValueGetter } from './deep-clone/deep-clone-value-getter';
+import { IDeepCloneValueGetter } from './deep-clone/deep-clone-value-getter.interface';
 import { IDeepClone } from './deep-clone/deep-clone.interface';
+import { DefaultDeepClone } from './deep-clone/default-deep-clone';
+import { LodashDeepClone } from './deep-clone/lodash-deep-clone';
+import { StructuredDeepClone } from './deep-clone/structured-deep-clone';
 import {
    Container,
    ContainerModule,
-   InjectionContainer,
    IMultiInjectService,
+   InjectionContainer,
    registerMultiInjectServices
 } from './dependency-injection';
 import { EqualityService } from './equality-service/equality-service';
@@ -26,12 +30,14 @@ import { MethodAccessor } from './index-value-accessor/method-accessor';
 import { ObservableAccessor } from './index-value-accessor/observable-accessor';
 import { PromiseAccessor } from './index-value-accessor/promise-accessor';
 import { PropertyValueAccessor } from './index-value-accessor/property-value-accessor';
+import { ResolvedValueCache } from './index-value-accessor/resolved-value-cache';
+import { IResolvedValueCache } from './index-value-accessor/resolved-value-cache.interface';
 import { SetKeyAccessor } from './index-value-accessor/set-key-accessor';
 import { RsXCoreInjectionTokens } from './rs-x-core.injection-tokens';
 import { ISequenceIdFactory } from './sequence-id/sequence-id-factory.interface';
 import { SequenceIdFactory } from './sequence-id/sequence-id.factory';
 
-export const defaultIIndexValueAccessorList: readonly IMultiInjectService[] = [
+export const defaultIndexValueAccessorList: readonly IMultiInjectService[] = [
    { target: PropertyValueAccessor, token: RsXCoreInjectionTokens.IPropertyValueAccessor },
    { target: MethodAccessor, token: RsXCoreInjectionTokens.IMethodAccessor },
    { target: ArrayIndexAccessor, token: RsXCoreInjectionTokens.IArrayIndexAccessor },
@@ -42,6 +48,11 @@ export const defaultIIndexValueAccessorList: readonly IMultiInjectService[] = [
    { target: DatePropertyAccessor, token: RsXCoreInjectionTokens.IDatePropertyAccessor }
 ];
 
+export const defaultDeeoCloneList: readonly IMultiInjectService[] = [
+   { target: StructuredDeepClone, token: RsXCoreInjectionTokens.IStructuredDeepClone },
+   { target: LodashDeepClone, token: RsXCoreInjectionTokens.ILodashDeepClone },
+];
+
 export const RsXCoreModule = new ContainerModule((options) => {
    options
       .bind<Container>(RsXCoreInjectionTokens.IInjectionContainer)
@@ -50,26 +61,18 @@ export const RsXCoreModule = new ContainerModule((options) => {
       .bind<IErrorLog>(RsXCoreInjectionTokens.IErrorLog)
       .to(ErrorLog)
       .inSingletonScope();
-
-   registerMultiInjectServices(
-      options,
-      RsXCoreInjectionTokens.IIndexValueAccessorList,
-      defaultIIndexValueAccessorList
-   );
-
    options
       .bind<IIndexValueAccessor>(RsXCoreInjectionTokens.IIndexValueAccessor)
       .to(IndexValueAccessor)
       .inSingletonScope();
    options
       .bind<IDeepClone>(RsXCoreInjectionTokens.IDeepClone)
-      .to(DeepClone)
+      .to(DefaultDeepClone)
       .inSingletonScope();
    options
       .bind<IEqualityService>(RsXCoreInjectionTokens.IEqualityService)
       .to(EqualityService)
       .inSingletonScope();
-
    options
       .bind<ISequenceIdFactory>(RsXCoreInjectionTokens.ISequenceIdFactory)
       .to(SequenceIdFactory)
@@ -86,4 +89,29 @@ export const RsXCoreModule = new ContainerModule((options) => {
       .bind<IGuidFactory>(RsXCoreInjectionTokens.IGuidFactory)
       .to(GuidFactory)
       .inSingletonScope();
+   options
+      .bind<IResolvedValueCache>(RsXCoreInjectionTokens.IResolvedValueCache)
+      .to(ResolvedValueCache)
+      .inSingletonScope();
+    options
+      .bind<IDeepCloneValueGetter>(RsXCoreInjectionTokens.IDeepCloneValueGetter)
+      .to(DeepCloneValueGetter)
+      .inSingletonScope();
+
+      options
+      .bind<IDeepCloneValueGetter>(RsXCoreInjectionTokens.DefaultDeepCloneValueGetter)
+      .to(DeepCloneValueGetter)
+      .inSingletonScope();
+
+      
+   registerMultiInjectServices(
+      options,
+      RsXCoreInjectionTokens.IIndexValueAccessorList,
+      defaultIndexValueAccessorList
+   );
+   registerMultiInjectServices(
+      options,
+      RsXCoreInjectionTokens.IDeepCloneList,
+      defaultDeeoCloneList
+   );
 });

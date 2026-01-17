@@ -8,5 +8,7 @@ export const RsXExpressionParserInjectionTokens = {
    IExpressionChangeTransactionManager: Symbol('IExpressionChangeTransactionManager'),
    IExpressionParser: Symbol('IExpressionParser'),
    IExpressionFactory:  Symbol('IExpressionFactory'),
-   IExpressionIndexAccessor: Symbol('IExpressionIndexAccessor')
+   IExpressionObserverProxyPairFactory: Symbol('IExpressionObserverProxyPairFactory'),
+   IExpressionIndexAccessor: Symbol('IExpressionIndexAccessor'),
+   IExpressionObserverFactory: Symbol('IExpressionObserverFactory')
 };

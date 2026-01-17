@@ -3,14 +3,13 @@ import { isObservable } from 'rxjs';
 import { Injectable } from '../dependency-injection';
 import { IDeepClone } from './deep-clone.interface';
 
+
 @Injectable()
-export class DeepClone implements IDeepClone {
+export class LodashDeepClone implements IDeepClone {
+   public readonly priority = 1;
+
    public clone(source: unknown): unknown {
-      try {
-         return structuredClone(source);
-      } catch {
-         return cloneDeepWith(source, this.cloneExceptPredicate);
-      }
+      return cloneDeepWith(source, this.cloneExceptPredicate);
    }
 
    private cloneExceptPredicate = (value: unknown): unknown => {

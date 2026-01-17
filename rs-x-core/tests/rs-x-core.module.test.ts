@@ -1,4 +1,5 @@
-import { DeepClone } from '../lib/deep-clone/deep-clone';
+import { DeepCloneValueGetter } from '../lib/deep-clone/deep-clone-value-getter';
+import { DefaultDeepClone } from '../lib/deep-clone/default-deep-clone';
 import { InjectionContainer } from '../lib/dependency-injection';
 import { EqualityService } from '../lib/equality-service/equality-service';
 import { ErrorLog } from '../lib/error-log/error-log';
@@ -13,6 +14,7 @@ import { MethodAccessor } from '../lib/index-value-accessor/method-accessor';
 import { ObservableAccessor } from '../lib/index-value-accessor/observable-accessor';
 import { PromiseAccessor } from '../lib/index-value-accessor/promise-accessor';
 import { PropertyValueAccessor } from '../lib/index-value-accessor/property-value-accessor';
+import { ResolvedValueCache } from '../lib/index-value-accessor/resolved-value-cache';
 import { SetKeyAccessor } from '../lib/index-value-accessor/set-key-accessor';
 import { RsXCoreInjectionTokens } from '../lib/rs-x-core.injection-tokens';
 import { RsXCoreModule } from '../lib/rs-x-core.module';
@@ -182,7 +184,7 @@ describe('rs-x core module', () => {
 
    it('can get instance of IDeepClone', () => {
       const actual = InjectionContainer.get(RsXCoreInjectionTokens.IDeepClone);
-      expect(actual).toBeInstanceOf(DeepClone);
+      expect(actual).toBeInstanceOf(DefaultDeepClone);
    });
 
    it('IDeepClone instance is a singleton', () => {
@@ -308,6 +310,41 @@ describe('rs-x core module', () => {
       );
       const a2 = InjectionContainer.get(
          RsXCoreInjectionTokens.IGuidFactory
+      );
+      expect(a1).toBe(a2);
+   });
+
+
+   it('can get instance of IResolvedValueCache', () => {
+      const actual = InjectionContainer.get(
+         RsXCoreInjectionTokens.IResolvedValueCache
+      );
+      expect(actual).toBeInstanceOf(ResolvedValueCache);
+   });
+
+   it('IResolvedValueCache instance is a singleton', () => {
+      const a1 = InjectionContainer.get(
+         RsXCoreInjectionTokens.IResolvedValueCache
+      );
+      const a2 = InjectionContainer.get(
+         RsXCoreInjectionTokens.IResolvedValueCache
+      );
+      expect(a1).toBe(a2);
+   });
+
+   it('can get instance of IDeepCloneValueGetter', () => {
+      const actual = InjectionContainer.get(
+         RsXCoreInjectionTokens.IDeepCloneValueGetter
+      );
+      expect(actual).toBeInstanceOf(DeepCloneValueGetter);
+   });
+
+   it('IDeepCloneValueGetter instance is a singleton', () => {
+      const a1 = InjectionContainer.get(
+         RsXCoreInjectionTokens.IDeepCloneValueGetter
+      );
+      const a2 = InjectionContainer.get(
+         RsXCoreInjectionTokens.IDeepCloneValueGetter
       );
       expect(a1).toBe(a2);
    });

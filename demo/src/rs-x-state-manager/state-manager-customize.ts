@@ -1,21 +1,24 @@
 import {
+    ContainerModule,
+    defaultIndexValueAccessorList,
     IDisposableOwner,
     IErrorLog,
     IGuidFactory,
     IIndexValueAccessor,
-    IndexAccessor,
     Inject,
     Injectable,
     InjectionContainer,
     IPropertyChange,
+    overrideMultiInjectServices,
     RsXCoreInjectionTokens,
     SingletonFactory,
     truePredicate
 } from '@rs-x/core';
 import {
     AbstractObserver,
+    defaultObjectObserverProxyPairFactoryList,
+    defaultPropertyObserverProxyPairFactoryList,
     IIndexObserverInfo,
-    IndexObserverFactory,
     IndexObserverProxyPairFactory,
     IObjectObserverProxyPairFactory,
     IObjectObserverProxyPairManager,
@@ -25,14 +28,19 @@ import {
     IProxyTarget,
     IStateChange,
     IStateManager,
-    ObjectObserverFactory,
     RsXStateManagerInjectionTokens,
     RsXStateManagerModule
 } from '@rs-x/state-manager';
 import { ReplaySubject, Subscription } from 'rxjs';
 
-// Load the state manager module into the injection container
-InjectionContainer.load(RsXStateManagerModule);
+const MyInjectTokens = {
+    TextDocumentObserverManager: Symbol('TextDocumentObserverManager'),
+    TextDocumenIndexObserverManager: Symbol('TextDocumenIndexObserverManager'),
+    TextDocumentIndexAccessor: Symbol('TextDocumentIndexAccessor'),
+    TextDocumentObserverProxyPairFactory: Symbol('TextDocumentObserverProxyPairFactory'),
+    TextDocumentInxdexObserverProxyPairFactory: Symbol('TextDocumentInxdexObserverProxyPairFactory')
+    
+};
 
 class IndexForTextDocumentxObserverManager
     extends SingletonFactory<
@@ -116,7 +124,7 @@ export class TextDocumenIndexObserverManager
         IndexForTextDocumentxObserverManager
     > {
     constructor(
-        @Inject(TextDocumentObserverManager)
+        @Inject(MyInjectTokens.TextDocumentObserverManager)
         private readonly _textDocumentObserverManager: TextDocumentObserverManager,
     ) {
         super();
@@ -144,12 +152,10 @@ export class TextDocumenIndexObserverManager
     }
 }
 
-// Normally we would create our own module
-// But for simplicity we bind our services directly to the injection container
-InjectionContainer.bind(TextDocumentObserverManager).to(TextDocumentObserverManager).inSingletonScope();
-InjectionContainer.bind(TextDocumenIndexObserverManager).to(TextDocumenIndexObserverManager).inSingletonScope();
 
-@IndexAccessor()
+
+
+@Injectable()
 export class TextDocumentIndexAccessor implements IIndexValueAccessor<TextDocument, ITextDocumentIndex> {
     public readonly priority: 200;
 
@@ -187,12 +193,12 @@ export class TextDocumentIndexAccessor implements IIndexValueAccessor<TextDocume
     }
 }
 
-@IndexObserverFactory()
+@Injectable()
 export class TextDocumentInxdexObserverProxyPairFactory extends IndexObserverProxyPairFactory<TextDocument, unknown> {
     constructor(
         @Inject(RsXStateManagerInjectionTokens.IObjectObserverProxyPairManager)
         objectObserverManager: IObjectObserverProxyPairManager,
-        @Inject(TextDocumenIndexObserverManager)
+        @Inject( MyInjectTokens.TextDocumenIndexObserverManager)
         textDocumenIndexObserverManager: TextDocumenIndexObserverManager,
         @Inject(RsXCoreInjectionTokens.IErrorLog)
         errorLog: IErrorLog,
@@ -219,10 +225,12 @@ export class TextDocumentInxdexObserverProxyPairFactory extends IndexObserverPro
     }
 }
 
-@ObjectObserverFactory()
+@Injectable()
 export class TextDocumentObserverProxyPairFactory implements IObjectObserverProxyPairFactory {
+    public readonly priority = 100;
+
     constructor(
-        @Inject(TextDocumentObserverManager)
+        @Inject( MyInjectTokens.TextDocumentObserverManager)
         private readonly _textDocumentObserverManager: TextDocumentObserverManager) { }
 
     public create(
@@ -366,6 +374,43 @@ class TextDocumentObserver extends AbstractObserver<TextDocument> {
         }
     }
 }
+
+// Load the state manager module into the injection container
+InjectionContainer.load(RsXStateManagerModule);
+
+const MyModule = new ContainerModule((options) => {
+    options
+        .bind<TextDocumentObserverManager>(
+            MyInjectTokens.TextDocumentObserverManager
+        )
+        .to(TextDocumentObserverManager)
+        .inSingletonScope();
+
+    options
+        .bind<TextDocumenIndexObserverManager>(
+            MyInjectTokens.TextDocumenIndexObserverManager
+        )
+        .to(TextDocumenIndexObserverManager)
+        .inSingletonScope();
+
+
+    overrideMultiInjectServices(options, RsXCoreInjectionTokens.IIndexValueAccessorList, [
+        { target: TextDocumentIndexAccessor, token: MyInjectTokens.TextDocumentIndexAccessor },
+        ...defaultIndexValueAccessorList
+    ]);
+
+    overrideMultiInjectServices(options, RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList, [
+        { target: TextDocumentObserverProxyPairFactory, token: MyInjectTokens.TextDocumentObserverProxyPairFactory },
+        ...defaultObjectObserverProxyPairFactoryList
+    ]);
+
+    overrideMultiInjectServices(options,RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryList, [
+        { target: TextDocumentInxdexObserverProxyPairFactory, token: MyInjectTokens.TextDocumentInxdexObserverProxyPairFactory },
+        ...defaultPropertyObserverProxyPairFactoryList
+    ]);
+});
+
+InjectionContainer.load(MyModule);
 
 function testMonitorTextDocument(stateManager: IStateManager, stateContext: { myBook: TextDocument }): void {
     const bookSubscription = stateManager.changed.subscribe(() => {

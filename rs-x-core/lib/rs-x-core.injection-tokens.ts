@@ -16,5 +16,11 @@ export const RsXCoreInjectionTokens = {
    ISequenceIdFactory:  Symbol('ISequenceIdFactory'),
    IFunctionCallIndexFactory: Symbol('IFunctionCallIndexFactory'),
    IFunctionCallResultCacheFactory: Symbol('IFunctionCallResultCacheFactory'),
-   IGuidFactory: Symbol('IGuidFactory')
+   IGuidFactory: Symbol('IGuidFactory'),
+   IStructuredDeepClone: Symbol('IStructuredDeepClone'),
+   ILodashDeepClone: Symbol('ILodashDeepClone'),
+   IDeepCloneList: Symbol('IDeepCloneList'),
+   IResolvedValueCache: Symbol('IResolvedValueCache'),
+   IDeepCloneValueGetter: Symbol('IDeepCloneValueGetter'),
+   DefaultDeepCloneValueGetter: Symbol('DefaultDeepCloneValueGetter')
 };

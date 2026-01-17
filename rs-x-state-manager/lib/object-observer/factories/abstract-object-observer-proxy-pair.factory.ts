@@ -5,11 +5,12 @@ import { IObserver } from '../../observer.interface';
 import { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
 import { IObjectObserverProxyPairFactory } from '../object-observer-proxy-pair.factory.interface';
 
-export abstract class ObjectObserverProxyPairFactory<
+export abstract class AbstractObjectObserverProxyPairFactory<
    TTarget,
    TData extends IProxyTarget<TTarget> = IProxyTarget<TTarget>,
 > implements IObjectObserverProxyPairFactory<TTarget> {
    protected constructor(
+      public readonly priority: number,
       private readonly _observerRootObserver: boolean,
       protected readonly _errorLog: IErrorLog,
       protected readonly _indexAccessor: IIndexValueAccessor,

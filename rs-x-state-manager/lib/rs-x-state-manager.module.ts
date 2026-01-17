@@ -1,4 +1,4 @@
-import { ContainerModule, InjectionContainer, registerMultiInjectServices, RsXCoreModule } from '@rs-x/core';
+import { ContainerModule, IMultiInjectService, InjectionContainer, registerMultiInjectServices, RsXCoreModule } from '@rs-x/core';
 import { ArrayObserverProxyPairFactory } from './object-observer/factories/array-observer-proxy-pair.factory';
 import { DateObserverProxyPairFactory } from './object-observer/factories/date-observer-proxy-pair.factory';
 import { MapObserverProxyPairFactory } from './object-observer/factories/map-observer-proxy-pair.factory';
@@ -43,6 +43,21 @@ import { IObjectStateManager } from './state-manager/object-state-manager.interf
 import { StateManager } from './state-manager/state-manager';
 import { IStateManager } from './state-manager/state-manager.interface';
 
+export const defaultObjectObserverProxyPairFactoryList: readonly IMultiInjectService[] = [
+   { target: PlainObjectObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.IPlainObjectObserverProxyPairFactory },
+   { target: DateObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.IDateObserverProxyPairFactory },
+   { target: ArrayObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.IArrayObserverProxyPairFactory },
+   { target: PromiseObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.PromiseObserverProxyPairFactory },
+   { target: ObservableObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.ObservableObserverProxyPairFactory },
+   { target: MapObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.IMapObserverProxyPairFactory },
+   { target: SetObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.ISetObserverProxyPairFactory },
+];
+
+export const defaultPropertyObserverProxyPairFactoryList: readonly IMultiInjectService[] = [
+   { target: NonIterableObjectPropertyObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.NonIterableObjectPropertyObserverProxyPairFactory },
+   { target: CollectionItemObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.ICollectionItemObserverProxyPairFactory },
+   { target: DatePropertyObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.IDatePropertyObserverProxyPairFactory },
+];
 
 InjectionContainer.load(RsXCoreModule);
 
@@ -87,23 +102,15 @@ export const RsXStateManagerModule = new ContainerModule((options) => {
       )
       .to(ObjectPropertyObserverProxyPairManager)
       .inSingletonScope();
-   registerMultiInjectServices(options, RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList,
-      [
-         { target: PlainObjectObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.IPlainObjectObserverProxyPairFactory },
-         { target: DateObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.IDateObserverProxyPairFactory },
-         { target: ArrayObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.IArrayObserverProxyPairFactory },
-         { target: PromiseObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.PromiseObserverProxyPairFactory },
-         { target: ObservableObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.ObservableObserverProxyPairFactory },
-         { target: MapObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.IMapObserverProxyPairFactory },
-         { target: SetObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.ISetObserverProxyPairFactory },  
-      ]
+   registerMultiInjectServices(
+      options,
+      RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList,
+      defaultObjectObserverProxyPairFactoryList
    );
-   registerMultiInjectServices(options, RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryList,
-      [
-         { target: NonIterableObjectPropertyObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.NonIterableObjectPropertyObserverProxyPairFactory },
-         { target: CollectionItemObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.ICollectionItemObserverProxyPairFactory },
-         { target: DatePropertyObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.IDatePropertyObserverProxyPairFactory },
-      ]
+   registerMultiInjectServices(
+      options, 
+      RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryList,
+      defaultPropertyObserverProxyPairFactoryList
    );
    options
       .bind<IObjectObserverProxyPairFactoryProvider>(

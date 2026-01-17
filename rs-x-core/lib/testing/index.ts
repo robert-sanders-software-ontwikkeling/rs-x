@@ -3,6 +3,7 @@ export * from './disposable-owner.mock';
 export * from './function-call-index.factory.mock';
 export * from './guid.factory.mock';
 export * from './observable.mock';
+export * from './resolved-value-cache.mock';
 export * from './sequence-id.factory.mock';
 export * from './sequence-id.mock';
 export * from './singleton-factory-private.interface';

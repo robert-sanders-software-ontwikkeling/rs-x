@@ -1,12 +1,12 @@
 import { IPropertyChange, ObservableAccessor, WaitForEvent } from '@rs-x/core';
-import { ObservableMock, SubscriptionMock } from '@rs-x/core/testing';
+import { ObservableMock, ResolvedValueCacheMock, SubscriptionMock } from '@rs-x/core/testing';
 import { Observable, Subject } from 'rxjs';
 import { ObservableProxyFactory } from '../../../lib/proxies/observable-proxy/observable-proxy.factory';
 
 describe('ObserableProxy tests', () => {
    it('dispose will unregister proxy when all references are released', () => {
       const observableProxyFactory = new ObservableProxyFactory(
-         new ObservableAccessor()
+         new ObservableAccessor(new ResolvedValueCacheMock())
       );
       const observable = new Observable<number>();
 
@@ -32,7 +32,7 @@ describe('ObserableProxy tests', () => {
 
    it('no changed event will be emitted if we do not call init', async () => {
       const observableProxyFactory = new ObservableProxyFactory(
-         new ObservableAccessor()
+         new ObservableAccessor(new ResolvedValueCacheMock())
       );
       const observable = new Subject<number>();
 
@@ -49,7 +49,7 @@ describe('ObserableProxy tests', () => {
 
    it('init is idempotent', async () => {
       const observableProxyFactory = new ObservableProxyFactory(
-         new ObservableAccessor()
+         new ObservableAccessor(new ResolvedValueCacheMock())
       );
       const observable = new ObservableMock<number>();
 
@@ -71,7 +71,7 @@ describe('ObserableProxy tests', () => {
 
    it('calling next on observable will emit change event f changed', async () => {
       const observableProxyFactory = new ObservableProxyFactory(
-         new ObservableAccessor()
+         new ObservableAccessor(new ResolvedValueCacheMock())
       );
       const observable = new Subject<number>();
 
@@ -108,7 +108,7 @@ describe('ObserableProxy tests', () => {
 
    it('dipose will uunscribe to observerable', () => {
       const observableProxyFactory = new ObservableProxyFactory(
-         new ObservableAccessor()
+         new ObservableAccessor(new ResolvedValueCacheMock())
       );
       const observable = new ObservableMock<number>();
       const subscription = new SubscriptionMock();

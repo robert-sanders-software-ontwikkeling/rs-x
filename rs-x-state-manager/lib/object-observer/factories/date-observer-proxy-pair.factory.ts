@@ -11,6 +11,8 @@ import { IDateObserverProxyPairFactory, IDateOserverProxyPair } from './date-obs
 @Injectable()
 export class DateObserverProxyPairFactory implements IDateObserverProxyPairFactory
 {
+   public readonly priority = 6;
+   
    constructor(
       @Inject(RsXStateManagerInjectionTokens.IDateProxyFactory)
       private readonly _dateProxyFactory: IDateProxyFactory,

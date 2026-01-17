@@ -81,32 +81,34 @@ export function registerMultiInjectService(
 }
 
 export function overrideMultiInjectServices(
-    container: Container | ContainerModuleLoadOptions,
-    multiInjectToken: symbol,
-    services: IMultiInjectService[]
+   container: Container | ContainerModuleLoadOptions,
+   multiInjectToken: symbol,
+   services: IMultiInjectService[]
 ) {
-    // Remove previous multiInject token bindings
-    if (container.isBound(multiInjectToken)) {
-        container.unbind(multiInjectToken);
-    }
+   // Remove previous multiInject token bindings
+   if (container.isBound(multiInjectToken)) {
+      container.unbind(multiInjectToken);
+   }
 
-    const seen = new Set<Newable<unknown>>();
+   const seen = new Set<Newable<unknown>>();
 
-    services.forEach(service => {
-        if (seen.has(service.target)) return;
-        seen.add(service.target);
+   services.forEach(service => {
+      if (seen.has(service.target)) {
+         return;
+      }
+      seen.add(service.target);
 
-        // Bind the class itself if not already bound
-        if (!container.isBound(service.target)) {
-            container.bind(service.target).to(service.target).inSingletonScope();
-        }
+      // Bind the class itself if not already bound
+      if (!container.isBound(service.target)) {
+         container.bind(service.target).to(service.target).inSingletonScope();
+      }
 
-        // Bind the service token if provided
-        if (service.token && !container.isBound(service.token)) {
-            container.bind(service.token).toService(service.target);
-        }
+      // Bind the service token if provided
+      if (service.token && !container.isBound(service.token)) {
+         container.bind(service.token).toService(service.target);
+      }
 
-        // Bind to the multi-inject token
-        container.bind(multiInjectToken).toService(service.target);
-    });
+      // Bind to the multi-inject token
+      container.bind(multiInjectToken).toService(service.target);
+   });
 }

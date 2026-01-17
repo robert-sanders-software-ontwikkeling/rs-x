@@ -13,6 +13,9 @@ export class ObservableObserverProxyPairFactory
    implements
       IObjectObserverProxyPairFactory<Observable<unknown>>
 {
+
+   public readonly priority = 3;
+
    constructor(
       @Inject(RsXStateManagerInjectionTokens.IObservableProxyFactory)
       private readonly _observableProxyFactory: IObservableProxyFactory

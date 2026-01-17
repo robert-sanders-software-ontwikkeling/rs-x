@@ -1,10 +1,11 @@
 import { IPropertyChange, PromiseAccessor, WaitForEvent } from '@rs-x/core';
+import { ResolvedValueCacheMock } from '@rs-x/core/testing';
 import { PromiseProxyFactory } from '../../../lib/proxies/promise-proxy/promise-proxy.factory';
 
 describe('PromiseProxy tests', () => {
    it('dispose will unregister proxy when all references are released', () => {
       const promiseProxyFactory = new PromiseProxyFactory(
-         new PromiseAccessor()
+         new PromiseAccessor(new ResolvedValueCacheMock())
       );
       const promise = Promise.resolve(10);
 
@@ -30,7 +31,7 @@ describe('PromiseProxy tests', () => {
 
    it('will emit initial value if promise is resolved before subscribing to change event', async () => {
       const promiseProxyFactory = new PromiseProxyFactory(
-         new PromiseAccessor()
+         new PromiseAccessor(new ResolvedValueCacheMock())
       );
       const promise = Promise.resolve(10);
 
@@ -49,7 +50,7 @@ describe('PromiseProxy tests', () => {
 
    it('will emit  value if promise is resolved after subscribing to change event', async () => {
       const promiseProxyFactory = new PromiseProxyFactory(
-         new PromiseAccessor()
+         new PromiseAccessor(new ResolvedValueCacheMock())
       );
       let resolve: (value: number) => void;
       const promise = new Promise<number>(
