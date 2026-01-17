@@ -13,14 +13,13 @@ const expressionFactory: IExpressionFactory =
     InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionFactory);
 
 
-
 export const run = (async () => {
     interface IRisk {
         volatilityIndex: number;
         recessionProbability: number;
     }
 
-    const expressionContext = {
+    const riskModel = {
         customer: {
             age: 42,
             income: 72000,
@@ -83,25 +82,25 @@ export const run = (async () => {
             ? 'HIGH'
             : (
                 (
-                (
-                    (credit.score < 600 ? 0.4 : 0.1) +
-                    (credit.outstandingDebt / customer.income) * 0.6 -
-                    (customer.employmentYears * 0.03)
-                )
-                +
-                (
-                    customer.age < 25 ? 0.15 :
-                    customer.age < 35 ? 0.05 :
-                    customer.age < 55 ? 0.00 :
-                    0.08
-                )
-                +
-                (
-                    (risk.volatilityIndex * 0.5) +
-                    (risk.recessionProbability * 0.5)
-                )
-                +
-                (market.baseInterestRate * 2)
+                    (
+                        (credit.score < 600 ? 0.4 : 0.1) +
+                        (credit.outstandingDebt / customer.income) * 0.6 -
+                        (customer.employmentYears * 0.03)
+                    )
+                    +
+                    (
+                        customer.age < 25 ? 0.15 :
+                        customer.age < 35 ? 0.05 :
+                        customer.age < 55 ? 0.00 :
+                        0.08
+                    )
+                    +
+                    (
+                        (risk.volatilityIndex * 0.5) +
+                        (risk.recessionProbability * 0.5)
+                    )
+                    +
+                    (market.baseInterestRate * 2)
                 ) >= thresholds.mediumRisk
                 ? 'MEDIUM'
                 : 'LOW'
@@ -109,7 +108,7 @@ export const run = (async () => {
         )
     )`;
 
-    const expression = expressionFactory.create(expressionContext, expressionString);
+    const expression = expressionFactory.create(riskModel, expressionString);
 
     console.log('Initial risk: ')
     const changeSubscription = expression.changed.subscribe(() => {
@@ -117,15 +116,13 @@ export const run = (async () => {
     });
 
     try {
-
-
         // Wait until the expression has been resolved (has a value)
         await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
 
         console.log('Risk after changing risk parameters from  { volatilityIndex: 0.28, recessionProbability: 0.12 } to  { volatilityIndex: 0.41, recessionProbability: 0.35 } :')
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
-            expressionContext.risk.next({
+            riskModel.risk.next({
                 volatilityIndex: 0.45,
                 recessionProbability: 0.35
             })
@@ -135,8 +132,8 @@ export const run = (async () => {
 
 
          await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
-            expressionContext.customer.age = 63;
-            expressionContext.customer.employmentYears = 1;
+            riskModel.customer.age = 63;
+            riskModel.customer.employmentYears = 1;
         });
 
 

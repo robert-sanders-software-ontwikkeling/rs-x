@@ -25,8 +25,21 @@ describe('Expression parser demos', () => {
 
             await expect(() => runDemo('rs-x-expression-parser/real-life-examples/credit-risk-assessment-expression.ts')).toOutputAsync(expected);
         });
-    });
 
+        it('Credit / Risk Assessment Modular', async () => {
+            const expected = dedent`
+                Running demo: demo/src/rs-x-expression-parser/real-life-examples/credit-risk-assessment-expression-modular.ts
+                Initial risk: 
+                LOW
+                Risk after changing risk parameters from  { volatilityIndex: 0.28, recessionProbability: 0.12 } to  { volatilityIndex: 0.41, recessionProbability: 0.35 } :
+                MEDIUM
+                Risk after change age = 63 and employmentYears = 1 
+                HIGH
+            `;
+
+            await expect(() => runDemo('rs-x-expression-parser/real-life-examples/credit-risk-assessment-expression-modular.ts')).toOutputAsync(expected);
+        });
+    });
 
     it('addition-expression.ts', async () => {
         const expected = dedent`
