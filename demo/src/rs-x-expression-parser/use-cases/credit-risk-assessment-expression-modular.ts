@@ -1,4 +1,3 @@
-
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
     IExpressionFactory,
@@ -95,7 +94,6 @@ export const run = (async () => {
     });
 
     try {
-
         // Wait until the expression has been resolved (has a value)
         await new WaitForEvent(riskClassification, 'changed').wait(emptyFunction);
 
@@ -113,7 +111,6 @@ export const run = (async () => {
             riskModel.customer.age = 63;
             riskModel.customer.employmentYears = 1;
         });
-
 
     } finally {
         changeSubscription.unsubscribe();

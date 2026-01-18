@@ -1,40 +1,42 @@
 # Expression parser
 
-The **JavaScript Expression Parser** translates a JavaScript expression string into an **observable expression tree**. It automatically registers identifiers in the expression tree to the **State Manager**. Identifiers are resolved using an **Identifier Owner Resolver** service, which can be replaced by a custom implementation if needed. This parser forms the core of the **data binding implementation** for the SPA framework and allows mixing **synchronous** and **asynchronous** data transparently. 
+The **JavaScript Expression Parser** translates a JavaScript expression string into an **observable expression tree**. Expressions are not only reactive, but also **composable**, allowing complex logic to be built from smaller, reusable expression units. In addition, you no longer need to worry about asynchronous data: it can be used as if it were **synchronous**. The RS-X framework automatically takes care of resolving and tracking async values.
+
+Besides this, expressions can also invoke **methods**. The only assumption made is that these methods are **pure**—meaning that if the input arguments change, the return value will also change, and no hidden side effects are introduced. This guarantees predictable reactivity and correct change propagation.
+
+Each identifier used inside an expression is automatically registered with the **State Manager**, enabling fine-grained change detection and highly efficient updates. Identifiers are resolved via an **Identifier Owner Resolver** service, which can be replaced with a custom implementation to adapt resolution behavior to different architectures or domains.
+
+Because expressions themselves can be referenced by other expressions, the parser supports **true modularity**. Simple expressions can be combined, nested, and reused to form larger expression graphs, with changes propagating automatically across expression boundaries.
+
+This parser forms the core of the **data-binding implementation** for the SPA framework and allows **synchronous and asynchronous data** (such as observables) to be mixed transparently, while ensuring that only the affected parts of the expression tree—and ultimately the UI—are updated.
 
 ### Examples
 
-- Expression with a promise: ``promise + 2`` (where `promise` resolves to a number)
-- Expression with an observable: ``observable + 2`` (where `observable` emits a number)
-- Expression referencing nested async data: ``x.y.z + 2``
+- **Expression with a promise** — ``promise + 2`` (where `promise` resolves to a number)
+- **Expression with an observable** - ``observable + 2`` (where `observable` emits a number)
+- **Expression referencing nested async data**
 
     ```ts
-    const context = {
-        x: Promise.resolve({
-            y: { 
-                z: Promise.resolve(10)
-            }
-        })
+    {% include_relative ../demo/src/rs-x-expression-parser/member-expression-with-promise.ts %}
+    ```
+
+- **Modular expressions** — expressions can reference other expressions:
+
+    ```ts
+    const model = {
+        a: 10,
+        b: 20
     };
 
-    const parser: IExpressionParser =  InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IExpressionParser
-    );
+    const expr1 = expressionFactory.create(model, '(a + 1)');
+    const expr2 = expressionFactory.create(model, '(b + 2)');
 
-    const expression = parser.parse(context, 'x.y.z + 2');
+    const modularModel = {
+        expr1,
+        expr2
+    };
 
-    // The current value is emitted upon subscription
-    // For this example, it emits 12
-    expression.changed.subscribe(() => {
-        console.log(expression.value);
-    });
-
-    //Trigger change event
-    context.x = Promise.resolve({
-        y: { 
-            z: Promise.resolve(12)
-        }
-    });
+    const expr3 = expressionFactory.create(modularModel, 'expr1 * expr2');
     ```
 
 ## Use cases
@@ -67,6 +69,145 @@ The **JavaScript Expression Parser** translates a JavaScript expression string i
   - 
 - **Validation engines**  
   Field validation based on the values of other fields.
+
+
+## Modular Expressions
+
+RS-X supports **modular expressions**, allowing expressions to reference **other expressions** as first-class values.
+
+This enables you to:
+- Compose complex calculations from smaller, reusable parts
+- Share intermediate results across multiple expressions
+- Improve readability, maintainability, and testability
+- Improve performance by ensuring shared expressions are **evaluated only once**
+
+Modular expressions are a core feature of the **JavaScript Expression Parser** and play an important role in scalable data-binding scenarios.
+
+## Overview
+
+Instead of defining one large expression, you can split logic into smaller expressions and combine them:
+
+- Define **base expressions** for reusable logic
+- Reference those expressions in **higher-level expressions**
+- React automatically to changes anywhere in the dependency graph
+
+Each expression remains **observable**, and changes propagate efficiently through the expression tree.
+
+## Basic Example
+
+```ts
+const model = {
+  a: 10,
+  b: 20
+};
+
+const expr1 = expressionFactory.create(model, '(a + 1)');
+const expr2 = expressionFactory.create(model, '(b + 2)');
+
+const modularModel = {
+  expr1,
+  expr2
+};
+
+const expr3 = expressionFactory.create(modularModel, 'expr1 * expr2');
+```
+
+### Result
+
+- `expr1` evaluates to `11`
+- `expr2` evaluates to `22`
+- `expr3` evaluates to `242`
+
+When `a` or `b` changes:
+- Only the affected expressions are recalculated
+- Dependent expressions update automatically
+
+## Reactive Behavior
+
+Each expression exposes a `changed` event:
+
+```ts
+expr3.changed.subscribe(() => {
+  console.log('New value:', expr3.value);
+});
+```
+
+Changes to:
+- `a`
+- `b`
+- `expr1`
+- `expr2`
+
+automatically propagate to `expr3`.
+
+## Performance Benefits
+
+Modular expressions are not only about structure — they also **improve performance**.
+
+### Why?
+
+- Each expression is evaluated **once**
+- Dependent expressions reuse the cached result
+- No duplicated computation for shared logic
+
+This is especially important when:
+- Expressions are computationally expensive
+- Expressions depend on asynchronous or reactive data
+- The same calculation is reused in multiple places (e.g. UI bindings)
+
+## What Expressions Can Reference
+
+Modular expression support is enabled by adding a **custom index accessor** and a **custom observer factory**, allowing expressions to treat **other expressions as first-class reactive values**.
+
+This clearly illustrates the power of the expression parser: **new data types and reactive models can be seamlessly integrated** by extending the **State Manager** via plugins.
+
+## Complex modular expression example 
+
+To get a sense of how powerful **modular expressions** are, we will look at a more realistic example.  
+We are going to create an expression that calculates **credit risk**.
+
+First, we will show an implementation **without modular expressions**, followed by an implementation **using modular expressions**.
+
+---
+
+### Non-Modular example
+```ts
+{% include_relative ../demo/src/rs-x-expression-parser/use-cases/credit-risk-assessment-expression.ts %}
+```
+
+### Modular example
+
+```ts
+{% include_relative ../demo/src/rs-x-expression-parser/use-cases/credit-risk-assessment-expression-modular.ts %}
+```
+
+### Limitations of the Non-Modular Implementation
+
+We can observe the following issues in the non-modular implementation:
+
+- The expression is quite long and difficult to read.
+- Debugging is hard because the entire expression must be inspected as a single unit.
+- The risk score calculation is duplicated, meaning it is evaluated **twice**, which makes the implementation less efficient.
+
+---
+
+### Improvements with Modular Expressions
+
+With the modular implementation, we notice the following improvements:
+
+- The expression is split into multiple smaller expressions, making it much more readable.
+- Debugging becomes easier because each sub-expression can be tested and debugged independently.
+- Code duplication is eliminated by reusing the risk score expression. This also means the risk score is calculated **only once**, improving performance.
+
+## Summary
+
+- Expressions can reference **other expressions**
+- Modular expressions improve **clarity**, **reuse**, and **performance**
+- Shared expressions are evaluated **once**
+- Changes propagate efficiently through the expression tree
+- Works seamlessly with synchronous and asynchronous data
+
+Modular expressions form a powerful foundation for advanced data binding and reactive logic in RS-X.
 
 ## Get an instance of the Expression Parser Factory
 
@@ -158,13 +299,13 @@ The default configuration includes the following resolvers:
   Resolves the identifier if the context is a `Map` and the specified index exists as a key in that map. Returns the context if resolved; otherwise, returns `null`.
 
 The default resolver list may be overridden by registering a custom list in a consuming module:
-
-    registerMultiInjectServices(
+```ts
+    overrideMultiInjectServices(
       options,
       RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList,
       CUSTOM_LIST
     );
-
+```
 A common use case for a custom resolver occurs during data binding. In such scenarios, the initial context is the HTML element on which the data-binding expression is declared, while the identifier may be defined on an ancestor element (for example, a custom element). In this case, the resolver must traverse the parent chain until an element defining the identifier is found. The resolved context is then that element.
 
 This behavior can be implemented by providing a custom `IIdentifierOwnerResolver` that encapsulates the required traversal logic.

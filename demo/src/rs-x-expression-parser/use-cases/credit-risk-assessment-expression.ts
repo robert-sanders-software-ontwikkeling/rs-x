@@ -1,4 +1,3 @@
-
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
     IExpressionFactory,
@@ -11,7 +10,6 @@ import { BehaviorSubject } from 'rxjs';
 InjectionContainer.load(RsXExpressionParserModule);
 const expressionFactory: IExpressionFactory =
     InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionFactory);
-
 
 export const run = (async () => {
     interface IRisk {
@@ -119,7 +117,6 @@ export const run = (async () => {
         // Wait until the expression has been resolved (has a value)
         await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-
         console.log('Risk after changing risk parameters from  { volatilityIndex: 0.28, recessionProbability: 0.12 } to  { volatilityIndex: 0.41, recessionProbability: 0.35 } :')
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
             riskModel.risk.next({
@@ -130,13 +127,10 @@ export const run = (async () => {
 
         console.log('Risk after change age = 63 and employmentYears = 1 ');
 
-
-         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
+        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
             riskModel.customer.age = 63;
             riskModel.customer.employmentYears = 1;
         });
-
-
     } finally {
         changeSubscription.unsubscribe();
         // Always dispose of expressions after use.

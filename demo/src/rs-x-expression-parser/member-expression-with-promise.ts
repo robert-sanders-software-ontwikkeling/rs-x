@@ -5,7 +5,6 @@ import {
     RsXExpressionParserModule
 } from '@rs-x/expression-parser';
 
-
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
 const expressionFactory: IExpressionFactory = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionFactory);

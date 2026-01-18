@@ -14,7 +14,7 @@ describe('Expression parser demos', () => {
 
         it('Credit / Risk Assessment', async () => {
             const expected = dedent`
-                Running demo: demo/src/rs-x-expression-parser/real-life-examples/credit-risk-assessment-expression.ts
+                Running demo: demo/src/rs-x-expression-parser/use-cases/credit-risk-assessment-expression.ts
                 Initial risk: 
                 LOW
                 Risk after changing risk parameters from  { volatilityIndex: 0.28, recessionProbability: 0.12 } to  { volatilityIndex: 0.41, recessionProbability: 0.35 } :
@@ -23,12 +23,12 @@ describe('Expression parser demos', () => {
                 HIGH
             `;
 
-            await expect(() => runDemo('rs-x-expression-parser/real-life-examples/credit-risk-assessment-expression.ts')).toOutputAsync(expected);
+            await expect(() => runDemo('rs-x-expression-parser/use-cases/credit-risk-assessment-expression.ts')).toOutputAsync(expected);
         });
 
         it('Credit / Risk Assessment Modular', async () => {
             const expected = dedent`
-                Running demo: demo/src/rs-x-expression-parser/real-life-examples/credit-risk-assessment-expression-modular.ts
+                Running demo: demo/src/rs-x-expression-parser/use-cases/credit-risk-assessment-expression-modular.ts
                 Initial risk: 
                 LOW
                 Risk after changing risk parameters from  { volatilityIndex: 0.28, recessionProbability: 0.12 } to  { volatilityIndex: 0.41, recessionProbability: 0.35 } :
@@ -37,7 +37,7 @@ describe('Expression parser demos', () => {
                 HIGH
             `;
 
-            await expect(() => runDemo('rs-x-expression-parser/real-life-examples/credit-risk-assessment-expression-modular.ts')).toOutputAsync(expected);
+            await expect(() => runDemo('rs-x-expression-parser/use-cases/credit-risk-assessment-expression-modular.ts')).toOutputAsync(expected);
         });
     });
 

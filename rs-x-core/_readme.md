@@ -525,14 +525,8 @@ There are two ways to get an instance:
 
 ### Customize the supported index value accessor list
 
-There are two ways to customize the index value accessor list.
+You can customize the index value accessor list by overriding it:
 
-1. You want add new index value accessor list. Use the `@IndexAccessor` decorator:
-
-    ```ts
-    {% include_relative ../demo/src/rs-x-core/add-custom-index-value-accessor.ts %}
-    ```
-2. Redefine index value accessor list:
     ```ts
     {% include_relative ../demo/src/rs-x-core/redefine-custom-index-value-accessor-list.ts %}
     ```
@@ -576,7 +570,6 @@ The `PropertyObserver` class implements a `dispose` method, which ensures that i
 Basic logging using `console.error`
 
 ### interface IErrorLog
-
 
 
 ```ts

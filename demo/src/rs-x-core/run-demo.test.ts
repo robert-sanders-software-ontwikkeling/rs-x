@@ -65,17 +65,6 @@ describe('Core  demos', () => {
         await expect(() => runDemo('rs-x-core/error-log.ts')).toOutputAsync(expected);
     });
 
-
-    it('add-custom-index-value-accessor.ts', async () => {
-        const expected = dedent`
-            Running demo: demo/src/rs-x-core/add-custom-index-value-accessor.ts
-            Initial value for index '2': 200
-            value for index '2' after setting it to 2000: 2000
-        `;
-
-        await expect(() => runDemo('rs-x-core/add-custom-index-value-accessor.ts')).toOutputAsync(expected);
-    });
-
     it('redefine-custom-index-value-accessor-list.ts', async () => {
         const expected = dedent`
             Running demo: demo/src/rs-x-core/redefine-custom-index-value-accessor-list.ts

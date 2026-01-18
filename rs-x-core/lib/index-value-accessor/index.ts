@@ -2,7 +2,6 @@ export * from './array-index-accessor';
 export * from './array-index-accessor.type';
 export * from './date-property-accessor.interface';
 export * from './date-property-accessor';
-export * from './index-accessor.decorator';
 export * from './index-value-accessor.interface';
 export * from './index-value-accessor';
 export * from './map-key-accessor';
