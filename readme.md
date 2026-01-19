@@ -2,13 +2,14 @@
 
 **The SPA framework that solves the data binding problem with fine-grained UI updates.**
 
+
 RS-X is an advanced **SPA framework** designed to tackle one of the most challenging problems in modern web development: **efficient data binding and local UI updates**. Unlike frameworks such as Angular or React, RS-X performs **fine-grained change detection**, updating only the parts of the UI that actually change. This makes your apps faster and more responsive.  
 
 At its core, RS-X features a [**reactive state manager**](rs-x-state-manager/readme.md) and a powerful [**JavaScript expression parser**](rs-x-expression-parser/readme.md) that translates JavaScript expressions into an **observable expression tree**. Together, they enable a transparent mix of **synchronous and asynchronous data**, forming the foundation for reliable and efficient **data binding** throughout your application.
 
 ## Reusable Core Modules
 
-RS-X is designed with **reusability in mind**. Most of the core modules — including the **state manager**, **JavaScript expression parser**, and **data binding utilities** — can be used **independently of the SPA framework**. This means you can leverage RS-X’s **reactive capabilities** in other projects, even if you aren’t building a full SPA.  
+RS-X is designed for **reusability and adaptability**. Many of its core modules — including the **state manager**, **JavaScript expression parser**, and **data binding utilities** — can be used **independently of the SPA framework**. This allows you to harness RS-X’s **reactive capabilities** in other projects, even if you’re not building a full SPA.  
 
 ## My Vision
 
@@ -22,6 +23,81 @@ By sponsoring RS-X, you help maintain and enhance both the **SPA framework** and
 - Continued open-source availability  
 
 ### Roadmap
+
+RS-X is actively evolving. The roadmap below shows **progress**, **planned features**, and **why each feature matters** for both developers and sponsors.  
+
+---
+
+- **Expression Parser & Change Detection** — ✅ **90% done**  
+  - Most of the remaining work consists of finishing documentation and cleaning up the code.  
+  - **Impact:** Enables RS-X to update only what changes, improving UI performance and developer productivity.  
+
+- **Angular Extension** — ⚙️ **Planned / In progress**  
+  - Enables the use of RS-X expressions within Angular templates.  
+  - Makes **data binding in Angular easier** — no need for Redux, `async` pipes, or signals anymore.  
+  - **Impact:** Simplifies state management and reactive updates in Angular apps, reducing boilerplate and improving developer productivity. 
+
+- **React Extension** — ⚙️ **Planned / In progress**  
+  - Integrates RS-X expressions in React components with hooks and utilities that automatically subscribe to expression changes and trigger re-renders.  
+  - Supports both synchronous and asynchronous data sources and modular expressions.  
+  - **Impact:** Simplifies React reactivity and improves rendering efficiency.  
+
+- **RS-X Presentation Layer** — 🔧 **In progress / Needs refactoring**  
+  - Provides a framework for defining components (internally implemented as [Custom Elements](https://developer.mozilla.org/en-US/docs/Web/API/Web_components)).  
+  - Users can **separate presentation (HTML templates) from logic**.  
+  - The goal is to stay as close as possible to the **HTML standard**, while keeping templates **simple, readable, and expressive**.  
+  - Example:
+    ```html
+    <label click.on="showMessage(message)">
+      <input
+        type="checkbox"
+        name="checkbox"
+        checked.twoway="show"
+      />
+      [[show ? 'Hide' : 'Show']]
+    </label>
+
+    <p>
+      <div if.struct="show" tooltip.attach="message">
+        [[message]]
+      </div>
+    </p>
+    ```
+  - **Explanation of the HTML example:**  
+    - **Data-binding expressions** are identified by suffixing attributes (custom or standard) with:  
+      - `.oneway` — one-way binding  
+      - `.twoway` — two-way binding  
+      - `.onetime` — one-time binding  
+    - **Text bindings** are identified by surrounding an expression with `[[ ... ]]`.  
+    - **Event bindings** are defined by appending `.on` to the event attribute.  
+    - There are two types of directives:  
+      - **Structural directives** — identified by appending `.struct` to the directive name. They dynamically generate or modify HTML based on a **data-binding expression**.  
+      - **Behavioral directives** — identified by appending `.attach` to the directive name. They attach **behavior or logic** to a specific element without altering the DOM structure.  
+  - **Impact:** Streamlines UI development, keeps templates declarative and maintainable, and demonstrates RS-X’s **fine-grained reactive capabilities**.  
+
+- **Content Projection** — 🔧 **Mostly done / Needs refactoring**  
+  - Supports defining multiple slots in component templates.  
+  - Example:
+    ```html
+    <my-layout>
+        <h1 slot="header">[[header]]</h1>
+        <div slot="body">message</div>
+    </my-layout>
+    ```
+  - **Impact:** Enables reusable, flexible layouts and dynamic content injection.  
+
+- **Theming Support** — 🔧 **Mostly done / Needs refactoring**  
+  - Users can define custom themes, and changing themes is as simple as setting a `theme` property.  
+  - Leverages **CSS variables** to inject theme-specific properties into components.  
+  - **Impact:** Simplifies visual customization and branding for apps.  
+
+- **Component Library** — ⚙️ **Planned / Ongoing**  
+  - Introduce a **voting system** to let users prioritize which components should be developed first.  
+  - Examples:  
+    - **Flexible popups** — customizable positioning and behavior  
+    - **Data display components with virtualization**: list view, table  
+    - **Pattern-based text editors**: date-time input, numeric input, custom-pattern input  
+  - **Impact:** Builds a versatile ecosystem of reusable components driven by community demand.
 
 - Implement **expression parser** and solve the **change detection problem**: 90% done. Most of the remaining work consists of finishing documentation and cleaning up the code.
 
@@ -109,13 +185,13 @@ With your support, I can fully dedicate my time and talents to creating high-qua
 For example, the [Jest](https://marketplace.visualstudio.com/items?itemName=Orta.vscode-jest) extension is very useful for executing and debugging tests.
 
 ## Commands
-
-* Build commands:
-  * `pnmp build:core` : builds **rs-x-core** project
-  * `pnmp build:state-manager` : builds **rs-x-state-manager** project
-  * `pnmp build:expression-parser` : builds **rs-x-expression-parser** project
-  * `pnmp build:all` : build all projects
-* Release commands
+* `pnmp build:core` : builds **rs-x-core** project
+* `pnmp build:state-manager` : builds **rs-x-state-manager** project
+* `pnmp build:expression-parser` : builds **rs-x-expression-parser** project
+* `pnmp build:all` : build all projects
+* `pnmp lint`: run es lint and without trying to fix errors automatically
+* `pnmp lint:fix`: run es lint and tries to fix errors automatically
+* 
 
 
 ## Release & Publish Process
