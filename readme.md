@@ -28,7 +28,7 @@ RS-X is actively evolving. The roadmap below shows **progress**, **planned featu
 
 ---
 
-- **Expression Parser & Change Detection** — ✅ **90% done**  
+- [**Expression Parser & Change Detection**](rs-x-expression-parser/readme.md) — ✅ **90% done**  
   - Most of the remaining work consists of finishing documentation and cleaning up the code.  
   - **Impact:** Enables RS-X to update only what changes, improving UI performance and developer productivity.  
 
