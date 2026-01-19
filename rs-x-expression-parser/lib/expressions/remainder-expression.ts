@@ -17,7 +17,6 @@ export class RemainderExpression extends BinaryExpression<number, number> {
    }
 
    protected override evaluateExpression(
-      _sender: AbstractExpression,
       a: number,
       b: number
    ): number {

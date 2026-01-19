@@ -17,7 +17,6 @@ export class MultiplicationExpression extends BinaryExpression {
    }
 
    protected override evaluateExpression(
-      _sender: AbstractExpression,
       a: number,
       b: number
    ): number {

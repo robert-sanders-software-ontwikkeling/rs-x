@@ -1,5 +1,6 @@
 import {
     DateProperty, IDatePropertyAccessor,
+    IDisposableOwner,
     IErrorLog,
     Inject,
     Injectable,
@@ -9,7 +10,6 @@ import {
 } from '@rs-x/core';
 import { Subscription } from 'rxjs';
 import { AbstractObserver } from '../../../abstract-observer';
-import { IDisposableOwner } from '../../../disposable-owner.interface';
 import { IObserver } from '../../../observer.interface';
 import { IDateProxyFactory } from '../../../proxies/date-proxy/date-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
@@ -19,20 +19,20 @@ import { IMustProxifyItemHandlerFactory } from '../../must-proxify-item-handler.
 
 class DatePropertybserver extends AbstractObserver<Date> {
     private _oldValue: unknown;
-    private readonly _mapChangeSubscription: Subscription;
+    private readonly _dateChangeSubscription: Subscription;
 
     constructor(
         owner: IDisposableOwner,
         target: Date,
         propertyName: DateProperty,
         datePropertyAccessor: IDatePropertyAccessor,
-        private readonly _datebserver: IObserver,
+        private readonly _dateObserver: IObserver,
         private readonly _errorLog: IErrorLog,
     ) {
         super(owner, target, datePropertyAccessor.getValue(target, propertyName), undefined, propertyName);
 
-        this._oldValue = this.initialValue;
-        this._mapChangeSubscription = this._datebserver.changed.subscribe({
+        this._oldValue = this.value;
+        this._dateChangeSubscription = this._dateObserver.changed.subscribe({
             next: this.onDateChanged,
             error: (e) =>
                 this._errorLog.add({
@@ -45,8 +45,8 @@ class DatePropertybserver extends AbstractObserver<Date> {
     }
 
     protected override disposeInternal(): void {
-        this._datebserver.dispose();
-        this._mapChangeSubscription.unsubscribe();
+        this._dateObserver.dispose();
+        this._dateChangeSubscription.unsubscribe();
     }
 
     private onDateChanged = (change: IPropertyChange) => {

@@ -1,17 +1,18 @@
 import {
    AnyFunction,
+   IDisposableOwner,
    IIndexValueAccessor,
    Inject,
    Injectable,
    ParserException,
    RsXCoreInjectionTokens,
    Type,
-   UnsupportedException,
+   UnsupportedException
 } from '@rs-x/core';
 import {
    IMustProxifyItemHandlerFactory,
    IStateManager,
-   RsXStateManagerInjectionTokens,
+   RsXStateManagerInjectionTokens
 } from '@rs-x/state-manager';
 import { generate as astToString } from 'astring';
 import * as espree from 'espree';
@@ -47,6 +48,8 @@ import type {
    UnaryExpression,
    UnaryOperator,
 } from 'estree';
+import { IGuidFactory } from '../../rs-x-core/lib/guid/guid.factory.interface';
+import { IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
 import { IndexExpression } from './expressions';
 import { AbstractExpression } from './expressions/abstract-expression';
 import { AdditionExpression } from './expressions/addition-expression';
@@ -65,7 +68,6 @@ import { ConstantNullExpression } from './expressions/constant-null-expression';
 import { ConstantNumberExpression } from './expressions/constant-number-expression';
 import { ConstantRegExpExpression } from './expressions/constant-regexp-expression';
 import { ConstantStringExpression } from './expressions/constant-string-expression';
-import { ConvertToNumberExpression } from './expressions/convert-to-number-expression';
 import { DivisionExpression } from './expressions/division-expression';
 import { EqualityExpression } from './expressions/equality-expression';
 import { ExponentiationExpression } from './expressions/exponentiation-expression';
@@ -97,12 +99,13 @@ import { SequenceExpression } from './expressions/sequence-expression';
 import { SpreadExpression } from './expressions/spread-expression';
 import { StrictEqualityExpression } from './expressions/strict-equality-expression';
 import { StrictInequalityExpression } from './expressions/strict-inequality-expression';
-import { SubtractionExpression } from './expressions/subtraction-expression';
+import { SubtractionExpression as SubstractionExpression } from './expressions/substraction-expression';
 import { TemplateStringExpression } from './expressions/template-string-expression';
 import { TypeofExpression } from './expressions/typeof-expression';
 import { UnaryNegationExpression } from './expressions/unary-negation-expression';
-import { IIndexValueObserverManager } from './index-value-observer-manager/index-value-manager-observer.type';
+import { UnaryPlusExpression } from './expressions/unary-plus-expression';
 import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
+
 
 enum EspreeExpressionType {
    UnaryExpression = 'UnaryExpression',
@@ -137,64 +140,61 @@ export class JsEspreeExpressionParser implements IExpressionParser {
    public static readonly instance: IExpressionParser;
    private readonly createConstantExpression = {
       string: (literal: Literal) =>
-         new ConstantStringExpression(literal.value as string),
+         new ConstantStringExpression(literal.value as string, this._expressionChangeTransactionManager),
       number: (literal: Literal) =>
-         new ConstantNumberExpression(Number(literal.value)),
+         new ConstantNumberExpression(Number(literal.value), this._expressionChangeTransactionManager),
       boolean: (literal: Literal) =>
-         new ConstantBooleanExpression(Boolean(literal.value)),
+         new ConstantBooleanExpression(Boolean(literal.value), this._expressionChangeTransactionManager),
       bigint: (literal: Literal) =>
-         new ConstantBigIntExpression(BigInt(literal.value as string)),
+         new ConstantBigIntExpression(BigInt(literal.value as string), this._expressionChangeTransactionManager),
    };
    private readonly expressionFactories: Record<
       EspreeExpressionType,
       (
          expression: Expression | SpreadElement | Property,
-         context: unknown,
-         onDispose: () => void
+         context: unknown
       ) => AbstractExpression
    >;
    private readonly unaryExpressionFactories: Record<
       UnaryOperator,
       (
          expression: UnaryExpression,
-         context: unknown,
-         onDispose: () => void
+         context: unknown
       ) => AbstractExpression
    >;
    private readonly binaryExpressionFactories: Record<
       BinaryOperator,
       (
          expression: BinaryExpression,
-         context: unknown,
-         onDispose: () => void
+         context: unknown
       ) => AbstractExpression
    >;
    private readonly logicalExpressionFactories: Record<
       LogicalOperator,
       (
          expression: LogicalExpression,
-         context: unknown,
-         onDispose: () => void
+         context: unknown
       ) => AbstractExpression
    >;
    private readonly assignExpressionFactories: Record<
       AssignmentOperator,
       (
          expression: EstreeAssignmentExpression,
-         context: unknown,
-         onDispose: () => void
+         context: unknown
       ) => AbstractExpression
    >;
 
    constructor(
-      @Inject(RsXExpressionParserInjectionTokens.IIndexValueObserverManager)
-      private readonly _identifierValueObserverManager: IIndexValueObserverManager,
       @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
       private readonly _indexValueAccessor: IIndexValueAccessor,
       @Inject(RsXStateManagerInjectionTokens.IMustProxifyItemHandlerFactory)
       private readonly _mustProxifyItemHandlerFactory: IMustProxifyItemHandlerFactory,
+      @Inject(RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager)
+      private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
       @Inject(RsXStateManagerInjectionTokens.IStateManager)
-      private readonly _stateManager: IStateManager
+      private readonly _stateManager: IStateManager,
+      @Inject(RsXCoreInjectionTokens.IGuidFactory)
+      private readonly _guidFactory: IGuidFactory,
    ) {
       this.expressionFactories = {
          [EspreeExpressionType.UnaryExpression]: this.createUnaryExpression,
@@ -269,7 +269,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
    public parse(
       context: unknown,
       expressionString: string,
-      onDispose: () => void
+      owner: IDisposableOwner
    ): AbstractExpression {
       const espreeExpression = this.tryParse(expressionString);
 
@@ -277,17 +277,20 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       try {
          expression = this.createExpression(
             espreeExpression,
-            context,
-            onDispose
+            context
          );
       } catch (e) {
          throw new ParserException(expressionString, e.message);
       }
 
-      return expression.initialize({
-         stateManager: this._stateManager,
+      expression.initialize({
          context,
+         transactionManager: this._expressionChangeTransactionManager,
+         owner
       });
+      this._expressionChangeTransactionManager.commit();
+
+      return expression
    }
 
    private tryParse(expressionString: string): Expression {
@@ -302,8 +305,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
          | SpreadElement
          | Property
          | Pattern,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression {
       const createExpression = this.expressionFactories[expression.type];
       if (!createExpression) {
@@ -312,7 +314,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
          );
       }
 
-      return createExpression(expression, context, onDispose);
+      return createExpression(expression, context);
    }
 
    private createLiteralExpression = (
@@ -322,11 +324,12 @@ export class JsEspreeExpressionParser implements IExpressionParser {
          const regExpLiteral = expression as RegExpLiteral;
          return new ConstantRegExpExpression(
             astToString(expression),
-            new RegExp(regExpLiteral.regex.pattern, regExpLiteral.regex.flags)
+            new RegExp(regExpLiteral.regex.pattern, regExpLiteral.regex.flags),
+            this._expressionChangeTransactionManager
          );
       }
       if (expression.value === null) {
-         return new ConstantNullExpression();
+         return new ConstantNullExpression(this._expressionChangeTransactionManager);
       }
 
       return this.createConstantExpression[typeof expression.value](expression);
@@ -334,83 +337,71 @@ export class JsEspreeExpressionParser implements IExpressionParser {
 
    private createBinaryExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return this.binaryExpressionFactories[expression.operator](
          expression,
-         context,
-         onDispose
+         context
       );
    };
 
    private createAssignmentExpression = (
       expression: EstreeAssignmentExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return this.assignExpressionFactories[expression.operator](
          expression,
-         context,
-         onDispose
+         context
       );
    };
 
    private createUnaryExpression = (
       expression: UnaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return this.unaryExpressionFactories[expression.operator](
          expression,
-         context,
-         onDispose
+         context
       );
    };
 
    private createConditionalExpression = (
       expression: EstreeConditionalExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new ConditionalExpression(
          astToString(expression),
-         this.createExpression(expression.test, context, onDispose),
-         this.createExpression(expression.consequent, context, onDispose),
-         this.createExpression(expression.alternate, context, onDispose)
+         this.createExpression(expression.test, context),
+         this.createExpression(expression.consequent, context),
+         this.createExpression(expression.alternate, context)
       );
    };
 
    private createLogicalExpression = (
       expression: LogicalExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return this.logicalExpressionFactories[expression.operator](
          expression,
-         context,
-         onDispose
+         context
       );
    };
 
    private createChainExpression = (
       expression: ChainExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
-      return this.createExpression(expression.expression, context, onDispose);
+      return this.createExpression(expression.expression, context);
    };
 
    private createMemberExpression = (
       expression: EstreeMemberExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       const pathSegments = this.flattenMemberExpression(expression).map((e) => {
          const expression = this.createExpression(
             e.expression,
-            context,
-            onDispose
+            context
          );
          return e.computed ? new IndexExpression(expression) : expression;
       });
@@ -418,74 +409,69 @@ export class JsEspreeExpressionParser implements IExpressionParser {
          astToString(expression),
          pathSegments,
          this._indexValueAccessor,
-         this._identifierValueObserverManager,
-         this._mustProxifyItemHandlerFactory
+         this._stateManager,
+         this._mustProxifyItemHandlerFactory,
+         this._expressionChangeTransactionManager
       );
    };
 
    private createSequenceExpression = (
       expression: EstreeSequenceExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new SequenceExpression(
          astToString(expression),
          expression.expressions.map((expression) =>
-            this.createExpression(expression, context, onDispose)
+            this.createExpression(expression, context)
          )
       );
    };
 
    private createIdentifier = (
       expression: Identifier,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new IdentifierExpression(
          context,
-         this._identifierValueObserverManager,
-         onDispose,
-         expression.name
+         this._stateManager,
+         expression.name,
+         this._expressionChangeTransactionManager
       );
    };
 
    private createArrayExpression = (
       expression: EstreeArrayExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new ArrayExpression(
          expression.elements.map((element) =>
-            this.createExpression(element, context, onDispose)
+            this.createExpression(element, context)
          )
       );
    };
 
    private createSpreadExpression = (
       expression: SpreadElement,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new SpreadExpression(
-         this.createExpression(expression.argument, context, onDispose) as
-            | ArrayExpression
-            | ObjectExpression
+         this.createExpression(expression.argument, context) as
+         | ArrayExpression
+         | ObjectExpression
       );
    };
 
    private createNewExpression = (
       expression: EstreeNewExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       const constructorExpression = this.createExpression(
          expression.callee,
          context,
-         onDispose
       );
       const argumentExpressions = expression.arguments.map(
          (argumentExpressions) =>
-            this.createExpression(argumentExpressions, context, onDispose)
+            this.createExpression(argumentExpressions, context)
       );
       return new NewExpression(
          astToString(expression),
@@ -496,33 +482,29 @@ export class JsEspreeExpressionParser implements IExpressionParser {
 
    private createCallExpression = (
       expression: CallExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       let objectExpression: IExpression<object> = null;
       let functionExpression: IExpression;
       if (expression.callee.type === EspreeExpressionType.MemberExpression) {
          objectExpression = this.createExpression(
             expression.callee.object,
-            context,
-            onDispose
+            context
          ) as IExpression<object>;
          functionExpression = this.createExpression(
             expression.callee.property,
-            context,
-            onDispose
+            context
          );
       } else {
          functionExpression = this.createExpression(
             expression.callee,
-            context,
-            onDispose
+            context
          );
       }
 
       const argumentExpressions = expression.arguments.map(
          (argumentExpression) =>
-            this.createExpression(argumentExpression, context, onDispose)
+            this.createExpression(argumentExpression, context)
       );
 
       return new FunctionExpression(
@@ -531,19 +513,21 @@ export class JsEspreeExpressionParser implements IExpressionParser {
          Type.cast(objectExpression),
          new ArrayExpression(argumentExpressions),
          Type.cast<{ computed: boolean }>(expression.callee).computed,
-         Type.cast<{ optional: boolean }>(expression.callee).optional
+         Type.cast<{ optional: boolean }>(expression.callee).optional,
+         this._expressionChangeTransactionManager,
+         this._stateManager,
+         this._guidFactory
+      
       );
    };
 
    private createTemplateLiteralExpression = (
       templateLiteral: TemplateLiteral,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       const { quasis, parameters } = this.createTemplateElementExpression(
          templateLiteral,
          context,
-         onDispose
       );
 
       const expressions = quasis.flatMap((quasi, index) => {
@@ -565,13 +549,11 @@ export class JsEspreeExpressionParser implements IExpressionParser {
 
    private createTaggedTemplateExpression = (
       expression: EstreeTaggedTemplateExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       const { quasis, parameters } = this.createTemplateElementExpression(
          expression.quasi,
-         context,
-         onDispose
+         context
       );
 
       let objectExpression: IExpression<object>;
@@ -580,19 +562,16 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       if (expression.tag.type === EspreeExpressionType.MemberExpression) {
          objectExpression = this.createExpression(
             expression.tag.object,
-            context,
-            onDispose
+            context
          ) as IExpression<object>;
          functionExpression = this.createExpression(
             expression.tag.property,
-            context,
-            onDispose
+            context
          ) as IExpression<AnyFunction | string | number>;
       } else {
          functionExpression = this.createExpression(
             expression.tag,
-            context,
-            onDispose
+            context
          ) as IExpression<AnyFunction | string | number>;
       }
 
@@ -605,68 +584,66 @@ export class JsEspreeExpressionParser implements IExpressionParser {
             new SpreadExpression(new ArrayExpression(parameters)),
          ]),
          false,
-         false
+         false,
+         this._expressionChangeTransactionManager,
+         this._stateManager,
+         this._guidFactory
       );
    };
 
    private createTemplateElementExpression(
       templateLiteral: TemplateLiteral,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): { quasis: AbstractExpression[]; parameters: AbstractExpression[] } {
       return {
          quasis: templateLiteral.quasis.map(
-            (quasi) => new ConstantStringExpression(quasi.value.raw)
+            (quasi) => new ConstantStringExpression(quasi.value.raw, this._expressionChangeTransactionManager)
          ),
          parameters: templateLiteral.expressions.map((expression) =>
-            this.createExpression(expression, context, onDispose)
+            this.createExpression(expression, context)
          ),
       };
    }
 
    private createUnaryPlusExpression = (
       expression: UnaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
-      return new ConvertToNumberExpression(
+      return new UnaryPlusExpression(
          astToString(expression),
-         this.createExpression(expression.argument, context, onDispose)
+         this.createExpression(expression.argument, context)
       );
    };
 
    private createUnaryMinusExpression = (
       expression: UnaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new UnaryNegationExpression(
          astToString(expression),
          Type.cast(
-            this.createExpression(expression.argument, context, onDispose)
+            this.createExpression(expression.argument, context)
          )
       );
    };
 
    private createLogicalNotExpression = (
       expression: UnaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new LogicalNotExpression(
          astToString(expression),
-         this.createExpression(expression.argument, context, onDispose)
+         this.createExpression(expression.argument, context)
       );
    };
 
    private createTypeofExpression = (
       expression: UnaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new TypeofExpression(
          astToString(expression),
-         this.createExpression(expression.argument, context, onDispose)
+         this.createExpression(expression.argument, context)
       );
    };
 
@@ -676,326 +653,299 @@ export class JsEspreeExpressionParser implements IExpressionParser {
 
    private createEqualToExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new EqualityExpression(
          astToString(expression),
-         this.createExpression(expression.left, context, onDispose),
-         this.createExpression(expression.right, context, onDispose)
+         this.createExpression(expression.left, context),
+         this.createExpression(expression.right, context)
       );
    };
 
    private createNotEqualToExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new InequalityExpression(
          astToString(expression),
-         this.createExpression(expression.left, context, onDispose),
-         this.createExpression(expression.right, context, onDispose)
+         this.createExpression(expression.left, context),
+         this.createExpression(expression.right, context)
       );
    };
 
    private createStrictEqualToExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new StrictEqualityExpression(
          astToString(expression),
-         this.createExpression(expression.left, context, onDispose),
-         this.createExpression(expression.right, context, onDispose)
+         this.createExpression(expression.left, context),
+         this.createExpression(expression.right, context)
       );
    };
 
    private createStrictNotEqualToExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new StrictInequalityExpression(
          astToString(expression),
-         this.createExpression(expression.left, context, onDispose),
-         this.createExpression(expression.right, context, onDispose)
+         this.createExpression(expression.left, context),
+         this.createExpression(expression.right, context)
       );
    };
 
    private createLessThanExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new LessThanExpression(
          astToString(expression),
-         Type.cast(this.createExpression(expression.left, context, onDispose)),
-         Type.cast(this.createExpression(expression.right, context, onDispose))
+         Type.cast(this.createExpression(expression.left, context)),
+         Type.cast(this.createExpression(expression.right, context))
       );
    };
    private createLessThanOrEqualToExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new LessThanOrEqualExpression(
          astToString(expression),
-         Type.cast(this.createExpression(expression.left, context, onDispose)),
-         Type.cast(this.createExpression(expression.right, context, onDispose))
+         Type.cast(this.createExpression(expression.left, context)),
+         Type.cast(this.createExpression(expression.right, context))
       );
    };
 
    private createGreaterThanExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new GreaterThanExpression(
          astToString(expression),
-         this.createExpression(expression.left, context, onDispose),
-         this.createExpression(expression.right, context, onDispose)
+         this.createExpression(expression.left, context),
+         this.createExpression(expression.right, context)
       );
    };
 
    private createGreaterThanOrEqualToExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new GreaterThanOrEqualExpression(
          astToString(expression),
-         this.createExpression(expression.left, context, onDispose),
-         this.createExpression(expression.right, context, onDispose)
+         this.createExpression(expression.left, context),
+         this.createExpression(expression.right, context)
       );
    };
 
    private createBitwiseNotExpression = (
       expression: UnaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new BitwiseNotExpression(
          astToString(expression),
          Type.cast(
-            this.createExpression(expression.argument, context, onDispose)
+            this.createExpression(expression.argument, context)
          )
       );
    };
 
    private createLeftShiftExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new BitwiseLeftShiftExpression(
          astToString(expression),
-         Type.cast(this.createExpression(expression.left, context, onDispose)),
-         Type.cast(this.createExpression(expression.right, context, onDispose))
+         Type.cast(this.createExpression(expression.left, context)),
+         Type.cast(this.createExpression(expression.right, context))
       );
    };
 
    private createRightShiftExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new BitwiseRightShiftExpression(
          astToString(expression),
-         Type.cast(this.createExpression(expression.left, context, onDispose)),
-         Type.cast(this.createExpression(expression.right, context, onDispose))
+         Type.cast(this.createExpression(expression.left, context)),
+         Type.cast(this.createExpression(expression.right, context))
       );
    };
 
    private createUnsignedRightShiftExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new BitwiseUnsignedRightShiftExpression(
          astToString(expression),
-         Type.cast(this.createExpression(expression.left, context, onDispose)),
-         Type.cast(this.createExpression(expression.right, context, onDispose))
+         Type.cast(this.createExpression(expression.left, context)),
+         Type.cast(this.createExpression(expression.right, context))
       );
    };
 
    private createBitwiseOrExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new BitwiseOrExpression(
          astToString(expression),
-         Type.cast(this.createExpression(expression.left, context, onDispose)),
-         Type.cast(this.createExpression(expression.right, context, onDispose))
+         Type.cast(this.createExpression(expression.left, context)),
+         Type.cast(this.createExpression(expression.right, context))
       );
    };
 
    private createBitwiseXOrExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new BitwiseXorExpression(
          astToString(expression),
-         Type.cast(this.createExpression(expression.left, context, onDispose)),
-         Type.cast(this.createExpression(expression.right, context, onDispose))
+         Type.cast(this.createExpression(expression.left, context)),
+         Type.cast(this.createExpression(expression.right, context))
       );
    };
 
    private createBitwiseAndExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new BitwiseAndExpression(
          astToString(expression),
-         Type.cast(this.createExpression(expression.left, context, onDispose)),
-         Type.cast(this.createExpression(expression.right, context, onDispose))
+         Type.cast(this.createExpression(expression.left, context)),
+         Type.cast(this.createExpression(expression.right, context))
       );
    };
 
    private createAdditionExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new AdditionExpression(
          astToString(expression),
-         Type.cast(this.createExpression(expression.left, context, onDispose)),
-         Type.cast(this.createExpression(expression.right, context, onDispose))
+         Type.cast(this.createExpression(expression.left, context)),
+         Type.cast(this.createExpression(expression.right, context))
       );
    };
 
    private createSubstractionExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
-      return new SubtractionExpression(
+      return new SubstractionExpression(
          astToString(expression),
-         Type.cast(this.createExpression(expression.left, context, onDispose)),
-         Type.cast(this.createExpression(expression.right, context, onDispose))
+         Type.cast(this.createExpression(expression.left, context)),
+         Type.cast(this.createExpression(expression.right, context))
       );
    };
 
    private createMultiplicationExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new MultiplicationExpression(
          astToString(expression),
-         Type.cast(this.createExpression(expression.left, context, onDispose)),
-         Type.cast(this.createExpression(expression.right, context, onDispose))
+         Type.cast(this.createExpression(expression.left, context)),
+         Type.cast(this.createExpression(expression.right, context))
       );
    };
 
    private createDivisionExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new DivisionExpression(
          astToString(expression),
-         Type.cast(this.createExpression(expression.left, context, onDispose)),
-         Type.cast(this.createExpression(expression.right, context, onDispose))
+         Type.cast(this.createExpression(expression.left, context)),
+         Type.cast(this.createExpression(expression.right, context))
       );
    };
 
    private createModulusExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new RemainderExpression(
          astToString(expression),
-         Type.cast(this.createExpression(expression.left, context, onDispose)),
-         Type.cast(this.createExpression(expression.right, context, onDispose))
+         Type.cast(this.createExpression(expression.left, context)),
+         Type.cast(this.createExpression(expression.right, context))
       );
    };
 
    private createExponentiationExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new ExponentiationExpression(
          astToString(expression),
-         Type.cast(this.createExpression(expression.left, context, onDispose)),
-         Type.cast(this.createExpression(expression.right, context, onDispose))
+         Type.cast(this.createExpression(expression.left, context)),
+         Type.cast(this.createExpression(expression.right, context))
       );
    };
 
    private createInstanceOfExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new InstanceofExpression(
          astToString(expression),
-         this.createExpression(expression.left, context, onDispose),
-         Type.cast(this.createExpression(expression.right, context, onDispose))
+         this.createExpression(expression.left, context),
+         Type.cast(this.createExpression(expression.right, context))
       );
    };
 
    private createInExpression = (
       expression: BinaryExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new InExpression(
          astToString(expression),
-         this.createExpression(expression.left, context, onDispose),
-         this.createExpression(expression.right, context, onDispose)
+         this.createExpression(expression.left, context),
+         this.createExpression(expression.right, context)
       );
    };
 
    private createLogicalOrExpression = (
       expression: LogicalExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new LogicalOrExpression(
          astToString(expression),
-         this.createExpression(expression.left, context, onDispose),
-         this.createExpression(expression.right, context, onDispose)
+         this.createExpression(expression.left, context),
+         this.createExpression(expression.right, context)
       );
    };
 
    private createLogicalAndExpression = (
       expression: LogicalExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new LogicalAndExpression(
          astToString(expression),
-         this.createExpression(expression.left, context, onDispose),
-         this.createExpression(expression.right, context, onDispose)
+         this.createExpression(expression.left, context),
+         this.createExpression(expression.right, context)
       );
    };
 
    private createNullishCoalescingExpression = (
       expression: LogicalExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       return new NullishCoalescingExpression(
          astToString(expression),
-         this.createExpression(expression.left, context, onDispose),
-         this.createExpression(expression.right, context, onDispose)
+         this.createExpression(expression.left, context),
+         this.createExpression(expression.right, context)
       );
    };
 
    private createObjectExpression = (
       objectExpression: EstreeObjectExpression,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       const propertyExpressions = objectExpression.properties.map(
          (property) =>
-            this.createExpression(property, context, onDispose) as
-               | PropertyExpression
-               | SpreadExpression
+            this.createExpression(property, context) as
+            | PropertyExpression
+            | SpreadExpression
       );
       return new ObjectExpression(
          astToString(objectExpression),
@@ -1005,20 +955,20 @@ export class JsEspreeExpressionParser implements IExpressionParser {
 
    private createPropertyExpression = (
       propertyExpression: Property,
-      context: unknown,
-      onDispose: () => void
+      context: unknown
    ): AbstractExpression => {
       const keyExpression =
          propertyExpression.key.type === EspreeExpressionType.Identifier
             ? new ConstantStringExpression(
-                 Type.cast<Identifier>(propertyExpression.key).name
-              )
-            : this.createExpression(propertyExpression.key, context, onDispose);
+               Type.cast<Identifier>(propertyExpression.key).name,
+               this._expressionChangeTransactionManager
+            )
+            : this.createExpression(propertyExpression.key, context);
 
       return new PropertyExpression(
          astToString(propertyExpression),
          keyExpression as AbstractExpression<PropertyKey, unknown>,
-         this.createExpression(propertyExpression.value, context, onDispose)
+         this.createExpression(propertyExpression.value, context)
       );
    };
 
@@ -1086,24 +1036,25 @@ export class JsEspreeExpressionParser implements IExpressionParser {
 
       function walk(node: MemberExpressionSegmentType): void {
          switch (node.type) {
-            case 'MemberExpression':
-               // push the property once (do NOT recurse into it)
+            case EspreeExpressionType.MemberExpression:
+               // first resolve the object
+               walk(node.object as MemberExpressionSegmentType);
+
+               // then push the property
                result.push({
                   expression: node.property,
                   computed: node.computed,
                });
-
-               // continue with object
-               walk(node.object);
                break;
 
-            case 'CallExpression':
+            case EspreeExpressionType.CallExpression:
+               // CallExpression is a single semantic segment
                result.push({
                   expression: node,
                   computed: false,
                });
-               walk(node.callee as MemberExpressionSegmentType);
                break;
+
             default:
                result.push({
                   expression: node,
@@ -1113,6 +1064,6 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       }
 
       walk(expr);
-      return result.reverse();
+      return result;
    }
 }

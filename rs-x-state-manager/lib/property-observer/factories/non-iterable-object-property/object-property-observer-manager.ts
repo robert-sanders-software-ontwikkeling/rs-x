@@ -1,28 +1,27 @@
 import {
+   IDisposableOwner,
+   Inject,
    Injectable,
    InvalidOperationException,
-   IPropertyDescriptor,
    IPropertyChange,
+   IPropertyDescriptor,
    PropertyDescriptorType,
    SingletonFactory,
-   Type,
-   Inject,
+   Type
 } from '@rs-x/core';
 import { Subject } from 'rxjs';
 import { AbstractObserver } from '../../../abstract-observer';
-import { IDisposableOwner } from '../../../disposable-owner.interface';
 import { IObserver } from '../../../observer.interface';
+import { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
+import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
 import {
    IObjectPropertyObserverManager,
    IPropertyObserverIdInfo,
    IPropertyObserverInfo,
    IPropertyObserverManager,
 } from './object-property-observer-manager.type';
-import { IProxyRegistry } from '../../../proxies';
-import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
 
 class PropertObserver extends AbstractObserver {
-   private _value: unknown;
    private _emitingChange = false;
    private _propertyDescriptorWithTarget: IPropertyDescriptor;
 
@@ -31,7 +30,7 @@ class PropertObserver extends AbstractObserver {
       target: object,
       propertyName: string,
       initialValue: unknown,
-      private readonly _proxyRegister: IProxyRegistry
+      private readonly _proxyRegister: IProxyRegistry,
    ) {
       super(
          owner,
@@ -60,10 +59,10 @@ class PropertObserver extends AbstractObserver {
          this._propertyDescriptorWithTarget.type !==
          PropertyDescriptorType.Function
       ) {
-         this.target[propertyName] = this._proxyRegister.getProxyTarget( value) ?? value
+         this.target[propertyName] = this._proxyRegister.getProxyTarget(value) ?? value
       }
 
-      this._value = undefined;
+      this.value = undefined;
       this._propertyDescriptorWithTarget = undefined;
    }
 
@@ -106,23 +105,25 @@ class PropertObserver extends AbstractObserver {
             ...args
          );
 
-         if (newValue === undefined || this._value !== newValue) {
-            this.emitChanged({
+         if (newValue === undefined || this.value !== newValue) {
+            this.internalEmitChange({
                newValue,
                arguments: args,
-            });
+            }, this.id);
          }
          return newValue;
       };
+      this.value = undefined;
+
       return newDescriptor;
    }
 
    private setValue = (value) => {
-      this._value = value;
+      this.value = value;
    };
 
-   protected emitChanged(change: Partial<IPropertyChange>) {
-      this._value = change.newValue;
+   private  internalEmitChange(change: Partial<IPropertyChange>, id: unknown) {
+      this.value = change.newValue;
 
       if (!this._emitingChange) {
          this._emitingChange = true;
@@ -131,7 +132,7 @@ class PropertObserver extends AbstractObserver {
             ...change,
             chain: [{ object: this.target, id: this.id }],
             target: this.target,
-            id: this.id,
+            id,
             setValue: this.setValue,
          });
          this._emitingChange = false;
@@ -143,17 +144,17 @@ class PropertObserver extends AbstractObserver {
    ): PropertyDescriptor {
       const newDescriptor = { ...descriptorWithTarget.descriptor };
 
-      newDescriptor.get = () => this._value;
+      newDescriptor.get = () => this.value;
       delete newDescriptor.writable;
       delete newDescriptor.value;
 
       newDescriptor.set = (value) => {
-         if (value !== this._value) {
-            this.emitChanged({ newValue: value });
+         if (value !== this.value) {
+            this.internalEmitChange({ newValue: value, }, this.id);
          }
       };
 
-      this._value = this.target[this.id as string];
+      this.value = this.target[this.id as string];
 
       return newDescriptor;
    }
@@ -167,11 +168,11 @@ class PropertObserver extends AbstractObserver {
          const oldValue = this.target[this.id as string];
          if (value !== oldValue) {
             oldSetter.call(this.target, value);
-            this.emitChanged({ newValue: value });
+            this.internalEmitChange({ newValue: value }, this.id);
          }
       };
 
-      this._value = this.target[this.id as string];
+      this.value = this.target[this.id as string];
 
       return newDescriptor;
    }
@@ -184,8 +185,7 @@ class PropertyObserverManager
       IObserver,
       IPropertyObserverIdInfo
    >
-   implements IPropertyObserverManager
-{
+   implements IPropertyObserverManager {
    constructor(
       private readonly _object: object,
       private readonly _proxyRegister: IProxyRegistry,
@@ -214,7 +214,7 @@ class PropertyObserverManager
          this._object,
          data.index,
          data.initialValue,
-         this._proxyRegister
+         this._proxyRegister,
       );
    }
 
@@ -230,11 +230,11 @@ class PropertyObserverManager
 @Injectable()
 export class ObjectPropertyObserverManager
    extends SingletonFactory<object, object, IPropertyObserverManager>
-   implements IObjectPropertyObserverManager
-{
-   constructor( 
+   implements IObjectPropertyObserverManager {
+   constructor(
       @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
-      private readonly _proxyRegister: IProxyRegistry) {
+      private readonly _proxyRegister: IProxyRegistry
+   ) {
       super();
    }
 
@@ -249,7 +249,11 @@ export class ObjectPropertyObserverManager
    protected override createInstance(
       context: object
    ): IPropertyObserverManager {
-      return new PropertyObserverManager(context, this._proxyRegister, () => this.release(context));
+      return new PropertyObserverManager(
+         context,
+         this._proxyRegister,
+         () => this.release(context)
+      );
    }
 
    protected override releaseInstance(

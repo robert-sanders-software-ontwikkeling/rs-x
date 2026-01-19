@@ -1,49 +1,37 @@
 import { IPropertyChange, PromiseAccessor, WaitForEvent } from '@rs-x/core';
+import { ResolvedValueCacheMock } from '@rs-x/core/testing';
 import { PromiseProxyFactory } from '../../../lib/proxies/promise-proxy/promise-proxy.factory';
 
 describe('PromiseProxy tests', () => {
-   it('passed in promiuse is used as id', () => {
-      const promiseProxyFactory = new PromiseProxyFactory(
-         new PromiseAccessor()
-      );
-      const promise = Promise.resolve(10);
-
-      const { id } = promiseProxyFactory.create({
-         promise,
-      }).instance;
-
-      expect(id).toBe(promise);
-   });
-
    it('dispose will unregister proxy when all references are released', () => {
       const promiseProxyFactory = new PromiseProxyFactory(
-         new PromiseAccessor()
+         new PromiseAccessor(new ResolvedValueCacheMock())
       );
       const promise = Promise.resolve(10);
 
-      const { observer: observer1, id: id1 } = promiseProxyFactory.create({
+      const { observer: observer1 } = promiseProxyFactory.create({
          promise,
       }).instance;
-      const { observer: observer2, id: id2 } = promiseProxyFactory.create({
+      const { observer: observer2} = promiseProxyFactory.create({
          promise,
       }).instance;
 
       expect(observer1).toBe(observer2);
-      expect(id1).toBe(id2);
-      expect(promiseProxyFactory.getFromId(id1)).toBeDefined();
+
+      expect(promiseProxyFactory.getFromId(promise)).toBeDefined();
 
       observer1.dispose();
 
-      expect(promiseProxyFactory.getFromId(id2)).toBeDefined();
+      expect(promiseProxyFactory.getFromId(promise)).toBeDefined();
 
       observer2.dispose();
 
-      expect(promiseProxyFactory.getFromId(id2)).toBeUndefined();
+      expect(promiseProxyFactory.getFromId(promise)).toBeUndefined();
    });
 
    it('will emit initial value if promise is resolved before subscribing to change event', async () => {
       const promiseProxyFactory = new PromiseProxyFactory(
-         new PromiseAccessor()
+         new PromiseAccessor(new ResolvedValueCacheMock())
       );
       const promise = Promise.resolve(10);
 
@@ -62,7 +50,7 @@ describe('PromiseProxy tests', () => {
 
    it('will emit  value if promise is resolved after subscribing to change event', async () => {
       const promiseProxyFactory = new PromiseProxyFactory(
-         new PromiseAccessor()
+         new PromiseAccessor(new ResolvedValueCacheMock())
       );
       let resolve: (value: number) => void;
       const promise = new Promise<number>(

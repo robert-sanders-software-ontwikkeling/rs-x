@@ -52,6 +52,8 @@ describe('UnaryNegationExpression tests', () => {
    it('will emit change event when operands changes', async () => {
       const context = { value: 1 };
       expression = jsParser.parse(context, '-value');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,

@@ -1,6 +1,7 @@
 import {
    emptyFunction,
    ErrorLog,
+   GuidFactory,
    InjectionContainer,
    IPropertyChange,
    truePredicate,
@@ -27,7 +28,8 @@ describe('StateChangeSubscriptionManager tests', () => {
          InjectionContainer.get(
             RsXStateManagerInjectionTokens.IObjectPropertyObserverProxyPairManager
          ),
-         new ErrorLog()
+         new ErrorLog(),
+         new GuidFactory()
       );
    });
 
@@ -93,7 +95,6 @@ describe('StateChangeSubscriptionManager tests', () => {
             { object: context, id: 'x' },
             { object: context.x, id: 'y' },
          ],
-         hasRebindNested: false,
          target: context.x,
          id: 'y',
          newValue: 20,
@@ -132,7 +133,6 @@ describe('StateChangeSubscriptionManager tests', () => {
       const expected: IPropertyChange = {
          arguments: [],
          chain: [{ object: context, id: 'x' }],
-         hasRebindNested: false,
          target: context,
          id: 'x',
          newValue: { y: 20 },
@@ -171,7 +171,6 @@ describe('StateChangeSubscriptionManager tests', () => {
       const expected: IPropertyChange = {
          arguments: [],
          chain: [{ object: context, id: 'x' }],
-         hasRebindNested: false,
          target: context,
          id: 'x',
          newValue: { y: 20 },
@@ -221,7 +220,6 @@ describe('StateChangeSubscriptionManager tests', () => {
             { object: context, id: 'x' },
             { object: context.x, id: 'y' },
          ],
-         hasRebindNested: false,
          target: context.x,
          id: 'y',
          newValue: 20,

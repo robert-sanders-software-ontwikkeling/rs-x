@@ -1,7 +1,7 @@
 import { ISingletonFactory } from '../singleton-factory/singleton.factory.interface';
 
-export class SingletonFactoryMock<TId, TData, TInstance>
-   implements ISingletonFactory<TId, TData, TInstance>
+export class SingletonFactoryMock<TId, TData, TInstance, TIdData = TData>
+   implements ISingletonFactory<TId, TData, TInstance, TIdData>
 {
    public isEmpty: boolean;
    public readonly ids = jest.fn();

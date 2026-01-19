@@ -9,11 +9,8 @@ import {
 
 // Load the state manager module into the injection container
 InjectionContainer.load(RsXStateManagerModule);
-const stateManager: IStateManager = InjectionContainer.get(
-    RsXStateManagerInjectionTokens.IStateManager
-);
 
-function watchDate() {
+function watchDate(stateManager: IStateManager) {
     console.log('\n******************************************');
     console.log('* Watching date');
     console.log('******************************************\n');
@@ -26,7 +23,7 @@ function watchDate() {
     });
     try {
         console.log('Initial value:');
-        stateManager.register(stateContext, 'date', truePredicate);
+        stateManager.watchState(stateContext, 'date', truePredicate);
 
         console.log('Changed value:');
         stateContext.date.setFullYear(2023);
@@ -38,11 +35,12 @@ function watchDate() {
         console.log(stateManager.getState<Date>(stateContext, 'date').toUTCString());
     } finally {
         changeSubscription.unsubscribe();
-        stateManager.unregister(stateContext, 'date', truePredicate);
+        // Always release the state when it is no longer needed.
+        stateManager.releaseState(stateContext, 'date', truePredicate);
     }
 }
 
-function watchDateProperty() {
+function watchDateProperty(stateManager: IStateManager) {
     console.log('\n******************************************');
     console.log('* Watching year');
     console.log('******************************************\n');
@@ -51,8 +49,9 @@ function watchDateProperty() {
         console.log(change.newValue);
     });
     try {
+        // This will emit a change event with the initial (current) value.
         console.log('Initial value:');
-        stateManager.register(date, 'year');
+        stateManager.watchState(date, 'year');
 
         const proxyRegister: IProxyRegistry = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
         const dateProxy = proxyRegister.getProxy<Date>(date);
@@ -64,9 +63,14 @@ function watchDateProperty() {
 
     } finally {
         changeSubscription.unsubscribe();
-        stateManager.unregister(date, 'year');
+        stateManager.releaseState(date, 'year');
     }
 }
 
-watchDate();
-watchDateProperty();
+export const run = (() => {
+    const stateManager: IStateManager = InjectionContainer.get(
+        RsXStateManagerInjectionTokens.IStateManager
+    );
+    watchDate(stateManager);
+    watchDateProperty(stateManager);
+})();

@@ -1,17 +1,20 @@
 # State-manager
 
-The **State Manager** provides an efficient way to observe and synchronize state changes across your application.  
-State always lives on a certain **context** and is identified by an **index**:
+The **State Manager** provides an efficient way to observe and synchronize state changes across your application.
 
-- Object property or field → index = property/field name  
+A state item is defined by a **context** and an **index**.  
+A context can be an object, and an index can be a property name — but it is not limited to that. It can be **any value**. The context is used as an identifier to group a set of state indexes.
+
+Examples of state indexes:
+
+- Object property or field → index = property or field name  
 - Array item → index = numeric position  
-- Map item → index = the map key  
+- Map item → index = map key  
 
-A state item is always determined by **(context, index)**.  
-The state manager does **not** automatically know how to detect changes for every data type, so it uses two services:
+The State Manager does **not** automatically know how to detect changes for every state value data type, nor how to patch the corresponding state setter. Therefore, it relies on two services:
 
 - A service implementing `IObjectPropertyObserverProxyPairManager`  
-  Responsible for creating an observer and proxying values if needed.
+  Responsible for creating observers and proxying values when needed.
 
 - A service implementing `IIndexValueAccessor`  
   Responsible for retrieving the current value.
@@ -22,31 +25,37 @@ The **State Manager** has the followng interface:
 export interface IStateManager {
     readonly changed: Observable<IStateChange>;
     readonly contextChanged: Observable<IContextChanged>;
-    readonly startChangeCycly: Observable<void>;
-    readonly endChangeCycly: Observable<void>;
+    readonly startChangeCycle: Observable<void>;
+    readonly endChangeCycle: Observable<void>;
 
-    isRegistered(
+    isWatched(
         context: unknown,
         index: unknown,
-        mustProxify?: MustProxify
+        mustProxify: MustProxify
     ): boolean;
 
-    register(
-        context: unknown,
-        index: unknown,
+    watchState(
+        context: unknown, 
+        index: unknown, 
         mustProxify?: MustProxify
     ): unknown;
 
-    unregister(
-        context: unknown,
-        index: unknown,
+    releaseState(
+        oontext: unknown, 
+        index: unknown, 
         mustProxify?: MustProxify
     ): void;
 
-    getState(
-        context: unknown,
+    getState<T>(
+        context: unknown, 
         index: unknown
-    ): unknown;
+    ): T;
+
+    setState<T>(
+        context: unknown, 
+        index: unknown, 
+        value: T
+    ): void;
 
     clear(): void;
 }
@@ -58,81 +67,98 @@ export interface IStateManager {
 
 ### **changed**
 **Type:** `Observable<IStateChange>`  
-Emits whenever a state value changes.
+Emits whenever a state item value changes.
 
 ---
 
 ### **contextChanged**
 **Type:** `Observable<IContextChanged>`  
-Emits whenever an entire context is replaced. Happes for example when you replaces a nested object.
+Emits whenever an entire context is replaced.  
+This happens, for example, when a nested object is replaced.
 
 ---
 
-### **startChangeCycly**
+### **startChangeCycle**
 **Type:** `Observable<void>`  
-Emits at the start of handling a state change.
+Emits at the start of processing a state item change.
 
 ---
 
-### **endChangeCycly**
+### **endChangeCycle**
 **Type:** `Observable<void>`  
-Emits at the end of handling a state change.
+Emits at the end of processing a state item change.
 
 ---
 
-### **isRegistered(context, index, mustProxify?)**
-Returns whether the given `(context, index)` pair is already registered.
+### **isWatched(context, index, mustProxify)**
+Returns whether the state item identified by the `(context, index, mustProxify)` triplet is currently being watched.
 
-| Parameter       | Type                       | Description                                               |
-| --------------- | -------------------------- | --------------------------------------------------------- |
-| **context**     | `unknown`                  | The object holding the property or promise being tracked. |
-| **index**       | `unknown`                  | The index identifying the state on the passed in.         |
-| **mustProxify** | `MustProxify` *(optional)* | Controls whether the value should be proxified.           |
+| Parameter       | Type                       | Description                                                     |
+| --------------- | -------------------------- | --------------------------------------------------------------- |
+| **context**     | `unknown`                  | The context to which the state index belongs.                   |
+| **index**       | `unknown`                  | The index identifying the state on the given context.           |
+| **mustProxify** | `MustProxify` *(optional)* | Predicate determining whether a nested state value must be proxified. It should be the same predicate that was passed to `watchState`.               |
 
 **Returns:** `boolean`
 
 ---
 
-### **register(context, index, mustProxify?)**
-Registers a `(context, index)` pair so its value is proxified and tracked.
+### **watchState(context, index, mustProxify?)**
+Watches a state item identified by the `(context, index, mustProxify)` triplet so that its value is proxified and tracked.
 
-| Parameter       | Type                       | Description                                                 |
-| --------------- | -------------------------- | ----------------------------------------------------------- |
-| **context**     | `unknown`                  | The state context.                                          |
-| **index**       | `unknown`                  | The index identifying the state on the passed in.           |
-| **mustProxify** | `MustProxify` *(optional)* | Predicate to determine whether the value must be proxified. |
+| Parameter       | Type                       | Description                                                     |
+| --------------- | -------------------------- | --------------------------------------------------------------- |
+| **context**     | `unknown`                  | The state context.                                              |
+| **index**       | `unknown`                  | The index identifying the state on the given context.           |
+| **mustProxify** | `MustProxify` *(optional)* | Predicate determining whether a nested state value must be proxified.|
 
-**Returns:** `unknown` (the proxified value)
+**Returns:**  
+`unknown` — the state item value if it was already being watched; otherwise `undefined`.
 
 ---
 
-### **unregister(context, index, mustProxify?)**
-Unregisters a previously registered state field.
+### **releaseState(context, index, mustProxify?)**
+Releases the state item identified by the `(context, index, mustProxify)` triplet.  
+Each call to `watchState` should have a corresponding `releaseState` call to ensure the state item is released when it is no longer needed.
 
-| Parameter       | Type                       | Description                                          |
-| --------------- | -------------------------- | ---------------------------------------------------- |
-| **context**     | `unknown`                  | The state context.                                   |
-| **index**       | `unknown`                  | The index identifying the state on the passed in.    |
-| **mustProxify** | `MustProxify` *(optional)* | Reference to the predicate passed into `register()`. |
+| Parameter       | Type                       | Description                                                     |
+| --------------- | -------------------------- | --------------------------------------------------------------- |
+| **context**     | `unknown`                  | The state context.                                              |
+| **index**       | `unknown`                  | The index identifying the state on the given context.           |
+| **mustProxify** | `MustProxify` *(optional)* | Predicate determining whether a nested state value must be proxified. It should be the same predicate that was passed to `watchState`. .              |
 
 **Returns:** `void`
 
 ---
 
 ### **getState(context, index)**
-Retrieves the currently tracked value for `(context, index)`.
+Retrieves the current state item value identified by the `(context, index)` pair.
 
-| Parameter   | Type      | Description                                                |
-| ----------- | --------- | ---------------------------------------------------------- |
-| **context** | `unknown` | The state context.                                         |
-| **index**   | `unknown` | The index identifying the state on the passed in context . |
+| Parameter   | Type      | Description                                                     |
+| ----------- | --------- | --------------------------------------------------------------- |
+| **context** | `unknown` | The state context.                                              |
+| **index**   | `unknown` | The index identifying the state on the given context.           |
 
 **Returns:** `unknown`
 
 ---
 
+### **setState(context, index, value)**
+Sets the value of the state item identified by the `(context, index)` pair.
+
+Unlike `watchState`, `setState` does **not** track changes. It does not patch setters or proxify values.  
+A change event is emitted on the first `setState` call and again whenever the value changes in subsequent calls.
+
+| Parameter   | Type      | Description                                                     |
+| ----------- | --------- | --------------------------------------------------------------- |
+| **context** | `unknown` | The state context.                                              |
+| **index**   | `unknown` | The index identifying the state on the given context.           |
+| **value**   | `unknown` | The state value.                                                |
+
+---
+
 ### **clear()**
-Clears all registered state values.
+Releases all registered state items.
 
 **Returns:** `void`
 
@@ -141,7 +167,8 @@ Clears all registered state values.
 ## Get an instance of the State Manager
 
 The state manager is registered as a **singleton service**.  
-You must load the module into your injection container.
+You must load the module into the injection container if you went
+to use it.
 
 ```ts
 import { InjectionContainer } from '@rs-x/core';
@@ -194,18 +221,29 @@ Monitors only assignment of a **new value** to the index.
 **Output:**
 
 ```console
+Running demo: demo/src/rs-x-state-manager/register-non-recursive-state.ts
 Initial value:
-10
-
+{
+    y: 10
+}
 Changed value:
-20
+{
+    y: 20
+}
+Latest value:
+{
+    y: 20
+}
+
+stateContext.x.y = 30 will not emit any change:
+---
 ```
 
 ---
 
 ### Recursive  
 Monitors assignments **and** changes *inside* the value.  
-Example: if the value is an object, internal object changes are also observed.
+Example: if the value is an object, internal object changes are also observed. You can make a state item recursive by passing in a **mustProxify** predicate to a **watchState** call. The mustProxify will be called for every nested index. If you return true it will watch the index otherwise not.
 
 ```ts
 {% include_relative ../demo/src/rs-x-state-manager/register-recursive-state.ts %}
@@ -226,13 +264,37 @@ Changed (recursive) value:
 
 ---
 
+### Manually setting state
+
+Besides that you can register a watched stated (calling `watchedState`) you can register an unwatched state using `setState`. An example for using `setState` might be an readonly property:
+
+```ts
+{% include_relative ../demo/src/rs-x-state-manager/register-readonly-property.ts %}
+```
+
+**Output:**
+
+```console
+Running demo: demo/src/rs-x-state-manager/register-readonly-property.ts
+Initial value for readonly property 'aPlusB':
+30
+set 'stateContext.a' to '100' will emit a change event for readonly property 'aPlusB'
+Changed value for readonly property 'aPlusB':
+120
+set 'stateContext.b' to '200' will emit a change event for readonly property 'aPlusB'
+Changed value for readonly property 'aPlusB':
+300
+```
+
+---
+
 ### State registration is idempotent
 
-You can register the same state multiple times.  
-Never assume a state is already registered—always register if you depend on it.  
-Otherwise the state may disappear when another part of the system unregisters it.
+You can register the same state item multiple times.  
+Never assume a state is already registered. Always register it if you depend on it.  
+Otherwise the state may disappear when another part of the system unregisters it. The state manager keeps track of a reference count and will release the state when it goes to zero.
 
-When done, unregister the state:
+When done, release the state:
 
 ```ts
 {% include_relative ../demo/src/rs-x-state-manager/register-state-is-idempotent.ts %}
@@ -273,13 +335,13 @@ You can override this factory list by providing your own custom provider service
 | Observable  | Not indexable                                                                                                                                                                | Subscribe              | [example](#observable)           |
 | Custom type | user defined                                                                                                                                                                 | user defined           | [example](#customtype)           |
 
-State consists of **context** and **index**.  
-The manager checks each observer factory to determine support based on these two values.
+State item is identified by a **context**,  **index** and **mustProxify** predicate for a recursive state item
+The manager checks each observer factory to determine support based on the **context** and **index**.
 
 Behavior:
 
 - Both recursive and non-recursive observers monitor **assignment** of a new value.
-- Recursive observers additionally monitor **internal changes** of the value.
+- Recursive observers additionally monitor **internal changes** of the value. The nested values you want to monitor are determine by the **mustProxify** predicate.
 
 The following example illustrates the different state types:
 

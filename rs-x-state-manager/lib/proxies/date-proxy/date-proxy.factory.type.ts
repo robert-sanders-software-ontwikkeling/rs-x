@@ -1,5 +1,4 @@
-import { ISingletonFactory } from '@rs-x/core';
-import { IDisposableOwner } from '../../disposable-owner.interface';
+import { IDisposableOwner, ISingletonFactory } from '@rs-x/core';
 import {
    IObserverProxyPair,
    MustProxify
@@ -14,10 +13,9 @@ export interface IDateProxyData extends IDateProxyIdData {
    owner?: IDisposableOwner;
 }
 
-export type IDateObserverProxyPair = IObserverProxyPair<Date, string>;
+export type IDateObserverProxyPair = IObserverProxyPair<Date>;
 export type IDateProxyFactory = ISingletonFactory<
    string,
    IDateProxyData,
-   IDateObserverProxyPair,
-   IDateProxyIdData
+   IDateObserverProxyPair
 >;

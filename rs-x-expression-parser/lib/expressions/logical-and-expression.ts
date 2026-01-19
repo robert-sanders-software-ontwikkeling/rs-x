@@ -17,7 +17,6 @@ export class LogicalAndExpression extends BinaryExpression {
    }
 
    protected override evaluateExpression(
-      _: AbstractExpression,
       a: unknown,
       b: unknown
    ): unknown {

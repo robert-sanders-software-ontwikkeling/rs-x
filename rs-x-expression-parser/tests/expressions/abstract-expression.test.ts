@@ -30,65 +30,54 @@ describe('AbstractExpression tests', () => {
       expression = undefined;
    });
 
-   it('evaluate with constant expression', () => {
+   it('evaluate with constant expression', async () => {
       const expression = jsParser.parse({}, '1 + 2');
 
-      expect(expression.value).toEqual(3);
+      const actual = await new WaitForEvent(expression, 'changed').wait(() => { }) as IExpression;
+
+      expect(actual.value).toEqual(3);
    });
 
-   it('evaluate with identifier', () => {
+   it('evaluate with identifier', async () => {
       const context = {
          a: 10,
          b: 20,
       };
-      const expression = jsParser.parse(context, 'a + b');
+      const expression = jsParser.parse(context, 'a + b')
 
-      expect(expression.value).toEqual(30);
-   });
-
-   it('will emit initial value', async () => {
-      const context = {
-         a: 10,
-         b: 20,
-      };
-      expression = jsParser.parse(context, 'a + b');
-
-      const actual = (await new WaitForEvent(expression, 'changed').wait(
-         () => {}
-      )) as IExpression;
+      const actual = await new WaitForEvent(expression, 'changed').wait(() => { }) as IExpression;
 
       expect(actual.value).toEqual(30);
-      expect(actual).toBe(expression);
    });
 
-   it('will emit initial value for expression with observable', async () => {
+   it('expression with observable', async () => {
       const context = {
          observable: new BehaviorSubject<number>(50),
       };
       expression = jsParser.parse(context, 'observable + 1');
       const actual = (await new WaitForEvent(expression, 'changed').wait(
-         () => {}
+         () => { }
       )) as IExpression;
 
       expect(actual.value).toEqual(51);
       expect(actual).toBe(expression);
    });
 
-   it('will emit initial value for expression with promise', async () => {
+   it('expression with promise', async () => {
       const context = {
          promise: Promise.resolve(100),
       };
       expression = jsParser.parse(context, 'promise + 1');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
-         () => {}
+         () => { }
       )) as IExpression;
 
       expect(actual.value).toEqual(101);
       expect(actual).toBe(expression);
    });
 
-   it('will emit initial value for expression with map index', async () => {
+   it('expression with map index', async () => {
       const context = {
          map: new Map<string, number>([
             ['one', 1],
@@ -99,21 +88,21 @@ describe('AbstractExpression tests', () => {
       expression = jsParser.parse(context, 'map["three"]');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
-         () => {}
+         () => { }
       )) as IExpression;
 
       expect(actual.value).toEqual(3);
       expect(actual).toBe(expression);
    });
 
-   it('will emit initial value for expression with map index', async () => {
+   it('expression with array index', async () => {
       const context = {
          array: [11, 21, 31, 41, 51],
       };
       expression = jsParser.parse(context, 'array[1]');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
-         () => {}
+         () => { }
       )) as IExpression;
 
       expect(actual.value).toEqual(21);
@@ -126,6 +115,8 @@ describe('AbstractExpression tests', () => {
          b: 20,
       };
       expression = jsParser.parse(context, 'a + b');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,
@@ -142,10 +133,12 @@ describe('AbstractExpression tests', () => {
          promise: Promise.resolve(100),
       };
       expression = jsParser.parse(context, 'promise + 1');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,
-      }).wait(() => {});
+      }).wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,
@@ -162,6 +155,8 @@ describe('AbstractExpression tests', () => {
          observable: new BehaviorSubject<number>(50),
       };
       expression = jsParser.parse(context, 'observable + 1');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,
@@ -178,6 +173,8 @@ describe('AbstractExpression tests', () => {
          observable: new BehaviorSubject<number>(50),
       };
       expression = jsParser.parse(context, 'observable + 1');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,
@@ -194,6 +191,8 @@ describe('AbstractExpression tests', () => {
          array: [11, 21, 31, 41, 51],
       };
       expression = jsParser.parse(context, 'array');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,
@@ -214,6 +213,8 @@ describe('AbstractExpression tests', () => {
          ]),
       };
       expression = jsParser.parse(context, 'map');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,
@@ -241,7 +242,8 @@ describe('AbstractExpression tests', () => {
          c: 2,
       };
       expression = jsParser.parse(context, 'a.b + c');
-      await new WaitForEvent(expression, 'changed').wait(() => {});
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,
@@ -261,7 +263,8 @@ describe('AbstractExpression tests', () => {
          c: 2,
       };
       expression = jsParser.parse(context, 'a.b + c');
-      await new WaitForEvent(expression, 'changed').wait(() => {});
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,

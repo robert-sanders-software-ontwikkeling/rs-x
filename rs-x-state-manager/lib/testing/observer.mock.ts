@@ -5,7 +5,7 @@ export class ObserverMock implements IObserver {
    public target: unknown;
    public id?: unknown;
    public changed = new ObservableMock();
-   public initialValue: unknown;
+   public value: unknown;
    public readonly equalTo = jest.fn();
    public readonly init = jest.fn();
    public readonly dispose = jest.fn();

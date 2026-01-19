@@ -1,8 +1,10 @@
 import {
+   IGuidFactory,
    Inject,
    Injectable,
    InvalidOperationException,
-   SingletonFactory,
+   RsXCoreInjectionTokens,
+   SingletonFactoryWithGuid
 } from '@rs-x/core';
 import { IObserverProxyPair } from '../object-property-observer-proxy-pair-manager.type';
 import { IProxyRegistry } from '../proxies/proxy-registry/proxy-registry.interface';
@@ -15,28 +17,34 @@ import {
 
 @Injectable()
 export class ObjectObserverProxyPairManager
-   extends SingletonFactory<unknown, IProxyTarget<unknown>, IObserverProxyPair>
+   extends SingletonFactoryWithGuid<IProxyTarget<unknown>, IObserverProxyPair>
    implements IObjectObserverProxyPairManager
 {
+ 
    constructor(
       @Inject(
          RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryProviderFactory
       )
       private readonly getObserverFactoryProvider: () => IObjectObserverProxyPairFactoryProvider,
       @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
-      private readonly _proxyRegistry: IProxyRegistry
+      private readonly _proxyRegistry: IProxyRegistry,
+      @Inject(RsXCoreInjectionTokens.IGuidFactory)
+      guidFactory: IGuidFactory
    ) {
-      super();
+      super(guidFactory);
    }
 
-   public getId(proxyTarget: IProxyTarget<unknown>): unknown {
-      return proxyTarget.target;
+   protected override getGroupId(data: IProxyTarget<unknown>): unknown {
+     return data.target
+   }
+   protected override getGroupMemberId(data: IProxyTarget<unknown>): unknown {
+      return data.mustProxify;
    }
 
    public override create(data: IProxyTarget<unknown>): {
       referenceCount: number;
-      instance: IObserverProxyPair<unknown, unknown>;
-      id: unknown;
+      instance: IObserverProxyPair<unknown>;
+      id: string;
    } {
       if (this._proxyRegistry.isProxy(data.target)) {
          throw new InvalidOperationException(
@@ -47,13 +55,9 @@ export class ObjectObserverProxyPairManager
       return super.create(data);
    }
 
-   protected createId(proxyTarget: IProxyTarget<unknown>): unknown {
-      return proxyTarget.target;
-   }
-
    protected createInstance(
       objectObserverInfo: IProxyTarget<unknown>,
-      id: unknown
+      id: string
    ): IObserverProxyPair {
       const factory = this.getObserverFactoryProvider().factories.find(
          (factory) => factory.applies(objectObserverInfo.target)

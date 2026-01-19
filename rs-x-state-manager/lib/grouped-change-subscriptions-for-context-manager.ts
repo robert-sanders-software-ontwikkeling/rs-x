@@ -1,11 +1,13 @@
 import {
    IErrorLog,
+   IGuidFactory,
    IPropertyChange,
    ISingletonFactory,
-   SingletonFactoryWithGuid,
+   SingletonFactoryWithGuid
 } from '@rs-x/core';
 import { Subscription } from 'rxjs';
 import { IObserver } from './observer.interface';
+
 
 export interface ISubscriptionWithData<TSubscriptionData> {
    subscription: Subscription;
@@ -26,18 +28,17 @@ export interface IGroupedChangeSubscriptionsForContextManager<
 }
 
 export abstract class GroupedChangeSubscriptionsForContextManager<
-      TSubsriptionData,
-      TData extends TIdData & IChangeSubscriptionsCreateMethods,
-      TIdData = TData,
-   >
+   TSubsriptionData,
+   TData extends TIdData & IChangeSubscriptionsCreateMethods,
+   TIdData = TData,
+>
    extends SingletonFactoryWithGuid<TData, IObserver>
    implements
-      IGroupedChangeSubscriptionsForContextManager<
-         TSubsriptionData,
-         TData,
-         TIdData
-      >
-{
+   IGroupedChangeSubscriptionsForContextManager<
+      TSubsriptionData,
+      TData,
+      TIdData
+   > {
    private readonly _subscriptions = new Map<
       string,
       ISubscriptionWithData<TSubsriptionData>
@@ -46,9 +47,10 @@ export abstract class GroupedChangeSubscriptionsForContextManager<
    constructor(
       protected readonly _context: unknown,
       private readonly releaseContext: () => void,
-      protected readonly _errorLog: IErrorLog
+      protected readonly _errorLog: IErrorLog,
+      guidFactory: IGuidFactory,
    ) {
-      super();
+      super(guidFactory);
    }
 
    public getSubsriptionData(id: string): TSubsriptionData {

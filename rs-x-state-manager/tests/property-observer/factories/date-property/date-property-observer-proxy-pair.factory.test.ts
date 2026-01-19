@@ -3,12 +3,12 @@ import {
    IPropertyChange,
    WaitForEvent
 } from '@rs-x/core';
+import { DisposableOwnerMock } from '@rs-x/core/testing';
 import { IProxyRegistry } from '../../../../lib';
 import { IObserver } from '../../../../lib/observer.interface';
 import { IDatePropertyObserverProxyPairFactory } from '../../../../lib/property-observer/factories/date-property/date-property-observer-proxy-pair.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
-import { DisposableOwnerMock } from '../../../../lib/testing/disposable-owner.mock';
 
 describe('IDatePropertyObserverProxyPairFactory tests', () => {
    let disposableOwner: DisposableOwnerMock;
@@ -60,7 +60,6 @@ describe('IDatePropertyObserverProxyPairFactory tests', () => {
          target: date,
          id: 'year',
          newValue: 2024,
-         hasRebindNested: false,
       };
       expect(actual).toEqual(expected);
    });

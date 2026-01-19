@@ -1,6 +1,5 @@
-import { Inject, Injectable } from '@rs-x/core';
+import { IDisposableOwner, Inject, Injectable } from '@rs-x/core';
 import { isObservable, Observable } from 'rxjs';
-import { IDisposableOwner } from '../../disposable-owner.interface';
 import {
    IObservableObserverProxyPair,
    IObservableProxyFactory,
@@ -12,8 +11,11 @@ import { IObjectObserverProxyPairFactory } from '../object-observer-proxy-pair.f
 @Injectable()
 export class ObservableObserverProxyPairFactory
    implements
-      IObjectObserverProxyPairFactory<Observable<unknown>, Observable<unknown>>
+      IObjectObserverProxyPairFactory<Observable<unknown>>
 {
+
+   public readonly priority = 3;
+
    constructor(
       @Inject(RsXStateManagerInjectionTokens.IObservableProxyFactory)
       private readonly _observableProxyFactory: IObservableProxyFactory

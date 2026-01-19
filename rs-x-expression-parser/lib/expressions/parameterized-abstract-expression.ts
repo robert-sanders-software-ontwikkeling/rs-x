@@ -26,27 +26,20 @@ export abstract class ParameterizedExpression<
       return this;
    }
 
-   protected override evaluate(sender: AbstractExpression): void {
-      const args = this.evaluateChildExpression();
-      if (!args) {
-         return undefined;
+   protected abstract evaluateExpression(...args: unknown[]): T;
+
+   protected override prepareReevaluation(): boolean {
+      const args = this._childExpressions.map(childExpression => childExpression.value);
+
+      if (args.some(arg => arg === undefined)) {
+         return false;
       }
 
-      super.evaluate(sender, ...args);
+      return true;
    }
 
-   private get allChildExpressionsHaveAValue(): boolean {
-      return this._childExpressions.every(
-         (childExpression) => childExpression.value !== undefined
-      );
-   }
-
-   private evaluateChildExpression(): unknown[] {
-      if (!this.allChildExpressionsHaveAValue) {
-         return undefined;
-      }
-      return this._childExpressions.map(
-         (childExpression) => childExpression.value
-      );
+   protected override evaluate(): T {
+      const args = this._childExpressions.map(childExpression => childExpression.value);
+      return this.evaluateExpression(...args)
    }
 }

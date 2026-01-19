@@ -17,7 +17,6 @@ export class LessThanExpression extends BinaryExpression<boolean> {
    }
 
    protected override evaluateExpression(
-      _: AbstractExpression,
       a: number,
       b: number
    ): boolean {

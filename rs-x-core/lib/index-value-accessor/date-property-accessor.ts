@@ -1,8 +1,9 @@
 import { Injectable } from '../dependency-injection';
-import { DateProperty, IDatePropertyAccessor } from './date-property-accessor.interface';
+import { dataProperties, DateProperty, IDatePropertyAccessor } from './date-property-accessor.interface';
 
 @Injectable()
 export class DatePropertyAccessor implements IDatePropertyAccessor {
+    public readonly priority = 0;
     private readonly _setter = {
         year: (date, value) => date.setFullYear(value),
         utcYear: (date, value) => date.setUTCFullYear(value),
@@ -40,6 +41,14 @@ export class DatePropertyAccessor implements IDatePropertyAccessor {
 
     public isAsync(): boolean {
         return false;
+    }
+
+    public getIndexes(): IterableIterator<DateProperty> {
+        return dataProperties.values();
+    }
+
+    public hasValue(context: Date, index: DateProperty): boolean {
+        return this.getValue(context, index) !== undefined;
     }
 
     public getResolvedValue(context: Date, index: DateProperty): unknown {

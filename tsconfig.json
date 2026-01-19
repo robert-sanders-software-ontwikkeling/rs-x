@@ -37,7 +37,7 @@
             "rs-x-state-manager/lib/testing/index.ts"
          ],
          "@rs-x/expression-parser": [
-            "rs-x-core-ui/lib/index.ts"
+            "rs-x-expression-parser/lib/index.ts"
          ]
       },
       "allowJs": true,
@@ -45,7 +45,7 @@
          "node_modules/@types",
          "./types"
       ],
-      "types": ["jest"]
+      "types": ["jest", "node"]
    },
    "ts-node": {
       "compilerOptions": {

@@ -1,51 +1,38 @@
 import { IPropertyChange, ObservableAccessor, WaitForEvent } from '@rs-x/core';
+import { ObservableMock, ResolvedValueCacheMock, SubscriptionMock } from '@rs-x/core/testing';
 import { Observable, Subject } from 'rxjs';
 import { ObservableProxyFactory } from '../../../lib/proxies/observable-proxy/observable-proxy.factory';
-import { ObservableMock, SubscriptionMock } from '@rs-x/core/testing';
 
 describe('ObserableProxy tests', () => {
-   it('passed in observable is used as id', () => {
-      const observableProxyFactory = new ObservableProxyFactory(
-         new ObservableAccessor()
-      );
-      const observable = new Observable<number>();
-
-      const { id } = observableProxyFactory.create({
-         observable,
-      }).instance;
-
-      expect(id).toBe(observable);
-   });
-
    it('dispose will unregister proxy when all references are released', () => {
       const observableProxyFactory = new ObservableProxyFactory(
-         new ObservableAccessor()
+         new ObservableAccessor(new ResolvedValueCacheMock())
       );
       const observable = new Observable<number>();
 
-      const { observer: observer1, id: id1 } = observableProxyFactory.create({
+      const { observer: observer1 } = observableProxyFactory.create({
          observable,
       }).instance;
-      const { observer: observer2, id: id2 } = observableProxyFactory.create({
+      const { observer: observer2} = observableProxyFactory.create({
          observable,
       }).instance;
 
       expect(observer1).toBe(observer2);
-      expect(id1).toBe(id2);
-      expect(observableProxyFactory.getFromId(id1)).toBeDefined();
+   
+      expect(observableProxyFactory.getFromId(observable)).toBeDefined();
 
       observer1.dispose();
 
-      expect(observableProxyFactory.getFromId(id2)).toBeDefined();
+      expect(observableProxyFactory.getFromId(observable)).toBeDefined();
 
       observer2.dispose();
 
-      expect(observableProxyFactory.getFromId(id2)).toBeUndefined();
+      expect(observableProxyFactory.getFromId(observable)).toBeUndefined();
    });
 
    it('no changed event will be emitted if we do not call init', async () => {
       const observableProxyFactory = new ObservableProxyFactory(
-         new ObservableAccessor()
+         new ObservableAccessor(new ResolvedValueCacheMock())
       );
       const observable = new Subject<number>();
 
@@ -62,7 +49,7 @@ describe('ObserableProxy tests', () => {
 
    it('init is idempotent', async () => {
       const observableProxyFactory = new ObservableProxyFactory(
-         new ObservableAccessor()
+         new ObservableAccessor(new ResolvedValueCacheMock())
       );
       const observable = new ObservableMock<number>();
 
@@ -84,7 +71,7 @@ describe('ObserableProxy tests', () => {
 
    it('calling next on observable will emit change event f changed', async () => {
       const observableProxyFactory = new ObservableProxyFactory(
-         new ObservableAccessor()
+         new ObservableAccessor(new ResolvedValueCacheMock())
       );
       const observable = new Subject<number>();
 
@@ -121,7 +108,7 @@ describe('ObserableProxy tests', () => {
 
    it('dipose will uunscribe to observerable', () => {
       const observableProxyFactory = new ObservableProxyFactory(
-         new ObservableAccessor()
+         new ObservableAccessor(new ResolvedValueCacheMock())
       );
       const observable = new ObservableMock<number>();
       const subscription = new SubscriptionMock();

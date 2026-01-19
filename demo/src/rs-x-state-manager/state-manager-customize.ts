@@ -1,9 +1,24 @@
-import { IErrorLog, IIndexValueAccessor, IndexAccessor, Inject, Injectable, InjectionContainer, IPropertyChange, RsXCoreInjectionTokens, SingletonFactory, truePredicate } from '@rs-x/core';
+import {
+    ContainerModule,
+    defaultIndexValueAccessorList,
+    IDisposableOwner,
+    IErrorLog,
+    IGuidFactory,
+    IIndexValueAccessor,
+    Inject,
+    Injectable,
+    InjectionContainer,
+    IPropertyChange,
+    overrideMultiInjectServices,
+    RsXCoreInjectionTokens,
+    SingletonFactory,
+    truePredicate
+} from '@rs-x/core';
 import {
     AbstractObserver,
-    IDisposableOwner,
+    defaultObjectObserverProxyPairFactoryList,
+    defaultPropertyObserverProxyPairFactoryList,
     IIndexObserverInfo,
-    IndexObserverFactory,
     IndexObserverProxyPairFactory,
     IObjectObserverProxyPairFactory,
     IObjectObserverProxyPairManager,
@@ -13,22 +28,25 @@ import {
     IProxyTarget,
     IStateChange,
     IStateManager,
-    MustProxify,
-    ObjectObserverFactory,
     RsXStateManagerInjectionTokens,
     RsXStateManagerModule
 } from '@rs-x/state-manager';
 import { ReplaySubject, Subscription } from 'rxjs';
 
-// Load the state manager module into the injection container
-InjectionContainer.load(RsXStateManagerModule);
+const MyInjectTokens = {
+    TextDocumentObserverManager: Symbol('TextDocumentObserverManager'),
+    TextDocumenIndexObserverManager: Symbol('TextDocumenIndexObserverManager'),
+    TextDocumentIndexAccessor: Symbol('TextDocumentIndexAccessor'),
+    TextDocumentObserverProxyPairFactory: Symbol('TextDocumentObserverProxyPairFactory'),
+    TextDocumentInxdexObserverProxyPairFactory: Symbol('TextDocumentInxdexObserverProxyPairFactory')
+    
+};
 
 class IndexForTextDocumentxObserverManager
     extends SingletonFactory<
-        number | MustProxify,
+        number,
         IIndexObserverInfo<ITextDocumentIndex>,
         TextDocumentIndexObserver> {
-
     constructor(
         private readonly _textDocument: TextDocument,
         private readonly _textDocumentObserverManager: TextDocumentObserverManager,
@@ -37,12 +55,11 @@ class IndexForTextDocumentxObserverManager
         super();
     }
 
-
-    public override getId(indexObserverInfo: IIndexObserverInfo<ITextDocumentIndex>): number | MustProxify {
+    public override getId(indexObserverInfo: IIndexObserverInfo<ITextDocumentIndex>): number {
         return this.createId(indexObserverInfo);
     }
 
-    protected override createInstance(indexObserverInfo: IIndexObserverInfo<ITextDocumentIndex>, id: number | MustProxify): TextDocumentIndexObserver {
+    protected override createInstance(indexObserverInfo: IIndexObserverInfo<ITextDocumentIndex>, id: number): TextDocumentIndexObserver {
         const textDocumentObserver = this._textDocumentObserverManager.create(this._textDocument).instance;
         return new TextDocumentIndexObserver(
             {
@@ -56,11 +73,7 @@ class IndexForTextDocumentxObserverManager
         );
     }
 
-    protected override createId(indexObserverInfo: IIndexObserverInfo<ITextDocumentIndex>): number | MustProxify {
-
-        if (indexObserverInfo.mustProxify) {
-            return indexObserverInfo.mustProxify;
-        }
+    protected override createId(indexObserverInfo: IIndexObserverInfo<ITextDocumentIndex>): number {
         // Using Cantor pairing to create a unique id from page and line index
         const { pageIndex, lineIndex } = indexObserverInfo.index;
         return ((pageIndex + lineIndex) * (pageIndex + lineIndex + 1)) / 2 + lineIndex;
@@ -111,7 +124,7 @@ export class TextDocumenIndexObserverManager
         IndexForTextDocumentxObserverManager
     > {
     constructor(
-        @Inject(TextDocumentObserverManager)
+        @Inject(MyInjectTokens.TextDocumentObserverManager)
         private readonly _textDocumentObserverManager: TextDocumentObserverManager,
     ) {
         super();
@@ -139,14 +152,22 @@ export class TextDocumenIndexObserverManager
     }
 }
 
-// Normally we would create our own module
-// But for simplicity we bind our services directly to the injection container
 
-InjectionContainer.bind(TextDocumentObserverManager).to(TextDocumentObserverManager).inSingletonScope();
-InjectionContainer.bind(TextDocumenIndexObserverManager).to(TextDocumenIndexObserverManager).inSingletonScope();
 
-@IndexAccessor()
+
+@Injectable()
 export class TextDocumentIndexAccessor implements IIndexValueAccessor<TextDocument, ITextDocumentIndex> {
+    public readonly priority: 200;
+
+    public hasValue(context: TextDocument, index: ITextDocumentIndex): boolean {
+        return context.getLine(index) !== undefined;
+    }
+
+    // We don’t have any properties that can be iterated through.
+    public getIndexes(_context: TextDocument, _index?: ITextDocumentIndex): IterableIterator<ITextDocumentIndex> {
+        return [].values();
+    }
+
     // Indicate whether the value is async. For example when the value is a Promise
     public isAsync(_context: TextDocument, _index: ITextDocumentIndex): boolean {
         return false;
@@ -172,23 +193,29 @@ export class TextDocumentIndexAccessor implements IIndexValueAccessor<TextDocume
     }
 }
 
-@IndexObserverFactory()
+@Injectable()
 export class TextDocumentInxdexObserverProxyPairFactory extends IndexObserverProxyPairFactory<TextDocument, unknown> {
     constructor(
         @Inject(RsXStateManagerInjectionTokens.IObjectObserverProxyPairManager)
         objectObserverManager: IObjectObserverProxyPairManager,
-        @Inject(TextDocumenIndexObserverManager)
+        @Inject( MyInjectTokens.TextDocumenIndexObserverManager)
         textDocumenIndexObserverManager: TextDocumenIndexObserverManager,
         @Inject(RsXCoreInjectionTokens.IErrorLog)
         errorLog: IErrorLog,
+        @Inject(RsXCoreInjectionTokens.IGuidFactory)
+        guidFactory: IGuidFactory,
         @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
-        indexValueAccessor: IIndexValueAccessor
+        indexValueAccessor: IIndexValueAccessor,
+        @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
+        proxyRegister: IProxyRegistry
     ) {
         super(
             objectObserverManager,
             textDocumenIndexObserverManager,
             errorLog,
-            indexValueAccessor
+            guidFactory,
+            indexValueAccessor,
+            proxyRegister
         );
     }
 
@@ -198,25 +225,23 @@ export class TextDocumentInxdexObserverProxyPairFactory extends IndexObserverPro
     }
 }
 
-@ObjectObserverFactory()
+@Injectable()
 export class TextDocumentObserverProxyPairFactory implements IObjectObserverProxyPairFactory {
+    public readonly priority = 100;
+
     constructor(
-        @Inject(TextDocumentObserverManager)
+        @Inject( MyInjectTokens.TextDocumentObserverManager)
         private readonly _textDocumentObserverManager: TextDocumentObserverManager) { }
 
     public create(
         _: IDisposableOwner,
-        proxyTarget: IProxyTarget<TextDocument>): IObserverProxyPair<TextDocument, TextDocument> {
+        proxyTarget: IProxyTarget<TextDocument>): IObserverProxyPair<TextDocument> {
 
         const observer = this._textDocumentObserverManager.create(proxyTarget.target).instance;
         return {
             observer,
             proxy: observer.target as TextDocument,
             proxyTarget: proxyTarget.target,
-            id: proxyTarget.target,
-            // This should normally only be set to false when the value
-            // is async. For example when the property is a Promise
-            emitChangeWhenSet: true
         };
     }
 
@@ -254,7 +279,9 @@ class TextDocument {
 
         for (const pageIndex of sortedPageIndexes) {
             const page = this._pages.get(pageIndex);
-            if (!page) continue;
+            if (!page) {
+                continue;
+            }
 
             // Sort lines by lineIndex
             const sortedLineIndexes = Array.from(page.keys()).sort((a, b) => a - b);
@@ -323,7 +350,7 @@ class TextDocumentObserver extends AbstractObserver<TextDocument> {
     }
 
     protected override disposeInternal(): void {
-        this._proxyRegister.unregister(this.initialValue);
+        this._proxyRegister.unregister(this.value);
     }
 
     public get(
@@ -348,29 +375,46 @@ class TextDocumentObserver extends AbstractObserver<TextDocument> {
     }
 }
 
-const stateContext = {
-    myBook: new TextDocument([
-        [
-            'Once upon a time',
-            'bla bla'
-        ],
-        [
-            'bla bla',
-            'They lived happily ever after.',
-            'The end'
-        ]
-    ])
-};
-
 // Load the state manager module into the injection container
-const stateManager: IStateManager = InjectionContainer.get(
-    RsXStateManagerInjectionTokens.IStateManager
-);
+InjectionContainer.load(RsXStateManagerModule);
 
-function testMonitorTextDocument(): void {
+const MyModule = new ContainerModule((options) => {
+    options
+        .bind<TextDocumentObserverManager>(
+            MyInjectTokens.TextDocumentObserverManager
+        )
+        .to(TextDocumentObserverManager)
+        .inSingletonScope();
+
+    options
+        .bind<TextDocumenIndexObserverManager>(
+            MyInjectTokens.TextDocumenIndexObserverManager
+        )
+        .to(TextDocumenIndexObserverManager)
+        .inSingletonScope();
+
+
+    overrideMultiInjectServices(options, RsXCoreInjectionTokens.IIndexValueAccessorList, [
+        { target: TextDocumentIndexAccessor, token: MyInjectTokens.TextDocumentIndexAccessor },
+        ...defaultIndexValueAccessorList
+    ]);
+
+    overrideMultiInjectServices(options, RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList, [
+        { target: TextDocumentObserverProxyPairFactory, token: MyInjectTokens.TextDocumentObserverProxyPairFactory },
+        ...defaultObjectObserverProxyPairFactoryList
+    ]);
+
+    overrideMultiInjectServices(options,RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryList, [
+        { target: TextDocumentInxdexObserverProxyPairFactory, token: MyInjectTokens.TextDocumentInxdexObserverProxyPairFactory },
+        ...defaultPropertyObserverProxyPairFactoryList
+    ]);
+});
+
+InjectionContainer.load(MyModule);
+
+function testMonitorTextDocument(stateManager: IStateManager, stateContext: { myBook: TextDocument }): void {
     const bookSubscription = stateManager.changed.subscribe(() => {
         console.log(stateContext.myBook.toString());
-
     });
 
     // We observe the whole book
@@ -379,7 +423,7 @@ function testMonitorTextDocument(): void {
         console.log('\n***********************************************');
         console.log("Start watching the whole book\n");
         console.log('My initial book:\n');
-        stateManager.register(stateContext, 'myBook', truePredicate);
+        stateManager.watchState(stateContext, 'myBook', truePredicate);
 
         console.log('\nUpdate second line on the first page:\n');
         console.log('My book after change:\n');
@@ -387,13 +431,12 @@ function testMonitorTextDocument(): void {
 
     } finally {
         // Stop monitoring the whole book
-        stateManager.unregister(stateContext, 'myBook', truePredicate);
+        stateManager.releaseState(stateContext, 'myBook', truePredicate);
         bookSubscription.unsubscribe();
     }
-
 }
 
-function testMonitoreSpecificLineInDocument():void {
+function testMonitoreSpecificLineInDocument(stateManager: IStateManager, stateContext: { myBook: TextDocument }): void {
     const line3OnPage1Index = { pageIndex: 0, lineIndex: 2 };
     const lineSubscription = stateManager.changed.subscribe((change: IStateChange) => {
         const documentIndex = change.key as ITextDocumentIndex;
@@ -411,7 +454,7 @@ function testMonitoreSpecificLineInDocument():void {
 
         console.log('\n***********************************************');
         console.log("Start watching line 3 on page 1\n");
-        stateManager.register(stateContext.myBook, line3OnPage1Index);
+        stateManager.watchState(stateContext.myBook, line3OnPage1Index);
 
         const proxRegistry: IProxyRegistry = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
         const bookProxy: TextDocument = proxRegistry.getProxy(stateContext.myBook);
@@ -424,10 +467,28 @@ function testMonitoreSpecificLineInDocument():void {
 
     } finally {
         // Stop monitoring line 3 on page 1. 
-        stateManager.unregister(stateContext.myBook, line3OnPage1Index);
+        stateManager.releaseState(stateContext.myBook, line3OnPage1Index);
         lineSubscription.unsubscribe();
     }
 }
 
-testMonitorTextDocument();
-testMonitoreSpecificLineInDocument();
+export const run = (() => {
+    const stateManager: IStateManager = InjectionContainer.get(
+        RsXStateManagerInjectionTokens.IStateManager
+    );
+    const stateContext = {
+        myBook: new TextDocument([
+            [
+                'Once upon a time',
+                'bla bla'
+            ],
+            [
+                'bla bla',
+                'They lived happily ever after.',
+                'The end'
+            ]
+        ])
+    };
+    testMonitorTextDocument(stateManager, stateContext);
+    testMonitoreSpecificLineInDocument(stateManager, stateContext);
+})();

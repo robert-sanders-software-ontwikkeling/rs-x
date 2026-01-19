@@ -3,7 +3,12 @@ export const RsXExpressionParserInjectionTokens = {
    ArrayIndexOwnerResolver: Symbol('ArrayIndexOwnerResolver'),
    MapKeyOwnerResolver: Symbol('MapKeyOwnerResolver'),
    IdentifierOwnerResolver: Symbol('IdentifierOwnerResolver'),
-   IIndexValueObserverManager: Symbol('IIndexValueObserverManager'),
+   IIdentifierOwnerResolverList:  Symbol('IIdentifierOwnerResolverList'),
    IExpressionManager: Symbol('IExpressionManager'),
+   IExpressionChangeTransactionManager: Symbol('IExpressionChangeTransactionManager'),
    IExpressionParser: Symbol('IExpressionParser'),
+   IExpressionFactory:  Symbol('IExpressionFactory'),
+   IExpressionObserverProxyPairFactory: Symbol('IExpressionObserverProxyPairFactory'),
+   IExpressionIndexAccessor: Symbol('IExpressionIndexAccessor'),
+   IExpressionObserverFactory: Symbol('IExpressionObserverFactory')
 };

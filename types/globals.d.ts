@@ -6,5 +6,6 @@ declare namespace jest {
       observerEqualTo(expected: unknown):R
       toOutput(expected: string): R;
       toOutputAsync(expected: string): Promise<R>;
+      isWritableProperty(expected: string): Promise<R>;
    }
 }

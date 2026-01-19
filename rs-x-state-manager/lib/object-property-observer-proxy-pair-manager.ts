@@ -1,6 +1,9 @@
 import {
+   IGuidFactory,
+   Inject,
    Injectable,
    MultiInject,
+   RsXCoreInjectionTokens,
    SingletonFactory,
    SingletonFactoryWithGuid,
    UnsupportedException
@@ -24,11 +27,13 @@ class PropertyObserverProxyPairManager
    >
    implements IPropertyObserverProxyPairManager {
    constructor(
+
+      guidFactory: IGuidFactory,
       private readonly _object: unknown,
       private readonly _observerFactories: readonly IIndexObserverProxyPairFactory[],
       private readonly releaseContext: () => void
    ) {
-      super();
+      super(guidFactory);
    }
 
    protected getGroupId(data: IPropertyInfo): unknown {
@@ -88,10 +93,13 @@ export class ObjectPropertyObserverProxyPairManager
    extends SingletonFactory<unknown, unknown, IPropertyObserverProxyPairManager>
    implements IObjectPropertyObserverProxyPairManager {
    constructor(
+
       @MultiInject(
          RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryList
       )
-      private readonly _factories: IIndexObserverProxyPairFactory[]
+      private readonly _factories: IIndexObserverProxyPairFactory[],
+      @Inject(RsXCoreInjectionTokens.IGuidFactory)
+      private readonly _guidFactory: IGuidFactory,
    ) {
       super();
    }
@@ -108,6 +116,7 @@ export class ObjectPropertyObserverProxyPairManager
       context: unknown
    ): IPropertyObserverProxyPairManager {
       return new PropertyObserverProxyPairManager(
+         this._guidFactory,
          context,
          this._factories,
          () => this.release(context)

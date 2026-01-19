@@ -3,6 +3,7 @@ import { ISingletonFactory } from '@rs-x/core';
 export interface IState {
    value: unknown;
    valueCopy: unknown;
+   watched: boolean
 }
 
 export interface IValueKey {
@@ -10,11 +11,12 @@ export interface IValueKey {
 }
 export interface IValueWithKey extends IValueKey {
    value: unknown;
+   watched: boolean;
 }
 
 export interface IStateForObjectManager
    extends ISingletonFactory<unknown, IValueWithKey, IState, IValueKey> {
-   set(key: unknown, value: unknown): void;
+   set(key: unknown, value: unknown, watched: boolean): void;
 }
 
 export interface IObjectStateManager
@@ -23,6 +25,8 @@ export interface IObjectStateManager
       key: unknown,
       newContext: unknown,
       newValue: unknown,
-      oldContext
+      oldContext: unknown,
+      watched: boolean,
    ): void;
+   isRegistered( context: unknown, key: unknown): boolean;
 }

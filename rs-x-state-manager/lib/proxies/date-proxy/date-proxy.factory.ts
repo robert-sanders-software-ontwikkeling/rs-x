@@ -1,13 +1,15 @@
 import {
     CheckValidKey,
     DateProperty,
+    IDisposableOwner,
+    IGuidFactory,
     Inject,
     Injectable,
+    RsXCoreInjectionTokens,
     SingletonFactoryWithGuid
 } from '@rs-x/core';
 import { Subject } from 'rxjs';
 import { AbstractObserver } from '../../abstract-observer';
-import { IDisposableOwner } from '../../disposable-owner.interface';
 import { MustProxify } from '../../object-property-observer-proxy-pair-manager.type';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
 import { IProxyRegistry } from '../proxy-registry/proxy-registry.interface';
@@ -263,7 +265,7 @@ class DateProxy extends AbstractObserver<Date, Date, undefined> {
     }
 
     protected override disposeInternal(): void {
-        this._proxyRegistry.unregister(this.initialValue);
+        this._proxyRegistry.unregister(this.value);
         this.target = null;
     }
 }
@@ -277,10 +279,12 @@ export class DateProxyFactory
     implements IDateProxyFactory {
 
     constructor(
+        @Inject(RsXCoreInjectionTokens.IGuidFactory)
+        guidFactory: IGuidFactory,
         @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
         private readonly _proxyRegistry: IProxyRegistry
     ) {
-        super();
+        super(guidFactory);
     }
 
     protected override getGroupId(data: IDateProxyIdData): Date {
@@ -308,8 +312,6 @@ export class DateProxyFactory
             observer,
             proxy: observer.target,
             proxyTarget: dateProxyData.date,
-            emitChangeWhenSet: true,
-            id,
         };
     }
 }

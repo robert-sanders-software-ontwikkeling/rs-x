@@ -60,6 +60,8 @@ describe('ObjectExpression tests', () => {
          y: 20,
       };
       expression = jsParser.parse(context, '({ a: x, b: y })');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,

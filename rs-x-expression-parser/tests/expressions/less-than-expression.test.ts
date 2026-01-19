@@ -68,6 +68,8 @@ describe('LessThanExpression tests', () => {
          c: 3,
       };
       expression = jsParser.parse(context, 'a.b < c');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,

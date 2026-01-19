@@ -1,5 +1,6 @@
 import {
    IErrorLog,
+   IGuidFactory,
    IIndexValueAccessor,
    Inject,
    Injectable,
@@ -8,6 +9,7 @@ import {
 } from '@rs-x/core';
 import { IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
 import { IPropertyInfo } from '../../../object-property-observer-proxy-pair-manager.type';
+import { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
 import { IndexObserverProxyPairFactory } from '../indexed-value-observer-proxy-pair/indexed-value-observer-proxy-pair.factory';
 import { IObjectPropertyObserverManager } from './object-property-observer-manager.type';
@@ -24,14 +26,20 @@ export class NonIterableObjectPropertyObserverProxyPairFactory extends IndexObse
       objectPropertyObserverManager: IObjectPropertyObserverManager,
       @Inject(RsXCoreInjectionTokens.IErrorLog)
       errorLog: IErrorLog,
+      @Inject(RsXCoreInjectionTokens.IGuidFactory)
+      guidFactory: IGuidFactory,
       @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
-      indexValueAccessor: IIndexValueAccessor
+      indexValueAccessor: IIndexValueAccessor,
+      @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
+      proxyRegister: IProxyRegistry
    ) {
       super(
          objectObserveryManager,
          objectPropertyObserverManager,
          errorLog,
-         indexValueAccessor
+         guidFactory,
+         indexValueAccessor,
+         proxyRegister
       );
    }
 
@@ -41,8 +49,10 @@ export class NonIterableObjectPropertyObserverProxyPairFactory extends IndexObse
             Array.isArray(object) ||
             object instanceof Date ||
             object instanceof Map ||
-            object instanceof Set
-         ) && Type.isString(propertyInfo.key)
+            object instanceof Set 
+         ) 
+         && Type.isString(propertyInfo.key) 
+         && !Type.isMethod(object[propertyInfo.key])
       );
    }
 

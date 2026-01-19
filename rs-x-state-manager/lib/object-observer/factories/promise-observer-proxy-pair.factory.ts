@@ -1,5 +1,4 @@
-import { Inject, Injectable } from '@rs-x/core';
-import { IDisposableOwner } from '../../disposable-owner.interface';
+import { IDisposableOwner, Inject, Injectable } from '@rs-x/core';
 import {
    IPromiseObserverProxyPair,
    IPromiseProxyFactory,
@@ -11,12 +10,14 @@ import { IObjectObserverProxyPairFactory } from '../object-observer-proxy-pair.f
 @Injectable()
 export class PromiseObserverProxyPairFactory
    implements
-      IObjectObserverProxyPairFactory<Promise<unknown>, Promise<unknown>>
-{
+   IObjectObserverProxyPairFactory<Promise<unknown>> {
+
+   public readonly priority = 4;
+   
    constructor(
       @Inject(RsXStateManagerInjectionTokens.IPromiseProxyFactory)
       private readonly _promiseProxyFactory: IPromiseProxyFactory
-   ) {}
+   ) { }
 
    public create(
       owner: IDisposableOwner,

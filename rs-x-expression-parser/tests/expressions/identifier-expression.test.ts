@@ -51,6 +51,8 @@ describe('IdentifierExpression tests', () => {
    it('will emit change event when identifier value changes', async () => {
       const context = { a: 1 };
       expression = jsParser.parse(context, 'a');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,

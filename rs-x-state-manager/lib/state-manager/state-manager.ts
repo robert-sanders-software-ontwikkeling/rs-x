@@ -2,6 +2,7 @@ import {
    IChainPart,
    IEqualityService,
    IErrorLog,
+   IGuidFactory,
    IIndexValueAccessor,
    Inject,
    Injectable,
@@ -38,9 +39,10 @@ interface IChainPartChange extends IChainPart {
 export class StateManager implements IStateManager {
    private readonly _changed = new Subject<IStateChange>();
    private readonly _contextChanged = new Subject<IContextChanged>();
-   private readonly _startChangeCycly = new Subject<void>();
-   private readonly _endChangeCycly = new Subject<void>();
+   private readonly _startChangeCycle = new Subject<void>();
+   private readonly _endChangeCycle = new Subject<void>();
    private readonly _stateChangeSubscriptionManager: StateChangeSubscriptionManager;
+   private readonly _pending = new Map<unknown, unknown>();
 
    constructor(
       @Inject(
@@ -51,14 +53,17 @@ export class StateManager implements IStateManager {
       private readonly _objectStateManager: IObjectStateManager,
       @Inject(RsXCoreInjectionTokens.IErrorLog)
       errorLog: IErrorLog,
+      @Inject(RsXCoreInjectionTokens.IGuidFactory)
+      guidFactory: IGuidFactory,
       @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
       private readonly _indexValueAccessor: IIndexValueAccessor,
       @Inject(RsXCoreInjectionTokens.IEqualityService)
-      private readonly _qualityService: IEqualityService
+      private readonly _equalityService: IEqualityService,
    ) {
       this._stateChangeSubscriptionManager = new StateChangeSubscriptionManager(
          objectObserverManager,
-         errorLog
+         errorLog,
+         guidFactory
       );
    }
 
@@ -70,19 +75,24 @@ export class StateManager implements IStateManager {
       return this._contextChanged;
    }
 
-   public get startChangeCycly(): Observable<void> {
-      return this._startChangeCycly;
+   public get startChangeCycle(): Observable<void> {
+      return this._startChangeCycle;
    }
 
-   public get endChangeCycly(): Observable<void> {
-      return this._endChangeCycly;
+   public get endChangeCycle(): Observable<void> {
+      return this._endChangeCycle;
    }
 
-   public isRegistered(
+   public toString(): string {
+      return this._objectStateManager.toString();
+   }
+
+   public isWatched(
       context: unknown,
       index: unknown,
-      mustProxify: MustProxify
+      mustProxify?: MustProxify
    ): boolean {
+
       const stateChangeSubscriptionsForContextManager =
          this._stateChangeSubscriptionManager.getFromId(context);
 
@@ -97,20 +107,22 @@ export class StateManager implements IStateManager {
       return stateChangeSubscriptionsForContextManager.has(id);
    }
 
-   public register(
+   public watchState(
       context: unknown,
       index: unknown,
       mustProxify?: MustProxify
    ): unknown {
-      if (!this.isRegistered(context, index, mustProxify)) {
+      if (!this.isWatched(context, index, mustProxify)) {
+
+         const value = this.getState(context, index);
          this.tryToSubscribeToChange(context, index, mustProxify);
-         return undefined;
+         return value;
       } else {
-         return this.increaseStateReferenceCount(context, index);
+         return this.increaseStateReferenceCount(context, index, true);
       }
    }
 
-   public unregister(
+   public releaseState(
       context: unknown,
       index: unknown,
       mustProxify: MustProxify
@@ -124,10 +136,24 @@ export class StateManager implements IStateManager {
 
    public clear(): void {
       this._stateChangeSubscriptionManager.dispose();
+      this._objectStateManager.dispose();
    }
 
    public getState<T>(context: unknown, index: unknown): T {
       return this._objectStateManager.getFromId(context)?.getFromId(index)?.value as T;
+   }
+
+   public setState<T>(context: unknown, index: unknown, value: T): void {
+      this.internalSetState(context, index, value, {
+         context,
+         value: this.getState(context, index)
+      });
+   }
+
+   private internalSetState(context: unknown, index: unknown, value: unknown, transferValue: ITransferedValue) {
+      this.tryRebindingNestedState(value, transferValue.value)
+      this._objectStateManager.replaceState(index, context, value, transferValue.context, false);
+      this.emitChange(context, index, value, transferValue.value, transferValue.context);
    }
 
    private getOldValue(context: unknown, index: unknown): unknown {
@@ -155,7 +181,7 @@ export class StateManager implements IStateManager {
       index: unknown,
       mustProxify: MustProxify
    ): void {
-      if (this.releaseState(context, index)) {
+      if (this.canReleaseState(context, index)) {
          this.unnsubscribeToObserverEvents(context, index, mustProxify);
       }
    }
@@ -167,7 +193,7 @@ export class StateManager implements IStateManager {
       oldValue: unknown,
       oldContext?: unknown
    ): void {
-      if (this._qualityService.isEqual(newValue, oldValue)) {
+      if (this._equalityService.isEqual(newValue, oldValue)) {
          return;
       }
       this._changed.next({
@@ -183,17 +209,19 @@ export class StateManager implements IStateManager {
       newContext: unknown,
       oldContext: unknown,
       index: unknown,
-      newValue: unknown
+      newValue: unknown,
+      watched: boolean
    ): void {
       this._objectStateManager.replaceState(
          index,
          newContext,
          newValue,
-         oldContext
+         oldContext,
+         watched
       );
    }
 
-   private releaseState(context: unknown, key: unknown): boolean {
+   private canReleaseState(context: unknown, key: unknown): boolean {
       return (
          this._objectStateManager.getFromId(context)?.release(key)
             .referenceCount === 0
@@ -202,12 +230,13 @@ export class StateManager implements IStateManager {
 
    private increaseStateReferenceCount(
       context: unknown,
-      index: unknown
+      index: unknown,
+      watched: boolean
    ): unknown {
       const state = this.getState(context, index);
       this._objectStateManager
          .create(context)
-         .instance.create({ value: state, key: index });
+         .instance.create({ value: state, key: index, watched });
       return state;
    }
 
@@ -220,14 +249,16 @@ export class StateManager implements IStateManager {
       this._stateChangeSubscriptionManager.create(context).instance.create({
          key: index,
          mustProxify,
-         onChanged: (change) => this.onChange(change, mustProxify),
+         onChanged: (change) => this.onChange(change, mustProxify, true),
          init: (observer) => {
-            if (observer.initialValue !== undefined) {
+            if (observer.value !== undefined) {
                this.setInitialValue(
                   context,
                   index,
-                  observer.initialValue,
-                  transferedValue
+                  observer.value,
+                  transferedValue,
+                  true,
+
                );
             }
             observer.init();
@@ -236,7 +267,11 @@ export class StateManager implements IStateManager {
    }
 
    private getValue(context: unknown, key: unknown): unknown {
-      return this._indexValueAccessor.getResolvedValue(context, key);
+      try {
+         return this._indexValueAccessor.getResolvedValue(context, key);
+      } catch {
+         return this.getState(context, key)
+      }
    }
 
    private getStateChanges(
@@ -250,17 +285,25 @@ export class StateManager implements IStateManager {
 
       return Array.from(oldState.ids())
          .map((id) => {
-            const oldValue = oldState.getFromId(id).value;
+            const { value: oldValue, watched } = oldState.getFromId(id);
             const newValue = this.getValue(newContext, id);
 
-            if (this._qualityService.isEqual(oldValue, newValue)) {
+            if (oldContext === newContext && this._equalityService.isEqual(oldValue, newValue)) {
                return [];
+            }
+
+
+            let pendingId: string;
+            if (newValue === PENDING) {
+               this._pending.set(newContext, oldValue);
             }
             const stateInfo = {
                oldContext,
                context: newContext,
                key: id,
                oldValue,
+               newValue: pendingId ?? newValue,
+               watched
             };
             return newValue === PENDING
                ? [stateInfo]
@@ -270,19 +313,20 @@ export class StateManager implements IStateManager {
    }
 
    private tryRebindingNestedState(
-      change: IPropertyChange,
+      newValue: unknown,
       oldValue: unknown,
-      mustProxify: MustProxify
+      mustProxify?: MustProxify,
    ): void {
-      const stateChanges = this.getStateChanges(oldValue, change.newValue);
+      const stateChanges = this.getStateChanges(oldValue, newValue);
 
-      stateChanges.forEach((stateChange) => {
-         this.internalUnregister(
-            stateChange.oldContext,
-            stateChange.key,
-            mustProxify
-         );
-      });
+      stateChanges
+         .forEach((stateChange) => {
+            this.internalUnregister(
+               stateChange.oldContext,
+               stateChange.key,
+               mustProxify
+            );
+         });
 
       stateChanges
          .filter(
@@ -296,41 +340,51 @@ export class StateManager implements IStateManager {
             })
          );
 
-      stateChanges.forEach((stateChange) =>
-         this.tryToSubscribeToChange(
-            stateChange.context,
-            stateChange.key,
-            mustProxify,
-            {
+      stateChanges
+         .filter(stateChange => stateChange.watched)
+         .forEach((stateChange) =>
+            this.tryToSubscribeToChange(
+               stateChange.context,
+               stateChange.key,
+               mustProxify,
+               {
+                  context: stateChange.oldContext,
+                  value: stateChange.oldValue,
+               }
+            )
+         );
+
+      stateChanges
+         .filter(stateChange => !stateChange.watched)
+         .forEach((stateChange) =>
+            this.internalSetState(stateChange.context, stateChange.key, stateChange.newValue, {
                context: stateChange.oldContext,
-               value: stateChange.oldValue,
-            }
-         )
-      );
+               value: stateChange.oldValue
+            })
+         );
    }
 
    private setInitialValue(
       context: unknown,
       index: unknown,
       initialValue: unknown,
-      transferedValue: ITransferedValue
+      transferedValue: ITransferedValue,
+      watched: boolean,
    ): void {
-      if (initialValue !== transferedValue?.value) {
-         this.updateState(
-            context,
-            transferedValue?.context ?? context,
-            index,
-            initialValue
-         );
-
-         this.emitChange(
-            context,
-            index,
-            initialValue,
-            transferedValue?.value,
-            transferedValue?.context
-         );
-      }
+      this.updateState(
+         context,
+         transferedValue?.context ?? context,
+         index,
+         initialValue,
+         watched
+      );
+      this.emitChange(
+         context,
+         index,
+         initialValue,
+         transferedValue?.value,
+         transferedValue?.context
+      );
    }
 
    private getChainChanges(chain: IChainPart[]): IChainPartChange[] {
@@ -348,34 +402,48 @@ export class StateManager implements IStateManager {
       }));
    }
 
-   private onChange(change: IPropertyChange, mustProxify: MustProxify): void {
-      this._startChangeCycly.next();
+   private getCurrentValue(context: unknown, id: unknown): unknown {
+      const value = this._pending.get(context);
+      if (value !== undefined) {
+         this._pending.delete(context);
+         return value;
+      }
 
+      return this.getState(context, id);
+   }
+
+   private onChange(change: IPropertyChange, mustProxify: MustProxify, watched: boolean): void {
       const chainChanges = this.getChainChanges(change.chain);
       if (chainChanges.length === 0) {
          return;
       }
 
-      const chainLeaf = chainChanges[chainChanges.length - 1];
-      const currentValue = this.getState(chainLeaf.object, chainLeaf.id);
+      this._startChangeCycle.next();
 
-      this.tryRebindingNestedState(change, currentValue, mustProxify);
-      this.updateState(
-         chainLeaf.object,
-         chainLeaf.object,
-         chainLeaf.id,
-         chainLeaf.value
-      );
+      try {
+         const chainLeaf = chainChanges[chainChanges.length - 1];
+         const currentValue = this.getCurrentValue(chainLeaf.object, chainLeaf.id);
 
-      chainChanges.forEach((chainChange) =>
-         this.emitChange(
-            chainChange.object,
-            chainChange.id,
-            chainChange.value,
-            chainChange.oldValue
-         )
-      );
+         this.tryRebindingNestedState(change.newValue, currentValue, mustProxify);
+         this.updateState(
+            chainLeaf.object,
+            chainLeaf.object,
+            chainLeaf.id,
+            chainLeaf.value,
+            watched
+         );
 
-      this._endChangeCycly.next();
+         chainChanges.forEach((chainChange) =>
+            this.emitChange(
+               chainChange.object,
+               chainChange.id,
+               chainChange.value,
+               chainChange.oldValue
+            )
+         );
+      }
+      finally {
+         this._endChangeCycle.next();
+      }
    }
 }

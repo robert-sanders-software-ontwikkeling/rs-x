@@ -6,10 +6,24 @@ import {
    LastValuObservable,
 } from './observable-accessor.interface';
 import { PENDING } from './pending';
+import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
+import { Inject } from '../dependency-injection';
+import { IResolvedValueCache } from './resolved-value-cache.interface';
 
 @injectable()
 export class ObservableAccessor implements IObservableAccessor {
-   private readonly _lastValues = new WeakMap<LastValuObservable, unknown>();
+   public readonly priority = 2;
+
+   constructor(
+      @Inject(RsXCoreInjectionTokens.IResolvedValueCache)
+      private readonly _resolvedValueCache: IResolvedValueCache
+   ) {
+
+   }
+
+   public getIndexes(): IterableIterator<string> {
+      return [].values()
+   }
 
    public isAsync(): boolean {
       return true;
@@ -18,7 +32,11 @@ export class ObservableAccessor implements IObservableAccessor {
    public getResolvedValue(context: unknown, index: string): unknown {
       return context instanceof BehaviorSubject
          ? context.value
-         : (this._lastValues.get(context[index]) ?? PENDING);
+         : (this._resolvedValueCache.get(context[index]) ?? PENDING);
+   }
+
+   public hasValue(context: LastValuObservable, index: string): boolean {
+      return this.getResolvedValue(context, index) !== PENDING
    }
 
    public getValue(context: unknown, index: string): unknown {
@@ -38,10 +56,10 @@ export class ObservableAccessor implements IObservableAccessor {
    }
 
    public setLastValue(observable: LastValuObservable, value: unknown): void {
-      this._lastValues.set(observable, value);
+      this._resolvedValueCache.set(observable, value);
    }
 
    public clearLastValue(observable: LastValuObservable): void {
-      this._lastValues.delete(observable);
+      this._resolvedValueCache.delete(observable);
    }
 }

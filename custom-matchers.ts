@@ -174,32 +174,59 @@ export function observerEqualTo(
 }
 
 expect.extend({
-  async toOutputAsync(receivedFn: () => Promise<unknown>, expected: string) {
-    let output = '';
+   async toOutputAsync(receivedFn: () => Promise<unknown>, expected: string) {
+      let output = '';
+      const originalLog = console.log;
+      console.log = (...args: unknown[]) => {
+         output += args.map(a => String(a)).join(' ') + '\n';
+      };
 
-    // Patch console.log before calling the function
-    const originalLog = console.log;
-    console.log = (...args: unknown[]) => {
-      output += args.map(a => String(a)).join(' ') + '\n';
-    };
+      try {
+         await receivedFn();
+      } finally {
+         console.log = originalLog;
+      }
 
-    try {
-      // Await the function fully (runDemo in your case)
-      await receivedFn();
-    } finally {
-      console.log = originalLog; // Restore console.log after execution
-    }
+      const pass = output.trim() === expected.trim();
 
-    const pass = output.trim() === expected.trim();
+      return {
+         pass,
+         message: () =>
+            pass
+               ? `Expected async output not to equal:\n${expected}`
+               : `Expected async output:\n${expected}\n\nReceived:\n${output}`,
+      };
+   },
 
-    return {
-      pass,
-      message: () =>
-        pass
-          ? `Expected async output not to equal:\n${expected}`
-          : `Expected async output:\n${expected}\n\nReceived:\n${output}`,
-    };
-  },
+
+   isWritableProperty(received: object, propertyName: string) {
+      const desc = Object.getOwnPropertyDescriptor(received, propertyName)
+         ?? Object.getOwnPropertyDescriptor(Object.getPrototypeOf(received), propertyName);
+
+      if (!desc) {
+         return {
+            pass: false,
+            message: () =>
+               `Expected object to have property '${propertyName}', but it does not exist.`,
+         };
+      }
+
+      const hasGetter = typeof desc.get === "function";
+      const hasSetter = typeof desc.set === "function";
+
+      const pass = hasGetter && hasSetter;
+
+      return {
+         pass,
+         message: () =>
+            pass
+               ? `Property '${propertyName}' does have getter and setter, but expected it NOT to.`
+               : `Property '${propertyName}' is missing ${!hasGetter && !hasSetter ? "getter and setter"
+                  : !hasGetter ? "getter"
+                     : "setter"
+               }.`
+      };
+   }
 });
 
 export const customMatchers = {

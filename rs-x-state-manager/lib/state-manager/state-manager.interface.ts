@@ -9,20 +9,24 @@ export interface IContextChanged {
 export interface IStateChange extends IContextChanged {
    oldValue: unknown;
    newValue?: unknown;
+   watched?: boolean;
 }
+
+
 
 export interface IStateManager {
    readonly changed: Observable<IStateChange>;
    readonly contextChanged: Observable<IContextChanged>;
-   readonly startChangeCycly: Observable<void>;
-   readonly endChangeCycly: Observable<void>;
-   isRegistered(
+   readonly startChangeCycle: Observable<void>;
+   readonly endChangeCycle: Observable<void>;
+   isWatched(
       context: unknown,
       index: unknown,
       mustProxify?: MustProxify
    ): boolean;
-   register(context: unknown, index: unknown, mustProxify?: MustProxify): unknown;
-   unregister(oontext: unknown, index: unknown, mustProxify?: MustProxify): void;
+   watchState(context: unknown, index: unknown, mustProxify?: MustProxify): unknown;
+   releaseState(oontext: unknown, index: unknown, mustProxify?: MustProxify): void;
    getState<T>(context: unknown, index: unknown): T;
+   setState<T>(context: unknown, index: unknown, value: T): void;
    clear(): void;
 }

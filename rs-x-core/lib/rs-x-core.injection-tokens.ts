@@ -1,7 +1,6 @@
 export const RsXCoreInjectionTokens = {
    IInjectionContainer: Symbol('IInjectionContainer'),
    IErrorLog: Symbol('IErrorLog'),
-   IIndexValueAccessorProvider: Symbol('IIndexValueAccessorProvider'),
    IIndexValueAccessor: Symbol('IIndexValueAccessor'),
    IMapKeyAccessor: Symbol('IMapKeyAccessor'),
    ISetKeyAccessor: Symbol('ISetKeyAccessor'),
@@ -14,4 +13,14 @@ export const RsXCoreInjectionTokens = {
    IObservableAccessor: Symbol('IObservableAccessor'),
    IPromiseAccessor: Symbol('IPromiseAccessor'),
    IIndexValueAccessorList:  Symbol('IIndexValueAccessorList'),
+   ISequenceIdFactory:  Symbol('ISequenceIdFactory'),
+   IFunctionCallIndexFactory: Symbol('IFunctionCallIndexFactory'),
+   IFunctionCallResultCacheFactory: Symbol('IFunctionCallResultCacheFactory'),
+   IGuidFactory: Symbol('IGuidFactory'),
+   IStructuredDeepClone: Symbol('IStructuredDeepClone'),
+   ILodashDeepClone: Symbol('ILodashDeepClone'),
+   IDeepCloneList: Symbol('IDeepCloneList'),
+   IResolvedValueCache: Symbol('IResolvedValueCache'),
+   IDeepCloneValueGetter: Symbol('IDeepCloneValueGetter'),
+   DefaultDeepCloneValueGetter: Symbol('DefaultDeepCloneValueGetter')
 };

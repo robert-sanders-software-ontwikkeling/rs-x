@@ -17,7 +17,6 @@ export class NullishCoalescingExpression extends BinaryExpression {
    }
 
    protected evaluateExpression(
-      _sender: AbstractExpression,
       a: unknown,
       b: unknown
    ): unknown {

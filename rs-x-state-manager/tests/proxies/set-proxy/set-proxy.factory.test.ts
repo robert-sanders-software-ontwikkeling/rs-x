@@ -10,8 +10,6 @@ describe('SetProxyFactory tests', () => {
    it('will create an instance of set proxy', () => {
       const actual = setProxyFactory.create({
          set: new Set(),
-         proxifyItem: jest.fn(),
-         unproxifyItem: jest.fn(),
       }).instance;
 
       expect(actual).toBeDefined();

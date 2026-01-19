@@ -63,9 +63,11 @@ export class WaitForEvent<
       resolve: (value: R | null) => void,
       reject: (error: unknown) => void
    ): Subscription {
+      
       return this._target[this._eventName].subscribe({
          next: (value) => {
             if (state.pending || state.results.length >= (this._options.count ?? 1)) {
+               state.pending = false
                return;
             }
 
@@ -88,7 +90,6 @@ export class WaitForEvent<
       reject: (error: unknown) => void
    ) {
       try {
-         state.pending = false;
          const result = trigger();
 
          if (result instanceof Promise) {

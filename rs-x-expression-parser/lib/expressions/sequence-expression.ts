@@ -20,7 +20,7 @@ export class SequenceExpression extends AbstractExpression {
       return this;
    }
 
-   protected override evaluateExpression(): unknown {
+   protected override evaluate(): unknown {
       const childExpression = this._childExpressions;
       return childExpression[childExpression.length - 1].value;
    }

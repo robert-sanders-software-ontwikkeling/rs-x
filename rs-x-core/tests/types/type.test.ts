@@ -3,20 +3,217 @@ import { IPropertyDescriptor } from '../../lib/types/property-descriptor.interfa
 import { Type } from '../../lib/types/type';
 
 describe('Type tests', () => {
-   it('getPropertyDescriptor for overiden method', () => {
-      const instance = new Derived();
-      const actual = Type.getPropertyDescriptor(instance, 'method');
 
-      const expected: IPropertyDescriptor = {
-         type: PropertyDescriptorType.Function,
-         descriptor: {
-            configurable: true,
-            writable: true,
-            enumerable: false,
-            value: Derived.prototype.method,
-         },
-      };
-      expect(actual).toEqual(expected);
+
+   describe('getPropertyDescriptor', () => {
+      it('field', () => {
+         const instance = {
+            field: 10
+         };
+
+         const actual = Type.getPropertyDescriptor(instance, 'field');
+
+         const expected: IPropertyDescriptor = {
+            type: PropertyDescriptorType.Field,
+            descriptor: {
+               configurable: true,
+               enumerable: true,
+               writable: true,
+               value: 10,
+            },
+         };
+         expect(actual).toEqual(expected);
+      });
+
+      it('base field', () => {
+         const instance = new Derived();
+         const actual = Type.getPropertyDescriptor(instance, 'baseField');
+         const expected: IPropertyDescriptor = {
+            type: PropertyDescriptorType.Field,
+            descriptor: {
+               configurable: true,
+               writable: true,
+               enumerable: true,
+               value: true,
+            },
+         };
+         expect(actual).toEqual(expected);
+      });
+
+      it('derived field', () => {
+         const instance = new Derived();
+         const actual = Type.getPropertyDescriptor(instance, 'derivedField');
+
+         const expected: IPropertyDescriptor = {
+            type: PropertyDescriptorType.Field,
+            descriptor: {
+               configurable: true,
+               writable: true,
+               enumerable: true,
+               value: true,
+            },
+         };
+
+         expect(actual).toEqual(expected);
+      });
+
+
+
+      it('derived property', () => {
+         const instance = new Derived();
+
+         const actual = Type.getPropertyDescriptor(instance, 'derivedProperty');
+
+         const expected: IPropertyDescriptor = {
+            type: PropertyDescriptorType.Property,
+            descriptor: {
+               configurable: true,
+               enumerable: false,
+               get: expect.any(Function),
+               set: expect.any(Function),
+            },
+         };
+         expect(actual).toEqual(expected);
+      });
+
+
+      it('readonly property', () => {
+         const instance = {
+            get readonlyProperty() {
+               return 5;
+            }
+         };
+
+         const actual = Type.getPropertyDescriptor(instance, 'readonlyProperty');
+
+         const expected: IPropertyDescriptor = {
+            type: PropertyDescriptorType.ReadonlyProperty,
+            descriptor: {
+               configurable: true,
+               enumerable: true,
+               get: expect.any(Function)
+            },
+         };
+         expect(actual).toEqual(expected);
+
+      });
+
+      it('writable property', () => {
+         const instance = {
+            _value: 10,
+            get writableProperty(): number {
+               return this._value
+            },
+            set writableProperty(value: number) {
+               this._value = value;
+            }
+         };
+
+         const actual = Type.getPropertyDescriptor(instance, 'writableProperty');
+
+         const expected: IPropertyDescriptor = {
+            type: PropertyDescriptorType.Property,
+            descriptor: {
+               configurable: true,
+               enumerable: true,
+               get: expect.any(Function),
+               set: expect.any(Function)
+            },
+         };
+         expect(actual).toEqual(expected);
+      });
+
+      it('overiden method', () => {
+         const instance = new Derived();
+         const actual = Type.getPropertyDescriptor(instance, 'method');
+
+         const expected: IPropertyDescriptor = {
+            type: PropertyDescriptorType.Function,
+            descriptor: {
+               configurable: true,
+               writable: true,
+               enumerable: false,
+               value: Derived.prototype.method,
+            },
+         };
+         expect(actual).toEqual(expected);
+      });
+
+      it('base ethod', () => {
+         const instance = new Derived();
+
+         const actual = Type.getPropertyDescriptor(instance, 'baseMethod');
+
+         const expected: IPropertyDescriptor = {
+            type: PropertyDescriptorType.Function,
+            descriptor: {
+               configurable: true,
+               writable: true,
+               enumerable: false,
+               value: Base.prototype.baseMethod,
+            },
+         };
+         expect(actual).toEqual(expected);
+      });
+
+      it('derived method', () => {
+         const instance = new Derived();
+
+         const actual = Type.getPropertyDescriptor(instance, 'derivedMethod');
+
+         const expected: IPropertyDescriptor = {
+            type: PropertyDescriptorType.Function,
+            descriptor: {
+               configurable: true,
+               writable: true,
+               enumerable: false,
+               value: Derived.prototype.derivedMethod,
+            },
+         };
+         expect(actual).toEqual(expected);
+      });
+
+      it('lambda', () => {
+         const instance = {
+            lambda: (x: number) => { return x + 1 }
+         };
+
+         const actual = Type.getPropertyDescriptor(instance, 'lambda');
+
+         const expected: IPropertyDescriptor = {
+            type: PropertyDescriptorType.Function,
+            descriptor: {
+               configurable: true,
+               writable: true,
+               enumerable: true,
+               value: instance.lambda
+            },
+         };
+         expect(actual).toEqual(expected);
+
+      });
+
+      it('value is constructor', () => {
+         const instance = {
+            type: Derived,
+         };
+
+         const actual = Type.getPropertyDescriptor(instance, 'type');
+
+         const expected: IPropertyDescriptor = {
+            type: PropertyDescriptorType.Field,
+            descriptor: {
+               configurable: true,
+               writable: true,
+               enumerable: true,
+               value: instance.type
+            },
+         };
+         expect(actual).toEqual(expected);
+
+
+      });
+
    });
 
    it('isPlainObject', () => {
@@ -89,126 +286,6 @@ describe('Type tests', () => {
    it('hasProperty returns false when base or derive class doen not contain property or field', () => {
       const instance = new Derived();
       expect(Type.hasProperty(instance, 'x')).toEqual(false);
-   });
-
-   it('getPropertyDescriptor for base field', () => {
-      const instance = new Derived();
-      const actual = Type.getPropertyDescriptor(instance, 'baseField');
-      const expected: IPropertyDescriptor = {
-         type: PropertyDescriptorType.Field,
-         descriptor: {
-            configurable: true,
-            writable: true,
-            enumerable: true,
-            value: true,
-         },
-      };
-      expect(actual).toEqual(expected);
-   });
-
-   it('getPropertyDescriptor for derived field', () => {
-      const instance = new Derived();
-      const actual = Type.getPropertyDescriptor(instance, 'derivedField');
-
-      const expected: IPropertyDescriptor = {
-         type: PropertyDescriptorType.Field,
-         descriptor: {
-            configurable: true,
-            writable: true,
-            enumerable: true,
-            value: true,
-         },
-      };
-
-      expect(actual).toEqual(expected);
-   });
-
-   it('getPropertyDescriptor for readonly property', () => {
-      const instance = new Derived();
-      const actual = Type.getPropertyDescriptor(
-         instance,
-         'baseReadonlyProperty'
-      );
-      const descriptor = Object.getOwnPropertyDescriptor(
-         Base.prototype,
-         'baseReadonlyProperty'
-      );
-
-      const expected: IPropertyDescriptor = {
-         type: PropertyDescriptorType.ReadonlyProperty,
-         descriptor: {
-            configurable: true,
-            enumerable: false,
-            get: descriptor.get,
-         },
-      };
-      expect(actual).toEqual(expected);
-   });
-
-   it('getPropertyDescriptor for derived property', () => {
-      const instance = new Derived();
-      const actual = Type.getPropertyDescriptor(instance, 'derivedProperty');
-      const descriptor = Object.getOwnPropertyDescriptor(
-         Derived.prototype,
-         'derivedProperty'
-      );
-
-      const expected: IPropertyDescriptor = {
-         type: PropertyDescriptorType.Property,
-         descriptor: {
-            configurable: true,
-            enumerable: false,
-            get: descriptor.get,
-            set: descriptor.set,
-         },
-      };
-      expect(actual).toEqual(expected);
-   });
-
-   it('getPropertyDescriptor for baseMethod', () => {
-      const instance = new Derived();
-      const actual = Type.getPropertyDescriptor(instance, 'baseMethod');
-      const expected: IPropertyDescriptor = {
-         type: PropertyDescriptorType.Function,
-         descriptor: {
-            configurable: true,
-            writable: true,
-            enumerable: false,
-            value: Base.prototype.baseMethod,
-         },
-      };
-      expect(actual).toEqual(expected);
-   });
-
-   it('getPropertyDescriptor for derivedMethod', () => {
-      const instance = new Derived();
-      const actual = Type.getPropertyDescriptor(instance, 'derivedMethod');
-      const expected: IPropertyDescriptor = {
-         type: PropertyDescriptorType.Function,
-         descriptor: {
-            configurable: true,
-            writable: true,
-            enumerable: false,
-            value: Derived.prototype.derivedMethod,
-         },
-      };
-      expect(actual).toEqual(expected);
-   });
-
-   it('getPropertyDescriptor for overiden method', () => {
-      const instance = new Derived();
-      const actual = Type.getPropertyDescriptor(instance, 'method');
-
-      const expected: IPropertyDescriptor = {
-         type: PropertyDescriptorType.Function,
-         descriptor: {
-            configurable: true,
-            writable: true,
-            enumerable: false,
-            value: Derived.prototype.method,
-         },
-      };
-      expect(actual).toEqual(expected);
    });
 });
 

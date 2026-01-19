@@ -51,10 +51,8 @@ describe('EqualityExpression tests', () => {
    it('will emit change event for initial value: true', async () => {
       const context = { a: 1, b: 1 };
       expression = jsParser.parse(context, 'a == b');
-
-      const actual = (await new WaitForEvent(expression, 'changed').wait(
-         () => {}
-      )) as IExpression;
+    
+      const actual = await new WaitForEvent(expression, 'changed').wait(() => { }) as IExpression
 
       expect(actual.value).toEqual(true);
       expect(actual).toBe(expression);
@@ -68,6 +66,9 @@ describe('EqualityExpression tests', () => {
          c: 2,
       };
       expression = jsParser.parse(context, 'a.b == c');
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
+
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,

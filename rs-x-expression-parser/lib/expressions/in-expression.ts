@@ -17,7 +17,6 @@ export class InExpression extends BinaryExpression<boolean> {
    }
 
    protected override evaluateExpression(
-      _: AbstractExpression,
       a: string,
       b: object
    ): boolean {

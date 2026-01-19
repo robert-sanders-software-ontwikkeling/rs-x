@@ -1,12 +1,8 @@
-import { IDisposableOwner } from '../../disposable-owner.interface';
-import { MustProxify } from '../../object-property-observer-proxy-pair-manager.type';
 
-export interface IIndexObserverIdInfo<TIndex> {
+export interface IIndexObserverIdInfo<TIndex = unknown> {
    index: TIndex;
-   mustProxify?: MustProxify;
 }
-export interface IIndexObserverInfo<TIndex>
+export interface IIndexObserverInfo<TIndex = unknown>
    extends IIndexObserverIdInfo<TIndex> {
-   owner?: IDisposableOwner;
    initialValue?: unknown;
 }

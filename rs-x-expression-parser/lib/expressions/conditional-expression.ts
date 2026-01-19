@@ -19,7 +19,6 @@ export class ConditionalExpression extends ParameterizedExpression {
    }
 
    protected override evaluateExpression(
-      _sender: AbstractExpression,
       condition: unknown,
       consequent: unknown,
       alternate: unknown

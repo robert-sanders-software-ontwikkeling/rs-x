@@ -74,6 +74,8 @@ describe('InstanceofExpression tests', () => {
          a: new Date(),
       };
       expression = jsParser.parse(context, 'a instanceof type');
+       // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => { });
 
       const actual = (await new WaitForEvent(expression, 'changed', {
          ignoreInitialValue: true,

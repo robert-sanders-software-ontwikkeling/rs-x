@@ -9,9 +9,11 @@ export type SetFunction<T> = (value: T) => void;
 
 export const emptyValue = Symbol('empty');
 export type AnyFunction = (...args: unknown[]) => unknown;
-export const emptyFunction = () => {};
+export const emptyFunction = () => { };
 export const truePredicate = () => true;
 export const echo = (value) => value;
+
+
 
 export class Type {
    public static isPositiveIntegerString(value: unknown): boolean {
@@ -44,8 +46,8 @@ export class Type {
       );
    }
 
-  
-  
+
+
 
 
 
@@ -83,15 +85,19 @@ export class Type {
       }
    }
 
- 
 
    public static cast<T>(instance: unknown): T {
       return instance as T;
    }
 
-  
+
    public static isFunction(value: unknown): value is AnyFunction {
       return typeof value === 'function';
+   }
+
+   public static  isMethod(value:object ): boolean {
+      return typeof value === 'function' && !("prototype" in value);
+
    }
 
    public static isArrowFunction(
@@ -118,7 +124,6 @@ export class Type {
          (Array.isArray(value) && value.length === 0)
       );
    }
-
 
    public static isPlainObject(object: unknown): boolean {
       if (object !== null && typeof object === 'object') {
@@ -164,9 +169,10 @@ export class Type {
 
       return false;
    }
+
    public static getPropertyDescriptorType(
-      target: unknown,
-      name: string,
+      // target: unknown,
+      // name: string,
       propertyDescriptor: PropertyDescriptor
    ): PropertyDescriptorType {
       if (propertyDescriptor.set) {
@@ -178,8 +184,11 @@ export class Type {
       }
 
       if (
-         Type.isFunction(propertyDescriptor.value) &&
-         Type.hasOwnPropertyInPrototypeChain(target, name)
+         Type.isMethod(propertyDescriptor.value) //&&
+         // (
+         //    Type.hasProperty(target, name) ||
+         //    Type.hasOwnPropertyInPrototypeChain(target, name)
+         // )
       ) {
          return PropertyDescriptorType.Function;
       }
@@ -203,8 +212,8 @@ export class Type {
          if (propertyDescriptor) {
             return {
                type: Type.getPropertyDescriptorType(
-                  root,
-                  name as string,
+                  // root,
+                  // name as string,
                   propertyDescriptor
                ),
                descriptor: propertyDescriptor,
@@ -216,4 +225,5 @@ export class Type {
          `${root.constructor.name} does not have a property, method or field with name '${String(name)}'`
       );
    }
+
 }

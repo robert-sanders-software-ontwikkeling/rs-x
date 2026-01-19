@@ -8,7 +8,6 @@ export class LogicalNotExpression extends ParameterizedExpression {
    }
 
    protected override evaluateExpression(
-      _: AbstractExpression,
       value: unknown
    ): boolean {
       return !value;

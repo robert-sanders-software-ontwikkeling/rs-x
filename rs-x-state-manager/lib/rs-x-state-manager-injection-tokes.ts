@@ -9,8 +9,8 @@ export const RsXStateManagerInjectionTokens = {
    IObjectPropertyObserverProxyPairManager: Symbol(
       'IObjectPropertyObserverProxyPairManager'
    ),
-   PlainObjectObserverProxyPairFactory: Symbol(
-      'PlainObjectObserverProxyPairFactory'
+   IPlainObjectObserverProxyPairFactory: Symbol(
+      'IPlainObjectObserverProxyPairFactory'
    ),
    IDateObserverProxyPairFactory: Symbol('IDateObserverProxyPairFactory'),
    IArrayObserverProxyPairFactory: Symbol('IArrayObserverProxyPairFactory'),
@@ -27,20 +27,16 @@ export const RsXStateManagerInjectionTokens = {
    ),
    IObjectObserverProxyPairManager: Symbol('IObjectObserverProxyPairManager'),
    IObjectPropertyObserverManager: Symbol('IObjectPropertyObserverManager'),
-   IArrayItemObserverManager: Symbol('IArrayItemyObserverManager'),
-   IMapItemObserverManager: Symbol('IMapItemObserverManager'),
+   ICollectionItemObserverManager: Symbol('ICollectionItemObserverManager'),
    ISetItemObserverManager: Symbol('ISetItemObserverManager'),
    IDatePropertyObserverManager: Symbol('IDatePropertyObserverManager'),
    IPropertyObserverProxyPairFactoryList:  Symbol('IPropertyObserverProxyPairFactoryList'),
    NonIterableObjectPropertyObserverProxyPairFactory: Symbol(
       'NonIterableObjectPropertyObserverProxyPairFactory'
    ),
-   ArrayItemObserverProxyPairFactory: Symbol(
-      'ArrayItemObserverProxyPairFactory'
-   ),
-   MapItemObserverProxyPairFactory: Symbol('MapItemObserverProxyPairFactory'),
-   SetItemObserverProxyPairFactory: Symbol('SetItemObserverProxyPairFactory'),
- 
+   ICollectionItemObserverProxyPairFactory: Symbol(
+      'ICollectionItemObserverProxyPairFactory'
+   ), 
    IMustProxifyItemHandlerFactory: Symbol('IMustProxifyItemHandlerFactory'),
    IObjectStateManager: Symbol('IObjectStateManager'),
    IPropertyObserverProxyPairFactoryProvider: Symbol(
@@ -52,6 +48,5 @@ export const RsXStateManagerInjectionTokens = {
    IObjectObserverProxyPairFactoryProviderFactory: Symbol(
       'IObjectObserverProxyPairFactoryProviderFactory'
    ),
-
    IStateManager: Symbol('IStateManager'),
 };

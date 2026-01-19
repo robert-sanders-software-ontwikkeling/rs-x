@@ -9,30 +9,27 @@ import {
 // Load the state manager module into the injection container
 InjectionContainer.load(RsXStateManagerModule);
 
-const stateManager: IStateManager = InjectionContainer.get(
-    RsXStateManagerInjectionTokens.IStateManager
-);
-
-const stateContext = {
-    promise: Promise.resolve(10)
-};
-
 export const run = (async () => {
+    const stateManager: IStateManager = InjectionContainer.get(
+        RsXStateManagerInjectionTokens.IStateManager
+    );
+
+    const stateContext = {
+        promise: Promise.resolve(10)
+    };
     const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
         console.log(change.newValue);
     });
 
     try {
-        console.log('Initial value:');
-
         await new WaitForEvent(stateManager, 'changed').wait(() => {
-            stateManager.register(stateContext, 'promise');
+            // This will emit a change event with the initial (current) value.
+            console.log('Initial value:');
+            stateManager.watchState(stateContext, 'promise');
         });
 
-        console.log('Changed value:');
-
-    
         await new WaitForEvent(stateManager, 'changed').wait(() => {
+            console.log('Changed value:');
             let resolveHandler: (value: number) => void;
             stateContext.promise = new Promise((resolve) => { resolveHandler = resolve; });
             resolveHandler(30);
@@ -41,6 +38,7 @@ export const run = (async () => {
         console.log(`Latest value: ${stateManager.getState(stateContext, 'promise')}`);
     } finally {
         changeSubscription.unsubscribe();
-        stateManager.unregister(stateContext, 'promise');
+        // Always release the state when it is no longer needed.
+        stateManager.releaseState(stateContext, 'promise');
     }
 })();

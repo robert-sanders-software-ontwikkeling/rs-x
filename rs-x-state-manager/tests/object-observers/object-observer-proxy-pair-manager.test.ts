@@ -1,3 +1,4 @@
+import { GuidFactoryMock } from '../../../rs-x-core/lib/testing';
 import { ObjectObserverProxyPairManager } from '../../lib/object-observer/object-observer-proxy-pair-manager';
 import { ProxyRegistry } from '../../lib/proxies/proxy-registry/proxy-registry';
 import { ObjectObserverProxyPairFactoryMock } from '../../lib/testing/object-observer-proxy-pair.factory.mock';
@@ -6,24 +7,21 @@ import { ObserverMock } from '../../lib/testing/observer.mock';
 describe('ObjectObserverProxyPairManager tests', () => {
    let objectObserverProxyPairFactory: ObjectObserverProxyPairFactoryMock;
    let objectObserverProxyPairManager: ObjectObserverProxyPairManager;
+   let guidFactory: GuidFactoryMock;
 
-   beforeAll(async () => {
+   beforeEach(async () => {
       objectObserverProxyPairFactory = new ObjectObserverProxyPairFactoryMock();
+      guidFactory = new GuidFactoryMock();
       objectObserverProxyPairManager = new ObjectObserverProxyPairManager(
          () => ({ factories: [objectObserverProxyPairFactory] }),
-         new ProxyRegistry()
+         new ProxyRegistry(),
+         guidFactory
       );
    });
 
-   it('get id will return the passed in target', () => {
-      const proxyTarget = { target: {} };
-
-      const actual = objectObserverProxyPairManager.getId(proxyTarget);
-
-      expect(actual).toBe(proxyTarget.target);
-   });
 
    it('will return null for not supported type', () => {
+      guidFactory.create.mockReturnValue('myGuid');
       objectObserverProxyPairFactory.applies.mockReturnValue(false);
 
       const actual = objectObserverProxyPairManager.create({
@@ -31,13 +29,14 @@ describe('ObjectObserverProxyPairManager tests', () => {
       });
 
       expect(actual).toEqual({
-         id: { x: 1 },
+         id: 'myGuid',
          instance: null,
          referenceCount: 1,
       });
    });
 
    it('will create an observer for supported type', () => {
+      guidFactory.create.mockReturnValue('myGuid');
       const observer = new ObserverMock();
       objectObserverProxyPairFactory.applies.mockReturnValue(true);
       objectObserverProxyPairFactory.create.mockReturnValue(observer);
@@ -55,7 +54,7 @@ describe('ObjectObserverProxyPairManager tests', () => {
          { target: { x: 1 } }
       );
       expect(actual).toEqual({
-         id: { x: 1 },
+          id: 'myGuid',
          instance: observer,
          referenceCount: 1,
       });

@@ -11,7 +11,6 @@ export class UnaryNegationExpression extends ParameterizedExpression<number> {
    }
 
    protected override evaluateExpression(
-      _sender: AbstractExpression,
       value: number
    ): number {
       return -value;

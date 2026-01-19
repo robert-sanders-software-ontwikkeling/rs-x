@@ -1,5 +1,7 @@
-import { IStateManager, MustProxify } from '@rs-x/state-manager';
+import { IDisposableOwner, PENDING } from '@rs-x/core';
+import { MustProxify } from '@rs-x/state-manager';
 import { Observable, ReplaySubject, Subscription } from 'rxjs';
+import { IExpressionChangeCommitHandler, IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 import { ExpressionType, IExpression } from './interfaces';
 
 export interface IMustProxifyHandler {
@@ -8,22 +10,23 @@ export interface IMustProxifyHandler {
 }
 
 export interface IExpressionInitializeConfig {
-   stateManager: IStateManager;
    context?: unknown;
    mustProxifyHandler?: IMustProxifyHandler;
+   transactionManager?: IExpressionChangeTransactionManager
+   owner?: IDisposableOwner
 }
 
 export abstract class AbstractExpression<T = unknown, PT = unknown>
-   implements IExpression<T>
-{
+   implements IExpression<T> {
+
    protected readonly _childExpressions: AbstractExpression[] = [];
    private readonly _changed = new ReplaySubject<IExpression>(1);
-   private _startChangeCycleSubscription: Subscription;
-   private _endChangeCycleSubscription: Subscription;
-   private _oldValue: unknown;
    private _parent: AbstractExpression<PT>;
    protected _value: T;
    private _isDisposed = false;
+   private _oldValue: unknown;
+   private _commitedSubscription: Subscription;
+   private _owner: IDisposableOwner;
 
    protected constructor(
       public readonly type: ExpressionType,
@@ -41,20 +44,14 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
    public initialize(
       settings: IExpressionInitializeConfig
    ): AbstractExpression {
-      if (this.parent || !settings.stateManager) {
-         return;
+
+
+      if (!this._parent && settings.transactionManager) {
+         this._owner = settings.owner;
+         this._commitedSubscription = settings.transactionManager.commited.subscribe(this.onCommited);
       }
 
-      if (this._startChangeCycleSubscription) {
-         return;
-      }
-
-      this._startChangeCycleSubscription =
-         settings.stateManager.startChangeCycly.subscribe(
-            this.onStartChangeCycle
-         );
-      this._endChangeCycleSubscription =
-         settings.stateManager.endChangeCycly.subscribe(this.onEndChangeCycle);
+      return this;
    }
 
    public get value(): T {
@@ -69,10 +66,6 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
       return this._changed;
    }
 
-   public get rootExpressionString(): string {
-      return this._parent?.rootExpressionString ?? this.expressionString;
-   }
-
    public get childExpressions(): readonly IExpression[] {
       return this._childExpressions;
    }
@@ -85,48 +78,27 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
       if (this._isDisposed) {
          return;
       }
-      this._isDisposed = true;
-      this._childExpressions.forEach((childExpression) =>
-         childExpression.dispose()
-      );
 
-      this._startChangeCycleSubscription?.unsubscribe();
-      this._endChangeCycleSubscription?.unsubscribe();
-      this._startChangeCycleSubscription = undefined;
-      this._endChangeCycleSubscription = undefined;
+      if (!this._owner?.canDispose || this._owner?.canDispose()) {
+         this.internalDispose();
+      }
+
+      this._owner?.release?.();
    }
 
    public toString(): string {
       return this.expressionString;
    }
 
-   private onStartChangeCycle = (): void => {
-      this._oldValue = this._value;
-   };
-
-   private onEndChangeCycle = (): void => {
-      this.emitChange(this._oldValue);
-   };
-
-   private addChildExpressions(expressions: AbstractExpression[]): void {
-      this._childExpressions.push(...expressions);
-      expressions.forEach((expression) => (expression._parent = this));
+   protected get root(): AbstractExpression {
+      return this.parent ? this.parent.root : this;
    }
-
-   protected abstract evaluateExpression(
-      sender: AbstractExpression,
-      ...args: unknown[]
-   ): T;
 
    protected static setValue(
       expression: AbstractExpression,
       evaluate: () => unknown
    ): void {
       expression._value = evaluate();
-   }
-
-   protected static clearValue(expression: AbstractExpression): void {
-      expression._value = undefined;
    }
 
    protected static setParent(
@@ -136,27 +108,60 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
       expression._parent = parent;
    }
 
-   protected emitChange(oldValue: unknown): void {
-      if (this._value === oldValue) {
-         return;
-      }
-      this._oldValue = this.value;
-      this._changed.next(this);
+   protected static clearValue(expression: AbstractExpression): void {
+      expression._value = undefined;
    }
 
-   protected evaluate(sender: AbstractExpression, ...args: unknown[]): void {
-      AbstractExpression.setValue(this, () =>
-         this.evaluateExpression(sender, ...args)
+   protected abstract evaluate(sender: AbstractExpression, root: AbstractExpression): T;
+
+   protected internalDispose(): void {
+      this._commitedSubscription?.unsubscribe();
+      this._commitedSubscription = undefined;
+      this._childExpressions.forEach((childExpression) =>
+         childExpression.dispose()
       );
-
-      this.propergateUpdate();
+      this._isDisposed = true;
    }
 
-   private propergateUpdate(): void {
-      if (this.parent) {
-         this.parent.evaluate(this);
-      } else {
-         this.emitChange(this._oldValue);
+   protected prepareReevaluation(sender: AbstractExpression, root: AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
+      if (this._parent) {
+         return this._parent.prepareReevaluation(sender, root, pendingCommits);
       }
+      return true;
+   }
+
+   protected reevaluated(sender: AbstractExpression, root: AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
+      return this.prepareReevaluation(sender, root, pendingCommits)
+         ? this.evaluateBottomToTop(sender, root, pendingCommits)
+         : false;
+   }
+
+   protected evaluateBottomToTop(sender: AbstractExpression, root: AbstractExpression,  pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
+      const value = this.evaluate(sender, root);
+      if (value === PENDING) {
+         return false;
+      }
+      this._value = value;
+
+      if (this.parent) {
+         return this.parent.reevaluated(this, root, pendingCommits)
+      }
+      return true;
+   }
+
+   protected isCommitTarget(sender: AbstractExpression): boolean {
+      return sender === this || sender.root === sender;
+   }
+
+   private onCommited = (sender: AbstractExpression) => {
+      if (this.isCommitTarget(sender) && this._oldValue !== this.value) {
+         this._oldValue = this._value;
+         this._changed.next(this);
+      }
+   }
+
+   private addChildExpressions(expressions: AbstractExpression[]): void {
+      this._childExpressions.push(...expressions);
+      expressions.forEach((expression) => (expression._parent = this));
    }
 }

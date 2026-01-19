@@ -1,6 +1,6 @@
+import { AbstractExpression } from './abstract-expression';
 import { CollectionExpression } from './collection-expression';
 import { ExpressionType } from './interfaces';
-import { AbstractExpression } from './abstract-expression';
 
 export class ArrayExpression extends CollectionExpression<unknown[]> {
    constructor(expressions: AbstractExpression[]) {
@@ -12,7 +12,6 @@ export class ArrayExpression extends CollectionExpression<unknown[]> {
    }
 
    protected override evaluateExpression(
-      _: AbstractExpression,
       ...args: unknown[]
    ): unknown[] {
       const array = [];

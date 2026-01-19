@@ -17,7 +17,6 @@ export class BitwiseXorExpression extends BinaryExpression<number, number> {
    }
 
    protected override evaluateExpression(
-      _: AbstractExpression,
       a: number,
       b: number
    ): number {

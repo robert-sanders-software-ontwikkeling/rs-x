@@ -1,17 +1,33 @@
-import { InjectionContainer } from '@rs-x/core';
-import { ExpressionManager } from '../lib/expression-manager/expression-manager';
-
-import { ArrayIndexOwnerResolver } from '../lib/index-value-observer-manager/array-index-owner-resolver';
-import { DefaultIdentifierOwnerResolver } from '../lib/index-value-observer-manager/default-identifier-owner-resolver';
-import { IndexValueObserverManager } from '../lib/index-value-observer-manager/index-value-observer-manager';
-import { MapKeyOwnerResolver } from '../lib/index-value-observer-manager/map-key-owner-resolver';
-import { PropertyOwnerResolver } from '../lib/index-value-observer-manager/property-owner-resolver';
+import {
+   ArrayIndexAccessor,
+   DatePropertyAccessor,
+   InjectionContainer,
+   MapKeyAccessor,
+   MethodAccessor,
+   ObservableAccessor,
+   PromiseAccessor,
+   PropertyValueAccessor,
+   RsXCoreInjectionTokens,
+   SetKeyAccessor
+} from '@rs-x/core';
+import { ArrayObserverProxyPairFactory, DateObserverProxyPairFactory, MapObserverProxyPairFactory, ObservableObserverProxyPairFactory, PlainObjectObserverProxyPairFactory, PromiseObserverProxyPairFactory, RsXStateManagerInjectionTokens, SetObserverProxyPairFactory } from '@rs-x/state-manager';
+import { ExpressionChangeTransactionManager } from '../lib/expresion-change-transaction-manager';
+import { ExpressionFactory } from '../lib/expression-factory/expression-factory';
+import { ExpressionManager } from '../lib/expression-factory/expression-manager';
+import { DeepCloneValueGetterWithExpressionSupport } from '../lib/expression-observer/deep-clone-value-getter-with-expression-support';
+import { ExpressionIndexAccessor } from '../lib/expression-observer/expression-index-accessor';
+import { ExpressionObserverFactory } from '../lib/expression-observer/expression-observer.factory';
+import { ArrayIndexOwnerResolver } from '../lib/identifier-owner-resolver/array-index-owner-resolver';
+import { DefaultIdentifierOwnerResolver } from '../lib/identifier-owner-resolver/default-identifier-owner-resolver';
+import { MapKeyOwnerResolver } from '../lib/identifier-owner-resolver/map-key-owner-resolver';
+import { PropertyOwnerResolver } from '../lib/identifier-owner-resolver/property-owner-resolver';
 import { JsEspreeExpressionParser } from '../lib/js-espree-expression-parser';
 import { RsXExpressionParserInjectionTokens } from '../lib/rs-x-expression-parser-injection-tokes';
 import {
    RsXExpressionParserModule,
    unloadRsXExpressionParserModule,
 } from '../lib/rs-x-expression-parser.module';
+import { ExpressionObserverProxyPairFactory } from '../lib';
 
 describe('RsXExpressionParserModule tests', () => {
    beforeAll(async () => {
@@ -39,19 +55,36 @@ describe('RsXExpressionParserModule tests', () => {
       expect(a1).toBe(a2);
    });
 
-   it('can get instance of IIdentifierValueManager', () => {
+   it('can get instance of IExpressionFactory', () => {
       const actual = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IIndexValueObserverManager
+         RsXExpressionParserInjectionTokens.IExpressionFactory
       );
-      expect(actual).toBeInstanceOf(IndexValueObserverManager);
+      expect(actual).toBeInstanceOf(ExpressionFactory);
    });
 
-   it('IIdentifierValueManager instance is a singleton', () => {
+   it('IExpressionFactory instance is a singleton', () => {
       const a1 = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IIndexValueObserverManager
+         RsXExpressionParserInjectionTokens.IExpressionFactory
       );
       const a2 = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IIndexValueObserverManager
+         RsXExpressionParserInjectionTokens.IExpressionFactory
+      );
+      expect(a1).toBe(a2);
+   });
+
+   it('can get instance of IExpressionChangeTransactionManager', () => {
+      const actual = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager
+      );
+      expect(actual).toBeInstanceOf(ExpressionChangeTransactionManager);
+   });
+
+   it('IExpressionChangeTransactionManager instance is a singleton', () => {
+      const a1 = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager
+      );
+      const a2 = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager
       );
       expect(a1).toBe(a2);
    });
@@ -139,5 +172,136 @@ describe('RsXExpressionParserModule tests', () => {
          RsXExpressionParserInjectionTokens.IdentifierOwnerResolver
       );
       expect(a1).toBe(a2);
+   });
+
+   it('can get an instance of IIdentifierOwnerResolverList', () => {
+      const actual = InjectionContainer.getAll(
+         RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList
+      );
+
+      expect(actual.length).toEqual(3);
+
+      expect(actual[0]).toBeInstanceOf(PropertyOwnerResolver);
+      expect(actual[1]).toBeInstanceOf(ArrayIndexOwnerResolver);
+      expect(actual[2]).toBeInstanceOf(MapKeyOwnerResolver);
+   });
+
+   it('IIdentifierOwnerResolverList instance is a singelton', () => {
+      const a1 = InjectionContainer.getAll(
+         RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList
+      );
+      const a2 = InjectionContainer.getAll(
+         RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList
+      );
+      expect(a1[0]).toBe(a2[0]);
+      expect(a1[1]).toBe(a2[1]);
+      expect(a1[2]).toBe(a2[2]);
+   });
+
+   it('can get an instance of IIndexValueAccessorList', () => {
+      const actual = InjectionContainer.getAll(
+         RsXCoreInjectionTokens.IIndexValueAccessorList
+      );
+
+      expect(actual.length).toEqual(9);
+      expect(actual[0]).toBeInstanceOf(ExpressionIndexAccessor);
+      expect(actual[1]).toBeInstanceOf(PropertyValueAccessor);
+      expect(actual[2]).toBeInstanceOf(MethodAccessor);
+      expect(actual[3]).toBeInstanceOf(ArrayIndexAccessor);
+      expect(actual[4]).toBeInstanceOf(MapKeyAccessor);
+      expect(actual[5]).toBeInstanceOf(SetKeyAccessor);
+      expect(actual[6]).toBeInstanceOf(ObservableAccessor);
+      expect(actual[7]).toBeInstanceOf(PromiseAccessor);
+      expect(actual[8]).toBeInstanceOf(DatePropertyAccessor);
+
+   });
+
+   it('IIndexValueAccessorList instance is a singelton', () => {
+      const a1 = InjectionContainer.getAll(
+         RsXCoreInjectionTokens.IIndexValueAccessorList
+      );
+      const a2 = InjectionContainer.getAll(
+         RsXCoreInjectionTokens.IIndexValueAccessorList
+      );
+      expect(a1[0]).toBe(a2[0]);
+      expect(a1[1]).toBe(a2[1]);
+      expect(a1[2]).toBe(a2[2]);
+      expect(a1[3]).toBe(a2[3]);
+      expect(a1[4]).toBe(a2[4]);
+      expect(a1[5]).toBe(a2[5]);
+      expect(a1[6]).toBe(a2[6]);
+      expect(a1[7]).toBe(a2[7]);
+      expect(a1[8]).toBe(a2[8]);
+   });
+
+   it('can get instance of IExpressionObserverFactory', () => {
+      const actual = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionObserverFactory
+      );
+      expect(actual).toBeInstanceOf(ExpressionObserverFactory);
+   });
+
+   it('IExpressionObserverFactory instance is a singleton', () => {
+      const a1 = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionObserverFactory
+      );
+      const a2 = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionObserverFactory
+      );
+      expect(a1).toBe(a2);
+   });
+
+
+   it('can get instance of IDeepCloneValueGetter', () => {
+      const actual = InjectionContainer.get(
+         RsXCoreInjectionTokens.IDeepCloneValueGetter
+      );
+      expect(actual).toBeInstanceOf(DeepCloneValueGetterWithExpressionSupport);
+   });
+
+   it('IDeepCloneValueGetter instance is a singleton', () => {
+      const a1 = InjectionContainer.get(
+         RsXCoreInjectionTokens.IDeepCloneValueGetter
+      );
+      const a2 = InjectionContainer.get(
+         RsXCoreInjectionTokens.IDeepCloneValueGetter
+      );
+      expect(a1).toBe(a2);
+   });
+
+
+   it('can get an instance of IObjectObserverProxyPairFactoryList', () => {
+      const actual = InjectionContainer.getAll(
+         RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
+      );
+
+      expect(actual.length).toEqual(8);
+      expect(actual[0]).toBeInstanceOf(ExpressionObserverProxyPairFactory);
+      expect(actual[1]).toBeInstanceOf(PlainObjectObserverProxyPairFactory);
+      expect(actual[2]).toBeInstanceOf(DateObserverProxyPairFactory);
+      expect(actual[3]).toBeInstanceOf(ArrayObserverProxyPairFactory);
+      expect(actual[4]).toBeInstanceOf(PromiseObserverProxyPairFactory);
+      expect(actual[5]).toBeInstanceOf(ObservableObserverProxyPairFactory);
+      expect(actual[6]).toBeInstanceOf(MapObserverProxyPairFactory);
+      expect(actual[7]).toBeInstanceOf(SetObserverProxyPairFactory);
+
+
+   });
+
+   it('IObjectObserverProxyPairFactoryList instance is a singelton', () => {
+      const a1 = InjectionContainer.getAll(
+         RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
+      );
+      const a2 = InjectionContainer.getAll(
+         RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
+      );
+      expect(a1[0]).toBe(a2[0]);
+      expect(a1[1]).toBe(a2[1]);
+      expect(a1[2]).toBe(a2[2]);
+      expect(a1[3]).toBe(a2[3]);
+      expect(a1[4]).toBe(a2[4]);
+      expect(a1[5]).toBe(a2[5]);
+      expect(a1[6]).toBe(a2[6]);
+      expect(a1[7]).toBe(a2[7]);
    });
 });

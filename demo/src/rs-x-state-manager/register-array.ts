@@ -1,4 +1,4 @@
-import { InjectionContainer, truePredicate } from '@rs-x/core';
+import { InjectionContainer, printValue, truePredicate } from '@rs-x/core';
 import {
     IStateChange,
     IStateManager,
@@ -9,38 +9,36 @@ import {
 // Load the state manager module into the injection container
 InjectionContainer.load(RsXStateManagerModule);
 
-const stateManager: IStateManager = InjectionContainer.get(
-    RsXStateManagerInjectionTokens.IStateManager
-);
+export const run = (() => {
+    const stateManager: IStateManager = InjectionContainer.get(
+        RsXStateManagerInjectionTokens.IStateManager
+    );
 
-function printValue(object: unknown): void {
-    console.log(JSON.stringify(object, null, 4).replaceAll('"', ''));
-}
+    const stateContext = {
+        array: [
+            [1, 2],
+            [3, 4]
+        ]
+    };
 
-const stateContext = {
-    array: [
-        [1, 2],
-        [3, 4]
-    ]
-};
+    const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
+        printValue(change.newValue);
+    });
 
-const changeSubscription = stateManager.changed.subscribe((change: IStateChange) => {
-    printValue(change.newValue);
-});
+    try {
+        // This will emit a change event with the initial (current) value.
+        console.log('Initial value:');
+        stateManager.watchState(stateContext, 'array', truePredicate);
 
-try {
-    // Otherwise, only assigning a new value to stateContext.array would emit a change event.
-    // This will emit a change event with the initial (current) value.
-    console.log('Initial value:');
-    stateManager.register(stateContext, 'array', truePredicate);
+        console.log('Changed value:');
+        stateContext.array[1].push(5);
 
-    console.log('Changed value:');
-    stateContext.array[1].push(5);
+        console.log('Latest value:');
+        printValue(stateManager.getState(stateContext, 'array'));
 
-    console.log('Latest value:');
-    printValue(stateManager.getState(stateContext,'array'));
-
-} finally {
-    changeSubscription.unsubscribe();
-    stateManager.unregister(stateContext, 'array', truePredicate);
-}
+    } finally {
+        changeSubscription.unsubscribe();
+        // Always release the state when it is no longer needed.
+        stateManager.releaseState(stateContext, 'array', truePredicate);
+    }
+})();

@@ -17,7 +17,6 @@ export class GreaterThanOrEqualExpression extends BinaryExpression {
    }
 
    protected override evaluateExpression(
-      _: AbstractExpression,
       a: number,
       b: number
    ): boolean {

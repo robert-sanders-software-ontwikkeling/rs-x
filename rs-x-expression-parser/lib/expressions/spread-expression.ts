@@ -1,4 +1,3 @@
-import { AbstractExpression } from './abstract-expression';
 import { ArrayExpression } from './array-expression';
 import { IdentifierExpression } from './identifier-expression';
 import { ExpressionType } from './interfaces';
@@ -19,7 +18,6 @@ export class SpreadExpression extends ParameterizedExpression<
    }
 
    protected override evaluateExpression(
-      _: AbstractExpression,
       ...args: unknown[]
    ): unknown[] | object {
       return args[0] as unknown[] | object;

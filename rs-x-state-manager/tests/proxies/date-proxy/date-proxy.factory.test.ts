@@ -1,9 +1,12 @@
-import { DateProxyFactory, ProxyRegistry } from '@rs-x/state-manager';
+import { GuidFactory } from '@rs-x/core';
+import { DateProxyFactory } from '../../../lib/proxies/date-proxy/date-proxy.factory';
+import { ProxyRegistry } from '../../../lib/proxies/proxy-registry/proxy-registry';
+
 
 describe('DateProxyFactory tests', () => {
    let dateProxyFactory: DateProxyFactory;
    beforeEach(() => {
-      dateProxyFactory = new DateProxyFactory(new ProxyRegistry());
+      dateProxyFactory = new DateProxyFactory(new GuidFactory(), new ProxyRegistry());
    });
 
    it('will  create an instance of date proxy', () => {

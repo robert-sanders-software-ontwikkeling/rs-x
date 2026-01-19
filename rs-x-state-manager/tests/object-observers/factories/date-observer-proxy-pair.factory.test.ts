@@ -1,12 +1,12 @@
 import {
    InjectionContainer
 } from '@rs-x/core';
+import { DisposableOwnerMock } from '@rs-x/core/testing';
 import { IDateObserverProxyPairFactory } from '../../../lib/object-observer/factories/date-observer-proxy-pair.factory.type';
 import { IObserver } from '../../../lib/observer.interface';
 import { IDateProxyFactory } from '../../../lib/proxies/date-proxy/date-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
-import { DisposableOwnerMock } from '../../../lib/testing/disposable-owner.mock';
 
 describe('DateObserverProxyPairFactory tests', () => {
    let dateObserverProxyPairFactory: IDateObserverProxyPairFactory;
@@ -75,10 +75,13 @@ describe('DateObserverProxyPairFactory tests', () => {
       observer = observerProxyPair.observer;
       disposableOwner.canDispose.mockReturnValue(true);
 
-      expect(dateProxyFactory.getFromId(observerProxyPair.id)).toBeDefined();
+      const id = dateProxyFactory.getId({ date });
+      expect(id).toBeDefined();
+
+      expect(dateProxyFactory.getFromId(id)).toBeDefined();
 
       observer.dispose();
 
-      expect(dateProxyFactory.getFromId(observerProxyPair.id)).toBeUndefined();
+      expect(dateProxyFactory.getFromId(id)).toBeUndefined();
    });
 });

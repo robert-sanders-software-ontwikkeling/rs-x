@@ -1,7 +1,6 @@
-import { IErrorLog, IPropertyChange, Type } from '@rs-x/core';
+import { IDisposableOwner, IErrorLog, IPropertyChange, Type } from '@rs-x/core';
 import { ReplaySubject, Subscription } from 'rxjs';
 import { AbstractObserver } from './abstract-observer';
-import { IDisposableOwner } from './disposable-owner.interface';
 import { IObserver } from './observer.interface';
 
 export class ObserverGroup extends AbstractObserver {
@@ -83,26 +82,20 @@ export class ObserverGroup extends AbstractObserver {
       return this;
    }
 
-   public setValue(
-      newValue: unknown,
-      observers: IObserver[],
-      emitChange: boolean
-   ): void {
+
+   public replaceObservers( observers: IObserver[]): void {
       this.unsubscribeToObservers();
       this.addObservers(observers);
 
       this._observers.forEach((observer) => observer.init());
-
-      if (!emitChange) {
-         return;
-      }
-
+   }
+   
+   public emitValue(newValue: unknown): void {
       this.emitChange({
          arguments: [],
          target: this.target,
          chain: [{ object: this.target, id: this.id }],
          id: this.id,
-         hasRebindNested: this._observers.length > 0,
          newValue,
       });
    }

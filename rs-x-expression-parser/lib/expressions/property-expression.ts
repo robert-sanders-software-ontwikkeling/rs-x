@@ -20,7 +20,6 @@ export class PropertyExpression extends BinaryExpression<
    }
 
    protected override evaluateExpression(
-      _sender: AbstractExpression,
       key: PropertyKey,
       value: unknown
    ): object {

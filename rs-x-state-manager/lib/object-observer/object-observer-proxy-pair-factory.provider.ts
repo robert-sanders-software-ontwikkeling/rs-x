@@ -4,13 +4,13 @@ import { IObjectObserverProxyPairFactoryProvider } from './object-observer-proxy
 import { IObjectObserverProxyPairFactory } from './object-observer-proxy-pair.factory.interface';
 
 @Injectable()
-export class ObjectObserverProxyPairFactoryProvider
-   implements IObjectObserverProxyPairFactoryProvider
-{
+export class ObjectObserverProxyPairFactoryProvider implements IObjectObserverProxyPairFactoryProvider {
+   public readonly factories: readonly IObjectObserverProxyPairFactory[];
+
    constructor(
       @MultiInject(RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList)
-      public readonly factories: readonly IObjectObserverProxyPairFactory[]
+      factories: readonly IObjectObserverProxyPairFactory[]
    ) {
-      
+      this.factories = [...factories].sort((a, b) => b.priority - a.priority);
    }
 }

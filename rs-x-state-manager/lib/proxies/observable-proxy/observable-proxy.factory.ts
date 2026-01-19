@@ -1,4 +1,5 @@
 import {
+   IDisposableOwner,
    Inject,
    Injectable,
    IObservableAccessor,
@@ -8,7 +9,6 @@ import {
 } from '@rs-x/core';
 import { Observable, ReplaySubject, Subscription } from 'rxjs';
 import { AbstractObserver } from '../../abstract-observer';
-import { IDisposableOwner } from '../../disposable-owner.interface';
 import {
    IObservableObserverProxyPair,
    IObservableProxyData,
@@ -110,8 +110,6 @@ export class ObservableProxyFactory
          observer,
          proxy: undefined,
          proxyTarget: data.observable,
-         emitChangeWhenSet: false,
-         id,
       };
    }
 
