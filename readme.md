@@ -118,57 +118,272 @@ For example, the [Jest](https://marketplace.visualstudio.com/items?itemName=Orta
 * Release commands
 
 
-## Release a new version
+## Release & Publish Process
 
-1. run command `pnpm changeset` . This will ask which packages you want to include. For example
+This document explains **step by step** how to publish a new release for this repository.  
+No prior knowledge of the release pipeline is required. If you follow these steps in order, your packages will be versioned and published correctly.
 
-    ```console
-    🦋  Which packages would you like to include? … 
-    ◯ changed packages
-      ◯ @rs-x/expression-parser
-      ◯ @rs-x/state-manager
-      ◯ @rs-x/core
-    ```
+---
 
-     Controls
-      *	↑ / ↓ → move up and down
-      *	Space → select / deselect an item
-      *	Enter → confirm your selection
+### Overview
 
-    Options explained
+This project uses:
 
-    * changed packages
-      * Automatically selects packages that Git detects as changed
-      * Best choice most of the time
-      * Safer and faster
+- **pnpm** as the package manager
+- **Changesets** for versioning and changelog management
+- **GitHub Actions** to automate building and publishing
+- **npm** as the package registry
 
-      ✅ Recommended unless you have a specific reason not to.
+Releases are published **only from `release/*` branches** and are fully automated once the branch is pushed.
 
+---
 
-    * Individual packages
+### High-Level Flow
 
-      Select these if:
-      * You want to bump a package without code changes.
-      * You want to include multiple packages.
-      * Git didn’t detect changes correctly.
+1. Make changes on a feature branch  
+2. Add a Changeset describing the change  
+3. Merge changes into `main`  
+4. Create a `release/*` branch  
+5. Push the release branch  
+6. GitHub Actions:
+   - Validates changes
+   - Applies version bumps
+   - Builds packages
+   - Publishes to npm
+
+---
+
+### Prerequisites
+
+Before starting, make sure you have:
+
+- Node.js (LTS)
+- Git 
   
-    **What happens next**
 
-    After selecting packages, Changesets will ask
-    1. What type of change?
-        * patch – bug fix
-        * minor – backward-compatible feature
-        *	major – breaking change
-    2.	Summary
-        * Short description (goes into CHANGELOG)
+---
 
-    Then it will create a file like:
+### Steo 1: Install packages if not already done
 
-    `.changeset/my-release-fix.md`
+  npm install
 
-2.  Commit and push the changes
-3.  Run the release pipeline in github
-  
+---
+
+
+### Step 2: Create Your Changes
+
+Create a feature or fix branch and implement your changes.
+
+    git checkout -b feature/my-change
+    # make code changes
+
+---
+
+### Step 3: Add a Changeset
+
+After completing your code changes, create a Changeset:
+
+    pnpm changeset
+
+You will be prompted to:
+
+- Select the affected packages
+- Choose the version bump type (`patch`, `minor`, or `major`)
+- Write a short description of the change
+
+This generates a markdown file in:
+
+    .changeset/
+
+**Important:**  
+Every release **must** include at least one Changeset file.  
+Without a Changeset, no versions will be published.
+
+---
+
+### Step 4: Merge Changes into `main`
+
+Commit your changes and merge them into the `main` branch.
+
+    git commit -am "Add feature X"
+    git push origin feature/my-change
+
+Then open a Pull Request and merge it into `main`.
+
+---
+
+### Step 5: Create a Release Branch
+
+Create a release branch from `main`.
+
+    git checkout main
+    git pull origin main
+    git checkout -b release/v1.2.0
+    git push origin release/v1.2.0
+
+The branch name **must** start with:
+
+    release/
+
+This naming convention is required to trigger the publish pipeline.
+
+---
+
+### Step 6: GitHub Actions Pipeline
+
+Pushing a `release/*` branch automatically triggers the **Publish Packages** workflow.
+
+The pipeline executes the following steps in order.
+
+---
+
+### Pipeline Step 1: Checkout Repository
+
+- Checks out the release branch
+- Disables default credentials to prevent accidental pushes
+
+---
+
+### Pipeline Step 2: Setup Node.js
+
+Installs the latest **Node.js LTS** version.
+
+---
+
+### Pipeline Step 3: Install pnpm
+
+Installs **pnpm v9**, required by the repository.
+
+---
+
+### Pipeline Step 4: Install Dependencies
+
+    pnpm install
+
+Dependencies are installed using the lockfile.
+
+---
+
+### Pipeline Step 5: Validate Release Branch Changes
+
+The pipeline compares the release branch against `main`.
+
+Only the following files may differ:
+
+- `.changeset/**`
+- `package.json`
+- `pnpm-lock.yaml`
+
+If any other file is changed, the pipeline **fails immediately**.
+
+This guarantees that release branches contain **only versioning-related changes**.
+
+---
+
+### Pipeline Step 6: Apply Version Bumps
+
+    pnpm changeset version
+
+This step:
+
+- Reads all Changeset files
+- Updates package versions
+- Updates changelogs
+
+If version changes are generated:
+- They are committed automatically
+- The commit is pushed back to the same `release/*` branch
+
+If no changes are needed, the step exits safely.
+
+---
+
+### Pipeline Step 7: Build Packages
+
+    pnpm -r run build
+
+All packages are built recursively.
+
+If **any build fails**, the release is aborted.
+
+---
+
+### Pipeline Step 8: Publish Packages
+
+    pnpm changeset publish
+
+This step:
+
+- Publishes only packages with new versions
+- Skips versions that already exist on npm
+- Uses the `NPM_TOKEN` secret for authentication
+
+Once this step succeeds, the release is **live on npm**.
+
+---
+
+### Manual Workflow Trigger (Optional)
+
+The workflow can also be triggered manually:
+
+1. Go to **GitHub → Actions**
+2. Select **Publish Packages**
+3. Click **Run workflow**
+
+This is useful for recovery or re-running a failed pipeline.
+
+---
+
+### Required GitHub Secrets
+
+| Secret Name    | Description                                                           |
+| -------------- | --------------------------------------------------------------------- |
+| `NPM_TOKEN`    | Token used to publish packages to npm                                 |
+| `PIPELINE_PAT` | Personal Access Token used to push commits back to the release branch |
+
+---
+
+### Common Issues
+
+#### Unauthorized change detected
+
+You modified files other than:
+- `.changeset/**`
+- `package.json`
+- `pnpm-lock.yaml`
+
+Move all code changes back to `main`.
+
+---
+
+#### Nothing gets published
+
+Possible causes:
+- No Changeset files
+- Versions already published
+- Build step failed
+
+---
+
+#### Publish step fails
+
+Check:
+- `NPM_TOKEN` permissions
+- npm package ownership
+- Registry availability
+
+---
+
+### Summary
+
+To publish a new release:
+
+1. Create a Changeset  
+2. Merge it into `main`  
+3. Create and push a `release/*` branch  
+4. Let GitHub Actions handle the rest  
+
+Once the workflow completes successfully, your packages are published 🎉
 
 
 
