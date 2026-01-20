@@ -7,14 +7,19 @@ on:
   workflow_dispatch:
     inputs:
       dist_tag:
-        description: 'npm dist-tag to publish to (latest or next)'
+        description: 'npm dist-tag (latest or next)'
         required: false
         default: 'latest'
+      promote_from_next:
+        description: 'Promote already-published versions from next → latest'
+        required: false
+        default: 'false'
 
 permissions:
   contents: write
   id-token: write
 
+# 3️⃣ Prevent double publishing
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
@@ -25,6 +30,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ---------------- CHECKOUT ----------------
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -42,9 +48,12 @@ jobs:
         with:
           version: 9
 
-      - name: Install dependencies
+      # ---------------- LOCKFILE INTEGRITY ----------------
+      # 4️⃣ Enforce workspace + lockfile correctness
+      - name: Install dependencies (strict)
         run: pnpm install --frozen-lockfile
 
+      # ---------------- CHANGE VALIDATION ----------------
       - name: Validate release branch changes
         run: |
           git fetch origin main
@@ -58,21 +67,65 @@ jobs:
             fi
           done
 
-      # -------- VERSION --------
+      # ---------------- VERSION ----------------
       - name: Version packages with Changesets
         run: pnpm changeset version
 
-      # -------- BUILD --------
+      # ---------------- ROLLBACK DETECTION ----------------
+      # 2️⃣ Abort if any version already exists on npm
+      - name: Check for already-published versions
+        run: |
+          set -e
+          node <<'EOF'
+          const { execSync } = require('child_process');
+          const pkgs = execSync('pnpm -r exec node -e "console.log(require(\'./package.json\').name+\'@\'+require(\'./package.json\').version)"')
+            .toString()
+            .trim()
+            .split('\n');
+
+          for (const p of pkgs) {
+            try {
+              execSync(`npm view ${p} version`, { stdio: 'ignore' });
+              console.error(`❌ Version already published: ${p}`);
+              process.exit(1);
+            } catch {
+              console.log(`✅ Not yet published: ${p}`);
+            }
+          }
+          EOF
+
+      # ---------------- BUILD ----------------
       - name: Build packages
         run: pnpm -r run build
 
-      # -------- PUBLISH (OIDC / PROVENANCE) --------
-      - name: Publish packages via Changesets
+      # ---------------- PUBLISH ----------------
+      - name: Publish packages via Changesets (OIDC)
+        if: ${{ github.event.inputs.promote_from_next != 'true' }}
         run: |
           DIST_TAG="${{ github.event.inputs.dist_tag || 'latest' }}"
           pnpm changeset publish --tag "$DIST_TAG"
 
-      # -------- GITHUB RELEASE --------
+      # ---------------- NEXT → LATEST PROMOTION ----------------
+      # 6️⃣ Promote without rebuilding
+      - name: Promote from next to latest
+        if: ${{ github.event.inputs.promote_from_next == 'true' }}
+        run: |
+          node <<'EOF'
+          const { execSync } = require('child_process');
+          const pkgs = execSync('pnpm -r exec node -e "console.log(require(\'./package.json\').name+\'@\'+require(\'./package.json\').version)"')
+            .toString()
+            .trim()
+            .split('\n');
+
+          for (const p of pkgs) {
+            const [name, version] = p.split('@');
+            console.log(`Promoting ${name}@${version} → latest`);
+            execSync(`npm dist-tag add ${name}@${version} latest`, { stdio: 'inherit' });
+          }
+          EOF
+
+      # ---------------- GITHUB RELEASE ----------------
+      # 5️⃣ Synced GitHub Release (Changesets-based)
       - name: Create GitHub Release
         uses: changesets/action@v1
         with:
@@ -80,7 +133,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # -------- COMMIT (LAST) --------
+      # ---------------- COMMIT (LAST) ----------------
       - name: Commit version bump
         run: |
           git config user.name "CI Bot"
