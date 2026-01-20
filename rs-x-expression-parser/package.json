@@ -3,6 +3,10 @@
   "version": "0.8.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "publishConfig": {
+    "provenance": true,
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup lib/index.ts --format cjs,esm --dts  --tsconfig ../tsconfig.build.json"
   },
