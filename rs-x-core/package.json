@@ -1,6 +1,6 @@
 {
     "name": "@rs-x/core",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "scripts": {
         "build": "tsup lib/index.ts --format cjs,esm --dts --tsconfig ../tsconfig.build.json"
     },
