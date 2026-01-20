@@ -11,6 +11,14 @@ on:
         required: false
         default: 'latest'
 
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     name: Version, Publish & Release
@@ -32,7 +40,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: latest
+          version: 9
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -58,10 +66,8 @@ jobs:
       - name: Build packages
         run: pnpm -r run build
 
-      # -------- PUBLISH --------
+      # -------- PUBLISH (OIDC / PROVENANCE) --------
       - name: Publish packages via Changesets
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           DIST_TAG="${{ github.event.inputs.dist_tag || 'latest' }}"
           pnpm changeset publish --tag "$DIST_TAG"
@@ -74,10 +80,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # -------- COMMIT (LAST!) --------
+      # -------- COMMIT (LAST) --------
       - name: Commit version bump
-        env:
-          PAT: ${{ secrets.PIPELINE_PAT }}
         run: |
           git config user.name "CI Bot"
           git config user.email "ci@example.com"
@@ -85,7 +89,7 @@ jobs:
           if ! git diff --quiet; then
             git add .
             git commit -m "chore: version packages"
-            git push https://x-access-token:${PAT}@github.com/${{ github.repository }} HEAD:${{ github.ref_name }}
+            git push origin HEAD:${{ github.ref_name }}
           else
             echo "No changes to commit."
           fi
