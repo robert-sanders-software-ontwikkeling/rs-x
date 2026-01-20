@@ -19,7 +19,7 @@ permissions:
   contents: write
   id-token: write
 
-# 3️⃣ Prevent double publishing
+# Prevent double publishing
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
@@ -49,7 +49,6 @@ jobs:
           version: 9
 
       # ---------------- LOCKFILE INTEGRITY ----------------
-      # 4️⃣ Enforce workspace + lockfile correctness
       - name: Install dependencies (strict)
         run: pnpm install --frozen-lockfile
 
@@ -72,7 +71,6 @@ jobs:
         run: pnpm changeset version
 
       # ---------------- ROLLBACK DETECTION ----------------
-      # 2️⃣ Abort if any version already exists on npm
       - name: Check for already-published versions
         run: |
           set -e
@@ -98,15 +96,36 @@ jobs:
       - name: Build packages
         run: pnpm -r run build
 
+      # ---------------- FIRST-TIME PUBLISH DETECTION ----------------
+      - name: Detect first-time publish
+        id: first_publish
+        run: |
+          echo "Checking if any package is unpublished..."
+          UNPUBLISHED=0
+          for pkg in $(pnpm -r exec node -e "console.log(require('./package.json').name)") ; do
+            if ! npm view "$pkg" version > /dev/null 2>&1; then
+              echo "Package $pkg is not published yet"
+              UNPUBLISHED=1
+            fi
+          done
+          echo "first_publish=$UNPUBLISHED" >> $GITHUB_OUTPUT
+
       # ---------------- PUBLISH ----------------
-      - name: Publish packages via Changesets (OIDC)
+      - name: Publish packages via Changesets
         if: ${{ github.event.inputs.promote_from_next != 'true' }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           DIST_TAG="${{ github.event.inputs.dist_tag || 'latest' }}"
-          pnpm changeset publish --tag "$DIST_TAG"
+          if [ "${{ steps.first_publish.outputs.first_publish }}" = "1" ]; then
+            echo "First-time publish detected. Using NPM_TOKEN and --access public."
+            pnpm changeset publish --tag "$DIST_TAG" --access public
+          else
+            echo "Package already exists. Using OIDC + provenance."
+            pnpm changeset publish --tag "$DIST_TAG"
+          fi
 
       # ---------------- NEXT → LATEST PROMOTION ----------------
-      # 6️⃣ Promote without rebuilding
       - name: Promote from next to latest
         if: ${{ github.event.inputs.promote_from_next == 'true' }}
         run: |
@@ -125,7 +144,6 @@ jobs:
           EOF
 
       # ---------------- GITHUB RELEASE ----------------
-      # 5️⃣ Synced GitHub Release (Changesets-based)
       - name: Create GitHub Release
         uses: changesets/action@v1
         with:
@@ -133,7 +151,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ---------------- COMMIT (LAST) ----------------
+      # ---------------- COMMIT VERSION BUMP ----------------
       - name: Commit version bump
         run: |
           git config user.name "CI Bot"
@@ -145,4 +163,3 @@ jobs:
             git push origin HEAD:${{ github.ref_name }}
           else
             echo "No changes to commit."
-          fi
