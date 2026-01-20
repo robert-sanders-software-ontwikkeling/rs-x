@@ -5,13 +5,32 @@ on:
     branches:
       - 'release/*'
   workflow_dispatch:
+    inputs:
+      dist_tag:
+        description: 'npm dist-tag (latest or next)'
+        required: false
+        default: 'latest'
+      promote_from_next:
+        description: 'Promote already-published versions from next → latest'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write
+  id-token: write
+
+# 3️⃣ Prevent double publishing
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  version:
-    name: Version Packages
+  release:
+    name: Version, Publish & Release
     runs-on: ubuntu-latest
 
     steps:
+      # ---------------- CHECKOUT ----------------
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -22,21 +41,24 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
+          registry-url: https://registry.npmjs.org/
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
 
-      - name: Install dependencies
+      # ---------------- LOCKFILE INTEGRITY ----------------
+      # 4️⃣ Enforce workspace + lockfile correctness
+      - name: Install dependencies (strict)
         run: pnpm install --frozen-lockfile
 
+      # ---------------- CHANGE VALIDATION ----------------
       - name: Validate release branch changes
         run: |
           git fetch origin main
           BASE=$(git merge-base origin/main HEAD)
           CHANGED_FILES=$(git diff --name-only $BASE..HEAD)
-          echo "Changed files: $CHANGED_FILES"
 
           for f in $CHANGED_FILES; do
             if [[ ! "$f" =~ ^\.changeset/ && "$f" != "package.json" && "$f" != "pnpm-lock.yaml" ]]; then
@@ -45,12 +67,74 @@ jobs:
             fi
           done
 
+      # ---------------- VERSION ----------------
       - name: Version packages with Changesets
         run: pnpm changeset version
 
-      - name: Commit version bump
+      # ---------------- ROLLBACK DETECTION ----------------
+      # 2️⃣ Abort if any version already exists on npm
+      - name: Check for already-published versions
+        run: |
+          set -e
+          node <<'EOF'
+          const { execSync } = require('child_process');
+          const pkgs = execSync('pnpm -r exec node -e "console.log(require(\'./package.json\').name+\'@\'+require(\'./package.json\').version)"')
+            .toString()
+            .trim()
+            .split('\n');
+
+          for (const p of pkgs) {
+            try {
+              execSync(`npm view ${p} version`, { stdio: 'ignore' });
+              console.error(`❌ Version already published: ${p}`);
+              process.exit(1);
+            } catch {
+              console.log(`✅ Not yet published: ${p}`);
+            }
+          }
+          EOF
+
+      # ---------------- BUILD ----------------
+      - name: Build packages
+        run: pnpm -r run build
+
+      # ---------------- PUBLISH ----------------
+      - name: Publish packages via Changesets (OIDC)
+        if: ${{ github.event.inputs.promote_from_next != 'true' }}
+        run: |
+          DIST_TAG="${{ github.event.inputs.dist_tag || 'latest' }}"
+          pnpm changeset publish --tag "$DIST_TAG"
+
+      # ---------------- NEXT → LATEST PROMOTION ----------------
+      # 6️⃣ Promote without rebuilding
+      - name: Promote from next to latest
+        if: ${{ github.event.inputs.promote_from_next == 'true' }}
+        run: |
+          node <<'EOF'
+          const { execSync } = require('child_process');
+          const pkgs = execSync('pnpm -r exec node -e "console.log(require(\'./package.json\').name+\'@\'+require(\'./package.json\').version)"')
+            .toString()
+            .trim()
+            .split('\n');
+
+          for (const p of pkgs) {
+            const [name, version] = p.split('@');
+            console.log(`Promoting ${name}@${version} → latest`);
+            execSync(`npm dist-tag add ${name}@${version} latest`, { stdio: 'inherit' });
+          }
+          EOF
+
+      # ---------------- GITHUB RELEASE ----------------
+      # 5️⃣ Synced GitHub Release (Changesets-based)
+      - name: Create GitHub Release
+        uses: changesets/action@v1
+        with:
+          publish: false
         env:
-          PAT: ${{ secrets.PIPELINE_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---------------- COMMIT (LAST) ----------------
+      - name: Commit version bump
         run: |
           git config user.name "CI Bot"
           git config user.email "ci@example.com"
@@ -58,41 +142,7 @@ jobs:
           if ! git diff --quiet; then
             git add .
             git commit -m "chore: version packages"
-            git push https://x-access-token:${PAT}@github.com/${{ github.repository }} HEAD:${{ github.ref_name }}
+            git push origin HEAD:${{ github.ref_name }}
           else
-            echo "No version changes to commit."
+            echo "No changes to commit."
           fi
-
-  publish:
-    name: Publish Packages
-    runs-on: ubuntu-latest
-    needs: version
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-          registry-url: https://registry.npmjs.org/
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: latest
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build packages
-        run: pnpm -r run build
-
-      - name: Publish packages via Changesets
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          pnpm changeset publish || echo "Nothing to publish (already published)"
