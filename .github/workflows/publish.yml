@@ -14,12 +14,15 @@ on:
         description: 'Promote already-published versions from next → latest'
         required: false
         default: 'false'
+      dry_run:
+        description: 'Run everything except npm publish'
+        required: false
+        default: 'false'
 
 permissions:
   contents: write
   id-token: write
 
-# Prevent double publishing
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
@@ -28,6 +31,7 @@ jobs:
   release:
     name: Version, Publish & Release
     runs-on: ubuntu-latest
+    environment: npm-release
 
     steps:
       # ---------------- CHECKOUT ----------------
@@ -48,7 +52,7 @@ jobs:
         with:
           version: 9
 
-      # ---------------- LOCKFILE INTEGRITY ----------------
+      # ---------------- INSTALL ----------------
       - name: Install dependencies (strict)
         run: pnpm install --frozen-lockfile
 
@@ -71,15 +75,14 @@ jobs:
         run: pnpm changeset version
 
       # ---------------- ROLLBACK DETECTION ----------------
-      - name: Check for already-published versions
+      - name: Abort if version already exists on npm
         run: |
-          set -e
           node <<'EOF'
           const { execSync } = require('child_process');
-          const pkgs = execSync('pnpm -r exec node -e "console.log(require(\'./package.json\').name+\'@\'+require(\'./package.json\').version)"')
-            .toString()
-            .trim()
-            .split('\n');
+
+          const pkgs = execSync(
+            "pnpm -r exec node -e \"console.log(require('./package.json').name + '@' + require('./package.json').version)\""
+          ).toString().trim().split('\n');
 
           for (const p of pkgs) {
             try {
@@ -87,7 +90,7 @@ jobs:
               console.error(`❌ Version already published: ${p}`);
               process.exit(1);
             } catch {
-              console.log(`✅ Not yet published: ${p}`);
+              console.log(`✅ Not published yet: ${p}`);
             }
           }
           EOF
@@ -96,50 +99,70 @@ jobs:
       - name: Build packages
         run: pnpm -r run build
 
-      # ---------------- FIRST-TIME PUBLISH DETECTION ----------------
+      # ---------------- FIRST-PUBLISH DETECTION ----------------
       - name: Detect first-time publish
         id: first_publish
         run: |
-          echo "Checking if any package is unpublished..."
-          UNPUBLISHED=0
-          for pkg in $(pnpm -r exec node -e "console.log(require('./package.json').name)") ; do
-            if ! npm view "$pkg" version > /dev/null 2>&1; then
-              echo "Package $pkg is not published yet"
-              UNPUBLISHED=1
-            fi
-          done
-          echo "first_publish=$UNPUBLISHED" >> $GITHUB_OUTPUT
+          node <<'EOF'
+          const { execSync } = require('child_process');
+          const fs = require('fs');
+
+          const pkgs = execSync(
+            "pnpm -r exec node -e \"console.log(require('./package.json').name)\""
+          ).toString().trim().split('\n');
+
+          let first = false;
+          for (const name of pkgs) {
+            try {
+              execSync(`npm view ${name} version`, { stdio: 'ignore' });
+            } catch {
+              first = true;
+              break;
+            }
+          }
+
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `first_publish=${first ? 1 : 0}\n`);
+          EOF
 
       # ---------------- PUBLISH ----------------
-      - name: Publish packages via Changesets
-        if: ${{ github.event.inputs.promote_from_next != 'true' }}
+      - name: Publish packages
+        if: ${{ github.event.inputs.promote_from_next != 'true' && github.event.inputs.dry_run != 'true' }}
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ steps.first_publish.outputs.first_publish == '1' && secrets.NPM_TOKEN || '' }}
         run: |
           DIST_TAG="${{ github.event.inputs.dist_tag || 'latest' }}"
+
           if [ "${{ steps.first_publish.outputs.first_publish }}" = "1" ]; then
-            echo "First-time publish detected. Using NPM_TOKEN and --access public."
-            pnpm changeset publish --tag "$DIST_TAG" --access public
+            echo "🚀 First-time publish (token-based)"
+            pnpm changeset publish --tag "$DIST_TAG"
           else
-            echo "Package already exists. Using OIDC + provenance."
+            echo "🔐 OIDC publish with provenance"
+            unset NODE_AUTH_TOKEN
             pnpm changeset publish --tag "$DIST_TAG"
           fi
 
-      # ---------------- NEXT → LATEST PROMOTION ----------------
-      - name: Promote from next to latest
+      # ---------------- DRY RUN ----------------
+      - name: Dry run summary
+        if: ${{ github.event.inputs.dry_run == 'true' }}
+        run: |
+          echo "Dry run enabled — skipping npm publish"
+
+      # ---------------- PROMOTION ----------------
+      - name: Promote from next → latest
         if: ${{ github.event.inputs.promote_from_next == 'true' }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           node <<'EOF'
           const { execSync } = require('child_process');
-          const pkgs = execSync('pnpm -r exec node -e "console.log(require(\'./package.json\').name+\'@\'+require(\'./package.json\').version)"')
-            .toString()
-            .trim()
-            .split('\n');
+
+          const pkgs = execSync(
+            "pnpm -r exec node -e \"console.log(require('./package.json').name + '@' + require('./package.json').version)\""
+          ).toString().trim().split('\n');
 
           for (const p of pkgs) {
-            const [name, version] = p.split('@');
-            console.log(`Promoting ${name}@${version} → latest`);
-            execSync(`npm dist-tag add ${name}@${version} latest`, { stdio: 'inherit' });
+            console.log(`Promoting ${p} → latest`);
+            execSync(`npm dist-tag add ${p} latest`, { stdio: 'inherit' });
           }
           EOF
 
@@ -151,7 +174,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ---------------- COMMIT VERSION BUMP ----------------
+      # ---------------- COMMIT ----------------
       - name: Commit version bump
         run: |
           git config user.name "CI Bot"
@@ -161,5 +184,4 @@ jobs:
             git add .
             git commit -m "chore: version packages"
             git push origin HEAD:${{ github.ref_name }}
-          else
-            echo "No changes to commit."
+          fi
