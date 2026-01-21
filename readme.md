@@ -42,6 +42,50 @@ RS-X is actively evolving. The roadmap below shows **progress**, **planned featu
   - Supports both synchronous and asynchronous data sources and modular expressions.  
   - **Impact:** Simplifies React reactivity and improves rendering efficiency.  
 
+- **TS Transformer / Plugin — ⚙️ Planned**
+    - **Aim:** Provide **compile-time syntax validation** for RS-X expressions written in tagged template literals or lambda-like strings.  
+    - **Goal:** Offer **IntelliSense / autocomplete** for all properties on the provided context, preventing invalid identifiers from compiling.  
+    - **Objective:** Automatically convert tagged template expressions (e.g., ``rsX`x + observable` ``) into RS-X expression trees at **compile time**.  
+    - **Impact:** 
+      - Enables **full TypeScript safety** for reactive expressions and prevents runtime errors.  
+      - Eliminates **runtime parsing**, resulting in **significant performance gains** in large or frequently updated reactive contexts.
+
+
+      #### **Example Usage**
+
+      ```ts
+      import { BehaviorSubject } from 'rxjs';
+      import { rsX } from 'rs-x-transformer-planned';
+
+      const context = {
+        x: 10,
+        observable: new BehaviorSubject(20)
+      };
+
+      // ✅ Correct expression — compiles and subscribes to changes
+      const expression1 = rsX`x + observable`(context);
+      expression1.change.subscribe(() => console.log(expression1.value));
+
+      // ❌ Incorrect expression — will fail at compile time
+      // const expression2 = rsX`x + y`(context); 
+      // Error: 'y' does not exist on context
+
+      // ❌ Syntax error — will fail at compile time
+      // const expression3 = rsX`x + `(); 
+      // Error: incomplete expression
+      ```
+-  **HTML Transformer / Plugin** — ⚙️ Planned
+
+   - **Goal:** Automatically extract expressions from HTML, create RS-X expression trees in TypeScript, and update HTML to reference those trees.  
+   - **Objectives:**
+     - Inline HTML expressions like `[[ x + observable ]]` are validated at compile time.
+     - TypeScript catches any invalid references or syntax errors before runtime.
+     - HTML elements are automatically adapted to reference the generated expression tree.
+
+   - **Impact:**
+     - Provides **type safety and IntelliSense** inside HTML templates.
+     - Eliminates runtime parsing, improving performance.
+     - Keeps HTML clean and declarative while enabling full reactivity via RS-X.
 - **RS-X Presentation Layer** — 🔧 **In progress / Needs refactoring**  
   - Provides a framework for defining components (internally implemented as [Custom Elements](https://developer.mozilla.org/en-US/docs/Web/API/Web_components)).  
   - Users can **separate presentation (HTML templates) from logic**.  
