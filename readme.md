@@ -1,28 +1,72 @@
 # RS-X
 
-**The SPA framework that solves the data binding problem with fine-grained UI updates.**
+**A reactive framework that makes change detection and asynchronous data handling effortless.**
 
+RS-X is a framework designed to simplify **reactive programming** by eliminating the need for manual change detection and explicit asynchronous state management.
 
-RS-X is an advanced **SPA framework** designed to tackle one of the most challenging problems in modern web development: **efficient data binding and local UI updates**. Unlike frameworks such as Angular or React, RS-X performs **fine-grained change detection**, updating only the parts of the UI that actually change. This makes your apps faster and more responsive.  
+At its core, RS-X combines a powerful [**reactive state manager**](rs-x-state-manager/readme.md) with a flexible [**JavaScript expression parser**](rs-x-expression-parser/readme.md). The expression parser translates plain JavaScript expressions into an **observable expression tree**, allowing **synchronous and asynchronous data** to be used transparently and consistently.
 
-At its core, RS-X features a [**reactive state manager**](rs-x-state-manager/readme.md) and a powerful [**JavaScript expression parser**](rs-x-expression-parser/readme.md) that translates JavaScript expressions into an **observable expression tree**. Together, they enable a transparent mix of **synchronous and asynchronous data**, forming the foundation for reliable and efficient **data binding** throughout your application.
+This means you no longer need to treat asynchronous data differently from synchronous data — **promises, observables, and plain values can be composed together as if they were all synchronous**. RS-X automatically tracks dependencies, resolves asynchronous values, and propagates changes efficiently throughout your application.
 
-## Reusable Core Modules
+One of the most important applications of reactive programming is in **Single Page Application (SPA) frameworks** such as **Angular** and **React**, where efficient UI updates and precise change detection are critical.
 
-RS-X is designed for **reusability and adaptability**. Many of its core modules — including the **state manager**, **JavaScript expression parser**, and **data binding utilities** — can be used **independently of the SPA framework**. This allows you to harness RS-X’s **reactive capabilities** in other projects, even if you’re not building a full SPA.  
+RS-X is designed to serve as a **foundational reactive layer** for such frameworks. In addition, RS-X aims to provide its **own SPA-oriented integrations and extensions**, enabling **local, fine-grained, and highly efficient UI updates** without relying on coarse re-rendering strategies. This ensures that user interfaces update only where data actually changes, improving both performance and scalability.
 
-## My Vision
+RS-X will also provide **TypeScript and HTML language extensions** that parse expressions **at compile time** and replace them with prebuilt **observable expression trees**. These extensions will deliver **IntelliSense support and compile-time syntax validation**, eliminating runtime expression parsing and catching errors early during development.
 
-I plan to add a **large collection of components** and make RS-X the **most powerful SPA framework ever created**. However, I cannot commit to this full-time without sponsorship. Your support would allow me to focus on **building new features, optimizing performance, and maintaining high-quality documentation**.  
+## Key Concepts
 
-By sponsoring RS-X, you help maintain and enhance both the **SPA framework** and the **reusable core libraries**, making them more robust and versatile for the entire developer community. Your support enables:
+- **Reactive state management** with fine-grained change detection  
+- **Observable expression trees** derived from plain JavaScript expressions  
+- **Transparent async handling** — promises and observables behave like normal values  
+- **Composable expressions** — build complex logic from smaller, reusable expressions  
+- **Automatic dependency tracking** with efficient and deterministic updates  
+- **Compile-time tooling** for improved performance, IntelliSense, and early error detection  
+---
+### Examples
+
+- **Expression with a promise** — ``promise + 2`` (where `promise` resolves to a number)
+- **Expression with an observable** - ``observable + 2`` (where `observable` emits a number)
+- **Expression referencing nested async data**
+
+    ```ts
+    {% include_relative ../demo/src/rs-x-expression-parser/member-expression-with-promise.ts %}
+    ```
+
+- **Modular expressions** — expressions can reference other expressions:
+
+    ```ts
+    const model = {
+        a: 10,
+        b: 20
+    };
+
+    const expr1 = expressionFactory.create(model, '(a + 1)');
+    const expr2 = expressionFactory.create(model, '(b + 2)');
+
+    const modularModel = {
+        expr1,
+        expr2
+    };
+
+    const expr3 = expressionFactory.create(modularModel, 'expr1 * expr2');
+    ```
+
+## Support RS-X
+
+If you find RS-X useful and want to support its development, consider becoming a sponsor. Your contributions make a real difference in keeping this project **sustainable, ambitious, and cutting-edge**.  
+
+With your support, I can fully dedicate my time and talents to creating high-quality software for the community.  
 
 - Faster development of new features  
 - Improved stability and performance  
 - Documentation, tutorials, and example projects  
 - Continued open-source availability  
 
-### Roadmap
+[![Sponsor RS-X](https://img.shields.io/badge/Sponsor-RS--X-orange?logo=github)](https://github.com/sponsors/robert-sanders-software-ontwikkeling)
+
+
+## Roadmap
 
 RS-X is actively evolving. The roadmap below shows **progress**, **planned features**, and **why each feature matters** for both developers and sponsors.  
 
@@ -32,12 +76,12 @@ RS-X is actively evolving. The roadmap below shows **progress**, **planned featu
   - Most of the remaining work consists of finishing documentation and cleaning up the code.  
   - **Impact:** Enables RS-X to update only what changes, improving UI performance and developer productivity.  
 
-- **Angular Extension** — ⚙️ **Planned / In progress**  
+- **Angular Extension** — ⚙️ **Planned**  
   - Enables the use of RS-X expressions within Angular templates.  
   - Makes **data binding in Angular easier** — no need for Redux, `async` pipes, or signals anymore.  
   - **Impact:** Simplifies state management and reactive updates in Angular apps, reducing boilerplate and improving developer productivity. 
 
-- **React Extension** — ⚙️ **Planned / In progress**  
+- **React Extension** — ⚙️ **Planned / Planned**  
   - Integrates RS-X expressions in React components with hooks and utilities that automatically subscribe to expression changes and trigger re-renders.  
   - Supports both synchronous and asynchronous data sources and modular expressions.  
   - **Impact:** Simplifies React reactivity and improves rendering efficiency.  
@@ -206,14 +250,7 @@ RS-X is actively evolving. The roadmap below shows **progress**, **planned featu
     - Date-time input
     - Numeric input
     - Input with a custom pattern
-  
-## Support RS-X
 
-If you find RS-X useful and want to support its development, consider becoming a sponsor. Your contributions make a real difference in keeping this project **sustainable, ambitious, and cutting-edge**.  
-
-With your support, I can fully dedicate my time and talents to creating high-quality software for the community.  
-
-[![Sponsor RS-X](https://img.shields.io/badge/Sponsor-RS--X-orange?logo=github)](https://github.com/sponsors/robert-sanders-software-ontwikkeling)
 
 ## Projects
 
@@ -224,7 +261,7 @@ With your support, I can fully dedicate my time and talents to creating high-qua
 
 1. Install NodeJs
 2. Install GIT
-3. execute `npm i`
+3. execute `pnpm install`
 4. When using Visual Studio Code, install extensions.
 For example, the [Jest](https://marketplace.visualstudio.com/items?itemName=Orta.vscode-jest) extension is very useful for executing and debugging tests.
 
