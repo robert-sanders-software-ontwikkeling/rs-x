@@ -7,6 +7,10 @@
     "provenance": true,
     "access": "public"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x"
+  },
   "scripts": {
     "build": "tsup lib/index.ts --format cjs,esm --dts  --tsconfig ../tsconfig.build.json"
   },
