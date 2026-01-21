@@ -1,26 +1,59 @@
 {
   "name": "@rs-x/expression-parser",
-  "version": "0.8.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "publishConfig": {
-    "provenance": true,
-    "access": "public"
+  "version": "0.1.0",
+  "description": "Reactive JavaScript expression parser with observable AST integration for RS-X",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
   },
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x"
   },
-  "scripts": {
-    "build": "tsup lib/index.ts --format cjs,esm --dts  --tsconfig ../tsconfig.build.json"
+  "homepage": "https://github.com/robert-sanders-software-ontwikkeling/rs-x",
+  "bugs": {
+    "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x/issues"
   },
-  "dependencies": {
-    "rxjs": "7.8.2",
-    "@rs-x/core": "workspace:*",
-    "@rs-x/state-manager": "workspace:*"
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsup lib/index.ts --format cjs,esm --dts --tsconfig ../tsconfig.build.json"
+  },
+  "peerDependencies": {
+    "rxjs": "^7.8.0",
+    "@rs-x/core": "0.1.x",
+    "@rs-x/state-manager": "0.1.x"
   },
   "devDependencies": {
+    "rxjs": "7.8.2",
+    "@rs-x/core": "workspace:*",
+    "@rs-x/state-manager": "workspace:*",
     "tsup": "8.5.1",
     "typescript": "^5.9.3"
-  }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "expression-parser",
+    "reactive",
+    "observable",
+    "ast",
+    "state-management",
+    "rs-x",
+    "typescript"
+  ]
 }
