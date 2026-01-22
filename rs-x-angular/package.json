@@ -1,0 +1,64 @@
+{
+  "name": "@rs-x/angular",
+  "version": "0.1.0",
+  "description": "Angular bindings for RS-X reactive expressions",
+  "keywords": [
+    "rs-x",
+    "angular",
+    "reactive",
+    "expressions",
+    "change-detection",
+    "signals",
+    "rxjs"
+  ],
+  "license": "MIT",
+  "author": "Robert Sanders",
+  "sideEffects": false,
+
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x"
+  },
+
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+
+  "main": "fesm2022/rs-x-angular.mjs",
+  "module": "fesm2022/rs-x-angular.mjs",
+  "types": "index.d.ts",
+
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./fesm2022/rs-x-angular.mjs"
+    }
+  },
+
+  "peerDependencies": {
+    "@angular/core": ">=16.0.0",
+    "@angular/common": ">=16.0.0",
+    "rxjs": "^7.8.0",
+
+    "@rs-x/core": "^0.9.0",
+    "@rs-x/expression-parser": "^0.9.0"
+  },
+
+  "dependencies": {
+    "tslib": "^2.6.2"
+  },
+
+  "devDependencies": {
+    "@angular/compiler": "^17.1.0",
+    "@angular/compiler-cli": "^17.1.0",
+    "ng-packagr": "^17.1.0",
+    "typescript": "^5.3.3"
+  },
+
+  "scripts": {
+    "build": "ng-packagr -p ng-package.json",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "pnpm run build"
+  }
+}
