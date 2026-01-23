@@ -3,5 +3,10 @@
   "compilerOptions": {
       "allowJs": true
    },
-   "exclude": ["lib/testing", "node_modules", "dist"]
+   "include": [
+      "lib/**/*"
+   ],
+   "exclude": [
+      "lib/testing",
+   ]
 }
