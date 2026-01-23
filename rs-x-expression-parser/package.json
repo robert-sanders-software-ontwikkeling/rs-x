@@ -2,6 +2,10 @@
   "name": "@rs-x/expression-parser",
   "version": "0.1.0",
   "description": "Reactive JavaScript expression parser with observable AST integration for RS-X",
+  "funding": {
+    "type": "individual",
+    "url": "https://github.com/sponsors/robert-sanders-software-ontwikkeling"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

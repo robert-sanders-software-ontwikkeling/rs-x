@@ -261,8 +261,9 @@ RS-X is actively evolving. The roadmap below shows **progress**, **planned featu
 
 1. Install NodeJs
 2. Install GIT
-3. execute `pnpm install`
-4. When using Visual Studio Code, install extensions.
+3. Install pnpm `npm install -g pnpm`
+4. execute `pnpm install`
+5. When using Visual Studio Code, install extensions.
 For example, the [Jest](https://marketplace.visualstudio.com/items?itemName=Orta.vscode-jest) extension is very useful for executing and debugging tests.
 
 ## Commands

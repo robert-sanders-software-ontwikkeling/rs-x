@@ -2,6 +2,10 @@
   "name": "@rs-x/state-manager",
   "version": "0.1.0",
   "description": "Reactive state management layer for the RS-X framework with fine-grained change tracking",
+  "funding": {
+    "type": "individual",
+    "url": "https://github.com/sponsors/robert-sanders-software-ontwikkeling"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

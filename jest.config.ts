@@ -1,21 +1,34 @@
 import type { Config } from '@jest/types';
 import { pathsToModuleNameMapper } from 'ts-jest';
-import { compilerOptions } from './tsconfig.test.json';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 
+// ------------------------------
+// Load tsconfig dynamically
+// ------------------------------
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const tsconfigPath = join(__dirname, 'tsconfig.test.json');
+const tsconfigText = readFileSync(tsconfigPath, 'utf-8');
+const { compilerOptions } = JSON.parse(tsconfigText);
+
+// Adjust paths for ts-jest
 Object.keys(compilerOptions.paths).forEach((alias) => {
-  compilerOptions.paths[alias] = [
-    `<rootDir>/${compilerOptions.paths[alias][0]}`,
-  ];
+  compilerOptions.paths[alias] = [`<rootDir>/${compilerOptions.paths[alias][0]}`];
 });
 
+// ESM dependencies that need Babel transform
 const esModules = ['rxjs', 'resize-observer-polyfill', 'superjson'].join('|');
 
+// ------------------------------
+// Jest configuration
+// ------------------------------
 const jestConfig: Config.InitialOptions = {
   testEnvironment: 'jest-environment-jsdom',
-
   extensionsToTreatAsEsm: ['.ts'],
 
   transform: {
+    // TypeScript with ts-jest
     '^.+\\.tsx?$': [
       'ts-jest',
       {
@@ -25,9 +38,15 @@ const jestConfig: Config.InitialOptions = {
         isolatedModules: false,
       },
     ],
-    [`(${esModules}).+\\.js$`]: 'babel-jest',
-    '^.+\\.scss$': 'jest-scss-transform',
-    '^.+\\.html?$': 'html-loader-jest',
+
+    // ESM dependencies with Babel
+    [`(${esModules}).+\\.js$`]: [
+      'babel-jest',
+      { configFile: '<rootDir>/babel.config.js' },
+    ],
+
+    // SCSS / CSS / HTML stub transforms
+    '^.+\\.(scss|css|html)$': 'jest-transform-stub',
   },
 
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
