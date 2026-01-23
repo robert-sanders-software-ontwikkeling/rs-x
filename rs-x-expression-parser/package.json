@@ -33,14 +33,14 @@
     "build": "tsup lib/index.ts --format cjs,esm --dts --tsconfig ../tsconfig.build.json"
   },
   "peerDependencies": {
-    "rxjs": "^7.8.0",
     "@rs-x/core": "0.1.x",
-    "@rs-x/state-manager": "0.1.x"
+    "@rs-x/state-manager": "0.1.x",
+    "rxjs": "^7.8.0"
   },
   "devDependencies": {
-    "rxjs": "7.8.2",
     "@rs-x/core": "workspace:*",
     "@rs-x/state-manager": "workspace:*",
+    "rxjs": "7.8.2",
     "tsup": "8.5.1",
     "typescript": "^5.9.3"
   },
@@ -55,5 +55,8 @@
     "state-management",
     "rs-x",
     "typescript"
-  ]
+  ],
+  "dependencies": {
+    "astring": "^1.9.0"
+  }
 }

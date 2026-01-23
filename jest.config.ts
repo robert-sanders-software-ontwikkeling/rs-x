@@ -11,7 +11,7 @@ Object.keys(compilerOptions.paths).forEach((alias) => {
 const esModules = ['rxjs', 'resize-observer-polyfill', 'superjson'].join('|');
 
 const jestConfig: Config.InitialOptions = {
-  testEnvironment: 'jsdom',
+  testEnvironment: 'jest-environment-jsdom',
 
   extensionsToTreatAsEsm: ['.ts'],
 
