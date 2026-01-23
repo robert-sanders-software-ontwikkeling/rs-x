@@ -1,8 +1,8 @@
-import { DateProperty, ISingletonFactory } from '@rs-x/core';
-import { IObserver } from '../../../observer.interface';
+import { type DateProperty, type ISingletonFactory } from '@rs-x/core';
+import { type IObserver } from '../../../observer.interface';
 import {
-   IIndexObserverIdInfo,
-   IIndexObserverInfo,
+   type IIndexObserverIdInfo,
+   type IIndexObserverInfo,
 } from '../index-observer-info.interface';
 
 export type IDatePropertyObserverIdInfo = IIndexObserverIdInfo<DateProperty>;

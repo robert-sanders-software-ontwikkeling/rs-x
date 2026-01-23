@@ -1,8 +1,8 @@
 import {
-    CheckValidKey,
-    DateProperty,
-    IDisposableOwner,
-    IGuidFactory,
+    type CheckValidKey,
+    type DateProperty,
+    type IDisposableOwner,
+    type IGuidFactory,
     Inject,
     Injectable,
     RsXCoreInjectionTokens,
@@ -10,10 +10,10 @@ import {
 } from '@rs-x/core';
 import { Subject } from 'rxjs';
 import { AbstractObserver } from '../../abstract-observer';
-import { MustProxify } from '../../object-property-observer-proxy-pair-manager.type';
+import type { MustProxify } from '../../object-property-observer-proxy-pair-manager.type';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
-import { IProxyRegistry } from '../proxy-registry/proxy-registry.interface';
-import { IDateObserverProxyPair, IDateProxyData, IDateProxyFactory, IDateProxyIdData } from './date-proxy.factory.type';
+import type { IProxyRegistry } from '../proxy-registry/proxy-registry.interface';
+import type { IDateObserverProxyPair, IDateProxyData, IDateProxyFactory, IDateProxyIdData } from './date-proxy.factory.type';
 
 type DateSetterName = CheckValidKey<
     Date,

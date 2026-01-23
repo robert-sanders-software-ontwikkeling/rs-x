@@ -1,12 +1,12 @@
 import {
-   IPropertyChange,
+   type IPropertyChange,
    Type,
    WaitForEvent
 } from '@rs-x/core';
 import { ArrayProxyFactory } from '../../../lib/proxies/array-proxy/array-proxy.factory';
 import {
-   IArrayObserverProxyPair,
-   IArrayProxyData,
+   type IArrayObserverProxyPair,
+   type IArrayProxyData,
 } from '../../../lib/proxies/array-proxy/array-proxy.factory.type';
 import { ProxyRegistryMock } from '../../../lib/testing/proxies/proxy-registry.mock';
 

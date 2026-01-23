@@ -1,8 +1,8 @@
-import { IPropertyChange, WaitForEvent } from '@rs-x/core';
+import { type IPropertyChange, WaitForEvent } from '@rs-x/core';
 import { SetProxyFactory } from '../../../lib/proxies/set-proxy/set-proxy.factory';
 import {
-   ISetObserverProxyPair,
-   ISetProxifyData,
+   type ISetObserverProxyPair,
+   type ISetProxifyData,
 } from '../../../lib/proxies/set-proxy/set-proxy.factory.type';
 import { ProxyRegistryMock } from '../../../lib/testing/proxies/proxy-registry.mock';
 

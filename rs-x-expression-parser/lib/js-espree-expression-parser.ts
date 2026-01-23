@@ -1,7 +1,7 @@
 import {
-   AnyFunction,
-   IDisposableOwner,
-   IIndexValueAccessor,
+   type AnyFunction,
+   type IDisposableOwner,
+   type IIndexValueAccessor,
    Inject,
    Injectable,
    ParserException,
@@ -10,8 +10,8 @@ import {
    UnsupportedException
 } from '@rs-x/core';
 import {
-   IMustProxifyItemHandlerFactory,
-   IStateManager,
+   type IMustProxifyItemHandlerFactory,
+   type IStateManager,
    RsXStateManagerInjectionTokens
 } from '@rs-x/state-manager';
 import { generate as astToString } from 'astring';
@@ -48,8 +48,8 @@ import type {
    UnaryExpression,
    UnaryOperator,
 } from 'estree';
-import { IGuidFactory } from '../../rs-x-core/lib/guid/guid.factory.interface';
-import { IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
+import type { IGuidFactory } from '../../rs-x-core/lib/guid/guid.factory.interface';
+import type { IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
 import { IndexExpression } from './expressions';
 import { AbstractExpression } from './expressions/abstract-expression';
 import { AdditionExpression } from './expressions/addition-expression';
@@ -80,8 +80,8 @@ import { InequalityExpression } from './expressions/inequality-expression';
 import { InstanceofExpression } from './expressions/instanceof-expression';
 import {
    ExpressionType,
-   IExpression,
-   IExpressionParser,
+   type IExpression,
+   type IExpressionParser,
 } from './expressions/interfaces';
 import { LessThanExpression } from './expressions/less-than-expression';
 import { LessThanOrEqualExpression } from './expressions/less-than-or-equal-expression';

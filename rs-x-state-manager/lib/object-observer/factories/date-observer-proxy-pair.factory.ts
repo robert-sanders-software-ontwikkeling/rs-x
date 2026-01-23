@@ -1,12 +1,12 @@
 import {
-   IDisposableOwner,
+   type IDisposableOwner,
    Inject,
    Injectable
 } from '@rs-x/core';
-import { IDateProxyFactory } from '../../proxies/date-proxy/date-proxy.factory.type';
+import type { IDateProxyFactory } from '../../proxies/date-proxy/date-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
-import { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
-import { IDateObserverProxyPairFactory, IDateOserverProxyPair } from './date-observer-proxy-pair.factory.type';
+import type { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
+import type { IDateObserverProxyPairFactory, IDateOserverProxyPair } from './date-observer-proxy-pair.factory.type';
 
 @Injectable()
 export class DateObserverProxyPairFactory implements IDateObserverProxyPairFactory

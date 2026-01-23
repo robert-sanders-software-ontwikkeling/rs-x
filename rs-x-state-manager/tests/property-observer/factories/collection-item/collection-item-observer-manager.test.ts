@@ -1,8 +1,8 @@
-import { InjectionContainer, IPropertyChange, WaitForEvent } from '@rs-x/core';
-import { ICollectionItemObserverManager } from '../../../../lib/property-observer/factories/collection-item/collection-item-observer-manager.type';
-import { IArrayProxyFactory } from '../../../../lib/proxies/array-proxy/array-proxy.factory.type';
-import { IMapProxyFactory } from '../../../../lib/proxies/map-proxy/map-proxy.factory.type';
-import { ISetProxyFactory } from '../../../../lib/proxies/set-proxy/set-proxy.factory.type';
+import { InjectionContainer, type IPropertyChange, WaitForEvent } from '@rs-x/core';
+import { type ICollectionItemObserverManager } from '../../../../lib/property-observer/factories/collection-item/collection-item-observer-manager.type';
+import { type IArrayProxyFactory } from '../../../../lib/proxies/array-proxy/array-proxy.factory.type';
+import { type IMapProxyFactory } from '../../../../lib/proxies/map-proxy/map-proxy.factory.type';
+import { type ISetProxyFactory } from '../../../../lib/proxies/set-proxy/set-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
 

@@ -1,7 +1,7 @@
-import { IDisposable, IDisposableOwner } from '@rs-x/core';
+import { type IDisposable, type IDisposableOwner } from '@rs-x/core';
 import {
-   IObserverProxyPair,
-   IPropertyInfo,
+   type IObserverProxyPair,
+   type IPropertyInfo,
 } from '../object-property-observer-proxy-pair-manager.type';
 
 export interface IIndexObserverProxyPairFactory<TProxy = unknown> extends IDisposable {

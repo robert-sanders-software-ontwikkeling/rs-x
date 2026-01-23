@@ -1,7 +1,7 @@
 import { Inject, Injectable, MultiInject } from '../dependency-injection';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
-import { IDeepCloneValueGetter } from './deep-clone-value-getter.interface';
-import { IDeepClone } from './deep-clone.interface';
+import type { IDeepCloneValueGetter } from './deep-clone-value-getter.interface';
+import type { IDeepClone } from './deep-clone.interface';
 
 @Injectable()
 export class DefaultDeepClone implements IDeepClone {

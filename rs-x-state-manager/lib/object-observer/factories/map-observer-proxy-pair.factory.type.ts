@@ -1,3 +1,3 @@
-import { IObjectObserverProxyPairFactory } from '../object-observer-proxy-pair.factory.interface';
+import { type IObjectObserverProxyPairFactory } from '../object-observer-proxy-pair.factory.interface';
 
 export type IMapObserverProxyPairFactory = IObjectObserverProxyPairFactory<Map<unknown, unknown>>;

@@ -1,16 +1,16 @@
 import {
-   IGuidFactory,
+   type IGuidFactory,
    Inject,
    Injectable,
    InvalidOperationException,
    RsXCoreInjectionTokens,
    SingletonFactoryWithGuid
 } from '@rs-x/core';
-import { IObserverProxyPair } from '../object-property-observer-proxy-pair-manager.type';
-import { IProxyRegistry } from '../proxies/proxy-registry/proxy-registry.interface';
+import type { IObserverProxyPair } from '../object-property-observer-proxy-pair-manager.type';
+import type { IProxyRegistry } from '../proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerInjectionTokens } from '../rs-x-state-manager-injection-tokes';
-import { IObjectObserverProxyPairFactoryProvider } from './object-observer-proxy-pair-factory.provider.interface';
-import {
+import type { IObjectObserverProxyPairFactoryProvider } from './object-observer-proxy-pair-factory.provider.interface';
+import type {
    IObjectObserverProxyPairManager,
    IProxyTarget,
 } from './object-observer-proxy-pair-manager.type';

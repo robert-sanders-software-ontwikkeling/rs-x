@@ -3,7 +3,7 @@ import {
     WaitForEvent,
 
 } from '@rs-x/core';
-import { Observable, Subject } from 'rxjs';
+import { type Observable, Subject } from 'rxjs';
 
 export const run = (async () => {
     class MyEventContext {

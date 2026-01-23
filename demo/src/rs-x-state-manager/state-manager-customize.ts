@@ -1,33 +1,36 @@
 import {
     ContainerModule,
     defaultIndexValueAccessorList,
-    IDisposableOwner,
-    IErrorLog,
-    IGuidFactory,
-    IIndexValueAccessor,
+    type IDisposableOwner,
+    type IErrorLog,
+    type IGuidFactory,
+    type IIndexValueAccessor,
     Inject,
     Injectable,
     InjectionContainer,
-    IPropertyChange,
+    type IPropertyChange,
     overrideMultiInjectServices,
     RsXCoreInjectionTokens,
     SingletonFactory,
     truePredicate
 } from '@rs-x/core';
-import {
-    AbstractObserver,
-    defaultObjectObserverProxyPairFactoryList,
-    defaultPropertyObserverProxyPairFactoryList,
-    IIndexObserverInfo,
-    IndexObserverProxyPairFactory,
+
+import type {
     IObjectObserverProxyPairFactory,
     IObjectObserverProxyPairManager,
+    IIndexObserverInfo,
     IObserverProxyPair,
     IPropertyInfo,
     IProxyRegistry,
     IProxyTarget,
     IStateChange,
     IStateManager,
+} from '@rs-x/state-manager';
+import {
+    AbstractObserver,
+    defaultObjectObserverProxyPairFactoryList,
+    defaultPropertyObserverProxyPairFactoryList,
+    IndexObserverProxyPairFactory,
     RsXStateManagerInjectionTokens,
     RsXStateManagerModule
 } from '@rs-x/state-manager';

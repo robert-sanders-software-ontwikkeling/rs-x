@@ -1,12 +1,12 @@
 import {
-   IDeepClone,
+   type IDeepClone,
    Inject,
    Injectable,
    RsXCoreInjectionTokens,
    SingletonFactory,
    UnsupportedException,
 } from '@rs-x/core';
-import {
+import type {
    IObjectStateManager,
    IState,
    IStateForObjectManager,

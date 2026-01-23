@@ -1,6 +1,6 @@
 import { isObservable } from 'rxjs';
 import { Type } from '../types/type';
-import { IPropertyValueAccessor } from './property-value-accessor.type';
+import { type IPropertyValueAccessor } from './property-value-accessor.type';
 
 export class PropertyValueAccessor implements IPropertyValueAccessor {
    public readonly priority = 7;

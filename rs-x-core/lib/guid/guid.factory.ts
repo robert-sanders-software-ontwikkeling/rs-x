@@ -1,5 +1,5 @@
 import { Injectable } from '../dependency-injection';
-import { IGuidFactory } from './guid.factory.interface';
+import type { IGuidFactory } from './guid.factory.interface';
 
 @Injectable()
 export class GuidFactory  implements IGuidFactory {

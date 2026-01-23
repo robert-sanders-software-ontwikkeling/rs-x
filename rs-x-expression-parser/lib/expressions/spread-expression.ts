@@ -1,7 +1,7 @@
-import { ArrayExpression } from './array-expression';
-import { IdentifierExpression } from './identifier-expression';
+import { type ArrayExpression } from './array-expression';
+import { type IdentifierExpression } from './identifier-expression';
 import { ExpressionType } from './interfaces';
-import { ObjectExpression } from './object-expression';
+import { type ObjectExpression } from './object-expression';
 import { ParameterizedExpression } from './parameterized-abstract-expression';
 
 export class SpreadExpression extends ParameterizedExpression<

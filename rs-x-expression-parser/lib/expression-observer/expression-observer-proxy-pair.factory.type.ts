@@ -1,4 +1,4 @@
-import { IObjectObserverProxyPairFactory } from '@rs-x/state-manager';
-import { AbstractExpression } from '../expressions/abstract-expression';
+import { type IObjectObserverProxyPairFactory } from '@rs-x/state-manager';
+import { type AbstractExpression } from '../expressions/abstract-expression';
 
  export type IExpressionObserverProxyPairFactory = IObjectObserverProxyPairFactory<AbstractExpression>;

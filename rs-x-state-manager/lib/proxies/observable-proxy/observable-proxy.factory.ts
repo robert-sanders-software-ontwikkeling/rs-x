@@ -1,15 +1,15 @@
 import {
-   IDisposableOwner,
+   type IDisposableOwner,
    Inject,
    Injectable,
-   IObservableAccessor,
-   IPropertyChange,
+   type IObservableAccessor,
+   type IPropertyChange,
    RsXCoreInjectionTokens,
    SingletonFactory,
 } from '@rs-x/core';
 import { Observable, ReplaySubject, Subscription } from 'rxjs';
 import { AbstractObserver } from '../../abstract-observer';
-import {
+import type {
    IObservableObserverProxyPair,
    IObservableProxyData,
    IObservableProxyFactory,

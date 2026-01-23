@@ -1,4 +1,4 @@
-import { ISingletonFactory } from '../singleton-factory/singleton.factory.interface';
+import { type ISingletonFactory } from '../singleton-factory/singleton.factory.interface';
 
 export class SingletonFactoryMock<TId, TData, TInstance, TIdData = TData>
    implements ISingletonFactory<TId, TData, TInstance, TIdData>

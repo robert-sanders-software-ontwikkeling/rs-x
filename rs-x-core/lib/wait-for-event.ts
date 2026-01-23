@@ -1,4 +1,4 @@
-import { firstValueFrom, Observable, Subscription } from 'rxjs';
+import { firstValueFrom, Observable, type Subscription } from 'rxjs';
 
 interface WaitState<R> {
    results: R[];

@@ -1,6 +1,6 @@
-import { InjectionContainer, Newable, registerMultiInjectService } from '../dependency-injection';
+import { InjectionContainer, type Newable, registerMultiInjectService } from '../dependency-injection';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
-import { IDeepClone } from './deep-clone.interface';
+import { type IDeepClone } from './deep-clone.interface';
 
 
 export function DeepClone(serviceToken?: symbol) {

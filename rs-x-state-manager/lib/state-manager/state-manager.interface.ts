@@ -1,5 +1,5 @@
-import { Observable } from 'rxjs';
-import { MustProxify } from '../object-property-observer-proxy-pair-manager.type';
+import { type Observable } from 'rxjs';
+import { type MustProxify } from '../object-property-observer-proxy-pair-manager.type';
 
 export interface IContextChanged {
    oldContext: unknown;

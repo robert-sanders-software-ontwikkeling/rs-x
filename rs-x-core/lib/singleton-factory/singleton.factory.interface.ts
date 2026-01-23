@@ -1,4 +1,4 @@
-import { IDisposable } from '../types/disposable.interface';
+import { type IDisposable } from '../types/disposable.interface';
 
 export interface ISingletonFactory<
    TId = unknown,

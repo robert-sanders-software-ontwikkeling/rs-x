@@ -1,7 +1,7 @@
 import { Inject, Injectable, PreDestroy } from '@rs-x/core';
-import { IStateManager, RsXStateManagerInjectionTokens } from '@rs-x/state-manager';
+import { type IStateManager, RsXStateManagerInjectionTokens } from '@rs-x/state-manager';
 import { Observable, Subject, Subscription } from 'rxjs';
-import { IExpressionChangeCommitHandler, IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
+import type { IExpressionChangeCommitHandler, IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
 import { AbstractExpression } from './expressions';
 
 @Injectable()

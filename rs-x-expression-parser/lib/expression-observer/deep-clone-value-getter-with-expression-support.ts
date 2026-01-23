@@ -1,6 +1,5 @@
-import { IDeepCloneValueGetter, Inject, Injectable, RsXCoreInjectionTokens } from '@rs-x/core';
+import { type IDeepCloneValueGetter, Inject, Injectable, RsXCoreInjectionTokens } from '@rs-x/core';
 import { AbstractExpression } from '../expressions';
-
 
 @Injectable()
 export class DeepCloneValueGetterWithExpressionSupport  implements IDeepCloneValueGetter{

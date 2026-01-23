@@ -1,4 +1,4 @@
-import { ISingletonFactory } from '../singleton-factory/singleton.factory.interface';
+import { type ISingletonFactory } from '../singleton-factory/singleton.factory.interface';
 
 export interface ISingletonFactoryPrivate<TId, TData, TInstance>
    extends ISingletonFactory<TId, TData, TInstance> {

@@ -1,19 +1,19 @@
 import {
-   IErrorLog,
+   type IErrorLog,
    Inject,
    Injectable,
-   ISetKeyAccessor,
+   type ISetKeyAccessor,
    RsXCoreInjectionTokens
 } from '@rs-x/core';
-import {
+import type { IObjectPropertyObserverProxyPairManager } from '../../object-property-observer-proxy-pair-manager.type';
+import type {
    ISetObserverProxyPair,
    ISetProxyFactory,
 } from '../../proxies/set-proxy/set-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
-import { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
+import type { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
 import { AbstractObjectObserverProxyPairFactory } from './abstract-object-observer-proxy-pair.factory';
-import { ISetObserverProxyPairFactory } from './set-observer-proxy-pair.factory.type';
-import { IObjectPropertyObserverProxyPairManager } from '../../object-property-observer-proxy-pair-manager.type';
+import type { ISetObserverProxyPairFactory } from './set-observer-proxy-pair.factory.type';
 
 @Injectable()
 export class SetObserverProxyPairFactory

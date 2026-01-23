@@ -1,6 +1,6 @@
-import { IISequenceWithIdData, ISequenceWithId } from '../sequence-id';
-import { IDisposableOwner } from '../singleton-factory';
-import { IDisposableFunctionCallIndex } from './function-call-index.interface';
+import { type IISequenceWithIdData, type ISequenceWithId } from '../sequence-id';
+import { type IDisposableOwner } from '../singleton-factory';
+import { type IDisposableFunctionCallIndex } from './function-call-index.interface';
 
 export class FunctionCallIndex implements IDisposableFunctionCallIndex {
     private _isDisposed = false;

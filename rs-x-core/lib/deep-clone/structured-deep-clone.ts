@@ -1,5 +1,5 @@
 import { Injectable } from '../dependency-injection';
-import { IDeepClone } from './deep-clone.interface';
+import type { IDeepClone } from './deep-clone.interface';
 
 @Injectable()
 export class StructuredDeepClone implements IDeepClone {

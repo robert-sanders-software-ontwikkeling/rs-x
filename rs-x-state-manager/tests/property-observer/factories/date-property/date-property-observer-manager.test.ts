@@ -1,9 +1,9 @@
-import { InjectionContainer, IPropertyChange, WaitForEvent } from '@rs-x/core';
+import { InjectionContainer, type IPropertyChange, WaitForEvent } from '@rs-x/core';
 
-import { IDatePropertyObserverManager } from '../../../../lib/property-observer/factories/date-property/date-property-observer-manager.type';
+import { type IDatePropertyObserverManager } from '../../../../lib/property-observer/factories/date-property/date-property-observer-manager.type';
 import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
-import { IProxyRegistry } from '../../../../lib/proxies/proxy-registry/proxy-registry.interface';
+import { type IProxyRegistry } from '../../../../lib/proxies/proxy-registry/proxy-registry.interface';
 
 describe('IDatePropertyObserverManager tests', () => {
    let datePropertyObserverManager: IDatePropertyObserverManager;

@@ -1,6 +1,6 @@
-import { IExpressionChangeCommitHandler, IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
-import { AbstractExpression, IExpressionInitializeConfig } from './abstract-expression';
-import { ExpressionType } from './interfaces';
+import { type IExpressionChangeCommitHandler, type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
+import { AbstractExpression, type IExpressionInitializeConfig } from './abstract-expression';
+import { type ExpressionType } from './interfaces';
 
 
 export class ConstantExpression<T> extends AbstractExpression<T> {

@@ -1,4 +1,4 @@
-import { IIndexObserverProxyPairFactory } from '../property-observer/index-observer-proxy-pair.factory.interface';
+import { type IIndexObserverProxyPairFactory } from '../property-observer/index-observer-proxy-pair.factory.interface';
 
 export class PropertyObserverProxyPairFactoryMock
    implements IIndexObserverProxyPairFactory

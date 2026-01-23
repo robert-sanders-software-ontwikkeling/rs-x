@@ -1,10 +1,10 @@
 import { Inject, Injectable } from '../dependency-injection';
-import { IFunctionCallIndexFactory } from '../function-call-index';
-import { IDisposableFunctionCallIndex, IFunctionCallIndex } from '../function-call-index/function-call-index.interface';
+import type { IFunctionCallIndexFactory } from '../function-call-index';
+import type { IDisposableFunctionCallIndex, IFunctionCallIndex } from '../function-call-index/function-call-index.interface';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
-import { IDisposableOwner } from '../singleton-factory';
+import type { IDisposableOwner } from '../singleton-factory';
 import { SingletonFactory } from '../singleton-factory/singleton.factory';
-import {
+import type {
     IFunctionCallResult,
     IFunctionCallResultCache,
     IFunctionCallResultCacheFactory,

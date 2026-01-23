@@ -1,15 +1,15 @@
 import {
-    IDisposable,
-    IDisposableOwner,
+    type IDisposable,
+    type IDisposableOwner,
     InvalidOperationException,
-    IPropertyChange,
-    IPropertyDescriptor,
+    type IPropertyChange,
+    type IPropertyDescriptor,
     PropertyDescriptorType,
     SingletonFactory,
     Type,
     UnsupportedException
 } from '@rs-x/core';
-import { Observable, Subject } from 'rxjs';
+import { type Observable, Subject } from 'rxjs';
 
 interface IObserver extends IDisposable {
     changed: Observable<IPropertyChange>;

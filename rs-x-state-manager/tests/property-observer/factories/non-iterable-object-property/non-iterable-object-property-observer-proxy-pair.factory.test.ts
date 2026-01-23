@@ -1,14 +1,14 @@
 import {
    InjectionContainer,
-   IPropertyChange,
+   type IPropertyChange,
    truePredicate,
    WaitForEvent,
 } from '@rs-x/core';
 import { DisposableOwnerMock } from '@rs-x/core/testing';
 import { of } from 'rxjs';
-import { IObserver } from '../../../../lib/observer.interface';
-import { IIndexObserverProxyPairFactory } from '../../../../lib/property-observer/index-observer-proxy-pair.factory.interface';
-import { IArrayProxyFactory } from '../../../../lib/proxies/array-proxy/array-proxy.factory.type';
+import { type IObserver } from '../../../../lib/observer.interface';
+import { type IIndexObserverProxyPairFactory } from '../../../../lib/property-observer/index-observer-proxy-pair.factory.interface';
+import { type IArrayProxyFactory } from '../../../../lib/proxies/array-proxy/array-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
 

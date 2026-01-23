@@ -1,6 +1,6 @@
 import { InvalidOperationException } from '../exceptions';
-import { IGuidFactory } from '../guid';
-import { ISingletonFactoryWithIdGeneration } from './singleton-factory-with-id-generation.interface';
+import { type IGuidFactory } from '../guid';
+import { type ISingletonFactoryWithIdGeneration } from './singleton-factory-with-id-generation.interface';
 import { SingletonFactory } from './singleton.factory';
 
 export abstract class SingletonFactoryWithIdGeneration<

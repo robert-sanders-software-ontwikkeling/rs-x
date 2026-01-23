@@ -50,7 +50,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10.22.0
 
       # ---------------- INSTALL ----------------
       - name: Install dependencies (strict)

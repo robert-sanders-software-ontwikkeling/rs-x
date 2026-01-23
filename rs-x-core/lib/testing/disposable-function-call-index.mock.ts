@@ -1,5 +1,5 @@
-import { IDisposableFunctionCallIndex } from '../function-call-index/function-call-index.interface';
-import { IISequenceWithIdData } from '../sequence-id';
+import { type IDisposableFunctionCallIndex } from '../function-call-index/function-call-index.interface';
+import { type IISequenceWithIdData } from '../sequence-id';
 
 export class DisposableFunctionCallIndexMock implements IDisposableFunctionCallIndex {
     constructor(

@@ -1,6 +1,6 @@
 import {
    AbstractExpression,
-   IExpressionInitializeConfig,
+   type IExpressionInitializeConfig,
 } from './abstract-expression';
 import { ExpressionType } from './interfaces';
 

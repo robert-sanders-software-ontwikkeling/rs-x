@@ -1,6 +1,6 @@
-import { IDisposable, IDisposableOwner, ISingletonFactory } from '@rs-x/core';
-import { Observable } from 'rxjs';
-import { AbstractExpression } from './abstract-expression';
+import { type IDisposable, type IDisposableOwner, type ISingletonFactory } from '@rs-x/core';
+import { type Observable } from 'rxjs';
+import { type AbstractExpression } from './abstract-expression';
 
 export interface IExpression<T = unknown, PT = unknown> extends IDisposable {
    readonly changed: Observable<IExpression>;

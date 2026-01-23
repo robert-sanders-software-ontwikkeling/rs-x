@@ -1,5 +1,5 @@
 import {
-    IGuidFactory,
+    type IGuidFactory,
     InjectionContainer,
     RsXCoreInjectionTokens,
     RsXCoreModule

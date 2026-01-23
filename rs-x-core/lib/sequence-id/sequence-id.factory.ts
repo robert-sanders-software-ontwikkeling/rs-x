@@ -1,8 +1,8 @@
 import { Inject, Injectable, PreDestroy } from '../dependency-injection';
-import { IGuidFactory } from '../guid/guid.factory.interface';
+import type { IGuidFactory } from '../guid/guid.factory.interface';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
-import { IDisposableOwner, SingletonFactory } from '../singleton-factory';
-import { ISequenceIdFactory, ISequenceWithId } from './sequence-id-factory.interface';
+import { type IDisposableOwner, SingletonFactory } from '../singleton-factory';
+import type { ISequenceIdFactory, ISequenceWithId } from './sequence-id-factory.interface';
 
 class RegistryNode {
     public readonly children = new Map<unknown, RegistryNode>();

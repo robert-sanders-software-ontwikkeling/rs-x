@@ -1,5 +1,5 @@
 import {
-   IDisposableOwner,
+   type IDisposableOwner,
    Inject,
    Injectable,
    SingletonFactory,
@@ -8,8 +8,8 @@ import {
 import { Subject } from 'rxjs';
 import { AbstractObserver } from '../../abstract-observer';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
-import { IProxyRegistry } from '../proxy-registry/proxy-registry.interface';
-import {
+import type { IProxyRegistry } from '../proxy-registry/proxy-registry.interface';
+import type {
    IArrayObserverProxyPair,
    IArrayProxyData,
    IArrayProxyFactory,

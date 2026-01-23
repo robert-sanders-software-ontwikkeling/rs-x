@@ -1,3 +1,3 @@
-import { IObjectObserverProxyPairFactory } from '../object-observer-proxy-pair.factory.interface';
+import { type IObjectObserverProxyPairFactory } from '../object-observer-proxy-pair.factory.interface';
 
 export type ISetObserverProxyPairFactory = IObjectObserverProxyPairFactory<Set<unknown>>;

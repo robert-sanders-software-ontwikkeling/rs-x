@@ -1,14 +1,13 @@
 import {
-   IDisposableOwner,
+   type IDisposableOwner,
    Injectable,
-   IPropertyChange,
+   type IPropertyChange,
    SingletonFactory
 } from '@rs-x/core';
+import { AbstractObserver, type IObserver } from '@rs-x/state-manager';
 import { ReplaySubject, Subscription } from 'rxjs';
-
-import { AbstractObserver, IObserver } from '@rs-x/state-manager';
 import { AbstractExpression } from '../expressions';
-import {
+import type {
    IExpressionObserverData,
    IExpressionObserverFactory,
 } from './expression-proxy.factory.type';

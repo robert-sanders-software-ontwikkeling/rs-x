@@ -1,4 +1,4 @@
-import { GuidFactory, IPropertyChange, truePredicate, utCDate, WaitForEvent } from '@rs-x/core';
+import { GuidFactory, type IPropertyChange, truePredicate, utCDate, WaitForEvent } from '@rs-x/core';
 import { DateProxyFactory } from '../../../lib/proxies/date-proxy/date-proxy.factory';
 import { ProxyRegistryMock } from '../../../lib/testing/proxies/proxy-registry.mock';
 

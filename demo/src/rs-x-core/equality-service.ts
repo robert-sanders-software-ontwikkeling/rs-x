@@ -1,5 +1,5 @@
 import {
-    IEqualityService,
+    type IEqualityService,
     InjectionContainer,
     printValue,
     RsXCoreInjectionTokens,

@@ -1,6 +1,6 @@
 import { GuidFactory, UnsupportedException } from '@rs-x/core';
 import { ObjectPropertyObserverProxyPairManager } from '../../lib/object-property-observer-proxy-pair-manager';
-import { IPropertyObserverProxyPairManager } from '../../lib/object-property-observer-proxy-pair-manager.type';
+import { type IPropertyObserverProxyPairManager } from '../../lib/object-property-observer-proxy-pair-manager.type';
 import { ObserverMock } from '../../lib/testing/observer.mock';
 import { PropertyObserverProxyPairFactoryMock } from '../../lib/testing/property-observer-proxy-pair.factory.mock';
 

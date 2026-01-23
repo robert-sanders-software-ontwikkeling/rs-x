@@ -1,12 +1,12 @@
 import {
-   IErrorLog,
-   IGuidFactory,
-   IPropertyChange,
-   ISingletonFactory,
+   type IErrorLog,
+   type IGuidFactory,
+   type IPropertyChange,
+   type ISingletonFactory,
    SingletonFactoryWithGuid
 } from '@rs-x/core';
-import { Subscription } from 'rxjs';
-import { IObserver } from './observer.interface';
+import { type Subscription } from 'rxjs';
+import { type IObserver } from './observer.interface';
 
 
 export interface ISubscriptionWithData<TSubscriptionData> {

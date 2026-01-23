@@ -1,5 +1,5 @@
 import { PropertyDescriptorType } from '../../lib/types/property-descriptor-type.enum';
-import { IPropertyDescriptor } from '../../lib/types/property-descriptor.interface';
+import { type IPropertyDescriptor } from '../../lib/types/property-descriptor.interface';
 import { Type } from '../../lib/types/type';
 
 describe('Type tests', () => {

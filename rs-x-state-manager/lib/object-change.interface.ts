@@ -1,4 +1,4 @@
-import { IPropertyChange } from '@rs-x/core';
+import { type IPropertyChange } from '@rs-x/core';
 
 export interface IObjectChange {
    root: object;

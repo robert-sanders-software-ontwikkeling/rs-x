@@ -1,5 +1,5 @@
 import { ObserverGroup } from '../../observer-group';
-import { IObserver } from '../../observer.interface';
+import { type IObserver } from '../../observer.interface';
 import { abstractObserverEqualTo } from './abstract-observer-equal-to';
 import { arrayItemObserverEqualTo } from './array-item-observer-equal-to';
 import { mapItemObserverEqualTo } from './map-item-observer-equal-to';

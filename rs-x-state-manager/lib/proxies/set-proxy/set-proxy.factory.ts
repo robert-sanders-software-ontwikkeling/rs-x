@@ -1,8 +1,8 @@
-import { IDisposableOwner, Inject, Injectable, SingletonFactory } from '@rs-x/core';
+import { type IDisposableOwner, Inject, Injectable, SingletonFactory } from '@rs-x/core';
 import { AbstractObserver } from '../../abstract-observer';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
-import { IProxyRegistry } from '../proxy-registry/proxy-registry.interface';
-import {
+import type { IProxyRegistry } from '../proxy-registry/proxy-registry.interface';
+import type {
    ISetObserverProxyPair,
    ISetProxifyData,
    ISetProxifyIdData,

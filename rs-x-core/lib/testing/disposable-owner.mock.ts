@@ -1,4 +1,4 @@
-import { IDisposableOwner } from '../singleton-factory/disposable-owner.interface';
+import { type IDisposableOwner } from '../singleton-factory/disposable-owner.interface';
 
 
 export class DisposableOwnerMock implements IDisposableOwner {

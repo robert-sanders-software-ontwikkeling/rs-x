@@ -1,4 +1,4 @@
-import { AbstractExpression } from './abstract-expression';
+import { type AbstractExpression } from './abstract-expression';
 import { CollectionExpression } from './collection-expression';
 import { ExpressionType } from './interfaces';
 

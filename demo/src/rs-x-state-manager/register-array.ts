@@ -1,7 +1,7 @@
 import { InjectionContainer, printValue, truePredicate } from '@rs-x/core';
 import {
-    IStateChange,
-    IStateManager,
+    type IStateChange,
+    type IStateManager,
     RsXStateManagerInjectionTokens,
     RsXStateManagerModule
 } from '@rs-x/state-manager';

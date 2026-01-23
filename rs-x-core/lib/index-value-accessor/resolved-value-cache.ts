@@ -1,6 +1,5 @@
 import { Injectable } from '../dependency-injection';
-import { IResolvedValueCache } from './resolved-value-cache.interface';
-
+import type { IResolvedValueCache } from './resolved-value-cache.interface';
 
 @Injectable()
 export class ResolvedValueCache implements IResolvedValueCache {

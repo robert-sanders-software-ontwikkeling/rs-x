@@ -1,4 +1,4 @@
-import { IPropertyChange, ObservableAccessor, WaitForEvent } from '@rs-x/core';
+import { type IPropertyChange, ObservableAccessor, WaitForEvent } from '@rs-x/core';
 import { ObservableMock, ResolvedValueCacheMock, SubscriptionMock } from '@rs-x/core/testing';
 import { Observable, Subject } from 'rxjs';
 import { ObservableProxyFactory } from '../../../lib/proxies/observable-proxy/observable-proxy.factory';

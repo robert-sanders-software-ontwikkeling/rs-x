@@ -1,4 +1,4 @@
-import { IObjectObserverProxyPairFactory } from '../object-observer/object-observer-proxy-pair.factory.interface';
+import { type IObjectObserverProxyPairFactory } from '../object-observer/object-observer-proxy-pair.factory.interface';
 
 export class ObjectObserverProxyPairFactoryMock
    implements IObjectObserverProxyPairFactory

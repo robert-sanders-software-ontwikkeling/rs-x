@@ -1,14 +1,14 @@
 import { injectable } from 'inversify';
 import { BehaviorSubject, isObservable, Subject } from 'rxjs';
+import { Inject } from '../dependency-injection';
 import { UnsupportedException } from '../exceptions';
-import {
+import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
+import type {
    IObservableAccessor,
    LastValuObservable,
 } from './observable-accessor.interface';
 import { PENDING } from './pending';
-import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
-import { Inject } from '../dependency-injection';
-import { IResolvedValueCache } from './resolved-value-cache.interface';
+import type { IResolvedValueCache } from './resolved-value-cache.interface';
 
 @injectable()
 export class ObservableAccessor implements IObservableAccessor {

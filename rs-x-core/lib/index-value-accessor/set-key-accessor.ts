@@ -1,6 +1,6 @@
 import { Injectable } from '../dependency-injection';
 import { replaceSetItemAt } from '../types/set';
-import { ISetKeyAccessor } from './set-key-accessor.type';
+import type { ISetKeyAccessor } from './set-key-accessor.type';
 
 @Injectable()
 export class SetKeyAccessor implements ISetKeyAccessor {

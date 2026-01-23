@@ -1,24 +1,24 @@
 import {
-   IDisposableOwner,
-   IErrorLog,
-   IGuidFactory,
-   IIndexValueAccessor,
-   IPropertyChange,
+   type IDisposableOwner,
+   type IErrorLog,
+   type IGuidFactory,
+   type IIndexValueAccessor,
+   type IPropertyChange,
    truePredicate,
    Type,
 } from '@rs-x/core';
-import { IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
+import { type IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
 import {
-   IObserverProxyPair,
-   IPropertyInfo,
-   MustProxify,
+   type IObserverProxyPair,
+   type IPropertyInfo,
+   type MustProxify,
 } from '../../../object-property-observer-proxy-pair-manager.type';
-import { ObserverGroup } from '../../../observer-group';
-import { IObserver } from '../../../observer.interface';
-import { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
-import { IIndexObserverProxyPairFactory } from '../../index-observer-proxy-pair.factory.interface';
+import { type ObserverGroup } from '../../../observer-group';
+import { type IObserver } from '../../../observer.interface';
+import { type IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
+import { type IIndexObserverProxyPairFactory } from '../../index-observer-proxy-pair.factory.interface';
 import {
-   IIndexSetObserverManager,
+   type IIndexSetObserverManager,
    IndexChangeSubscriptionManager,
 } from './index-change-subscription-manager';
 

@@ -1,11 +1,11 @@
 import { emptyFunction, truePredicate } from '@rs-x/core';
-import { IContextChanged, IStateChange, IStateManager, MustProxify } from '@rs-x/state-manager';
-import { Observable, ReplaySubject, Subject, Subscription } from 'rxjs';
-import { IExpressionChangeCommitHandler, IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
+import { type IContextChanged, type IStateChange, type IStateManager, type MustProxify } from '@rs-x/state-manager';
+import { type Observable, ReplaySubject, Subject, type Subscription } from 'rxjs';
+import { type IExpressionChangeCommitHandler, type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 import {
    AbstractExpression,
-   IExpressionInitializeConfig,
-   IMustProxifyHandler,
+   type IExpressionInitializeConfig,
+   type IMustProxifyHandler,
 } from './abstract-expression';
 import { FunctionExpression } from './function-expression';
 import { ExpressionType } from './interfaces';
