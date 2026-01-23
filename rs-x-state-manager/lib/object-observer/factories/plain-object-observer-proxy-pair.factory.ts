@@ -1,22 +1,22 @@
 import {
-   IErrorLog,
+   type IErrorLog,
    Inject,
    Injectable,
-   IPropertyValueAccessor,
+   type IPropertyValueAccessor,
    RsXCoreInjectionTokens,
    truePredicate,
    Type
 } from '@rs-x/core';
-import {
+import type {
    IObjectPropertyObserverProxyPairManager,
    IObserverProxyPair
 } from '../../object-property-observer-proxy-pair-manager.type';
 import { ObserverGroup } from '../../observer-group';
-import { IObserver } from '../../observer.interface';
+import type { IObserver } from '../../observer.interface';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
-import { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
+import type { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
 import { AbstractObjectObserverProxyPairFactory } from './abstract-object-observer-proxy-pair.factory';
-import { IPlainObjectObserverProxyPairFactory } from './plain-object-observer-proxy-pair.factory.type';
+import type { IPlainObjectObserverProxyPairFactory } from './plain-object-observer-proxy-pair.factory.type';
 
 @Injectable()
 export class PlainObjectObserverProxyPairFactory

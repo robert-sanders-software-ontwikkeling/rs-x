@@ -1,7 +1,7 @@
 import { Type } from '@rs-x/core';
-import { AbstractObserver } from '../../abstract-observer';
+import { type AbstractObserver } from '../../abstract-observer';
 import { ObserverGroup } from '../../observer-group';
-import { IObserver } from '../../observer.interface';
+import { type IObserver } from '../../observer.interface';
 import { abstractObserverEqualTo } from './abstract-observer-equal-to';
 import { observerEqualTo } from './observer.equal-to';
 

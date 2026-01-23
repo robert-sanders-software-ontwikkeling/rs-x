@@ -1,5 +1,5 @@
 import {
-   IGuidFactory,
+   type IGuidFactory,
    Inject,
    Injectable,
    MultiInject,
@@ -8,7 +8,7 @@ import {
    SingletonFactoryWithGuid,
    UnsupportedException
 } from '@rs-x/core';
-import {
+import type {
    IObjectPropertyObserverProxyPairManager,
    IObserverProxyPair,
    IPropertyIdInfo,
@@ -16,7 +16,7 @@ import {
    IPropertyObserverProxyPairManager,
    MustProxify,
 } from './object-property-observer-proxy-pair-manager.type';
-import { IIndexObserverProxyPairFactory } from './property-observer/index-observer-proxy-pair.factory.interface';
+import type { IIndexObserverProxyPairFactory } from './property-observer/index-observer-proxy-pair.factory.interface';
 import { RsXStateManagerInjectionTokens } from './rs-x-state-manager-injection-tokes';
 
 class PropertyObserverProxyPairManager

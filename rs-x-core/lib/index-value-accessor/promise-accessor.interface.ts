@@ -1,4 +1,4 @@
-import { IIndexValueAccessor } from './index-value-accessor.interface';
+import { type IIndexValueAccessor } from './index-value-accessor.interface';
 
 export interface IPromiseAccessor
    extends IIndexValueAccessor<Promise<unknown>, unknown> {

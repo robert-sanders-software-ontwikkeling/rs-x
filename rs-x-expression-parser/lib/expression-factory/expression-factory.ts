@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@rs-x/core';
-import { IExpression } from '../expressions';
+import type { IExpression } from '../expressions';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
-import { IExpressionFactory } from './expression-factory.interface';
-import { IExpressionManager } from './expression-manager.type';
+import type { IExpressionFactory } from './expression-factory.interface';
+import type { IExpressionManager } from './expression-manager.type';
 
 @Injectable()
 export class ExpressionFactory implements IExpressionFactory {

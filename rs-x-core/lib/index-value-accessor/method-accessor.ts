@@ -1,11 +1,10 @@
 import { Inject, Injectable } from '../dependency-injection';
 import { UnsupportedException } from '../exceptions';
-import { IDisposableFunctionCallIndex, IFunctionCallIndex } from '../function-call-index';
-import { IFunctionCallResultCacheFactory } from '../function-call-result-cache/function-call-result-cache.factory.interface';
+import type { IDisposableFunctionCallIndex, IFunctionCallIndex } from '../function-call-index';
+import type { IFunctionCallResultCacheFactory } from '../function-call-result-cache/function-call-result-cache.factory.interface';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
 import { Type } from '../types/type';
-import { IMethodAccessor } from './method-accessor.type';
-
+import type { IMethodAccessor } from './method-accessor.type';
 
 @Injectable()
 export class MethodAccessor implements IMethodAccessor {

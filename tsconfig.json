@@ -1,5 +1,7 @@
 {
    "compilerOptions": {
+      "verbatimModuleSyntax": true,
+      "preserveValueImports": false,
       "forceConsistentCasingInFileNames": true,
       "resolveJsonModule": true,
       "outDir": "dist/build",
@@ -45,7 +47,10 @@
          "node_modules/@types",
          "./types"
       ],
-      "types": ["jest", "node"]
+      "types": [
+         "jest",
+         "node"
+      ]
    },
    "ts-node": {
       "compilerOptions": {

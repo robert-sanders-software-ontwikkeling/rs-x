@@ -1,4 +1,4 @@
-import { Operator, Subscribable } from 'rxjs';
+import { type Operator, type Subscribable } from 'rxjs';
 import { SubscriptionMock } from './subscription.mock';
 
 export class ObservableMock<T = unknown> implements Subscribable<T> {

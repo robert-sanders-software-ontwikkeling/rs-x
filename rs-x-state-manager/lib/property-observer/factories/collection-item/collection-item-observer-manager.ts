@@ -1,21 +1,21 @@
 import {
-   IDisposableOwner,
-   IEqualityService,
-   IErrorLog,
-   IIndexValueAccessor,
+   type IDisposableOwner,
+   type IEqualityService,
+   type IErrorLog,
+   type IIndexValueAccessor,
    Inject,
    Injectable,
-   IPropertyChange,
+   type IPropertyChange,
    RsXCoreInjectionTokens,
    SingletonFactory,
 } from '@rs-x/core';
 import { Subscription } from 'rxjs';
 import { AbstractObserver } from '../../../abstract-observer';
-import { IObjectObserverProxyPairManager } from '../../../object-observer';
-import { IObserver } from '../../../observer.interface';
+import type { IObjectObserverProxyPairManager } from '../../../object-observer';
+import type { IObserver } from '../../../observer.interface';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
-import { IIndexObserverIdInfo, IIndexObserverInfo } from '../index-observer-info.interface';
-import {
+import type { IIndexObserverIdInfo, IIndexObserverInfo } from '../index-observer-info.interface';
+import type {
    Collection,
    ICollectionIndexObserverManager,
    ICollectionItemObserverManager,
@@ -96,7 +96,7 @@ class CollectionIndexObserverManager
       return data.index;
    }
 
-   protected override createId(data: IIndexObserverIdInfo):unknown {
+   protected override createId(data: IIndexObserverIdInfo): unknown {
       return data.index
    }
 

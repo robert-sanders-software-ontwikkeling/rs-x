@@ -1,6 +1,6 @@
 import { ArgumentException } from '../exceptions/argument-exception';
 import { PropertyDescriptorType } from './property-descriptor-type.enum';
-import { IPropertyDescriptor } from './property-descriptor.interface';
+import { type IPropertyDescriptor } from './property-descriptor.interface';
 
 
 export type CheckValidKey<T, U extends keyof T> = U;

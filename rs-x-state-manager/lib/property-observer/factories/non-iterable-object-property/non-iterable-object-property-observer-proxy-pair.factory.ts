@@ -1,18 +1,18 @@
 import {
-   IErrorLog,
-   IGuidFactory,
-   IIndexValueAccessor,
+   type IErrorLog,
+   type IGuidFactory,
+   type IIndexValueAccessor,
    Inject,
    Injectable,
    RsXCoreInjectionTokens,
    Type,
 } from '@rs-x/core';
-import { IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
-import { IPropertyInfo } from '../../../object-property-observer-proxy-pair-manager.type';
-import { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
+import type { IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
+import type { IPropertyInfo } from '../../../object-property-observer-proxy-pair-manager.type';
+import type { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
 import { IndexObserverProxyPairFactory } from '../indexed-value-observer-proxy-pair/indexed-value-observer-proxy-pair.factory';
-import { IObjectPropertyObserverManager } from './object-property-observer-manager.type';
+import type { IObjectPropertyObserverManager } from './object-property-observer-manager.type';
 
 @Injectable()
 export class NonIterableObjectPropertyObserverProxyPairFactory extends IndexObserverProxyPairFactory<

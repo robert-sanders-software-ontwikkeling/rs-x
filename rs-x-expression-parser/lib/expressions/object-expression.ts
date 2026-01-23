@@ -1,8 +1,8 @@
-import { AbstractExpression } from './abstract-expression';
+import { type AbstractExpression } from './abstract-expression';
 import { ExpressionType } from './interfaces';
 import { ParameterizedExpression } from './parameterized-abstract-expression';
-import { PropertyExpression } from './property-expression';
-import { SpreadExpression } from './spread-expression';
+import { type PropertyExpression } from './property-expression';
+import { type SpreadExpression } from './spread-expression';
 
 export class ObjectExpression extends ParameterizedExpression<object> {
    constructor(

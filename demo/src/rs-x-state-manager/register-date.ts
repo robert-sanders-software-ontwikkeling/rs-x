@@ -1,8 +1,8 @@
 import { InjectionContainer, truePredicate, utCDate } from '@rs-x/core';
 import {
-    IProxyRegistry,
-    IStateChange,
-    IStateManager,
+    type IProxyRegistry,
+    type IStateChange,
+    type IStateManager,
     RsXStateManagerInjectionTokens,
     RsXStateManagerModule
 } from '@rs-x/state-manager';

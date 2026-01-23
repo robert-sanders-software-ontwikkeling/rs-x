@@ -1,4 +1,4 @@
-import { IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
+import { type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 import { ConstantExpression } from './constant-expression';
 import { ExpressionType } from './interfaces';
 

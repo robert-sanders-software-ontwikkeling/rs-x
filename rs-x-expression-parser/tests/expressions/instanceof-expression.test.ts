@@ -1,8 +1,8 @@
 import { InjectionContainer, Type, WaitForEvent } from '@rs-x/core';
 import {
    ExpressionType,
-   IExpression,
-   IExpressionParser,
+   type IExpression,
+   type IExpressionParser,
 } from '../../lib/expressions/interfaces';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
 import {

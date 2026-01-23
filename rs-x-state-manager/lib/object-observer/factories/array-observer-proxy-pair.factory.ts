@@ -1,16 +1,16 @@
 import {
-   IArrayIndexAccessor,
-   IErrorLog,
+   type IArrayIndexAccessor,
+   type IErrorLog,
    Inject,
    Injectable,
    RsXCoreInjectionTokens,
 } from '@rs-x/core';
-import { IArrayObserverProxyPair, IArrayProxyFactory } from '../../proxies/array-proxy/array-proxy.factory.type';
+import type { IObjectPropertyObserverProxyPairManager } from '../../object-property-observer-proxy-pair-manager.type';
+import type { IArrayObserverProxyPair, IArrayProxyFactory } from '../../proxies/array-proxy/array-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
-import { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
-import { IArrayObserverProxyPairFactory } from './array-observer-proxy-pair.factory.type';
+import type { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
 import { AbstractObjectObserverProxyPairFactory } from './abstract-object-observer-proxy-pair.factory';
-import { IObjectPropertyObserverProxyPairManager } from '../../object-property-observer-proxy-pair-manager.type';
+import type { IArrayObserverProxyPairFactory } from './array-observer-proxy-pair.factory.type';
 
 @Injectable()
 export class ArrayObserverProxyPairFactory

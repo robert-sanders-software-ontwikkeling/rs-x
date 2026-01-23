@@ -1,7 +1,7 @@
 import { Injectable, MultiInject } from '../dependency-injection';
 import { UnsupportedException } from '../exceptions/unsupported-exception';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
-import { IIndexValueAccessor } from './index-value-accessor.interface';
+import type { IIndexValueAccessor } from './index-value-accessor.interface';
 
 @Injectable()
 export class IndexValueAccessor implements IIndexValueAccessor {

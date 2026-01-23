@@ -1,5 +1,5 @@
-import { ISingletonFactory } from '@rs-x/core';
-import { IExpression } from '../expressions';
+import { type ISingletonFactory } from '@rs-x/core';
+import { type IExpression } from '../expressions';
 
 export interface IExpressionInfo {
    context: object;

@@ -1,4 +1,4 @@
-import { AbstractExpression } from './abstract-expression';
+import { type AbstractExpression } from './abstract-expression';
 import { BinaryExpression } from './binary-expression';
 import { ExpressionType } from './interfaces';
 

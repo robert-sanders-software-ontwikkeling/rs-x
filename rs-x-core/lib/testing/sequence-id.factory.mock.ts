@@ -1,4 +1,4 @@
-import { ISequenceIdFactory } from '../sequence-id/sequence-id-factory.interface';
+import { type ISequenceIdFactory } from '../sequence-id/sequence-id-factory.interface';
 
 export class SequenceIdFactoryMock implements ISequenceIdFactory {
     public readonly create = jest.fn();

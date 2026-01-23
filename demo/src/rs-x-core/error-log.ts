@@ -1,5 +1,5 @@
 import {
-    IErrorLog,
+    type IErrorLog,
     InjectionContainer,
     printValue,
     RsXCoreInjectionTokens,

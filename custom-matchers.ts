@@ -1,6 +1,6 @@
-import { AbstractObserver } from '@rs-x/state-manager';
+import { type AbstractObserver } from '@rs-x/state-manager';
 import { observerEqualTo as _observerEqualTo } from '@rs-x/state-manager/testing';
-import type { MatcherFunction } from 'expect';
+import { type MatcherFunction } from 'expect';
 
 type SeenMap = WeakMap<object, string>;
 

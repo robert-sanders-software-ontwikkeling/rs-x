@@ -1,5 +1,5 @@
-import { Observable } from 'rxjs';
-import { IError } from './error.interface';
+import { type Observable } from 'rxjs';
+import { type IError } from './error.interface';
 
 export interface IErrorLog {
    readonly error: Observable<IError>;

@@ -1,16 +1,16 @@
-import { emptyFunction, IIndexValueAccessor, PENDING, truePredicate, Type } from '@rs-x/core';
+import { emptyFunction, type IIndexValueAccessor, PENDING, truePredicate, Type } from '@rs-x/core';
 import {
-   IMustProxifyItemHandlerFactory,
-   IStateManager,
-   MustProxify,
+   type IMustProxifyItemHandlerFactory,
+   type IStateManager,
+   type MustProxify,
 } from '@rs-x/state-manager';
-import { Subscription } from 'rxjs';
-import { IExpressionChangeCommitHandler, IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
+import { type Subscription } from 'rxjs';
+import { type IExpressionChangeCommitHandler, type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 import {
    AbstractExpression,
-   IExpressionInitializeConfig,
+   type IExpressionInitializeConfig,
 } from './abstract-expression';
-import { IdentifierExpression, IIdentifierInitializeConfig } from './identifier-expression';
+import { IdentifierExpression, type IIdentifierInitializeConfig } from './identifier-expression';
 import { ExpressionType } from './interfaces';
 
 interface IMustProxifyHandler {

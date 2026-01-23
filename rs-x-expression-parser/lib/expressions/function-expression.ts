@@ -1,12 +1,12 @@
-import { AnyFunction, Assertion, PENDING } from '@rs-x/core';
-import { IGuidFactory } from '../../../rs-x-core/lib/guid';
-import { IStateManager } from '../../../rs-x-state-manager/lib';
-import { IExpressionChangeCommitHandler, IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
+import { type AnyFunction, Assertion, PENDING } from '@rs-x/core';
+import { type IGuidFactory } from '../../../rs-x-core/lib/guid';
+import { type IStateManager } from '../../../rs-x-state-manager/lib';
+import { type IExpressionChangeCommitHandler, type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 import {
    AbstractExpression,
-   IExpressionInitializeConfig,
+   type IExpressionInitializeConfig,
 } from './abstract-expression';
-import { ArrayExpression } from './array-expression';
+import { type ArrayExpression } from './array-expression';
 import { ConstantNullExpression } from './constant-null-expression';
 import { ExpressionType } from './interfaces';
 

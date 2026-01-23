@@ -1,5 +1,5 @@
-import { Observable, Subject } from 'rxjs';
-import { IIndexValueAccessor } from './index-value-accessor.interface';
+import { type Observable, type Subject } from 'rxjs';
+import { type IIndexValueAccessor } from './index-value-accessor.interface';
 
 export type LastValuObservable = Subject<unknown> | Observable<unknown>;
 

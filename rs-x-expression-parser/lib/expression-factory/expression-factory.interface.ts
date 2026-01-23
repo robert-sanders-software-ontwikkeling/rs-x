@@ -1,4 +1,4 @@
-import { IExpression } from '../expressions';
+import { type IExpression } from '../expressions';
 
 export interface IExpressionFactory {
     create(context: object, expression: string): IExpression;

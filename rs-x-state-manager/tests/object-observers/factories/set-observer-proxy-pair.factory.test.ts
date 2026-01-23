@@ -1,11 +1,11 @@
-import { ErrorLog, InjectionContainer, IPropertyChange, truePredicate, WaitForEvent } from '@rs-x/core';
+import { ErrorLog, InjectionContainer, type IPropertyChange, truePredicate, WaitForEvent } from '@rs-x/core';
 import { DisposableOwnerMock } from '@rs-x/core/testing';
-import { ISetObserverProxyPairFactory } from '../../../lib/object-observer/factories/set-observer-proxy-pair.factory.type';
-import { IObjectPropertyObserverProxyPairManager } from '../../../lib/object-property-observer-proxy-pair-manager.type';
+import { type ISetObserverProxyPairFactory } from '../../../lib/object-observer/factories/set-observer-proxy-pair.factory.type';
+import { type IObjectPropertyObserverProxyPairManager } from '../../../lib/object-property-observer-proxy-pair-manager.type';
 import { ObserverGroup } from '../../../lib/observer-group';
-import { IObserver } from '../../../lib/observer.interface';
-import { IProxyRegistry } from '../../../lib/proxies/proxy-registry/proxy-registry.interface';
-import { ISetObserverProxyPair, ISetProxyFactory } from '../../../lib/proxies/set-proxy/set-proxy.factory.type';
+import { type IObserver } from '../../../lib/observer.interface';
+import { type IProxyRegistry } from '../../../lib/proxies/proxy-registry/proxy-registry.interface';
+import { type ISetObserverProxyPair, type ISetProxyFactory } from '../../../lib/proxies/set-proxy/set-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
 

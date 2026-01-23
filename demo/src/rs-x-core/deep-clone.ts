@@ -1,5 +1,5 @@
 import {
-    IDeepClone,
+    type IDeepClone,
     InjectionContainer,
     printValue,
     RsXCoreInjectionTokens,

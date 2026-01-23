@@ -1,5 +1,5 @@
-import { IISequenceWithIdData } from '../sequence-id/sequence-id-factory.interface';
-import { IDisposable } from '../types/disposable.interface';
+import { type IISequenceWithIdData } from '../sequence-id/sequence-id-factory.interface';
+import { type IDisposable } from '../types/disposable.interface';
 
 export interface  IFunctionCallIndexData {
     readonly context: unknown;

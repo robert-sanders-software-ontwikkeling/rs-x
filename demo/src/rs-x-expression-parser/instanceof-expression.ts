@@ -1,6 +1,6 @@
 import { emptyFunction, InjectionContainer, Type, WaitForEvent } from '@rs-x/core';
 import {
-    IExpressionFactory,
+    type IExpressionFactory,
     RsXExpressionParserInjectionTokens,
     RsXExpressionParserModule
 } from '@rs-x/expression-parser';

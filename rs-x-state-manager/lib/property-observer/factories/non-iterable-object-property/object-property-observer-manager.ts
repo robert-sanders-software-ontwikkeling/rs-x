@@ -1,20 +1,20 @@
 import {
-   IDisposableOwner,
+   type IDisposableOwner,
    Inject,
    Injectable,
    InvalidOperationException,
-   IPropertyChange,
-   IPropertyDescriptor,
+   type IPropertyChange,
+   type IPropertyDescriptor,
    PropertyDescriptorType,
    SingletonFactory,
    Type
 } from '@rs-x/core';
 import { Subject } from 'rxjs';
 import { AbstractObserver } from '../../../abstract-observer';
-import { IObserver } from '../../../observer.interface';
-import { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
+import type { IObserver } from '../../../observer.interface';
+import type { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
-import {
+import type {
    IObjectPropertyObserverManager,
    IPropertyObserverIdInfo,
    IPropertyObserverInfo,

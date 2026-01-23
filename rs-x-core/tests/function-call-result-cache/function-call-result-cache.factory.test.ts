@@ -1,6 +1,6 @@
 
 import { FunctionCallResultCacheFactory } from '../../lib/function-call-result-cache/function-call-result-cache.factory';
-import { IFunctionCallResult } from '../../lib/function-call-result-cache/function-call-result-cache.factory.interface';
+import { type IFunctionCallResult } from '../../lib/function-call-result-cache/function-call-result-cache.factory.interface';
 import { DisposableFunctionCallIndexMock } from '../../lib/testing/disposable-function-call-index.mock';
 import { FunctionCallIndexFactoryMock } from '../../lib/testing/function-call-index.factory.mock';
 

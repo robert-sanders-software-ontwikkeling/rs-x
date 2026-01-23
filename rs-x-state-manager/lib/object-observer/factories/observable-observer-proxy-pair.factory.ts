@@ -1,12 +1,12 @@
-import { IDisposableOwner, Inject, Injectable } from '@rs-x/core';
+import { type IDisposableOwner, Inject, Injectable } from '@rs-x/core';
 import { isObservable, Observable } from 'rxjs';
-import {
+import type {
    IObservableObserverProxyPair,
    IObservableProxyFactory,
 } from '../../proxies/observable-proxy/observable-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
-import { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
-import { IObjectObserverProxyPairFactory } from '../object-observer-proxy-pair.factory.interface';
+import type { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
+import type { IObjectObserverProxyPairFactory } from '../object-observer-proxy-pair.factory.interface';
 
 @Injectable()
 export class ObservableObserverProxyPairFactory

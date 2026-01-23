@@ -1,21 +1,26 @@
 import {
-    DateProperty, IDatePropertyAccessor,
-    IDisposableOwner,
-    IErrorLog,
+    type DateProperty,
+    type IDatePropertyAccessor,
+    type IDisposableOwner,
+    type IErrorLog,
     Inject,
     Injectable,
-    IPropertyChange,
+    type IPropertyChange,
     RsXCoreInjectionTokens,
     SingletonFactory
 } from '@rs-x/core';
 import { Subscription } from 'rxjs';
 import { AbstractObserver } from '../../../abstract-observer';
-import { IObserver } from '../../../observer.interface';
-import { IDateProxyFactory } from '../../../proxies/date-proxy/date-proxy.factory.type';
+import type { IObserver } from '../../../observer.interface';
+import type { IDateProxyFactory } from '../../../proxies/date-proxy/date-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
-import { IDatePropertyObserverIdInfo, IDatePropertyObserverInfo, IDatePropertyObserverManager, IProperForDataObserverManager } from './date-property-observer-manager.type';
-import { IMustProxifyItemHandlerFactory } from '../../must-proxify-item-handler.factory.type';
-
+import type { IMustProxifyItemHandlerFactory } from '../../must-proxify-item-handler.factory.type';
+import type {
+    IDatePropertyObserverIdInfo,
+    IDatePropertyObserverInfo,
+    IDatePropertyObserverManager,
+    IProperForDataObserverManager
+} from './date-property-observer-manager.type';
 
 class DatePropertybserver extends AbstractObserver<Date> {
     private _oldValue: unknown;

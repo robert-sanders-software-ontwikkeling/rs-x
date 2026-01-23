@@ -1,6 +1,6 @@
-// eslint.config.js
 import tseslint from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
+import importPlugin from "eslint-plugin-import";
 import globals from "globals";
 
 /**
@@ -8,7 +8,7 @@ import globals from "globals";
  */
 export default [
   {
-    ignores: ["**/dist/**", "**/*.d.ts"], // ignore build output & type definitions
+    ignores: ["**/dist/**", "**/*.d.ts"],
   },
 
   {
@@ -26,14 +26,27 @@ export default [
 
     plugins: {
       "@typescript-eslint": tseslint,
+      import: importPlugin,
     },
 
     rules: {
-      // Core & TS rules
+      // --- Core TS hygiene ---
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/ban-ts-comment": "off",
       "@typescript-eslint/no-empty-function": "off",
+
+      // --- Type-only imports (verbatimModuleSyntax safe) ---
+      "@typescript-eslint/consistent-type-imports": [
+        "error",
+        {
+          prefer: "type-imports",
+          fixStyle: "inline-type-imports",
+        },
+      ],
+
+      // 🔑 THIS merges split imports from the same module
+      "import/no-duplicates": "error",
     },
   },
 ];

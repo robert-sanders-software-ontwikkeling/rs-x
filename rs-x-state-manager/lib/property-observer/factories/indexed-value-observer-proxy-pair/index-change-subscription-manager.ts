@@ -1,20 +1,20 @@
 import {
-   IDisposableOwner,
-   IErrorLog,
-   IGuidFactory,
-   IPropertyChange,
-   ISingletonFactory,
+   type IDisposableOwner,
+   type IErrorLog,
+   type IGuidFactory,
+   type IPropertyChange,
+   type ISingletonFactory,
    SingletonFactory,
 } from '@rs-x/core';
 import {
    GroupedChangeSubscriptionsForContextManager,
-   IChangeSubscriptionsCreateMethods,
-   IGroupedChangeSubscriptionsForContextManager,
+   type IChangeSubscriptionsCreateMethods,
+   type IGroupedChangeSubscriptionsForContextManager,
 } from '../../../grouped-change-subscriptions-for-context-manager';
-import { MustProxify } from '../../../object-property-observer-proxy-pair-manager.type';
+import { type MustProxify } from '../../../object-property-observer-proxy-pair-manager.type';
 import { ObserverGroup } from '../../../observer-group';
-import { IObserver } from '../../../observer.interface';
-import { IIndexObserverInfo } from '../index-observer-info.interface';
+import { type IObserver } from '../../../observer.interface';
+import { type IIndexObserverInfo } from '../index-observer-info.interface';
 
 export interface ISubscriptionIdInfo<TIndex> {
    index: TIndex;

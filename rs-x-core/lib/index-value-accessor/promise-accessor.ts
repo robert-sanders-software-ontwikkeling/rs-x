@@ -1,10 +1,10 @@
 import { injectable } from 'inversify';
-import { UnsupportedException } from '../exceptions';
-import { IPromiseAccessor } from './promise-accessor.interface';
-import { PENDING } from './pending';
-import { IResolvedValueCache } from './resolved-value-cache.interface';
 import { Inject } from '../dependency-injection';
+import { UnsupportedException } from '../exceptions';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
+import { PENDING } from './pending';
+import type { IPromiseAccessor } from './promise-accessor.interface';
+import type { IResolvedValueCache } from './resolved-value-cache.interface';
 
 @injectable()
 export class PromiseAccessor implements IPromiseAccessor {

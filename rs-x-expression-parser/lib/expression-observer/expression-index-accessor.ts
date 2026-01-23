@@ -3,8 +3,8 @@ import {
     Type,
     UnsupportedException
 } from '@rs-x/core';
-import { AbstractExpression, IExpression } from '../expressions';
-import { IExpressionIndexAccessor } from './expression-index-accessor.type';
+import { AbstractExpression, type IExpression } from '../expressions';
+import type { IExpressionIndexAccessor } from './expression-index-accessor.type';
 
 
 @Injectable()

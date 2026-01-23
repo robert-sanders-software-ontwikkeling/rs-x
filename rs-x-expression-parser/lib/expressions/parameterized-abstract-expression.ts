@@ -1,8 +1,8 @@
 import {
    AbstractExpression,
-   IExpressionInitializeConfig,
+   type IExpressionInitializeConfig,
 } from './abstract-expression';
-import { ExpressionType } from './interfaces';
+import { type ExpressionType } from './interfaces';
 
 export abstract class ParameterizedExpression<
    T = unknown,

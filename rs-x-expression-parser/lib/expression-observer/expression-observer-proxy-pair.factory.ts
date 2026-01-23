@@ -1,10 +1,10 @@
-import { IDisposableOwner, Inject, Injectable } from '@rs-x/core';
-import { IProxyTarget } from '@rs-x/state-manager';
+import { type IDisposableOwner, Inject, Injectable } from '@rs-x/core';
+import { type IProxyTarget } from '@rs-x/state-manager';
 import { AbstractExpression } from '../expressions/abstract-expression';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
-import { IExpressionObserverProxyPairFactory } from './expression-observer-proxy-pair.factory.type';
-import { IExpressionObserverProxyPair } from './expression-observer-proxy-pair.type';
-import { IExpressionObserverFactory } from './expression-proxy.factory.type';
+import type { IExpressionObserverProxyPairFactory } from './expression-observer-proxy-pair.factory.type';
+import type { IExpressionObserverProxyPair } from './expression-observer-proxy-pair.type';
+import type { IExpressionObserverFactory } from './expression-proxy.factory.type';
 
 @Injectable()
 export class ExpressionObserverProxyPairFactory

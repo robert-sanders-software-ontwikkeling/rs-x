@@ -1,4 +1,4 @@
-import { IObserver } from '../../observer.interface';
+import { type IObserver } from '../../observer.interface';
 
 export function abstractObserverEqualTo(x: IObserver, y: IObserver): boolean {
    if (!(y instanceof x.constructor)) {

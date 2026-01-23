@@ -1,6 +1,6 @@
-import { IDisposableOwner, IPropertyChange } from '@rs-x/core';
-import { Observable, Subject } from 'rxjs';
-import { IObserver } from './observer.interface';
+import { type IDisposableOwner, type IPropertyChange } from '@rs-x/core';
+import { type Observable, Subject } from 'rxjs';
+import { type IObserver } from './observer.interface';
 
 export abstract class AbstractObserver<
    TTarget = unknown,

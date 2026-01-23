@@ -1,8 +1,8 @@
 import { Observable } from 'rxjs';
 import { Inject, Injectable } from '../dependency-injection';
-import { IResolvedValueCache } from '../index-value-accessor/resolved-value-cache.interface';
+import type { IResolvedValueCache } from '../index-value-accessor/resolved-value-cache.interface';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
-import { IDeepCloneValueGetter } from './deep-clone-value-getter.interface';
+import type { IDeepCloneValueGetter } from './deep-clone-value-getter.interface';
 
 @Injectable()
 export class DeepCloneValueGetter implements IDeepCloneValueGetter {

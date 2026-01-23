@@ -1,25 +1,25 @@
 import {
-   IChainPart,
-   IEqualityService,
-   IErrorLog,
-   IGuidFactory,
-   IIndexValueAccessor,
+   type IChainPart,
+   type IEqualityService,
+   type IErrorLog,
+   type IGuidFactory,
+   type IIndexValueAccessor,
    Inject,
    Injectable,
-   IPropertyChange,
+   type IPropertyChange,
    PENDING,
    RsXCoreInjectionTokens,
 } from '@rs-x/core';
 
 import { Observable, Subject } from 'rxjs';
-import {
+import type {
    IObjectPropertyObserverProxyPairManager,
    MustProxify,
 } from '../object-property-observer-proxy-pair-manager.type';
 import { RsXStateManagerInjectionTokens } from '../rs-x-state-manager-injection-tokes';
-import { IObjectStateManager } from './object-state-manager.interface';
+import type { IObjectStateManager } from './object-state-manager.interface';
 import { StateChangeSubscriptionManager } from './state-change-subscription-manager/state-change-subsription-manager';
-import {
+import type {
    IContextChanged,
    IStateChange,
    IStateManager,

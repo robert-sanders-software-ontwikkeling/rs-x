@@ -1,5 +1,5 @@
-import { IFunctionCallIndex } from '../function-call-index';
-import { IDisposable } from '../types/disposable.interface';
+import { type IFunctionCallIndex } from '../function-call-index';
+import { type IDisposable } from '../types/disposable.interface';
 
 
 export interface IFunctionCallResultIdInfo {

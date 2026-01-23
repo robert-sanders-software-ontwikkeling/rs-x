@@ -3,9 +3,9 @@ import {
    Injectable,
    SingletonFactory
 } from '@rs-x/core';
-import { IExpression, IExpressionParser } from '../expressions/interfaces';
+import type { IExpression, IExpressionParser } from '../expressions/interfaces';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
-import {
+import type {
    IExpressionForContextManager,
    IExpressionManager
 } from './expression-manager.type';

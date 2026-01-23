@@ -1,6 +1,6 @@
 import { Injectable, MultiInject } from '@rs-x/core';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
-import { IIdentifierOwnerResolver } from './identifier-owner-resolver.interface';
+import type { IIdentifierOwnerResolver } from './identifier-owner-resolver.interface';
 
 @Injectable()
 export class DefaultIdentifierOwnerResolver

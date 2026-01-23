@@ -2,9 +2,9 @@ import {
    InjectionContainer
 } from '@rs-x/core';
 import { DisposableOwnerMock } from '@rs-x/core/testing';
-import { IDateObserverProxyPairFactory } from '../../../lib/object-observer/factories/date-observer-proxy-pair.factory.type';
-import { IObserver } from '../../../lib/observer.interface';
-import { IDateProxyFactory } from '../../../lib/proxies/date-proxy/date-proxy.factory.type';
+import { type IDateObserverProxyPairFactory } from '../../../lib/object-observer/factories/date-observer-proxy-pair.factory.type';
+import { type IObserver } from '../../../lib/observer.interface';
+import { type IDateProxyFactory } from '../../../lib/proxies/date-proxy/date-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
 

@@ -1,11 +1,11 @@
 import {
-   IPropertyChange,
-   ISingletonFactory,
-   ISingletonFactoryWithIdGeneration,
+   type IPropertyChange,
+   type ISingletonFactory,
+   type ISingletonFactoryWithIdGeneration,
 } from '@rs-x/core';
-import { Subscription } from 'rxjs';
-import { MustProxify } from '../../object-property-observer-proxy-pair-manager.type';
-import { IObserver } from '../../observer.interface';
+import { type Subscription } from 'rxjs';
+import { type MustProxify } from '../../object-property-observer-proxy-pair-manager.type';
+import { type IObserver } from '../../observer.interface';
 
 export interface IStateChangeObserverInfo {
    readonly observer: IObserver;

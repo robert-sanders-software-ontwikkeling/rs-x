@@ -1,7 +1,7 @@
 import {
     ArrayIndexAccessor,
     ContainerModule,
-    IIndexValueAccessor,
+    type IIndexValueAccessor,
     InjectionContainer,
     overrideMultiInjectServices,
     PropertyValueAccessor,

@@ -1,19 +1,19 @@
 import {
-   IErrorLog,
-   IMapKeyAccessor,
+   type IErrorLog,
+   type IMapKeyAccessor,
    Inject,
    Injectable,
    RsXCoreInjectionTokens,
 } from '@rs-x/core';
-import {
+import type { IObjectPropertyObserverProxyPairManager } from '../../object-property-observer-proxy-pair-manager.type';
+import type {
    IMapObserverProxyPair,
    IMapProxyFactory
 } from '../../proxies/map-proxy/map-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
-import { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
-import { IMapObserverProxyPairFactory } from './map-observer-proxy-pair.factory.type';
+import type { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
 import { AbstractObjectObserverProxyPairFactory } from './abstract-object-observer-proxy-pair.factory';
-import { IObjectPropertyObserverProxyPairManager } from '../../object-property-observer-proxy-pair-manager.type';
+import type { IMapObserverProxyPairFactory } from './map-observer-proxy-pair.factory.type';
 
 @Injectable()
 export class MapObserverProxyPairFactory
