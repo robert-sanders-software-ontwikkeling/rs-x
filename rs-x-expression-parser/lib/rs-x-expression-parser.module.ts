@@ -7,8 +7,6 @@ import { IExpressionFactory } from './expression-factory/expression-factory.inte
 import { ExpressionManager } from './expression-factory/expression-manager';
 import { IExpressionManager } from './expression-factory/expression-manager.type';
 import { DeepCloneValueGetterWithExpressionSupport } from './expression-observer/deep-clone-value-getter-with-expression-support';
-import './expression-observer/expression-index-accessor';
-import './expression-observer/expression-observer-proxy-pair.factory';
 import { ExpressionObserverFactory } from './expression-observer/expression-observer.factory';
 import { IExpressionObserverFactory } from './expression-observer/expression-proxy.factory.type';
 import { IExpressionParser } from './expressions/interfaces';
