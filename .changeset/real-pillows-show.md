@@ -1,7 +1,5 @@
 ---
-"@rs-x/expression-parser": minor
-"@rs-x/state-manager": minor
-"@rs-x/core": minor
+"@rs-x/core": patch
 ---
 
 First release
