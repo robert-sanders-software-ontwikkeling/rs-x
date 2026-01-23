@@ -29,7 +29,7 @@ concurrency:
 
 jobs:
   release:
-    name: Version, Publish & Release
+    name: Version, Build, Publish & GitHub Release
     runs-on: ubuntu-latest
     environment: npm-release
 
@@ -41,6 +41,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      # ---------------- NODE ----------------
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -144,8 +145,7 @@ jobs:
       # ---------------- DRY RUN ----------------
       - name: Dry run summary
         if: ${{ github.event.inputs.dry_run == 'true' }}
-        run: |
-          echo "Dry run enabled — skipping npm publish"
+        run: echo "Dry run enabled — skipping npm publish"
 
       # ---------------- PROMOTION ----------------
       - name: Promote from next → latest
@@ -155,7 +155,6 @@ jobs:
         run: |
           node <<'EOF'
           const { execSync } = require('child_process');
-
           const pkgs = execSync(
             "pnpm -r exec node -e \"console.log(require('./package.json').name + '@' + require('./package.json').version)\""
           ).toString().trim().split('\n');
@@ -167,10 +166,23 @@ jobs:
           EOF
 
       # ---------------- GITHUB RELEASE ----------------
-      - name: Create GitHub Release
-        uses: changesets/action@v1
+      - name: Create GitHub Release with commit-based notes
+        uses: actions/create-release@v1
         with:
-          publish: false
+          tag_name: |
+            $(git describe --tags --abbrev=0 2>/dev/null || echo "v${GITHUB_RUN_NUMBER}")
+          release_name: Release ${{ github.run_number }}
+          body: |
+            $(
+              LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+              if [ -n "$LAST_TAG" ]; then
+                git log $LAST_TAG..HEAD --pretty=format:"- %s"
+              else
+                git log --pretty=format:"- %s"
+              fi
+            )
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -184,4 +196,3 @@ jobs:
             git add .
             git commit -m "chore: version packages"
             git push origin HEAD:${{ github.ref_name }}
-          fi
