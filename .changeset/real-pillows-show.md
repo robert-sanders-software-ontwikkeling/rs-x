@@ -2,4 +2,4 @@
 "@rs-x/core": patch
 ---
 
-First release
+Angular support
