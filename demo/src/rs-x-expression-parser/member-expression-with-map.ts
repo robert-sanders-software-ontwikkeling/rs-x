@@ -48,12 +48,12 @@ export const run = (async () => {
 
         console.log(`Value of 'a.b['b'].c.d' after changing b['b'].c to '{ d: 220 }':`);
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { 
-            Type.toObject(expressionContext.a.b.get('b')).c = { d: 220 }; 
+            (Type.toObject(expressionContext.a.b.get('b')) ??{}).c = { d: 220 }; 
         });
 
         console.log(`Value of 'a.b['b'].c.d' after changing b[1].c.d to '330':`);
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { 
-            Type.toObject(expressionContext.a.b.get('b')?.c).d = 330; 
+            (Type.toObject(expressionContext.a.b.get('b')?.c) ?? {}).d = 330; 
         });
 
         console.log(`Final value of 'a.b['b'].c.d':`)

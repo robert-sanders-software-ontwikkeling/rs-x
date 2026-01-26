@@ -11,6 +11,9 @@ export class PropertyValueAccessor implements IPropertyValueAccessor {
 
    public getIndexes(context: unknown): IterableIterator<string> {
       const obj = Type.toObject(context); 
+      if(!obj) {
+         return [].values();
+      }
       return Object.keys(obj)
          .filter((key) => !Type.isMethod(obj[key] as object))
          .values();
@@ -27,16 +30,22 @@ export class PropertyValueAccessor implements IPropertyValueAccessor {
 
    public getValue(context: unknown, index: string): unknown {
       const obj = Type.toObject(context);
-      return obj[index];
+      return obj ? obj[index] : undefined;
    }
 
    public setValue(context: unknown, index: string, value: unknown): void {
       const obj = Type.toObject(context);
-      obj[index] = value;
+      if(obj) {   
+           obj[index] = value;
+      }
+    
    }
 
    public applies(context: unknown, index: string): boolean {
       const obj = Type.toObject(context);
+      if(!obj) {
+         return false;
+      }
       return (
          Type.hasProperty(obj, index) &&
          !(obj instanceof Date) &&

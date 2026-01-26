@@ -219,11 +219,11 @@ export class Type {
       );
    }
 
-   public static toObject(context: unknown): Record<string, unknown> {
+   public static toObject(context: unknown): Record<string, unknown> | undefined {
       if (context && (typeof context === 'object' || typeof context === 'function')) {
          return context as object & Record<string, unknown>;
       }
-      return {};
+      return undefined;
    }
 
     public static getConstructorName(value: unknown): string {

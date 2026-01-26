@@ -52,7 +52,7 @@ export class NonIterableObjectPropertyObserverProxyPairFactory extends IndexObse
             object instanceof Set 
          ) 
          && Type.isString(propertyInfo.key) 
-         && !Type.isMethod(Type.toObject(object)[propertyInfo.key])
+         && !Type.isMethod((Type.toObject(object) ?? {})[propertyInfo.key])
       );
    }
 

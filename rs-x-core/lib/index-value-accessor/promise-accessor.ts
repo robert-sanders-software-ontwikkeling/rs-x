@@ -55,10 +55,7 @@ export class PromiseAccessor implements IPromiseAccessor {
    }
 
    private getIndexedValue(context: unknown, index: string): unknown {
-      if (context && (typeof context === 'object' || typeof context === 'function')) {
-         return Type.toObject(context)[index];
-      }
-      return undefined;
+      return (Type.toObject(context) ?? {} )[index];
    }
 
    private isCacheable(value: unknown): value is object | Function {

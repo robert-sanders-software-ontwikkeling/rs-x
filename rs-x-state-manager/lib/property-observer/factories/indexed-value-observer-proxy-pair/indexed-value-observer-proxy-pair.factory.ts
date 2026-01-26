@@ -166,7 +166,7 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
          .getFromId(change.target)
          ?.getSubsriptionData(subsriptionId);
 
-      if(!observerGroup) {
+      if (!observerGroup) {
          throw new UnexpectedException(
             `Observer group not found for subscription id ${subsriptionId}`
          );
@@ -202,7 +202,11 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
             true,
             change.setValue ??
             ((value: unknown) => {
-               Type.toObject(change.target)[change.id as string] = value;
+               const obj = Type.toObject(change.target);
+               if (obj) {
+                  obj[change.id as string] = value;
+               }
+
             })
          );
 

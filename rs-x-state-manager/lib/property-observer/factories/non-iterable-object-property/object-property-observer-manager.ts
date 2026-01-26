@@ -45,7 +45,7 @@ class PropertObserver extends AbstractObserver {
 
    protected override disposeInternal(): void {
       const propertyName = this.id as string;
-      const object = Type.toObject(this.target);
+      const object = Type.toObject(this.target) ?? {};
       const value = object[propertyName];
       //to prevent errors if is was non configurable
       delete object[propertyName];
@@ -155,7 +155,7 @@ class PropertObserver extends AbstractObserver {
          }
       };
 
-      this.value = Type.toObject(this.target)[this.id as string];
+      this.value = (Type.toObject(this.target) ?? {})[this.id as string];
 
       return newDescriptor;
    }
@@ -166,14 +166,14 @@ class PropertObserver extends AbstractObserver {
       const newDescriptor = { ...descriptorWithTarget.descriptor };
       const oldSetter = descriptorWithTarget.descriptor.set as ((v: unknown) => void);
       newDescriptor.set = (value) => {
-         const oldValue = Type.toObject(this.target)[this.id as string];
+         const oldValue = (Type.toObject(this.target) ?? {})[this.id as string];
          if (value !== oldValue) {
             oldSetter.call(this.target, value);
             this.internalEmitChange({ newValue: value }, this.id);
          }
       };
 
-      this.value = Type.toObject(this.target)[this.id as string];
+      this.value = (Type.toObject(this.target) ?? {})[this.id as string];
 
       return newDescriptor;
    }

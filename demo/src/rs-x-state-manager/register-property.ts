@@ -58,7 +58,7 @@ export const run = (() => {
         console.log('\nReplacing stateContext.b.nested.nested will emit a change event');
         console.log('Changed value:');
 
-        Type.toObject(stateContext.b.nested).nested = {
+        (Type.toObject(stateContext.b.nested) ?? {}).nested = {
             a: -30,
             nested: {
                 a: -40

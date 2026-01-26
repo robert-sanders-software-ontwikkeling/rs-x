@@ -681,7 +681,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
             ).observer;
 
             const actual = await new WaitForEvent(observer1, 'changed').wait(() => {
-               Type.toObject(map.get('a')?.get('z')).x = 100;
+               (Type.toObject(map.get('a')?.get('z')) ?? {}).x = 100;
             });
 
             const expected: IPropertyChange = {

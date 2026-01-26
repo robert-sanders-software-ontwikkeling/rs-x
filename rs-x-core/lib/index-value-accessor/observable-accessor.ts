@@ -69,8 +69,8 @@ export class ObservableAccessor implements IObservableAccessor {
    public clearLastValue(observable: LastValuObservable): void {
       this._resolvedValueCache.delete(observable);
    }
-   
+
    private getIndexedValue(context: unknown, index: string): unknown {
-      return Type.toObject(context)[index]
+      return (Type.toObject(context) ?? {})[index]
    }
 }

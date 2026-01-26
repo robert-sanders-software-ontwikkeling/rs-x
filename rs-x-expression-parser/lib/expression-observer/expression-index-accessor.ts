@@ -16,15 +16,15 @@ export class ExpressionIndexAccessor implements IExpressionIndexAccessor {
     }
 
     public getResolvedValue(context: unknown, index: string): unknown {
-        return Type.cast<IExpression>(Type.toObject(context)[index])?.value;
+        return Type.cast<IExpression>((Type.toObject(context) ?? {})[index])?.value;
     }
     
     public hasValue(context: unknown, index: string): boolean {
-        return Type.cast<IExpression>(Type.toObject(context)[index])?.value !== undefined;
+        return Type.cast<IExpression>((Type.toObject(context) ?? {})[index])?.value !== undefined;
     }
 
     public getValue(context: unknown, index: string): unknown {
-        return Type.toObject(context)[index];
+        return (Type.toObject(context) ?? {})[index];
     }
 
     public setValue(): void {
@@ -36,6 +36,6 @@ export class ExpressionIndexAccessor implements IExpressionIndexAccessor {
     }
 
     public applies(context: unknown, index: string): boolean {
-        return Type.toObject(context)[index] instanceof AbstractExpression;
+        return (Type.toObject(context) ?? {})[index] instanceof AbstractExpression;
     }
 }
