@@ -1,33 +1,59 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const root = process.cwd();
-const packagesDir = path.join(root, 'packages');
+
+/**
+ * Read pnpm-workspace.yaml to find workspace package globs
+ * Fallback to scanning root directories if needed
+ */
+function getWorkspaceDirs() {
+  const workspaceFile = path.join(root, 'pnpm-workspace.yaml');
+
+  if (!fs.existsSync(workspaceFile)) {
+    // Fallback: scan root dirs
+    return fs
+      .readdirSync(root, { withFileTypes: true })
+      .filter(d => d.isDirectory())
+      .map(d => d.name)
+      .filter(name => !name.startsWith('.') && name !== 'node_modules' && name !== 'scripts');
+  }
+
+  const yaml = fs.readFileSync(workspaceFile, 'utf8');
+  const matches = [...yaml.matchAll(/- (.+)/g)].map(m => m[1]);
+
+  return matches
+    .map(p => p.replace('/*', ''))
+    .filter(Boolean);
+}
 
 const nodeLibs = [];
 const angularLibs = [];
 
-for (const dir of fs.readdirSync(packagesDir)) {
-  const pkgPath = path.join(packagesDir, dir, 'package.json');
-  if (!fs.existsSync(pkgPath)) continue;
+for (const dir of getWorkspaceDirs()) {
+  const absDir = path.join(root, dir);
+  const pkgJson = path.join(absDir, 'package.json');
 
-  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+  if (!fs.existsSync(pkgJson)) continue;
+
+  const pkg = JSON.parse(fs.readFileSync(pkgJson, 'utf8'));
   const name = pkg.name;
-
   if (!name) continue;
 
-  if (pkg.dependencies?.['@angular/core'] || pkg.peerDependencies?.['@angular/core']) {
+  const isAngular =
+    pkg.dependencies?.['@angular/core'] ||
+    pkg.peerDependencies?.['@angular/core'];
+
+  if (isAngular) {
     angularLibs.push(name);
   } else {
     nodeLibs.push(name);
   }
 }
 
-// 🔑 EXPORT TO GITHUB ACTIONS
-const envFile = process.env.GITHUB_ENV;
+// 🔑 Export to GitHub Actions
+fs.appendFileSync(process.env.GITHUB_ENV, `node_libs=${nodeLibs.join(' ')}\n`);
+fs.appendFileSync(process.env.GITHUB_ENV, `angular_libs=${angularLibs.join(' ')}\n`);
 
-fs.appendFileSync(envFile, `node_libs=${nodeLibs.join(' ')}\n`);
-fs.appendFileSync(envFile, `angular_libs=${angularLibs.join(' ')}\n`);
-
-console.log('Node libs:', nodeLibs);
-console.log('Angular libs:', angularLibs);
+console.log('Detected Node libs:', nodeLibs);
+console.log('Detected Angular libs:', angularLibs);
