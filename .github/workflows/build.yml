@@ -34,8 +34,11 @@ jobs:
       - name: Detect all packages
         id: detect
         run: |
-          # Get all workspace packages
-          ALL_PACKAGES=$(jq -r '.packages[]' pnpm-workspace.yaml)
+          # Install yq (if not already on the runner)
+          sudo apt-get update && sudo apt-get install -y yq
+
+          # Read all workspace packages
+          ALL_PACKAGES=$(yq eval '.packages[]' pnpm-workspace.yaml)
 
           NODE_LIBS=""
           ANGULAR_LIBS=""
@@ -52,6 +55,7 @@ jobs:
 
           echo "node_libs=$NODE_LIBS" >> $GITHUB_ENV
           echo "angular_libs=$ANGULAR_LIBS" >> $GITHUB_ENV
+        shell: /usr/bin/bash -e
 
       # ---- Node/TS libraries ----
       - name: Run Jest tests for Node libs
