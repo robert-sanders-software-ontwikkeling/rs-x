@@ -30,8 +30,12 @@ export const run = (async () => {
 
         await new WaitForEvent(stateManager, 'changed').wait(() => {
             console.log('Changed value:');
-            let resolveHandler: (value: number) => void;
-            stateContext.promise = new Promise((resolve) => { resolveHandler = resolve; });
+            let resolveHandler!: (value: number) => void;
+
+            stateContext.promise = new Promise<number>((resolve) => {
+                resolveHandler = resolve;
+            });
+
             resolveHandler(30);
         });
 

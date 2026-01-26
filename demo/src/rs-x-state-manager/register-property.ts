@@ -1,4 +1,4 @@
-import { InjectionContainer, printValue, truePredicate } from '@rs-x/core';
+import { InjectionContainer, printValue, truePredicate, Type } from '@rs-x/core';
 import {
     type IStateChange,
     type IStateManager,
@@ -58,7 +58,7 @@ export const run = (() => {
         console.log('\nReplacing stateContext.b.nested.nested will emit a change event');
         console.log('Changed value:');
 
-        stateContext.b.nested.nested = {
+        Type.toObject(stateContext.b.nested).nested = {
             a: -30,
             nested: {
                 a: -40

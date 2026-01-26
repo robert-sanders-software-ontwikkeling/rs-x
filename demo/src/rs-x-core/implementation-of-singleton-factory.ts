@@ -18,7 +18,7 @@ interface IObserver extends IDisposable {
 class PropertObserver implements IObserver {
     private _isDisposed = false;
     private _value: unknown;
-    private _propertyDescriptorWithTarget: IPropertyDescriptor;
+    private _propertyDescriptorWithTarget: IPropertyDescriptor | undefined;
     private readonly _changed = new Subject<IPropertyChange>();
 
     constructor(
@@ -45,7 +45,7 @@ class PropertObserver implements IObserver {
             delete this._target[propertyName];
 
             if (
-                this._propertyDescriptorWithTarget.type !==
+                this._propertyDescriptorWithTarget?.type !==
                 PropertyDescriptorType.Function
             ) {
                 this._target[propertyName] = value
@@ -120,7 +120,7 @@ class PropertObserver implements IObserver {
         descriptorWithTarget: IPropertyDescriptor
     ): PropertyDescriptor {
         const newDescriptor = { ...descriptorWithTarget.descriptor };
-        const oldSetter = descriptorWithTarget.descriptor.set;
+        const oldSetter = descriptorWithTarget.descriptor.set as (v: unknown) => void
         newDescriptor.set = (value) => {
             const oldValue = this._target[this._propertyName];
             if (value !== oldValue) {

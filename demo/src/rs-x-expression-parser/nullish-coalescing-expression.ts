@@ -10,7 +10,7 @@ InjectionContainer.load(RsXExpressionParserModule);
 const expressionFactory: IExpressionFactory = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionFactory);
 
 export const run = (async () => {
-    const expressionContext = {
+    const expressionContext: { a: null | number; b: number } = {
         a: null,
         b: 10,
     };

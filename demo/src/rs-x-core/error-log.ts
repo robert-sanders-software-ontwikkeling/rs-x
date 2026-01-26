@@ -3,7 +3,8 @@ import {
     InjectionContainer,
     printValue,
     RsXCoreInjectionTokens,
-    RsXCoreModule
+    RsXCoreModule,
+    Type
 } from '@rs-x/core';
 
 // Load the core module into the injection container
@@ -23,7 +24,7 @@ export const run = (() => {
         throw new Error('Oops an error');
     } catch (e) {
         errorLog.add({
-            exception: e,
+            exception: Type.cast(e),
             message: 'Oops',
             context,
         });

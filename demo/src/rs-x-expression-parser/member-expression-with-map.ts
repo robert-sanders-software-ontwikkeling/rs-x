@@ -1,4 +1,4 @@
-import { emptyFunction, InjectionContainer, printValue, WaitForEvent } from '@rs-x/core';
+import { emptyFunction, InjectionContainer, printValue, Type, WaitForEvent } from '@rs-x/core';
 import {
     type IExpressionFactory,
     RsXExpressionParserInjectionTokens,
@@ -11,7 +11,7 @@ InjectionContainer.load(RsXExpressionParserModule);
 const expressionFactory: IExpressionFactory = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionFactory);
 
 export const run = (async () => {
-    const expressionContext = {
+    const expressionContext: { a: { b: Map<string, { c: { d: number } }> } } = {
         a: {
             b: new Map([
                 ['a', { c: { d: 1 } }],
@@ -48,12 +48,12 @@ export const run = (async () => {
 
         console.log(`Value of 'a.b['b'].c.d' after changing b['b'].c to '{ d: 220 }':`);
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { 
-            expressionContext.a.b.get('b').c = { d: 220 }; 
+            Type.toObject(expressionContext.a.b.get('b')).c = { d: 220 }; 
         });
 
         console.log(`Value of 'a.b['b'].c.d' after changing b[1].c.d to '330':`);
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { 
-            expressionContext.a.b.get('b').c.d = 330; 
+            Type.toObject(expressionContext.a.b.get('b')?.c).d = 330; 
         });
 
         console.log(`Final value of 'a.b['b'].c.d':`)
