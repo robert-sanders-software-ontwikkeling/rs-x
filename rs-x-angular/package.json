@@ -4,13 +4,17 @@
   "version": "0.0.0",
   "packageManager": "pnpm@10.22.0",
   "scripts": {
-    "build:libs": "pnpm -r --filter '!@rs-x/angular' run build",
-    "build:angular": "pnpm --prefix rs-x-angular run build",
-    "build": "pnpm run build:libs && pnpm run build:angular",
-    "test": "vitest run --config projects/rsx/vitest.config.ts",
+    "build:angular": "ng-packagr -p projects/rsx/ng-package.json",
+    "clean": "rimraf dist",
+    "test": "vitest run",
     "lint": "ng lint"
   },
   "devDependencies": {
+    "@angular/cli": "^21.1.1",
+    "@angular/compiler-cli": "^21.1.0",
+    "ng-packagr": "^21.1.0",
+    "typescript": "~5.9.2",
+    "vitest": "^4.0.8",
     "rimraf": "^6.1.2"
   }
 }

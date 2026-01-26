@@ -3,14 +3,13 @@
   "version": "0.4.0",
   "description": "Reactive JavaScript expression parser with observable AST integration for RS-X",
   "type": "module",
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     }
   },
   "sideEffects": false,
@@ -30,11 +29,16 @@
     "provenance": true
   },
   "scripts": {
-    "build": "tsup lib/index.ts --format cjs,esm --dts --tsconfig ../tsconfig.build.json",
+    "build": "tsup lib/index.ts --format esm --dts --tsconfig ../tsconfig.build.json",
     "clean": "rimraf dist"
   },
   "peerDependencies": {
     "rxjs": "^7.8.0"
+  },
+  "peerDependenciesMeta": {
+    "rxjs": {
+      "optional": false
+    }
   },
   "dependencies": {
     "@rs-x/core": "workspace:*",

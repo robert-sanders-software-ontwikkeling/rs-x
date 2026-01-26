@@ -5,7 +5,7 @@
    "packageManager": "pnpm@10.22.0",
    "scripts": {
       "build:libs": "pnpm --filter '@rs-x/core' run build && pnpm --filter '@rs-x/state-manager' run build && pnpm --filter '@rs-x/expression-parser' run build",
-      "build:angular": "pnpm --prefix rs-x-angular run build:libs",
+      "build:angular": "pnpm --prefix rs-x-angular run build:angular",
       "clean": "pnpm -r exec rimraf node_modules dist && pnpm exec rimraf node_modules dist .pnpm-store",
       "reinstall": "pnpm run clean && pnpm install",
       "build:core": "pnpm --filter @rs-x/core run build",

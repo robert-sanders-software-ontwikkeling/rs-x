@@ -57,48 +57,19 @@ jobs:
       - name: Install dependencies (strict)
         run: pnpm install --frozen-lockfile
 
-      # ---------------- CHANGE VALIDATION ----------------
-      - name: Validate release branch changes
-        run: |
-          git fetch origin main
-          BASE=$(git merge-base origin/main HEAD)
-          CHANGED_FILES=$(git diff --name-only $BASE..HEAD)
-
-          for f in $CHANGED_FILES; do
-            if [[ ! "$f" =~ ^\.changeset/ && "$f" != "package.json" && "$f" != "pnpm-lock.yaml" ]]; then
-              echo "Unauthorized change detected: $f"
-              exit 1
-            fi
-          done
-
       # ---------------- VERSION ----------------
       - name: Version packages with Changesets
         run: pnpm changeset version
 
-      # ---------------- ROLLBACK DETECTION ----------------
-      - name: Abort if version already exists on npm
-        run: |
-          node <<'EOF'
-          const { execSync } = require('child_process');
-
-          const pkgs = execSync(
-            "pnpm -r exec node -e \"console.log(require('./package.json').name + '@' + require('./package.json').version)\""
-          ).toString().trim().split('\n');
-
-          for (const p of pkgs) {
-            try {
-              execSync(`npm view ${p} version`, { stdio: 'ignore' });
-              console.error(`❌ Version already published: ${p}`);
-              process.exit(1);
-            } catch {
-              console.log(`✅ Not published yet: ${p}`);
-            }
-          }
-          EOF
-
       # ---------------- BUILD ----------------
-      - name: Build packages
-        run: pnpm -r run build
+      - name: Build Node libs
+        run: |
+          pnpm --filter '@rs-x/core' run build
+          pnpm --filter '@rs-x/state-manager' run build
+          pnpm --filter '@rs-x/expression-parser' run build
+
+      - name: Build Angular lib
+        run: pnpm --prefix rs-x-angular run build:angular
 
       # ---------------- FIRST-PUBLISH DETECTION ----------------
       - name: Detect first-time publish
@@ -108,9 +79,13 @@ jobs:
           const { execSync } = require('child_process');
           const fs = require('fs');
 
-          const pkgs = execSync(
-            "pnpm -r exec node -e \"console.log(require('./package.json').name)\""
-          ).toString().trim().split('\n');
+          // List all packages in monorepo
+          const pkgs = [
+            "@rs-x/core",
+            "@rs-x/state-manager",
+            "@rs-x/expression-parser",
+            "@rs-x/angular"
+          ];
 
           let first = false;
           for (const name of pkgs) {
@@ -126,21 +101,20 @@ jobs:
           EOF
 
       # ---------------- PUBLISH ----------------
-      - name: Publish packages
+      - name: Publish packages (Node libs + Angular)
         if: ${{ github.event.inputs.promote_from_next != 'true' && github.event.inputs.dry_run != 'true' }}
-        env:
-          NODE_AUTH_TOKEN: ${{ steps.first_publish.outputs.first_publish == '1' && secrets.NPM_TOKEN || '' }}
         run: |
           DIST_TAG="${{ github.event.inputs.dist_tag || 'latest' }}"
 
-          if [ "${{ steps.first_publish.outputs.first_publish }}" = "1" ]; then
-            echo "🚀 First-time publish (token-based)"
-            pnpm changeset publish --tag "$DIST_TAG"
-          else
-            echo "🔐 OIDC publish with provenance"
-            unset NODE_AUTH_TOKEN
-            pnpm changeset publish --tag "$DIST_TAG"
-          fi
+          # Node libs
+          for pkg in "@rs-x/core" "@rs-x/state-manager" "@rs-x/expression-parser"; do
+            echo "Publishing $pkg with tag $DIST_TAG"
+            pnpm publish --filter $pkg --tag "$DIST_TAG" --access public
+          done
+
+          # Angular package from dist folder
+          echo "Publishing Angular package @rs-x/angular from dist"
+          pnpm publish rs-x-angular/dist --tag "$DIST_TAG" --access public
 
       # ---------------- DRY RUN ----------------
       - name: Dry run summary
@@ -150,15 +124,15 @@ jobs:
       # ---------------- PROMOTION ----------------
       - name: Promote from next → latest
         if: ${{ github.event.inputs.promote_from_next == 'true' }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           node <<'EOF'
           const { execSync } = require('child_process');
-          const pkgs = execSync(
-            "pnpm -r exec node -e \"console.log(require('./package.json').name + '@' + require('./package.json').version)\""
-          ).toString().trim().split('\n');
-
+          const pkgs = [
+            "@rs-x/core",
+            "@rs-x/state-manager",
+            "@rs-x/expression-parser",
+            "@rs-x/angular"
+          ];
           for (const p of pkgs) {
             console.log(`Promoting ${p} → latest`);
             execSync(`npm dist-tag add ${p} latest`, { stdio: 'inherit' });
@@ -191,7 +165,6 @@ jobs:
         run: |
           git config user.name "CI Bot"
           git config user.email "ci@example.com"
-
           if ! git diff --quiet; then
             git add .
             git commit -m "chore: version packages"

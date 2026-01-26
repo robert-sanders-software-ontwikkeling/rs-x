@@ -3,14 +3,17 @@
   "version": "0.4.0",
   "description": "Angular integration for RS-X, providing the RsxPipe",
   "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "module": "./dist/rsx/fesm2022/rs-x-angular.mjs",
+  "types": "./dist/rsx/types/rs-x-angular.d.ts",
+  "typings": "./dist/rsx/types/rs-x-angular.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "types": "./dist/rsx/types/rs-x-angular.d.ts",
+      "import": "./dist/rsx/fesm2022/rs-x-angular.mjs",
+      "default": "./dist/rsx/fesm2022/rs-x-angular.mjs"
+    },
+    "./package.json": {
+      "default": "./package.json"
     }
   },
   "sideEffects": false,
@@ -32,19 +35,17 @@
   "peerDependencies": {
     "@angular/core": "^21.1.0",
     "@angular/common": "^21.1.0",
-    "rxjs": "^7.8.0"
-  },
-  "dependencies": {
+    "rxjs": "^7.8.0",
     "@rs-x/core": "workspace:*",
     "@rs-x/expression-parser": "workspace:*"
   },
-  "devDependencies": {
-    "@angular/cli": "^21.1.1",
-    "@angular/compiler-cli": "^21.1.0",
-    "ng-packagr": "^21.1.0",
-    "typescript": "~5.9.2",
-    "vitest": "^4.0.8",
-    "rimraf": "^6.1.2"
+  "peerDependenciesMeta": {
+    "@rs-x/core": {
+      "optional": false
+    },
+    "@rs-x/expression-parser": {
+      "optional": false
+    }
   },
   "engines": {
     "node": ">=24"

@@ -3,14 +3,13 @@
     "version": "0.4.0",
     "description": "Core reactive primitives, dependency injection, and state foundations for the RS-X framework",
     "type": "module",
-    "main": "./dist/index.cjs",
+    "main": "./dist/index.js",
     "module": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "exports": {
         ".": {
             "types": "./dist/index.d.ts",
-            "import": "./dist/index.js",
-            "require": "./dist/index.cjs"
+            "import": "./dist/index.js"
         }
     },
     "sideEffects": false,
@@ -30,18 +29,22 @@
         "provenance": true
     },
     "scripts": {
-        "build": "tsup lib/index.ts --format cjs,esm --dts --tsconfig ../tsconfig.build.json",
+        "build": "tsup lib/index.ts --format esm --dts --tsconfig ../tsconfig.build.json",
         "clean": "rimraf dist"
     },
     "dependencies": {
         "fast-equals": "^5.3.2",
         "inversify": "^7.1.0",
         "reflect-metadata": "^0.2.2",
-        "lodash.clonedeepwith": "^4.5.0",
-        "rxjs": "^7.8.2"
+        "lodash.clonedeepwith": "^4.5.0"
     },
     "peerDependencies": {
-        
+        "rxjs": "^7.8.2"
+    },
+    "peerDependenciesMeta": {
+        "rxjs": {
+            "optional": false
+        }
     },
     "devDependencies": {
         "tsup": "^8.5.1",
