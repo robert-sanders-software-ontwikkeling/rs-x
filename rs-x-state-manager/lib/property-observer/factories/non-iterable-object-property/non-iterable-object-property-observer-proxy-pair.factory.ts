@@ -52,11 +52,11 @@ export class NonIterableObjectPropertyObserverProxyPairFactory extends IndexObse
             object instanceof Set 
          ) 
          && Type.isString(propertyInfo.key) 
-         && !Type.isMethod(object[propertyInfo.key])
+         && !Type.isMethod(Type.toObject(object)[propertyInfo.key])
       );
    }
 
-   protected setIndexValue(object: object, key: string, value: unknown): void {
+   protected setIndexValue(object: Record<string, unknown>, key: string, value: unknown): void {
       object[key] = value;
    }
 }

@@ -36,7 +36,7 @@ class StateChangeSubscriptionsForContextManager
 
    protected getGroupMemberId(
       data: IStateChangeSubscriptionIdInfo
-   ): MustProxify {
+   ): MustProxify | undefined {
       return data.mustProxify;
    }
 

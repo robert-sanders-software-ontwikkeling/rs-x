@@ -34,7 +34,7 @@ export class MethodAccessor implements IMethodAccessor {
    }
 
    public getValue(context: unknown, index: IFunctionCallIndex): unknown {
-      return this._functionCallResultCacheFactory.get(context, index).result;
+      return this._functionCallResultCacheFactory.get(context, index)?.result;
    }
 
    public setValue(_: object, index: IFunctionCallIndex): void {
@@ -42,7 +42,11 @@ export class MethodAccessor implements IMethodAccessor {
    }
 
    public applies(context: unknown, index: IFunctionCallIndex): boolean {
-      return Type.isFunction(context[index.functionName]) || Type.isArrowFunction(context[index.functionName]);
+      if (typeof context !== 'object' || context === null) {
+         return false;
+      }
 
+      const prop = (context as Record<string, unknown>)[index.functionName];
+      return Type.isFunction(prop) || Type.isArrowFunction(prop);
    }
 }

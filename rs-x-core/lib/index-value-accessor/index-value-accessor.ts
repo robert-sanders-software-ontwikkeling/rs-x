@@ -11,7 +11,7 @@ export class IndexValueAccessor implements IIndexValueAccessor {
    constructor(
       @MultiInject(RsXCoreInjectionTokens.IIndexValueAccessorList)
       accessors: readonly IIndexValueAccessor[]
-   ) { 
+   ) {
       this._accessors = [...accessors].sort((a, b) => b.priority - a.priority)
    }
 
@@ -58,19 +58,25 @@ export class IndexValueAccessor implements IIndexValueAccessor {
    }
 
    private getIndexAccessor(
-         context: unknown,
-         index: unknown
-      ): IIndexValueAccessor<unknown, unknown> {
-         const accessor = this._accessors.find((accessor) =>
-            accessor.applies(context, index)
-         );
-   
-         if (!accessor) {
+      context: unknown,
+      index: unknown
+   ): IIndexValueAccessor<unknown, unknown> {
+      const accessor = this._accessors.find((accessor) =>
+         accessor.applies(context, index)
+      );
+
+      if (!accessor) {
+         if (typeof context === 'object' && context !== null) {
             throw new UnsupportedException(
-               `No accessor found for ${context.constructor.name}.${index}`
+               `No accessor found for ${context.constructor.name}.${String(index)}`
+            );
+         } else {
+            throw new UnsupportedException(
+               `No accessor found for non-object context: ${String(context)}.${String(index)}`
             );
          }
-   
-         return accessor;
       }
+
+      return accessor;
+   }
 }

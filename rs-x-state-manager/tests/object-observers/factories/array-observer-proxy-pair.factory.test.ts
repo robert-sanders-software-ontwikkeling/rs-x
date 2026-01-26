@@ -21,13 +21,14 @@ describe('ArrayObserverProxyPairFactory tests', () => {
    let arrayObserverProxyPairFactory: IArrayObserverProxyPairFactory;
    let arrayProxyFactory: IArrayProxyFactory;
    let disposableOwner: DisposableOwnerMock;
-   let observer: IObserver;
+   let observer: IObserver | undefined;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXStateManagerModule);
       arrayProxyFactory = InjectionContainer.get<IArrayProxyFactory>(
          RsXStateManagerInjectionTokens.IArrayProxyFactory
       );
+
       arrayObserverProxyPairFactory =
          InjectionContainer.get<IArrayObserverProxyPairFactory>(
             RsXStateManagerInjectionTokens.IArrayObserverProxyPairFactory
@@ -45,7 +46,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
    afterEach(() => {
       if (observer) {
          observer.dispose();
-         observer = null;
+         observer = undefined;
       }
    });
 
@@ -91,7 +92,10 @@ describe('ArrayObserverProxyPairFactory tests', () => {
          truePredicate,
          new ErrorLog(),
          undefined,
-         () => arrayProxyFactory.getFromId(arrayProxyId).observer,
+         () => {
+            const proxy = arrayProxyFactory?.getFromId(arrayProxyId);
+            return (proxy ? (proxy.observer as IObserver) : undefined) as IObserver;
+         },
          true
       );
 
@@ -114,17 +118,19 @@ describe('ArrayObserverProxyPairFactory tests', () => {
 
       expect(propertyObserverProxyPairManager).toBeDefined();
 
-      const item1Id = propertyObserverProxyPairManager.getId({
+      const item1Id = propertyObserverProxyPairManager?.getId({
          key: 0,
          mustProxify: truePredicate,
       });
-      const item2Id = propertyObserverProxyPairManager.getId({
+      const item2Id = propertyObserverProxyPairManager?.getId({
          key: 1,
          mustProxify: truePredicate,
       });
       const arrayProxyId = arrayProxyFactory.getId({
          array: objectArray,
-      });
+      }) as unknown
+
+      expect(arrayProxyId).toBeDefined()
 
       const expected = new ObserverGroup(
          disposableOwner,
@@ -133,11 +139,14 @@ describe('ArrayObserverProxyPairFactory tests', () => {
          truePredicate,
          new ErrorLog(),
          undefined,
-         () => arrayProxyFactory.getFromId(arrayProxyId).observer,
+         () => {
+            const proxy = arrayProxyFactory?.getFromId(arrayProxyId);
+            return (proxy ? (proxy.observer as IObserver) : undefined) as IObserver;
+         },
          true
       ).addObservers([
-         propertyObserverProxyPairManager.getFromId(item1Id).observer,
-         propertyObserverProxyPairManager.getFromId(item2Id).observer,
+         propertyObserverProxyPairManager?.getFromId(item1Id)?.observer as IObserver,    
+         propertyObserverProxyPairManager?.getFromId(item2Id)?.observer as IObserver,
       ]);
       expect(observer).observerEqualTo(expected);
    });
@@ -174,18 +183,18 @@ describe('ArrayObserverProxyPairFactory tests', () => {
          );
       const propertyObserverProxyPairManager =
          objectPropertyObserverProxyPairManager.getFromId(objectArray);
-      const item1Id = propertyObserverProxyPairManager.getId({
+      const item1Id = propertyObserverProxyPairManager?.getId({
          key: 0,
          mustProxify: truePredicate
       });
-      const item2Id = propertyObserverProxyPairManager.getId({
+      const item2Id = propertyObserverProxyPairManager?.getId({
          key: 1,
          mustProxify: truePredicate
       });
 
       expect(arrayProxyFactory.getFromId(objectArray)).toBeDefined();
-      expect(propertyObserverProxyPairManager.getFromId(item1Id)).toBeDefined();
-      expect(propertyObserverProxyPairManager.getFromId(item2Id)).toBeDefined();
+      expect(propertyObserverProxyPairManager?.getFromId(item1Id)).toBeDefined();
+      expect(propertyObserverProxyPairManager?.getFromId(item2Id)).toBeDefined();
       expect(objectArray[0]).isWritableProperty('x');
       expect(objectArray[1]).isWritableProperty('x')
 
@@ -193,10 +202,10 @@ describe('ArrayObserverProxyPairFactory tests', () => {
 
       expect(arrayProxyFactory.getFromId(objectArray)).toBeUndefined();
       expect(
-         propertyObserverProxyPairManager.getFromId(item1Id)
+         propertyObserverProxyPairManager?.getFromId(item1Id)
       ).toBeUndefined();
       expect(
-         propertyObserverProxyPairManager.getFromId(item2Id)
+         propertyObserverProxyPairManager?.getFromId(item2Id)
       ).toBeUndefined();
       expect(objectArray[0]).not.isWritableProperty('x');
       expect(objectArray[1]).not.isWritableProperty('x')

@@ -3,7 +3,7 @@ import type { IIdentifierOwnerResolver } from './identifier-owner-resolver.inter
 
 @Injectable()
 export class ArrayIndexOwnerResolver implements IIdentifierOwnerResolver {
-   public resolve(index: string | number, array: unknown[]): object {
+   public resolve(index: string | number, array: unknown[]): object| null {
       const normalizedIndex = Number(index);
       if (isNaN(normalizedIndex) || !Array.isArray(array)) {
          return null;

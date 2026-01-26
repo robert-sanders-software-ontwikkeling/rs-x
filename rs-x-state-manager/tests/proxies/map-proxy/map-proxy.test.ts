@@ -46,7 +46,7 @@ describe('MapProxy tests', () => {
 
 
    it('dispose will unregister proxy when all references are released', () => {
-       const proxyRegistry = new ProxyRegistryMock();
+      const proxyRegistry = new ProxyRegistryMock();
       const mapProxyFactory = new MapProxyFactory(proxyRegistry);
       const map = new Map([
          ['a', 1],
@@ -83,30 +83,30 @@ describe('MapProxy tests', () => {
 
    describe('all map operation still work as before', () => {
       it('size', () => {
-         expect(observerProxyPair.proxy.size).toEqual(2);
+         expect(observerProxyPair.proxy?.size).toEqual(2);
       });
 
       it('get', () => {
-         expect(observerProxyPair.proxy.get('a')).toEqual(1);
-         expect(observerProxyPair.proxy.get('b')).toEqual(2);
+         expect(observerProxyPair.proxy?.get('a')).toEqual(1);
+         expect(observerProxyPair.proxy?.get('b')).toEqual(2);
       });
 
       it('has', () => {
-         expect(observerProxyPair.proxy.has('a')).toEqual(true);
-         expect(observerProxyPair.proxy.has('b')).toEqual(true);
-         expect(observerProxyPair.proxy.has('c')).toEqual(false);
+         expect(observerProxyPair.proxy?.has('a')).toEqual(true);
+         expect(observerProxyPair.proxy?.has('b')).toEqual(true);
+         expect(observerProxyPair.proxy?.has('c')).toEqual(false);
       });
 
       it('entries', () => {
-         expect(Array.from(observerProxyPair.proxy.entries())).toEqual([
+         expect(Array.from(observerProxyPair.proxy?.entries() ?? [])).toEqual([
             ['a', 1],
             ['b', 2],
          ]);
       });
 
       it('forEach', () => {
-         const actual = [];
-         observerProxyPair.proxy.forEach((value, key) =>
+         const actual: unknown[] = [];
+         observerProxyPair.proxy?.forEach((value, key) =>
             actual.push([key, value])
          );
 
@@ -117,15 +117,15 @@ describe('MapProxy tests', () => {
       });
 
       it('values', () => {
-         expect(Array.from(observerProxyPair.proxy.values())).toEqual([1, 2]);
+         expect(Array.from(observerProxyPair.proxy?.values() ?? [])).toEqual([1, 2]);
       });
 
       it('keys', () => {
-         expect(Array.from(observerProxyPair.proxy.keys())).toEqual(['a', 'b']);
+         expect(Array.from(observerProxyPair.proxy?.keys() ?? [])).toEqual(['a', 'b']);
       });
 
       it('set', () => {
-         const actual = observerProxyPair.proxy.set('c', 3);
+         const actual = observerProxyPair.proxy?.set('c', 3);
 
          expect(actual).toBe(observerProxyPair.proxy);
          expect(mapData.map).toEqual(
@@ -138,13 +138,13 @@ describe('MapProxy tests', () => {
       });
 
       it('delete', () => {
-         const actual = observerProxyPair.proxy.delete('b');
+         const actual = observerProxyPair.proxy?.delete('b');
          expect(actual).toEqual(true);
          expect(mapData.map).toEqual(new Map([['a', 1]]));
       });
 
       it('clear', () => {
-         observerProxyPair.proxy.clear();
+         observerProxyPair.proxy?.clear();
          expect(mapData.map).toEqual(new Map());
       });
    });
@@ -155,7 +155,7 @@ describe('MapProxy tests', () => {
             observerProxyPair.observer,
             'changed'
          ).wait(() => {
-            observerProxyPair.proxy.set('c', 3);
+            observerProxyPair.proxy?.set('c', 3);
          });
 
          const expected: IPropertyChange = {
@@ -173,7 +173,7 @@ describe('MapProxy tests', () => {
             observerProxyPair.observer,
             'changed'
          ).wait(() => {
-            observerProxyPair.proxy.set('b', 20);
+            observerProxyPair.proxy?.set('b', 20);
          });
 
          const expected: IPropertyChange = {
@@ -192,7 +192,7 @@ describe('MapProxy tests', () => {
             observerProxyPair.observer,
             'changed'
          ).wait(() => {
-            observerProxyPair.proxy.delete('b');
+            observerProxyPair.proxy?.delete('b');
          });
 
          const expected: IPropertyChange = {
@@ -212,7 +212,7 @@ describe('MapProxy tests', () => {
             'changed',
             { count: 2 }
          ).wait(() => {
-            observerProxyPair.proxy.clear();
+            observerProxyPair.proxy?.clear();
          });
 
          const expected: IPropertyChange[] = [

@@ -9,7 +9,7 @@ import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
 describe('ObservableObserverProxyPairFactory tests', () => {
    let disposableOwner: DisposableOwnerMock;
    let observableObserverFactory: IObjectObserverProxyPairFactory;
-   let observer: IObserver;
+   let observer: IObserver | undefined;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXStateManagerModule);
@@ -30,7 +30,7 @@ describe('ObservableObserverProxyPairFactory tests', () => {
    afterEach(() => {
       if (observer) {
          observer.dispose();
-         observer = null;
+         observer = undefined;
       }
    });
 

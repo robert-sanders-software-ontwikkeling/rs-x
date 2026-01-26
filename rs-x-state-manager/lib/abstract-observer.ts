@@ -1,4 +1,4 @@
-import { type IDisposableOwner, type IPropertyChange } from '@rs-x/core';
+import { Type, type IDisposableOwner, type IPropertyChange } from '@rs-x/core';
 import { type Observable, Subject } from 'rxjs';
 import { type IObserver } from './observer.interface';
 
@@ -11,20 +11,20 @@ export abstract class AbstractObserver<
    private readonly _changed: Subject<IPropertyChange>;
 
    protected constructor(
-      private readonly _owner: IDisposableOwner,
+      private readonly _owner: IDisposableOwner | undefined,
       private _target: TTarget,
-      private _value: TValue,
+      private _value: TValue | undefined,
       changed?: Subject<IPropertyChange>,
       public readonly id?: TId
    ) {
       this._changed = changed ?? new Subject<IPropertyChange>();
    }
 
-   public get value(): TValue {
+   public get value(): TValue | undefined {
       return this._value;
    }
 
-   protected set value(value: TValue) {
+   protected set value(value: TValue | undefined) {
       this._value = value;
    }
 
@@ -49,8 +49,8 @@ export abstract class AbstractObserver<
 
       if (!this._owner?.canDispose || this._owner.canDispose()) {
          this.disposeInternal();
-         this._target = undefined;
-         this._value = undefined;
+         this._target = Type.cast(undefined);
+         this._value = Type.cast(undefined);
          this._isDisposed = true;
       }
 

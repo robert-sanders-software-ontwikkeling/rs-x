@@ -5,29 +5,28 @@ import { type IObserver } from './observer.interface';
 
 export class ObserverGroup extends AbstractObserver {
    private readonly _subscriptions = new Map<IObserver, Subscription>();
-   private _rootChangeSubscription: Subscription;
+   private _rootChangeSubscription: Subscription | undefined;
    private readonly _observers: IObserver[] = [];
    private readonly mustHandleChange: (change: IPropertyChange) => boolean;
-   private _rootObserver: IObserver;
+   private _rootObserver: IObserver | undefined;
    private _isInitialized = false;
-
-   protected _parent: ObserverGroup;
+   protected _parent: ObserverGroup | undefined;
 
    constructor(
-      owner: IDisposableOwner,
+      owner: IDisposableOwner | undefined,
       target: unknown,
       initialValue: unknown,
-      mustHandleChange: (change: IPropertyChange) => boolean,
+      mustHandleChange: ((change: IPropertyChange) => boolean) | undefined,
       private readonly _errorLog: IErrorLog,
       id?: unknown,
-      private readonly getRootObserver?: () => IObserver,
+      private readonly getRootObserver?: () => IObserver | undefined,
       private readonly _observeRootObserver?: boolean
    ) {
       super(owner, target, initialValue, new ReplaySubject(1), id);
       this.mustHandleChange = mustHandleChange ?? (() => true);
    }
 
-   public get rootObserver(): IObserver {
+   public get rootObserver(): IObserver | undefined {
       if (!this._rootObserver && this.getRootObserver) {
          this._rootObserver = this.getRootObserver();
       }
@@ -43,18 +42,20 @@ export class ObserverGroup extends AbstractObserver {
       this.rootObserver?.init();
       this._observers.forEach((observer) => observer.init());
 
-      if (this._observeRootObserver && this.rootObserver) {
-         this._rootChangeSubscription = this._rootObserver.changed.subscribe({
-            next: this.emitChange,
-            error: (e) =>
-               this._errorLog.add({
-                  message: `Failed to handle change for ${this._rootObserver.target.constructor.name}[${this._rootObserver.id}]`,
-                  exception: e,
-                  context: this._rootObserver.target,
-                  fatal: true,
-               }),
-         });
-      }
+      if (this._observeRootObserver && this._rootObserver) {
+    this._rootChangeSubscription = this._rootObserver.changed.subscribe({
+        next: this.emitChange,
+        error: (e) => {
+            const target = this._rootObserver!.target;
+            this._errorLog.add({
+                message: `Failed to handle change for ${Type.getConstructorName(target)}[${this._rootObserver!.id}]`,
+                exception: e,
+                context: target as object,
+                fatal: true,
+            });
+        },
+    });
+}
    }
 
    public addObservers(observers: IObserver[]): ObserverGroup {

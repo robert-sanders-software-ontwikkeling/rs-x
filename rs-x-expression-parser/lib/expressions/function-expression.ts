@@ -1,4 +1,4 @@
-import { type AnyFunction, Assertion, PENDING } from '@rs-x/core';
+import { type AnyFunction, Assertion, PENDING, Type } from '@rs-x/core';
 import { type IGuidFactory } from '../../../rs-x-core/lib/guid';
 import { type IStateManager } from '../../../rs-x-state-manager/lib';
 import { type IExpressionChangeCommitHandler, type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
@@ -74,7 +74,7 @@ export class FunctionExpression extends AbstractExpression {
    }
 
    protected override evaluate(): unknown {
-      const functionContext = this.objectExpression ? this.objectExpression?.value : this._context;
+      const functionContext = Type.toObject(this.objectExpression ? this.objectExpression?.value : this._context);
       if (!functionContext) {
          return PENDING;
       }
@@ -95,7 +95,7 @@ export class FunctionExpression extends AbstractExpression {
          return PENDING;
       }
 
-      const func = functionContext[functionName];
+      const func = Type.cast<Function>(functionContext[functionName]);
       Assertion.assertIsFunction(func, func.name);
 
       return this.registerResult(func.call(functionContext, ...args));

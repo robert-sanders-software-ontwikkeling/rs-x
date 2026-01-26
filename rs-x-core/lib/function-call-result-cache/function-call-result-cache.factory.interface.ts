@@ -19,5 +19,5 @@ export interface IFunctionCallResultCache extends IDisposable {
 export interface IFunctionCallResultCacheFactory {
     create(context: unknown, result: IFunctionCallResult): IFunctionCallResultCache;
     has(context: unknown, index: IFunctionCallIndex): boolean;
-    get(context: unknown, index: IFunctionCallIndex): IFunctionCallResultCache;
+    get(context: unknown, index: IFunctionCallIndex): IFunctionCallResultCache | undefined;
 }

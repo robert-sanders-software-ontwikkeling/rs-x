@@ -28,7 +28,7 @@ export class ConstantExpression<T> extends AbstractExpression<T> {
       
    }
 
-   protected override evaluate(): T {
+   protected override evaluate(): T | undefined {
       return this._value;
    }
 

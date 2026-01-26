@@ -10,7 +10,6 @@ import {
    PENDING,
    RsXCoreInjectionTokens,
 } from '@rs-x/core';
-
 import { Observable, Subject } from 'rxjs';
 import type {
    IObjectPropertyObserverProxyPairManager,
@@ -104,7 +103,7 @@ export class StateManager implements IStateManager {
          key: index,
          mustProxify,
       });
-      return stateChangeSubscriptionsForContextManager.has(id);
+      return id ? stateChangeSubscriptionsForContextManager.has(id) : false;
    }
 
    public watchState(
@@ -164,7 +163,7 @@ export class StateManager implements IStateManager {
    private unnsubscribeToObserverEvents(
       context: unknown,
       index: unknown,
-      mustProxify: MustProxify
+      mustProxify: MustProxify | undefined
    ): void {
       const subscriptionsForKey =
          this._stateChangeSubscriptionManager.getFromId(context);
@@ -179,7 +178,7 @@ export class StateManager implements IStateManager {
    private internalUnregister(
       context: unknown,
       index: unknown,
-      mustProxify: MustProxify
+      mustProxify: MustProxify | undefined,
    ): void {
       if (this.canReleaseState(context, index)) {
          this.unnsubscribeToObserverEvents(context, index, mustProxify);
@@ -243,7 +242,7 @@ export class StateManager implements IStateManager {
    private tryToSubscribeToChange(
       context: unknown,
       index: unknown,
-      mustProxify: MustProxify,
+      mustProxify: MustProxify | undefined,
       transferedValue?: ITransferedValue
    ): void {
       this._stateChangeSubscriptionManager.create(context).instance.create({
@@ -285,7 +284,7 @@ export class StateManager implements IStateManager {
 
       return Array.from(oldState.ids())
          .map((id) => {
-            const { value: oldValue, watched } = oldState.getFromId(id);
+            const { value: oldValue, watched } = oldState.getFromId(id) ?? {};
             const newValue = this.getValue(newContext, id);
 
             if (oldContext === newContext && this._equalityService.isEqual(oldValue, newValue)) {
@@ -293,7 +292,7 @@ export class StateManager implements IStateManager {
             }
 
 
-            let pendingId: string;
+            let pendingId: string | null = null;
             if (newValue === PENDING) {
                this._pending.set(newContext, oldValue);
             }
@@ -368,7 +367,7 @@ export class StateManager implements IStateManager {
       context: unknown,
       index: unknown,
       initialValue: unknown,
-      transferedValue: ITransferedValue,
+      transferedValue: ITransferedValue | undefined,
       watched: boolean,
    ): void {
       this.updateState(
@@ -387,7 +386,11 @@ export class StateManager implements IStateManager {
       );
    }
 
-   private getChainChanges(chain: IChainPart[]): IChainPartChange[] {
+   private getChainChanges(chain: IChainPart[] | undefined): IChainPartChange[] {
+      if(!chain){
+         return [];
+      }
+
       const registeredChainParts = chain.filter((chainPart) =>
          this._stateChangeSubscriptionManager.isRegistered(
             chainPart.object,
@@ -412,7 +415,7 @@ export class StateManager implements IStateManager {
       return this.getState(context, id);
    }
 
-   private onChange(change: IPropertyChange, mustProxify: MustProxify, watched: boolean): void {
+   private onChange(change: IPropertyChange, mustProxify: MustProxify | undefined, watched: boolean): void {
       const chainChanges = this.getChainChanges(change.chain);
       if (chainChanges.length === 0) {
          return;

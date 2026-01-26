@@ -13,7 +13,7 @@ describe('SetObserverProxyPairFactory tests', () => {
    let setObserverProxyPairFactory: ISetObserverProxyPairFactory;
    let setProxyFactory: ISetProxyFactory;
    let disposableOwner: DisposableOwnerMock;
-   let observer: IObserver;
+   let observer: IObserver | undefined;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXStateManagerModule);
@@ -37,7 +37,7 @@ describe('SetObserverProxyPairFactory tests', () => {
    afterEach(() => {
       if (observer) {
          observer.dispose();
-         observer = null;
+         observer = undefined;
       }
    });
 
@@ -77,7 +77,7 @@ describe('SetObserverProxyPairFactory tests', () => {
 
       const setProxyId = setProxyFactory.getId({
          set: objectSet,
-      });
+      }) as Set<unknown>;
 
       const expected = new ObserverGroup(
          disposableOwner,
@@ -86,7 +86,7 @@ describe('SetObserverProxyPairFactory tests', () => {
          truePredicate,
          new ErrorLog(),
          undefined,
-         () => setProxyFactory.getFromId(setProxyId).observer,
+         () => setProxyFactory.getFromId(setProxyId)?.observer,
          true
       );
 
@@ -94,8 +94,8 @@ describe('SetObserverProxyPairFactory tests', () => {
    });
 
    it('create will return  an Observergroup with item observers when setting mustProxify', async () => {
-      const item1 =  { x: 1 };
-      const item2 =  { x: 2 };
+      const item1 = { x: 1 };
+      const item2 = { x: 2 };
       const objectSet = new Set([
          item1,
          item2
@@ -114,17 +114,17 @@ describe('SetObserverProxyPairFactory tests', () => {
 
       expect(propertyObserverProxyPairManager).toBeDefined();
 
-      const item1Id = propertyObserverProxyPairManager.getId({
+      const item1Id = propertyObserverProxyPairManager?.getId({
          key: item1,
          mustProxify: truePredicate,
       });
-      const item2Id = propertyObserverProxyPairManager.getId({
-         key:  item2,
+      const item2Id = propertyObserverProxyPairManager?.getId({
+         key: item2,
          mustProxify: truePredicate,
       });
       const mapProxyId = setProxyFactory.getId({
          set: objectSet,
-      });
+      }) as Set<unknown>;
 
       const expected = new ObserverGroup(
          disposableOwner,
@@ -133,11 +133,11 @@ describe('SetObserverProxyPairFactory tests', () => {
          truePredicate,
          new ErrorLog(),
          undefined,
-         () => setProxyFactory.getFromId(mapProxyId).observer,
+         () => setProxyFactory.getFromId(mapProxyId)?.observer,
          true
       ).addObservers([
-         propertyObserverProxyPairManager.getFromId(item1Id).observer,
-         propertyObserverProxyPairManager.getFromId(item2Id).observer,
+         propertyObserverProxyPairManager?.getFromId(item1Id)?.observer as IObserver,
+         propertyObserverProxyPairManager?.getFromId(item2Id)?.observer as IObserver,
       ]);
       expect(observer).observerEqualTo(expected);
    });
@@ -163,8 +163,8 @@ describe('SetObserverProxyPairFactory tests', () => {
    });
 
    it('dispose will release the items for recursive observer', async () => {
-      const item1 =  { x: 1 };
-      const item2 =  { x: 2 };
+      const item1 = { x: 1 };
+      const item2 = { x: 2 };
       const objectSet = new Set([
          item1,
          item2
@@ -182,18 +182,18 @@ describe('SetObserverProxyPairFactory tests', () => {
          );
       const propertyObserverProxyPairManager =
          objectPropertyObserverProxyPairManager.getFromId(objectSet);
-      const item1Id = propertyObserverProxyPairManager.getId({
+      const item1Id = propertyObserverProxyPairManager?.getId({
          key: item1,
          mustProxify: truePredicate
       });
-      const item2Id = propertyObserverProxyPairManager.getId({
-         key:item2,
+      const item2Id = propertyObserverProxyPairManager?.getId({
+         key: item2,
          mustProxify: truePredicate
       });
 
       expect(setProxyFactory.getFromId(objectSet)).toBeDefined();
-      expect(propertyObserverProxyPairManager.getFromId(item1Id)).toBeDefined();
-      expect(propertyObserverProxyPairManager.getFromId(item2Id)).toBeDefined();
+      expect(propertyObserverProxyPairManager?.getFromId(item1Id)).toBeDefined();
+      expect(propertyObserverProxyPairManager?.getFromId(item2Id)).toBeDefined();
       expect(item1).isWritableProperty('x');
       expect(item2).isWritableProperty('x')
 
@@ -201,10 +201,10 @@ describe('SetObserverProxyPairFactory tests', () => {
 
       expect(setProxyFactory.getFromId(objectSet)).toBeUndefined();
       expect(
-         propertyObserverProxyPairManager.getFromId(item1Id)
+         propertyObserverProxyPairManager?.getFromId(item1Id)
       ).toBeUndefined();
       expect(
-         propertyObserverProxyPairManager.getFromId(item2Id)
+         propertyObserverProxyPairManager?.getFromId(item2Id)
       ).toBeUndefined();
       expect(item1).not.isWritableProperty('x');
       expect(item2).not.isWritableProperty('x')
@@ -221,11 +221,11 @@ describe('SetObserverProxyPairFactory tests', () => {
       ]);
 
       const mustProxify = jest.fn();
-      mustProxify.mockImplementation((index: { x: number }| string) => {
+      mustProxify.mockImplementation((index: { x: number } | string) => {
          return index === item1 || index === item3 || index === 'x';
       });
 
-      
+
 
       const observerProxyPair: ISetObserverProxyPair = setObserverProxyPairFactory.create(
          disposableOwner,

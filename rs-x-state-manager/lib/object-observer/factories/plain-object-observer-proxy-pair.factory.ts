@@ -38,7 +38,7 @@ export class PlainObjectObserverProxyPairFactory
       return Type.isPlainObject(object);
    }
 
-   protected override createRootObserver(data: IProxyTarget<Record<string, unknown>>): IObserverProxyPair<Record<string, unknown>> {
+   protected override createRootObserver(data: IProxyTarget<Record<string, unknown>>): IObserverProxyPair<Record<string, unknown>> | undefined {
       if(data.mustProxify) {
          return undefined;
       }

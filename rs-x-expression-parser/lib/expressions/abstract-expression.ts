@@ -5,8 +5,8 @@ import { type IExpressionChangeCommitHandler, type IExpressionChangeTransactionM
 import { type ExpressionType, type IExpression } from './interfaces';
 
 export interface IMustProxifyHandler {
-   createMustProxifyHandler: () => MustProxify;
-   releaseMustProxifyHandler: () => void;
+   createMustProxifyHandler: (() => MustProxify) | undefined;
+   releaseMustProxifyHandler: (() => void) | undefined;
 }
 
 export interface IExpressionInitializeConfig {
@@ -21,12 +21,12 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
 
    protected readonly _childExpressions: AbstractExpression[] = [];
    private readonly _changed = new ReplaySubject<IExpression>(1);
-   private _parent: AbstractExpression<PT>;
-   protected _value: T;
+   private _parent: AbstractExpression<PT> | undefined;
+   protected _value: T | undefined;
    private _isDisposed = false;
    private _oldValue: unknown;
-   private _commitedSubscription: Subscription;
-   private _owner: IDisposableOwner;
+   private _commitedSubscription: Subscription | undefined;
+   private _owner: IDisposableOwner | undefined;
 
    protected constructor(
       public readonly type: ExpressionType,
@@ -54,7 +54,7 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
       return this;
    }
 
-   public get value(): T {
+   public get value(): T | undefined {
       return this._value;
    }
 
@@ -70,7 +70,7 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
       return this._childExpressions;
    }
 
-   public get parent(): AbstractExpression<PT> {
+   public get parent(): AbstractExpression<PT> | undefined {
       return this._parent;
    }
 
@@ -112,7 +112,7 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
       expression._value = undefined;
    }
 
-   protected abstract evaluate(sender: AbstractExpression, root: AbstractExpression): T;
+   protected abstract evaluate(sender: AbstractExpression, root: AbstractExpression): T | undefined;
 
    protected internalDispose(): void {
       this._commitedSubscription?.unsubscribe();

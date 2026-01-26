@@ -11,7 +11,7 @@ export class ExpressionChangeTransactionManager implements IExpressionChangeTran
     private readonly _startChangeCycleSubscription: Subscription;
     private readonly _endChangeCycleSubscription: Subscription;
     private _emittedChangeCounter = 0;
-    private _suspended: boolean;
+    private _suspended = false;
 
     constructor(
         @Inject(RsXStateManagerInjectionTokens.IStateManager)

@@ -2,10 +2,6 @@
   "name": "@rs-x/expression-parser",
   "version": "0.4.0",
   "description": "Reactive JavaScript expression parser with observable AST integration for RS-X",
-  "funding": {
-    "type": "individual",
-    "url": "https://github.com/sponsors/robert-sanders-software-ontwikkeling"
-  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -34,22 +30,23 @@
     "provenance": true
   },
   "scripts": {
-    "build": "tsup lib/index.ts --format cjs,esm --dts --tsconfig ../tsconfig.build.json"
+    "build": "tsup lib/index.ts --format cjs,esm --dts --tsconfig ../tsconfig.build.json",
+    "clean": "rimraf dist"
   },
   "peerDependencies": {
-    "@rs-x/core": "0.1.x",
-    "@rs-x/state-manager": "0.1.x",
     "rxjs": "^7.8.0"
   },
-  "devDependencies": {
+  "dependencies": {
     "@rs-x/core": "workspace:*",
     "@rs-x/state-manager": "workspace:*",
-    "rxjs": "7.8.2",
-    "tsup": "8.5.1",
-    "typescript": "^5.9.3"
+    "astring": "^1.9.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "rimraf": "^6.1.2"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=24"
   },
   "keywords": [
     "expression-parser",
@@ -59,8 +56,5 @@
     "state-management",
     "rs-x",
     "typescript"
-  ],
-  "dependencies": {
-    "astring": "^1.9.0"
-  }
+  ]
 }

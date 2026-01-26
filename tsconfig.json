@@ -1,5 +1,7 @@
 {
    "compilerOptions": {
+      "strict": true,
+      "noImplicitReturns": true,
       "verbatimModuleSyntax": true,
       "preserveValueImports": false,
       "forceConsistentCasingInFileNames": true,

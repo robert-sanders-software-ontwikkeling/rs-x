@@ -73,12 +73,12 @@ describe('ICollectionItemObserverManager tests', () => {
             collectionItemObserverManager.getFromId(array);
 
          expect(arrayIndexObserverManager).toBeDefined();
-         expect(arrayIndexObserverManager.getFromId(0)).toBeDefined();
+         expect(arrayIndexObserverManager?.getFromId(0)).toBeDefined();
 
          observer.dispose();
 
          expect(collectionItemObserverManager.getFromId(array)).toBeUndefined();
-         expect(arrayIndexObserverManager.isEmpty).toEqual(true);
+         expect(arrayIndexObserverManager?.isEmpty).toEqual(true);
       });
 
       describe('change event', () => {
@@ -87,7 +87,7 @@ describe('ICollectionItemObserverManager tests', () => {
             const observer = collectionItemObserverManager
                .create(array)
                .instance.create({ index: 1 }).instance;
-            const proxy = arrayProxyFactory.getFromData({ array }).proxy;
+            const proxy = arrayProxyFactory.getFromData({ array })?.proxy as unknown[];
 
             const actual = await new WaitForEvent(observer, 'changed').wait(() => {
                proxy.length = 1;
@@ -108,7 +108,7 @@ describe('ICollectionItemObserverManager tests', () => {
             const observer = collectionItemObserverManager
                .create(array)
                .instance.create({ index: 2 }).instance;
-            const proxy = arrayProxyFactory.getFromData({ array }).proxy;
+            const proxy = arrayProxyFactory.getFromData({ array })?.proxy as unknown[];
 
             const actual = await new WaitForEvent(observer, 'changed').wait(() => {
                proxy.pop();
@@ -128,7 +128,7 @@ describe('ICollectionItemObserverManager tests', () => {
             const observer = collectionItemObserverManager
                .create(array)
                .instance.create({ index: 1 }).instance;
-            const proxy = arrayProxyFactory.getFromData({ array }).proxy;
+            const proxy = arrayProxyFactory.getFromData({ array })?.proxy as unknown[];
 
             const actual = await new WaitForEvent(observer, 'changed').wait(() => {
                proxy.shift();
@@ -197,7 +197,7 @@ describe('ICollectionItemObserverManager tests', () => {
             const observer = collectionItemObserverManager
                .create(map)
                .instance.create({index: 'b'}).instance;
-            const mapProxy = mapProxyFactory.getFromData({ map }).proxy as Map<
+            const mapProxy = mapProxyFactory.getFromData({ map })?.proxy as Map<
                string,
                number
             >;
@@ -216,7 +216,7 @@ describe('ICollectionItemObserverManager tests', () => {
             const observer = collectionItemObserverManager
                .create(map)
                .instance.create({index: 'a'}).instance;
-            const mapProxy = mapProxyFactory.getFromData({ map }).proxy as Map<
+            const mapProxy = mapProxyFactory.getFromData({ map })?.proxy as Map<
                string,
                number
             >;
@@ -243,7 +243,7 @@ describe('ICollectionItemObserverManager tests', () => {
             const observer = collectionItemObserverManager
                .create(map)
                .instance.create({index: 'a'}).instance;
-            const mapProxy = mapProxyFactory.getFromData({ map }).proxy as Map<
+            const mapProxy = mapProxyFactory.getFromData({ map })?.proxy as Map<
                string,
                number
             >;
@@ -270,7 +270,7 @@ describe('ICollectionItemObserverManager tests', () => {
             const observer = collectionItemObserverManager
                .create(map)
                .instance.create({index: 'a'}).instance;
-            const mapProxy = mapProxyFactory.getFromData({ map }).proxy as Map<
+            const mapProxy = mapProxyFactory.getFromData({ map })?.proxy as Map<
                string,
                number
             >;
@@ -332,7 +332,7 @@ describe('ICollectionItemObserverManager tests', () => {
             const observer = collectionItemObserverManager
                .create(set)
                .instance.create({index: 1}).instance;
-            const setProxy = setProxyFactory.getFromData({ set }).proxy;
+            const setProxy = setProxyFactory.getFromData({ set })?.proxy as Set<unknown>;
 
             const actual = await new WaitForEvent(observer, 'changed').wait(() => {
                setProxy.delete(2);
@@ -346,7 +346,7 @@ describe('ICollectionItemObserverManager tests', () => {
             const observer = collectionItemObserverManager
                .create(set)
                .instance.create({index: 1}).instance;
-            const setProxy = setProxyFactory.getFromData({ set }).proxy;
+            const setProxy = setProxyFactory.getFromData({ set })?.proxy as Set<unknown>
 
             const actual = await new WaitForEvent(observer, 'changed').wait(() => {
                setProxy.delete(1);

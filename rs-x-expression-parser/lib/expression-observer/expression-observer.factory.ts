@@ -6,7 +6,7 @@ import {
 } from '@rs-x/core';
 import { AbstractObserver, type IObserver } from '@rs-x/state-manager';
 import { ReplaySubject, Subscription } from 'rxjs';
-import { AbstractExpression } from '../expressions';
+import { AbstractExpression, type IExpression } from '../expressions';
 import type {
    IExpressionObserverData,
    IExpressionObserverFactory,
@@ -31,7 +31,7 @@ class ExpressionObserver extends AbstractObserver<
       this._changedSubsctiption.unsubscribe();
    }
 
-   private onExpressionChanged = (expression: AbstractExpression): void => {
+   private onExpressionChanged = (expression: IExpression): void => {
       this.emitChange({
          arguments: [],
          chain: [],

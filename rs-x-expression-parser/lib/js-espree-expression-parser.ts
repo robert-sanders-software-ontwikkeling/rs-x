@@ -18,7 +18,6 @@ import { generate as astToString } from 'astring';
 import * as espree from 'espree';
 import * as estraverse from 'estraverse';
 import type {
-   AssignmentOperator,
    BinaryExpression,
    BinaryOperator,
    CallExpression,
@@ -37,6 +36,7 @@ import type {
    Literal,
    LogicalExpression,
    LogicalOperator,
+   Node,
    Pattern,
    PrivateIdentifier,
    Program,
@@ -46,7 +46,7 @@ import type {
    Super,
    TemplateLiteral,
    UnaryExpression,
-   UnaryOperator,
+   UnaryOperator
 } from 'estree';
 import type { IGuidFactory } from '../../rs-x-core/lib/guid/guid.factory.interface';
 import type { IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
@@ -106,7 +106,6 @@ import { UnaryNegationExpression } from './expressions/unary-negation-expression
 import { UnaryPlusExpression } from './expressions/unary-plus-expression';
 import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
 
-
 enum EspreeExpressionType {
    UnaryExpression = 'UnaryExpression',
    BinaryExpression = 'BinaryExpression',
@@ -130,6 +129,11 @@ enum EspreeExpressionType {
 
 type MemberExpressionSegmentType = Expression | PrivateIdentifier | Super;
 
+type ExpressionFactory<T extends Expression | SpreadElement | Property> =
+   (expression: T, context: unknown) => AbstractExpression;
+
+type KnownExpressionType = keyof typeof JsEspreeExpressionParser.prototype['expressionFactories'];
+
 interface IPathSehment {
    expression: MemberExpressionSegmentType;
    computed: boolean;
@@ -148,13 +152,26 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       bigint: (literal: Literal) =>
          new ConstantBigIntExpression(BigInt(literal.value as string), this._expressionChangeTransactionManager),
    };
-   private readonly expressionFactories: Record<
-      EspreeExpressionType,
-      (
-         expression: Expression | SpreadElement | Property,
-         context: unknown
-      ) => AbstractExpression
-   >;
+   private readonly expressionFactories: {
+      [EspreeExpressionType.UnaryExpression]: ExpressionFactory<UnaryExpression>;
+      [EspreeExpressionType.BinaryExpression]: ExpressionFactory<BinaryExpression>;
+      [EspreeExpressionType.AssignmentExpression]: ExpressionFactory<EstreeAssignmentExpression>;
+      [EspreeExpressionType.Literal]: ExpressionFactory<Literal>;
+      [EspreeExpressionType.ConditionalExpression]: ExpressionFactory<EstreeConditionalExpression>;
+      [EspreeExpressionType.LogicalExpression]: ExpressionFactory<LogicalExpression>;
+      [EspreeExpressionType.ChainExpression]: ExpressionFactory<ChainExpression>;
+      [EspreeExpressionType.MemberExpression]: ExpressionFactory<EstreeMemberExpression>;
+      [EspreeExpressionType.Identifier]: ExpressionFactory<Identifier>;
+      [EspreeExpressionType.NewExpression]: ExpressionFactory<EstreeNewExpression>;
+      [EspreeExpressionType.CallExpression]: ExpressionFactory<CallExpression>;
+      [EspreeExpressionType.TemplateLiteral]: ExpressionFactory<TemplateLiteral>;
+      [EspreeExpressionType.SpreadElement]: ExpressionFactory<SpreadElement>;
+      [EspreeExpressionType.SequenceExpression]: ExpressionFactory<EstreeSequenceExpression>;
+      [EspreeExpressionType.TaggedTemplateExpression]: ExpressionFactory<EstreeTaggedTemplateExpression>;
+      [EspreeExpressionType.ArrayExpression]: ExpressionFactory<EstreeArrayExpression>;
+      [EspreeExpressionType.ObjectExpression]: ExpressionFactory<EstreeObjectExpression>;
+      [EspreeExpressionType.Property]: ExpressionFactory<Property>;
+   };
    private readonly unaryExpressionFactories: Record<
       UnaryOperator,
       (
@@ -173,13 +190,6 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       LogicalOperator,
       (
          expression: LogicalExpression,
-         context: unknown
-      ) => AbstractExpression
-   >;
-   private readonly assignExpressionFactories: Record<
-      AssignmentOperator,
-      (
-         expression: EstreeAssignmentExpression,
          context: unknown
       ) => AbstractExpression
    >;
@@ -280,7 +290,11 @@ export class JsEspreeExpressionParser implements IExpressionParser {
             context
          );
       } catch (e) {
-         throw new ParserException(expressionString, e.message);
+         if (e instanceof Error) {
+            throw new ParserException(expressionString, e.message);
+         }
+
+         throw new ParserException(expressionString, String(e));
       }
 
       expression.initialize({
@@ -297,6 +311,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       return this.parseExpression(expressionString).expression;
    }
 
+
    private createExpression(
       expression:
          | Expression
@@ -307,20 +322,25 @@ export class JsEspreeExpressionParser implements IExpressionParser {
          | Pattern,
       context: unknown
    ): AbstractExpression {
-      const createExpression = this.expressionFactories[expression.type];
-      if (!createExpression) {
+      if (!(expression.type in this.expressionFactories)) {
          throw new UnsupportedException(
             `Unsupported expression type ${expression.type}`
          );
       }
 
-      return createExpression(expression, context);
+      const factory = this.expressionFactories[
+         expression.type as KnownExpressionType
+      ];
+
+      return factory(Type.cast(expression), context);
    }
+
 
    private createLiteralExpression = (
       expression: Literal
    ): AbstractExpression => {
-      if (Type.cast<RegExpLiteral>(expression).regex) {
+      // RegExp literal
+      if ((expression as RegExpLiteral).regex) {
          const regExpLiteral = expression as RegExpLiteral;
          return new ConstantRegExpExpression(
             astToString(expression),
@@ -328,11 +348,26 @@ export class JsEspreeExpressionParser implements IExpressionParser {
             this._expressionChangeTransactionManager
          );
       }
+
+      // null literal
       if (expression.value === null) {
          return new ConstantNullExpression(this._expressionChangeTransactionManager);
       }
 
-      return this.createConstantExpression[typeof expression.value](expression);
+      // Only allowed types
+      const valueType = typeof expression.value;
+      if (
+         valueType === 'string' ||
+         valueType === 'number' ||
+         valueType === 'boolean' ||
+         valueType === 'bigint'
+      ) {
+         return this.createConstantExpression[valueType](expression);
+      }
+
+      throw new UnsupportedException(
+         `Unsupported literal type: ${valueType}`
+      );
    };
 
    private createBinaryExpression = (
@@ -345,14 +380,9 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       );
    };
 
-   private createAssignmentExpression = (
-      expression: EstreeAssignmentExpression,
-      context: unknown
-   ): AbstractExpression => {
-      return this.assignExpressionFactories[expression.operator](
-         expression,
-         context
-      );
+   private createAssignmentExpression = (): AbstractExpression => {
+
+      throw new UnsupportedException('Assignment expressions are not supported');
    };
 
    private createUnaryExpression = (
@@ -445,7 +475,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
    ): AbstractExpression => {
       return new ArrayExpression(
          expression.elements.map((element) =>
-            this.createExpression(element, context)
+            this.createExpression(Type.cast(element), context)
          )
       );
    };
@@ -484,7 +514,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       expression: CallExpression,
       context: unknown
    ): AbstractExpression => {
-      let objectExpression: IExpression<object> = null;
+      let objectExpression: IExpression<object> | null = null;
       let functionExpression: IExpression;
       if (expression.callee.type === EspreeExpressionType.MemberExpression) {
          objectExpression = this.createExpression(
@@ -517,7 +547,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
          this._expressionChangeTransactionManager,
          this._stateManager,
          this._guidFactory
-      
+
       );
    };
 
@@ -556,7 +586,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
          context
       );
 
-      let objectExpression: IExpression<object>;
+      let objectExpression: IExpression<object> | null = null;
       let functionExpression: IExpression<AnyFunction | string | number>;
 
       if (expression.tag.type === EspreeExpressionType.MemberExpression) {
@@ -1005,7 +1035,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
    // Normalize a['b'] to a.b
    private normalizeAST(ast: ExpressionStatement): void {
       estraverse.traverse(ast, {
-         enter(node) {
+         enter(node: Node) {
             if (
                node.type === 'MemberExpression' &&
                node.computed &&

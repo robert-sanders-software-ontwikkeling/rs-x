@@ -1,11 +1,11 @@
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import { type IObserver } from '@rs-x/state-manager';
 import { afterEach } from 'node:test';
-import { type IExpressionFactory, RsXExpressionParserInjectionTokens } from '../../lib';
+import { type IExpression, type IExpressionFactory, RsXExpressionParserInjectionTokens } from '../../lib';
 import { RsXExpressionParserModule, unloadRsXExpressionParserModule } from '../../lib/rs-x-expression-parser.module';
 
 describe('Expression observer tests', () => {
-    let observer: IObserver;
+    let observer: IObserver | undefined;
 
     beforeAll(async () => {
         await InjectionContainer.load(RsXExpressionParserModule);
@@ -22,7 +22,7 @@ describe('Expression observer tests', () => {
 
     it('initial value', async () => {
         let expressionFactory: IExpressionFactory = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionFactory);
-        const context = {
+        const context: { a: number, b: number, c: number, aPlusB: IExpression | undefined } = {
             a: 10,
             b: 20,
             c: 40,
@@ -39,7 +39,7 @@ describe('Expression observer tests', () => {
 
     it('changed value', async () => {
         let expressionFactory: IExpressionFactory = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionFactory);
-        const context = {
+        const context: { a: number, b: number, c: number, aPlusB: IExpression | undefined } = {
             a: 10,
             b: 20,
             c: 40,

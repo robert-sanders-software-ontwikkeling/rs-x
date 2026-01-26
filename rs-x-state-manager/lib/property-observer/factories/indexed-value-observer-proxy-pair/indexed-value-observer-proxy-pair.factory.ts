@@ -6,6 +6,7 @@ import {
    type IPropertyChange,
    truePredicate,
    Type,
+   UnexpectedException
 } from '@rs-x/core';
 import { type IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
 import {
@@ -98,10 +99,10 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
    }
 
    private getMustProxifyHandler(
-      mustProxify: MustProxify,
+      mustProxify: MustProxify | undefined,
       context: unknown,
       index: unknown
-   ): MustProxify {
+   ): MustProxify | undefined {
       if (mustProxify) {
          return mustProxify;
       }
@@ -133,9 +134,9 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
       object: TContext,
       index: TIndex,
       initialValue: unknown,
-      initializeManually: boolean,
-      indexValueObserver: IObserver,
-      mustProxify: MustProxify
+      initializeManually: boolean | undefined,
+      indexValueObserver: IObserver | undefined,
+      mustProxify: MustProxify | undefined
    ): ObserverGroup {
       const indexChangeSubscriptionsForContextManager =
          this._indexChangeSubscriptionManager.create(object).instance;
@@ -150,20 +151,26 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
             this.onIndexSet(change, id, mustProxify),
          owner,
       });
-      return indexChangeSubscriptionsForContextManager.getSubsriptionData(id);
+      return Type.cast(indexChangeSubscriptionsForContextManager.getSubsriptionData(id));
    }
 
    private onIndexSet(
       change: IPropertyChange,
       subsriptionId: string,
-      mustProxify: MustProxify
+      mustProxify: MustProxify | undefined
    ): void {
 
       const emitValue = Type.isNullOrUndefined(change.newValue) ||
          !this._indexValueAccessor.isAsync(change.target, change.id);
       const observerGroup = this._indexChangeSubscriptionManager
          .getFromId(change.target)
-         .getSubsriptionData(subsriptionId);
+         ?.getSubsriptionData(subsriptionId);
+
+      if(!observerGroup) {
+         throw new UnexpectedException(
+            `Observer group not found for subscription id ${subsriptionId}`
+         );
+      }
 
       if (emitValue) {
          observerGroup.emitValue(change.newValue);
@@ -179,7 +186,7 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
 
    private getNestedObservers(
       change: IPropertyChange,
-      mustProxify: MustProxify
+      mustProxify: MustProxify | undefined
    ): IObserver[] {
       const mustProxifyHandler = this.getMustProxifyHandler(
          mustProxify,
@@ -195,7 +202,7 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
             true,
             change.setValue ??
             ((value: unknown) => {
-               change.target[change.id as string] = value;
+               Type.toObject(change.target)[change.id as string] = value;
             })
          );
 
@@ -210,9 +217,9 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
    private proxifyIndexValue(
       value: unknown,
       mustProxify: MustProxify,
-      initializeManually: boolean,
+      initializeManually: boolean | undefined,
       setValue: (value: unknown) => void
-   ): IObserverProxyPair {
+   ): IObserverProxyPair | undefined {
 
       const target = this._proxyRegister.getProxyTarget(value) ?? value;
       const observerProxyPair = this._objectObserveryManager.create({
@@ -221,7 +228,7 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
          initializeManually,
       }).instance;
       if (!observerProxyPair) {
-         return null;
+         return undefined;
       }
 
       if (observerProxyPair.proxy !== undefined) {

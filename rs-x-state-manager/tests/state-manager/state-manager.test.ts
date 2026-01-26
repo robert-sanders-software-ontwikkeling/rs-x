@@ -22,7 +22,7 @@ interface IPrivateIStateManager extends IStateManager {
 
 describe('StateManager tests', () => {
    let stateManager: IPrivateIStateManager;
-   let _oldChange: Observable<IStateChange>;
+   let _oldChange: Observable<IStateChange> |undefined;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXStateManagerModule);
@@ -278,7 +278,7 @@ describe('StateManager tests', () => {
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
-               arrayProxyFactory.getFromData({ array }).proxy[1] = 20;
+               Type.cast<number[]>(arrayProxyFactory.getFromData({ array })?.proxy)[1] = 20;
             }
          );
 
@@ -298,7 +298,7 @@ describe('StateManager tests', () => {
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
-               arrayProxyFactory.getFromData({ array }).proxy[0] = 20;
+               Type.cast<number[]>(arrayProxyFactory.getFromData({ array })?.proxy)[0] = 20;
             }
          );
 
@@ -309,7 +309,7 @@ describe('StateManager tests', () => {
          const array = [1, 2];
          stateManager.watchState(array, 1);
 
-         arrayProxyFactory.getFromData({ array }).proxy[1] = 20;
+         Type.cast<number[]>(arrayProxyFactory.getFromData({ array })?.proxy)[1] = 20;
 
          expect(stateManager.getState(array, 1)).toEqual(20);
       });
@@ -321,7 +321,7 @@ describe('StateManager tests', () => {
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
                Type.cast<unknown[]>(
-                  arrayProxyFactory.getFromData({ array }).proxy
+                  arrayProxyFactory.getFromData({ array })?.proxy
                ).length = 1;
             }
          );
@@ -346,7 +346,7 @@ describe('StateManager tests', () => {
          expect(arrayProxyFactory.getFromData({ array })).toBeDefined();
 
          Type.cast<unknown[]>(
-            arrayProxyFactory.getFromData({ array }).proxy
+            arrayProxyFactory.getFromData({ array })?.proxy
          ).length = 1;
 
          expect(stateManager.getState(array, 1)).toBeUndefined();
@@ -405,7 +405,7 @@ describe('StateManager tests', () => {
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
-               mapProxyFactory.getFromData({ map: map }).proxy.set('b', 20);
+               mapProxyFactory.getFromData({ map: map })?.proxy?.set('b', 20);
             }
          );
 
@@ -428,7 +428,7 @@ describe('StateManager tests', () => {
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
-               mapProxyFactory.getFromData({ map: map }).proxy.set('a', 20);
+               mapProxyFactory.getFromData({ map: map })?.proxy?.set('a', 20);
             }
          );
 
@@ -443,7 +443,7 @@ describe('StateManager tests', () => {
          stateManager.watchState(map, 'b');
 
          Type.cast<Map<string, number>>(
-            mapProxyFactory.getFromData({ map }).proxy
+            mapProxyFactory.getFromData({ map })?.proxy
          ).set('b', 20);
 
          expect(stateManager.getState(map, 'b')).toEqual(20);
@@ -459,7 +459,7 @@ describe('StateManager tests', () => {
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
-               mapProxyFactory.getFromData({ map: map }).proxy.delete('b');
+               mapProxyFactory.getFromData({ map: map })?.proxy?.delete('b');
             }
          );
 
@@ -610,7 +610,7 @@ describe('StateManager tests', () => {
       });
 
       it('Replacing watched promise property with null will emit change event', async () => {
-         const object = { x: Promise.resolve(2) };
+         const object: { x: null | Promise<number> } = { x: Promise.resolve(2) };
 
          await new WaitForEvent(stateManager, 'changed').wait(() => {
             stateManager.watchState(object, 'x');
@@ -633,7 +633,7 @@ describe('StateManager tests', () => {
       });
 
       it('Setting initial value from null to promise will emit a change event.', async () => {
-         const object = { x: null };
+         const object: { x: null | Promise<number> } = { x: null };
          await new WaitForEvent(stateManager, 'changed').wait(() => {
             stateManager.watchState(object, 'x');
          });
@@ -724,7 +724,7 @@ describe('StateManager tests', () => {
       });
 
       it('Replacing observable property with null will emit a change event.', async () => {
-         const object = { x: of(2) };
+         const object: { x: null | Observable<number> } = { x: of(2) };
 
          await new WaitForEvent(stateManager, 'changed').wait(() => {
             stateManager.watchState(object, 'x');
@@ -748,7 +748,7 @@ describe('StateManager tests', () => {
       });
 
       it('Setting initial value from null to a observable will emit a change event.', async () => {
-         const object = { x: null };
+         const object: { x: null | Observable<number> } = { x: null };
 
          await new WaitForEvent(stateManager, 'changed').wait(() => {
             stateManager.watchState(object, 'x');
@@ -1033,7 +1033,7 @@ describe('StateManager tests', () => {
             count: 4,
          }).wait(() => {
             object.nested = newContext;
-         });
+         }) as IStateChange[];
 
          const expected = [
             {

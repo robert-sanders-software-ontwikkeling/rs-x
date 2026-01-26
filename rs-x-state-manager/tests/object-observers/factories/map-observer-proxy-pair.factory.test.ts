@@ -1,4 +1,4 @@
-import { ErrorLog, InjectionContainer, type IPropertyChange, truePredicate, WaitForEvent } from '@rs-x/core';
+import { ErrorLog, InjectionContainer, type IPropertyChange, truePredicate, Type, WaitForEvent } from '@rs-x/core';
 import { DisposableOwnerMock } from '@rs-x/core/testing';
 import { type IMapObserverProxyPairFactory } from '../../../lib/object-observer/factories/map-observer-proxy-pair.factory.type';
 import { type IObjectPropertyObserverProxyPairManager } from '../../../lib/object-property-observer-proxy-pair-manager.type';
@@ -37,7 +37,7 @@ describe('MapObserverProxyPairFactory tests', () => {
    afterEach(() => {
       if (observer) {
          observer.dispose();
-         observer = null;
+         observer = Type.cast(undefined);
       }
    });
 
@@ -77,7 +77,7 @@ describe('MapObserverProxyPairFactory tests', () => {
 
       const mapProxyId = mapProxyFactory.getId({
          map: objectMap,
-      });
+      }) as Map<unknown, unknown>;
 
       const expected = new ObserverGroup(
          disposableOwner,
@@ -86,7 +86,7 @@ describe('MapObserverProxyPairFactory tests', () => {
          truePredicate,
          new ErrorLog(),
          undefined,
-         () => mapProxyFactory.getFromId(mapProxyId).observer,
+         () => mapProxyFactory.getFromId(mapProxyId)?.observer,
          true
       );
 
@@ -112,17 +112,17 @@ describe('MapObserverProxyPairFactory tests', () => {
 
       expect(propertyObserverProxyPairManager).toBeDefined();
 
-      const item1Id = propertyObserverProxyPairManager.getId({
+      const item1Id = propertyObserverProxyPairManager?.getId({
          key: 'a',
          mustProxify: truePredicate,
       });
-      const item2Id = propertyObserverProxyPairManager.getId({
+      const item2Id = propertyObserverProxyPairManager?.getId({
          key: 'b',
          mustProxify: truePredicate,
       });
       const mapProxyId = mapProxyFactory.getId({
          map: objectMap,
-      });
+      }) as Map<unknown, unknown> 
 
       const expected = new ObserverGroup(
          disposableOwner,
@@ -131,11 +131,11 @@ describe('MapObserverProxyPairFactory tests', () => {
          truePredicate,
          new ErrorLog(),
          undefined,
-         () => mapProxyFactory.getFromId(mapProxyId).observer,
+         () => mapProxyFactory.getFromId(mapProxyId)?.observer,
          true
       ).addObservers([
-         propertyObserverProxyPairManager.getFromId(item1Id).observer,
-         propertyObserverProxyPairManager.getFromId(item2Id).observer,
+         propertyObserverProxyPairManager?.getFromId(item1Id)?.observer as IObserver,
+         propertyObserverProxyPairManager?.getFromId(item2Id)?.observer as IObserver,
       ]);
       expect(observer).observerEqualTo(expected);
    });
@@ -178,18 +178,18 @@ describe('MapObserverProxyPairFactory tests', () => {
          );
       const propertyObserverProxyPairManager =
          objectPropertyObserverProxyPairManager.getFromId(objectMap);
-      const item1Id = propertyObserverProxyPairManager.getId({
+      const item1Id = propertyObserverProxyPairManager?.getId({
          key: 'a',
          mustProxify: truePredicate
       });
-      const item2Id = propertyObserverProxyPairManager.getId({
+      const item2Id = propertyObserverProxyPairManager?.getId({
          key: 'b',
          mustProxify: truePredicate
       });
 
       expect(mapProxyFactory.getFromId(objectMap)).toBeDefined();
-      expect(propertyObserverProxyPairManager.getFromId(item1Id)).toBeDefined();
-      expect(propertyObserverProxyPairManager.getFromId(item2Id)).toBeDefined();
+      expect(propertyObserverProxyPairManager?.getFromId(item1Id)).toBeDefined();
+      expect(propertyObserverProxyPairManager?.getFromId(item2Id)).toBeDefined();
       expect(objectMap.get('a')).isWritableProperty('x');
       expect(objectMap.get('b')).isWritableProperty('x')
 
@@ -197,10 +197,10 @@ describe('MapObserverProxyPairFactory tests', () => {
 
       expect(mapProxyFactory.getFromId(objectMap)).toBeUndefined();
       expect(
-         propertyObserverProxyPairManager.getFromId(item1Id)
+         propertyObserverProxyPairManager?.getFromId(item1Id)
       ).toBeUndefined();
       expect(
-         propertyObserverProxyPairManager.getFromId(item2Id)
+         propertyObserverProxyPairManager?.getFromId(item2Id)
       ).toBeUndefined();
       expect(objectMap.get('a')).not.isWritableProperty('x');
       expect(objectMap.get('b')).not.isWritableProperty('x')
@@ -303,7 +303,7 @@ describe('MapObserverProxyPairFactory tests', () => {
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            objectMap.get('b').x = 200
+            Type.cast<{x: number}>(objectMap.get('b')).x = 200
          });
 
          const expected: IPropertyChange = {
@@ -387,7 +387,7 @@ describe('MapObserverProxyPairFactory tests', () => {
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            objectMap.get('b').x = 200
+            Type.cast<{x: number}>(objectMap.get('b')).x = 200
          });
 
          expect(actual).toBeNull();

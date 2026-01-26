@@ -38,7 +38,7 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
       initialValue: unknown[],
       private readonly _proxyRegistry: IProxyRegistry
    ) {
-      super(owner, null, initialValue, new Subject(), undefined);
+      super(owner, Type.cast(undefined), initialValue, new Subject(), undefined);
 
       this.updateArray = {
          push: this.pushArray,
@@ -60,13 +60,13 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
       property: PropertyKey,
       receiver: unknown
    ): unknown {
-      if (property !== 'constructor' && this.updateArray[property]) {
+      if (this.isUpdateArrayKey(property)) {
          return (...args: unknown[]) => {
             return this.updateArray[property](originalArray, ...args);
          };
-      } else {
-         return Reflect.get(originalArray, property, receiver);
       }
+
+      return Reflect.get(originalArray, property, receiver);
    }
 
    public set(
@@ -82,7 +82,7 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
             const index = Number(property);
             originalArray[index] = value;
 
-            this.emitSet(originalArray,index, value);
+            this.emitSet(originalArray, index, value);
          } else {
             Reflect.set(originalArray, property, value, receiver);
          }
@@ -92,7 +92,13 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
 
    protected override disposeInternal(): void {
       this._proxyRegistry.unregister(this.value);
-      this.target = null;
+      this.target = Type.cast(undefined);
+   }
+
+   private isUpdateArrayKey(
+      property: PropertyKey
+   ): property is keyof typeof this.updateArray {
+      return typeof property === 'string' && property in this.updateArray;
    }
 
    private pushArray = (orginalArray: unknown[], ...args: unknown[]) => {
@@ -239,7 +245,7 @@ export class ArrayProxyFactory
    }
 
    protected override createId(data: IArrayProxyIdData): unknown[] {
-       return data.array;
+      return data.array;
    }
 
    protected override createInstance(

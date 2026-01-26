@@ -14,8 +14,8 @@ import { IdentifierExpression, type IIdentifierInitializeConfig } from './identi
 import { ExpressionType } from './interfaces';
 
 interface IMustProxifyHandler {
-   createMustProxifyHandler: () => MustProxify;
-   releaseMustProxifyHandler: () => void;
+   createMustProxifyHandler: (() => MustProxify) | undefined;
+   releaseMustProxifyHandler: (() => void) | undefined;
    valid: boolean;
 }
 
@@ -55,7 +55,7 @@ export class MemberExpression extends AbstractExpression {
          if (i === 0 || this.isCalculated(currentSegment)) {
             currentSegment.initialize({
                ...settings,
-               mustProxifyHandler: this.getMustProxifyHandler(i),
+               mustProxifyHandler: this.getMustProxifyHandler(i) as IMustProxifyHandler
             });
          }
       }
@@ -275,7 +275,7 @@ export class MemberExpression extends AbstractExpression {
    ): IMustProxifyHandler {
       return {
          releaseMustProxifyHandler: emptyFunction,
-         createMustProxifyHandler: () => predicate,
+         createMustProxifyHandler: () => predicate as MustProxify,
          valid: true,
       };
    }

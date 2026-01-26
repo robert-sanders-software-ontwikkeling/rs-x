@@ -4,7 +4,8 @@ import {
    Injectable,
    InvalidOperationException,
    RsXCoreInjectionTokens,
-   SingletonFactoryWithGuid
+   SingletonFactoryWithGuid,
+   Type
 } from '@rs-x/core';
 import type { IObserverProxyPair } from '../object-property-observer-proxy-pair-manager.type';
 import type { IProxyRegistry } from '../proxies/proxy-registry/proxy-registry.interface';
@@ -70,7 +71,7 @@ export class ObjectObserverProxyPairManager
               },
               objectObserverInfo
            )
-         : null;
+         : Type.cast(null);
    }
 
    protected override releaseInstance(

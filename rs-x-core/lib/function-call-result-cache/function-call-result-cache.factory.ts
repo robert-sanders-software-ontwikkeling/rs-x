@@ -29,7 +29,7 @@ class FunctionCallResultCache implements IFunctionCallResultCache {
             return;
         }
 
-        if (this._owner.canDispose()) {
+        if (this._owner.canDispose?.()) {
             this._disposeableIndex.dispose();
             this._isDisposed = true;
         }
@@ -48,12 +48,12 @@ class FunctionCallResultCacheForContextManager
         super();
     }
 
-    public override getId(data: IFunctionCallResultIdInfo): IDisposableFunctionCallIndex {
+    public override getId(data: IFunctionCallResultIdInfo): IDisposableFunctionCallIndex  {
         return this._functionCallIndexFactory.getFromData({
             functionName: data.functionName,
             context: this._context,
             arguments: data.arguments
-        });
+        }) as IDisposableFunctionCallIndex;
     }
 
     protected override createInstance(data: IFunctionCallResult, id: IDisposableFunctionCallIndex): IFunctionCallResultCache {
@@ -120,10 +120,10 @@ export class FunctionCallResultCacheFactory implements IFunctionCallResultCacheF
     }
 
     public has(context: unknown, index: IDisposableFunctionCallIndex): boolean {
-        return this._functionCallResultCacheManager.getFromId(context)?.has(index);
+        return this._functionCallResultCacheManager.getFromId(context)?.has(index) ?? false;
     }
 
-    public get(context: unknown, index: IDisposableFunctionCallIndex): IFunctionCallResultCache {
+    public get(context: unknown, index: IDisposableFunctionCallIndex): IFunctionCallResultCache | undefined {
         return this._functionCallResultCacheManager.getFromId(context)?.getFromId(index);
     }
 }

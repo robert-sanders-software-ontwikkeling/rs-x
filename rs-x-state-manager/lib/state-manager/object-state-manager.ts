@@ -85,7 +85,7 @@ export class ObjectStateManager
 
 
    public isRegistered( context: unknown, key: unknown): boolean {
-      return this.getFromId(context)?.has(key);
+      return !!this.getFromId(context)?.has(key);
    }
 
    public replaceState(
@@ -95,9 +95,9 @@ export class ObjectStateManager
       oldContext: unknown,
       watched: boolean
    ): void {
-      let stateForObjectManagerForNewContext: IStateForObjectManager;
+      let stateForObjectManagerForNewContext: IStateForObjectManager | undefined;
       const stateForObjectManagerForOldContext = this.getFromId(oldContext);
-
+ 
       if (newValue === undefined) {
          stateForObjectManagerForOldContext?.release(key);
          return;

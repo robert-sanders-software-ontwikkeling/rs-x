@@ -2,6 +2,7 @@ import cloneDeepWith from 'lodash.clonedeepwith';
 import { isObservable } from 'rxjs';
 import { Injectable } from '../dependency-injection';
 import type { IDeepClone } from './deep-clone.interface';
+
 @Injectable()
 export class LodashDeepClone implements IDeepClone {
    public readonly priority = 1;

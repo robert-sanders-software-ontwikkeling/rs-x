@@ -55,13 +55,13 @@ describe('ArrayProxy tests', () => {
 
    describe('All array operation still work as before', () => {
       it('push', () => {
-         const length = observerProxyPair.proxy.push(100, 200);
+         const length = Type.cast<number[]>(observerProxyPair.proxy).push(100, 200);
          expect(length).toEqual(6);
-         expect([...observerProxyPair.proxy]).toEqual([1, 2, 3, 4, 100, 200]);
+         expect([...Type.cast<number[]>(observerProxyPair.proxy)]).toEqual([1, 2, 3, 4, 100, 200]);
       });
 
       it('splice', () => {
-         const deleteItems = observerProxyPair.proxy.splice(
+         const deleteItems = Type.cast<number[]>(observerProxyPair.proxy).splice(
             1,
             2,
             100,
@@ -69,50 +69,50 @@ describe('ArrayProxy tests', () => {
             300
          );
          expect(deleteItems).toEqual([2, 3]);
-         expect([...observerProxyPair.proxy]).toEqual([1, 100, 200, 300, 4]);
+         expect([...Type.cast<number[]>(observerProxyPair.proxy)]).toEqual([1, 100, 200, 300, 4]);
       });
 
       it('pop', () => {
-         const deletedItem = observerProxyPair.proxy.pop();
+         const deletedItem = Type.cast<number[]>(observerProxyPair.proxy).pop();
          expect(deletedItem).toEqual(4);
-         expect([...observerProxyPair.proxy]).toEqual([1, 2, 3]);
+         expect([...Type.cast<number[]>(observerProxyPair.proxy)]).toEqual([1, 2, 3]);
       });
 
       it('shift', () => {
-         const deletedItem = observerProxyPair.proxy.shift();
+         const deletedItem = Type.cast<number[]>(observerProxyPair.proxy).shift();
          expect(deletedItem).toEqual(1);
-         expect([...observerProxyPair.proxy]).toEqual([2, 3, 4]);
+         expect([...Type.cast<number[]>(observerProxyPair.proxy)]).toEqual([2, 3, 4]);
       });
 
       it('unshift', () => {
-         const newLength = observerProxyPair.proxy.unshift(0, -1);
+         const newLength = Type.cast<number[]>(observerProxyPair.proxy).unshift(0, -1);
          expect(newLength).toEqual(6);
-         expect([...observerProxyPair.proxy]).toEqual([0, -1, 1, 2, 3, 4]);
+         expect([...Type.cast<number[]>(observerProxyPair.proxy)]).toEqual([0, -1, 1, 2, 3, 4]);
       });
 
       it('reverse', () => {
-         const reverseArray = observerProxyPair.proxy.reverse();
+         const reverseArray = Type.cast<number[]>(observerProxyPair.proxy).reverse();
          expect(reverseArray).toEqual([4, 3, 2, 1]);
-         expect([...observerProxyPair.proxy]).toEqual([4, 3, 2, 1]);
+         expect([...Type.cast<number[]>(observerProxyPair.proxy)]).toEqual([4, 3, 2, 1]);
       });
 
       it('sort', () => {
-         const sortedArray = observerProxyPair.proxy.sort(
+         const sortedArray = Type.cast<number[]>(observerProxyPair.proxy).sort(
             (a: number, b: number) => b - a
          );
          expect(sortedArray).toEqual([4, 3, 2, 1]);
-         expect([...observerProxyPair.proxy]).toEqual([4, 3, 2, 1]);
+         expect([...Type.cast<number[]>(observerProxyPair.proxy)]).toEqual([4, 3, 2, 1]);
       });
 
       it('fill', () => {
-         const filledArray = observerProxyPair.proxy.fill(-1, 1, 3);
+         const filledArray = Type.cast<number[]>(observerProxyPair.proxy).fill(-1, 1, 3);
          expect(filledArray).toEqual([1, -1, -1, 4]);
-         expect([...observerProxyPair.proxy]).toEqual([1, -1, -1, 4]);
+         expect([...Type.cast<number[]>(observerProxyPair.proxy)]).toEqual([1, -1, -1, 4]);
       });
 
       it('increase length', () => {
-         observerProxyPair.proxy.length = 6;
-         expect([...observerProxyPair.proxy]).toEqual([
+         Type.cast<number[]>(observerProxyPair.proxy).length = 6;
+         expect([...Type.cast<number[]>(observerProxyPair.proxy)]).toEqual([
             1,
             2,
             3,
@@ -123,8 +123,8 @@ describe('ArrayProxy tests', () => {
       });
 
       it('decrease length', () => {
-         observerProxyPair.proxy.length = 2;
-         expect([...observerProxyPair.proxy]).toEqual([1, 2]);
+         Type.cast<number[]>(observerProxyPair.proxy).length = 2;
+         expect([...Type.cast<number[]>(observerProxyPair.proxy)]).toEqual([1, 2]);
       });
    });
 
@@ -136,7 +136,7 @@ describe('ArrayProxy tests', () => {
             'changed',
             { count: 3 }
          ).wait(() => {
-            observerProxyPair.proxy.push(10, 11);
+            Type.cast<number[]>(observerProxyPair.proxy).push(10, 11);
          });
 
          expect(actual).toBeNull();
@@ -148,7 +148,7 @@ describe('ArrayProxy tests', () => {
             'changed',
             { count: 2 }
          ).wait(() => {
-            observerProxyPair.proxy.push(10, 11);
+            Type.cast<number[]>(observerProxyPair.proxy).push(10, 11);
          });
 
          const expected: IPropertyChange[] = [
@@ -176,7 +176,7 @@ describe('ArrayProxy tests', () => {
             'changed',
             { count: 4 }
          ).wait(() => {
-            observerProxyPair.proxy.splice(1, 1, 10, 11);
+            Type.cast<number[]>(observerProxyPair.proxy).splice(1, 1, 10, 11);
          });
 
          const expected: IPropertyChange[] = [
@@ -217,7 +217,7 @@ describe('ArrayProxy tests', () => {
             observerProxyPair.observer,
             'changed'
          ).wait(() => {
-            observerProxyPair.proxy.pop();
+            Type.cast<number[]>(observerProxyPair.proxy).pop();
          });
 
          const expected: IPropertyChange = {
@@ -236,7 +236,7 @@ describe('ArrayProxy tests', () => {
             'changed',
             { count: 4 }
          ).wait(() => {
-            observerProxyPair.proxy.shift();
+            Type.cast<number[]>(observerProxyPair.proxy).shift();
          });
 
          const expected: IPropertyChange[] = [
@@ -278,7 +278,7 @@ describe('ArrayProxy tests', () => {
             'changed',
             { count: 4 }
          ).wait(() => {
-            observerProxyPair.proxy.reverse();
+            Type.cast<number[]>(observerProxyPair.proxy).reverse();
          });
 
          const expected: IPropertyChange[] = [
@@ -320,7 +320,7 @@ describe('ArrayProxy tests', () => {
             'changed',
             { count: 4 }
          ).wait(() => {
-            observerProxyPair.proxy.sort(
+            Type.cast<number[]>(observerProxyPair.proxy).sort(
                (a, b) => Type.cast<number>(b) - Type.cast<number>(a)
             );
          });
@@ -364,7 +364,7 @@ describe('ArrayProxy tests', () => {
             'changed',
             { count: 6 }
          ).wait(() => {
-            observerProxyPair.proxy.unshift(-1, 0);
+            Type.cast<number[]>(observerProxyPair.proxy).unshift(-1, 0);
          });
 
          const expected: IPropertyChange[] = [
@@ -420,7 +420,7 @@ describe('ArrayProxy tests', () => {
             'changed',
             { count: 2 }
          ).wait(() => {
-            observerProxyPair.proxy.fill(-1, 1, 3);
+            Type.cast<number[]>(observerProxyPair.proxy).fill(-1, 1, 3);
          });
 
          const expected: IPropertyChange[] = [
@@ -448,7 +448,7 @@ describe('ArrayProxy tests', () => {
             'changed',
             { count: 2 }
          ).wait(() => {
-            observerProxyPair.proxy.length = 2;
+            Type.cast<number[]>(observerProxyPair.proxy).length = 2;
          });
 
          const expected: IPropertyChange[] = [
@@ -475,7 +475,7 @@ describe('ArrayProxy tests', () => {
             observerProxyPair.observer,
             'changed'
          ).wait(() => {
-            observerProxyPair.proxy.length = 5;
+            Type.cast<number[]>(observerProxyPair.proxy).length = 5;
          });
 
          expect(actual).toBeNull();
@@ -486,7 +486,7 @@ describe('ArrayProxy tests', () => {
             observerProxyPair.observer,
             'changed'
          ).wait(() => {
-            observerProxyPair.proxy[2] = 100;
+            Type.cast<number[]>(observerProxyPair.proxy)[2] = 100;
          });
 
          const expected: IPropertyChange = {

@@ -10,9 +10,9 @@ import {
    unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 
-describe('Unar tests', () => {
+describe('UnaryPlusExpression tests', () => {
    let jsParser: IExpressionParser;
-   let expression: IExpression;
+   let expression: IExpression | undefined;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXExpressionParserModule);

@@ -13,10 +13,10 @@ export abstract class SingletonFactoryWithIdGeneration<
    implements ISingletonFactoryWithIdGeneration<TId, TData, TInstance, TIdData> {
    private readonly _groupedData = new Map<unknown, Map<unknown, TId>>();
 
-   public getId(data: TIdData): TId {
+   public getId(data: TIdData): TId | undefined {
       const groupId = this.getGroupId(data);
       const groupMemberId = this.getGroupMemberId(data);
-      return this._groupedData.get(groupId)?.get(groupMemberId);
+      return this._groupedData.get(groupId)?.get(groupMemberId)
    }
 
    public isGroupRegistered(groupId: unknown): boolean {
