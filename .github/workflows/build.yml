@@ -1,4 +1,4 @@
-name: Build
+name: Build & Test Monorepo
 
 on:
   push:
@@ -27,11 +27,58 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Lint code
+      - name: Lint all projects
         run: pnpm lint
 
-      - name: Run tests
-        run: pnpm test
+      # ---- Detect packages dynamically ----
+      - name: Detect all packages
+        id: detect
+        run: |
+          # Get all workspace packages
+          ALL_PACKAGES=$(jq -r '.packages[]' pnpm-workspace.yaml)
 
-      - name: Build packages
-        run: pnpm -r run build
+          NODE_LIBS=""
+          ANGULAR_LIBS=""
+
+          for pkg in $ALL_PACKAGES; do
+            if [ -f "$pkg/package.json" ]; then
+              if grep -q '"@angular/' "$pkg/package.json" || [ -f "$pkg/ng-package.json" ]; then
+                ANGULAR_LIBS="$ANGULAR_LIBS $pkg"
+              else
+                NODE_LIBS="$NODE_LIBS $pkg"
+              fi
+            fi
+          done
+
+          echo "node_libs=$NODE_LIBS" >> $GITHUB_ENV
+          echo "angular_libs=$ANGULAR_LIBS" >> $GITHUB_ENV
+
+      # ---- Node/TS libraries ----
+      - name: Run Jest tests for Node libs
+        run: |
+          for pkg in $node_libs; do
+            echo "Running Jest tests for $pkg"
+            pnpm --filter $pkg test
+          done
+
+      - name: Build Node/TS libraries
+        run: |
+          for pkg in $node_libs; do
+            echo "Building Node/TS lib $pkg"
+            pnpm --filter $pkg run build
+          done
+
+      # ---- Angular library ----
+      - name: Run Angular tests
+        run: |
+          for pkg in $angular_libs; do
+            echo "Running Angular tests for $pkg"
+            pnpm --filter $pkg test -- --watch=false --browsers=ChromeHeadless
+          done
+
+      - name: Build Angular library
+        run: |
+          for pkg in $angular_libs; do
+            echo "Building Angular library $pkg"
+            pnpm --filter $pkg run build
+          done
