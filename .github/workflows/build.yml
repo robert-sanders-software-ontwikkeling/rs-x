@@ -6,61 +6,67 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  node_libs: "@rs-x/core @rs-x/state-manager @rs-x-expression-parser"
+  angular_libs: "@rs-x/angular"
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
     steps:
+      # ---- Checkout ----
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # ---- Setup Node ----
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: lts/*
 
-      - name: Install pnpm CLI
+      # ---- Setup pnpm ----
+      - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10.22.0
 
+      # ---- Install dependencies ----
       - name: Install dependencies
         run: pnpm install
 
+      # ---- Lint all projects ----
       - name: Lint all projects
         run: pnpm lint
 
-      # ---- Detect packages dynamically ----
-      - name: Detect all packages
-        id: detect
-        run: node scripts/detect-packages.js
-
-      # ---- Node/TS libraries ----
+      # ---- Run Jest tests for Node libs ----
       - name: Run Jest tests for Node libs
         run: |
           for pkg in $node_libs; do
             echo "Running Jest tests for $pkg"
-            pnpm --filter $pkg test
+            pnpm --filter "$pkg" test
           done
 
+      # ---- Build Node libs ----
       - name: Build Node/TS libraries
         run: |
           for pkg in $node_libs; do
             echo "Building Node/TS lib $pkg"
-            pnpm --filter $pkg run build
+            pnpm --filter "$pkg" run build
           done
 
-      # ---- Angular library ----
+      # ---- Run Angular tests ----
       - name: Run Angular tests
         run: |
           for pkg in $angular_libs; do
             echo "Running Angular tests for $pkg"
-            pnpm --filter $pkg test -- --watch=false --browsers=ChromeHeadless
+            pnpm --filter "$pkg" test -- --watch=false --browsers=ChromeHeadless
           done
 
-      - name: Build Angular library
+      # ---- Build Angular library ----
+      - name: Build Angular libraries
         run: |
           for pkg in $angular_libs; do
             echo "Building Angular library $pkg"
-            pnpm --filter $pkg run build
+            pnpm --filter "$pkg" run build
           done
