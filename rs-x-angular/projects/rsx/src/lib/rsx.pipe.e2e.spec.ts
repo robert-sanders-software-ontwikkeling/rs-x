@@ -22,7 +22,6 @@ describe('RsxPipe Integration', () => {
   let fixture: ComponentFixture<TestHostComponent>;
   let component: TestHostComponent;
 
-
   afterAll(async () => {
     await unloadRsXExpressionParserModule();
   });
