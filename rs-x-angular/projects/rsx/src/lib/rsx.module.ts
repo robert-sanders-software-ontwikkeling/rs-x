@@ -5,7 +5,12 @@ import { IExpressionFactory, RsXExpressionParserInjectionTokens, RsXExpressionPa
 export const IExpressionFactoryToken = new InjectionToken<IExpressionFactory>('IExpressionFactoryProvider');
 
 function initializeRsx(): () => Promise<void> {
-    return () => InjectionContainer.load(RsXExpressionParserModule);
+    return () => {
+        if(InjectionContainer.isBound(RsXExpressionParserInjectionTokens.IExpressionFactory)) {
+            return Promise.resolve();
+        }
+        return InjectionContainer.load(RsXExpressionParserModule);
+    }
 }
 
 @NgModule({

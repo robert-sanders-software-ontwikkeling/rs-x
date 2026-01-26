@@ -1,5 +1,8 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import {
+  unloadRsXExpressionParserModule
+} from '@rs-x/expression-parser';
 import { RsxModule } from './rsx.module';
 import { RsxPipe } from './rsx.pipe';
 
@@ -19,15 +22,18 @@ describe('RsxPipe Integration', () => {
   let fixture: ComponentFixture<TestHostComponent>;
   let component: TestHostComponent;
 
+
+  afterAll(async () => {
+    await unloadRsXExpressionParserModule();
+  });
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [RsxModule],
     }).compileComponents();
-
     fixture = TestBed.createComponent(TestHostComponent);
     component = fixture.componentInstance;
   });
-
 
   it('evaluates a simple expression', async () => {
     fixture.detectChanges();

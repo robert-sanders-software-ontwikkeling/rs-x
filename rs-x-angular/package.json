@@ -6,7 +6,7 @@
   "scripts": {
     "build:angular": "ng-packagr -p projects/rsx/ng-package.json",
     "clean": "rimraf dist",
-    "test": "vitest run",
+    "test": "vitest run --config projects/rsx/vitest.config.ts",
     "lint": "ng lint"
   },
   "devDependencies": {
