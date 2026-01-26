@@ -2,4 +2,4 @@ packages:
   - "rs-x-core"
   - "rs-x-state-manager"
   - "rs-x-expression-parser"
-  - "rs-x-angular"
+  - "rs-x-angular/projects/*"

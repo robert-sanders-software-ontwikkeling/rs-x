@@ -6,67 +6,65 @@ on:
       - main
   workflow_dispatch:
 
-env:
-  node_libs: "@rs-x/core @rs-x/state-manager @rs-x-expression-parser"
-  angular_libs: "@rs-x/angular"
-
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      # ---- Checkout ----
+      # ------------------------------
+      # Checkout repository
+      # ------------------------------
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # ---- Setup Node ----
+      # ------------------------------
+      # Setup Node.js
+      # ------------------------------
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: lts/*
 
-      # ---- Setup pnpm ----
+      # ------------------------------
+      # Setup pnpm
+      # ------------------------------
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10.22.0
 
-      # ---- Install dependencies ----
+      # ------------------------------
+      # Install dependencies
+      # ------------------------------
       - name: Install dependencies
         run: pnpm install
 
-      # ---- Lint all projects ----
+      # ------------------------------
+      # Lint all projects
+      # ------------------------------
       - name: Lint all projects
         run: pnpm lint
 
-      # ---- Run Jest tests for Node libs ----
-      - name: Run Jest tests for Node libs
-        run: |
-          for pkg in $node_libs; do
-            echo "Running Jest tests for $pkg"
-            pnpm --filter "$pkg" test
-          done
+      # ------------------------------
+      # Run Node/TS tests
+      # ------------------------------
+      - name: Run Node tests
+        run: pnpm run test
 
-      # ---- Build Node libs ----
-      - name: Build Node/TS libraries
-        run: |
-          for pkg in $node_libs; do
-            echo "Building Node/TS lib $pkg"
-            pnpm --filter "$pkg" run build
-          done
+      # ------------------------------
+      # Build Node libraries
+      # ------------------------------
+      - name: Build Node libraries
+        run: pnpm run build:libs
 
-      # ---- Run Angular tests ----
+      # ------------------------------
+      # Build Angular library
+      # ------------------------------
+      - name: Build Angular library
+        run: pnpm run build:angular
+
+      # ------------------------------
+      # Run Angular tests
+      # ------------------------------
       - name: Run Angular tests
-        run: |
-          for pkg in $angular_libs; do
-            echo "Running Angular tests for $pkg"
-            pnpm --filter "$pkg" test -- --watch=false --browsers=ChromeHeadless
-          done
-
-      # ---- Build Angular library ----
-      - name: Build Angular libraries
-        run: |
-          for pkg in $angular_libs; do
-            echo "Building Angular library $pkg"
-            pnpm --filter "$pkg" run build
-          done
+        run: pnpm run test:angular

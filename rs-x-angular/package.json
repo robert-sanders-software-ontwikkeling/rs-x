@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.22.0",
   "scripts": {
     "build:libs": "pnpm -r --filter '!@rs-x/angular' run build",
-    "build:angular": "ng-packagr -p projects/rsx/ng-package.json",
+    "build:angular": "pnpm --prefix rs-x-angular run build",
     "build": "pnpm run build:libs && pnpm run build:angular",
     "test": "vitest run --config projects/rsx/vitest.config.ts",
     "lint": "ng lint"
