@@ -1,4 +1,5 @@
 packages:
   - "rs-x-core"
-  - "rs-x-expression-parser"
   - "rs-x-state-manager"
+  - "rs-x-expression-parser"
+  - "rs-x-angular"

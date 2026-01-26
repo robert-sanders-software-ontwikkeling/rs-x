@@ -1,0 +1,60 @@
+{
+  "name": "@rs-x/angular",
+  "version": "0.4.0",
+  "description": "Angular integration for RS-X, providing the RsxPipe",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x"
+  },
+  "homepage": "https://github.com/robert-sanders-software-ontwikkeling/rs-x",
+  "bugs": {
+    "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "peerDependencies": {
+    "@angular/core": "^21.1.0",
+    "@angular/common": "^21.1.0",
+    "rxjs": "^7.8.0"
+  },
+  "dependencies": {
+    "@rs-x/core": "workspace:*",
+    "@rs-x/expression-parser": "workspace:*"
+  },
+  "devDependencies": {
+    "@angular/cli": "^21.1.1",
+    "@angular/compiler-cli": "^21.1.0",
+    "ng-packagr": "^21.1.0",
+    "typescript": "~5.9.2",
+    "vitest": "^4.0.8",
+    "rimraf": "^6.1.2"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "keywords": [
+    "angular",
+    "rs-x",
+    "pipe",
+    "expression",
+    "reactive",
+    "typescript"
+  ]
+}
