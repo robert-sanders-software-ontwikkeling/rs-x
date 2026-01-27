@@ -12,6 +12,6 @@
   ],
   "linked": [],
   "access": "public",
-  "baseBranch": "fix/publish",
+  "baseBranch": "main",
   "updateInternalDependencies": "patch"
 }
