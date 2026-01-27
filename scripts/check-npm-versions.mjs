@@ -1,17 +1,18 @@
 #!/usr/bin/env node
+import { execSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { execSync } from 'node:child_process';
 
 // Map npm package names to local folder names
 const packageMap = {
   '@rs-x/core': 'rs-x-core',
   '@rs-x/state-manager': 'rs-x-state-manager',
   '@rs-x/expression-parser': 'rs-x-expression-parser',
-  '@rs-x/angular': 'rs-x-angular',
+  '@rs-x/angular': 'rs-x-angular/projects/rsx',
 };
 
-const basePath = './packages'; // adjust if your packages are elsewhere
+const basePath = './';
+
 
 let hasConflict = false;
 

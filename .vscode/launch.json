@@ -15,6 +15,23 @@
       "cwd": "${workspaceFolder}",
       "autoAttachChildProcesses": true,
       "console": "integratedTerminal"
+    },
+
+     {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug check-npm-versions",
+      "program": "${workspaceFolder}/scripts/check-npm-versions.mjs",
+      "cwd": "${workspaceFolder}",
+      "runtimeArgs": [
+        "--loader", "ts-node/esm"
+      ],
+      "autoAttachChildProcesses": true,
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "env": {
+        "NODE_OPTIONS": "--experimental-specifier-resolution=node"
+      }
     }
   ]
 }

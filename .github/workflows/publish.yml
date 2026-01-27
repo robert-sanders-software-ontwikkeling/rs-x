@@ -82,7 +82,7 @@ jobs:
           pnpm publish --filter '@rs-x/state-manager' --tag "$DIST_TAG" --access public
           pnpm publish --filter '@rs-x/expression-parser' --tag "$DIST_TAG" --access public
 
-          pnpm publish rs-x-angular/dist --tag "$DIST_TAG" --access public
+          pnpm publish rs-x-angular/dist/rsx --tag "$DIST_TAG" --access public
 
       # ---------------- PROMOTION ----------------
       - name: Promote next → latest

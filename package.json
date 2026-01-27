@@ -3,6 +3,12 @@
    "private": true,
    "version": "0.0.0",
    "packageManager": "pnpm@10.22.0",
+   "workspaces": [
+      "rs-x-core",
+      "rs-x-state-manager",
+      "rs-x-expression-parser",
+      "rs-x-angular/projects/rsx"
+   ],
    "scripts": {
       "build:libs": "pnpm --filter '@rs-x/core' run build && pnpm --filter '@rs-x/state-manager' run build && pnpm --filter '@rs-x/expression-parser' run build",
       "build:angular": "pnpm --prefix rs-x-angular run build:angular",
