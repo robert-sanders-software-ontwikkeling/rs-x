@@ -12,7 +12,7 @@ import {
 
 describe('InequalityExpression tests', () => {
    let jsParser: IExpressionParser;
-   let expression: IExpression;
+   let expression: IExpression | undefined;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXExpressionParserModule);

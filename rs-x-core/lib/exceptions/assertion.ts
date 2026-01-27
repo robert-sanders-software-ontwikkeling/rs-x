@@ -4,15 +4,16 @@ import { NullOrEmptyException } from './null-or-empty-exception';
 import { NullOrUndefinedException } from './null-or-undefined-exception';
 
 export class Assertion {
-   private constructor() {}
+   private constructor() { }
 
    public static assertIsFunction(
       value: unknown,
       name: string | number
    ): asserts value is AnyFunction {
       if (!Type.isFunction(value)) {
+         const typeName = value && typeof value === 'object' ? value.constructor?.name : typeof value;
          throw new InvalidCastException(
-            `${value.constructor.name}[${name}] is not a function`
+            `${typeName}[${name}] is not a function`
          );
       }
    }

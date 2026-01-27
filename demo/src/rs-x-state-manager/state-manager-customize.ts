@@ -12,7 +12,8 @@ import {
     overrideMultiInjectServices,
     RsXCoreInjectionTokens,
     SingletonFactory,
-    truePredicate
+    truePredicate,
+    Type
 } from '@rs-x/core';
 
 import type {
@@ -160,7 +161,7 @@ export class TextDocumenIndexObserverManager
 
 @Injectable()
 export class TextDocumentIndexAccessor implements IIndexValueAccessor<TextDocument, ITextDocumentIndex> {
-    public readonly priority: 200;
+    public readonly priority!: 200;
 
     public hasValue(context: TextDocument, index: ITextDocumentIndex): boolean {
         return context.getLine(index) !== undefined;
@@ -179,11 +180,11 @@ export class TextDocumentIndexAccessor implements IIndexValueAccessor<TextDocume
     // Here it is the same as getValue.
     // For example, for a Promise accessor getValue returns the promise
     // and getResolvedValue returns the resolved promise value
-    public getResolvedValue(context: TextDocument, index: ITextDocumentIndex): string {
+    public getResolvedValue(context: TextDocument, index: ITextDocumentIndex): string | undefined {
         return this.getValue(context, index);
     }
 
-    public getValue(context: TextDocument, index: ITextDocumentIndex): string {
+    public getValue(context: TextDocument, index: ITextDocumentIndex): string | undefined {
         return context.getLine(index);
     }
 
@@ -307,7 +308,7 @@ class TextDocument {
         page.set(lineIndex, text);
     }
 
-    public getLine(index: ITextDocumentIndex): string {
+    public getLine(index: ITextDocumentIndex): string| undefined {
         const { pageIndex, lineIndex } = index;
         return this._pages.get(pageIndex)?.get(lineIndex);
     }
@@ -332,7 +333,7 @@ class TextDocumentIndexObserver extends AbstractObserver<TextDocument, string, I
 
     private readonly onChange = (change: IPropertyChange) => {
         const changeIndex = change.id as ITextDocumentIndex;
-        if (changeIndex.lineIndex === this.id.lineIndex && changeIndex.pageIndex === this.id.pageIndex) {
+        if (changeIndex.lineIndex === this.id?.lineIndex && changeIndex.pageIndex === this.id?.pageIndex) {
             this.emitChange(change);
         }
     }
@@ -343,7 +344,7 @@ class TextDocumentObserver extends AbstractObserver<TextDocument> {
         textDocument: TextDocument,
         private readonly _proxyRegister: IProxyRegistry,
         owner?: IDisposableOwner,) {
-        super(owner, null, textDocument);
+        super(owner, Type.cast(undefined), textDocument);
 
         this.target = new Proxy(textDocument, this);
 

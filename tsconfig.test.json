@@ -1,5 +1,7 @@
 {
    "compilerOptions": {
+       "strict": true,
+      "noImplicitReturns": true,
       "forceConsistentCasingInFileNames": true,
       "resolveJsonModule": true,
       "outDir": "dist/build",

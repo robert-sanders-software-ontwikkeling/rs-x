@@ -13,8 +13,10 @@ const tsconfigText = readFileSync(tsconfigPath, 'utf-8');
 const { compilerOptions } = JSON.parse(tsconfigText);
 
 // Adjust paths for ts-jest
-Object.keys(compilerOptions.paths).forEach((alias) => {
-  compilerOptions.paths[alias] = [`<rootDir>/${compilerOptions.paths[alias][0]}`];
+Object.keys(compilerOptions.paths ?? {}).forEach((alias) => {
+  compilerOptions.paths[alias] = [
+    `<rootDir>/${compilerOptions.paths[alias][0]}`,
+  ];
 });
 
 // ESM dependencies that need Babel transform
@@ -24,11 +26,22 @@ const esModules = ['rxjs', 'resize-observer-polyfill', 'superjson'].join('|');
 // Jest configuration
 // ------------------------------
 const jestConfig: Config.InitialOptions = {
+  // Environment
   testEnvironment: 'jest-environment-jsdom',
   extensionsToTreatAsEsm: ['.ts'],
 
+  // 🚫 Exclude Angular package entirely
+  testPathIgnorePatterns: [
+    '<rootDir>/rs-x-angular/',
+  ],
+
+  modulePathIgnorePatterns: [
+    '<rootDir>/rs-x-angular/',
+  ],
+
+  // Transforms
   transform: {
-    // TypeScript with ts-jest
+    // TypeScript via ts-jest (ESM)
     '^.+\\.tsx?$': [
       'ts-jest',
       {
@@ -39,28 +52,34 @@ const jestConfig: Config.InitialOptions = {
       },
     ],
 
-    // ESM dependencies with Babel
+    // ESM dependencies via Babel
     [`(${esModules}).+\\.js$`]: [
       'babel-jest',
       { configFile: '<rootDir>/babel.config.js' },
     ],
 
-    // SCSS / CSS / HTML stub transforms
+    // Styles / templates
     '^.+\\.(scss|css|html)$': 'jest-transform-stub',
   },
 
+  // Setup
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
 
+  // Performance / output
   cacheDirectory: '<rootDir>/dist/jest',
   reporters: ['default'],
+  verbose: true,
+  maxWorkers: '8',
+  testTimeout: 10000,
 
+  // Coverage
   collectCoverage: true,
   coverageReporters: ['html'],
 
-  moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths),
-  maxWorkers: '8',
-  testTimeout: 10000,
-  verbose: true,
+  // Path aliases
+  moduleNameMapper: pathsToModuleNameMapper(
+    compilerOptions.paths ?? {},
+  ),
 };
 
 export default jestConfig;

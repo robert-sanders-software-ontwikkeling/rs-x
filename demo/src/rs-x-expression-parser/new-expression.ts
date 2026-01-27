@@ -1,4 +1,4 @@
-import { emptyFunction, InjectionContainer, printValue, WaitForEvent } from '@rs-x/core';
+import { emptyFunction, InjectionContainer, printValue, Type, WaitForEvent } from '@rs-x/core';
 import {
     type IExpressionFactory,
     RsXExpressionParserInjectionTokens,
@@ -28,7 +28,7 @@ export const run = (async () => {
     const expression = expressionFactory.create(expressionContext, 'new type(value)');
 
     function print(instance: unknown): void {
-        console.log(instance.constructor.name);
+        console.log(Type.getConstructorName(instance));
         printValue(instance);
     }
 

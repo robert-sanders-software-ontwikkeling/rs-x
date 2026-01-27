@@ -31,7 +31,7 @@ export const run = (() => {
         stateManager.watchState(stateContext, 'map', truePredicate);
 
         console.log('Changed value:');
-        stateContext.map.get('b').push(5);
+        stateContext.map.get('b')?.push(5);
 
         console.log('Latest value:');
         printValue(stateManager.getState(stateContext, 'map'))

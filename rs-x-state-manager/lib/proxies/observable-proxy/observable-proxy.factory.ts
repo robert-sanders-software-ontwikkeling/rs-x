@@ -20,7 +20,7 @@ class ObservableProxy extends AbstractObserver<
    undefined,
    undefined
 > {
-   private _observableSubscription: Subscription;
+   private _observableSubscription: Subscription | undefined;
    private _oldValue: unknown;
 
    constructor(
@@ -43,7 +43,7 @@ class ObservableProxy extends AbstractObserver<
    protected override disposeInternal(): void {
       this._observableSubscription?.unsubscribe();
       this._observableAccessor.clearLastValue(this.target);
-      this._observableSubscription = null;
+      this._observableSubscription = undefined;
       this._oldValue = null;
    }
 

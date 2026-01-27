@@ -6,6 +6,7 @@ import {
    RsXCoreInjectionTokens,
    SingletonFactory,
    SingletonFactoryWithGuid,
+   Type,
    UnsupportedException
 } from '@rs-x/core';
 import type {
@@ -40,10 +41,10 @@ class PropertyObserverProxyPairManager
       return data.key;
    }
 
-   protected getGroupMemberId(data: IPropertyInfo): MustProxify {
+   protected getGroupMemberId(data: IPropertyInfo): MustProxify | undefined {
       return data.mustProxify;
    }
-   x;
+   
    protected createInstance(
       propertyInfo: IPropertyInfo,
       id: string
@@ -80,7 +81,7 @@ class PropertyObserverProxyPairManager
 
       if (!observerFactory) {
          throw new UnsupportedException(
-            `No observer factory found for given object of type ${this._object.constructor.name} for given id ${propertyInfo.key}`
+            `No observer factory found for given object of type ${Type.getConstructorName(this._object)} for given id ${propertyInfo.key}`
          );
       }
 

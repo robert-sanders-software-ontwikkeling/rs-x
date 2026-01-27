@@ -27,8 +27,8 @@ describe('ObjectStateManager tests', () => {
 
       objectStateManager.create(object).instance.set('x', object.x, false);
       const { value, valueCopy } = objectStateManager
-         .getFromId(object)
-         .getFromId('x');
+         ?.getFromId(object)
+         ?.getFromId('x') ?? {};
 
       expect(value).not.toBe(valueCopy);
       expect(value).toEqual(valueCopy);
@@ -53,7 +53,7 @@ describe('ObjectStateManager tests', () => {
       expect(objectStateManager.has(oldObject)).toEqual(false);
       expect(objectStateManager.has(newObject)).toEqual(true);
       expect(
-         objectStateManager.getFromId(newObject).getFromId('x').value
+         objectStateManager?.getFromId(newObject)?.getFromId('x')?.value
       ).toEqual({
          y: 2,
       });
@@ -70,7 +70,7 @@ describe('ObjectStateManager tests', () => {
       objectStateManager.replaceState('x', object, { y: 2 }, object, false);
 
       expect(objectStateManager.has(object)).toEqual(true);
-      expect(objectStateManager.getFromId(object).getFromId('x').value).toEqual(
+      expect(objectStateManager?.getFromId(object)?.getFromId('x')?.value).toEqual(
          {
             y: 2,
          }
@@ -86,7 +86,7 @@ describe('ObjectStateManager tests', () => {
 
       objectStateManager.replaceState('x', object, { y: 2 }, object, false);
       expect(objectStateManager.has(object)).toEqual(true);
-      expect(objectStateManager.getFromId(object).getFromId('x').value).toEqual(
+      expect(objectStateManager?.getFromId(object)?.getFromId('x')?.value).toEqual(
          {
             y: 2,
          }

@@ -58,7 +58,7 @@ describe('SetProxy tests', () => {
 
    describe('all set operation still work as before', () => {
       it('size', () => {
-         expect(observerProxyPair.proxy.size).toEqual(2);
+         expect(observerProxyPair.proxy?.size).toEqual(2);
       });
 
       it('has', () => {
@@ -70,21 +70,21 @@ describe('SetProxy tests', () => {
             new ProxyRegistryMock()
          ).create(setData).instance;
 
-         expect(observerProxyPair.proxy.has(1)).toEqual(true);
-         expect(observerProxyPair.proxy.has(2)).toEqual(true);
-         expect(observerProxyPair.proxy.has(3)).toEqual(false);
+         expect(observerProxyPair.proxy?.has(1)).toEqual(true);
+         expect(observerProxyPair.proxy?.has(2)).toEqual(true);
+         expect(observerProxyPair.proxy?.has(3)).toEqual(false);
       });
 
       it('entries', () => {
-         expect(Array.from(observerProxyPair.proxy.entries())).toEqual([
+         expect(Array.from(observerProxyPair.proxy?.entries() ?? [])).toEqual([
             [item1, item1],
             [item2, item2],
          ]);
       });
 
       it('forEach', () => {
-         const actual = [];
-         observerProxyPair.proxy.forEach((value, key) =>
+         const actual:unknown[] = [];
+         observerProxyPair.proxy?.forEach((value, key) =>
             actual.push([key, value])
          );
 
@@ -95,14 +95,14 @@ describe('SetProxy tests', () => {
       });
 
       it('values', () => {
-         expect(Array.from(observerProxyPair.proxy.values())).toEqual([
+         expect(Array.from(observerProxyPair.proxy?.values() ?? [])).toEqual([
             item1,
             item2,
          ]);
       });
 
       it('keys', () => {
-         expect(Array.from(observerProxyPair.proxy.keys())).toEqual([
+         expect(Array.from(observerProxyPair.proxy?.keys() ?? [])).toEqual([
             item1,
             item2,
          ]);
@@ -110,20 +110,20 @@ describe('SetProxy tests', () => {
 
       it('add', () => {
          const item3 = { x: 3 };
-         const actual = observerProxyPair.proxy.add(item3);
+         const actual = observerProxyPair.proxy?.add(item3);
 
          expect(actual).toBe(observerProxyPair.proxy);
          expect(setData.set).toEqual(new Set([item1, item2, item3]));
       });
 
       it('delete', () => {
-         const actual = observerProxyPair.proxy.delete(item2);
+         const actual = observerProxyPair.proxy?.delete(item2);
          expect(actual).toEqual(true);
          expect(setData.set).toEqual(new Set([item1]));
       });
 
       it('clear', () => {
-         observerProxyPair.proxy.clear();
+         observerProxyPair.proxy?.clear();
          expect(setData.set).toEqual(new Set());
       });
    });
@@ -136,7 +136,7 @@ describe('SetProxy tests', () => {
             observerProxyPair.observer,
             'changed'
          ).wait(() => {
-            observerProxyPair.proxy.add(newItem);
+            observerProxyPair.proxy?.add(newItem);
          });
 
          const expected: IPropertyChange = {
@@ -154,7 +154,7 @@ describe('SetProxy tests', () => {
             observerProxyPair.observer,
             'changed'
          ).wait(() => {
-            observerProxyPair.proxy.delete(item1);
+            observerProxyPair.proxy?.delete(item1);
          });
 
          const expected: IPropertyChange = {
@@ -173,7 +173,7 @@ describe('SetProxy tests', () => {
             observerProxyPair.observer,
             'changed', { count: 2 }
          ).wait(() => {
-            observerProxyPair.proxy.clear();
+            observerProxyPair.proxy?.clear();
          });
 
          const expected: IPropertyChange[] = [

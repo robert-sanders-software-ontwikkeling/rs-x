@@ -8,9 +8,9 @@ import { observerGroupEqualTo } from './observer-group-equal-to';
 export type ObserverComparator = (x: IObserver, y: IObserver) => boolean;
 
 const comparatorRegistry = new Map<string, ObserverComparator>([
-   [ObserverGroup.constructor.name, observerGroupEqualTo],
-   ['ArrayItemObserver', arrayItemObserverEqualTo],
-   ['MapItemObserver', mapItemObserverEqualTo],
+   [ObserverGroup.constructor.name, observerGroupEqualTo as ObserverComparator],
+   ['ArrayItemObserver', arrayItemObserverEqualTo as ObserverComparator],
+   ['MapItemObserver', mapItemObserverEqualTo as ObserverComparator],
 ]);
 
 export function observerEqualTo(x: IObserver, y: IObserver): boolean {

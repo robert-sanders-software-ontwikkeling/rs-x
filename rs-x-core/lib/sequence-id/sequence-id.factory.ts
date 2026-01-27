@@ -24,7 +24,7 @@ export class SequenceWithId implements ISequenceWithId {
             return;
         }
 
-        if (this._owner.canDispose()) {
+        if (this._owner.canDispose?.()) {
             this._isDisposed = true;
         }
 
@@ -57,7 +57,7 @@ class ValueSequenceIdRegistry {
             this._idToSequence.set(node.id, [...sequence]);
         }
 
-        return { isNew, id: node.id }
+        return { isNew, id: node.id as string }
     }
 
     public deleteId(id: string): void {
@@ -137,7 +137,7 @@ class ValueSequenceIdsForContext
 
     protected override createId(sequence: unknown[]): string {
         return this._valueSequenceIdRegistry.getId(sequence).id;
-    }
+    }   
 
     protected override releaseInstance(_: ISequenceWithId, id: string): void {
         this._valueSequenceIdRegistry.deleteId(id)
@@ -198,7 +198,7 @@ export class SequenceIdFactory implements ISequenceIdFactory {
         this._valueSequenceIdRegistryManager.getFromId(context)?.release(id)
     }
 
-    public get(context: unknown, sequence: unknown[]): ISequenceWithId {
+    public get(context: unknown, sequence: unknown[]): ISequenceWithId | undefined {
         return this._valueSequenceIdRegistryManager.getFromId(context)?.getFromData(sequence);
     }
 

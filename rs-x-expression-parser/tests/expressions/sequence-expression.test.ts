@@ -12,7 +12,7 @@ import {
 
 describe('SequenceExpression tests', () => {
    let jsParser: IExpressionParser;
-   let expression: IExpression;
+   let expression: IExpression | undefined;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXExpressionParserModule);
@@ -43,7 +43,7 @@ describe('SequenceExpression tests', () => {
    });
 
    it('will emit change event for initial value', async () => {
-      const context = {
+      const context :{ b: number | null; value: number; setB(v: number): void } = {
          b: null,
          value: 100,
          setB(v: number) {
@@ -61,7 +61,7 @@ describe('SequenceExpression tests', () => {
    });
 
    it('will emit change event when operands changes', async () => {
-      const context = {
+      const context: { b: number | null; value: number; setB(v: number): void } = {
          b: null,
          value: 100,
          setB(v: number) {

@@ -49,7 +49,6 @@ export abstract class SingletonFactory<
       return lines;
    }
 
-   // provide compatibility method if something calls toString
    public toString(indent = 4, level = 0): string {
       return this.toLines(indent, level).map(l => ' '.repeat(indent * level) + l).join('\n');
    }
@@ -66,7 +65,7 @@ export abstract class SingletonFactory<
       return this._instances.keys();
    }
 
-   public getFromId(id: TId): TInstance {
+   public getFromId(id: TId): TInstance | undefined {
       return this._instances.get(id);
    }
 
@@ -74,12 +73,12 @@ export abstract class SingletonFactory<
       return this._instances.has(id);
    }
 
-   public getFromData(data: TIdData): TInstance {
+   public getFromData(data: TIdData): TInstance | undefined {
       const id = this.getId(data);
       return id !== undefined ? this.getFromId(id) : undefined;
    }
 
-   public abstract getId(data: TIdData): TId;
+   public abstract getId(data: TIdData): TId | undefined;
 
    @PreDestroy()
    public dispose(): void {
@@ -125,7 +124,7 @@ export abstract class SingletonFactory<
    public release(
       id: TId,
       force?: boolean
-   ): { referenceCount: number; instance: TInstance } {
+   ): { referenceCount: number; instance: TInstance| null } {
       const instance = this._instances.get(id);
       if (!instance) {
          return {

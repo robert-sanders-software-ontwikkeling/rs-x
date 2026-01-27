@@ -1,4 +1,4 @@
-import { type IDisposableOwner, Inject, Injectable, SingletonFactory } from '@rs-x/core';
+import { type IDisposableOwner, Inject, Injectable, SingletonFactory, Type } from '@rs-x/core';
 import { AbstractObserver } from '../../abstract-observer';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
 import type { IProxyRegistry } from '../proxy-registry/proxy-registry.interface';
@@ -10,7 +10,6 @@ import type {
 } from './set-proxy.factory.type';
 
 type SetMethodsKeys = 'clear' | 'add' | 'delete' | 'has';
-
 export class SetProxy extends AbstractObserver<
    Set<unknown>,
    Set<unknown>,
@@ -26,7 +25,7 @@ export class SetProxy extends AbstractObserver<
       initialValue: Set<unknown>,
       private readonly _proxyRegistry: IProxyRegistry
    ) {
-      super(owner, undefined, initialValue);
+      super(owner, Type.cast(undefined), initialValue);
 
       this.updateSet = {
          clear: this.clearSet,
@@ -41,15 +40,21 @@ export class SetProxy extends AbstractObserver<
    }
 
    public get(originalSet: Set<unknown>, property: PropertyKey): unknown {
-      if (property !== 'constructor' && this.updateSet[property]) {
-         return (...args: unknown[]) => {
-            return this.updateSet[property](originalSet, ...args);
-         };
-      } else {
-         return typeof originalSet[property] === 'function'
-            ? originalSet[property].bind(originalSet)
-            : originalSet[property];
+      const target = originalSet as unknown as Record<PropertyKey, unknown>;
+
+      if (property !== 'constructor' && property in this.updateSet) {
+         return (...args: unknown[]) =>
+            (this.updateSet as Record<PropertyKey, Function>)[property](
+               originalSet,
+               ...args
+            );
       }
+
+      const value = target[property];
+
+      return typeof value === 'function'
+         ? (value as Function).bind(originalSet)
+         : value;
    }
 
    protected override disposeInternal(): void {
@@ -69,7 +74,7 @@ export class SetProxy extends AbstractObserver<
    };
 
    private deleteSet = (originalSet: Set<unknown>, ...args: unknown[]) => {
-      const result =   originalSet.delete(args[0])
+      const result = originalSet.delete(args[0])
       this.emitValueChange(originalSet, args[0], undefined)
       return result;
    };

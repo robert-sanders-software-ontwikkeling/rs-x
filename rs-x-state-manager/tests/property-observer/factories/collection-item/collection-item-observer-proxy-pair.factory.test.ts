@@ -2,6 +2,7 @@ import {
    InjectionContainer,
    type IPropertyChange,
    truePredicate,
+   Type,
    WaitForEvent,
 } from '@rs-x/core';
 import { DisposableOwnerMock } from '@rs-x/core/testing';
@@ -12,8 +13,8 @@ import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manag
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
 
 describe('CollectionItemObserverProxyPairFactory tests', () => {
-   let observer1: IObserver;
-   let observer2: IObserver;
+   let observer1: IObserver | undefined;
+   let observer2: IObserver| undefined;
    let proxyRegister: IProxyRegistry;
    let collectionItemObserverProxyPairFactory: ICollectionItemObserverProxyPairFactory;
    let disposableOwner: DisposableOwnerMock;
@@ -157,7 +158,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
          });
 
          it('No change event for non-recursived observer will be emmited when changing nested item', async () => {
-            const array = [[]];
+            const array:number[][] = [[]];
 
             observer1 = collectionItemObserverProxyPairFactory.create(
                disposableOwner,
@@ -507,7 +508,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
             ).observer;
 
             const actual = await new WaitForEvent(observer1, 'changed').wait(() => {
-               map.get('a').set('b', 20)
+               map.get('a')?.set('b', 20)
             });
             expect(actual).toBeNull()
          });
@@ -534,7 +535,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
             ).observer;
 
             const actual = await new WaitForEvent(observer2, 'changed').wait(() => {
-               map.get('a').set('b', 20)
+               map.get('a')?.set('b', 20)
             });
 
             const expected: IPropertyChange = {
@@ -618,7 +619,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
             ).observer;
 
             const actual = await new WaitForEvent(observer1, 'changed').wait(() => {
-               map.get('a').delete('y');
+               map.get('a')?.delete('y');
             });
 
             const expected: IPropertyChange = {
@@ -648,7 +649,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
             ).observer;
 
             const actual = await new WaitForEvent(observer1, 'changed').wait(() => {
-               map.get('a').set('b', 10);
+               map?.get('a')?.set('b', 10);
             });
 
             const expected: IPropertyChange = {
@@ -680,7 +681,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
             ).observer;
 
             const actual = await new WaitForEvent(observer1, 'changed').wait(() => {
-               map.get('a').get('z').x = 100;
+               (Type.toObject(map.get('a')?.get('z')) ?? {}).x = 100;
             });
 
             const expected: IPropertyChange = {

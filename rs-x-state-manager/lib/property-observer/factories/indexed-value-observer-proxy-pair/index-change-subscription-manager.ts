@@ -26,7 +26,7 @@ export interface ISubscriptionInfo<TIndex>
    initialValue?: unknown;
    indexValueObserver?: IObserver;
    owner: IDisposableOwner;
-   initializeManually: boolean;
+   initializeManually?: boolean;
    mustHandleChange?: (change: IPropertyChange) => boolean;
 }
 
@@ -74,7 +74,7 @@ class IndexChangeSubscriptionsForContextManager<TIndex>
       return data.index;
    }
 
-   protected getGroupMemberId(data: ISubscriptionIdInfo<TIndex>): MustProxify {
+   protected getGroupMemberId(data: ISubscriptionIdInfo<TIndex>): MustProxify | undefined {
       return data.mustProxify;
    }
 

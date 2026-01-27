@@ -14,9 +14,9 @@ import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module
 
 describe('non iterableObjectPropertyObserverFactory', () => {
    let disposableOwner: DisposableOwnerMock;
-   let observer: IObserver;
-   let recursiveObserver: IObserver;
-   let nonRecursiveObserver: IObserver;
+   let observer: IObserver | undefined;
+   let recursiveObserver: IObserver | undefined;
+   let nonRecursiveObserver: IObserver | undefined;
    let arrayProxyFactory: IArrayProxyFactory;
    let nonIterableObjectPropertyObserverFactory: IIndexObserverProxyPairFactory;
 
@@ -43,9 +43,9 @@ describe('non iterableObjectPropertyObserverFactory', () => {
       observer?.dispose();
       recursiveObserver?.dispose();
       nonRecursiveObserver?.dispose();
-      observer = null;
-      recursiveObserver = null;
-      nonRecursiveObserver = null;
+      observer = undefined;
+      recursiveObserver = undefined;
+      nonRecursiveObserver = undefined;
    });
 
    it('applies return true if object is not iterable', () => {
@@ -101,7 +101,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
 
       const expected = arrayProxyFactory.getFromData({
          array,
-      }).proxy;
+      })?.proxy;
       expect(actual).toBe(expected);
    });
 
@@ -128,12 +128,12 @@ describe('non iterableObjectPropertyObserverFactory', () => {
 
       const expected = arrayProxyFactory.getFromData({
          array,
-      }).proxy;
+      })?.proxy;
       expect(object.x).toBe(expected);
    });
 
    it('old proxy will be replaced if we set property to new value', () => {
-      const array = [];
+      const array: number[] = [];
       const object = { x: array };
 
       nonIterableObjectPropertyObserverFactory.create(disposableOwner, object, {
@@ -146,12 +146,12 @@ describe('non iterableObjectPropertyObserverFactory', () => {
 
       const expected = arrayProxyFactory.getFromData({
          array: newArray,
-      }).proxy;
+      })?.proxy;
       expect(object.x).toBe(expected);
    });
 
    it('old proxy will be dispose if we set property to new value', () => {
-      const oldArray = [];
+      const oldArray: number[] = [];
       const object = { x: oldArray };
 
       nonIterableObjectPropertyObserverFactory.create(disposableOwner, object, {
@@ -182,7 +182,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
       expect(object.x).toBe(
          arrayProxyFactory.getFromData({
             array: newArray,
-         }).proxy
+         })?.proxy
       );
    });
 
@@ -233,7 +233,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
    });
 
    it('if we set set property to new value it will be observed for recursive observer', async () => {
-      const object = { x: [] };
+      const object = { x: [] as number[] };
       observer = nonIterableObjectPropertyObserverFactory.create(
          disposableOwner,
          object,
@@ -262,7 +262,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
    });
 
    it('change event will emit if we change property value for recursive observer', async () => {
-      const object = { x: [] };
+      const object = { x: [] as number[] };
       observer = nonIterableObjectPropertyObserverFactory.create(
          disposableOwner,
          object,
@@ -288,7 +288,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
    });
 
    it('change event will not emit if we change property value for non-recursive observer', async () => {
-      const object = { x: [] };
+      const object = { x: [] as number[] };
       observer = nonIterableObjectPropertyObserverFactory.create(
          disposableOwner,
          object,
@@ -303,7 +303,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
    });
 
    it('can create recursive and  non-recursive observer without conflicts: changing index value', async () => {
-      const object = { x: [] };
+      const object = { x: [] as number[] };
       recursiveObserver = nonIterableObjectPropertyObserverFactory.create(
          disposableOwner,
          object,
@@ -333,7 +333,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
    });
 
    it('can create recursive and non-recursive observer without conflicts: setting index value', async () => {
-      const object = { x: [] };
+      const object = { x: [] as number[] };
       recursiveObserver = nonIterableObjectPropertyObserverFactory.create(
          disposableOwner,
          object,
@@ -377,7 +377,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
    });
 
    it('can create recursive and non-recursive observer without conflicts: changing nested value', async () => {
-      const object = { x: [] };
+      const object = { x: [] as unknown[] };
       recursiveObserver = nonIterableObjectPropertyObserverFactory.create(
          disposableOwner,
          object,

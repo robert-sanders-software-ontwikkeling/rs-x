@@ -1,5 +1,6 @@
 import {
-   InjectionContainer
+   InjectionContainer,
+   Type
 } from '@rs-x/core';
 import { DisposableOwnerMock } from '@rs-x/core/testing';
 import { type IDateObserverProxyPairFactory } from '../../../lib/object-observer/factories/date-observer-proxy-pair.factory.type';
@@ -7,6 +8,7 @@ import { type IObserver } from '../../../lib/observer.interface';
 import { type IDateProxyFactory } from '../../../lib/proxies/date-proxy/date-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
+
 
 describe('DateObserverProxyPairFactory tests', () => {
    let dateObserverProxyPairFactory: IDateObserverProxyPairFactory;
@@ -36,7 +38,7 @@ describe('DateObserverProxyPairFactory tests', () => {
    afterEach(() => {
       if (observer) {
          observer.dispose();
-         observer = null;
+         observer = Type.cast(undefined);
       }
    });
 
@@ -75,7 +77,7 @@ describe('DateObserverProxyPairFactory tests', () => {
       observer = observerProxyPair.observer;
       disposableOwner.canDispose.mockReturnValue(true);
 
-      const id = dateProxyFactory.getId({ date });
+      const id = dateProxyFactory.getId({ date }) as string;
       expect(id).toBeDefined();
 
       expect(dateProxyFactory.getFromId(id)).toBeDefined();

@@ -16,14 +16,14 @@ export class DefaultDeepClone implements IDeepClone {
    }
 
    public clone(source: unknown): unknown {
-      let error: Error;
+      let error: Error | null = null;
 
       const value = this._deepCloneValueGetter.get(source);
       for (let i = 0; i < this._deepCloneList.length; i++) {
          try {
             return this._deepCloneList[i].clone(value);
          } catch (e) {
-            error = e;
+            error = e as Error
          }
       }
       throw error;

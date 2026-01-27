@@ -133,23 +133,39 @@ export function findDifferences(
 }
 
 const toDeepEqualCircular: MatcherFunction<[expected: unknown]> = function (
-   received: object,
-   expected: object
+  this,                 // Jest matcher context
+  received: unknown,    // must be unknown, not object
+  expected: unknown     // expected argument can also be unknown
 ) {
-   const diffs = findDifferences(received, expected);
+  // Optionally assert that received and expected are objects
+  if (typeof received !== 'object' || received === null) {
+    return {
+      pass: false,
+      message: () => 'Received value is not an object',
+    };
+  }
 
-   const pass = diffs.length === 0;
+  if (typeof expected !== 'object' || expected === null) {
+    return {
+      pass: false,
+      message: () => 'Expected value is not an object',
+    };
+  }
 
-   return {
-      pass,
-      message: () =>
-         pass
-            ? this.utils.matcherHint('.not.toDeepEqualCircularWithDiff') +
-            '\n\nExpected values not to be deeply equal, but they were.'
-            : this.utils.matcherHint('.toDeepEqualCircularWithDiff') +
-            '\n\nFound the following differences:\n\n' +
-            diffs.map((d) => `  • ${d}`).join('\n'),
-   };
+  // Now safe to cast
+  const diffs = findDifferences(received as object, expected as object);
+  const pass = diffs.length === 0;
+
+  return {
+    pass,
+    message: () =>
+      pass
+        ? this.utils.matcherHint('.not.toDeepEqualCircularWithDiff') +
+          '\n\nExpected values not to be deeply equal, but they were.'
+        : this.utils.matcherHint('.toDeepEqualCircularWithDiff') +
+          '\n\nFound the following differences:\n\n' +
+          diffs.map((d) => `  • ${d}`).join('\n'),
+  };
 };
 
 export function observerEqualTo(

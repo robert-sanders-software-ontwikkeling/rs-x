@@ -6,7 +6,8 @@ import {
     Inject,
     Injectable,
     RsXCoreInjectionTokens,
-    SingletonFactoryWithGuid
+    SingletonFactoryWithGuid,
+    Type
 } from '@rs-x/core';
 import { Subject } from 'rxjs';
 import { AbstractObserver } from '../../abstract-observer';
@@ -188,7 +189,7 @@ class DateProxy extends AbstractObserver<Date, Date, undefined> {
         initialValue: Date,
         private readonly _proxyRegistry: IProxyRegistry,
         private readonly _filter?: (propertyName: DateProperty) => boolean) {
-        super(owner, null, initialValue, new Subject(), undefined);
+        super(owner, Type.cast(undefined), initialValue, new Subject(), undefined);
 
         this.target = new Proxy(initialValue, this);
         this._proxyRegistry.register(initialValue, this.target);
@@ -266,7 +267,7 @@ class DateProxy extends AbstractObserver<Date, Date, undefined> {
 
     protected override disposeInternal(): void {
         this._proxyRegistry.unregister(this.value);
-        this.target = null;
+        this.target = Type.cast(undefined);
     }
 }
 @Injectable()
@@ -291,7 +292,7 @@ export class DateProxyFactory
         return data.date;
     }
 
-    protected override getGroupMemberId(data: IDateProxyIdData): MustProxify {
+    protected override getGroupMemberId(data: IDateProxyIdData): MustProxify | undefined {
         return data.mustProxify;
     }
 

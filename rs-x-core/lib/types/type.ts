@@ -2,18 +2,14 @@ import { ArgumentException } from '../exceptions/argument-exception';
 import { PropertyDescriptorType } from './property-descriptor-type.enum';
 import { type IPropertyDescriptor } from './property-descriptor.interface';
 
-
 export type CheckValidKey<T, U extends keyof T> = U;
 export type GetFunction<T> = () => T;
 export type SetFunction<T> = (value: T) => void;
-
 export const emptyValue = Symbol('empty');
 export type AnyFunction = (...args: unknown[]) => unknown;
 export const emptyFunction = () => { };
 export const truePredicate = () => true;
-export const echo = (value) => value;
-
-
+export const echo = <T = unknown>(value: T) => value;
 
 export class Type {
    public static isPositiveIntegerString(value: unknown): boolean {
@@ -95,7 +91,7 @@ export class Type {
       return typeof value === 'function';
    }
 
-   public static  isMethod(value:object ): boolean {
+   public static isMethod(value: unknown): boolean {
       return typeof value === 'function' && !("prototype" in value);
 
    }
@@ -184,11 +180,7 @@ export class Type {
       }
 
       if (
-         Type.isMethod(propertyDescriptor.value) //&&
-         // (
-         //    Type.hasProperty(target, name) ||
-         //    Type.hasOwnPropertyInPrototypeChain(target, name)
-         // )
+         Type.isMethod(propertyDescriptor.value)
       ) {
          return PropertyDescriptorType.Function;
       }
@@ -200,30 +192,45 @@ export class Type {
       root: unknown,
       name: keyof T
    ): IPropertyDescriptor {
-      for (
-         let current = root;
-         current && current !== Object.prototype;
-         current = Object.getPrototypeOf(current)
-      ) {
-         const propertyDescriptor = Object.getOwnPropertyDescriptor(
-            current,
-            name
+      if (!root || typeof root !== 'object') {
+         throw new ArgumentException(
+            `Cannot get property '${String(name)}' from non-object root: ${String(root)}`
          );
+      }
+
+      let current: object | null = root;
+      while (current && current !== Object.prototype) {
+         const propertyDescriptor = Object.getOwnPropertyDescriptor(current, name);
          if (propertyDescriptor) {
             return {
-               type: Type.getPropertyDescriptorType(
-                  // root,
-                  // name as string,
-                  propertyDescriptor
-               ),
+               type: Type.getPropertyDescriptorType(propertyDescriptor),
                descriptor: propertyDescriptor,
             };
          }
+         current = Object.getPrototypeOf(current);
       }
 
+      // TypeScript knows `root` is an object here
+      const constructorName =
+         (root as object).constructor?.name || 'UnknownObject';
+
       throw new ArgumentException(
-         `${root.constructor.name} does not have a property, method or field with name '${String(name)}'`
+         `${constructorName} does not have a property, method or field with name '${String(name)}'`
       );
    }
+
+   public static toObject(context: unknown): Record<string, unknown> | undefined {
+      if (context && (typeof context === 'object' || typeof context === 'function')) {
+         return context as object & Record<string, unknown>;
+      }
+      return undefined;
+   }
+
+    public static getConstructorName(value: unknown): string {
+        if (typeof value === 'object' && value !== null) {
+            return (value as object).constructor.name;
+        }
+        return 'unknown';
+    }
 
 }

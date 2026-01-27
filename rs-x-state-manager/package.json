@@ -2,19 +2,14 @@
   "name": "@rs-x/state-manager",
   "version": "0.4.0",
   "description": "Reactive state management layer for the RS-X framework with fine-grained change tracking",
-  "funding": {
-    "type": "individual",
-    "url": "https://github.com/sponsors/robert-sanders-software-ontwikkeling"
-  },
   "type": "module",
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     }
   },
   "sideEffects": false,
@@ -34,20 +29,22 @@
     "provenance": true
   },
   "scripts": {
-    "build": "tsup lib/index.ts --format cjs,esm --dts --tsconfig ../tsconfig.build.json"
+    "build": "tsup lib/index.ts --format esm --dts --tsconfig ../tsconfig.build.json",
+    "clean": "rimraf dist"
   },
   "peerDependencies": {
-    "rxjs": "^7.8.0",
-    "@rs-x/core": "0.1.x"
+   
+    "rxjs": "^7.8.0"
+  },
+  "dependencies": {
+    "@rs-x/core": "workspace:*"
   },
   "devDependencies": {
-    "rxjs": "7.8.2",
-    "@rs-x/core": "workspace:*",
-    "tsup": "8.5.1",
-    "typescript": "^5.9.3"
+    "tsup": "^8.5.1",
+    "rimraf": "^6.1.2"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=24"
   },
   "keywords": [
     "rs-x",

@@ -1,6 +1,7 @@
 import {
    InjectionContainer,
    type IPropertyChange,
+   Type,
    WaitForEvent
 } from '@rs-x/core';
 import { DisposableOwnerMock } from '@rs-x/core/testing';
@@ -36,7 +37,7 @@ describe('IDatePropertyObserverProxyPairFactory tests', () => {
    afterEach(() => {
       if (observer) {
          observer.dispose();
-         observer = null;
+         observer = Type.cast(undefined)  ;
       }
    });
 

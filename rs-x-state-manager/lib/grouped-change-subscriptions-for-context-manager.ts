@@ -24,7 +24,7 @@ export interface IGroupedChangeSubscriptionsForContextManager<
    TData,
    TIdData = TData,
 > extends ISingletonFactory<string, TData, IObserver, TIdData> {
-   getSubsriptionData(id: string): TSubsriptionData;
+   getSubsriptionData(id: string): TSubsriptionData | undefined;
 }
 
 export abstract class GroupedChangeSubscriptionsForContextManager<
@@ -53,7 +53,7 @@ export abstract class GroupedChangeSubscriptionsForContextManager<
       super(guidFactory);
    }
 
-   public getSubsriptionData(id: string): TSubsriptionData {
+   public getSubsriptionData(id: string): TSubsriptionData | undefined {
       return this._subscriptions.get(id)?.data;
    }
 
@@ -85,7 +85,7 @@ export abstract class GroupedChangeSubscriptionsForContextManager<
       observer: IObserver<unknown>,
       data: TData
    ): void {
-      const init = data.init ? data.init : (observer) => observer.init();
+      const init = data.init ? data.init : (observer : IObserver) => observer.init();
       init(observer);
    }
 

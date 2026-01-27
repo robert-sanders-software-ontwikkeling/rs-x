@@ -9,22 +9,22 @@ import type { IExpressionIndexAccessor } from './expression-index-accessor.type'
 
 @Injectable()
 export class ExpressionIndexAccessor implements IExpressionIndexAccessor {
-    public readonly priority: 300;
+    public readonly priority!: 300;
 
     public isAsync(): boolean {
        return true;
     }
 
     public getResolvedValue(context: unknown, index: string): unknown {
-        return Type.cast<IExpression>(context[index])?.value;
+        return Type.cast<IExpression>((Type.toObject(context) ?? {})[index])?.value;
     }
     
     public hasValue(context: unknown, index: string): boolean {
-        return Type.cast<IExpression>(context[index])?.value !== undefined;
+        return Type.cast<IExpression>((Type.toObject(context) ?? {})[index])?.value !== undefined;
     }
 
     public getValue(context: unknown, index: string): unknown {
-        return context[index];
+        return (Type.toObject(context) ?? {})[index];
     }
 
     public setValue(): void {
@@ -36,6 +36,6 @@ export class ExpressionIndexAccessor implements IExpressionIndexAccessor {
     }
 
     public applies(context: unknown, index: string): boolean {
-        return context[index] instanceof AbstractExpression;
+        return (Type.toObject(context) ?? {})[index] instanceof AbstractExpression;
     }
 }

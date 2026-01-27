@@ -12,7 +12,7 @@ import {
 
 describe('NullishCoalescingExpression tests', () => {
    let jsParser: IExpressionParser;
-   let expression: IExpression;
+   let expression: IExpression | undefined;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXExpressionParserModule);
@@ -55,7 +55,7 @@ describe('NullishCoalescingExpression tests', () => {
    });
 
    it('will emit change event when parameters changes', async () => {
-      const context = {
+      const context: { a: number | null; b: number } = {
          a: null,
          b: 10,
       };

@@ -14,11 +14,11 @@ export class ArrayExpression extends CollectionExpression<unknown[]> {
    protected override evaluateExpression(
       ...args: unknown[]
    ): unknown[] {
-      const array = [];
+      const array:unknown[] = [];
 
       args.forEach((item, i) => {
          if (this.childExpressions[i].type === ExpressionType.Spread) {
-            array.push(...(item as Array<unknown>));
+            array.push(...(item as unknown[]));
          } else {
             array.push(item);
          }

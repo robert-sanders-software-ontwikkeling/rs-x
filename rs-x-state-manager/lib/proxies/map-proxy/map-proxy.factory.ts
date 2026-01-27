@@ -1,4 +1,4 @@
-import { type IDisposableOwner, Inject, Injectable, SingletonFactory } from '@rs-x/core';
+import { type IDisposableOwner, Inject, Injectable, SingletonFactory, Type } from '@rs-x/core';
 import { AbstractObserver } from '../../abstract-observer';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
 import type { IProxyRegistry } from '../proxy-registry/proxy-registry.interface';
@@ -25,7 +25,7 @@ export class MapProxy extends AbstractObserver<
       map: Map<unknown, unknown>,
       private readonly _proxyRegistry: IProxyRegistry
    ) {
-      super(owner, null, map);
+      super(owner, Type.cast(undefined), map);
 
       this.updateMap = {
          clear: this.clearMap,
@@ -33,31 +33,41 @@ export class MapProxy extends AbstractObserver<
          delete: this.deleteMap,
       };
 
-
       this.target = new Proxy(map, this);
       this._proxyRegistry.register(map, this.target);
    }
+
 
 
    public get(
       originalMap: Map<unknown, unknown>,
       property: PropertyKey
    ): unknown {
-      if (property !== 'constructor' && this.updateMap[property]) {
+      if (this.isUpdateMapKey(property)) {
          return (...args: unknown[]) => {
             return this.updateMap[property](originalMap, ...args);
          };
-      } else if (property === 'get') {
-         return (key) => originalMap.get(key);
-      } else {
-         return typeof originalMap[property] === 'function'
-            ? originalMap[property].bind(originalMap)
-            : originalMap[property];
       }
+
+      if (property === 'get') {
+         return (key: unknown) => originalMap.get(key);
+      }
+
+      const mapAny = originalMap as unknown as Record<PropertyKey, unknown>;
+
+      return typeof mapAny[property] === 'function'
+         ? (mapAny[property] as Function).bind(originalMap)
+         : mapAny[property];
    }
 
    protected override disposeInternal(): void {
       this._proxyRegistry.unregister(this.value);;
+   }
+
+   private isUpdateMapKey(
+      property: PropertyKey
+   ): property is keyof typeof this.updateMap {
+      return typeof property === 'string' && property in this.updateMap;
    }
 
    private clearMap = (originalMap: Map<unknown, unknown>) => {

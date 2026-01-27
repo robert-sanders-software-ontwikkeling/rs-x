@@ -3,7 +3,7 @@ import { type IObjectObserverProxyPairFactory } from '../object-observer/object-
 export class ObjectObserverProxyPairFactoryMock
    implements IObjectObserverProxyPairFactory
 {
-   public priority: number;
+   public priority = 0;
    public readonly create = jest.fn();
    public readonly applies = jest.fn();
 }

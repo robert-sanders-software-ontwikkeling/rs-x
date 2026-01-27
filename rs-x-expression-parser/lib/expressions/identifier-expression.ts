@@ -22,7 +22,7 @@ export class IndexValueObserver {
    constructor(
       private _context: unknown,
       private readonly _key: unknown,
-      private readonly _mustProxify: MustProxify,
+      private readonly _mustProxify: MustProxify | undefined,
       private readonly _stateManager: IStateManager,
    ) {
       this._changeSubscription = this._stateManager.changed.subscribe(
@@ -87,11 +87,11 @@ export interface IIdentifierInitializeConfig
 }
 
 export class IdentifierExpression extends AbstractExpression {
-   private _changeSubscription: Subscription;
+   private _changeSubscription: Subscription | undefined;
    private _isInitialized = false;
-   private _indexValueObserver: IndexValueObserver;
-   private releaseMustProxifyHandler: () => void;
-   private _commitAfterInitialized: boolean;
+   private _indexValueObserver: IndexValueObserver | undefined;
+   private releaseMustProxifyHandler: (() => void) | undefined;
+   private _commitAfterInitialized: boolean | undefined;
    private readonly _commitHandler: IExpressionChangeCommitHandler;
 
    constructor(
@@ -160,7 +160,6 @@ export class IdentifierExpression extends AbstractExpression {
          this._stateManager,
       );
 
-
       this._changeSubscription = this._indexValueObserver.changed.subscribe(
          this.onValueChanged
       );
@@ -175,7 +174,7 @@ export class IdentifierExpression extends AbstractExpression {
       }
 
       return {
-         createMustProxifyHandler: () => undefined,
+         createMustProxifyHandler: undefined,
          releaseMustProxifyHandler: emptyFunction,
       };
    }
@@ -186,7 +185,7 @@ export class IdentifierExpression extends AbstractExpression {
       }
       this._changeSubscription.unsubscribe();
       this._changeSubscription = undefined;
-      this._indexValueObserver.dispose();
+      this._indexValueObserver?.dispose();
       this._indexValueObserver = undefined;
    }
 

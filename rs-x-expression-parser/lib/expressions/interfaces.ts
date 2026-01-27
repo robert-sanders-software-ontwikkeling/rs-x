@@ -1,4 +1,4 @@
-import { type IDisposable, type IDisposableOwner, type ISingletonFactory } from '@rs-x/core';
+import { type IDisposable, type IDisposableOwner } from '@rs-x/core';
 import { type Observable } from 'rxjs';
 import { type AbstractExpression } from './abstract-expression';
 
@@ -6,19 +6,12 @@ export interface IExpression<T = unknown, PT = unknown> extends IDisposable {
    readonly changed: Observable<IExpression>;
    readonly type: ExpressionType;
    readonly expressionString: string;
-   readonly parent: IExpression<PT>;
+   readonly parent: IExpression<PT> | undefined;
    readonly childExpressions: readonly IExpression[];
-   readonly value: T;
+   readonly value: T | undefined;
    readonly isRoot: boolean;
    toString(): string;
 }
-
-
-export type IExpressionExecutionContextFactory = ISingletonFactory<
-   object,
-   object,
-   IExpressionExecutionContext
->;
 
 export interface IPropertyPath {
    object: IPropertyPath;
@@ -28,18 +21,6 @@ export interface IPropertyPath {
 export interface IChangePathValue<T> {
    readonly path: string;
    readonly value: T;
-}
-
-export interface IExpressionExecutionContext {
-   target: object;
-   getPathContext(path: string): object;
-   getValue();
-}
-
-export interface IExpressionNode {
-   readonly type: ExpressionType;
-   readonly children: readonly IExpressionNode[];
-   readonly literal?: string | number | boolean;
 }
 
 export enum ExpressionType {

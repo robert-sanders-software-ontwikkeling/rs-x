@@ -8,7 +8,7 @@ export class UnaryPlusExpression extends ParameterizedExpression<number> {
    }
 
    protected override evaluateExpression(
-      a: unknown
+      a: string|number
    ): number {
       return +a;
    }

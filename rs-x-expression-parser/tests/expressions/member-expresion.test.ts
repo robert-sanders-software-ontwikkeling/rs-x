@@ -11,9 +11,9 @@ import {
    unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 
-describe('Memmber expression tests', () => {
+describe('Member expression tests', () => {
    let jsParser: IExpressionParser;
-   let expression: IExpression;
+   let expression: IExpression | undefined;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXExpressionParserModule);

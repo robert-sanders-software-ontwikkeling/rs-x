@@ -1,4 +1,4 @@
-name: Build
+name: Build & Test Monorepo
 
 on:
   push:
@@ -7,31 +7,64 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
+      # ------------------------------
+      # Checkout repository
+      # ------------------------------
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # ------------------------------
+      # Setup Node.js
+      # ------------------------------
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: lts/*
 
-      - name: Install pnpm CLI
+      # ------------------------------
+      # Setup pnpm
+      # ------------------------------
+      - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10.22.0
 
+      # ------------------------------
+      # Install dependencies
+      # ------------------------------
       - name: Install dependencies
         run: pnpm install
 
-      - name: Lint code
+      # ------------------------------
+      # Lint all projects
+      # ------------------------------
+      - name: Lint all projects
         run: pnpm lint
 
-      - name: Run tests
-        run: pnpm test
+      # ------------------------------
+      # Run Node/TS tests
+      # ------------------------------
+      - name: Run Node tests
+        run: pnpm run test
 
-      - name: Build packages
-        run: pnpm -r run build
+      # ------------------------------
+      # Build Node libraries
+      # ------------------------------
+      - name: Build Node libraries
+        run: pnpm run build:libs
+
+      # ------------------------------
+      # Build Angular library
+      # ------------------------------
+      - name: Build Angular library
+        run: pnpm run build:angular
+
+      # ------------------------------
+      # Run Angular tests
+      # ------------------------------
+      - name: Run Angular tests
+        run: pnpm run test:angular

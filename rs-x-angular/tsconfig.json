@@ -1,0 +1,49 @@
+/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
+/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "emitDecoratorMetadata": true,
+    "strict": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "experimentalDecorators": true,
+    "baseUrl": "./",
+    "paths": {
+      "rsx": [
+        "./dist/rsx"
+      ],
+      "@rs-x/core": [
+        "../rs-x-core/lib/index.ts"
+      ],
+      "@rs-x/state-manager": [
+        "../rs-x-state-manager/lib/index.ts"
+      ],
+      "@rs-x/expression-parser": [
+        "../rs-x-expression-parser/lib/index.ts"
+      ],
+    },
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "preserve"
+  },
+  "angularCompilerOptions": {
+    "enableI18nLegacyMessageIdFormat": false,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "./projects/rsx/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/rsx/tsconfig.spec.json"
+    }
+  ]
+}

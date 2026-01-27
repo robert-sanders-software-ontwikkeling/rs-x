@@ -55,13 +55,13 @@ export abstract class AbstractObjectObserverProxyPairFactory<
 
    protected abstract createRootObserver(
       data: TData
-   ): IObserverProxyPair<TTarget>;
+   ): IObserverProxyPair<TTarget> | undefined;
 
 
    protected onObserverGroupCreate(
       target: TTarget,
       observerGroup: ObserverGroup,
-      mustProxify: MustProxify
+      mustProxify: MustProxify | undefined
    ): void {
 
       if(!mustProxify) {

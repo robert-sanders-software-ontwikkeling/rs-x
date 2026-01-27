@@ -23,7 +23,7 @@ import type {
 
 class PropertObserver extends AbstractObserver {
    private _emitingChange = false;
-   private _propertyDescriptorWithTarget: IPropertyDescriptor;
+   private _propertyDescriptorWithTarget: IPropertyDescriptor | undefined;
 
    constructor(
       owner: IDisposableOwner,
@@ -45,21 +45,22 @@ class PropertObserver extends AbstractObserver {
 
    protected override disposeInternal(): void {
       const propertyName = this.id as string;
-      const value = this.target[propertyName];
+      const object = Type.toObject(this.target) ?? {};
+      const value = object[propertyName];
       //to prevent errors if is was non configurable
-      delete this.target[propertyName];
+      delete object[propertyName];
 
       Object.defineProperty(
          this.target,
          propertyName,
-         this._propertyDescriptorWithTarget.descriptor
+         Type.cast(this._propertyDescriptorWithTarget?.descriptor)
       );
 
       if (
-         this._propertyDescriptorWithTarget.type !==
+         this._propertyDescriptorWithTarget?.type !==
          PropertyDescriptorType.Function
       ) {
-         this.target[propertyName] = this._proxyRegister.getProxyTarget(value) ?? value
+         object[propertyName] = this._proxyRegister.getProxyTarget(value) ?? value
       }
 
       this.value = undefined;
@@ -118,11 +119,11 @@ class PropertObserver extends AbstractObserver {
       return newDescriptor;
    }
 
-   private setValue = (value) => {
+   private setValue = (value: unknown) => {
       this.value = value;
    };
 
-   private  internalEmitChange(change: Partial<IPropertyChange>, id: unknown) {
+   private internalEmitChange(change: Partial<IPropertyChange>, id: unknown) {
       this.value = change.newValue;
 
       if (!this._emitingChange) {
@@ -154,7 +155,7 @@ class PropertObserver extends AbstractObserver {
          }
       };
 
-      this.value = this.target[this.id as string];
+      this.value = (Type.toObject(this.target) ?? {})[this.id as string];
 
       return newDescriptor;
    }
@@ -163,16 +164,16 @@ class PropertObserver extends AbstractObserver {
       descriptorWithTarget: IPropertyDescriptor
    ): PropertyDescriptor {
       const newDescriptor = { ...descriptorWithTarget.descriptor };
-      const oldSetter = descriptorWithTarget.descriptor.set;
+      const oldSetter = descriptorWithTarget.descriptor.set as ((v: unknown) => void);
       newDescriptor.set = (value) => {
-         const oldValue = this.target[this.id as string];
+         const oldValue = (Type.toObject(this.target) ?? {})[this.id as string];
          if (value !== oldValue) {
             oldSetter.call(this.target, value);
             this.internalEmitChange({ newValue: value }, this.id);
          }
       };
 
-      this.value = this.target[this.id as string];
+      this.value = (Type.toObject(this.target) ?? {})[this.id as string];
 
       return newDescriptor;
    }

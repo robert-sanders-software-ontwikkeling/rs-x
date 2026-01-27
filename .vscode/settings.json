@@ -5,7 +5,5 @@
     ],
     "jest.nodeEnv": {
         "TZ": "UTC"
-    },
-
-    "typescript.preferences.useTypeOnlyAutoImports": true
+    }
 }

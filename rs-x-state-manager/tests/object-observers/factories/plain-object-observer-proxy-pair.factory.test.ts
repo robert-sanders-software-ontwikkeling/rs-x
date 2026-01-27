@@ -10,7 +10,7 @@ import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
 describe('PlainIbjectObserverProxyPairFactory tests', () => {
    let plainObjectObserverProxyPairFactory: IPlainObjectObserverProxyPairFactory;
    let disposableOwner: DisposableOwnerMock;
-   let observer: IObserver;
+   let observer: IObserver | undefined;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXStateManagerModule);
@@ -32,7 +32,7 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
    afterEach(() => {
       if (observer) {
          observer.dispose();
-         observer = null;
+         observer = undefined;
       }
    });
 
@@ -64,10 +64,10 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
       const propertyObserverProxyPairManager =
          objectPropertyObserverProxyPairManager.getFromId(plainObject);
 
-      const xId = propertyObserverProxyPairManager.getId({
+      const xId = propertyObserverProxyPairManager?.getId({
          key: 'x',
       });
-      const nestedId = propertyObserverProxyPairManager.getId({
+      const nestedId = propertyObserverProxyPairManager?.getId({
          key: 'nested',
       });
 
@@ -78,8 +78,8 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
          truePredicate,
          new ErrorLog(),
       ).addObservers([
-         propertyObserverProxyPairManager.getFromId(xId).observer,
-         propertyObserverProxyPairManager.getFromId(nestedId).observer,
+         propertyObserverProxyPairManager?.getFromId(xId)?.observer as IObserver,
+         propertyObserverProxyPairManager?.getFromId(nestedId)?.observer as IObserver,
 
       ]);
 
@@ -124,17 +124,17 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
       expect(propertyObserverProxyPairManager).toBeDefined();
       expect(nestedPropertyObserverProxyPairManager).toBeDefined();
 
-      const xId = propertyObserverProxyPairManager.getId({
+      const xId = propertyObserverProxyPairManager?.getId({
          key: 'x',
          mustProxify,
       });
-      const nestedId = propertyObserverProxyPairManager.getId({
+      const nestedId = propertyObserverProxyPairManager?.getId({
          key: 'nested',
          mustProxify,
       });
 
 
-      const yId = nestedPropertyObserverProxyPairManager.getId({
+      const yId = nestedPropertyObserverProxyPairManager?.getId({
          key: 'y',
          mustProxify,
       });
@@ -147,15 +147,15 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
          truePredicate,
          new ErrorLog(),
       ).addObservers([
-         propertyObserverProxyPairManager.getFromId(xId).observer,
-         propertyObserverProxyPairManager.getFromId(nestedId).observer,
+         propertyObserverProxyPairManager?.getFromId(xId)?.observer as IObserver,
+         propertyObserverProxyPairManager?.getFromId(nestedId)?.observer as IObserver,
          new ObserverGroup(
             disposableOwner,
             plainObject.nested,
             plainObject.nested,
             truePredicate,
             new ErrorLog(),
-         ).addObservers([nestedPropertyObserverProxyPairManager.getFromId(yId).observer])
+         ).addObservers([nestedPropertyObserverProxyPairManager?.getFromId(yId)?.observer as IObserver])
 
       ]);
       expect(observer).observerEqualTo(expected);
@@ -183,31 +183,31 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
          objectPropertyObserverProxyPairManager.getFromId(plainObject);
       const nestedPropertyObserverProxyPairManager =
          objectPropertyObserverProxyPairManager.getFromId(plainObject.nested);
-      const xId = propertyObserverProxyPairManager.getId({
+      const xId = propertyObserverProxyPairManager?.getId({
          key: 'x',
          mustProxify: truePredicate,
       });
-      const nestedId = propertyObserverProxyPairManager.getId({
+      const nestedId = propertyObserverProxyPairManager?.getId({
          key: 'nested',
          mustProxify: truePredicate,
       });
-      const yId = nestedPropertyObserverProxyPairManager.getId({
+      const yId = nestedPropertyObserverProxyPairManager?.getId({
          key: 'y',
          mustProxify: truePredicate,
       });
 
-      expect(propertyObserverProxyPairManager.getFromId(xId)).toBeDefined();
-      expect(propertyObserverProxyPairManager.getFromId(nestedId)).toBeDefined();
-      expect(nestedPropertyObserverProxyPairManager.getFromId(yId)).toBeDefined();
+      expect(propertyObserverProxyPairManager?.getFromId(xId)).toBeDefined();
+      expect(propertyObserverProxyPairManager?.getFromId(nestedId)).toBeDefined();
+      expect(nestedPropertyObserverProxyPairManager?.getFromId(yId)).toBeDefined();
       expect(plainObject).isWritableProperty('x');
       expect(plainObject).isWritableProperty('nested');
       expect(plainObject.nested).isWritableProperty('y')
 
       observer.dispose();
 
-      expect(propertyObserverProxyPairManager.getFromId(xId)).toBeUndefined();
-      expect(propertyObserverProxyPairManager.getFromId(nestedId)).toBeUndefined();
-      expect(nestedPropertyObserverProxyPairManager.getFromId(yId)).toBeUndefined();
+      expect(propertyObserverProxyPairManager?.getFromId(xId)).toBeUndefined();
+      expect(propertyObserverProxyPairManager?.getFromId(nestedId)).toBeUndefined();
+      expect(nestedPropertyObserverProxyPairManager?.getFromId(yId)).toBeUndefined();
       expect(plainObject).not.isWritableProperty('x');
       expect(plainObject).not.isWritableProperty('nested');
       expect(plainObject.nested).not.isWritableProperty('y')

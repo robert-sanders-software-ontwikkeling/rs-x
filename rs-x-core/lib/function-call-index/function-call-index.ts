@@ -4,7 +4,7 @@ import { type IDisposableFunctionCallIndex } from './function-call-index.interfa
 
 export class FunctionCallIndex implements IDisposableFunctionCallIndex {
     private _isDisposed = false;
-    private _id: string;
+    private _id: string | undefined;
 
     constructor(
         public readonly context: unknown,
@@ -20,9 +20,6 @@ export class FunctionCallIndex implements IDisposableFunctionCallIndex {
         return this._id;
     }
 
-
-
-
     public get argumentsId(): IISequenceWithIdData {
         return this._sequenceWithId;
     }
@@ -32,7 +29,7 @@ export class FunctionCallIndex implements IDisposableFunctionCallIndex {
             return;
         }
 
-        if (this._owner.canDispose()) {
+        if (this._owner.canDispose?.()) {
             this._isDisposed = true;
             this._sequenceWithId.dispose();
         }
