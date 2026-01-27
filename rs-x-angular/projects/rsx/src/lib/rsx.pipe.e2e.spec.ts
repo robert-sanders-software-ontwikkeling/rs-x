@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
   unloadRsXExpressionParserModule
 } from '@rs-x/expression-parser';
-import { RsxModule } from './rsx.module';
+import { providexRsx} from './rsx.providers';
 import { RsxPipe } from './rsx.pipe';
 
 @Component({
@@ -28,7 +28,7 @@ describe('RsxPipe Integration', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RsxModule],
+      providers: providexRsx(),
     }).compileComponents();
     fixture = TestBed.createComponent(TestHostComponent);
     component = fixture.componentInstance;

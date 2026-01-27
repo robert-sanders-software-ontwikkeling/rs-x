@@ -9,7 +9,7 @@ import {
     type IExpression
 } from '@rs-x/expression-parser';
 import { Subscription } from 'rxjs';
-import { IExpressionFactoryToken } from './rsx.module';
+import { IExpressionFactoryToken } from './rsx.providers';
 
 @Pipe({
     name: 'rsx',
