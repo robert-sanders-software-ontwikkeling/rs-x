@@ -9,8 +9,8 @@ import {
 } from '@rs-x/expression-parser';
 import { BehaviorSubject, type Subscription } from 'rxjs';
 import { vi } from 'vitest';
-import { IExpressionFactoryToken } from './rsx.module';
 import { RsxPipe } from './rsx.pipe';
+import { IExpressionFactoryToken } from './rsx.providers';
 
 
 describe('RsxPipe', () => {
