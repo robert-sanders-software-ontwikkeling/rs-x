@@ -105,6 +105,10 @@ jobs:
         run: |
           set -e
           node scripts/publish-packages.mjs
+    
+      - name: Configure Git remote with token
+        run: |
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
 
       # ---------------- COMMIT VERSION BUMP ----------------
       - name: Commit version bump after successful publish
@@ -115,11 +119,6 @@ jobs:
           git add .
           git commit -m "chore: release [ci skip]" || echo "No changes to commit"
           git push origin HEAD:${{ github.ref_name }}
-
-      # ---------------- PROMOTION ----------------
-      - name: Promote next → latest
-        if: ${{ github.event.inputs.promote_from_next == 'true' }}
-        run: node scripts/promote-latest.mjs
 
       # ---------------- CREATE RELEASE ----------------
       - name: Create GitHub Release
