@@ -54,6 +54,24 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # ---------------- VERSION ----------------
+      - name: Version packages (Changesets)
+        run: pnpm changeset version
+
+      # ---------------- BUILD ----------------
+      - name: Build Node libraries
+        run: |
+          pnpm --filter '@rs-x/core' run build
+          pnpm --filter '@rs-x/state-manager' run build
+          pnpm --filter '@rs-x/expression-parser' run build
+
+      - name: Build Angular package
+        run: pnpm --prefix rs-x-angular run build:angular
+
+      # ---------------- ROLLBACK GUARD ----------------
+      - name: Abort if versions already exist on npm
+        run: node scripts/check-npm-versions.mjs
+
       # ---------------- PRE-FLIGHT CHECK ----------------
       - name: Pre-check packages & Angular dist
         env:
@@ -77,24 +95,6 @@ jobs:
             echo "Error: Angular dist folder not found → build failed"
             exit 1
           fi
-
-      # ---------------- VERSION ----------------
-      - name: Version packages (Changesets)
-        run: pnpm changeset version
-
-      # ---------------- ROLLBACK GUARD ----------------
-      - name: Abort if versions already exist on npm
-        run: node scripts/check-npm-versions.mjs
-
-      # ---------------- BUILD ----------------
-      - name: Build Node libraries
-        run: |
-          pnpm --filter '@rs-x/core' run build
-          pnpm --filter '@rs-x/state-manager' run build
-          pnpm --filter '@rs-x/expression-parser' run build
-
-      - name: Build Angular package
-        run: pnpm --prefix rs-x-angular run build:angular
 
       # ---------------- PUBLISH ----------------
       - name: Publish all packages (atomic)
