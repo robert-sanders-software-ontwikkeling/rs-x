@@ -13,10 +13,6 @@
   "linked": [],
   "access": "public",
   "baseBranch": "main",
-  "publishBranch": [
-    "main",
-    "release/*",
-    "fix/publish"
-  ],
+  "publish-branch": "main|release/.*|fix/publish",
   "updateInternalDependencies": "patch"
 }
