@@ -3,10 +3,20 @@
   "changelog": "@changesets/cli/changelog",
   "commit": false,
   "fixed": [
-    ["@rs-x/core", "@rs-x/state-manager", "@rs-x/expression-parser", "@rs-x/angular"]
+    [
+      "@rs-x/core",
+      "@rs-x/state-manager",
+      "@rs-x/expression-parser",
+      "@rs-x/angular"
+    ]
   ],
   "linked": [],
   "access": "public",
-  "baseBranch": "main|release/*|fix/publish",
+  "baseBranch": "main",
+  "publishBranch": [
+    "main",
+    "release/*",
+    "fix/publish"
+  ],
   "updateInternalDependencies": "patch"
 }
