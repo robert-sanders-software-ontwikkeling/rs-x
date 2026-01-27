@@ -15,7 +15,6 @@ function run(cmd, options = {}) {
   execSync(cmd, { stdio: 'inherit', ...options });
 }
 
-// ---------------- PATCH ANGULAR PACKAGE ----------------
 function patchAngularPackage() {
   const pkgJsonPath = path.join(angularDist, 'package.json');
   if (!fs.existsSync(pkgJsonPath)) {
@@ -26,11 +25,15 @@ function patchAngularPackage() {
   const pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
 
   // Use actual published Node package versions
-  const coreVersion = execSync('pnpm info @rs-x/core version --json').toString().trim().replace(/'/g, '');
-  const expVersion = execSync('pnpm info @rs-x/expression-parser version --json').toString().trim().replace(/'/g, '');
+  const coreVersion = JSON.parse(
+    execSync('pnpm info @rs-x/core version --json').toString()
+  );
+  const expVersion = JSON.parse(
+    execSync('pnpm info @rs-x/expression-parser version --json').toString()
+  );
 
-  pkgJson.dependencies['@rs-x/core'] = coreVersion;
-  pkgJson.dependencies['@rs-x/expression-parser'] = expVersion;
+  pkgJson.peerDependencies['@rs-x/core'] = coreVersion;
+  pkgJson.peerDependencies['@rs-x/expression-parser'] = expVersion;
 
   fs.writeFileSync(pkgJsonPath, JSON.stringify(pkgJson, null, 2));
   console.log('Patched Angular package.json with actual published versions');
