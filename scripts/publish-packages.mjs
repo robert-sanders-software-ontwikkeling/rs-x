@@ -7,7 +7,7 @@ const DIST_TAG = process.env.DIST_TAG || 'latest';
 const NODE_AUTH_TOKEN = process.env.NODE_AUTH_TOKEN;
 
 const angularDist = 'rs-x-angular/dist/rsx';
-const nodePackageFolders = ['rs-x-core', 'rs-x-state-manager', 'rs-x-expression-parser'];
+const nodePackageFolders = ['rs-x-core', 'rs-x-state-manager', 'rs-x-expression-parser', angularDist];
 
 // ---------------- UTILITIES ----------------
 function run(cmd, envOverrides = {}) {
@@ -73,18 +73,9 @@ function publishFolder(folder, pkgName) {
   }
 }
 
-function publish() {
-  console.log('=== Publishing Node packages ===');
-  for (const folder of nodePackageFolders) {
-    const pkgJson = JSON.parse(fs.readFileSync(path.join(folder, 'package.json'), 'utf-8'));
-    publishFolder(folder, pkgJson.name);
-  }
-  console.log('=== All packages published successfully! ===');
-}
-
 function dryRun() {
   console.log('=== Pre-flight dry-run check ===');
-  for (const folder of [...nodePackageFolders, angularDist]) {
+  for (const folder of nodePackageFolders) {
     const pkgJson = JSON.parse(fs.readFileSync(path.join(folder, 'package.json'), 'utf-8'));
     const firstPublish = !pnpmInfoExists(pkgJson.name);
 
@@ -100,6 +91,15 @@ function dryRun() {
   }
 
   console.log('Dry-run check complete → packages ready for publishing');
+}
+
+function publish() {
+  console.log('=== Publishing Node packages ===');
+  for (const folder of nodePackageFolders) {
+    const pkgJson = JSON.parse(fs.readFileSync(path.join(folder, 'package.json'), 'utf-8'));
+    publishFolder(folder, pkgJson.name);
+  }
+  console.log('=== All packages published successfully! ===');
 }
 
 // ---------------- Patching Angular package.json ----------------
