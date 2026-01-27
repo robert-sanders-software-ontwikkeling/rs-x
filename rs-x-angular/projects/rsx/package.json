@@ -3,14 +3,15 @@
   "version": "0.4.4",
   "description": "Angular integration for RS-X, providing the RsxPipe",
   "type": "module",
-  "module": "./dist/rsx/fesm2022/rs-x-angular.mjs",
-  "types": "./dist/rsx/types/rs-x-angular.d.ts",
-  "typings": "./dist/rsx/types/rs-x-angular.d.ts",
+  "module": "fesm2022/rs-x-angular.mjs",
+  "main": "fesm2022/rs-x-angular.mjs",
+  "types": "types/rs-x-angular.d.ts",
+  "typings": "types/rs-x-angular.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/rsx/types/rs-x-angular.d.ts",
-      "import": "./dist/rsx/fesm2022/rs-x-angular.mjs",
-      "default": "./dist/rsx/fesm2022/rs-x-angular.mjs"
+      "import": "./fesm2022/rs-x-angular.mjs",
+      "default": "./fesm2022/rs-x-angular.mjs",
+      "types": "./types/rs-x-angular.d.ts"
     },
     "./package.json": {
       "default": "./package.json"
