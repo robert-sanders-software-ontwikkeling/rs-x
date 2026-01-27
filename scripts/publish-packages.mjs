@@ -5,8 +5,14 @@ import path from "path";
 
 const DIST_TAG = process.env.DIST_TAG || "latest";
 
-// Node packages (workspace packages)
-const nodePackages = ["@rs-x/core", "@rs-x/state-manager", "@rs-x/expression-parser"];
+// Folders of Node packages
+const nodePackageFolders = [
+  "rs-x-core",
+  "rs-x/state-manager",
+  "rs-x/expression-parser"
+];
+
+// Angular dist folder
 const angularDist = "rs-x-angular/dist/rsx";
 
 function run(cmd, options = {}) {
@@ -14,67 +20,51 @@ function run(cmd, options = {}) {
   execSync(cmd, { stdio: "inherit", ...options });
 }
 
-function pnpmInfoExists(pkg) {
-  try {
-    execSync(`pnpm info ${pkg}`, { stdio: "ignore" });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function publishPackage(pkg) {
-  if (pnpmInfoExists(pkg)) {
-    console.log(`${pkg} exists → publishing with OIDC & provenance`);
-    run(`pnpm publish ${pkg} --tag ${DIST_TAG} --access public --provenance --no-git-checks`);
-  } else {
-    console.log(`First-time publish of ${pkg} → publishing normally`);
-    run(`pnpm publish ${pkg} --tag ${DIST_TAG} --access public --no-git-checks`);
-  }
-}
-
+// ---------------- PATCH ANGULAR PACKAGE ----------------
 function patchAngularPackage() {
   const angularPkgPath = path.join(angularDist, "package.json");
 
   if (!fs.existsSync(angularPkgPath)) {
-    console.error("Angular dist folder not found:", angularDist);
+    console.error("Angular dist folder not found:", angularPkgPath);
     process.exit(1);
   }
 
   const pkgJson = JSON.parse(fs.readFileSync(angularPkgPath, "utf-8"));
 
   // Get actual published versions of Node packages
-  const coreVersion = execSync("pnpm info @rs-x/core version --json").toString().trim().replace(/"/g, "");
-  const expVersion = execSync("pnpm info @rs-x/expression-parser version --json").toString().trim().replace(/"/g, "");
+  const coreVersion = execSync(`pnpm info rs-x-core version --json`).toString().trim().replace(/"/g, "");
+  const stateVersion = execSync(`pnpm info rs-x/state-manager version --json`).toString().trim().replace(/"/g, "");
+  const expVersion = execSync(`pnpm info rs-x/expression-parser version --json`).toString().trim().replace(/"/g, "");
 
   pkgJson.dependencies["@rs-x/core"] = coreVersion;
+  pkgJson.dependencies["@rs-x/state-manager"] = stateVersion;
   pkgJson.dependencies["@rs-x/expression-parser"] = expVersion;
 
   fs.writeFileSync(angularPkgPath, JSON.stringify(pkgJson, null, 2));
-  console.log("Patched Angular dist package.json with actual published versions");
+  console.log("Patched Angular package.json with actual published versions");
 }
 
-// ---------------- DRY-RUN PRE-CHECK ----------------
-console.log("=== Pre-flight dry-run check for Node packages ===");
-for (const pkg of nodePackages) {
-  run(`pnpm publish ${pkg} --dry-run --tag ${DIST_TAG}`);
+// ---------------- DRY-RUN ----------------
+console.log("=== Pre-flight dry-run for Node packages ===");
+for (const folder of nodePackageFolders) {
+  run(`pnpm publish ${folder} --dry-run --tag ${DIST_TAG}`);
 }
 
-// ---------------- PATCH ANGULAR PACKAGE ----------------
+// Patch Angular first
 console.log("=== Patching Angular package ===");
 patchAngularPackage();
 
-// ---------------- DRY-RUN ANGULAR PACKAGE ----------------
-console.log("=== Pre-flight dry-run check for Angular package ===");
+// Dry-run for Angular
+console.log("=== Pre-flight dry-run for Angular package ===");
 run(`pnpm publish ${angularDist} --dry-run --tag ${DIST_TAG}`);
 
-
-// ---------------- PUBLISH NODE PACKAGES ----------------
+// ---------------- PUBLISH ----------------
 console.log("=== Publishing Node packages ===");
-for (const pkg of nodePackages) publishPackage(pkg);
+for (const folder of nodePackageFolders) {
+  run(`pnpm publish ${folder} --tag ${DIST_TAG} --access public --provenance --no-git-checks`);
+}
 
-// ---------------- PUBLISH ANGULAR PACKAGE ----------------
 console.log("=== Publishing Angular package ===");
-publishPackage(angularDist);
+run(`pnpm publish ${angularDist} --tag ${DIST_TAG} --access public --provenance --no-git-checks`);
 
 console.log("=== All packages published successfully! ===");
