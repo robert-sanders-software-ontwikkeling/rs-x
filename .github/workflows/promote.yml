@@ -1,0 +1,28 @@
+name: Promote Next → Latest
+
+on:
+  workflow_dispatch: # Manual trigger
+
+env:
+  DIST_TAG_NEXT: 'next'
+  DIST_TAG_LATEST: 'latest'
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          registry-url: https://registry.npmjs.org/
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.22.0
+
+      - name: Promote packages from next → latest
+        run: node scripts/promote-latest.mjs
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
