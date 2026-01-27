@@ -20,8 +20,8 @@
      {
       "type": "node",
       "request": "launch",
-      "name": "Debug check-npm-versions",
-      "program": "${workspaceFolder}/scripts/check-npm-versions.mjs",
+      "name": "Debug selected mjs file",
+      "program": "${file}",
       "cwd": "${workspaceFolder}",
       "runtimeArgs": [
         "--loader", "ts-node/esm"

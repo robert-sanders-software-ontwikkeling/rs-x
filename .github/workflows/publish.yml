@@ -54,6 +54,30 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # ---------------- PRE-FLIGHT CHECK ----------------
+      - name: Pre-check packages & Angular dist
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -e
+          echo "Checking npm for existing versions..."
+          for pkg in @rs-x/core @rs-x/state-manager @rs-x/expression-parser; do
+            if pnpm info $pkg &> /dev/null; then
+              echo "$pkg exists on npm → will publish with OIDC & provenance"
+            else
+              echo "$pkg does not exist → NODE_AUTH_TOKEN required"
+              if [ -z "$NODE_AUTH_TOKEN" ]; then
+                echo "Error: NODE_AUTH_TOKEN missing for first-time publish"
+                exit 1
+              fi
+            fi
+          done
+
+          if [ ! -d "rs-x-angular/dist/rsx" ]; then
+            echo "Error: Angular dist folder not found → build failed"
+            exit 1
+          fi
+
       # ---------------- VERSION ----------------
       - name: Version packages (Changesets)
         run: pnpm changeset version
@@ -73,48 +97,15 @@ jobs:
         run: pnpm --prefix rs-x-angular run build:angular
 
       # ---------------- PUBLISH ----------------
-      - name: Publish all packages (OIDC / token fallback)
+      - name: Publish all packages (atomic)
         if: ${{ github.event.inputs.promote_from_next != 'true' && github.event.inputs.dry_run != 'true' }}
         env:
           DIST_TAG: ${{ github.event.inputs.dist_tag || 'latest' }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}  # Only needed for first-time publishes
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}   # Only for first-time publishes
         run: |
           set -e
+          node scripts/publish-packages.mjs
 
-          publish_pkg() {
-            PKG=$1
-            echo "Publishing $PKG..."
-
-            if [ -d "$PKG" ]; then
-              # Folder-based package (like Angular dist)
-              echo "$PKG is a folder → publishing from folder"
-
-              if pnpm info ./"$PKG" &> /dev/null; then
-                echo "Package exists → publishing with OIDC & provenance"
-                pnpm publish "$PKG" --tag "$DIST_TAG" --access public --provenance --no-git-checks
-              else
-                echo "First-time publish, using NODE_AUTH_TOKEN"
-                pnpm publish "$PKG" --tag "$DIST_TAG" --access public --no-git-checks
-              fi
-
-            else
-              # Workspace package (monorepo) → use --filter
-              if pnpm info "$PKG" &> /dev/null; then
-                echo "Workspace package exists → publishing with OIDC & provenance"
-                pnpm publish --filter "$PKG" --tag "$DIST_TAG" --access public --provenance --no-git-checks
-              else
-                echo "First-time workspace package publish, using NODE_AUTH_TOKEN"
-                pnpm publish --filter "$PKG" --tag "$DIST_TAG" --access public --no-git-checks
-              fi
-            fi
-          }
-
-          # ---------------- Publish all packages ----------------
-          publish_pkg '@rs-x/core'
-          publish_pkg '@rs-x/state-manager'
-          publish_pkg '@rs-x/expression-parser'
-          publish_pkg 'rs-x-angular/dist/rsx'
-          
       # ---------------- COMMIT VERSION BUMP ----------------
       - name: Commit version bump after successful publish
         if: success()
@@ -130,7 +121,7 @@ jobs:
         if: ${{ github.event.inputs.promote_from_next == 'true' }}
         run: node scripts/promote-latest.mjs
 
-      # ---------------- RELEASE ----------------
+      # ---------------- CREATE RELEASE ----------------
       - name: Create GitHub Release
         uses: actions/create-release@v1
         with:
