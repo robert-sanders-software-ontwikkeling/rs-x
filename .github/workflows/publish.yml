@@ -29,134 +29,73 @@ concurrency:
 
 jobs:
   release:
-    name: Version, Build, Publish & GitHub Release
+    name: Version, Build, Publish & Release
     runs-on: ubuntu-latest
     environment: npm-release
 
     steps:
       # ---------------- CHECKOUT ----------------
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: false
 
       # ---------------- NODE ----------------
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: lts/*
           registry-url: https://registry.npmjs.org/
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: 10.22.0
 
       # ---------------- INSTALL ----------------
-      - name: Install dependencies (strict)
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       # ---------------- VERSION ----------------
-      - name: Version packages with Changesets
+      - name: Version packages (Changesets)
         run: pnpm changeset version
 
+      # ---------------- ROLLBACK GUARD ----------------
+      - name: Abort if versions already exist on npm
+        run: node scripts/check-npm-versions.mjs
+
       # ---------------- BUILD ----------------
-      - name: Build Node libs
+      - name: Build Node libraries
         run: |
           pnpm --filter '@rs-x/core' run build
           pnpm --filter '@rs-x/state-manager' run build
           pnpm --filter '@rs-x/expression-parser' run build
 
-      - name: Build Angular lib
+      - name: Build Angular package
         run: pnpm --prefix rs-x-angular run build:angular
 
-      # ---------------- FIRST-PUBLISH DETECTION ----------------
-      - name: Detect first-time publish
-        id: first_publish
-        run: |
-          node <<'EOF'
-          const { execSync } = require('child_process');
-          const fs = require('fs');
-
-          // List all packages in monorepo
-          const pkgs = [
-            "@rs-x/core",
-            "@rs-x/state-manager",
-            "@rs-x/expression-parser",
-            "@rs-x/angular"
-          ];
-
-          let first = false;
-          for (const name of pkgs) {
-            try {
-              execSync(`npm view ${name} version`, { stdio: 'ignore' });
-            } catch {
-              first = true;
-              break;
-            }
-          }
-
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `first_publish=${first ? 1 : 0}\n`);
-          EOF
-
       # ---------------- PUBLISH ----------------
-      - name: Publish packages (Node libs + Angular)
+      - name: Publish all packages (OIDC)
         if: ${{ github.event.inputs.promote_from_next != 'true' && github.event.inputs.dry_run != 'true' }}
         run: |
           DIST_TAG="${{ github.event.inputs.dist_tag || 'latest' }}"
 
-          # Node libs
-          for pkg in "@rs-x/core" "@rs-x/state-manager" "@rs-x/expression-parser"; do
-            echo "Publishing $pkg with tag $DIST_TAG"
-            pnpm publish --filter $pkg --tag "$DIST_TAG" --access public
-          done
+          pnpm publish --filter '@rs-x/core' --tag "$DIST_TAG" --access public
+          pnpm publish --filter '@rs-x/state-manager' --tag "$DIST_TAG" --access public
+          pnpm publish --filter '@rs-x/expression-parser' --tag "$DIST_TAG" --access public
 
-          # Angular package from dist folder
-          echo "Publishing Angular package @rs-x/angular from dist"
           pnpm publish rs-x-angular/dist --tag "$DIST_TAG" --access public
 
-      # ---------------- DRY RUN ----------------
-      - name: Dry run summary
-        if: ${{ github.event.inputs.dry_run == 'true' }}
-        run: echo "Dry run enabled — skipping npm publish"
-
       # ---------------- PROMOTION ----------------
-      - name: Promote from next → latest
+      - name: Promote next → latest
         if: ${{ github.event.inputs.promote_from_next == 'true' }}
-        run: |
-          node <<'EOF'
-          const { execSync } = require('child_process');
-          const pkgs = [
-            "@rs-x/core",
-            "@rs-x/state-manager",
-            "@rs-x/expression-parser",
-            "@rs-x/angular"
-          ];
-          for (const p of pkgs) {
-            console.log(`Promoting ${p} → latest`);
-            execSync(`npm dist-tag add ${p} latest`, { stdio: 'inherit' });
-          }
-          EOF
+        run: node scripts/promote-latest.mjs
 
-      # ---------------- GITHUB RELEASE ----------------
-      - name: Create GitHub Release with commit-based notes
+      # ---------------- RELEASE ----------------
+      - name: Create GitHub Release
         uses: actions/create-release@v1
         with:
-          tag_name: |
-            $(git describe --tags --abbrev=0 2>/dev/null || echo "v${GITHUB_RUN_NUMBER}")
-          release_name: Release ${{ github.run_number }}
-          body: |
-            $(
-              LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-              if [ -n "$LAST_TAG" ]; then
-                git log $LAST_TAG..HEAD --pretty=format:"- %s"
-              else
-                git log --pretty=format:"- %s"
-              fi
-            )
-          draft: false
-          prerelease: false
+          tag_name: v${{ github.run_number }}
+          release_name: RS-X Release ${{ github.run_number }}
+          body_path: CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -165,7 +104,6 @@ jobs:
         run: |
           git config user.name "CI Bot"
           git config user.email "ci@example.com"
-          if ! git diff --quiet; then
-            git add .
-            git commit -m "chore: version packages"
-            git push origin HEAD:${{ github.ref_name }}
+          git add .
+          git commit -m "chore: release"
+          git push origin HEAD:${{ github.ref_name }}
