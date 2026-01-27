@@ -7,7 +7,11 @@ const DIST_TAG = process.env.DIST_TAG || 'latest';
 const NODE_AUTH_TOKEN = process.env.NODE_AUTH_TOKEN;
 
 const angularDist = 'rs-x-angular/dist/rsx';
-const nodePackageFolders = ['rs-x-core', 'rs-x-state-manager', 'rs-x-expression-parser', angularDist];
+
+const nodeLibFolders =  ['rs-x-core', 'rs-x-state-manager', 'rs-x-expression-parser']
+const nodePackageFolders = [...nodeLibFolders, angularDist];
+const changelogFolders = [...nodeLibFolders, 'rs-x-angular/projects/rsx'];
+
 
 // ---------------- UTILITIES ----------------
 function run(cmd, envOverrides = {}) {
@@ -44,8 +48,8 @@ function patchAngularPackage() {
   }
 
   const pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
-  pkgJson.peerDependencies['@rs-x/core'] = getLocalPackageVersion('rs-x-core');
-  pkgJson.peerDependencies['@rs-x/expression-parser'] = getLocalPackageVersion('rs-x-expression-parser');
+  pkgJson.peerDependencies['@rs-x/core'] = `^${getLocalPackageVersion('rs-x-core')}`;
+  pkgJson.peerDependencies['@rs-x/expression-parser'] = `^${getLocalPackageVersion('rs-x-expression-parser')}`;
 
   fs.writeFileSync(pkgJsonPath, JSON.stringify(pkgJson, null, 2));
   console.log('Patched Angular package.json with local Node package versions');
@@ -102,9 +106,30 @@ function publish() {
   console.log('=== All packages published successfully! ===');
 }
 
-// ---------------- Patching Angular package.json ----------------
+function generateRootChangelog() {
+  console.log('=== Generating root-level CHANGELOG.md ===');
+
+  // Node + Angular packages
+  const changelogFiles = changelogFolders.map(f => path.join(f, 'CHANGELOG.md'));
+
+  let combined = '';
+  for (const file of changelogFiles) {
+    if (fs.existsSync(file)) {
+      combined += fs.readFileSync(file, 'utf-8') + '\n\n';
+    } else {
+      console.log(`⚠️  Skipping missing changelog: ${file}`);
+    }
+  }
+
+  if (!combined) {
+    combined = 'No changes recorded in changelogs yet.';
+  }
+
+  fs.writeFileSync('CHANGELOG.md', combined);
+  console.log('✅ Root CHANGELOG.md created or updated');
+}
+
 patchAngularPackage();
-// ---------------- DRY-RUN PRE-CHECK ----------------
 dryRun();
-// ---------------- REAL PUBLISH ----------------
 publish();
+generateRootChangelog();
