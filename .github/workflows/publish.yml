@@ -21,7 +21,7 @@ on:
 
 permissions:
   contents: write
-  id-token: write
+  id-token: write  # Required for OIDC
 
 concurrency:
   group: release-${{ github.ref }}
@@ -73,15 +73,41 @@ jobs:
         run: pnpm --prefix rs-x-angular run build:angular
 
       # ---------------- PUBLISH ----------------
-      - name: Publish all packages (OIDC)
+      - name: Publish all packages (OIDC / token fallback)
         if: ${{ github.event.inputs.promote_from_next != 'true' && github.event.inputs.dry_run != 'true' }}
+        env:
+          DIST_TAG: ${{ github.event.inputs.dist_tag || 'latest' }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}  # Only for first-time publishes
         run: |
-          DIST_TAG="${{ github.event.inputs.dist_tag || 'latest' }}"
+          set -e
 
-          pnpm publish --filter '@rs-x/core' --tag "$DIST_TAG" --access public --no-git-checks
-          pnpm publish --filter '@rs-x/state-manager' --tag "$DIST_TAG" --access public --no-git-checks
-          pnpm publish --filter '@rs-x/expression-parser' --tag "$DIST_TAG" --access public --no-git-checks
-          pnpm publish rs-x-angular/dist/rsx --tag "$DIST_TAG" --access public --no-git-checks
+          publish_pkg() {
+            PKG=$1
+            echo "Publishing $PKG..."
+            if pnpm info $PKG &> /dev/null; then
+              # Existing package → OIDC with provenance
+              pnpm publish $PKG --tag "$DIST_TAG" --access public --provenance --no-git-checks
+            else
+              # First-time publish → use NODE_AUTH_TOKEN
+              echo "First-time publish, using NODE_AUTH_TOKEN"
+              pnpm publish $PKG --tag "$DIST_TAG" --access public --no-git-checks
+            fi
+          }
+
+          publish_pkg '@rs-x/core'
+          publish_pkg '@rs-x/state-manager'
+          publish_pkg '@rs-x/expression-parser'
+          publish_pkg 'rs-x-angular/dist/rsx'
+
+      # ---------------- COMMIT VERSION BUMP ----------------
+      - name: Commit version bump after successful publish
+        if: success()
+        run: |
+          git config user.name "CI Bot"
+          git config user.email "ci@example.com"
+          git add .
+          git commit -m "chore: release [ci skip]" || echo "No changes to commit"
+          git push origin HEAD:${{ github.ref_name }}
 
       # ---------------- PROMOTION ----------------
       - name: Promote next → latest
@@ -97,12 +123,3 @@ jobs:
           body_path: CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # ---------------- COMMIT ----------------
-      - name: Commit version bump
-        run: |
-          git config user.name "CI Bot"
-          git config user.email "ci@example.com"
-          git add .
-          git commit -m "chore: release"
-          git push origin HEAD:${{ github.ref_name }}
