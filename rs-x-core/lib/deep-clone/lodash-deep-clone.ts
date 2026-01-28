@@ -13,7 +13,6 @@ export class LodashDeepClone implements IDeepClone {
       @Inject(RsXCoreInjectionTokens.DefaultDeepCloneExcept)
       private readonly _deepCloneExcept: IDeepCloneExcept
    ) {
-
    }
 
    public clone(source: unknown): unknown {
