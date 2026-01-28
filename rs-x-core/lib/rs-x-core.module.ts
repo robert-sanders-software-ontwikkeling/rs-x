@@ -1,5 +1,5 @@
-import { DeepCloneValueGetter } from './deep-clone/deep-clone-value-getter';
-import { type IDeepCloneValueGetter } from './deep-clone/deep-clone-value-getter.interface';
+import { DeepCloneValueExcept } from './deep-clone/deep-clone-except';
+import { type IDeepCloneExcept } from './deep-clone/deep-clone-except.interface';
 import { type IDeepClone } from './deep-clone/deep-clone.interface';
 import { DefaultDeepClone } from './deep-clone/default-deep-clone';
 import { LodashDeepClone } from './deep-clone/lodash-deep-clone';
@@ -94,13 +94,13 @@ export const RsXCoreModule = new ContainerModule((options) => {
       .to(ResolvedValueCache)
       .inSingletonScope();
     options
-      .bind<IDeepCloneValueGetter>(RsXCoreInjectionTokens.IDeepCloneValueGetter)
-      .to(DeepCloneValueGetter)
+      .bind<IDeepCloneExcept>(RsXCoreInjectionTokens.IDeepCloneExcept)
+      .to(DeepCloneValueExcept)
       .inSingletonScope();
 
       options
-      .bind<IDeepCloneValueGetter>(RsXCoreInjectionTokens.DefaultDeepCloneValueGetter)
-      .to(DeepCloneValueGetter)
+      .bind<IDeepCloneExcept>(RsXCoreInjectionTokens.DefaultDeepCloneExcept)
+      .to(DeepCloneValueExcept)
       .inSingletonScope();
 
       

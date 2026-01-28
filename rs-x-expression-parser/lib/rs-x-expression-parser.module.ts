@@ -1,7 +1,7 @@
 import { 
    ContainerModule, 
    defaultIndexValueAccessorList, 
-   type IDeepCloneValueGetter, 
+   type IDeepCloneExcept, 
    InjectionContainer, 
    overrideMultiInjectServices, 
    registerMultiInjectServices,
@@ -14,7 +14,7 @@ import { ExpressionFactory } from './expression-factory/expression-factory';
 import type { IExpressionFactory } from './expression-factory/expression-factory.interface';
 import { ExpressionManager } from './expression-factory/expression-manager';
 import type { IExpressionManager } from './expression-factory/expression-manager.type';
-import { DeepCloneValueGetterWithExpressionSupport } from './expression-observer/deep-clone-value-getter-with-expression-support';
+import { DeepCloneExceptWithExpressionSupport } from './expression-observer/deep-clone-except-with-expression-support';
 import { ExpressionObserverFactory } from './expression-observer/expression-observer.factory';
 import type { IExpressionObserverFactory } from './expression-observer/expression-proxy.factory.type';
 import type { IExpressionParser } from './expressions/interfaces';
@@ -31,12 +31,12 @@ import { ExpressionIndexAccessor } from './expression-observer/expression-index-
 InjectionContainer.load(RsXStateManagerModule);
 
 export const RsXExpressionParserModule = new ContainerModule((options) => {
-   options.unbind(RsXCoreInjectionTokens.IDeepCloneValueGetter);
+   options.unbind(RsXCoreInjectionTokens.DefaultDeepCloneExcept);
    options
-      .bind<IDeepCloneValueGetter>(
-         RsXCoreInjectionTokens.IDeepCloneValueGetter
+      .bind<IDeepCloneExcept>(
+         RsXCoreInjectionTokens.DefaultDeepCloneExcept
       )
-      .to(DeepCloneValueGetterWithExpressionSupport)
+      .to(DeepCloneExceptWithExpressionSupport)
       .inSingletonScope();
    options
       .bind<IExpressionChangeTransactionManager>(

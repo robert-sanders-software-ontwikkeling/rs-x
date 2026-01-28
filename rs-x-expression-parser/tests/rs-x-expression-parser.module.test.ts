@@ -14,7 +14,7 @@ import { ArrayObserverProxyPairFactory, DateObserverProxyPairFactory, MapObserve
 import { ExpressionChangeTransactionManager } from '../lib/expresion-change-transaction-manager';
 import { ExpressionFactory } from '../lib/expression-factory/expression-factory';
 import { ExpressionManager } from '../lib/expression-factory/expression-manager';
-import { DeepCloneValueGetterWithExpressionSupport } from '../lib/expression-observer/deep-clone-value-getter-with-expression-support';
+import { DeepCloneExceptWithExpressionSupport } from '../lib/expression-observer/deep-clone-except-with-expression-support';
 import { ExpressionIndexAccessor } from '../lib/expression-observer/expression-index-accessor';
 import { ExpressionObserverFactory } from '../lib/expression-observer/expression-observer.factory';
 import { ArrayIndexOwnerResolver } from '../lib/identifier-owner-resolver/array-index-owner-resolver';
@@ -254,17 +254,17 @@ describe('RsXExpressionParserModule tests', () => {
 
    it('can get instance of IDeepCloneValueGetter', () => {
       const actual = InjectionContainer.get(
-         RsXCoreInjectionTokens.IDeepCloneValueGetter
+         RsXCoreInjectionTokens.DefaultDeepCloneExcept
       );
-      expect(actual).toBeInstanceOf(DeepCloneValueGetterWithExpressionSupport);
+      expect(actual).toBeInstanceOf(DeepCloneExceptWithExpressionSupport);
    });
 
-   it('IDeepCloneValueGetter instance is a singleton', () => {
+   it('DefaultDeepCloneExcept instance is a singleton', () => {
       const a1 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IDeepCloneValueGetter
+         RsXCoreInjectionTokens.DefaultDeepCloneExcept
       );
       const a2 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IDeepCloneValueGetter
+         RsXCoreInjectionTokens.DefaultDeepCloneExcept
       );
       expect(a1).toBe(a2);
    });
