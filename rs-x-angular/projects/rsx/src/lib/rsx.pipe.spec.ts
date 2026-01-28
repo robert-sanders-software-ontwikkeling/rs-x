@@ -1,5 +1,5 @@
 import { ChangeDetectorRef, runInInjectionContext } from '@angular/core';
-import { InjectionContainer, Type } from '@rs-x/core';
+import { InjectionContainer, Type, UnsupportedException } from '@rs-x/core';
 import {
   type IExpression,
   type IExpressionFactory,
@@ -49,7 +49,11 @@ describe('RsxPipe', () => {
     );
   });
 
-  it('evaluates a simple expression', async () => {
+  it('will thrown an error when not passing in null|undefined, IExpression, or string', async () => {
+    expect(() => pipe.transform(Type.cast({}), {})).toThrow(new UnsupportedException(`string or IExpression expected`));
+  });
+
+  it('evaluates a simple expression string', async () => {
     const ctx = { x: 10 };
     pipe.transform('x + 2', ctx);
     // rsx expression will emit  the initial value after initialize so wait until all already-scheduled microtasks have run.
@@ -58,6 +62,23 @@ describe('RsxPipe', () => {
     const actual = pipe.transform('x + 2', ctx);
 
     expect(actual).toEqual(12);
+  });
+
+
+  it('evaluates a simple expression', async () => {
+    const expression = expressionFactory.create({ x: 10 }, 'x + 2');
+    try {
+      pipe.transform(expression);
+      // rsx expression will emit  the initial value after initialize so wait until all already-scheduled microtasks have run.
+      await Promise.resolve()
+
+      const actual = pipe.transform(expression);
+
+      expect(actual).toEqual(12);
+
+    } finally {
+      expression.dispose();
+    }
   });
 
   it('reacts to observable changes', async () => {
@@ -172,18 +193,38 @@ describe('RsxPipe', () => {
     }
   });
 
-  it('disposeExpression will dispose old expression', () => {
+  it('disposeExpression will dispose expression if it owns it', () => {
+    pipe.transform('x + 2', { x: 1 });
+    const pipeWithExpression = Type.cast<{ _expression: IExpression, _changedSubscription?: Subscription }>(pipe);
+    const disposeSpy = vi.spyOn(pipeWithExpression._expression, 'dispose');
 
+    pipe.transform(Type.cast(null));
+
+    expect(disposeSpy).toHaveBeenCalledTimes(1);
+
+  });
+
+  it('disposeExpression will not dispose expression if doesn not own it', () => {
+    const expression = expressionFactory.create({ x: 1 }, 'x + 2')
+    try {
+      pipe.transform(expression);
+      const disposeSpy = vi.spyOn(expression, 'dispose');
+
+      pipe.transform(Type.cast(null));
+
+      expect(disposeSpy).not.toHaveBeenCalled()
+    } finally {
+      expression.dispose();
+    }
+  });
+
+  it('disposeExpression will will unsubscribe to changed event', () => {
     pipe.transform('x + 2', { x: 1 });
     const pipeWithExpression = Type.cast<{ _expression: IExpression, _changedSubscription?: Subscription }>(pipe);
 
-    const disposeSpy = vi.spyOn(pipeWithExpression._expression, 'dispose');
     const unsubscribeExpression = vi.spyOn(pipeWithExpression._changedSubscription as Subscription, 'unsubscribe');
 
     pipe.transform('x + 2', { x: 2 });
-
-
-    expect(disposeSpy).toHaveBeenCalledTimes(1);
     expect(unsubscribeExpression).toHaveBeenCalledTimes(1);
 
   });
