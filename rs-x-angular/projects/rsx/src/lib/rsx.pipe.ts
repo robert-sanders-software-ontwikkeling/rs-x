@@ -26,7 +26,7 @@ export class RsxPipe implements PipeTransform, OnDestroy {
     private _lastContext?: object;
     private _value: unknown;
 
-    public transform<T>(expression: string | IExpression<T>, context?: object): T {
+    public transform<T>(expression: string | IExpression<T>| null | undefined, context?: object): T {
         if (
             (expression instanceof AbstractExpression && this._expression !== expression) ||
             expression !== this._lastExpressionString ||
@@ -43,7 +43,7 @@ export class RsxPipe implements PipeTransform, OnDestroy {
         this.disposeExpression();
     }
 
-    private createExpression(expression: string | IExpression, context?: object): void {
+    private createExpression(expression: string | IExpression | null | undefined, context?: object): void {
         if (expression instanceof AbstractExpression) {
             this._lastExpressionString = undefined;
             this._expression = expression;
