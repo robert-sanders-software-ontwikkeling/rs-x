@@ -1,6 +1,6 @@
 {
   "name": "@rs-x/state-manager",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "description": "Reactive state management layer for the RS-X framework with fine-grained change tracking",
   "type": "module",
   "main": "./dist/index.js",

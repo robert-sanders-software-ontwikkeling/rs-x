@@ -1,4 +1,4 @@
-import { DeepCloneValueGetter } from '../lib/deep-clone/deep-clone-value-getter';
+import { DeepCloneValueExcept } from '../lib/deep-clone/deep-clone-except';
 import { DefaultDeepClone } from '../lib/deep-clone/default-deep-clone';
 import { InjectionContainer } from '../lib/dependency-injection';
 import { EqualityService } from '../lib/equality-service/equality-service';
@@ -334,17 +334,17 @@ describe('rs-x core module', () => {
 
    it('can get instance of IDeepCloneValueGetter', () => {
       const actual = InjectionContainer.get(
-         RsXCoreInjectionTokens.IDeepCloneValueGetter
+         RsXCoreInjectionTokens.IDeepCloneExcept
       );
-      expect(actual).toBeInstanceOf(DeepCloneValueGetter);
+      expect(actual).toBeInstanceOf(DeepCloneValueExcept);
    });
 
    it('IDeepCloneValueGetter instance is a singleton', () => {
       const a1 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IDeepCloneValueGetter
+         RsXCoreInjectionTokens.IDeepCloneExcept
       );
       const a2 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IDeepCloneValueGetter
+         RsXCoreInjectionTokens.IDeepCloneExcept
       );
       expect(a1).toBe(a2);
    });

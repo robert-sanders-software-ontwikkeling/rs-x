@@ -21,6 +21,6 @@ export const RsXCoreInjectionTokens = {
    ILodashDeepClone: Symbol('ILodashDeepClone'),
    IDeepCloneList: Symbol('IDeepCloneList'),
    IResolvedValueCache: Symbol('IResolvedValueCache'),
-   IDeepCloneValueGetter: Symbol('IDeepCloneValueGetter'),
-   DefaultDeepCloneValueGetter: Symbol('DefaultDeepCloneValueGetter')
+   IDeepCloneExcept: Symbol('IDeepCloneExcept'),
+   DefaultDeepCloneExcept: Symbol('DefaultDeepCloneExcept')
 };
