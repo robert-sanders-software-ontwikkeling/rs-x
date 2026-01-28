@@ -8,7 +8,7 @@ const NODE_AUTH_TOKEN = process.env.NODE_AUTH_TOKEN;
 
 const angularDist = 'rs-x-angular/dist/rsx';
 
-const nodeLibFolders =  ['rs-x-core', 'rs-x-state-manager', 'rs-x-expression-parser']
+const nodeLibFolders = ['rs-x-core', 'rs-x-state-manager', 'rs-x-expression-parser'];
 const nodePackageFolders = [...nodeLibFolders, angularDist];
 const changelogFolders = [...nodeLibFolders, 'rs-x-angular/projects/rsx'];
 
@@ -39,8 +39,20 @@ function pnpmInfoExists(pkgName) {
 }
 
 // ---------------- PATCH ANGULAR ----------------
+function toMajorRange(version) {
+  const [major, minor] = version.split('.').map(Number);
+
+  if (major === 0) {
+    // pre-1.0: minor is the breaking boundary
+    return `^0.${minor}.0`;
+  }
+
+  return `^${major}.0.0`;
+}
+
 function patchAngularPackage() {
   console.log('=== Patching Angular package.json ===');
+
   const pkgJsonPath = path.join(angularDist, 'package.json');
   if (!fs.existsSync(pkgJsonPath)) {
     console.error('Angular dist folder not found:', angularDist);
@@ -48,11 +60,18 @@ function patchAngularPackage() {
   }
 
   const pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
-  pkgJson.peerDependencies['@rs-x/core'] = `^${getLocalPackageVersion('rs-x-core')}`;
-  pkgJson.peerDependencies['@rs-x/expression-parser'] = `^${getLocalPackageVersion('rs-x-expression-parser')}`;
+
+  const coreVersion = getLocalPackageVersion('rs-x-core');
+  const parserVersion = getLocalPackageVersion('rs-x-expression-parser');
+
+  pkgJson.peerDependencies ??= {};
+  pkgJson.peerDependencies['@rs-x/core'] =
+    toMajorRange(coreVersion);
+  pkgJson.peerDependencies['@rs-x/expression-parser'] =
+    toMajorRange(parserVersion);
 
   fs.writeFileSync(pkgJsonPath, JSON.stringify(pkgJson, null, 2));
-  console.log('Patched Angular package.json with local Node package versions');
+  console.log('✅ Patched Angular peerDependencies using MAJOR-only ranges');
 }
 
 // ---------------- PUBLISH LOGIC ----------------
