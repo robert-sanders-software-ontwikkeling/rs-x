@@ -50,7 +50,7 @@ describe('RsxPipe', () => {
   });
 
   it('will thrown an error when not passing in null|undefined, IExpression, or string', async () => {
-    expect(() => pipe.transform(Type.cast({}), {})).toThrow(new UnsupportedException(`string or IExpression expected`));
+    expect(() => pipe.transform(Type.cast<IExpression>({}), {})).toThrow(new UnsupportedException(`string or IExpression expected`));
   });
 
   it('evaluates a simple expression string', async () => {
@@ -198,19 +198,19 @@ describe('RsxPipe', () => {
     const pipeWithExpression = Type.cast<{ _expression: IExpression, _changedSubscription?: Subscription }>(pipe);
     const disposeSpy = vi.spyOn(pipeWithExpression._expression, 'dispose');
 
-    pipe.transform(Type.cast(null));
+    pipe.transform(null);
 
     expect(disposeSpy).toHaveBeenCalledTimes(1);
 
   });
-
+ 
   it('disposeExpression will not dispose expression if doesn not own it', () => {
     const expression = expressionFactory.create({ x: 1 }, 'x + 2')
     try {
       pipe.transform(expression);
       const disposeSpy = vi.spyOn(expression, 'dispose');
 
-      pipe.transform(Type.cast(null));
+      pipe.transform(null);
 
       expect(disposeSpy).not.toHaveBeenCalled()
     } finally {
