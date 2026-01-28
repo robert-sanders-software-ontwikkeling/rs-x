@@ -12,8 +12,8 @@ export class ExpressionFactory implements IExpressionFactory {
     ) {   
     }
 
-    public create(context: object, expression: string): IExpression {
-        return this._expressionManager.create(context).instance.create(expression).instance;
+    public create<T>(context: object, expression: string): IExpression<T> {
+        return this._expressionManager.create(context).instance.create(expression).instance as IExpression<T>;
     }
 
 }
