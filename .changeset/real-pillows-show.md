@@ -2,4 +2,4 @@
 "@rs-x/core": patch
 ---
 
-Angular support
+Optimize expression parser
