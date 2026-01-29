@@ -88,12 +88,12 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
    overrideMultiInjectServices(options, RsXCoreInjectionTokens.IIndexValueAccessorList, [
       { target: ExpressionIndexAccessor, token: RsXExpressionParserInjectionTokens.IExpressionIndexAccessor },
       ...defaultIndexValueAccessorList
-   ])
+   ]);
 
    overrideMultiInjectServices(options, RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList, [
       { target: ExpressionObserverProxyPairFactory, token: RsXExpressionParserInjectionTokens.IExpressionObserverProxyPairFactory },
       ...defaultObjectObserverProxyPairFactoryList
-   ])
+   ]);
 });
 
 

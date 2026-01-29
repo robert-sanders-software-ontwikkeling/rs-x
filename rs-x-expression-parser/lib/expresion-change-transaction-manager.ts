@@ -19,7 +19,7 @@ export class ExpressionChangeTransactionManager implements IExpressionChangeTran
         @Inject(RsXStateManagerInjectionTokens.IStateManager)
         stateManager: IStateManager
     ) {
-        this._startChangeCycleSubscription = stateManager.startChangeCycle.subscribe(this.onStartChangeCycle)
+        this._startChangeCycleSubscription = stateManager.startChangeCycle.subscribe(this.onStartChangeCycle);
         this._endChangeCycleSubscription = stateManager.endChangeCycle.subscribe(this.onEndChangeCycle);
     }
 
@@ -52,7 +52,7 @@ export class ExpressionChangeTransactionManager implements IExpressionChangeTran
     }
 
     private tryCommit(root: AbstractExpression, previousCommited: boolean): void  {
-        const commitHandlers =this._changes.get(root)
+        const commitHandlers =this._changes.get(root);
         
         if(!commitHandlers?.size) {
              if(previousCommited) {
@@ -81,7 +81,7 @@ export class ExpressionChangeTransactionManager implements IExpressionChangeTran
 
     private onStartChangeCycle = () => {
         this._emittedChangeCounter++;
-    }
+    };
 
     private onEndChangeCycle = () => {
         if (this._emittedChangeCounter === 0) {
@@ -94,5 +94,5 @@ export class ExpressionChangeTransactionManager implements IExpressionChangeTran
         }
 
         this.commit();
-    }
+    };
 }

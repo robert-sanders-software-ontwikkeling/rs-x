@@ -10,7 +10,7 @@ describe('DateProxy tests', () => {
    });
 
    it('create will register the data proxy to the proxy registry', () => {
-      const date = new Date()
+      const date = new Date();
       const proxyRegistry = new ProxyRegistryMock();
       const setProxyFactory = new DateProxyFactory(new GuidFactory(), proxyRegistry);
       const { proxy } = setProxyFactory.create({ date }).instance;
@@ -21,7 +21,7 @@ describe('DateProxy tests', () => {
    });
 
    it('dispose will unregister the data proxy to the proxy registry', () => {
-      const date = new Date()
+      const date = new Date();
       const proxyRegistry = new ProxyRegistryMock();
       const setProxyFactory = new DateProxyFactory(new GuidFactory(), proxyRegistry);
       const { observer } = setProxyFactory.create({ date }).instance;
@@ -29,12 +29,12 @@ describe('DateProxy tests', () => {
       observer.dispose();
 
       expect(proxyRegistry.unregister).toHaveBeenCalledTimes(1);
-      expect(proxyRegistry.unregister).toHaveBeenCalledWith(date)
+      expect(proxyRegistry.unregister).toHaveBeenCalledWith(date);
    });
 
    it('dispose will unregister proxy when all references are released', () => {
       const dateProxyFactory = new DateProxyFactory(new GuidFactory(), new ProxyRegistryMock());
-      const date = new Date()
+      const date = new Date();
 
       const { observer: observer1 } = dateProxyFactory.create({
          date,
@@ -43,7 +43,7 @@ describe('DateProxy tests', () => {
          date,
       }).instance;
 
-      const id = dateProxyFactory.getId({ date }) as string
+      const id = dateProxyFactory.getId({ date }) as string;
       expect(id).toBeDefined();
 
       expect(observer1).toBe(observer2);
@@ -142,7 +142,7 @@ describe('DateProxy tests', () => {
          ).instance.proxy as Date;
          const timestamp = proxy.setDate(4);
 
-         expect(new Date(timestamp)).toEqual(new Date(2021, 0, 4))
+         expect(new Date(timestamp)).toEqual(new Date(2021, 0, 4));
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(0);
          expect(proxy.getDate()).toEqual(4);
@@ -178,7 +178,7 @@ describe('DateProxy tests', () => {
          ).instance.proxy as Date;
          const timestamp = proxy.setHours(3);
 
-         expect(new Date(timestamp)).toEqual(new Date(2021, 0, 2, 3))
+         expect(new Date(timestamp)).toEqual(new Date(2021, 0, 2, 3));
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(0);
          expect(proxy.getDate()).toEqual(2);
@@ -215,7 +215,7 @@ describe('DateProxy tests', () => {
          ).instance.proxy as Date;
          const timestamp = proxy.setMinutes(3);
 
-         expect(new Date(timestamp)).toEqual(new Date(2021, 0, 2, 0, 3))
+         expect(new Date(timestamp)).toEqual(new Date(2021, 0, 2, 0, 3));
          expect(proxy.getFullYear()).toEqual(2021);
          expect(proxy.getMonth()).toEqual(0);
          expect(proxy.getDate()).toEqual(2);
@@ -340,7 +340,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.toString()).toEqual(proxy.toString())
+         expect(date.toString()).toEqual(proxy.toString());
       });
 
       it('toDateString', () => {
@@ -350,7 +350,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.toDateString()).toEqual(proxy.toDateString())
+         expect(date.toDateString()).toEqual(proxy.toDateString());
       });
 
 
@@ -361,7 +361,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.toTimeString()).toEqual(proxy.toTimeString())
+         expect(date.toTimeString()).toEqual(proxy.toTimeString());
       });
 
       it('toLocaleString', () => {
@@ -371,7 +371,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.toLocaleString()).toEqual(proxy.toLocaleString())
+         expect(date.toLocaleString()).toEqual(proxy.toLocaleString());
       });
 
       it('toLocaleDateString', () => {
@@ -381,7 +381,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.toLocaleDateString()).toEqual(proxy.toLocaleDateString())
+         expect(date.toLocaleDateString()).toEqual(proxy.toLocaleDateString());
       });
 
       it('toLocaleTimeString', () => {
@@ -391,7 +391,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.toLocaleTimeString()).toEqual(proxy.toLocaleTimeString())
+         expect(date.toLocaleTimeString()).toEqual(proxy.toLocaleTimeString());
       });
 
       it('valueOf', () => {
@@ -401,7 +401,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.valueOf()).toEqual(proxy.valueOf())
+         expect(date.valueOf()).toEqual(proxy.valueOf());
       });
 
       it('getTime', () => {
@@ -411,7 +411,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.getTime()).toEqual(proxy.getTime())
+         expect(date.getTime()).toEqual(proxy.getTime());
       });
 
       it('getFullYear', () => {
@@ -421,7 +421,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.getFullYear()).toEqual(proxy.getFullYear())
+         expect(date.getFullYear()).toEqual(proxy.getFullYear());
       });
 
       it('getUTCFullYear', () => {
@@ -432,7 +432,7 @@ describe('DateProxy tests', () => {
             }
          ).instance.proxy as Date;
 
-         expect(date.getUTCFullYear()).toEqual(proxy.getUTCFullYear())
+         expect(date.getUTCFullYear()).toEqual(proxy.getUTCFullYear());
       });
 
       it('getMonth', () => {
@@ -442,7 +442,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.getMonth()).toEqual(proxy.getMonth())
+         expect(date.getMonth()).toEqual(proxy.getMonth());
       });
 
       it('getUTCMonth', () => {
@@ -452,7 +452,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.getUTCMonth()).toEqual(proxy.getUTCMonth())
+         expect(date.getUTCMonth()).toEqual(proxy.getUTCMonth());
       });
 
       it('getDate', () => {
@@ -462,7 +462,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.getDate()).toEqual(proxy.getDate())
+         expect(date.getDate()).toEqual(proxy.getDate());
       });
 
       it('getUTCDate', () => {
@@ -472,7 +472,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.getUTCDate()).toEqual(proxy.getUTCDate())
+         expect(date.getUTCDate()).toEqual(proxy.getUTCDate());
       });
 
       it('getDay', () => {
@@ -482,7 +482,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.getDay()).toEqual(proxy.getDay())
+         expect(date.getDay()).toEqual(proxy.getDay());
       });
 
       it('getUTCDay', () => {
@@ -493,7 +493,7 @@ describe('DateProxy tests', () => {
             }
          ).instance.proxy as Date;
 
-         expect(date.getUTCDay()).toEqual(proxy.getUTCDay())
+         expect(date.getUTCDay()).toEqual(proxy.getUTCDay());
       });
 
       it('getHours', () => {
@@ -503,7 +503,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.getHours()).toEqual(proxy.getHours())
+         expect(date.getHours()).toEqual(proxy.getHours());
       });
 
       it('getUTCHours', () => {
@@ -513,7 +513,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.getUTCHours()).toEqual(proxy.getUTCHours())
+         expect(date.getUTCHours()).toEqual(proxy.getUTCHours());
       });
 
       it('getMinutes', () => {
@@ -524,7 +524,7 @@ describe('DateProxy tests', () => {
             }
          ).instance.proxy as Date;
 
-         expect(date.getMinutes()).toEqual(proxy.getMinutes())
+         expect(date.getMinutes()).toEqual(proxy.getMinutes());
       });
 
       it('getUTCMinutes', () => {
@@ -534,7 +534,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.getUTCMinutes()).toEqual(proxy.getUTCMinutes())
+         expect(date.getUTCMinutes()).toEqual(proxy.getUTCMinutes());
       });
 
       it('getSeconds', () => {
@@ -544,7 +544,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.getSeconds()).toEqual(proxy.getSeconds())
+         expect(date.getSeconds()).toEqual(proxy.getSeconds());
       });
 
       it('getUTCSeconds', () => {
@@ -554,7 +554,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.getUTCSeconds()).toEqual(proxy.getUTCSeconds())
+         expect(date.getUTCSeconds()).toEqual(proxy.getUTCSeconds());
       });
 
       it('getMilliseconds', () => {
@@ -564,7 +564,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.getMilliseconds()).toEqual(proxy.getMilliseconds())
+         expect(date.getMilliseconds()).toEqual(proxy.getMilliseconds());
       });
 
       it('getUTCMilliseconds', () => {
@@ -574,7 +574,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.getUTCMilliseconds()).toEqual(proxy.getUTCMilliseconds())
+         expect(date.getUTCMilliseconds()).toEqual(proxy.getUTCMilliseconds());
       });
 
       it('getTimezoneOffset', () => {
@@ -584,7 +584,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.getTimezoneOffset()).toEqual(proxy.getTimezoneOffset())
+         expect(date.getTimezoneOffset()).toEqual(proxy.getTimezoneOffset());
       });
 
 
@@ -596,7 +596,7 @@ describe('DateProxy tests', () => {
             }
          ).instance.proxy as Date;
 
-         expect(date.toISOString()).toEqual(proxy.toISOString())
+         expect(date.toISOString()).toEqual(proxy.toISOString());
       });
 
       it('toUTCString', () => {
@@ -606,7 +606,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.toUTCString()).toEqual(proxy.toUTCString())
+         expect(date.toUTCString()).toEqual(proxy.toUTCString());
       });
 
       it('toJSON', () => {
@@ -616,7 +616,7 @@ describe('DateProxy tests', () => {
                date
             }
          ).instance.proxy as Date;
-         expect(date.toJSON()).toEqual(proxy.toJSON())
+         expect(date.toJSON()).toEqual(proxy.toJSON());
       });
    });
 
@@ -643,7 +643,7 @@ describe('DateProxy tests', () => {
             id: 'year',
             newValue: utCDate(2022, 1, 2),
             target: proxyTarget,
-         }
+         };
 
          expect(actual).toEqual(expected);
       });
@@ -1070,7 +1070,7 @@ describe('DateProxy tests', () => {
                newValue: 1667465652987,
                target: proxyTarget,
             }
-         ]
+         ];
          expect(actual).toEqual(expected);
       });
 

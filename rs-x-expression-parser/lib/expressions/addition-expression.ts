@@ -3,6 +3,7 @@ import { BinaryExpression } from './binary-expression';
 import { ExpressionType } from './expression-parser.interface';
 
 export class AdditionExpression extends BinaryExpression<number, number> {
+   
    constructor(
       expressionString: string,
       leftExpression: AbstractExpression<number>,

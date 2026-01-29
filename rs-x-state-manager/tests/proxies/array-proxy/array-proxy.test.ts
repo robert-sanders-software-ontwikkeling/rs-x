@@ -14,7 +14,7 @@ import { ProxyRegistryMock } from '../../../lib/testing/proxies/proxy-registry.m
 describe('ArrayProxy tests', () => {
    let observerProxyPair: IArrayObserverProxyPair;
    let arrayData: IArrayProxyData;
-   let proxyRegistry: ProxyRegistryMock
+   let proxyRegistry: ProxyRegistryMock;
 
    beforeEach(() => {
       arrayData = { array: [1, 2, 3, 4] };
@@ -44,7 +44,7 @@ describe('ArrayProxy tests', () => {
       observer.dispose();
 
       expect(proxyRegistry.unregister).toHaveBeenCalledTimes(1);
-      expect(proxyRegistry.unregister).toHaveBeenCalledWith(array)
+      expect(proxyRegistry.unregister).toHaveBeenCalledWith(array);
    });
 
     it('dispose is idempotent', () => {

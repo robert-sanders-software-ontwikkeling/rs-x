@@ -115,7 +115,7 @@ describe('StateManager tests', () => {
          };
          const actual = await new WaitForEvent(stateManager, 'changed', { count: 5 }).wait(() => {
             stateManager.setState(context, 'root', newValue);
-         })
+         });
 
          const expected: IStateChange[] = [
             {
@@ -157,11 +157,11 @@ describe('StateManager tests', () => {
                newValue,
                oldValue: value
             }
-         ]
+         ];
 
          expect(actual).toEqual(expected);
       });
-   })
+   });
 
    describe('watch property of an object', () => {
       it('Watch will initialise state', () => {
@@ -486,7 +486,7 @@ describe('StateManager tests', () => {
       });
 
       it('Watch date property will initialise state', async () => {
-         const date = new Date(2021, 2, 3)
+         const date = new Date(2021, 2, 3);
 
          await new WaitForEvent(stateManager, 'changed').wait(() => {
             stateManager.watchState(date, 'year');
@@ -497,7 +497,7 @@ describe('StateManager tests', () => {
 
 
       it('When the state is watched, its initial value is emitted.', async () => {
-         const date = new Date(2021, 2, 3)
+         const date = new Date(2021, 2, 3);
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
@@ -525,7 +525,7 @@ describe('StateManager tests', () => {
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
-               object.x.setFullYear(2024)
+               object.x.setFullYear(2024);
             }
          );
 
@@ -541,7 +541,7 @@ describe('StateManager tests', () => {
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
-               object.x.setFullYear(2024)
+               object.x.setFullYear(2024);
             }
          );
 
@@ -556,14 +556,14 @@ describe('StateManager tests', () => {
       });
 
       it('Changing watched date property will emit a change evenet', async () => {
-         const date = new Date(2021, 2, 3)
+         const date = new Date(2021, 2, 3);
 
          stateManager.watchState(date, 'year');
 
          const actual = await new WaitForEvent(stateManager, 'changed').wait(
             () => {
                const dataProxy = proxyRegistry.getProxy<Date>(date);
-               dataProxy.setFullYear(2023)
+               dataProxy.setFullYear(2023);
             }
          );
 

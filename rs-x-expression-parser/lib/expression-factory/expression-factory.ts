@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@rs-x/core';
 
-import type { IExpression } from '../expressions';
+import type { IExpression } from '../expressions/expression-parser.interface';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
 
 import type { IExpressionFactory } from './expression-factory.interface';

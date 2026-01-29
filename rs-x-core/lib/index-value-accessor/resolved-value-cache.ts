@@ -8,7 +8,7 @@ export class ResolvedValueCache implements IResolvedValueCache {
 
 
     public set(source: WeakKey, value: unknown) {
-        this._resolvedValues.set(source, value)
+        this._resolvedValues.set(source, value);
     }
 
     public get(source: WeakKey): unknown {

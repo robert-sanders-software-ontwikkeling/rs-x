@@ -2,7 +2,7 @@ import { type Observable } from 'rxjs';
 
 import { type IDisposable } from '@rs-x/core';
 
-import { type AbstractExpression } from './expressions';
+import type { AbstractExpression } from './expressions/abstract-expression';
 
 export interface IExpressionChangeCommitHandler {
     owner: AbstractExpression;

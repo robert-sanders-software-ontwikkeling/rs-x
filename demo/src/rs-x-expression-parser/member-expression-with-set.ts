@@ -49,7 +49,7 @@ export const run = (async () => {
             expressionContext.a.b.delete(200);
         });
 
-        console.log(`Final value of 'a.b':`)
+        console.log(`Final value of 'a.b':`);
         printValue(expression.value);
     } finally {
         // Always dispose of expressions after use.

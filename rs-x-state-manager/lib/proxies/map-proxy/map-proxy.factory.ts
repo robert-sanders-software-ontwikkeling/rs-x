@@ -145,11 +145,11 @@ export class MapProxyFactory
    }
 
    public override getId(data: IMapProxifyData): Map<unknown, unknown> {
-      return data.map
+      return data.map;
    }
 
    protected override createId(data: IMapProxifyData): Map<unknown, unknown> {
-      return data.map
+      return data.map;
    }
 
    protected override createInstance(

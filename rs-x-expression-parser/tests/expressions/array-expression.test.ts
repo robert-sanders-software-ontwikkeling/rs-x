@@ -1,5 +1,7 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
+import { ArrayExpression } from '../../lib';
+import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
@@ -14,7 +16,7 @@ describe('Array expression tests', () => {
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXExpressionParserModule);
-       expressionFactory = InjectionContainer.get(
+      expressionFactory = InjectionContainer.get(
          RsXExpressionParserInjectionTokens.IExpressionFactory
       );
    });
@@ -33,10 +35,38 @@ describe('Array expression tests', () => {
       expect(expression.type).toEqual(ExpressionType.Array);
    });
 
+
+   it('clone', async () => {
+      const transactionManager: IExpressionChangeTransactionManager = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
+      const context = { array: [2, 3] };
+      expression = expressionFactory.create(context, '[1, 2]');
+
+      const clonedExpression = expression.clone();
+
+      try {
+         expect(clonedExpression).toBeInstanceOf(ArrayExpression);
+         expect(clonedExpression.type).toEqual(ExpressionType.Array);
+         expect(clonedExpression.expressionString).toEqual('[1, 2]');
+
+         await new WaitForEvent(clonedExpression, 'changed').wait(() => {
+            clonedExpression.bind({
+               transactionManager,
+               rootContext: context
+            });
+
+            transactionManager.commit();
+         });
+         expect(clonedExpression.value).toEqual([1, 2]);
+      } finally {
+         clonedExpression.dispose();
+      }
+   });
+
    it('will emit change event for initial value: [1, 2]', async () => {
       expression = expressionFactory.create({}, '[1, 2]');
       const actual = (await new WaitForEvent(expression, 'changed').wait(
-         () => {}
+         () => { }
       )) as IExpression;
 
       expect(expression.value).toEqual([1, 2]);
@@ -47,9 +77,9 @@ describe('Array expression tests', () => {
       expression = expressionFactory.create({}, ' [1, ...[2, 3]]');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
-         () => {}
+         () => { }
       )) as IExpression;
-      
+
       expect(expression.value).toEqual([1, 2, 3]);
       expect(actual).toBe(expression);
    });

@@ -38,9 +38,9 @@ export const run = (() => {
 
     let errrThrown = false;
     try {
-         indexValueAccessor.getValue(object.map, 'x')
+         indexValueAccessor.getValue(object.map, 'x');
     } catch {
-        errrThrown = true
+        errrThrown = true;
     }
 
     console.log(`Value of 'map['x'] will throw error: ${errrThrown}`);

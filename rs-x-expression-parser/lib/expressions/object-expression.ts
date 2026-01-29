@@ -16,6 +16,16 @@ export class ObjectExpression extends ParameterizedExpression<object> {
       );
    }
 
+    public override clone(): this {
+      return new (this.constructor as new (
+         expressionString: string,
+         propertyExpressions: (PropertyExpression | SpreadExpression)[]
+      ) => this)(
+         this.expressionString,
+         this._childExpressions.map(child => child.clone()) as (PropertyExpression | SpreadExpression)[]
+      );
+   }
+
    protected evaluateExpression(
       ...args: unknown[]
    ): object {

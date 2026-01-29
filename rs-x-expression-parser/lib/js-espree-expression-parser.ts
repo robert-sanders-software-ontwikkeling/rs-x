@@ -289,7 +289,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
          throw new ParserException(expressionString, String(e));
       }
 
-      return expression
+      return expression;
    }
 
    private tryParse(expressionString: string): Expression {

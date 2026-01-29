@@ -1,6 +1,8 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
+import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
+import { AdditionExpression } from '../../lib/expressions/addition-expression';
 import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
    RsXExpressionParserModule,
@@ -14,7 +16,7 @@ describe('AdditionExpression tests', () => {
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXExpressionParserModule);
-       expressionFactory = InjectionContainer.get(
+      expressionFactory = InjectionContainer.get(
          RsXExpressionParserInjectionTokens.IExpressionFactory
       );
    });
@@ -34,12 +36,39 @@ describe('AdditionExpression tests', () => {
       expect(expression.type).toEqual(ExpressionType.Addition);
    });
 
+   it('clone', async () => {
+      const transactionManager: IExpressionChangeTransactionManager = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
+      const context = { a: 1, b: 2 };
+      expression = expressionFactory.create(context, 'a + b');
+
+      const clonedExpression = expression.clone();
+
+      try {
+         expect(clonedExpression).toBeInstanceOf(AdditionExpression);
+         expect(clonedExpression.type).toEqual(ExpressionType.Addition);
+         expect(clonedExpression.expressionString).toEqual('a + b');
+
+         await new WaitForEvent(clonedExpression, 'changed').wait(() => {
+            clonedExpression.bind({
+               transactionManager,
+               rootContext: context
+            });
+            transactionManager.commit();
+         });
+         expect(clonedExpression.value).toEqual(3);
+      }
+      finally {
+         clonedExpression.dispose();
+      }
+   });
+
    it('will emit change event for initial value', async () => {
       const context = { a: 1, b: 2 };
       expression = expressionFactory.create(context, 'a + b');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
-         () => {}
+         () => { }
       )) as IExpression;
 
       expect(actual.value).toEqual(3);

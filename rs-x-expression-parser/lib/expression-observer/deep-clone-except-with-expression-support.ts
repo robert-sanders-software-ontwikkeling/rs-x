@@ -1,6 +1,6 @@
 import { type IDeepCloneExcept, Inject, Injectable, PENDING, RsXCoreInjectionTokens } from '@rs-x/core';
 
-import { AbstractExpression } from '../expressions';
+import { AbstractExpression } from '../expressions/abstract-expression';
 
 @Injectable()
 export class DeepCloneExceptWithExpressionSupport implements IDeepCloneExcept {

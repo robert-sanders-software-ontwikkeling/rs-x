@@ -25,9 +25,9 @@ export const run = (() => {
     };
 
     printValue(object1);
-    console.log('is equal to')
+    console.log('is equal to');
     printValue(object2);
 
     const result = equalityService.isEqual(object1, object2);
-    console.log(`Result: ${result}`)
+    console.log(`Result: ${result}`);
 })();

@@ -48,6 +48,24 @@ export class MemberExpression extends AbstractExpression {
       super(ExpressionType.Member, expressionString, ...pathSeqments);
    }
 
+    public override clone(): this {
+      return new (this.constructor as new (
+         expressionString: string,
+         pathSeqments: AbstractExpression[],
+         indexValueAccessor: IIndexValueAccessor,
+         stateManager: IStateManager,
+         mustProxifyItemHandlerFactory: IMustProxifyItemHandlerFactory,
+         expressionChangeTransactionManager: IExpressionChangeTransactionManager
+      ) => this)(
+         this.expressionString,
+         this._childExpressions.map(child => child.clone()),
+         this._indexValueAccessor,
+         this._stateManager,
+         this._mustProxifyItemHandlerFactory,
+         this._expressionChangeTransactionManager
+      );
+   }
+
    public override bind(
       settings: IExpressionBindConfiguration
    ): AbstractExpression {
@@ -91,7 +109,7 @@ export class MemberExpression extends AbstractExpression {
       const pathSeqments = this._childExpressions;
       for (let i = senderIndex + 1; i < pathSeqments.length; i++) {
          if (!this.isCalculated(pathSeqments[i]) && !this.isPending(pathSeqments[i], pendingCommits)) {
-            AbstractExpression.clearValue(pathSeqments[i])
+            AbstractExpression.clearValue(pathSeqments[i]);
          }
       }
 
@@ -182,7 +200,7 @@ export class MemberExpression extends AbstractExpression {
             context: previousPathSegmentValue,
             mustProxifyHandler: mustProxifyInfo,
          });
-         return PENDING
+         return PENDING;
       }
 
       if (this.isCalculated(pathSegment)) {
@@ -315,7 +333,7 @@ export class MemberExpression extends AbstractExpression {
             mustProxifyHandler: mustProxifyHandler,
          },
          () => {
-            let bound = false
+            let bound = false;
             const changeSubscription = staticIndexExpression.changed.subscribe(() => {
                if (bound) {
                   this.onSlotChanged(staticIndexExpression);

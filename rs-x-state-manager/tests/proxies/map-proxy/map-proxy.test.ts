@@ -5,9 +5,9 @@ import { type IMapObserverProxyPair, type IMapProxifyData } from '../../../lib/p
 import { ProxyRegistryMock } from '../../../lib/testing/proxies/proxy-registry.mock';
 
 describe('MapProxy tests', () => {
-   let observerProxyPair: IMapObserverProxyPair
+   let observerProxyPair: IMapObserverProxyPair;
    let mapData: IMapProxifyData;
-   let proxyRegistry: ProxyRegistryMock
+   let proxyRegistry: ProxyRegistryMock;
 
 
    beforeEach(() => {

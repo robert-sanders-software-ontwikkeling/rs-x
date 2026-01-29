@@ -34,7 +34,7 @@ export const run = (() => {
         stateContext.map.get('b')?.push(5);
 
         console.log('Latest value:');
-        printValue(stateManager.getState(stateContext, 'map'))
+        printValue(stateManager.getState(stateContext, 'map'));
 
     } finally {
         changeSubscription.unsubscribe();

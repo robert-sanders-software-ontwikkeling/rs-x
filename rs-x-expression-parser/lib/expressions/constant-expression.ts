@@ -11,7 +11,7 @@ export class ConstantExpression<T> extends AbstractExpression<T> {
       type: ExpressionType,
       expressionString: string,
       constValue: T,
-      private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
+      protected readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
 
       
    ) {
@@ -21,6 +21,16 @@ export class ConstantExpression<T> extends AbstractExpression<T> {
          commit: this.commit
       };
       this._value = constValue;
+   }
+
+   public override clone(): this {
+      return new (this.constructor as new (
+         constValue: T,
+         expressionChangeTransactionManager: IExpressionChangeTransactionManager
+      ) => this)(
+         this._value as T,
+         this._expressionChangeTransactionManager
+      );
    }
 
    public override bind(settings: IExpressionBindConfiguration): AbstractExpression {

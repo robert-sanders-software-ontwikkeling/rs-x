@@ -196,7 +196,7 @@ describe('SetObserverProxyPairFactory tests', () => {
       expect(propertyObserverProxyPairManager?.getFromId(item1Id)).toBeDefined();
       expect(propertyObserverProxyPairManager?.getFromId(item2Id)).toBeDefined();
       expect(item1).isWritableProperty('x');
-      expect(item2).isWritableProperty('x')
+      expect(item2).isWritableProperty('x');
 
       observer.dispose();
 
@@ -208,7 +208,7 @@ describe('SetObserverProxyPairFactory tests', () => {
          propertyObserverProxyPairManager?.getFromId(item2Id)
       ).toBeUndefined();
       expect(item1).not.isWritableProperty('x');
-      expect(item2).not.isWritableProperty('x')
+      expect(item2).not.isWritableProperty('x');
    });
 
    it('will only proxify items for which mustProxify returns true', () => {
@@ -250,7 +250,7 @@ describe('SetObserverProxyPairFactory tests', () => {
 
       beforeEach(() => {
          proxyRegister = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
-      })
+      });
 
       it('change event is emitted when adding Set item', async () => {
          const objectSet = new Set([
@@ -264,7 +264,7 @@ describe('SetObserverProxyPairFactory tests', () => {
 
          const item3 = { x: 3 };
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            const setProxy = proxyRegister.getProxy<Set<{ x: number }>>(objectSet)
+            const setProxy = proxyRegister.getProxy<Set<{ x: number }>>(objectSet);
             setProxy.add(item3);
          });
 
@@ -291,7 +291,7 @@ describe('SetObserverProxyPairFactory tests', () => {
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            const mapProxy = proxyRegister.getProxy<Set<{ x: number }>>(objectSet)
+            const mapProxy = proxyRegister.getProxy<Set<{ x: number }>>(objectSet);
             mapProxy.delete(item2);
          });
 
@@ -318,7 +318,7 @@ describe('SetObserverProxyPairFactory tests', () => {
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            item2.x = 200
+            item2.x = 200;
          });
 
          const expected: IPropertyChange = {
@@ -341,7 +341,7 @@ describe('SetObserverProxyPairFactory tests', () => {
 
       beforeEach(() => {
          proxyRegister = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
-      })
+      });
 
       it('change event is emitted when adding Map item', async () => {
          const objectSet = new Set([
@@ -355,7 +355,7 @@ describe('SetObserverProxyPairFactory tests', () => {
          const item3 = { x: 3 };
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            const mapProxy = proxyRegister.getProxy<Set<{ x: number }>>(objectSet)
+            const mapProxy = proxyRegister.getProxy<Set<{ x: number }>>(objectSet);
             mapProxy.add(item3);
          });
 
@@ -381,7 +381,7 @@ describe('SetObserverProxyPairFactory tests', () => {
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            const setProxy = proxyRegister.getProxy<Set<{ x: number }>>(objectSet)
+            const setProxy = proxyRegister.getProxy<Set<{ x: number }>>(objectSet);
             setProxy.delete(item2);
          });
 
@@ -406,7 +406,7 @@ describe('SetObserverProxyPairFactory tests', () => {
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            item2.x = 200
+            item2.x = 200;
          });
 
          expect(actual).toBeNull();

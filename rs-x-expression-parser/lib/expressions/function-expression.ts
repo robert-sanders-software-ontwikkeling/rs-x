@@ -25,19 +25,43 @@ export class FunctionExpression extends AbstractExpression {
       public readonly argumentsExpression: ArrayExpression,
       public readonly computed: boolean,
       public readonly optional: boolean,
-      expressionChangeTransactionManager: IExpressionChangeTransactionManager,
+       private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
       private readonly _stateManager: IStateManager,
-      guidFactory: IGuidFactory
+      private readonly _guidFactory: IGuidFactory
    ) {
       super(
          ExpressionType.Function,
          expressionString,
-         objectExpression ?? new ConstantNullExpression(expressionChangeTransactionManager),
+         objectExpression ?? new ConstantNullExpression(_expressionChangeTransactionManager),
          functionExpression,
          argumentsExpression
       );
 
-      this._functionId = guidFactory.create();
+      this._functionId = _guidFactory.create();
+   }
+
+    public override clone(): this {
+      return new (this.constructor as new (
+         expressionString: string,
+         functionExpression: AbstractExpression<AnyFunction | string | number>,
+         objectExpression: AbstractExpression<object>,
+         argumentsExpression: ArrayExpression,
+         computed: boolean,
+         optional: boolean,
+         expressionChangeTransactionManager: IExpressionChangeTransactionManager,
+         stateManager: IStateManager,
+         guidFactory: IGuidFactory
+      ) => this)(
+         this.expressionString,
+         this.functionExpression.clone(),
+         this.objectExpression?.clone(),
+         this.argumentsExpression.clone(),
+         this.computed,
+         this.optional,
+         this._expressionChangeTransactionManager,
+         this._stateManager,
+         this._guidFactory
+      );
    }
 
    public override bind(
@@ -68,7 +92,7 @@ export class FunctionExpression extends AbstractExpression {
          || sender === this.objectExpression ||
          sender === this.argumentsExpression) {
          super.prepareReevaluation(this, root, pendingCommits);
-         return true
+         return true;
       }
 
       return super.prepareReevaluation(sender, root, pendingCommits);
@@ -116,6 +140,6 @@ export class FunctionExpression extends AbstractExpression {
 
    private registerResult(result: unknown): unknown {
       this._stateManager.setState(this._functionContext, this._functionId, result);
-      return result
+      return result;
    }
 }

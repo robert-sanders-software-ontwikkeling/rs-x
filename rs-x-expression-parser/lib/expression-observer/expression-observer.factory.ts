@@ -8,7 +8,8 @@ import {
 } from '@rs-x/core';
 import { AbstractObserver, type IObserver } from '@rs-x/state-manager';
 
-import { AbstractExpression, type IExpression } from '../expressions';
+import type { AbstractExpression } from '../expressions/abstract-expression';
+import type { IExpression } from '../expressions/expression-parser.interface';
 
 import type {
    IExpressionObserverData,

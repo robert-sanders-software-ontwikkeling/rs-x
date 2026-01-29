@@ -13,7 +13,7 @@ export class DefaultIdentifierOwnerResolver
    ) { }
 
    public resolve(index: unknown, context?: unknown): object | null {
-      const resolvers = this._identifierOwnerResolvers
+      const resolvers = this._identifierOwnerResolvers;
       for (let i = 0; i < resolvers.length; i++) {
          const result = resolvers[i].resolve(context, index);
          if (result) {

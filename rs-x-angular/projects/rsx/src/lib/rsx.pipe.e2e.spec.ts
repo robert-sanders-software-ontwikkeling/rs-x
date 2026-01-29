@@ -70,7 +70,7 @@ describe('RsxPipe Integration', () => {
   });
 
   it('reacts to expression changes', async () => {
-    component.expression = '(x + 3) * 2'
+    component.expression = '(x + 3) * 2';
 
     fixture.detectChanges();
     await Promise.resolve();

@@ -1,7 +1,7 @@
 import { type IDisposableOwner, type ISingletonFactory } from '@rs-x/core';
 import { type IObserver } from '@rs-x/state-manager';
 
-import { type AbstractExpression } from '../expressions';
+import type { AbstractExpression } from '../expressions/abstract-expression';
 
 export interface IExpressionObserverData {
    owner?: IDisposableOwner;

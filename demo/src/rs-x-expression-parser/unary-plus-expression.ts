@@ -12,7 +12,7 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(RsXExpressi
 export const run = (async () => {
     const expressionContext = { 
         value: '2' 
-    }
+    };
 
     const expression = expressionFactory.create(expressionContext, '+value');
 
@@ -26,9 +26,9 @@ export const run = (async () => {
         });
 
         console.log(`Value of '+value' after changing 'value' to '"6"':`);
-        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.value = '6'; })
+        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.value = '6'; });
 
-        console.log(`Final value of '+value':`)
+        console.log(`Final value of '+value':`);
         console.log(expression.value);
     } finally {
         // Always dispose of expressions after use.

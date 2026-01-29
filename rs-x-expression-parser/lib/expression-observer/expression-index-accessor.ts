@@ -4,7 +4,8 @@ import {
     UnsupportedException
 } from '@rs-x/core';
 
-import { AbstractExpression, type IExpression } from '../expressions';
+import { AbstractExpression } from '../expressions/abstract-expression';
+import type { IExpression } from '../expressions/expression-parser.interface';
 
 import type { IExpressionIndexAccessor } from './expression-index-accessor.type';
 

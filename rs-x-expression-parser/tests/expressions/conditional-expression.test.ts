@@ -1,6 +1,8 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
+import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
+import { ConditionalExpression } from '../../lib/expressions/conditional-expression';
 import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
    RsXExpressionParserModule,
@@ -8,13 +10,14 @@ import {
 } from '../../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
 
+
 describe('ConditionalExpression tests', () => {
    let expressionFactory: IExpressionFactory;
    let expression: IExpression | undefined;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXExpressionParserModule);
-       expressionFactory = InjectionContainer.get(
+      expressionFactory = InjectionContainer.get(
          RsXExpressionParserInjectionTokens.IExpressionFactory
       );
    });
@@ -34,12 +37,39 @@ describe('ConditionalExpression tests', () => {
       expect(expression.type).toEqual(ExpressionType.Conditional);
    });
 
+   it('clone', async () => {
+      const transactionManager: IExpressionChangeTransactionManager = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
+      const context = { a: 10, b: 2, c: 100, d: 200 };
+      expression = expressionFactory.create(context, 'a > b ? c : d');
+
+      const clonedExpression = expression.clone();
+
+      try {
+         expect(clonedExpression).toBeInstanceOf(ConditionalExpression);
+         expect(clonedExpression.type).toEqual(ExpressionType.Conditional);
+         expect(clonedExpression.expressionString).toEqual('a > b ? c : d');
+
+         await new WaitForEvent(clonedExpression, 'changed').wait(() => {
+            clonedExpression.bind({
+               transactionManager,
+               rootContext: context
+            });
+
+            transactionManager.commit();
+         });
+         expect(clonedExpression.value).toEqual(100);
+      } finally {
+         clonedExpression.dispose();
+      }
+   });
+
    it('will return consequent if condition is true', async () => {
       const context = { a: 10, b: 2, c: 100, d: 200 };
       expression = expressionFactory.create(context, 'a > b ? c : d');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
-         () => {}
+         () => { }
       )) as IExpression;
 
       expect(actual.value).toEqual(100);
@@ -51,7 +81,7 @@ describe('ConditionalExpression tests', () => {
       expression = expressionFactory.create(context, 'a > b ? c : d');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
-         () => {}
+         () => { }
       )) as IExpression;
 
       expect(actual.value).toEqual(200);

@@ -17,7 +17,7 @@ export abstract class SingletonFactoryWithIdGeneration<
    public getId(data: TIdData): TId | undefined {
       const groupId = this.getGroupId(data);
       const groupMemberId = this.getGroupMemberId(data);
-      return this._groupedData.get(groupId)?.get(groupMemberId)
+      return this._groupedData.get(groupId)?.get(groupMemberId);
    }
 
    public isGroupRegistered(groupId: unknown): boolean {

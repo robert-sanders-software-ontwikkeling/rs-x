@@ -36,7 +36,7 @@ export const run = (async () => {
             expressionContext.a =   { b: Promise.resolve({ c: Promise.resolve({ d: 200 }) }) };
         });
 
-        console.log(`Final value of 'a.b.c.d':`)
+        console.log(`Final value of 'a.b.c.d':`);
         printValue(expression.value);
     } finally {
         // Always dispose of expressions after use.

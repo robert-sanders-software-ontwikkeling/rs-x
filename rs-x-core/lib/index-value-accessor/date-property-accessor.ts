@@ -65,6 +65,6 @@ export class DatePropertyAccessor implements IDatePropertyAccessor {
     }
 
     public applies(context: unknown, index: DateProperty): boolean {
-        return context instanceof Date && !!this._getters[index]
+        return context instanceof Date && !!this._getters[index];
     }
 }

@@ -10,12 +10,10 @@ export interface IBindConfigurationBase {
   owner?: IDisposableOwner;
 }
 
-// Exactly one of rootContext or context, plus optional extra props
 export type IExpressionBindConfigurationExtra = {
   currentValue?: unknown;
 };
 
-// Union approach to enforce exactly one of rootContext or context
 export type IExpressionBindConfiguration =
   | (IBindConfigurationBase & IExpressionBindConfigurationExtra & { rootContext: unknown; context?: never })
   | (IBindConfigurationBase & IExpressionBindConfigurationExtra & { rootContext?: never; context: unknown });

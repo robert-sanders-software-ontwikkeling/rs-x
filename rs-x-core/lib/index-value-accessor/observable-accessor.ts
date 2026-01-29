@@ -73,6 +73,6 @@ export class ObservableAccessor implements IObservableAccessor {
    }
 
    private getIndexedValue(context: unknown, index: string): unknown {
-      return (Type.toObject(context) ?? {})[index]
+      return (Type.toObject(context) ?? {})[index];
    }
 }

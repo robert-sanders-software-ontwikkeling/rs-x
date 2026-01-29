@@ -129,9 +129,9 @@ describe('ArrayObserverProxyPairFactory tests', () => {
       });
       const arrayProxyId = arrayProxyFactory.getId({
          array: objectArray,
-      }) as unknown
+      }) as unknown;
 
-      expect(arrayProxyId).toBeDefined()
+      expect(arrayProxyId).toBeDefined();
 
       const expected = new ObserverGroup(
          disposableOwner,
@@ -197,7 +197,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
       expect(propertyObserverProxyPairManager?.getFromId(item1Id)).toBeDefined();
       expect(propertyObserverProxyPairManager?.getFromId(item2Id)).toBeDefined();
       expect(objectArray[0]).isWritableProperty('x');
-      expect(objectArray[1]).isWritableProperty('x')
+      expect(objectArray[1]).isWritableProperty('x');
 
       observer.dispose();
 
@@ -209,7 +209,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
          propertyObserverProxyPairManager?.getFromId(item2Id)
       ).toBeUndefined();
       expect(objectArray[0]).not.isWritableProperty('x');
-      expect(objectArray[1]).not.isWritableProperty('x')
+      expect(objectArray[1]).not.isWritableProperty('x');
    });
 
    it('will only proxify items for which mustProxify returns true', () => {
@@ -240,7 +240,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
 
       beforeEach(() => {
          proxyRegister = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
-      })
+      });
 
       it('change event is emitted when adding array item', async () => {
          const array = [{ x: 1 }, { x: 2 }];
@@ -250,7 +250,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            const arrayProxy = proxyRegister.getProxy<({ x: number })[]>(array)
+            const arrayProxy = proxyRegister.getProxy<({ x: number })[]>(array);
             arrayProxy.push({ x: 3 });;
          });
 
@@ -273,7 +273,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            const arrayProxy = proxyRegister.getProxy<({ x: number })[]>(array)
+            const arrayProxy = proxyRegister.getProxy<({ x: number })[]>(array);
             arrayProxy.splice(1, 1);
          });
 
@@ -296,7 +296,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            array[1].x = 200
+            array[1].x = 200;
          });
 
          const expected: IPropertyChange = {
@@ -319,7 +319,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
 
       beforeEach(() => {
          proxyRegister = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
-      })
+      });
 
       it('change event is emitted when adding array item', async () => {
          const array = [{ x: 1 }, { x: 2 }];
@@ -328,7 +328,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            const arrayProxy = proxyRegister.getProxy<({ x: number })[]>(array)
+            const arrayProxy = proxyRegister.getProxy<({ x: number })[]>(array);
             arrayProxy.push({ x: 3 });;
          });
 
@@ -350,7 +350,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            const arrayProxy = proxyRegister.getProxy<({ x: number })[]>(array)
+            const arrayProxy = proxyRegister.getProxy<({ x: number })[]>(array);
             arrayProxy.splice(1, 1);
          });
 
@@ -372,7 +372,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            array[1].x = 200
+            array[1].x = 200;
          });
 
          expect(actual).toBeNull();

@@ -17,7 +17,7 @@ describe('SetProxy tests', () => {
    let setData: ISetProxifyData;
    let item1: ISetItem;
    let item2: ISetItem;
-   let proxyRegistry: ProxyRegistryMock
+   let proxyRegistry: ProxyRegistryMock;
 
    beforeEach(() => {
       item1 = { x: 1 };
@@ -192,7 +192,7 @@ describe('SetProxy tests', () => {
                newValue: undefined,
                target: setData.set,
             }
-         ]
+         ];
 
          expect(actual).toEqual(expected);
       });

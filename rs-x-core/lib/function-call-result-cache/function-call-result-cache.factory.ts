@@ -65,7 +65,7 @@ class FunctionCallResultCacheForContextManager
                 canDispose: () => this.getReferenceCount(id) === 1,
                 release: () => this.release(id)
             }
-        )
+        );
     }
 
     protected override createId(data: IFunctionCallResultIdInfo): IDisposableFunctionCallIndex {
@@ -97,7 +97,7 @@ class FunctionCallResultCacheManager
     }
 
     protected createInstance(context: unknown, id: unknown): FunctionCallResultCacheForContextManager {
-        return new FunctionCallResultCacheForContextManager(context, this._functionCallIndexFactory, () => this.release(id))
+        return new FunctionCallResultCacheForContextManager(context, this._functionCallIndexFactory, () => this.release(id));
     }
 
     protected createId(contex: unknown): unknown {
@@ -107,7 +107,7 @@ class FunctionCallResultCacheManager
 
 @Injectable()
 export class FunctionCallResultCacheFactory implements IFunctionCallResultCacheFactory {
-    private readonly _functionCallResultCacheManager: FunctionCallResultCacheManager
+    private readonly _functionCallResultCacheManager: FunctionCallResultCacheManager;
 
     constructor(
         @Inject(RsXCoreInjectionTokens.IFunctionCallIndexFactory)

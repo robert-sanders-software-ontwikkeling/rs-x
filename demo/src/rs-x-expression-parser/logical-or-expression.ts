@@ -21,7 +21,7 @@ export const run = (async () => {
         // Wait until the expression has been resolved (has a value)
         await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-        console.log(`Initial value of 'a || b':`)
+        console.log(`Initial value of 'a || b':`);
         expression.changed.subscribe((change) => {
             console.log(change.value);
         });
@@ -29,10 +29,10 @@ export const run = (async () => {
         console.log(`Value of 'a || b' after changing 'a' to 'false':`);
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.a = false; });
 
-        console.log(`Value of 'a || b' after changing 'b' to 'true':`)
+        console.log(`Value of 'a || b' after changing 'b' to 'true':`);
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.b = true; });
 
-        console.log(`Final value of 'a || b':`)
+        console.log(`Final value of 'a || b':`);
         console.log(expression.value);
     } finally {
         // Always dispose of expressions after use.

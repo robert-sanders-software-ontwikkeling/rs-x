@@ -34,7 +34,7 @@ class ExpressionForContextManager
    }
 
    protected override createInstance(expressionString: string, id: string): IExpression {
-      const expression = this._expressionParser.parse(expressionString)
+      const expression = this._expressionParser.parse(expressionString);
 
       expression.bind({
          rootContext: this._context,

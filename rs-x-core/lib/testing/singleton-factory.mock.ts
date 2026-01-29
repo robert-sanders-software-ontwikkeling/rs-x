@@ -3,7 +3,7 @@ import { type ISingletonFactory } from '../singleton-factory/singleton.factory.i
 export class SingletonFactoryMock<TId, TData, TInstance, TIdData = TData>
    implements ISingletonFactory<TId, TData, TInstance, TIdData>
 {
-   public isEmpty: boolean = false
+   public isEmpty: boolean = false;
    public readonly ids = jest.fn();
    public readonly has = jest.fn();
    public readonly getId = jest.fn();

@@ -202,7 +202,7 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
       expect(nestedPropertyObserverProxyPairManager?.getFromId(yId)).toBeDefined();
       expect(plainObject).isWritableProperty('x');
       expect(plainObject).isWritableProperty('nested');
-      expect(plainObject.nested).isWritableProperty('y')
+      expect(plainObject.nested).isWritableProperty('y');
 
       observer.dispose();
 
@@ -211,7 +211,7 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
       expect(nestedPropertyObserverProxyPairManager?.getFromId(yId)).toBeUndefined();
       expect(plainObject).not.isWritableProperty('x');
       expect(plainObject).not.isWritableProperty('nested');
-      expect(plainObject.nested).not.isWritableProperty('y')
+      expect(plainObject.nested).not.isWritableProperty('y');
    });
 
    it('will only patch root field when no mustProxify handler is passed in', () => {
@@ -285,7 +285,7 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            plainObject.x = 100
+            plainObject.x = 100;
          });
 
          const expected: IPropertyChange = {
@@ -370,7 +370,7 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            plainObject.x = 100
+            plainObject.x = 100;
          });
 
          const expected: IPropertyChange = {

@@ -74,7 +74,7 @@ class CollectionIndexObserver extends AbstractObserver<Collection> {
          this.value = change.newValue;
          this.emitChange(change);
       }
-   }
+   };
 }
 
 class CollectionIndexObserverManager
@@ -100,7 +100,7 @@ class CollectionIndexObserverManager
    }
 
    protected override createId(data: IIndexObserverIdInfo): unknown {
-      return data.index
+      return data.index;
    }
 
    protected override createInstance(
@@ -118,7 +118,7 @@ class CollectionIndexObserverManager
          this._indexValueAccessor,
          this._objectObserverProxyPairManager,
          this._errorLog
-      )
+      );
    }
 
    protected override releaseInstance(observer: IObserver): void {

@@ -1,12 +1,15 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
+import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
+import { FunctionExpression } from '../../lib/expressions/function-expression';
 import {
    RsXExpressionParserModule,
    unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+
 
 describe('FunctionExpression tests', () => {
    let expressionFactory: IExpressionFactory;
@@ -14,7 +17,7 @@ describe('FunctionExpression tests', () => {
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXExpressionParserModule);
-       expressionFactory = InjectionContainer.get(
+      expressionFactory = InjectionContainer.get(
          RsXExpressionParserInjectionTokens.IExpressionFactory
       );
    });
@@ -34,12 +37,40 @@ describe('FunctionExpression tests', () => {
       expect(expression.type).toEqual(ExpressionType.Function);
    });
 
+   it('clone', async () => {
+      const transactionManager: IExpressionChangeTransactionManager = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
+
+      const context = { a: 10, multiplWithTwo: (a: number) => 2 * a };
+      expression = expressionFactory.create(context, 'multiplWithTwo(a)');
+
+      const clonedExpression = expression.clone();
+
+      try {
+         expect(clonedExpression).toBeInstanceOf(FunctionExpression);
+         expect(clonedExpression.type).toEqual(ExpressionType.Function);
+         expect(clonedExpression.expressionString).toEqual('multiplWithTwo(a)');
+
+         await new WaitForEvent(clonedExpression, 'changed').wait(() => {
+            clonedExpression.bind({
+               transactionManager,
+               rootContext: context
+            });
+
+            transactionManager.commit();
+         });
+         expect(clonedExpression.value).toEqual(20);
+      } finally {
+         clonedExpression.dispose();
+      }
+   });
+
    it('method on root object', async () => {
       const context = { a: 10, multiplWithTwo: (a: number) => 2 * a };
       expression = expressionFactory.create(context, 'multiplWithTwo(a)');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
-         () => {}
+         () => { }
       )) as IExpression;
 
       expect(actual.value).toEqual(20);
@@ -59,7 +90,7 @@ describe('FunctionExpression tests', () => {
       expression = expressionFactory.create(context, 'b.multiply(a)');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
-         () => {}
+         () => { }
       )) as IExpression;
 
       expect(actual.value).toEqual(100);
@@ -80,7 +111,7 @@ describe('FunctionExpression tests', () => {
       expression = expressionFactory.create(context, 'b[b.methodName](a)');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
-         () => {}
+         () => { }
       )) as IExpression;
 
       expect(actual.value).toEqual(100);

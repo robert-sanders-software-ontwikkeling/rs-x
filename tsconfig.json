@@ -23,7 +23,7 @@
       "declaration": true,
       "esModuleInterop": true,
       "importHelpers": true,
-      "isolatedModules":false,
+      "isolatedModules": false,
       "declarationMap": true,
       "useDefineForClassFields": false,
       "pretty": true,
@@ -68,6 +68,7 @@
    ],
    "exclude": [
       "node_modules",
-      "dist"
+      "**/dist",
+      "**/dist/**"
    ]
 }

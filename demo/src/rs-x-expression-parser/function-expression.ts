@@ -24,7 +24,7 @@ export const run = (async () => {
         // Wait until the expression has been resolved (has a value)
         await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-        console.log(`Initial value of 'multiply(a, b)'`)
+        console.log(`Initial value of 'multiply(a, b)'`);
         expression.changed.subscribe((change) => {
             console.log(change.value);
         });
@@ -32,10 +32,10 @@ export const run = (async () => {
         console.log(`Value of 'multiply(a, b)' after changing 'a' to '4':`);
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.a = 4; });
 
-        console.log(`Value of 'mutiply(a, b)' after changing 'b' to '5':`)
+        console.log(`Value of 'mutiply(a, b)' after changing 'b' to '5':`);
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.b = 5; });
 
-        console.log(`Final value of 'multiply(a, b)':`)
+        console.log(`Final value of 'multiply(a, b)':`);
         console.log(expression.value);
     } finally {
         // Always dispose of expressions after use.

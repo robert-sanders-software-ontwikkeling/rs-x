@@ -5,7 +5,7 @@ import { emptyFunction } from '../types';
 import { SubscriptionMock } from './subscription.mock';
 
 export class ObservableMock<T = unknown> implements Subscribable<T> {
-   private _callback: (value: T) => void = emptyFunction
+   private _callback: (value: T) => void = emptyFunction;
    private readonly _subscribe = (e) => {
       this._callback = e.next ?? e;
       return new SubscriptionMock();

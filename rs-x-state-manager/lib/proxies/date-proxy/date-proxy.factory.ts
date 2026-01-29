@@ -237,7 +237,7 @@ class DateProxy extends AbstractObserver<Date, Date, undefined> {
 
         for (const setterMetaData of this._dateSetterMetadata.values()) {
             if (!this._filter(setterMetaData.name)) {
-                continue
+                continue;
             }
             const oldValue = oldDate[setterMetaData.getterName].call(oldDate);
             const newValue = newDate[setterMetaData.getterName].call(newDate);

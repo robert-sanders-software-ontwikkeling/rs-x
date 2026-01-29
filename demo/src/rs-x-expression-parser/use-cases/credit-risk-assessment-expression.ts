@@ -109,7 +109,7 @@ export const run = (async () => {
 
     const expression = expressionFactory.create(riskModel, expressionString);
 
-    console.log('Initial risk: ')
+    console.log('Initial risk: ');
     const changeSubscription = expression.changed.subscribe(() => {
         console.log(expression.value);
     });
@@ -118,12 +118,12 @@ export const run = (async () => {
         // Wait until the expression has been resolved (has a value)
         await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-        console.log('Risk after changing risk parameters from  { volatilityIndex: 0.28, recessionProbability: 0.12 } to  { volatilityIndex: 0.41, recessionProbability: 0.35 } :')
+        console.log('Risk after changing risk parameters from  { volatilityIndex: 0.28, recessionProbability: 0.12 } to  { volatilityIndex: 0.41, recessionProbability: 0.35 } :');
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
             riskModel.risk.next({
                 volatilityIndex: 0.45,
                 recessionProbability: 0.35
-            })
+            });
         });
 
         console.log('Risk after change age = 63 and employmentYears = 1 ');

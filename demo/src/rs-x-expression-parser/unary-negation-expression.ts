@@ -26,9 +26,9 @@ export const run = (async () => {
         });
 
         console.log(`Value of '-value' after changing 'value' to '-5':`);
-        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.value = -5; })
+        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.value = -5; });
 
-        console.log(`Final value of '-value':`)
+        console.log(`Final value of '-value':`);
         console.log(expression.value);
     } finally {
         // Always dispose of expressions after use.
