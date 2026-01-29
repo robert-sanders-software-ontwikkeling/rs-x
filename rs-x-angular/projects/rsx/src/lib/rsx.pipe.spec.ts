@@ -1,4 +1,7 @@
 import { ChangeDetectorRef, runInInjectionContext } from '@angular/core';
+import { BehaviorSubject, type Subscription } from 'rxjs';
+import { vi } from 'vitest';
+
 import { InjectionContainer, Type, UnsupportedException } from '@rs-x/core';
 import {
   type IExpression,
@@ -7,8 +10,7 @@ import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule
 } from '@rs-x/expression-parser';
-import { BehaviorSubject, type Subscription } from 'rxjs';
-import { vi } from 'vitest';
+
 import { RsxPipe } from './rsx.pipe';
 import { IExpressionFactoryToken } from './rsx.providers';
 

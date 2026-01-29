@@ -1,10 +1,12 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+
 import {
   unloadRsXExpressionParserModule
 } from '@rs-x/expression-parser';
-import { providexRsx} from './rsx.providers';
+
 import { RsxPipe } from './rsx.pipe';
+import { providexRsx} from './rsx.providers';
 
 @Component({
   template: `{{ expression | rsx: ctx }}`,

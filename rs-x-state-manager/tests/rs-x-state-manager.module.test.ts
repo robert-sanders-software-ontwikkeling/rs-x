@@ -1,4 +1,5 @@
 import { InjectionContainer } from '@rs-x/core';
+
 import { ArrayObserverProxyPairFactory } from '../lib/object-observer/factories/array-observer-proxy-pair.factory';
 import { DateObserverProxyPairFactory } from '../lib/object-observer/factories/date-observer-proxy-pair.factory';
 import { MapObserverProxyPairFactory } from '../lib/object-observer/factories/map-observer-proxy-pair.factory';
@@ -23,11 +24,11 @@ import { ObservableProxyFactory } from '../lib/proxies/observable-proxy/observab
 import { PromiseProxyFactory } from '../lib/proxies/promise-proxy/promise-proxy.factory';
 import { ProxyRegistry } from '../lib/proxies/proxy-registry/proxy-registry';
 import { SetProxyFactory } from '../lib/proxies/set-proxy/set-proxy.factory';
-import { RsXStateManagerInjectionTokens } from '../lib/rs-x-state-manager-injection-tokes';
 import {
    RsXStateManagerModule,
    unloadRsXStateManagerModule,
 } from '../lib/rs-x-state-manager.module';
+import { RsXStateManagerInjectionTokens } from '../lib/rs-x-state-manager-injection-tokes';
 import { ObjectStateManager } from '../lib/state-manager/object-state-manager';
 import { StateManager } from '../lib/state-manager/state-manager';
 

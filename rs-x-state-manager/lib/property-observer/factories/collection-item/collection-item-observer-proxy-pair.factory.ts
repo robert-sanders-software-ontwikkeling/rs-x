@@ -7,11 +7,13 @@ import {
    RsXCoreInjectionTokens,
    truePredicate,
 } from '@rs-x/core';
+
 import type { IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
+import type { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
 import { IndexObserverProxyPairFactory } from '../indexed-value-observer-proxy-pair/indexed-value-observer-proxy-pair.factory';
+
 import type { Collection, ICollectionItemObserverManager } from './collection-item-observer-manager.type';
-import type { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
 
 @Injectable()
 export class CollectionItemObserverProxyPairFactory extends IndexObserverProxyPairFactory<

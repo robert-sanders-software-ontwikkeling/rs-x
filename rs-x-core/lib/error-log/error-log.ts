@@ -1,7 +1,9 @@
 import { Observable, Subject } from 'rxjs';
+
 import { Injectable } from '../dependency-injection';
-import type { IErrorLog } from './error-log.interface';
+
 import type { IError } from './error.interface';
+import type { IErrorLog } from './error-log.interface';
 
 @Injectable()
 export class ErrorLog implements IErrorLog {

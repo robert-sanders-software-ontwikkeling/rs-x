@@ -1,4 +1,5 @@
 import { type ISingletonFactory } from '@rs-x/core';
+
 import {
    type IObserverProxyPair,
    type MustProxify,

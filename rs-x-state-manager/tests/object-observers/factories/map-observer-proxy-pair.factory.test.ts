@@ -1,13 +1,14 @@
 import { ErrorLog, InjectionContainer, type IPropertyChange, truePredicate, Type, WaitForEvent } from '@rs-x/core';
 import { DisposableOwnerMock } from '@rs-x/core/testing';
+
 import { type IMapObserverProxyPairFactory } from '../../../lib/object-observer/factories/map-observer-proxy-pair.factory.type';
 import { type IObjectPropertyObserverProxyPairManager } from '../../../lib/object-property-observer-proxy-pair-manager.type';
-import { ObserverGroup } from '../../../lib/observer-group';
 import { type IObserver } from '../../../lib/observer.interface';
+import { ObserverGroup } from '../../../lib/observer-group';
 import { type IMapObserverProxyPair, type IMapProxyFactory } from '../../../lib/proxies/map-proxy/map-proxy.factory.type';
 import { type IProxyRegistry } from '../../../lib/proxies/proxy-registry/proxy-registry.interface';
-import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
+import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokes';
 
 describe('MapObserverProxyPairFactory tests', () => {
    let mapObserverProxyPairFactory: IMapObserverProxyPairFactory;

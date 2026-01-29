@@ -1,5 +1,6 @@
-import { type IObserver } from '../observer.interface';
 import { ObservableMock } from '@rs-x/core/testing';
+
+import { type IObserver } from '../observer.interface';
 
 export class ObserverMock implements IObserver {
    public target: unknown;

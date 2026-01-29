@@ -1,6 +1,6 @@
 import { type ArrayExpression } from './array-expression';
+import { ExpressionType } from './expression-parser.interface';
 import { type IdentifierExpression } from './identifier-expression';
-import { ExpressionType } from './interfaces';
 import { type ObjectExpression } from './object-expression';
 import { ParameterizedExpression } from './parameterized-abstract-expression';
 

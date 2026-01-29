@@ -1,6 +1,8 @@
+import { afterEach } from 'node:test';
+
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import { type IObserver } from '@rs-x/state-manager';
-import { afterEach } from 'node:test';
+
 import { type IExpression, type IExpressionFactory, RsXExpressionParserInjectionTokens } from '../../lib';
 import { RsXExpressionParserModule, unloadRsXExpressionParserModule } from '../../lib/rs-x-expression-parser.module';
 

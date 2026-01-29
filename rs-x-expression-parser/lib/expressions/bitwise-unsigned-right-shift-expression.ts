@@ -1,6 +1,6 @@
 import { type AbstractExpression } from './abstract-expression';
 import { BinaryExpression } from './binary-expression';
-import { ExpressionType } from './interfaces';
+import { ExpressionType } from './expression-parser.interface';
 
 export class BitwiseUnsignedRightShiftExpression extends BinaryExpression<
    number,

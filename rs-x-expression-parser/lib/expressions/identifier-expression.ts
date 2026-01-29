@@ -1,15 +1,18 @@
+import { type Observable, ReplaySubject, Subject, type Subscription } from 'rxjs';
+
 import { emptyFunction, truePredicate } from '@rs-x/core';
 import { type IContextChanged, type IStateChange, type IStateManager, type MustProxify } from '@rs-x/state-manager';
-import { type Observable, ReplaySubject, Subject, type Subscription } from 'rxjs';
+
 import { type IExpressionChangeCommitHandler, type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
+
 import {
    AbstractExpression,
    type IMustProxifyHandler,
 } from './abstract-expression';
-import { FunctionExpression } from './function-expression';
-import { ExpressionType } from './interfaces';
-import { MemberExpression } from './member-expression';
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
+import { ExpressionType } from './expression-parser.interface';
+import { FunctionExpression } from './function-expression';
+import { MemberExpression } from './member-expression';
 
 
 export class IndexValueObserver {

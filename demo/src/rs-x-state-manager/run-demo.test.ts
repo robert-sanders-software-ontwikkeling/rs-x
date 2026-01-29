@@ -1,4 +1,5 @@
 import dedent from 'dedent';
+
 import { runDemo } from '../../run-demo';
 
 describe('Statemanager demos', () => {

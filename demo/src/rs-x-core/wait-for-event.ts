@@ -1,9 +1,9 @@
+import { type Observable, Subject } from 'rxjs';
+
 import {
     printValue,
     WaitForEvent,
-
 } from '@rs-x/core';
-import { type Observable, Subject } from 'rxjs';
 
 export const run = (async () => {
     class MyEventContext {

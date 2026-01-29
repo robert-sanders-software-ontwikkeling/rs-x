@@ -2,7 +2,7 @@ import {
    AbstractExpression
 } from './abstract-expression';
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
-import { ExpressionType } from './interfaces';
+import { ExpressionType } from './expression-parser.interface';
 
 export class SequenceExpression extends AbstractExpression {
    constructor(expressionString: string, expressions: AbstractExpression[]) {

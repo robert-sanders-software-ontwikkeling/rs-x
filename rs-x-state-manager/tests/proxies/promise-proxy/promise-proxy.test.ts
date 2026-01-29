@@ -1,5 +1,6 @@
 import { type IPropertyChange, PromiseAccessor, WaitForEvent } from '@rs-x/core';
 import { ResolvedValueCacheMock } from '@rs-x/core/testing';
+
 import { PromiseProxyFactory } from '../../../lib/proxies/promise-proxy/promise-proxy.factory';
 
 describe('PromiseProxy tests', () => {

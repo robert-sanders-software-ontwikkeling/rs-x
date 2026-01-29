@@ -1,24 +1,23 @@
-import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import { BehaviorSubject, of } from 'rxjs';
-import {
-   ExpressionType,
-   type IExpression,
-   type IExpressionParser,
-} from '../../lib/expressions/interfaces';
-import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+
+import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
+
+import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
+import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
    RsXExpressionParserModule,
    unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
+import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
 
 describe('Member expression tests', () => {
-   let jsParser: IExpressionParser;
+   let expressionFactory: IExpressionFactory;
    let expression: IExpression | undefined;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXExpressionParserModule);
-      jsParser = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IExpressionParser
+       expressionFactory = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionFactory
       );
    });
 
@@ -33,7 +32,7 @@ describe('Member expression tests', () => {
 
    it('type', () => {
       const context = { a: { b: 1 } };
-      expression = jsParser.parse(context, 'a.b');
+      expression = expressionFactory.create(context, 'a.b');
       expect(expression.type).toEqual(ExpressionType.Member);
    });
 
@@ -42,7 +41,7 @@ describe('Member expression tests', () => {
          const context = {
             array: [11, 21, 31, 41, 51],
          };
-         expression = jsParser.parse(context, 'array[1]');
+         expression = expressionFactory.create(context, 'array[1]');
 
          const actual = (await new WaitForEvent(expression, 'changed').wait(
             () => { }
@@ -61,7 +60,7 @@ describe('Member expression tests', () => {
                },
             },
          };
-         expression = jsParser.parse(context, 'nestedA.nestedB.array[a + 1]');
+         expression = expressionFactory.create(context, 'nestedA.nestedB.array[a + 1]');
 
          const actual = (await new WaitForEvent(expression, 'changed').wait(() => { })) as IExpression;
 
@@ -74,7 +73,7 @@ describe('Member expression tests', () => {
             index: 0,
             a: ['1', 1],
          };
-         expression = jsParser.parse(context, 'a[index]');
+         expression = expressionFactory.create(context, 'a[index]');
 
          const actual = (await new WaitForEvent(expression, 'changed').wait(() => { })) as IExpression;
 
@@ -87,7 +86,7 @@ describe('Member expression tests', () => {
             index: 0,
             a: ['1', 1],
          };
-         expression = jsParser.parse(context, 'a[index]');
+         expression = expressionFactory.create(context, 'a[index]');
          // Wait till the expression has been initialized before changing value
          await new WaitForEvent(expression, 'changed').wait(() => { });
 
@@ -109,7 +108,7 @@ describe('Member expression tests', () => {
             },
          };
 
-         expression = jsParser.parse(context, 'nestedA.nestedB.array[a + 1]');
+         expression = expressionFactory.create(context, 'nestedA.nestedB.array[a + 1]');
 
          // Wait till the expression has been initialized before changing value
          await new WaitForEvent(expression, 'changed').wait(() => { });
@@ -131,7 +130,7 @@ describe('Member expression tests', () => {
                },
             },
          };
-         expression = jsParser.parse(context, 'nestedA.nestedB.array[a + 1]');
+         expression = expressionFactory.create(context, 'nestedA.nestedB.array[a + 1]');
 
          // Wait till the expression has been initialized before changing value
          await new WaitForEvent(expression, 'changed').wait(() => { });
@@ -155,7 +154,7 @@ describe('Member expression tests', () => {
                },
             },
          };
-         expression = jsParser.parse(context, 'nestedA.nestedB.array[a + 1]');
+         expression = expressionFactory.create(context, 'nestedA.nestedB.array[a + 1]');
 
          // Wait till the expression has been initialized before changing value
          await new WaitForEvent(expression, 'changed').wait(() => { });
@@ -180,7 +179,7 @@ describe('Member expression tests', () => {
                ['c', 3],
             ]),
          };
-         expression = jsParser.parse(context, 'map["b"]');
+         expression = expressionFactory.create(context, 'map["b"]');
 
          const actual = (await new WaitForEvent(expression, 'changed').wait(
             () => { }
@@ -201,7 +200,7 @@ describe('Member expression tests', () => {
                ]),
             },
          };
-         expression = jsParser.parse(context, 'nestedA.map[key]');
+         expression = expressionFactory.create(context, 'nestedA.map[key]');
 
          const actual = (await new WaitForEvent(expression, 'changed').wait(
             () => { }
@@ -223,7 +222,7 @@ describe('Member expression tests', () => {
             },
          };
 
-         expression = jsParser.parse(context, 'nestedA.map[key]');
+         expression = expressionFactory.create(context, 'nestedA.map[key]');
 
          // Wait till the expression has been initialized before changing value
          await new WaitForEvent(expression, 'changed').wait(() => { });
@@ -249,7 +248,7 @@ describe('Member expression tests', () => {
             },
          };
 
-         expression = jsParser.parse(context, 'nestedA.map[key]');
+         expression = expressionFactory.create(context, 'nestedA.map[key]');
 
          // Wait till the expression has been initialized before changing value
          await new WaitForEvent(expression, 'changed').wait(() => { });
@@ -274,7 +273,7 @@ describe('Member expression tests', () => {
                ]),
             },
          };
-         expression = jsParser.parse(context, 'nestedA.map[key]');
+         expression = expressionFactory.create(context, 'nestedA.map[key]');
 
          await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(emptyFunction);
 
@@ -303,7 +302,7 @@ describe('Member expression tests', () => {
                ]),
             },
          };
-         expression = jsParser.parse(context, 'nestedA.map[key]');
+         expression = expressionFactory.create(context, 'nestedA.map[key]');
 
          // Wait till the expression has been initialized before changing value
          await new WaitForEvent(expression, 'changed').wait(() => { });
@@ -333,7 +332,7 @@ describe('Member expression tests', () => {
             }),
          };
 
-         expression = jsParser.parse(context, 'x.y.z');
+         expression = expressionFactory.create(context, 'x.y.z');
 
          const actual = (await new WaitForEvent(expression, 'changed').wait(
             () => { }
@@ -352,7 +351,7 @@ describe('Member expression tests', () => {
             }),
          };
 
-         expression = jsParser.parse(context, 'x.y.z');
+         expression = expressionFactory.create(context, 'x.y.z');
 
          const actual = (await new WaitForEvent(expression, 'changed').wait(
             () => { }
@@ -371,7 +370,7 @@ describe('Member expression tests', () => {
             }),
          };
 
-         expression = jsParser.parse(context, 'x.y.z');
+         expression = expressionFactory.create(context, 'x.y.z');
 
          // Wait till the expression has been initialized before changing value
          await new WaitForEvent(expression, 'changed').wait(() => { });
@@ -396,7 +395,7 @@ describe('Member expression tests', () => {
             x: of(nestedContext),
          };
 
-         expression = jsParser.parse(context, 'x.y.z');
+         expression = expressionFactory.create(context, 'x.y.z');
 
          // Wait till the expression has been initialized before changing value
          await new WaitForEvent(expression, 'changed').wait(() => { });
@@ -418,7 +417,7 @@ describe('Member expression tests', () => {
             }),
          };
 
-         expression = jsParser.parse(context, 'x.y.z');
+         expression = expressionFactory.create(context, 'x.y.z');
 
          // Wait till the expression has been initialized before changing value
          await new WaitForEvent(expression, 'changed').wait(() => { });
@@ -447,7 +446,7 @@ describe('Member expression tests', () => {
                )
             }
          };
-         const expression = jsParser.parse(expressionContext, `a.b.c.d`);
+         const expression = expressionFactory.create(expressionContext, `a.b.c.d`);
 
          await new WaitForEvent(expression, 'changed').wait(emptyFunction);
          expect(expression.value).toEqual(20);
@@ -481,7 +480,7 @@ describe('Member expression tests', () => {
             }),
          };
 
-         expression = jsParser.parse(context, 'x.y.z');
+         expression = expressionFactory.create(context, 'x.y.z');
 
          const actual = (await new WaitForEvent(expression, 'changed').wait(
             () => { }
@@ -500,7 +499,7 @@ describe('Member expression tests', () => {
             }),
          };
 
-         expression = jsParser.parse(context, 'x.y.z');
+         expression = expressionFactory.create(context, 'x.y.z');
 
          const actual = (await new WaitForEvent(expression, 'changed').wait(
             () => { }
@@ -519,7 +518,7 @@ describe('Member expression tests', () => {
             }),
          };
 
-         expression = jsParser.parse(context, 'x.y.z');
+         expression = expressionFactory.create(context, 'x.y.z');
 
          // Wait till the expression has been initialized before changing value
          await new WaitForEvent(expression, 'changed').wait(() => { });
@@ -546,7 +545,7 @@ describe('Member expression tests', () => {
             }
          };
 
-         expression = jsParser.parse(context, 'a.b.c.d');
+         expression = expressionFactory.create(context, 'a.b.c.d');
 
          // Wait till the expression has been initialized before changing value
          await new WaitForEvent(expression, 'changed').wait(() => { });
@@ -587,7 +586,7 @@ describe('Member expression tests', () => {
             x: { y: 1 }
          };
 
-         const expression = jsParser.parse(expressionContext, 'a.b[1].c.d');
+         const expression = expressionFactory.create(expressionContext, 'a.b[1].c.d');
 
          await new WaitForEvent(expression, 'changed').wait(() => { });
 
@@ -613,7 +612,7 @@ describe('Member expression tests', () => {
             },
             x: { y: 1 }
          };
-         const expression = jsParser.parse(expressionContext, 'a.b[1].c.d');
+         const expression = expressionFactory.create(expressionContext, 'a.b[1].c.d');
 
          // Wait till the expression has been initialized before changing value
          await new WaitForEvent(expression, 'changed').wait(() => { });
@@ -658,7 +657,7 @@ describe('Member expression tests', () => {
             },
             x: { y: 1 }
          };
-         const expression = jsParser.parse(expressionContext, 'a.b[1].c.d');
+         const expression = expressionFactory.create(expressionContext, 'a.b[1].c.d');
 
          // Wait till the expression has been initialized before changing value
          await new WaitForEvent(expression, 'changed').wait(emptyFunction);
@@ -692,7 +691,7 @@ describe('Member expression tests', () => {
             },
             x: { y: 1 }
          };
-         const expression = jsParser.parse(expressionContext, 'a.b[1].c.d');
+         const expression = expressionFactory.create(expressionContext, 'a.b[1].c.d');
 
          // Wait till the expression has been initialized before changing value
          await new WaitForEvent(expression, 'changed').wait(() => { });
@@ -722,7 +721,7 @@ describe('Member expression tests', () => {
             },
             x: { y: 1 }
          };
-         const expression = jsParser.parse(expressionContext, 'a.b[1].c.d');
+         const expression = expressionFactory.create(expressionContext, 'a.b[1].c.d');
 
          await new WaitForEvent(expression, 'changed').wait(() => { });
 
@@ -789,7 +788,7 @@ describe('Member expression tests', () => {
             }
          };
 
-         const expression = jsParser.parse(expressionContext, 'a.b.mail(message, subject).messageWithSubject');
+         const expression = expressionFactory.create(expressionContext, 'a.b.mail(message, subject).messageWithSubject');
          const actual = await new WaitForEvent(expression, 'changed').wait(emptyFunction) as IExpression;
 
          expect(actual.value).toEqual('message: Hello, subject: Message');
@@ -812,7 +811,7 @@ describe('Member expression tests', () => {
             }
          };
 
-         const expression = jsParser.parse(expressionContext, 'a.b.mail(message, subject).messageWithSubject');
+         const expression = expressionFactory.create(expressionContext, 'a.b.mail(message, subject).messageWithSubject');
          await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
 
@@ -834,7 +833,7 @@ describe('Member expression tests', () => {
             })
          };
 
-         expression = jsParser.parse(expressionContext, 'parameters.a + parameters.b');
+         expression = expressionFactory.create(expressionContext, 'parameters.a + parameters.b');
 
          await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
@@ -849,7 +848,7 @@ describe('Member expression tests', () => {
             })
          };
 
-         expression = jsParser.parse(expressionContext, 'parameters.a + parameters.b');
+         expression = expressionFactory.create(expressionContext, 'parameters.a + parameters.b');
 
          await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
@@ -876,7 +875,7 @@ describe('Member expression tests', () => {
          },
          f: 40
       };
-      const expression = jsParser.parse(expressionContext, 'a.b');
+      const expression = expressionFactory.create(expressionContext, 'a.b');
       await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
       expect(expressionContext).isWritableProperty('a');
@@ -898,7 +897,7 @@ describe('Member expression tests', () => {
          },
          f: 40
       };
-      const expression = jsParser.parse(expressionContext, 'a.b');
+      const expression = expressionFactory.create(expressionContext, 'a.b');
       await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
       expect(expressionContext).isWritableProperty('a');
@@ -932,11 +931,11 @@ describe('Member expression tests', () => {
          f: 40
       };
 
-      const expression1 = jsParser.parse(expressionContext, 'a.b');
+      const expression1 = expressionFactory.create(expressionContext, 'a.b');
       await new WaitForEvent(expression1, 'changed').wait(emptyFunction);
-      const expression2 = jsParser.parse(expressionContext, 'a.b');
+      const expression2 = expressionFactory.create(expressionContext, 'a.b');
       await new WaitForEvent(expression2, 'changed').wait(emptyFunction);
-      const expression3 = jsParser.parse(expressionContext.a.b, 'c');
+      const expression3 = expressionFactory.create(expressionContext.a.b, 'c');
       await new WaitForEvent(expression3, 'changed').wait(emptyFunction);
 
       expect(expressionContext).isWritableProperty('a');

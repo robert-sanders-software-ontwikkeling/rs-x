@@ -1,3 +1,5 @@
+import { ReplaySubject, Subscription } from 'rxjs';
+
 import {
     ContainerModule,
     defaultIndexValueAccessorList,
@@ -15,11 +17,10 @@ import {
     truePredicate,
     Type
 } from '@rs-x/core';
-
 import type {
+    IIndexObserverInfo,
     IObjectObserverProxyPairFactory,
     IObjectObserverProxyPairManager,
-    IIndexObserverInfo,
     IObserverProxyPair,
     IPropertyInfo,
     IProxyRegistry,
@@ -35,7 +36,6 @@ import {
     RsXStateManagerInjectionTokens,
     RsXStateManagerModule
 } from '@rs-x/state-manager';
-import { ReplaySubject, Subscription } from 'rxjs';
 
 const MyInjectTokens = {
     TextDocumentObserverManager: Symbol('TextDocumentObserverManager'),

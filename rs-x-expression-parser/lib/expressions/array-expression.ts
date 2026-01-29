@@ -1,6 +1,6 @@
 import { type AbstractExpression } from './abstract-expression';
 import { CollectionExpression } from './collection-expression';
-import { ExpressionType } from './interfaces';
+import { ExpressionType } from './expression-parser.interface';
 
 export class ArrayExpression extends CollectionExpression<unknown[]> {
    constructor(expressions: AbstractExpression[]) {

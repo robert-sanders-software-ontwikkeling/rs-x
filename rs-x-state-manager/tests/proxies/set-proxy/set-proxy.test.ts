@@ -1,4 +1,5 @@
 import { type IPropertyChange, WaitForEvent } from '@rs-x/core';
+
 import { SetProxyFactory } from '../../../lib/proxies/set-proxy/set-proxy.factory';
 import {
    type ISetObserverProxyPair,

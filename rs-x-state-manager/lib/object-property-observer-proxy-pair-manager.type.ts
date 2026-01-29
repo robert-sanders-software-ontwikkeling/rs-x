@@ -1,4 +1,5 @@
 import { type IDisposableOwner, type ISingletonFactory } from '@rs-x/core';
+
 import { type IObserver } from './observer.interface';
 
 export interface IObserverProxyPair<TProxy = unknown> {

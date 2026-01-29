@@ -1,8 +1,9 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { type Config } from '@jest/types';
 import { pathsToModuleNameMapper } from 'ts-jest';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
 
 // ------------------------------
 // Load tsconfig dynamically

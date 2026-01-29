@@ -1,23 +1,21 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-   ExpressionType,
-   type IExpression,
-   type IExpressionParser,
-} from '../../lib/expressions/interfaces';
-import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+
+import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
+import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
    RsXExpressionParserModule,
    unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
+import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
 
 describe('ExponentiationExpression tests', () => {
-   let jsParser: IExpressionParser;
+   let expressionFactory: IExpressionFactory;
    let expression: IExpression | undefined;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXExpressionParserModule);
-      jsParser = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IExpressionParser
+       expressionFactory = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionFactory
       );
    });
 
@@ -32,13 +30,13 @@ describe('ExponentiationExpression tests', () => {
 
    it('type', () => {
       const context = { a: 2, b: 3 };
-      expression = jsParser.parse(context, 'a ** b');
+      expression = expressionFactory.create(context, 'a ** b');
       expect(expression.type).toEqual(ExpressionType.Exponentiation);
    });
 
    it('will emit change event for initial value', async () => {
       const context = { a: 2, b: 3 };
-      expression = jsParser.parse(context, 'a ** b');
+      expression = expressionFactory.create(context, 'a ** b');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
          () => {}
@@ -55,7 +53,7 @@ describe('ExponentiationExpression tests', () => {
          },
          c: 3,
       };
-      expression = jsParser.parse(context, 'a.b ** c');
+      expression = expressionFactory.create(context, 'a.b ** c');
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => { });
 

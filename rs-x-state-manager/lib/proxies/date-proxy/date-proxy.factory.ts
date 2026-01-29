@@ -1,3 +1,5 @@
+import { Subject } from 'rxjs';
+
 import {
     type CheckValidKey,
     type DateProperty,
@@ -9,11 +11,12 @@ import {
     SingletonFactoryWithGuid,
     Type
 } from '@rs-x/core';
-import { Subject } from 'rxjs';
+
 import { AbstractObserver } from '../../abstract-observer';
 import type { MustProxify } from '../../object-property-observer-proxy-pair-manager.type';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
 import type { IProxyRegistry } from '../proxy-registry/proxy-registry.interface';
+
 import type { IDateObserverProxyPair, IDateProxyData, IDateProxyFactory, IDateProxyIdData } from './date-proxy.factory.type';
 
 type DateSetterName = CheckValidKey<

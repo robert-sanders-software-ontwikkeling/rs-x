@@ -7,14 +7,16 @@ import {
    truePredicate,
    Type
 } from '@rs-x/core';
+
 import type {
    IObjectPropertyObserverProxyPairManager,
    IObserverProxyPair
 } from '../../object-property-observer-proxy-pair-manager.type';
-import { ObserverGroup } from '../../observer-group';
 import type { IObserver } from '../../observer.interface';
+import { ObserverGroup } from '../../observer-group';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
 import type { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
+
 import { AbstractObjectObserverProxyPairFactory } from './abstract-object-observer-proxy-pair.factory';
 import type { IPlainObjectObserverProxyPairFactory } from './plain-object-observer-proxy-pair.factory.type';
 

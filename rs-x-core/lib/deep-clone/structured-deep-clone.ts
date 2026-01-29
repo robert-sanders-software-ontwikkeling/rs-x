@@ -1,4 +1,5 @@
 import { Injectable } from '../dependency-injection';
+
 import type { IDeepClone } from './deep-clone.interface';
 
 @Injectable()

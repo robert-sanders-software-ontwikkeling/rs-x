@@ -1,3 +1,5 @@
+import { of, Subject } from 'rxjs';
+
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
     type IStateChange,
@@ -5,7 +7,6 @@ import {
     RsXStateManagerInjectionTokens,
     RsXStateManagerModule
 } from '@rs-x/state-manager';
-import { of, Subject } from 'rxjs';
 
 // Load the state manager module into the injection container
 InjectionContainer.load(RsXStateManagerModule);

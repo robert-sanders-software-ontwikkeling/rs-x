@@ -1,4 +1,5 @@
 import { Injectable } from '../dependency-injection';
+
 import { dataProperties, type DateProperty, type IDatePropertyAccessor } from './date-property-accessor.interface';
 
 @Injectable()

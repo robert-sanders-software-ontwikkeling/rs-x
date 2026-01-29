@@ -1,6 +1,8 @@
 import { createCustomEqual } from 'fast-equals';
 import { isObservable } from 'rxjs';
+
 import { Injectable } from '../dependency-injection';
+
 import type { IEqualityService } from './equality-service.interface';
 
 @Injectable()

@@ -7,9 +7,10 @@ import {
    truePredicate,
    WaitForEvent,
 } from '@rs-x/core';
+
 import { type IObjectPropertyObserverProxyPairManager } from '../../lib/object-property-observer-proxy-pair-manager.type';
-import { RsXStateManagerInjectionTokens } from '../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../lib/rs-x-state-manager.module';
+import { RsXStateManagerInjectionTokens } from '../../lib/rs-x-state-manager-injection-tokes';
 import { StateChangeSubscriptionManager } from '../../lib/state-manager/state-change-subscription-manager/state-change-subsription-manager';
 
 describe('StateChangeSubscriptionManager tests', () => {

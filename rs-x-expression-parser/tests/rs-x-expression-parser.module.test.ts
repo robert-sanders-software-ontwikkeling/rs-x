@@ -11,6 +11,8 @@ import {
    SetKeyAccessor
 } from '@rs-x/core';
 import { ArrayObserverProxyPairFactory, DateObserverProxyPairFactory, MapObserverProxyPairFactory, ObservableObserverProxyPairFactory, PlainObjectObserverProxyPairFactory, PromiseObserverProxyPairFactory, RsXStateManagerInjectionTokens, SetObserverProxyPairFactory } from '@rs-x/state-manager';
+
+import { ExpressionObserverProxyPairFactory } from '../lib';
 import { ExpressionChangeTransactionManager } from '../lib/expresion-change-transaction-manager';
 import { ExpressionFactory } from '../lib/expression-factory/expression-factory';
 import { ExpressionManager } from '../lib/expression-factory/expression-manager';
@@ -22,12 +24,11 @@ import { DefaultIdentifierOwnerResolver } from '../lib/identifier-owner-resolver
 import { MapKeyOwnerResolver } from '../lib/identifier-owner-resolver/map-key-owner-resolver';
 import { PropertyOwnerResolver } from '../lib/identifier-owner-resolver/property-owner-resolver';
 import { JsEspreeExpressionParser } from '../lib/js-espree-expression-parser';
-import { RsXExpressionParserInjectionTokens } from '../lib/rs-x-expression-parser-injection-tokes';
 import {
    RsXExpressionParserModule,
    unloadRsXExpressionParserModule,
 } from '../lib/rs-x-expression-parser.module';
-import { ExpressionObserverProxyPairFactory } from '../lib';
+import { RsXExpressionParserInjectionTokens } from '../lib/rs-x-expression-parser-injection-tokes';
 
 describe('RsXExpressionParserModule tests', () => {
    beforeAll(async () => {

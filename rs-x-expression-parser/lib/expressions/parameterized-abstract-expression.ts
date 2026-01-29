@@ -2,7 +2,7 @@ import {
    AbstractExpression,
 } from './abstract-expression';
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
-import { type ExpressionType } from './interfaces';
+import { type ExpressionType } from './expression-parser.interface';
 
 export abstract class ParameterizedExpression<
    T = unknown,

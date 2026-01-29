@@ -1,7 +1,8 @@
 import { type ConstructorType } from '@rs-x/core';
+
 import { type AbstractExpression } from './abstract-expression';
 import { BinaryExpression } from './binary-expression';
-import { ExpressionType } from './interfaces';
+import { ExpressionType } from './expression-parser.interface';
 
 export class InstanceofExpression extends BinaryExpression<
    boolean,

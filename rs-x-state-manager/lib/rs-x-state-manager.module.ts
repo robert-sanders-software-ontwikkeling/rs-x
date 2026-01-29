@@ -1,4 +1,5 @@
 import { ContainerModule, type IMultiInjectService, InjectionContainer, registerMultiInjectServices, RsXCoreModule } from '@rs-x/core';
+
 import { ArrayObserverProxyPairFactory } from './object-observer/factories/array-observer-proxy-pair.factory';
 import { DateObserverProxyPairFactory } from './object-observer/factories/date-observer-proxy-pair.factory';
 import { MapObserverProxyPairFactory } from './object-observer/factories/map-observer-proxy-pair.factory';
@@ -10,9 +11,6 @@ import { ObjectObserverProxyPairFactoryProvider } from './object-observer/object
 import { type IObjectObserverProxyPairFactoryProvider } from './object-observer/object-observer-proxy-pair-factory.provider.interface';
 import { ObjectObserverProxyPairManager } from './object-observer/object-observer-proxy-pair-manager';
 import { type IObjectObserverProxyPairManager } from './object-observer/object-observer-proxy-pair-manager.type';
-import { ObjectPropertyObserverProxyPairManager } from './object-property-observer-proxy-pair-manager';
-import { type IObjectPropertyObserverProxyPairManager } from './object-property-observer-proxy-pair-manager.type';
-import { CollectionItemObserverProxyPairFactory } from './property-observer';
 import { CollectionItemObserverManager } from './property-observer/factories/collection-item/collection-item-observer-manager';
 import { type ICollectionItemObserverManager } from './property-observer/factories/collection-item/collection-item-observer-manager.type';
 import { DatePropertyObserverManager } from './property-observer/factories/date-property/data-property-observer-manager';
@@ -37,11 +35,14 @@ import { ProxyRegistry } from './proxies/proxy-registry/proxy-registry';
 import { type IProxyRegistry } from './proxies/proxy-registry/proxy-registry.interface';
 import { SetProxyFactory } from './proxies/set-proxy/set-proxy.factory';
 import { type ISetProxyFactory } from './proxies/set-proxy/set-proxy.factory.type';
-import { RsXStateManagerInjectionTokens } from './rs-x-state-manager-injection-tokes';
 import { ObjectStateManager } from './state-manager/object-state-manager';
 import { type IObjectStateManager } from './state-manager/object-state-manager.interface';
 import { StateManager } from './state-manager/state-manager';
 import { type IStateManager } from './state-manager/state-manager.interface';
+import { ObjectPropertyObserverProxyPairManager } from './object-property-observer-proxy-pair-manager';
+import { type IObjectPropertyObserverProxyPairManager } from './object-property-observer-proxy-pair-manager.type';
+import { CollectionItemObserverProxyPairFactory } from './property-observer';
+import { RsXStateManagerInjectionTokens } from './rs-x-state-manager-injection-tokes';
 
 export const defaultObjectObserverProxyPairFactoryList: readonly IMultiInjectService[] = [
    { target: PlainObjectObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.IPlainObjectObserverProxyPairFactory },

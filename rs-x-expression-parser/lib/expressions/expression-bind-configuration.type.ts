@@ -1,5 +1,7 @@
 import type { IDisposableOwner } from '@rs-x/core';
+
 import type { IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
+
 import type { IMustProxifyHandler } from './abstract-expression';
 
 export interface IBindConfigurationBase {

@@ -1,3 +1,5 @@
+import { ReplaySubject } from 'rxjs';
+
 import {
    type IDisposableOwner,
    Inject,
@@ -7,8 +9,9 @@ import {
    RsXCoreInjectionTokens,
    SingletonFactory,
 } from '@rs-x/core';
-import { ReplaySubject } from 'rxjs';
+
 import { AbstractObserver } from '../../abstract-observer';
+
 import type {
    IPromiseObserverProxyPair,
    IPromiseProxyData,

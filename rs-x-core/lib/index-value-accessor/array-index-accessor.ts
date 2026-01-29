@@ -1,4 +1,5 @@
 import { Injectable } from '../dependency-injection';
+
 import type { IArrayIndexAccessor } from './array-index-accessor.type';
 
 @Injectable()

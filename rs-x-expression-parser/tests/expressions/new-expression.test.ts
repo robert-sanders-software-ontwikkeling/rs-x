@@ -1,26 +1,24 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-   ExpressionType,
-   type IExpression,
-   type IExpressionParser,
-} from '../../lib/expressions/interfaces';
-import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+
+import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
+import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
    RsXExpressionParserModule,
    unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
+import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
 
 describe('NewExpression tests', () => {
    class Test {
       constructor(public readonly value: number) {}
    }
-   let jsParser: IExpressionParser;
+   let expressionFactory: IExpressionFactory;
    let expression: IExpression | undefined;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXExpressionParserModule);
-      jsParser = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IExpressionParser
+       expressionFactory = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionFactory
       );
    });
 
@@ -38,7 +36,7 @@ describe('NewExpression tests', () => {
          type: Test,
          value: 10,
       };
-      expression = jsParser.parse(context, 'new type(value)');
+      expression = expressionFactory.create(context, 'new type(value)');
       expect(expression.type).toEqual(ExpressionType.New);
    });
 
@@ -47,7 +45,7 @@ describe('NewExpression tests', () => {
          type: Test,
          value: 10,
       };
-      expression = jsParser.parse(context, 'new type(value)');
+      expression = expressionFactory.create(context, 'new type(value)');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
          () => {}
@@ -62,7 +60,7 @@ describe('NewExpression tests', () => {
          type: Test,
          value: 10,
       };
-      expression = jsParser.parse(context, 'new type(value)');
+      expression = expressionFactory.create(context, 'new type(value)');
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => { });
 

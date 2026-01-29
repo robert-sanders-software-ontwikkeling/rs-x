@@ -1,5 +1,5 @@
-import { readdirSync, readFileSync, writeFileSync, statSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { existsSync,readdirSync, readFileSync, statSync, writeFileSync } from 'fs';
+import { dirname,join } from 'path';
 
 const EXCLUDED_DIRS = ['node_modules', 'dist', '.git'];
 

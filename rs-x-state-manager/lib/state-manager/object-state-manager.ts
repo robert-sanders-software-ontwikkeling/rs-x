@@ -6,6 +6,7 @@ import {
    SingletonFactory,
    UnsupportedException,
 } from '@rs-x/core';
+
 import type {
    IObjectStateManager,
    IState,

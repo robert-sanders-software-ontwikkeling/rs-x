@@ -1,5 +1,5 @@
 import { type AbstractExpression } from './abstract-expression';
-import { ExpressionType } from './interfaces';
+import { ExpressionType } from './expression-parser.interface';
 import { ParameterizedExpression } from './parameterized-abstract-expression';
 import { type PropertyExpression } from './property-expression';
 import { type SpreadExpression } from './spread-expression';

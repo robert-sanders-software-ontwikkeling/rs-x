@@ -1,6 +1,40 @@
+import { generate as astToString } from 'astring';
+import * as espree from 'espree';
+import * as estraverse from 'estraverse';
+import type {
+   ArrayExpression as EstreeArrayExpression,
+   AssignmentExpression as EstreeAssignmentExpression,
+   BinaryExpression,
+   BinaryOperator,
+   CallExpression,
+   ChainExpression,
+   ConditionalExpression as EstreeConditionalExpression,
+   Expression,
+   ExpressionStatement,
+   Identifier,
+   Literal,
+   LogicalExpression,
+   LogicalOperator,
+   MemberExpression as EstreeMemberExpression,
+   NewExpression as EstreeNewExpression,
+   Node,
+   ObjectExpression as EstreeObjectExpression,
+   Pattern,
+   PrivateIdentifier,
+   Program,
+   Property,
+   RegExpLiteral,
+   SequenceExpression as EstreeSequenceExpression,
+   SpreadElement,
+   Super,
+   TaggedTemplateExpression as EstreeTaggedTemplateExpression,
+   TemplateLiteral,
+   UnaryExpression,
+   UnaryOperator
+} from 'estree';
+
 import {
    type AnyFunction,
-   type IDisposableOwner,
    type IIndexValueAccessor,
    Inject,
    Injectable,
@@ -14,43 +48,9 @@ import {
    type IStateManager,
    RsXStateManagerInjectionTokens
 } from '@rs-x/state-manager';
-import { generate as astToString } from 'astring';
-import * as espree from 'espree';
-import * as estraverse from 'estraverse';
-import type {
-   BinaryExpression,
-   BinaryOperator,
-   CallExpression,
-   ChainExpression,
-   ArrayExpression as EstreeArrayExpression,
-   AssignmentExpression as EstreeAssignmentExpression,
-   ConditionalExpression as EstreeConditionalExpression,
-   MemberExpression as EstreeMemberExpression,
-   NewExpression as EstreeNewExpression,
-   ObjectExpression as EstreeObjectExpression,
-   SequenceExpression as EstreeSequenceExpression,
-   TaggedTemplateExpression as EstreeTaggedTemplateExpression,
-   Expression,
-   ExpressionStatement,
-   Identifier,
-   Literal,
-   LogicalExpression,
-   LogicalOperator,
-   Node,
-   Pattern,
-   PrivateIdentifier,
-   Program,
-   Property,
-   RegExpLiteral,
-   SpreadElement,
-   Super,
-   TemplateLiteral,
-   UnaryExpression,
-   UnaryOperator
-} from 'estree';
+
 import type { IGuidFactory } from '../../rs-x-core/lib/guid/guid.factory.interface';
-import type { IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
-import { IndexExpression } from './expressions';
+
 import { AbstractExpression } from './expressions/abstract-expression';
 import { AdditionExpression } from './expressions/addition-expression';
 import { ArrayExpression } from './expressions/array-expression';
@@ -71,6 +71,11 @@ import { ConstantStringExpression } from './expressions/constant-string-expressi
 import { DivisionExpression } from './expressions/division-expression';
 import { EqualityExpression } from './expressions/equality-expression';
 import { ExponentiationExpression } from './expressions/exponentiation-expression';
+import {
+   ExpressionType,
+   type IExpression,
+   type IExpressionParser,
+} from './expressions/expression-parser.interface';
 import { FunctionExpression } from './expressions/function-expression';
 import { GreaterThanExpression } from './expressions/greater-than-expression';
 import { GreaterThanOrEqualExpression } from './expressions/greater-than-or-equal-expression';
@@ -78,11 +83,6 @@ import { IdentifierExpression } from './expressions/identifier-expression';
 import { InExpression } from './expressions/in-expression';
 import { InequalityExpression } from './expressions/inequality-expression';
 import { InstanceofExpression } from './expressions/instanceof-expression';
-import {
-   ExpressionType,
-   type IExpression,
-   type IExpressionParser,
-} from './expressions/interfaces';
 import { LessThanExpression } from './expressions/less-than-expression';
 import { LessThanOrEqualExpression } from './expressions/less-than-or-equal-expression';
 import { LogicalAndExpression } from './expressions/logical-and-expression';
@@ -104,6 +104,8 @@ import { TemplateStringExpression } from './expressions/template-string-expressi
 import { TypeofExpression } from './expressions/typeof-expression';
 import { UnaryNegationExpression } from './expressions/unary-negation-expression';
 import { UnaryPlusExpression } from './expressions/unary-plus-expression';
+import type { IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
+import { IndexExpression } from './expressions';
 import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
 
 enum EspreeExpressionType {
@@ -273,18 +275,12 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       };
    }
 
-   public parse(
-      context: object,
-      expressionString: string,
-      owner: IDisposableOwner
-   ): AbstractExpression {
+   public parse(expressionString: string): AbstractExpression {
       const espreeExpression = this.tryParse(expressionString);
 
       let expression: AbstractExpression;
       try {
-         expression = this.createExpression(
-            espreeExpression,
-         );
+         expression = this.createExpression(espreeExpression);
       } catch (e) {
          if (e instanceof Error) {
             throw new ParserException(expressionString, e.message);
@@ -293,20 +289,12 @@ export class JsEspreeExpressionParser implements IExpressionParser {
          throw new ParserException(expressionString, String(e));
       }
 
-      expression.bind({
-         rootContext: context,
-         transactionManager: this._expressionChangeTransactionManager,
-         owner
-      });
-      this._expressionChangeTransactionManager.commit();
-
       return expression
    }
 
    private tryParse(expressionString: string): Expression {
       return this.parseExpression(expressionString).expression;
    }
-
 
    private createExpression(
       expression:

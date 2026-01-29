@@ -1,4 +1,5 @@
 import { APP_INITIALIZER, InjectionToken, type Provider } from '@angular/core';
+
 import { InjectionContainer } from '@rs-x/core';
 import { type IExpressionFactory, RsXExpressionParserInjectionTokens, RsXExpressionParserModule } from '@rs-x/expression-parser';
 

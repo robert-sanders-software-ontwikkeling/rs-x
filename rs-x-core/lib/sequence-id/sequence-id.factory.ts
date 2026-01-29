@@ -2,6 +2,7 @@ import { Inject, Injectable, PreDestroy } from '../dependency-injection';
 import type { IGuidFactory } from '../guid/guid.factory.interface';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
 import { type IDisposableOwner, SingletonFactory } from '../singleton-factory';
+
 import type { ISequenceIdFactory, ISequenceWithId } from './sequence-id-factory.interface';
 
 class RegistryNode {

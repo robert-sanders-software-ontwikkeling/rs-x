@@ -1,6 +1,7 @@
 import { InjectionContainer } from '@rs-x/core';
-import { RsXStateManagerInjectionTokens } from '../../lib/rs-x-state-manager-injection-tokes';
+
 import { RsXStateManagerModule, unloadRsXStateManagerModule } from '../../lib/rs-x-state-manager.module';
+import { RsXStateManagerInjectionTokens } from '../../lib/rs-x-state-manager-injection-tokes';
 import { type IObjectStateManager } from '../../lib/state-manager/object-state-manager.interface';
 
 

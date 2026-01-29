@@ -1,10 +1,12 @@
 import { type IErrorLog, type IGuidFactory, SingletonFactory } from '@rs-x/core';
+
 import { GroupedChangeSubscriptionsForContextManager } from '../../grouped-change-subscriptions-for-context-manager';
 import {
    type IObjectPropertyObserverProxyPairManager,
    type MustProxify,
 } from '../../object-property-observer-proxy-pair-manager.type';
 import { type IObserver } from '../../observer.interface';
+
 import {
    type IStateChangeSubscriptionIdInfo,
    type IStateChangeSubscriptionInfo,

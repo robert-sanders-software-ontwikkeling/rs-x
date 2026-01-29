@@ -1,5 +1,7 @@
 import { type Operator, type Subscribable } from 'rxjs';
+
 import { emptyFunction } from '../types';
+
 import { SubscriptionMock } from './subscription.mock';
 
 export class ObservableMock<T = unknown> implements Subscribable<T> {

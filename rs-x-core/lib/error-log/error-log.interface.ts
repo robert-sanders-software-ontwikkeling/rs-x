@@ -1,4 +1,5 @@
 import { type Observable } from 'rxjs';
+
 import { type IError } from './error.interface';
 
 export interface IErrorLog {

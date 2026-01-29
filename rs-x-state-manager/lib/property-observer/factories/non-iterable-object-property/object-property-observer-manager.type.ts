@@ -1,4 +1,5 @@
 import { type ISingletonFactory } from '@rs-x/core';
+
 import { type IObserver } from '../../../observer.interface';
 import {
    type IIndexObserverIdInfo,
