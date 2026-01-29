@@ -2,4 +2,4 @@
 "@rs-x/core": patch
 ---
 
-Optimize expression parser
+Refactor: Make expression creation independent of context
