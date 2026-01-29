@@ -4,12 +4,12 @@ import { type Observable, ReplaySubject, Subject, type Subscription } from 'rxjs
 import { type IExpressionChangeCommitHandler, type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 import {
    AbstractExpression,
-   type IExpressionInitializeConfig,
    type IMustProxifyHandler,
 } from './abstract-expression';
 import { FunctionExpression } from './function-expression';
 import { ExpressionType } from './interfaces';
 import { MemberExpression } from './member-expression';
+import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 
 
 export class IndexValueObserver {
@@ -80,22 +80,19 @@ export class IndexValueObserver {
    };
 }
 
-
-export interface IIdentifierInitializeConfig
-   extends IExpressionInitializeConfig {
-   currentValue?: unknown;
-}
+export type IIdentifierBindConfiguration = IExpressionBindConfiguration & {
+  currentValue?: unknown;
+};
 
 export class IdentifierExpression extends AbstractExpression {
    private _changeSubscription: Subscription | undefined;
-   private _isInitialized = false;
+   private _isBound = false;
    private _indexValueObserver: IndexValueObserver | undefined;
    private releaseMustProxifyHandler: (() => void) | undefined;
    private _commitAfterInitialized: boolean | undefined;
    private readonly _commitHandler: IExpressionChangeCommitHandler;
 
    constructor(
-      private readonly _rootContext: unknown,
       private readonly _stateManager: IStateManager,
       expressionString: string,
       private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
@@ -109,13 +106,14 @@ export class IdentifierExpression extends AbstractExpression {
       };
    }
 
-   public override initialize(
-      settings: IIdentifierInitializeConfig
+   public override bind(
+      settings: IIdentifierBindConfiguration
    ): AbstractExpression {
-      this._isInitialized = false;
-      super.initialize(settings);
+      this._isBound = false;
+      super.bind(settings);
 
-      this._commitAfterInitialized = settings.context !== this._rootContext;
+  
+      this._commitAfterInitialized = settings.context !== settings.rootContext;
 
       if (!this._indexValueObserver) {
          this.observeChange(settings);
@@ -132,7 +130,7 @@ export class IdentifierExpression extends AbstractExpression {
             oldContext: settings.context,
          });
       }
-      this._isInitialized = true;
+      this._isBound = true;
       return this;
    }
 
@@ -146,7 +144,7 @@ export class IdentifierExpression extends AbstractExpression {
       return this._value;
    }
 
-   private observeChange(settings: IIdentifierInitializeConfig): void {
+   private observeChange(settings: IIdentifierBindConfiguration): void {
       const mustProxifyHandler =
          settings.mustProxifyHandler ?? this.getDefaultMustProxifyHandler();
       this.releaseMustProxifyHandler =
@@ -154,7 +152,7 @@ export class IdentifierExpression extends AbstractExpression {
       const index = this._indexValue ?? this.expressionString;
 
       this._indexValueObserver = new IndexValueObserver(
-         settings.context ?? this._rootContext,
+         settings.context ?? settings.rootContext,
          index,
          mustProxifyHandler?.createMustProxifyHandler?.(),
          this._stateManager,
@@ -199,7 +197,7 @@ export class IdentifierExpression extends AbstractExpression {
 
       this._expressionChangeTransactionManager.registerChange(this.root, this._commitHandler);
 
-      if (!this._isInitialized && this._commitAfterInitialized) {
+      if (!this._isBound && this._commitAfterInitialized) {
          this._expressionChangeTransactionManager.commit();
       }
    };

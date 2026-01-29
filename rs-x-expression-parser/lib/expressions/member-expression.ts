@@ -7,10 +7,10 @@ import {
 import { type Subscription } from 'rxjs';
 import { type IExpressionChangeCommitHandler, type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 import {
-   AbstractExpression,
-   type IExpressionInitializeConfig,
+   AbstractExpression
 } from './abstract-expression';
-import { IdentifierExpression, type IIdentifierInitializeConfig } from './identifier-expression';
+import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
+import { IdentifierExpression, type IIdentifierBindConfiguration, } from './identifier-expression';
 import { ExpressionType } from './interfaces';
 
 interface IMustProxifyHandler {
@@ -45,15 +45,15 @@ export class MemberExpression extends AbstractExpression {
       super(ExpressionType.Member, expressionString, ...pathSeqments);
    }
 
-   public override initialize(
-      settings: IExpressionInitializeConfig
+   public override bind(
+      settings: IExpressionBindConfiguration
    ): AbstractExpression {
-      super.initialize(settings);
+      super.bind(settings);
 
       for (let i = 0; i < this._childExpressions.length; i++) {
          const currentSegment = this._childExpressions[i];
          if (i === 0 || this.isCalculated(currentSegment)) {
-            currentSegment.initialize({
+            currentSegment.bind({
                ...settings,
                mustProxifyHandler: this.getMustProxifyHandler(i) as IMustProxifyHandler
             });
@@ -153,8 +153,8 @@ export class MemberExpression extends AbstractExpression {
       return false;
    }
 
-   private initializePathSegement(pathSegment: AbstractExpression, settings: IIdentifierInitializeConfig, initialize?: () => void): void {
-      this._initializeQueue.set(pathSegment, initialize ?? (() => pathSegment.initialize(settings)));
+   private bindPathSegement(pathSegment: AbstractExpression, settings: IIdentifierBindConfiguration, bind?: () => void): void {
+      this._initializeQueue.set(pathSegment, bind ?? (() => pathSegment.bind(settings)));
       // Must run after the current evaluate() finishes.
       // Running this code block immediately could trigger a nested evaluate(),
       // so we defer it until the current evaluate has fully returned.
@@ -175,7 +175,7 @@ export class MemberExpression extends AbstractExpression {
       }
 
       if (pathSegment.value === undefined) {
-         this.initializePathSegement(pathSegment, {
+         this.bindPathSegement(pathSegment, {
             context: previousPathSegmentValue,
             mustProxifyHandler: mustProxifyInfo,
          });
@@ -195,7 +195,7 @@ export class MemberExpression extends AbstractExpression {
          return pathSegment.value;
       }
 
-      this.initializePathSegement(pathSegment, {
+      this.bindPathSegement(pathSegment, {
          context: previousPathSegmentValue,
          mustProxifyHandler: mustProxifyInfo,
       });
@@ -298,26 +298,26 @@ export class MemberExpression extends AbstractExpression {
       }
 
       const staticIndexExpression = new IdentifierExpression(
-         context,
          this._stateManager,
          '',
          this._expressionChangeTransactionManager,
          dynamicIndexExpression.value
       );
 
-      this.initializePathSegement(
+      this.bindPathSegement(
          staticIndexExpression,
          {
+            context,
             currentValue: value,
             mustProxifyHandler: mustProxifyHandler,
          },
          () => {
-            let initialized = false
+            let bound = false
             const changeSubscription = staticIndexExpression.changed.subscribe(() => {
-               if (initialized) {
+               if (bound) {
                   this.onSlotChanged(staticIndexExpression);
                }
-               initialized = true;
+               bound = true;
             });
             this._slotObservers.set(dynamicIndexExpression, {
                staticIndexExpression,
