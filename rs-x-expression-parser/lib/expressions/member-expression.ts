@@ -1,17 +1,20 @@
+import { type Subscription } from 'rxjs';
+
 import { emptyFunction, type IIndexValueAccessor, PENDING, truePredicate, Type } from '@rs-x/core';
 import {
    type IMustProxifyItemHandlerFactory,
    type IStateManager,
    type MustProxify,
 } from '@rs-x/state-manager';
-import { type Subscription } from 'rxjs';
+
 import { type IExpressionChangeCommitHandler, type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
+
 import {
    AbstractExpression
 } from './abstract-expression';
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
+import { ExpressionType } from './expression-parser.interface';
 import { IdentifierExpression, type IIdentifierBindConfiguration, } from './identifier-expression';
-import { ExpressionType } from './interfaces';
 
 interface IMustProxifyHandler {
    createMustProxifyHandler: (() => MustProxify) | undefined;

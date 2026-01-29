@@ -1,10 +1,11 @@
+import { BehaviorSubject } from 'rxjs';
+
 import { emptyFunction, InjectionContainer, printValue, WaitForEvent } from '@rs-x/core';
 import {
     type IExpressionFactory,
     RsXExpressionParserInjectionTokens,
     RsXExpressionParserModule
 } from '@rs-x/expression-parser';
-import { BehaviorSubject } from 'rxjs';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);

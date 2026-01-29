@@ -7,9 +7,11 @@ import {
    SingletonFactoryWithGuid,
    Type
 } from '@rs-x/core';
+
 import type { IObserverProxyPair } from '../object-property-observer-proxy-pair-manager.type';
 import type { IProxyRegistry } from '../proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerInjectionTokens } from '../rs-x-state-manager-injection-tokes';
+
 import type { IObjectObserverProxyPairFactoryProvider } from './object-observer-proxy-pair-factory.provider.interface';
 import type {
    IObjectObserverProxyPairManager,

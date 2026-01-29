@@ -1,4 +1,5 @@
 import { Injectable } from '../dependency-injection';
+
 import type { IGuidFactory } from './guid.factory.interface';
 
 @Injectable()

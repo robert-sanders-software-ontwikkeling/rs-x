@@ -1,5 +1,7 @@
 import { Type } from '@rs-x/core';
+
 import { type IObserver } from '../../observer.interface';
+
 import { observerEqualTo } from './observer.equal-to';
 
 interface IMapItemObserverPrivate {

@@ -1,5 +1,6 @@
-import { customMatchers } from './custom-matchers';
 import structuredCloneModule from '@ungap/structured-clone';
+
+import { customMatchers } from './custom-matchers';
 
 class ResizeObserverMock {
    public disconnect = jest.fn();

@@ -3,8 +3,11 @@ import {
    Injectable,
    SingletonFactory
 } from '@rs-x/core';
-import type { IExpression, IExpressionParser } from '../expressions/interfaces';
+
+import type { IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
+import type { IExpression, IExpressionParser } from '../expressions/expression-parser.interface';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
+
 import type {
    IExpressionForContextManager,
    IExpressionManager
@@ -15,6 +18,7 @@ class ExpressionForContextManager
    implements IExpressionForContextManager {
    constructor(
       private readonly _expressionParser: IExpressionParser,
+      private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
       private readonly _context: object,
       private readonly releaseContext: () => void
    ) {
@@ -29,12 +33,20 @@ class ExpressionForContextManager
       return expression;
    }
 
-   protected override createInstance(expression: string, id: string): IExpression {
-      return this._expressionParser.parse(this._context, expression, {
-         release: () => this.release(id),
-         canDispose: () => this.getReferenceCount(id) === 1
-      }
-      );
+   protected override createInstance(expressionString: string, id: string): IExpression {
+      const expression = this._expressionParser.parse(expressionString)
+
+      expression.bind({
+         rootContext: this._context,
+         transactionManager: this._expressionChangeTransactionManager,
+         owner: {
+            release: () => this.release(id),
+            canDispose: () => this.getReferenceCount(id) === 1
+         }
+      });
+      this._expressionChangeTransactionManager.commit();
+
+      return expression;
    }
 
    protected override onReleased(): void {
@@ -60,11 +72,12 @@ export class ExpressionManager
    }
    constructor(
       @Inject(RsXExpressionParserInjectionTokens.IExpressionParser)
-      private readonly _expressionParser: IExpressionParser
+      private readonly _expressionParser: IExpressionParser,
+      @Inject(RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager)
+      private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
    ) {
       super();
    }
-
 
    protected createInstance(
       context: object,
@@ -72,6 +85,7 @@ export class ExpressionManager
    ): IExpressionForContextManager {
       return new ExpressionForContextManager(
          this._expressionParser,
+         this._expressionChangeTransactionManager,
          context,
          () => this.release(id)
       );

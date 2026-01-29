@@ -5,6 +5,7 @@ import {
    Injectable,
    RsXCoreInjectionTokens,
 } from '@rs-x/core';
+
 import type { IObjectPropertyObserverProxyPairManager } from '../../object-property-observer-proxy-pair-manager.type';
 import type {
    IMapObserverProxyPair,
@@ -12,6 +13,7 @@ import type {
 } from '../../proxies/map-proxy/map-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
 import type { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
+
 import { AbstractObjectObserverProxyPairFactory } from './abstract-object-observer-proxy-pair.factory';
 import type { IMapObserverProxyPairFactory } from './map-observer-proxy-pair.factory.type';
 

@@ -1,18 +1,18 @@
-import 'reflect-metadata';
-
 import {
+   type BindToFluentSyntax,
    Container,
    ContainerModule,
+   type ContainerModuleLoadOptions,
    inject,
    injectable,
    multiInject,
-   preDestroy,
-   unmanaged,
-   type BindToFluentSyntax,
-   type ContainerModuleLoadOptions,
    type Newable,
+   preDestroy,
    type ServiceIdentifier,
+   unmanaged,
 } from 'inversify';
+
+import 'reflect-metadata';
 
 /* ---------------------------------------------------------
  * Runtime values

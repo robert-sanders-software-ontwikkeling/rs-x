@@ -1,5 +1,7 @@
-import { type IDisposable } from '@rs-x/core';
 import { type Observable } from 'rxjs';
+
+import { type IDisposable } from '@rs-x/core';
+
 import { type AbstractExpression } from './expressions';
 
 export interface IExpressionChangeCommitHandler {

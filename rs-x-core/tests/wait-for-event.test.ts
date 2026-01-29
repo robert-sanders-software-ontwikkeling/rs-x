@@ -1,4 +1,5 @@
 import { BehaviorSubject, Subject, tap, throwError, timer } from 'rxjs';
+
 import { WaitForEvent } from '../lib/wait-for-event';
 
 describe('WaitOptions tests', () => {

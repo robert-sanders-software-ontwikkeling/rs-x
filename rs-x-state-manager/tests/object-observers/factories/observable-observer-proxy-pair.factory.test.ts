@@ -1,10 +1,12 @@
+import { Subject } from 'rxjs';
+
 import { InjectionContainer, type IPropertyChange, WaitForEvent } from '@rs-x/core';
 import { DisposableOwnerMock, ObservableMock, SubscriptionMock } from '@rs-x/core/testing';
-import { Subject } from 'rxjs';
+
 import { type IObjectObserverProxyPairFactory } from '../../../lib/object-observer/object-observer-proxy-pair.factory.interface';
 import { type IObserver } from '../../../lib/observer.interface';
-import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
+import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokes';
 
 describe('ObservableObserverProxyPairFactory tests', () => {
    let disposableOwner: DisposableOwnerMock;

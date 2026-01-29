@@ -1,23 +1,21 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-   ExpressionType,
-   type IExpression,
-   type IExpressionParser,
-} from '../../lib/expressions/interfaces';
-import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+
+import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
+import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
    RsXExpressionParserModule,
    unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
+import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
 
 describe('ConstantBooleanExpression tests', () => {
-   let jsParser: IExpressionParser;
+   let expressionFactory: IExpressionFactory;
    let expression: IExpression | undefined;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXExpressionParserModule);
-      jsParser = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IExpressionParser
+       expressionFactory = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionFactory
       );
    });
 
@@ -31,12 +29,12 @@ describe('ConstantBooleanExpression tests', () => {
    });
 
    it('type', () => {
-      expression = jsParser.parse({}, 'true');
+      expression = expressionFactory.create({}, 'true');
       expect(expression.type).toEqual(ExpressionType.Boolean);
    });
 
    it('will emit change event for initial value: true', async () => {
-      expression = jsParser.parse({}, 'true');
+      expression = expressionFactory.create({}, 'true');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
          () => {}
@@ -47,7 +45,7 @@ describe('ConstantBooleanExpression tests', () => {
    });
 
    it('will emit change event for initial value: false', async () => {
-      expression = jsParser.parse({}, 'false');
+      expression = expressionFactory.create({}, 'false');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
          () => {}

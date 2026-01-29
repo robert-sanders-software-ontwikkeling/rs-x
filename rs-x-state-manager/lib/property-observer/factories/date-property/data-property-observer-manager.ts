@@ -1,3 +1,5 @@
+import { Subscription } from 'rxjs';
+
 import {
     type DateProperty,
     type IDatePropertyAccessor,
@@ -9,12 +11,13 @@ import {
     RsXCoreInjectionTokens,
     SingletonFactory
 } from '@rs-x/core';
-import { Subscription } from 'rxjs';
+
 import { AbstractObserver } from '../../../abstract-observer';
 import type { IObserver } from '../../../observer.interface';
 import type { IDateProxyFactory } from '../../../proxies/date-proxy/date-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
 import type { IMustProxifyItemHandlerFactory } from '../../must-proxify-item-handler.factory.type';
+
 import type {
     IDatePropertyObserverIdInfo,
     IDatePropertyObserverInfo,

@@ -1,9 +1,10 @@
 import { type IDisposableOwner, type IErrorLog, type IIndexValueAccessor, truePredicate } from '@rs-x/core';
+
 import { type IObjectPropertyObserverProxyPairManager, type IObserverProxyPair, type MustProxify } from '../../object-property-observer-proxy-pair-manager.type';
-import { ObserverGroup } from '../../observer-group';
 import { type IObserver } from '../../observer.interface';
-import { type IProxyTarget } from '../object-observer-proxy-pair-manager.type';
+import { ObserverGroup } from '../../observer-group';
 import { type IObjectObserverProxyPairFactory } from '../object-observer-proxy-pair.factory.interface';
+import { type IProxyTarget } from '../object-observer-proxy-pair-manager.type';
 
 export abstract class AbstractObjectObserverProxyPairFactory<
    TTarget,

@@ -1,5 +1,7 @@
 import { describe } from 'node:test';
+
 import { of } from 'rxjs';
+
 import { EqualityService } from '../lib/equality-service/equality-service';
 
 describe('EqualityService tests', () => {

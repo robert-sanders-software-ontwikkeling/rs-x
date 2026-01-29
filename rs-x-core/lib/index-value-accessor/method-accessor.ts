@@ -4,6 +4,7 @@ import type { IDisposableFunctionCallIndex, IFunctionCallIndex } from '../functi
 import type { IFunctionCallResultCacheFactory } from '../function-call-result-cache/function-call-result-cache.factory.interface';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
 import { Type } from '../types/type';
+
 import type { IMethodAccessor } from './method-accessor.type';
 
 @Injectable()

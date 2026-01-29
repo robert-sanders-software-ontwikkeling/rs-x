@@ -1,5 +1,6 @@
-import { type IDisposable, type IPropertyChange } from '@rs-x/core';
 import { type Observable } from 'rxjs';
+
+import { type IDisposable, type IPropertyChange } from '@rs-x/core';
 
 export interface IObserver<T = unknown> extends IDisposable {
    target: T | undefined;

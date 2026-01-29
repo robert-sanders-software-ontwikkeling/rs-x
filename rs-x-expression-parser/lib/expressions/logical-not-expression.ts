@@ -1,5 +1,5 @@
 import { type AbstractExpression } from './abstract-expression';
-import { ExpressionType } from './interfaces';
+import { ExpressionType } from './expression-parser.interface';
 import { ParameterizedExpression } from './parameterized-abstract-expression';
 
 export class LogicalNotExpression extends ParameterizedExpression {

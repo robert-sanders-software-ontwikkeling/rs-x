@@ -1,3 +1,5 @@
+import { type Subscription } from 'rxjs';
+
 import {
    type IErrorLog,
    type IGuidFactory,
@@ -5,7 +7,7 @@ import {
    type ISingletonFactory,
    SingletonFactoryWithGuid
 } from '@rs-x/core';
-import { type Subscription } from 'rxjs';
+
 import { type IObserver } from './observer.interface';
 
 

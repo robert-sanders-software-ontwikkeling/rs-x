@@ -1,13 +1,14 @@
 import { ErrorLog, InjectionContainer, type IPropertyChange, truePredicate, WaitForEvent } from '@rs-x/core';
 import { DisposableOwnerMock } from '@rs-x/core/testing';
+
 import { type ISetObserverProxyPairFactory } from '../../../lib/object-observer/factories/set-observer-proxy-pair.factory.type';
 import { type IObjectPropertyObserverProxyPairManager } from '../../../lib/object-property-observer-proxy-pair-manager.type';
-import { ObserverGroup } from '../../../lib/observer-group';
 import { type IObserver } from '../../../lib/observer.interface';
+import { ObserverGroup } from '../../../lib/observer-group';
 import { type IProxyRegistry } from '../../../lib/proxies/proxy-registry/proxy-registry.interface';
 import { type ISetObserverProxyPair, type ISetProxyFactory } from '../../../lib/proxies/set-proxy/set-proxy.factory.type';
-import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
+import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokes';
 
 describe('SetObserverProxyPairFactory tests', () => {
    let setObserverProxyPairFactory: ISetObserverProxyPairFactory;

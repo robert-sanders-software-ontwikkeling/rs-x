@@ -1,9 +1,12 @@
+import { type Observable, ReplaySubject, type Subscription } from 'rxjs';
+
 import { type IDisposableOwner, PENDING } from '@rs-x/core';
 import { type MustProxify } from '@rs-x/state-manager';
-import { type Observable, ReplaySubject, type Subscription } from 'rxjs';
+
 import { type IExpressionChangeCommitHandler } from '../expresion-change-transaction-manager.interface';
+
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
-import { type ExpressionType, type IExpression } from './interfaces';
+import { type ExpressionType, type IExpression } from './expression-parser.interface';
 
 export interface IMustProxifyHandler {
    createMustProxifyHandler: (() => MustProxify) | undefined;

@@ -1,23 +1,23 @@
-import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 import { BehaviorSubject } from 'rxjs';
-import {
-   type IExpression,
-   type IExpressionParser,
-} from '../../lib/expressions/interfaces';
-import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+
+import { InjectionContainer, WaitForEvent } from '@rs-x/core';
+
+import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
+import { type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
    RsXExpressionParserModule,
    unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
+import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
 
 describe('AbstractExpression tests', () => {
-   let jsParser: IExpressionParser;
+   let expressionFactory: IExpressionFactory;
    let expression: IExpression | undefined;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXExpressionParserModule);
-      jsParser = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IExpressionParser
+      expressionFactory = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionFactory
       );
    });
 
@@ -31,7 +31,7 @@ describe('AbstractExpression tests', () => {
    });
 
    it('evaluate with constant expression', async () => {
-      const expression = jsParser.parse({}, '1 + 2');
+      const expression = expressionFactory.create({}, '1 + 2');
 
       const actual = await new WaitForEvent(expression, 'changed').wait(() => { }) as IExpression;
 
@@ -43,7 +43,7 @@ describe('AbstractExpression tests', () => {
          a: 10,
          b: 20,
       };
-      const expression = jsParser.parse(context, 'a + b')
+      const expression = expressionFactory.create(context, 'a + b')
 
       const actual = await new WaitForEvent(expression, 'changed').wait(() => { }) as IExpression;
 
@@ -54,7 +54,7 @@ describe('AbstractExpression tests', () => {
       const context = {
          observable: new BehaviorSubject<number>(50),
       };
-      expression = jsParser.parse(context, 'observable + 1');
+      expression = expressionFactory.create(context, 'observable + 1');
       const actual = (await new WaitForEvent(expression, 'changed').wait(
          () => { }
       )) as IExpression;
@@ -67,7 +67,7 @@ describe('AbstractExpression tests', () => {
       const context = {
          promise: Promise.resolve(100),
       };
-      expression = jsParser.parse(context, 'promise + 1');
+      expression = expressionFactory.create(context, 'promise + 1');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
          () => { }
@@ -85,7 +85,7 @@ describe('AbstractExpression tests', () => {
             ['three', 3],
          ]),
       };
-      expression = jsParser.parse(context, 'map["three"]');
+      expression = expressionFactory.create(context, 'map["three"]');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
          () => { }
@@ -99,7 +99,7 @@ describe('AbstractExpression tests', () => {
       const context = {
          array: [11, 21, 31, 41, 51],
       };
-      expression = jsParser.parse(context, 'array[1]');
+      expression = expressionFactory.create(context, 'array[1]');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
          () => { }
@@ -114,7 +114,7 @@ describe('AbstractExpression tests', () => {
          a: 10,
          b: 20,
       };
-      expression = jsParser.parse(context, 'a + b');
+      expression = expressionFactory.create(context, 'a + b');
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => { });
 
@@ -132,7 +132,7 @@ describe('AbstractExpression tests', () => {
       const context = {
          promise: Promise.resolve(100),
       };
-      expression = jsParser.parse(context, 'promise + 1');
+      expression = expressionFactory.create(context, 'promise + 1');
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => { });
 
@@ -154,7 +154,7 @@ describe('AbstractExpression tests', () => {
       const context = {
          observable: new BehaviorSubject<number>(50),
       };
-      expression = jsParser.parse(context, 'observable + 1');
+      expression = expressionFactory.create(context, 'observable + 1');
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => { });
 
@@ -172,7 +172,7 @@ describe('AbstractExpression tests', () => {
       const context = {
          observable: new BehaviorSubject<number>(50),
       };
-      expression = jsParser.parse(context, 'observable + 1');
+      expression = expressionFactory.create(context, 'observable + 1');
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => { });
 
@@ -190,7 +190,7 @@ describe('AbstractExpression tests', () => {
       const context = {
          array: [11, 21, 31, 41, 51],
       };
-      expression = jsParser.parse(context, 'array');
+      expression = expressionFactory.create(context, 'array');
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => { });
 
@@ -212,7 +212,7 @@ describe('AbstractExpression tests', () => {
             ['three', 3],
          ]),
       };
-      expression = jsParser.parse(context, 'map');
+      expression = expressionFactory.create(context, 'map');
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => { });
 
@@ -241,7 +241,7 @@ describe('AbstractExpression tests', () => {
          },
          c: 2,
       };
-      expression = jsParser.parse(context, 'a.b + c');
+      expression = expressionFactory.create(context, 'a.b + c');
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => { });
 
@@ -262,7 +262,7 @@ describe('AbstractExpression tests', () => {
          },
          c: 2,
       };
-      expression = jsParser.parse(context, 'a.b + c');
+      expression = expressionFactory.create(context, 'a.b + c');
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => { });
 

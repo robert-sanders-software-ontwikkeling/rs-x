@@ -1,14 +1,15 @@
-import { type AnyFunction, Assertion, PENDING, Type } from '@rs-x/core';
-import { type IGuidFactory } from '../../../rs-x-core/lib/guid';
+import { type AnyFunction, Assertion, type IGuidFactory,PENDING, Type  } from '@rs-x/core';
+
 import { type IStateManager } from '../../../rs-x-state-manager/lib';
 import { type IExpressionChangeCommitHandler, type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
+
 import {
    AbstractExpression,
 } from './abstract-expression';
 import { type ArrayExpression } from './array-expression';
 import { ConstantNullExpression } from './constant-null-expression';
-import { ExpressionType } from './interfaces';
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
+import { ExpressionType } from './expression-parser.interface';
 
 export class FunctionExpression extends AbstractExpression {
    private _context: unknown;

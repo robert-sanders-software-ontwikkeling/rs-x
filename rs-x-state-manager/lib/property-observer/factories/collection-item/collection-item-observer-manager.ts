@@ -1,3 +1,5 @@
+import { Subscription } from 'rxjs';
+
 import {
    type IDisposableOwner,
    type IEqualityService,
@@ -9,12 +11,13 @@ import {
    RsXCoreInjectionTokens,
    SingletonFactory,
 } from '@rs-x/core';
-import { Subscription } from 'rxjs';
+
 import { AbstractObserver } from '../../../abstract-observer';
 import type { IObjectObserverProxyPairManager } from '../../../object-observer';
 import type { IObserver } from '../../../observer.interface';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
 import type { IIndexObserverIdInfo, IIndexObserverInfo } from '../index-observer-info.interface';
+
 import type {
    Collection,
    ICollectionIndexObserverManager,

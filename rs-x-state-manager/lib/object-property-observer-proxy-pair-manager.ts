@@ -9,6 +9,8 @@ import {
    Type,
    UnsupportedException
 } from '@rs-x/core';
+
+import type { IIndexObserverProxyPairFactory } from './property-observer/index-observer-proxy-pair.factory.interface';
 import type {
    IObjectPropertyObserverProxyPairManager,
    IObserverProxyPair,
@@ -17,7 +19,6 @@ import type {
    IPropertyObserverProxyPairManager,
    MustProxify,
 } from './object-property-observer-proxy-pair-manager.type';
-import type { IIndexObserverProxyPairFactory } from './property-observer/index-observer-proxy-pair.factory.interface';
 import { RsXStateManagerInjectionTokens } from './rs-x-state-manager-injection-tokes';
 
 class PropertyObserverProxyPairManager

@@ -6,14 +6,15 @@ import {
    type ISingletonFactory,
    SingletonFactory,
 } from '@rs-x/core';
+
 import {
    GroupedChangeSubscriptionsForContextManager,
    type IChangeSubscriptionsCreateMethods,
    type IGroupedChangeSubscriptionsForContextManager,
 } from '../../../grouped-change-subscriptions-for-context-manager';
 import { type MustProxify } from '../../../object-property-observer-proxy-pair-manager.type';
-import { ObserverGroup } from '../../../observer-group';
 import { type IObserver } from '../../../observer.interface';
+import { ObserverGroup } from '../../../observer-group';
 import { type IIndexObserverInfo } from '../index-observer-info.interface';
 
 export interface ISubscriptionIdInfo<TIndex> {

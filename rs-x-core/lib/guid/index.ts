@@ -1,2 +1,2 @@
-export * from './guid.factory.interface';
 export * from './guid.factory';
+export * from './guid.factory.interface';

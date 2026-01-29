@@ -1,16 +1,9 @@
+import { type IDeepClone } from './deep-clone/deep-clone.interface';
 import { DeepCloneValueExcept } from './deep-clone/deep-clone-except';
 import { type IDeepCloneExcept } from './deep-clone/deep-clone-except.interface';
-import { type IDeepClone } from './deep-clone/deep-clone.interface';
 import { DefaultDeepClone } from './deep-clone/default-deep-clone';
 import { LodashDeepClone } from './deep-clone/lodash-deep-clone';
 import { StructuredDeepClone } from './deep-clone/structured-deep-clone';
-import {
-   type Container,
-   ContainerModule,
-   type IMultiInjectService,
-   InjectionContainer,
-   registerMultiInjectServices
-} from './dependency-injection';
 import { EqualityService } from './equality-service/equality-service';
 import { type IEqualityService } from './equality-service/equality-service.interface';
 import { ErrorLog } from './error-log/error-log';
@@ -33,9 +26,16 @@ import { PropertyValueAccessor } from './index-value-accessor/property-value-acc
 import { ResolvedValueCache } from './index-value-accessor/resolved-value-cache';
 import { type IResolvedValueCache } from './index-value-accessor/resolved-value-cache.interface';
 import { SetKeyAccessor } from './index-value-accessor/set-key-accessor';
-import { RsXCoreInjectionTokens } from './rs-x-core.injection-tokens';
-import { type ISequenceIdFactory } from './sequence-id/sequence-id-factory.interface';
 import { SequenceIdFactory } from './sequence-id/sequence-id.factory';
+import { type ISequenceIdFactory } from './sequence-id/sequence-id-factory.interface';
+import {
+   type Container,
+   ContainerModule,
+   type IMultiInjectService,
+   InjectionContainer,
+   registerMultiInjectServices
+} from './dependency-injection';
+import { RsXCoreInjectionTokens } from './rs-x-core.injection-tokens';
 
 export const defaultIndexValueAccessorList: readonly IMultiInjectService[] = [
    { target: PropertyValueAccessor, token: RsXCoreInjectionTokens.IPropertyValueAccessor },

@@ -1,5 +1,5 @@
 import { type AbstractExpression } from './abstract-expression';
-import { type ExpressionType } from './interfaces';
+import { type ExpressionType } from './expression-parser.interface';
 import { ParameterizedExpression } from './parameterized-abstract-expression';
 
 export abstract class CollectionExpression<

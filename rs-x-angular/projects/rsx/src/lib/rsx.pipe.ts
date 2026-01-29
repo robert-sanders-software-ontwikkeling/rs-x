@@ -1,16 +1,18 @@
 import {
     ChangeDetectorRef,
     inject,
-    Pipe,
     type OnDestroy,
+    Pipe,
     type PipeTransform
 } from '@angular/core';
+import { Subscription } from 'rxjs';
+
 import { Type, UnsupportedException } from '@rs-x/core';
 import {
     AbstractExpression,
     type IExpression
 } from '@rs-x/expression-parser';
-import { Subscription } from 'rxjs';
+
 import { IExpressionFactoryToken } from './rsx.providers';
 
 @Pipe({

@@ -1,6 +1,8 @@
+import { Observable } from 'rxjs';
+
 import { ObservableAccessor } from '@rs-x/core';
 import { ResolvedValueCacheMock } from '@rs-x/core/testing';
-import { Observable } from 'rxjs';
+
 import { ObservableProxyFactory } from '../../../lib/proxies/observable-proxy/observable-proxy.factory';
 
 describe('ObservableProxyFactory tests', () => {

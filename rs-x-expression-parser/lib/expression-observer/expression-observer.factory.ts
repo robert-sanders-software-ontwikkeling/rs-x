@@ -1,3 +1,5 @@
+import { ReplaySubject, Subscription } from 'rxjs';
+
 import {
    type IDisposableOwner,
    Injectable,
@@ -5,8 +7,9 @@ import {
    SingletonFactory
 } from '@rs-x/core';
 import { AbstractObserver, type IObserver } from '@rs-x/state-manager';
-import { ReplaySubject, Subscription } from 'rxjs';
+
 import { AbstractExpression, type IExpression } from '../expressions';
+
 import type {
    IExpressionObserverData,
    IExpressionObserverFactory,

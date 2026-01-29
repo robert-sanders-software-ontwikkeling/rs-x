@@ -1,7 +1,8 @@
 import { GuidFactory, type IPropertyChange, truePredicate, utCDate, WaitForEvent } from '@rs-x/core';
+
+import type { IObserver } from '../../../lib';
 import { DateProxyFactory } from '../../../lib/proxies/date-proxy/date-proxy.factory';
 import { ProxyRegistryMock } from '../../../lib/testing/proxies/proxy-registry.mock';
-import type { IObserver } from '../../../lib';
 
 describe('DateProxy tests', () => {
    it('Node timezone is UTC', () => {

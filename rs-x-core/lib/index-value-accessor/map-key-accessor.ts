@@ -1,4 +1,5 @@
 import { Injectable } from '../dependency-injection';
+
 import type { IMapKeyAccessor } from './map-key-accessor.type';
 
 @Injectable()

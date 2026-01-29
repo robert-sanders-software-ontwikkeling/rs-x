@@ -1,4 +1,5 @@
 import { type AnyFunction, Type } from '../types/type';
+
 import { InvalidCastException } from './invalid-cast-exception';
 import { NullOrEmptyException } from './null-or-empty-exception';
 import { NullOrUndefinedException } from './null-or-undefined-exception';

@@ -1,5 +1,7 @@
-import { type IDisposable, type IDisposableOwner } from '@rs-x/core';
 import { type Observable } from 'rxjs';
+
+import { type IDisposable } from '@rs-x/core';
+
 import { type AbstractExpression } from './abstract-expression';
 
 export interface IExpression<T = unknown, PT = unknown> extends IDisposable {
@@ -78,9 +80,5 @@ export enum ExpressionType {
 }
 
 export interface IExpressionParser {
-   parse(
-      context: object,
-      expression: string,
-      owner?: IDisposableOwner
-   ): AbstractExpression;
+   parse(expression: string): AbstractExpression;
 }

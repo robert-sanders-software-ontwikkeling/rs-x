@@ -1,3 +1,5 @@
+import { type Observable, Subject } from 'rxjs';
+
 import {
     type IDisposable,
     type IDisposableOwner,
@@ -9,7 +11,6 @@ import {
     Type,
     UnsupportedException
 } from '@rs-x/core';
-import { type Observable, Subject } from 'rxjs';
 
 interface IObserver extends IDisposable {
     changed: Observable<IPropertyChange>;

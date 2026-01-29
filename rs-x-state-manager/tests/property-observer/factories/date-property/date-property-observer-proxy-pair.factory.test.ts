@@ -5,11 +5,12 @@ import {
    WaitForEvent
 } from '@rs-x/core';
 import { DisposableOwnerMock } from '@rs-x/core/testing';
+
 import { type IProxyRegistry } from '../../../../lib';
 import { type IObserver } from '../../../../lib/observer.interface';
 import { type IDatePropertyObserverProxyPairFactory } from '../../../../lib/property-observer/factories/date-property/date-property-observer-proxy-pair.factory.type';
-import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
+import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';
 
 describe('IDatePropertyObserverProxyPairFactory tests', () => {
    let disposableOwner: DisposableOwnerMock;

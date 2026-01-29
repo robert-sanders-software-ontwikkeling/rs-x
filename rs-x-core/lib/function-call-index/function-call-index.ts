@@ -1,5 +1,6 @@
 import { type IISequenceWithIdData, type ISequenceWithId } from '../sequence-id';
 import { type IDisposableOwner } from '../singleton-factory';
+
 import { type IDisposableFunctionCallIndex } from './function-call-index.interface';
 
 export class FunctionCallIndex implements IDisposableFunctionCallIndex {

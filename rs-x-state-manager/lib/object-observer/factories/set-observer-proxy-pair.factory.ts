@@ -5,6 +5,7 @@ import {
    type ISetKeyAccessor,
    RsXCoreInjectionTokens
 } from '@rs-x/core';
+
 import type { IObjectPropertyObserverProxyPairManager } from '../../object-property-observer-proxy-pair-manager.type';
 import type {
    ISetObserverProxyPair,
@@ -12,6 +13,7 @@ import type {
 } from '../../proxies/set-proxy/set-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
 import type { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
+
 import { AbstractObjectObserverProxyPairFactory } from './abstract-object-observer-proxy-pair.factory';
 import type { ISetObserverProxyPairFactory } from './set-observer-proxy-pair.factory.type';
 

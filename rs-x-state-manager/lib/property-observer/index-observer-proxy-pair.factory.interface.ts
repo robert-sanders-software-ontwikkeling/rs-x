@@ -1,4 +1,5 @@
 import { type IDisposable, type IDisposableOwner } from '@rs-x/core';
+
 import {
    type IObserverProxyPair,
    type IPropertyInfo,

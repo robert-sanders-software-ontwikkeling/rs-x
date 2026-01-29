@@ -1,23 +1,21 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-   ExpressionType,
-   type IExpression,
-   type IExpressionParser,
-} from '../../lib/expressions/interfaces';
-import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+
+import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
+import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
    RsXExpressionParserModule,
    unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
+import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
 
 describe('FunctionExpression tests', () => {
-   let jsParser: IExpressionParser;
+   let expressionFactory: IExpressionFactory;
    let expression: IExpression | undefined;
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXExpressionParserModule);
-      jsParser = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IExpressionParser
+       expressionFactory = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionFactory
       );
    });
 
@@ -32,13 +30,13 @@ describe('FunctionExpression tests', () => {
 
    it('type', () => {
       const context = { a: 10, multiplWithTwo: (a: number) => 2 * a };
-      expression = jsParser.parse(context, 'multiplWithTwo(a)');
+      expression = expressionFactory.create(context, 'multiplWithTwo(a)');
       expect(expression.type).toEqual(ExpressionType.Function);
    });
 
    it('method on root object', async () => {
       const context = { a: 10, multiplWithTwo: (a: number) => 2 * a };
-      expression = jsParser.parse(context, 'multiplWithTwo(a)');
+      expression = expressionFactory.create(context, 'multiplWithTwo(a)');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
          () => {}
@@ -58,7 +56,7 @@ describe('FunctionExpression tests', () => {
             },
          },
       };
-      expression = jsParser.parse(context, 'b.multiply(a)');
+      expression = expressionFactory.create(context, 'b.multiply(a)');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
          () => {}
@@ -79,7 +77,7 @@ describe('FunctionExpression tests', () => {
             },
          },
       };
-      expression = jsParser.parse(context, 'b[b.methodName](a)');
+      expression = expressionFactory.create(context, 'b[b.methodName](a)');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
          () => {}
@@ -91,7 +89,7 @@ describe('FunctionExpression tests', () => {
 
    it('method on root object: change event is emitted when arguments changes', async () => {
       const context = { a: 10, multiplWithTwo: (a: number) => 2 * a };
-      expression = jsParser.parse(context, 'multiplWithTwo(a)');
+      expression = expressionFactory.create(context, 'multiplWithTwo(a)');
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => { });
 
@@ -117,7 +115,7 @@ describe('FunctionExpression tests', () => {
             },
          },
       };
-      expression = jsParser.parse(context, 'b[b.methodName](a)');
+      expression = expressionFactory.create(context, 'b[b.methodName](a)');
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => { });
 
@@ -140,7 +138,7 @@ describe('FunctionExpression tests', () => {
             },
          },
       };
-      expression = jsParser.parse(context, 'b[b.methodName](a)');
+      expression = expressionFactory.create(context, 'b[b.methodName](a)');
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => { });
 
@@ -172,7 +170,7 @@ describe('FunctionExpression tests', () => {
             },
          },
       };
-      expression = jsParser.parse(context, 'b[b.methodName](a)');
+      expression = expressionFactory.create(context, 'b[b.methodName](a)');
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => { });
 

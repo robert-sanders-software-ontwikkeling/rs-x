@@ -8,16 +8,18 @@ import {
    Type,
    UnexpectedException
 } from '@rs-x/core';
+
 import { type IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
 import {
    type IObserverProxyPair,
    type IPropertyInfo,
    type MustProxify,
 } from '../../../object-property-observer-proxy-pair-manager.type';
-import { type ObserverGroup } from '../../../observer-group';
 import { type IObserver } from '../../../observer.interface';
+import { type ObserverGroup } from '../../../observer-group';
 import { type IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
 import { type IIndexObserverProxyPairFactory } from '../../index-observer-proxy-pair.factory.interface';
+
 import {
    type IIndexSetObserverManager,
    IndexChangeSubscriptionManager,

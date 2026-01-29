@@ -1,3 +1,5 @@
+import { Subject } from 'rxjs';
+
 import {
    type IDisposableOwner,
    Inject,
@@ -9,11 +11,12 @@ import {
    SingletonFactory,
    Type
 } from '@rs-x/core';
-import { Subject } from 'rxjs';
+
 import { AbstractObserver } from '../../../abstract-observer';
 import type { IObserver } from '../../../observer.interface';
 import type { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
+
 import type {
    IObjectPropertyObserverManager,
    IPropertyObserverIdInfo,

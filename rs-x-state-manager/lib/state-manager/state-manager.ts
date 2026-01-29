@@ -1,3 +1,5 @@
+import { Observable, Subject } from 'rxjs';
+
 import {
    type IChainPart,
    type IEqualityService,
@@ -10,14 +12,15 @@ import {
    PENDING,
    RsXCoreInjectionTokens,
 } from '@rs-x/core';
-import { Observable, Subject } from 'rxjs';
+
 import type {
    IObjectPropertyObserverProxyPairManager,
    MustProxify,
 } from '../object-property-observer-proxy-pair-manager.type';
 import { RsXStateManagerInjectionTokens } from '../rs-x-state-manager-injection-tokes';
-import type { IObjectStateManager } from './object-state-manager.interface';
+
 import { StateChangeSubscriptionManager } from './state-change-subscription-manager/state-change-subsription-manager';
+import type { IObjectStateManager } from './object-state-manager.interface';
 import type {
    IContextChanged,
    IStateChange,
