@@ -2,7 +2,7 @@ import { BehaviorSubject } from 'rxjs';
 
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionFactory } from '../../dist';
+import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import { type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
    RsXExpressionParserModule,
