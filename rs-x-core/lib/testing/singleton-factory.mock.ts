@@ -12,6 +12,7 @@ export class SingletonFactoryMock<TId, TData, TInstance, TIdData = TData>
    public readonly getFromData = jest.fn();
    public readonly getFromId = jest.fn();
    public readonly getOrCreate = jest.fn();
+   public readonly  getReferenceCount= jest.fn();
    public readonly dispose = jest.fn();
    public readonly exists = jest.fn();
 }

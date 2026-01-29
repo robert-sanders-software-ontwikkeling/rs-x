@@ -10,10 +10,20 @@ import {
    RsXCoreInjectionTokens,
    SetKeyAccessor
 } from '@rs-x/core';
-import { ArrayObserverProxyPairFactory, DateObserverProxyPairFactory, MapObserverProxyPairFactory, ObservableObserverProxyPairFactory, PlainObjectObserverProxyPairFactory, PromiseObserverProxyPairFactory, RsXStateManagerInjectionTokens, SetObserverProxyPairFactory } from '@rs-x/state-manager';
+import { 
+   ArrayObserverProxyPairFactory, 
+   DateObserverProxyPairFactory, 
+   MapObserverProxyPairFactory, 
+   ObservableObserverProxyPairFactory, 
+   PlainObjectObserverProxyPairFactory, 
+   PromiseObserverProxyPairFactory, 
+   RsXStateManagerInjectionTokens, 
+   SetObserverProxyPairFactory 
+} from '@rs-x/state-manager';
 
 import { ExpressionObserverProxyPairFactory } from '../lib';
 import { ExpressionChangeTransactionManager } from '../lib/expresion-change-transaction-manager';
+import { ExpressionCache } from '../lib/expression-cache/expression-cache';
 import { ExpressionFactory } from '../lib/expression-factory/expression-factory';
 import { ExpressionManager } from '../lib/expression-factory/expression-manager';
 import { DeepCloneExceptWithExpressionSupport } from '../lib/expression-observer/deep-clone-except-with-expression-support';
@@ -252,7 +262,6 @@ describe('RsXExpressionParserModule tests', () => {
       expect(a1).toBe(a2);
    });
 
-
    it('can get instance of IDeepCloneValueGetter', () => {
       const actual = InjectionContainer.get(
          RsXCoreInjectionTokens.DefaultDeepCloneExcept
@@ -271,6 +280,23 @@ describe('RsXExpressionParserModule tests', () => {
    });
 
 
+   it('can get instance of IExpressionCache', () => {
+      const actual = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionCache
+      );
+      expect(actual).toBeInstanceOf(ExpressionCache);
+   });
+
+   it('IExpressionCache instance is a singleton', () => {
+      const a1 = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionCache
+      );
+      const a2 = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionCache
+      );
+      expect(a1).toBe(a2);
+   });
+
    it('can get an instance of IObjectObserverProxyPairFactoryList', () => {
       const actual = InjectionContainer.getAll(
          RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList
@@ -285,8 +311,6 @@ describe('RsXExpressionParserModule tests', () => {
       expect(actual[5]).toBeInstanceOf(ObservableObserverProxyPairFactory);
       expect(actual[6]).toBeInstanceOf(MapObserverProxyPairFactory);
       expect(actual[7]).toBeInstanceOf(SetObserverProxyPairFactory);
-
-
    });
 
    it('IObjectObserverProxyPairFactoryList instance is a singelton', () => {

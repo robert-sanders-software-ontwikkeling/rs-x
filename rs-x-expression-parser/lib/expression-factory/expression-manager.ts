@@ -5,7 +5,8 @@ import {
 } from '@rs-x/core';
 
 import type { IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
-import type { IExpression, IExpressionParser } from '../expressions/expression-parser.interface';
+import type { IExpressionCache } from '../expression-cache';
+import type { IExpression } from '../expressions/expression-parser.interface';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
 
 import type {
@@ -17,7 +18,7 @@ class ExpressionForContextManager
    extends SingletonFactory<string, string, IExpression>
    implements IExpressionForContextManager {
    constructor(
-      private readonly _expressionParser: IExpressionParser,
+      private readonly _expressionCache: IExpressionCache,
       private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
       private readonly _context: object,
       private readonly releaseContext: () => void
@@ -30,29 +31,38 @@ class ExpressionForContextManager
    }
 
    protected override createId(expression: string): string {
+      // Ideally, we would normalize the expression string here to avoid duplicates caused by whitespace differences.
+      // However, this is a complex task that requires parsing the expression, which is not feasible in this context.
+      // Normalization would also need to be fast; otherwise, it defeats the purpose of caching.
+
       return expression;
    }
 
-   protected override createInstance(expressionString: string, id: string): IExpression {
-      const expression = this._expressionParser.parse(expressionString);
+   override create(expressionString: string): { referenceCount: number; instance: IExpression<unknown, unknown>; id: string; } {
+      const result = super.create(expressionString);
 
-      expression.bind({
+      result.instance.bind({
          rootContext: this._context,
          transactionManager: this._expressionChangeTransactionManager,
          owner: {
-            release: () => this.release(id),
-            canDispose: () => this.getReferenceCount(id) === 1
+            release: () => {
+               this.release(result.id);
+               this._expressionCache.release(result.id);
+            },
+            canDispose: () => this.getReferenceCount(result.id) === 1
          }
       });
       this._expressionChangeTransactionManager.commit();
 
-      return expression;
+      return result;
    }
 
    protected override onReleased(): void {
-      if (this.isEmpty) {
-         this.releaseContext();
-      }
+      this.releaseContext();
+   }
+
+   protected override createInstance(_: string, id: string): IExpression {
+      return this._expressionCache.create(id).instance;
    }
 }
 
@@ -71,8 +81,8 @@ export class ExpressionManager
       return context;
    }
    constructor(
-      @Inject(RsXExpressionParserInjectionTokens.IExpressionParser)
-      private readonly _expressionParser: IExpressionParser,
+      @Inject(RsXExpressionParserInjectionTokens.IExpressionCache)
+      private readonly _expressionCache: IExpressionCache,
       @Inject(RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager)
       private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
    ) {
@@ -84,7 +94,7 @@ export class ExpressionManager
       id: object
    ): IExpressionForContextManager {
       return new ExpressionForContextManager(
-         this._expressionParser,
+         this._expressionCache,
          this._expressionChangeTransactionManager,
          context,
          () => this.release(id)

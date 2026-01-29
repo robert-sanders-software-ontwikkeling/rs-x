@@ -22,6 +22,6 @@ export interface ISingletonFactory<
    has(id: TId): boolean;
    getFromData(data: TIdData): TInstance | undefined;
    getId(data: TIdData): TId | undefined;
-
+   getReferenceCount(id: TId): number;
    exists(instance: TInstance): boolean;
 }
