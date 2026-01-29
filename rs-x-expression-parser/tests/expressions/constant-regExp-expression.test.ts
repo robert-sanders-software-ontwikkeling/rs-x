@@ -1,6 +1,8 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
+import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
+import { ConstantRegExpExpression } from '../../lib/expressions/constant-regexp-expression';
 import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
    RsXExpressionParserModule,
@@ -14,7 +16,7 @@ describe('ConstantRegExpExpression tests', () => {
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXExpressionParserModule);
-       expressionFactory = InjectionContainer.get(
+      expressionFactory = InjectionContainer.get(
          RsXExpressionParserInjectionTokens.IExpressionFactory
       );
    });
@@ -33,11 +35,38 @@ describe('ConstantRegExpExpression tests', () => {
       expect(expression.type).toEqual(ExpressionType.RegExp);
    });
 
+   it('clone', async () => {
+      const transactionManager: IExpressionChangeTransactionManager = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
+
+      expression = expressionFactory.create({}, '/ab+c/i');
+
+      const clonedExpression = expression.clone();
+
+      try {
+         expect(clonedExpression).toBeInstanceOf(ConstantRegExpExpression);
+         expect(clonedExpression.type).toEqual(ExpressionType.RegExp);
+         expect(clonedExpression.expressionString).toEqual('/ab+c/i');
+
+         await new WaitForEvent(clonedExpression, 'changed').wait(() => {
+            clonedExpression.bind({
+               transactionManager,
+               rootContext: {}
+            });
+
+            transactionManager.commit();
+         });
+         expect(clonedExpression.value).toEqual(new RegExp('ab+c', 'i'));
+      } finally {
+         clonedExpression.dispose();
+      }
+   });
+
    it('will emit change event for initial value', async () => {
       expression = expressionFactory.create({}, '/ab+c/i');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
-         () => {}
+         () => { }
       )) as IExpression;
 
       expect(actual.value).toEqual(new RegExp('ab+c', 'i'));

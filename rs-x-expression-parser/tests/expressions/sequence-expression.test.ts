@@ -1,7 +1,9 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
+import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
+import { SequenceExpression } from '../../lib/expressions/sequence-expression';
 import {
    RsXExpressionParserModule,
    unloadRsXExpressionParserModule,
@@ -14,7 +16,7 @@ describe('SequenceExpression tests', () => {
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXExpressionParserModule);
-       expressionFactory = InjectionContainer.get(
+      expressionFactory = InjectionContainer.get(
          RsXExpressionParserInjectionTokens.IExpressionFactory
       );
    });
@@ -40,8 +42,42 @@ describe('SequenceExpression tests', () => {
       expect(expression.type).toEqual(ExpressionType.Sequence);
    });
 
+   it('clone', async () => {
+      const transactionManager: IExpressionChangeTransactionManager = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
+
+      const context: { b: number | null; value: number; setB(v: number): void } = {
+         b: null,
+         value: 100,
+         setB(v: number) {
+            this.b = v;
+         },
+      };
+      expression = expressionFactory.create(context, '(setB(value), b)');
+
+      const clonedExpression = expression.clone();
+
+      try {
+         expect(clonedExpression).toBeInstanceOf(SequenceExpression);
+         expect(clonedExpression.type).toEqual(ExpressionType.Sequence);
+         expect(clonedExpression.expressionString).toEqual('(setB(value), b)');
+
+         await new WaitForEvent(clonedExpression, 'changed').wait(() => {
+            clonedExpression.bind({
+               transactionManager,
+               rootContext: context
+            });
+
+            transactionManager.commit();
+         });
+         expect(clonedExpression.value).toEqual(100);
+      } finally {
+         clonedExpression.dispose();
+      }
+   });
+
    it('will emit change event for initial value', async () => {
-      const context :{ b: number | null; value: number; setB(v: number): void } = {
+      const context: { b: number | null; value: number; setB(v: number): void } = {
          b: null,
          value: 100,
          setB(v: number) {
@@ -51,7 +87,7 @@ describe('SequenceExpression tests', () => {
       expression = expressionFactory.create(context, '(setB(value), b)');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
-         () => {}
+         () => { }
       )) as IExpression;
 
       expect(actual.value).toEqual(100);

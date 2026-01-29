@@ -1,12 +1,15 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
+import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
+import { TemplateStringExpression } from '../../lib/expressions/template-string-expression';
 import {
    RsXExpressionParserModule,
    unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+
 
 describe('TemplateStringExpression tests', () => {
    let expressionFactory: IExpressionFactory;
@@ -14,7 +17,7 @@ describe('TemplateStringExpression tests', () => {
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXExpressionParserModule);
-       expressionFactory = InjectionContainer.get(
+      expressionFactory = InjectionContainer.get(
          RsXExpressionParserInjectionTokens.IExpressionFactory
       );
    });
@@ -34,12 +37,40 @@ describe('TemplateStringExpression tests', () => {
       expect(expression.type).toEqual(ExpressionType.TemlateString);
    });
 
+   it('clone', async () => {
+      const transactionManager: IExpressionChangeTransactionManager = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
+
+      const context = { name: 'Robert' };
+      expression = expressionFactory.create(context, '`Hello ${name}`');
+
+      const clonedExpression = expression.clone();
+
+      try {
+         expect(clonedExpression).toBeInstanceOf(TemplateStringExpression);
+         expect(clonedExpression.type).toEqual(ExpressionType.TemlateString);
+         expect(clonedExpression.expressionString).toEqual('`Hello ${name}`');
+
+         await new WaitForEvent(clonedExpression, 'changed').wait(() => {
+            clonedExpression.bind({
+               transactionManager,
+               rootContext: context
+            });
+
+            transactionManager.commit();
+         });
+         expect(clonedExpression.value).toEqual('Hello Robert');
+      } finally {
+         clonedExpression.dispose();
+      }
+   });
+
    it('will emit change event for initial value', async () => {
       const context = { name: 'Robert' };
       expression = expressionFactory.create(context, '`Hello ${name}`');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
-         () => {}
+         () => { }
       )) as IExpression;
 
       expect(actual.value).toEqual('Hello Robert');

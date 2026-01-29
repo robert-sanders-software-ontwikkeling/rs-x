@@ -43,7 +43,7 @@ describe('IDatePropertyObserverProxyPairFactory tests', () => {
    });
 
    it('will emit change when set date property to a new value', async () => {
-      const date = new Date(2021, 2, 3)
+      const date = new Date(2021, 2, 3);
       const { observer } = datePropertyObserverProxyPairFactory.create(
          disposableOwner,
          date,
@@ -53,7 +53,7 @@ describe('IDatePropertyObserverProxyPairFactory tests', () => {
       const dateProxy = proxyRegistry.getProxy<Date>(date);
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-         dateProxy.setFullYear(2024)
+         dateProxy.setFullYear(2024);
       });
 
       const expected: IPropertyChange = {

@@ -102,7 +102,7 @@ describe('Type tests', () => {
          const instance = {
             _value: 10,
             get writableProperty(): number {
-               return this._value
+               return this._value;
             },
             set writableProperty(value: number) {
                this._value = value;
@@ -175,7 +175,7 @@ describe('Type tests', () => {
 
       it('lambda', () => {
          const instance = {
-            lambda: (x: number) => { return x + 1 }
+            lambda: (x: number) => { return x + 1; }
          };
 
          const actual = Type.getPropertyDescriptor(instance, 'lambda');

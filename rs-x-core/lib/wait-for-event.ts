@@ -67,7 +67,7 @@ export class WaitForEvent<
       return this._target[this._eventName].subscribe({
          next: (value) => {
             if (state.pending || state.results.length >= (this._options.count ?? 1)) {
-               state.pending = false
+               state.pending = false;
                return;
             }
 

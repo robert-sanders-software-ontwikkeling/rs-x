@@ -38,16 +38,16 @@ export const run = (async () => {
 
         console.log(`Initial value of 'new type(value)':`);
         expression.changed.subscribe((change) => {
-            print(change.value)
+            print(change.value);
         });
 
         console.log(`Value of 'new type(value)' after changing 'value' to '20':`);
-        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.value = 20; })
+        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.value = 20; });
 
-        console.log(`Value of 'new type(value)' after changing 'type' to 'Add10':`)
-        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.type = Add10; })
+        console.log(`Value of 'new type(value)' after changing 'type' to 'Add10':`);
+        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.type = Add10; });
 
-        console.log(`Final value of 'new type(value)':`)
+        console.log(`Final value of 'new type(value)':`);
         print(expression.value);
 
     } finally {

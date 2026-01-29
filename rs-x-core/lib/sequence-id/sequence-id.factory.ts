@@ -54,11 +54,11 @@ class ValueSequenceIdRegistry {
 
         let isNew = !node.id;
         if (isNew) {
-            node.id = this._guidFactory.create()
+            node.id = this._guidFactory.create();
             this._idToSequence.set(node.id, [...sequence]);
         }
 
-        return { isNew, id: node.id as string }
+        return { isNew, id: node.id as string };
     }
 
     public deleteId(id: string): void {
@@ -110,7 +110,7 @@ class ValueSequenceIdRegistry {
 class ValueSequenceIdsForContext
     extends SingletonFactory<string, unknown[], ISequenceWithId> {
 
-    private readonly _valueSequenceIdRegistry: ValueSequenceIdRegistry
+    private readonly _valueSequenceIdRegistry: ValueSequenceIdRegistry;
     constructor(
         public readonly context: unknown,
         private readonly _guidFactory: IGuidFactory,
@@ -141,7 +141,7 @@ class ValueSequenceIdsForContext
     }   
 
     protected override releaseInstance(_: ISequenceWithId, id: string): void {
-        this._valueSequenceIdRegistry.deleteId(id)
+        this._valueSequenceIdRegistry.deleteId(id);
     }
 
     protected override onReleased(): void {
@@ -196,7 +196,7 @@ export class SequenceIdFactory implements ISequenceIdFactory {
     }
 
     public release(context: unknown, id: string): void {
-        this._valueSequenceIdRegistryManager.getFromId(context)?.release(id)
+        this._valueSequenceIdRegistryManager.getFromId(context)?.release(id);
     }
 
     public get(context: unknown, sequence: unknown[]): ISequenceWithId | undefined {

@@ -8,7 +8,7 @@ export class SetKeyAccessor implements ISetKeyAccessor {
    public readonly priority = 3;
 
    public getIndexes(set: Set<unknown>): IterableIterator<unknown> {
-     return new Set(set).values()
+     return new Set(set).values();
    }
 
    public isAsync(): boolean {

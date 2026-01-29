@@ -73,7 +73,7 @@ export const run = (async () => {
         console.log(`Value of 'a.b[1].c.d' after changing b[1].c.d to '330':`);
         await new WaitForEvent(expression, 'changed', {ignoreInitialValue: true}).wait(() => { expressionContext.a.b[1].c.d = 330; });
 
-        console.log(`Final value of 'a.b[1].c.d':`)
+        console.log(`Final value of 'a.b[1].c.d':`);
         printValue(expression.value);
     } finally {
         // Always dispose of expressions after use.

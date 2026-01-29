@@ -18,6 +18,20 @@ export class ConditionalExpression extends ParameterizedExpression {
       );
    }
 
+   public override clone(): this {
+      return new (this.constructor as new (
+         expressionString: string,
+         condition: AbstractExpression,
+         ifValueExpression: AbstractExpression,
+         elseValueExpression: AbstractExpression
+      ) => this)(
+         this.expressionString,
+         this._childExpressions[0].clone(),
+         this._childExpressions[1].clone(),
+         this._childExpressions[2].clone()
+      );
+   }
+
    protected override evaluateExpression(
       condition: unknown,
       consequent: unknown,

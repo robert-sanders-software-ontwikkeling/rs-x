@@ -13,6 +13,16 @@ export class BitwiseNotExpression extends ParameterizedExpression<
       super(ExpressionType.BitwiseNot, expressionString, expression);
    }
 
+   public override clone(): this {
+      return new (this.constructor as new (
+         expressionString: string,
+         expression: AbstractExpression<number>
+      ) => this)(
+         this.expressionString,
+         this._childExpressions[0].clone() as  AbstractExpression<number>
+      );
+   }
+
    protected override evaluateExpression(
       a: number
    ): number {

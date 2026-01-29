@@ -9,6 +9,16 @@ export class SequenceExpression extends AbstractExpression {
       super(ExpressionType.Sequence, expressionString, ...expressions);
    }
 
+   public override clone(): this {
+      return new (this.constructor as new (
+         expressionString: string,
+         expressions: AbstractExpression[]
+      ) => this)(
+         this.expressionString,
+         this._childExpressions.map(child => child.clone())
+      );
+   }
+
    public override bind(
       settings: IExpressionBindConfiguration
    ): AbstractExpression {

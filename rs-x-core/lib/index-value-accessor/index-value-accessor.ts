@@ -7,13 +7,13 @@ import type { IIndexValueAccessor } from './index-value-accessor.interface';
 @Injectable()
 export class IndexValueAccessor implements IIndexValueAccessor {
    public readonly priority = 0;
-   private readonly _accessors: readonly IIndexValueAccessor[]
+   private readonly _accessors: readonly IIndexValueAccessor[];
 
    constructor(
       @MultiInject(RsXCoreInjectionTokens.IIndexValueAccessorList)
       accessors: readonly IIndexValueAccessor[]
    ) {
-      this._accessors = [...accessors].sort((a, b) => b.priority - a.priority)
+      this._accessors = [...accessors].sort((a, b) => b.priority - a.priority);
    }
 
    public getIndexes(context: unknown, index: unknown): IterableIterator<unknown> {

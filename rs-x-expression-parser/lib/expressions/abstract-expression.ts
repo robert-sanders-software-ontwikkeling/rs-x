@@ -38,6 +38,9 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
       );
    }
 
+
+   public abstract clone(): this;
+
    public bind(settings: IExpressionBindConfiguration): AbstractExpression {
       if (!this._parent && settings.transactionManager) {
          this._owner = settings.owner;
@@ -137,7 +140,7 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
       this._value = value;
 
       if (this.parent) {
-         return this.parent.reevaluated(this, root, pendingCommits)
+         return this.parent.reevaluated(this, root, pendingCommits);
       }
       return true;
    }
@@ -151,7 +154,7 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
          this._oldValue = this._value;
          this._changed.next(this);
       }
-   }
+   };
 
    private addChildExpressions(expressions: AbstractExpression[]): void {
       this._childExpressions.push(...expressions);

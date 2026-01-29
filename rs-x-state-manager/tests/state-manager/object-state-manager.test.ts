@@ -9,11 +9,11 @@ describe('ObjectStateManager tests', () => {
    let objectStateManager: IObjectStateManager;
    beforeAll(async () => {
       await InjectionContainer.load(RsXStateManagerModule);
-      objectStateManager = InjectionContainer.get(RsXStateManagerInjectionTokens.IObjectStateManager)
-   })
+      objectStateManager = InjectionContainer.get(RsXStateManagerInjectionTokens.IObjectStateManager);
+   });
    afterAll(async() => {
       await unloadRsXStateManagerModule();
-   })
+   });
 
    afterEach(() => {
      objectStateManager.dispose();

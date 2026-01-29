@@ -19,7 +19,7 @@ export const run = (() => {
     };
     const clone = deepClone.clone(object);
 
-    console.log(`Clone is a copy of the cloned object: ${object !== clone}`)
+    console.log(`Clone is a copy of the cloned object: ${object !== clone}`);
     console.log('Cloned object');
     printValue(clone);
 })();

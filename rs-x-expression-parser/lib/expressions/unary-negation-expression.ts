@@ -10,6 +10,16 @@ export class UnaryNegationExpression extends ParameterizedExpression<number> {
       super(ExpressionType.UnaryNegation, expressionString, expression);
    }
 
+   public override clone(): this {
+      return new (this.constructor as new (
+         expressionString: string,
+         expression: AbstractExpression<number>
+      ) => this)(
+         this.expressionString,
+         this._childExpressions[0].clone() as AbstractExpression<number>
+      );
+   }
+
    protected override evaluateExpression(
       value: number
    ): number {

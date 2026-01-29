@@ -103,7 +103,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
 
             const newValue = [[11]];
             const actual = await new WaitForEvent(observer2, 'changed').wait(() => {
-               const arrayProxy = proxyRegister.getProxy<unknown[]>(array)
+               const arrayProxy = proxyRegister.getProxy<unknown[]>(array);
                arrayProxy[0] = newValue;
             });
 
@@ -116,7 +116,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                id: 0,
                newValue: newValue,
             };
-            expect(actual).toDeepEqualCircular(expected)
+            expect(actual).toDeepEqualCircular(expected);
          });
 
          it('Change event for non-recursived observer will be emmited when changing root item', async () => {
@@ -142,7 +142,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
 
             const newValue = [[11]];
             const actual = await new WaitForEvent(observer1, 'changed').wait(() => {
-               const arrayProxy = proxyRegister.getProxy<unknown[]>(array)
+               const arrayProxy = proxyRegister.getProxy<unknown[]>(array);
                arrayProxy[0] = newValue;
             });
 
@@ -155,7 +155,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                id: 0,
                newValue: newValue,
             };
-            expect(actual).toDeepEqualCircular(expected)
+            expect(actual).toDeepEqualCircular(expected);
          });
 
          it('No change event for non-recursived observer will be emmited when changing nested item', async () => {
@@ -177,9 +177,9 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
             ).observer;
 
             const actual = await new WaitForEvent(observer1, 'changed').wait(() => {
-               array[0].push(20)
+               array[0].push(20);
             });
-            expect(actual).toBeNull()
+            expect(actual).toBeNull();
          });
 
          it('Change event for recursived observer will be emmited when changing nested item', async () => {
@@ -217,7 +217,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                id: 1,
                newValue: 20,
             };
-            expect(actual).toDeepEqualCircular(expected)
+            expect(actual).toDeepEqualCircular(expected);
          });
       });
 
@@ -309,7 +309,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
             ).observer;
 
             const actual = await new WaitForEvent(observer1, 'changed').wait(() => {
-               array[0].push(20)
+               array[0].push(20);
             });
 
             const expected: IPropertyChange = {
@@ -371,7 +371,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
 
             expect(actual).toBeNull();
          });
-      })
+      });
    });
 
 
@@ -433,7 +433,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
 
             const newValue = new Map([['x', 11]]);
             const actual = await new WaitForEvent(observer2, 'changed').wait(() => {
-               const mapProxy = proxyRegister.getProxy<Map<string, unknown>>(map)
+               const mapProxy = proxyRegister.getProxy<Map<string, unknown>>(map);
                mapProxy.set('a', newValue);
             });
 
@@ -446,7 +446,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                id: 'a',
                newValue: newValue,
             };
-            expect(actual).toDeepEqualCircular(expected)
+            expect(actual).toDeepEqualCircular(expected);
          });
 
          it('Change event for non-recursived observer will be emmited when changing root item', async () => {
@@ -472,7 +472,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
 
             const newValue = new Map([['x', 11]]);
             const actual = await new WaitForEvent(observer1, 'changed').wait(() => {
-               const mapProxy = proxyRegister.getProxy<Map<string, unknown>>(map)
+               const mapProxy = proxyRegister.getProxy<Map<string, unknown>>(map);
                mapProxy.set('a', newValue);
             });
 
@@ -485,7 +485,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                id: 'a',
                newValue: newValue,
             };
-            expect(actual).toDeepEqualCircular(expected)
+            expect(actual).toDeepEqualCircular(expected);
          });
 
          it('No change event for non-recursived observer will be emmited when changing nested item', async () => {
@@ -509,9 +509,9 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
             ).observer;
 
             const actual = await new WaitForEvent(observer1, 'changed').wait(() => {
-               map.get('a')?.set('b', 20)
+               map.get('a')?.set('b', 20);
             });
-            expect(actual).toBeNull()
+            expect(actual).toBeNull();
          });
 
          it('Change event for recursived observer will be emmited when changing nested item', async () => {
@@ -536,7 +536,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
             ).observer;
 
             const actual = await new WaitForEvent(observer2, 'changed').wait(() => {
-               map.get('a')?.set('b', 20)
+               map.get('a')?.set('b', 20);
             });
 
             const expected: IPropertyChange = {
@@ -549,7 +549,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                id: 'b',
                newValue: 20,
             };
-            expect(actual).toDeepEqualCircular(expected)
+            expect(actual).toDeepEqualCircular(expected);
          });
       });
 
@@ -714,7 +714,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
 
             expect(actual).toBeNull();
          });
-      })
+      });
    });
 
 
@@ -771,7 +771,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
 
 
             const actual = await new WaitForEvent(observer2, 'changed').wait(() => {
-               const setProxy = proxyRegister.getProxy<Set<Set<unknown>>>(set)
+               const setProxy = proxyRegister.getProxy<Set<Set<unknown>>>(set);
                setProxy.delete(nestedSet);
             });
 
@@ -808,7 +808,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
             ).observer;
 
             const actual = await new WaitForEvent(observer1, 'changed').wait(() => {
-               const setProxy = proxyRegister.getProxy<Set<Set<unknown>>>(set)
+               const setProxy = proxyRegister.getProxy<Set<Set<unknown>>>(set);
                setProxy.delete(nestedSet);
             });
 
@@ -846,7 +846,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
             const actual = await new WaitForEvent(observer1, 'changed').wait(() => {
                Array.from(set)[1].add(10);
             });
-            expect(actual).toBeNull()
+            expect(actual).toBeNull();
          });
 
          it('Change event for recursived observer will be emmited when changing nested item', async () => {
@@ -882,7 +882,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                id: 10,
                newValue: 10,
             };
-            expect(actual).toDeepEqualCircular(expected)
+            expect(actual).toDeepEqualCircular(expected);
          });
       });
 
@@ -923,7 +923,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
             const mapProxy = proxyRegister.getProxy<Set<number>>(set);
 
             const actual = await new WaitForEvent(observer1, 'changed').wait(() => {
-               mapProxy.delete(2)
+               mapProxy.delete(2);
             });
 
             expect(actual).toBeNull();
@@ -943,7 +943,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
             ).observer;
 
             const actual = await new WaitForEvent(observer1, 'changed').wait(() => {
-               Array.from(set)[1].delete(100)
+               Array.from(set)[1].delete(100);
             });
 
             const expected: IPropertyChange = {
@@ -993,6 +993,6 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
             expect(actual).toDeepEqualCircular(expected);
          });
 
-      })
+      });
    });
 });

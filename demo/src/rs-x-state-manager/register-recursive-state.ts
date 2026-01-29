@@ -17,7 +17,7 @@ export const run = (() => {
         x: { y: 10 }
     };
     const changedSubscription = stateManager.changed.subscribe((change: IStateChange) => {
-        printValue(change.newValue)
+        printValue(change.newValue);
     });
 
     try {

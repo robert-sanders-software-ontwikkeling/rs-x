@@ -3,6 +3,7 @@ import { type Observable } from 'rxjs';
 import { type IDisposable } from '@rs-x/core';
 
 import { type AbstractExpression } from './abstract-expression';
+import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 
 export interface IExpression<T = unknown, PT = unknown> extends IDisposable {
    readonly changed: Observable<IExpression>;
@@ -13,6 +14,8 @@ export interface IExpression<T = unknown, PT = unknown> extends IDisposable {
    readonly value: T | undefined;
    readonly isRoot: boolean;
    toString(): string;
+   clone(): this;
+   bind(settings: IExpressionBindConfiguration): IExpression;
 }
 
 export interface IPropertyPath {

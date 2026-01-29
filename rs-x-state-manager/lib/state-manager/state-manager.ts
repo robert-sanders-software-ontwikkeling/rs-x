@@ -153,7 +153,7 @@ export class StateManager implements IStateManager {
    }
 
    private internalSetState(context: unknown, index: unknown, value: unknown, transferValue: ITransferedValue) {
-      this.tryRebindingNestedState(value, transferValue.value)
+      this.tryRebindingNestedState(value, transferValue.value);
       this._objectStateManager.replaceState(index, context, value, transferValue.context, false);
       this.emitChange(context, index, value, transferValue.value, transferValue.context);
    }
@@ -272,7 +272,7 @@ export class StateManager implements IStateManager {
       try {
          return this._indexValueAccessor.getResolvedValue(context, key);
       } catch {
-         return this.getState(context, key)
+         return this.getState(context, key);
       }
    }
 

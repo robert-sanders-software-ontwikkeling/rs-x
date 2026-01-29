@@ -23,16 +23,16 @@ export const run = (async () => {
 
         console.log(`Initial value of '({ a: x, b: y })':`);
         expression.changed.subscribe((change) => {
-            printValue(change.value)
+            printValue(change.value);
         });
 
         console.log(`Value of '({ a: x, b: y })' after changing 'x' to '100':`);
-        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.x = 100; })
+        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.x = 100; });
 
         console.log(`Value of '({ a: x, b: y })' after changing 'y' to '200':`);
-        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.y = 200; })
+        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.y = 200; });
 
-        console.log(`Final value of '({ a: x, b: y })':`)
+        console.log(`Final value of '({ a: x, b: y })':`);
         printValue(expression.value);
 
     } finally {

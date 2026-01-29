@@ -7,6 +7,16 @@ export class UnaryPlusExpression extends ParameterizedExpression<number> {
       super(ExpressionType.UnaryPlus, expressionString, expression);
    }
 
+   public override clone(): this {
+      return new (this.constructor as new (
+         expressionString: string,
+         expression: AbstractExpression
+      ) => this)(
+         this.expressionString,
+         this._childExpressions[0].clone()
+      );
+   }
+
    protected override evaluateExpression(
       a: string|number
    ): number {

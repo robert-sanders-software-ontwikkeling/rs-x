@@ -38,7 +38,7 @@ export class RsxPipe implements PipeTransform, OnDestroy {
             this.createExpression(expression, context);
         }
 
-        return this._value as T
+        return this._value as T;
     }
 
     public ngOnDestroy(): void {
@@ -52,11 +52,11 @@ export class RsxPipe implements PipeTransform, OnDestroy {
         } else if (Type.isString(expression)) {
             this._lastExpressionString = expression;
             if (context) {
-                this._expression = this._expressionFactory.create(context, expression)
+                this._expression = this._expressionFactory.create(context, expression);
             }
 
         } else if(!Type.isNullOrUndefined(expression)) {
-            throw new UnsupportedException(`string or IExpression expected`)
+            throw new UnsupportedException(`string or IExpression expected`);
         }
 
         this._lastContext = context;

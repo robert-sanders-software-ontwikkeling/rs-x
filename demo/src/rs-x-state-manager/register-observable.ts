@@ -36,7 +36,7 @@ export const run = (async () => {
         await new WaitForEvent(stateManager, 'changed').wait(() => {
             console.log('Changed value:');
             const subject = new Subject<number>();
-            stateContext.observable = subject
+            stateContext.observable = subject;
             subject.next(30);
         });
 

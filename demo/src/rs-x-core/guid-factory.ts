@@ -11,5 +11,5 @@ const guidFactory: IGuidFactory = InjectionContainer.get(RsXCoreInjectionTokens.
 
 export const run = (() => {
     const guid = guidFactory.create();
-    console.log(`Created guid: ${guid}`)
+    console.log(`Created guid: ${guid}`);
 })();

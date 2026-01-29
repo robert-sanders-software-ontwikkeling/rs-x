@@ -28,21 +28,21 @@ describe('IDatePropertyObserverManager tests', () => {
    });
 
    it('will not observer slot change for unregistered indexes', async () => {
-      const date = new Date(2021, 1, 3)
+      const date = new Date(2021, 1, 3);
       const observer = datePropertyObserverManager
          .create(date)
          .instance.create({ index: 'year' }).instance;
       const dateProxy = proxyRegister.getProxy<Date>(date);
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-         dateProxy.setMonth(4)
+         dateProxy.setMonth(4);
       });
 
       expect(actual).toBeNull();
    });
 
    it('will release the date proxy when releasing a array item and their are no other items registered', async () => {
-      const date = new Date(2021, 1, 3)
+      const date = new Date(2021, 1, 3);
       const observer = datePropertyObserverManager
          .create(date)
          .instance.create({ index: 'year' }).instance;
@@ -84,7 +84,7 @@ describe('IDatePropertyObserverManager tests', () => {
          const dateProxy = proxyRegister.getProxy<Date>(date);
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            dateProxy.setMonth(3)
+            dateProxy.setMonth(3);
          });
 
          expect(actual).toBeNull();
@@ -98,7 +98,7 @@ describe('IDatePropertyObserverManager tests', () => {
          const dateProxy = proxyRegister.getProxy<Date>(date);
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            dateProxy.setFullYear(2024)
+            dateProxy.setFullYear(2024);
          });
 
          const expected: IPropertyChange = {
@@ -119,7 +119,7 @@ describe('IDatePropertyObserverManager tests', () => {
          const dateProxy = proxyRegister.getProxy<Date>(date);
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            dateProxy.setFullYear(2021)
+            dateProxy.setFullYear(2021);
          });
 
          expect(actual).toBeNull();

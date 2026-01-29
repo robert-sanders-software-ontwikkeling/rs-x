@@ -63,7 +63,7 @@ class PropertObserver extends AbstractObserver {
          this._propertyDescriptorWithTarget?.type !==
          PropertyDescriptorType.Function
       ) {
-         object[propertyName] = this._proxyRegister.getProxyTarget(value) ?? value
+         object[propertyName] = this._proxyRegister.getProxyTarget(value) ?? value;
       }
 
       this.value = undefined;

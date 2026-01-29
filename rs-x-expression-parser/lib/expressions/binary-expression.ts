@@ -14,4 +14,17 @@ export abstract class BinaryExpression<
    ) {
       super(expressionType, expressionString, leftExpression, rightExpression);
    }
+
+
+   public override clone(): this {
+      return new (this.constructor as new (
+         expressionString: string,
+         leftExpression: AbstractExpression,
+         rightExpression: AbstractExpression
+      ) => this)(
+         this.expressionString,
+         this._childExpressions[0].clone(),
+         this._childExpressions[1].clone()
+      );
+   }
 }

@@ -27,9 +27,9 @@ export const run = (async () => {
         });
 
         console.log(`Value of 'typeof a[index]' after changing 'index' to '1':`);
-        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.index = 1; })
+        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.index = 1; });
 
-        console.log(`Final value of 'typeof a[index]':`)
+        console.log(`Final value of 'typeof a[index]':`);
         console.log(expression.value);
     } finally {
         // Always dispose of expressions after use.

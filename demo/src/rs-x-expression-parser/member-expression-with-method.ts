@@ -46,7 +46,7 @@ export const run = (async () => {
             expressionContext.subject  = 'urgent message';
         });
 
-        console.log(`Final value of 'a.b.mail(message, subject).messageWithSubject':`)
+        console.log(`Final value of 'a.b.mail(message, subject).messageWithSubject':`);
         printValue(expression.value);
     } finally {
         // Always dispose of expressions after use.

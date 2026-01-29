@@ -2,8 +2,10 @@ import { BehaviorSubject, of } from 'rxjs';
 
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 
+import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
+import { MemberExpression } from '../../lib/expressions/member-expression';
 import {
    RsXExpressionParserModule,
    unloadRsXExpressionParserModule,
@@ -16,7 +18,7 @@ describe('Member expression tests', () => {
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXExpressionParserModule);
-       expressionFactory = InjectionContainer.get(
+      expressionFactory = InjectionContainer.get(
          RsXExpressionParserInjectionTokens.IExpressionFactory
       );
    });
@@ -34,6 +36,34 @@ describe('Member expression tests', () => {
       const context = { a: { b: 1 } };
       expression = expressionFactory.create(context, 'a.b');
       expect(expression.type).toEqual(ExpressionType.Member);
+   });
+
+   it('clone', async () => {
+      const transactionManager: IExpressionChangeTransactionManager = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
+
+      const context = { a: { b: 1 } };
+      expression = expressionFactory.create(context, 'a.b');
+
+      const clonedExpression = expression.clone();
+
+      try {
+         expect(clonedExpression).toBeInstanceOf(MemberExpression);
+         expect(clonedExpression.type).toEqual(ExpressionType.Member);
+         expect(clonedExpression.expressionString).toEqual('a.b');
+
+         await new WaitForEvent(clonedExpression, 'changed').wait(() => {
+            clonedExpression.bind({
+               transactionManager,
+               rootContext: context
+            });
+
+            transactionManager.commit();
+         });
+         expect(clonedExpression.value).toEqual(1);
+      } finally {
+         clonedExpression.dispose();
+      }
    });
 
    describe('member expression with array index', () => {
@@ -79,7 +109,7 @@ describe('Member expression tests', () => {
 
          expect(actual.value).toEqual('1');
          expect(actual).toBe(expression);
-      })
+      });
 
       it('dynamic index on root array: emit value when dynamic index changes', async () => {
          const context = {
@@ -96,7 +126,7 @@ describe('Member expression tests', () => {
 
          expect(actual.value).toEqual(1);
          expect(actual).toBe(expression);
-      })
+      });
 
       it('Emits a changed value for a member expression with a calculated array index when the index is set to a new value', async () => {
          const context = {
@@ -452,7 +482,7 @@ describe('Member expression tests', () => {
          expect(expression.value).toEqual(20);
 
          await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
-            expressionContext.a = { b: rootObservable }
+            expressionContext.a = { b: rootObservable };
          });
          expect(expression.value).toEqual(200);
 
@@ -464,7 +494,7 @@ describe('Member expression tests', () => {
          await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
             rootObservable.next({
                c: new BehaviorSubject({ d: 400 })
-            })
+            });
          });
          expect(expression.value).toEqual(400);
       });
@@ -590,7 +620,7 @@ describe('Member expression tests', () => {
 
          await new WaitForEvent(expression, 'changed').wait(() => { });
 
-         expect(expression.value).toEqual(11)
+         expect(expression.value).toEqual(11);
 
       });
 
@@ -618,7 +648,7 @@ describe('Member expression tests', () => {
          await new WaitForEvent(expression, 'changed').wait(() => { });
 
 
-         await new WaitForEvent(expression, 'changed', {ignoreInitialValue: true}).wait(() => {
+         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
             expressionContext.a = {
                b: [
                   {
@@ -635,7 +665,7 @@ describe('Member expression tests', () => {
             };
          });
 
-         expect(expression.value).toEqual(110)
+         expect(expression.value).toEqual(110);
 
       });
 
@@ -662,7 +692,7 @@ describe('Member expression tests', () => {
          // Wait till the expression has been initialized before changing value
          await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-         await new WaitForEvent(expression, 'changed', {ignoreInitialValue: true}).wait(() => {
+         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
             expressionContext.a.b[1] = {
                c: {
                   d: 120
@@ -670,7 +700,7 @@ describe('Member expression tests', () => {
             };
          });
 
-         expect(expression.value).toEqual(120)
+         expect(expression.value).toEqual(120);
       });
 
       it(`value of 'a.b[1].c.d' after changing b[1].c to '{d: 220}`, async () => {
@@ -700,7 +730,7 @@ describe('Member expression tests', () => {
             expressionContext.a.b[1].c = { d: 220 };
          });
 
-         expect(expression.value).toEqual(220)
+         expect(expression.value).toEqual(220);
       });
 
       it(`Value of a.b[1].c.d after first changing path segements.`, async () => {
@@ -764,7 +794,7 @@ describe('Member expression tests', () => {
 
 
          await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
-            expressionContext.a.b[1].c.d = 140
+            expressionContext.a.b[1].c.d = 140;
          });
 
          expect(expression.value).toEqual(140);
@@ -816,7 +846,7 @@ describe('Member expression tests', () => {
 
 
          const actual = await new WaitForEvent(expression, 'changed').wait(() => {
-            expressionContext.message = 'hi'
+            expressionContext.message = 'hi';
          }) as IExpression;
 
 
@@ -856,13 +886,13 @@ describe('Member expression tests', () => {
             expressionContext.parameters.next({
                a: 5,
                b: 20
-            })
+            });
          });
 
          expect(expression.value).toEqual(25);
       });
 
-   })
+   });
 
    it('Only relevant identifiers will be observed.', async () => {
       const expressionContext = {

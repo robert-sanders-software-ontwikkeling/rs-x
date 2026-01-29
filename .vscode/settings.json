@@ -7,7 +7,6 @@
         "TZ": "UTC"
     },
     "typescript.updateImportsOnFileMove.enabled": "never",
-    "typescript.format.enable": false,
     "[typescript]": {
         "editor.codeActionsOnSave": {
             "source.organizeImports": "never",

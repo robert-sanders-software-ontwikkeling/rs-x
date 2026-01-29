@@ -40,6 +40,6 @@ export abstract class ParameterizedExpression<
 
    protected override evaluate(): T {
       const args = this._childExpressions.map(childExpression => childExpression.value);
-      return this.evaluateExpression(...args)
+      return this.evaluateExpression(...args);
    }
 }

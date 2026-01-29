@@ -113,7 +113,7 @@ describe('FunctionCallIndexFactory tests', () => {
 
     it('will created different function cache result instances for different context but same function index', () => {
         const context1 = {};
-        const context2 = {}
+        const context2 = {};
         const functionCallIndex = new DisposableFunctionCallIndexMock(
             {},
             'test',

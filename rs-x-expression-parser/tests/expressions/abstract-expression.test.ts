@@ -43,7 +43,7 @@ describe('AbstractExpression tests', () => {
          a: 10,
          b: 20,
       };
-      const expression = expressionFactory.create(context, 'a + b')
+      const expression = expressionFactory.create(context, 'a + b');
 
       const actual = await new WaitForEvent(expression, 'changed').wait(() => { }) as IExpression;
 

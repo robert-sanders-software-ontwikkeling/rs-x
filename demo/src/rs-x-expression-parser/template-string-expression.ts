@@ -26,9 +26,9 @@ export const run = (async () => {
         });
 
         console.log("Value of '`Say ${message}`' after changing message a to 'hello':");
-        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.message = 'hello'; })
+        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.message = 'hello'; });
 
-        console.log("Final value of '`Say ${message}`':")
+        console.log("Final value of '`Say ${message}`':");
         console.log(expression.value);
     } finally {
         // Always dispose of expressions after use.

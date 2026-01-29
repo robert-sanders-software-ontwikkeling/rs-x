@@ -38,7 +38,7 @@ export const run = (async () => {
                     ['a', { c: { d: 11 } }],
                     ['b', { c: { d: 21 } }]
                 ])
-            }
+            };
         });
      
         console.log(`Value of 'a.b['b'].c.d' after changing b['b'] to '{ c: { d: 120 } }':`);
@@ -56,7 +56,7 @@ export const run = (async () => {
             (Type.toObject(expressionContext.a.b.get('b')?.c) ?? {}).d = 330; 
         });
 
-        console.log(`Final value of 'a.b['b'].c.d':`)
+        console.log(`Final value of 'a.b['b'].c.d':`);
         printValue(expression.value);
     } finally {
         // Always dispose of expressions after use.

@@ -19,7 +19,7 @@ export class FunctionCallIndexFactory
    }
 
    public getId(data: IFunctionCallIndexData): IISequenceWithIdData {
-      return this._sequenceIdFactory.get(data.context, data.arguments) as IISequenceWithIdData
+      return this._sequenceIdFactory.get(data.context, data.arguments) as IISequenceWithIdData;
    }
 
    protected createInstance(data: IFunctionCallIndexData, id: ISequenceWithId): IDisposableFunctionCallIndex {

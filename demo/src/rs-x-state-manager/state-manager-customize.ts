@@ -336,7 +336,7 @@ class TextDocumentIndexObserver extends AbstractObserver<TextDocument, string, I
         if (changeIndex.lineIndex === this.id?.lineIndex && changeIndex.pageIndex === this.id?.pageIndex) {
             this.emitChange(change);
         }
-    }
+    };
 }
 
 class TextDocumentObserver extends AbstractObserver<TextDocument> {

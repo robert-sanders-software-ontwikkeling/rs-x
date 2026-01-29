@@ -123,7 +123,7 @@ describe('MapObserverProxyPairFactory tests', () => {
       });
       const mapProxyId = mapProxyFactory.getId({
          map: objectMap,
-      }) as Map<unknown, unknown> 
+      }) as Map<unknown, unknown>; 
 
       const expected = new ObserverGroup(
          disposableOwner,
@@ -192,7 +192,7 @@ describe('MapObserverProxyPairFactory tests', () => {
       expect(propertyObserverProxyPairManager?.getFromId(item1Id)).toBeDefined();
       expect(propertyObserverProxyPairManager?.getFromId(item2Id)).toBeDefined();
       expect(objectMap.get('a')).isWritableProperty('x');
-      expect(objectMap.get('b')).isWritableProperty('x')
+      expect(objectMap.get('b')).isWritableProperty('x');
 
       observer.dispose();
 
@@ -204,7 +204,7 @@ describe('MapObserverProxyPairFactory tests', () => {
          propertyObserverProxyPairManager?.getFromId(item2Id)
       ).toBeUndefined();
       expect(objectMap.get('a')).not.isWritableProperty('x');
-      expect(objectMap.get('b')).not.isWritableProperty('x')
+      expect(objectMap.get('b')).not.isWritableProperty('x');
    });
 
    it('will only proxify items for which mustProxify returns true', () => {
@@ -239,7 +239,7 @@ describe('MapObserverProxyPairFactory tests', () => {
 
       beforeEach(() => {
          proxyRegister = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
-      })
+      });
 
       it('change event is emitted when adding Map item', async () => {
          const objectMap = new Map([
@@ -252,7 +252,7 @@ describe('MapObserverProxyPairFactory tests', () => {
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            const mapProxy = proxyRegister.getProxy<Map<string, { x: number }>>(objectMap)
+            const mapProxy = proxyRegister.getProxy<Map<string, { x: number }>>(objectMap);
             mapProxy.set('c', { x: 3 });
          });
 
@@ -278,7 +278,7 @@ describe('MapObserverProxyPairFactory tests', () => {
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            const mapProxy = proxyRegister.getProxy<Map<string, { x: number }>>(objectMap)
+            const mapProxy = proxyRegister.getProxy<Map<string, { x: number }>>(objectMap);
             mapProxy.delete('b');
          });
 
@@ -304,7 +304,7 @@ describe('MapObserverProxyPairFactory tests', () => {
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            Type.cast<{x: number}>(objectMap.get('b')).x = 200
+            Type.cast<{x: number}>(objectMap.get('b')).x = 200;
          });
 
          const expected: IPropertyChange = {
@@ -327,7 +327,7 @@ describe('MapObserverProxyPairFactory tests', () => {
 
       beforeEach(() => {
          proxyRegister = InjectionContainer.get(RsXStateManagerInjectionTokens.IProxyRegistry);
-      })
+      });
 
       it('change event is emitted when adding Map item', async () => {
          const objectMap = new Map([
@@ -339,7 +339,7 @@ describe('MapObserverProxyPairFactory tests', () => {
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            const mapProxy = proxyRegister.getProxy<Map<string, { x: number }>>(objectMap)
+            const mapProxy = proxyRegister.getProxy<Map<string, { x: number }>>(objectMap);
             mapProxy.set('c', { x: 3 });
          });
 
@@ -364,7 +364,7 @@ describe('MapObserverProxyPairFactory tests', () => {
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            const mapProxy = proxyRegister.getProxy<Map<string, { x: number }>>(objectMap)
+            const mapProxy = proxyRegister.getProxy<Map<string, { x: number }>>(objectMap);
             mapProxy.delete('b');
          });
 
@@ -388,7 +388,7 @@ describe('MapObserverProxyPairFactory tests', () => {
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
-            Type.cast<{x: number}>(objectMap.get('b')).x = 200
+            Type.cast<{x: number}>(objectMap.get('b')).x = 200;
          });
 
          expect(actual).toBeNull();

@@ -172,9 +172,9 @@ describe('ICollectionItemObserverManager tests', () => {
             ['a', 1],
             ['b', 2],
          ]);
-         const mapKeyObserverManager = collectionItemObserverManager.create(map)
+         const mapKeyObserverManager = collectionItemObserverManager.create(map);
          const observer1 = mapKeyObserverManager.instance.create({index: 'a'}).instance;
-         const observer2 = mapKeyObserverManager.instance.create({index: 'a'}).instance
+         const observer2 = mapKeyObserverManager.instance.create({index: 'a'}).instance;
 
          observer1.dispose();
 
@@ -310,9 +310,9 @@ describe('ICollectionItemObserverManager tests', () => {
 
       it('will release observers when all references have nee disposed', async () => {
          const set = new Set([1, 2,]);
-         const mapKeyObserverManager = collectionItemObserverManager.create(set)
+         const mapKeyObserverManager = collectionItemObserverManager.create(set);
          const observer1 = mapKeyObserverManager.instance.create({index: 1}).instance;
-         const observer2 = mapKeyObserverManager.instance.create({index: 1}).instance
+         const observer2 = mapKeyObserverManager.instance.create({index: 1}).instance;
 
          observer1.dispose();
 
@@ -347,7 +347,7 @@ describe('ICollectionItemObserverManager tests', () => {
             const observer = collectionItemObserverManager
                .create(set)
                .instance.create({index: 1}).instance;
-            const setProxy = setProxyFactory.getFromData({ set })?.proxy as Set<unknown>
+            const setProxy = setProxyFactory.getFromData({ set })?.proxy as Set<unknown>;
 
             const actual = await new WaitForEvent(observer, 'changed').wait(() => {
                setProxy.delete(1);

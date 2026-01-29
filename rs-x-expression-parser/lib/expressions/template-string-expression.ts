@@ -7,6 +7,16 @@ export class TemplateStringExpression extends CollectionExpression<string> {
       super(ExpressionType.TemlateString, expressionString, expressions);
    }
 
+   public override clone(): this {
+      return new (this.constructor as new (
+         expressionString: string,
+         expressions: AbstractExpression[]
+      ) => this)(
+         this.expressionString,
+         this._childExpressions.map(child => child.clone())
+      );
+   }
+
    protected override evaluateExpression(
       ...segments: unknown[]
    ): string {

@@ -49,7 +49,7 @@ class PropertObserver implements IObserver {
                 this._propertyDescriptorWithTarget?.type !==
                 PropertyDescriptorType.Function
             ) {
-                this._target[propertyName] = value
+                this._target[propertyName] = value;
             }
 
             this._propertyDescriptorWithTarget = undefined;
@@ -67,7 +67,7 @@ class PropertObserver implements IObserver {
         let newDescriptor: PropertyDescriptor;
 
         if (descriptorWithTarget.type === PropertyDescriptorType.Function) {
-            throw new UnsupportedException('Methods are not supported')
+            throw new UnsupportedException('Methods are not supported');
         } else if (!descriptor.get && !descriptor.set) {
             newDescriptor =
                 this.createFieldPropertyDescriptor(descriptorWithTarget);
@@ -121,7 +121,7 @@ class PropertObserver implements IObserver {
         descriptorWithTarget: IPropertyDescriptor
     ): PropertyDescriptor {
         const newDescriptor = { ...descriptorWithTarget.descriptor };
-        const oldSetter = descriptorWithTarget.descriptor.set as (v: unknown) => void
+        const oldSetter = descriptorWithTarget.descriptor.set as (v: unknown) => void;
         newDescriptor.set = (value) => {
             const oldValue = this._target[this._propertyName];
             if (value !== oldValue) {
@@ -226,18 +226,18 @@ export const run = (() => {
     const aObserver2 = propertyObserverFactory.create(context, 'a');
 
     const changeSubsription1 = aObserver1.changed.subscribe((change) => {
-        console.log('Observer 1:')
-        console.log(change.newValue)
+        console.log('Observer 1:');
+        console.log(change.newValue);
     });
     const changeSubsription2 = aObserver1.changed.subscribe((change) => {
-        console.log('Observer 2:')
-        console.log(change.newValue)
+        console.log('Observer 2:');
+        console.log(change.newValue);
     });
 
     console.log('You can observe the same property multiple times but only one observer will be create:');
     console.log(aObserver1 === aObserver2);
 
-    console.log('Changing value to 20:')
+    console.log('Changing value to 20:');
 
     context.a = 20;
 

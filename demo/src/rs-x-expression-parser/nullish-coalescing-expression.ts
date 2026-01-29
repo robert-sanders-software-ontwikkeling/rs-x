@@ -27,16 +27,16 @@ export const run = (async () => {
         });
 
         console.log(`Value of 'a ?? b' after changing 'b' to '6':`);
-        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.b = 6; })
+        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.b = 6; });
 
-        console.log(`Value of 'a ?? b' after changing 'a' to '10':`)
-        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.a = 10; })
+        console.log(`Value of 'a ?? b' after changing 'a' to '10':`);
+        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.a = 10; });
 
-        console.log(`Value of 'a ?? b' after changing 'a' to 'null':`)
-        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.a = null; })
+        console.log(`Value of 'a ?? b' after changing 'a' to 'null':`);
+        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.a = null; });
 
 
-        console.log(`Final value of 'a ?? b'':`)
+        console.log(`Final value of 'a ?? b'':`);
         console.log(expression.value);
     } finally {
         // Always dispose of expressions after use.

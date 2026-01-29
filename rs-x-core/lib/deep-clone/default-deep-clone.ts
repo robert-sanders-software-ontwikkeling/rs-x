@@ -21,7 +21,7 @@ export class DefaultDeepClone implements IDeepClone {
          try {
             return this._deepCloneList[i].clone(source);
          } catch (e) {
-            error = e as Error
+            error = e as Error;
          }
       }
       throw error;

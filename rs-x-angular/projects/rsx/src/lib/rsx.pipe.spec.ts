@@ -59,7 +59,7 @@ describe('RsxPipe', () => {
     const ctx = { x: 10 };
     pipe.transform('x + 2', ctx);
     // rsx expression will emit  the initial value after initialize so wait until all already-scheduled microtasks have run.
-    await Promise.resolve()
+    await Promise.resolve();
 
     const actual = pipe.transform('x + 2', ctx);
 
@@ -72,7 +72,7 @@ describe('RsxPipe', () => {
     try {
       pipe.transform(expression);
       // rsx expression will emit  the initial value after initialize so wait until all already-scheduled microtasks have run.
-      await Promise.resolve()
+      await Promise.resolve();
 
       const actual = pipe.transform(expression);
 
@@ -88,7 +88,7 @@ describe('RsxPipe', () => {
     const ctx = { value: value$ };
 
     pipe.transform('value + 1', ctx);
-    await Promise.resolve()
+    await Promise.resolve();
 
     let actual = pipe.transform('value + 1', ctx);
     expect(actual).toEqual(2);
@@ -207,14 +207,14 @@ describe('RsxPipe', () => {
   });
  
   it('disposeExpression will not dispose expression if doesn not own it', () => {
-    const expression = expressionFactory.create({ x: 1 }, 'x + 2')
+    const expression = expressionFactory.create({ x: 1 }, 'x + 2');
     try {
       pipe.transform(expression);
       const disposeSpy = vi.spyOn(expression, 'dispose');
 
       pipe.transform(null);
 
-      expect(disposeSpy).not.toHaveBeenCalled()
+      expect(disposeSpy).not.toHaveBeenCalled();
     } finally {
       expression.dispose();
     }

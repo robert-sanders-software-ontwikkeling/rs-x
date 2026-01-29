@@ -7,7 +7,7 @@ export class ProxyRegistry implements IProxyRegistry {
    private readonly _proxies = new Map<unknown,unknown>();
 
    public getProxyTarget<T>(proxyToFind: unknown): T {
-       return Array.from(this._proxies.entries()).find(([_, proxy]) => proxy === proxyToFind )?.[0] as T
+       return Array.from(this._proxies.entries()).find(([_, proxy]) => proxy === proxyToFind )?.[0] as T;
    }
 
    public getProxy<T>(proxyTarget: unknown): T {
@@ -15,7 +15,7 @@ export class ProxyRegistry implements IProxyRegistry {
    }
 
    public register(proxyTarget: unknown, proxy: unknown): void {
-      this._proxies.set(proxyTarget, proxy)
+      this._proxies.set(proxyTarget, proxy);
    }
 
    public unregister(proxyTarget: unknown): void {

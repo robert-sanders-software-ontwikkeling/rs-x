@@ -37,7 +37,7 @@ export const run = (async () => {
 
         console.log(`Value of 'a.b.c.d' after changing 'a' to '{ b: BehaviorSubject({ c: BehaviorSubject({ d: 200 }) }) }':`);
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
-            expressionContext.a = { b: rootObservable }
+            expressionContext.a = { b: rootObservable };
 
         });
 
@@ -50,10 +50,10 @@ export const run = (async () => {
         await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => {
             rootObservable.next({
                 c: new BehaviorSubject({ d: 400 })
-            })
+            });
         });
 
-        console.log(`Final value of 'a.b.c.d':`)
+        console.log(`Final value of 'a.b.c.d':`);
         printValue(expression.value);
     } finally {
         // Always dispose of expressions after use.

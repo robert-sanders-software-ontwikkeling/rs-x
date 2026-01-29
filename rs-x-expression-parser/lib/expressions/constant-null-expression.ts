@@ -7,4 +7,12 @@ export class ConstantNullExpression extends ConstantExpression<null> {
    constructor(expressionChangeTransactionManager: IExpressionChangeTransactionManager) {
       super(ExpressionType.Null, 'null', null, expressionChangeTransactionManager);
    }
+
+   override clone(): this {
+      return new (this.constructor as new (
+         expressionChangeTransactionManager: IExpressionChangeTransactionManager
+      ) => this)(
+         this._expressionChangeTransactionManager
+      );
+   }
 }

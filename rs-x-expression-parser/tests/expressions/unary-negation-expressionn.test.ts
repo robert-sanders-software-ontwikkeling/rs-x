@@ -1,7 +1,9 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
+import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
+import { UnaryNegationExpression } from '../../lib/expressions/unary-negation-expression';
 import {
    RsXExpressionParserModule,
    unloadRsXExpressionParserModule,
@@ -14,7 +16,7 @@ describe('UnaryNegationExpression tests', () => {
 
    beforeAll(async () => {
       await InjectionContainer.load(RsXExpressionParserModule);
-       expressionFactory = InjectionContainer.get(
+      expressionFactory = InjectionContainer.get(
          RsXExpressionParserInjectionTokens.IExpressionFactory
       );
    });
@@ -35,12 +37,40 @@ describe('UnaryNegationExpression tests', () => {
       expect(expression.type).toEqual(ExpressionType.UnaryNegation);
    });
 
+   it('clone', async () => {
+      const transactionManager: IExpressionChangeTransactionManager = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
+
+      const context = { value: 1 };
+      expression = expressionFactory.create(context, '-value');
+
+      const clonedExpression = expression.clone();
+
+      try {
+         expect(clonedExpression).toBeInstanceOf(UnaryNegationExpression);
+         expect(clonedExpression.type).toEqual(ExpressionType.UnaryNegation);
+         expect(clonedExpression.expressionString).toEqual('-value');
+
+         await new WaitForEvent(clonedExpression, 'changed').wait(() => {
+            clonedExpression.bind({
+               transactionManager,
+               rootContext: context
+            });
+
+            transactionManager.commit();
+         });
+         expect(clonedExpression.value).toEqual(-1);
+      } finally {
+         clonedExpression.dispose();
+      }
+   });
+
    it('will emit change event for initial value', async () => {
       const context = { value: 1 };
       expression = expressionFactory.create(context, '-value');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
-         () => {}
+         () => { }
       )) as IExpression;
 
       expect(actual.value).toEqual(-1);

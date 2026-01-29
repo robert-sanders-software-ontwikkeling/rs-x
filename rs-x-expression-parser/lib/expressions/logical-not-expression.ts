@@ -7,6 +7,16 @@ export class LogicalNotExpression extends ParameterizedExpression {
       super(ExpressionType.Not, expressionString, expression);
    }
 
+   public override clone(): this {
+      return new (this.constructor as new (
+         expressionString: string,
+         expression: AbstractExpression
+      ) => this)(
+         this.expressionString,
+         this._childExpressions[0].clone()
+      );
+   }
+
    protected override evaluateExpression(
       value: unknown
    ): boolean {

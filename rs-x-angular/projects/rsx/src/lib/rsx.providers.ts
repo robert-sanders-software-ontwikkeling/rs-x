@@ -11,7 +11,7 @@ function initializeRsx(): () => Promise<void> {
       return Promise.resolve();
     }
     return InjectionContainer.load(RsXExpressionParserModule);
-  }
+  };
 }
 
 export function providexRsx(): Provider[] {

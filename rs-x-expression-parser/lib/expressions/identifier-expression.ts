@@ -14,7 +14,6 @@ import { ExpressionType } from './expression-parser.interface';
 import { FunctionExpression } from './function-expression';
 import { MemberExpression } from './member-expression';
 
-
 export class IndexValueObserver {
    private readonly _changeSubscription: Subscription;
    private readonly _contextChangeSubscription: Subscription;
@@ -107,6 +106,20 @@ export class IdentifierExpression extends AbstractExpression {
          owner: this,
          commit: this.commit
       };
+   }
+
+   public override clone(): this {
+      return new (this.constructor as new (
+         stateManager: IStateManager,
+         expressionString: string,
+         expressionChangeTransactionManager: IExpressionChangeTransactionManager,
+         indexValue?: unknown
+      ) => this)(
+         this._stateManager,
+         this.expressionString,
+         this._expressionChangeTransactionManager,
+         this._indexValue
+      );
    }
 
    public override bind(

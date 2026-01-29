@@ -71,13 +71,13 @@ export class SetProxy extends AbstractObserver<
 
    private addSet = (originalSet: Set<unknown>, ...args: unknown[]) => {
       originalSet.add(args[0]);
-      this.emitValueChange(originalSet, args[0], args[0])
+      this.emitValueChange(originalSet, args[0], args[0]);
       return this.target;
    };
 
    private deleteSet = (originalSet: Set<unknown>, ...args: unknown[]) => {
-      const result = originalSet.delete(args[0])
-      this.emitValueChange(originalSet, args[0], undefined)
+      const result = originalSet.delete(args[0]);
+      this.emitValueChange(originalSet, args[0], undefined);
       return result;
    };
 

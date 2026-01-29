@@ -30,14 +30,14 @@ export const run = (async () => {
         });
 
         console.log(`Value of '(setB(value)', b)' after changing 'value' to '200':`);
-        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.value = 200; })
+        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.value = 200; });
 
 
         console.log(`Value of '(setB(value)', b)' after changing 'b' to '300':`);
-        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.b = 300; })
+        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.b = 300; });
 
 
-        console.log(`Final value of '(setB(value), b)':`)
+        console.log(`Final value of '(setB(value), b)':`);
         console.log(expression.value);
     } finally {
         // Always dispose of expressions after use.
