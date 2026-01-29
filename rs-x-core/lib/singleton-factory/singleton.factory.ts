@@ -93,7 +93,7 @@ export abstract class SingletonFactory<
       this.onDipose();
    }
 
-   
+
    public getOrCreate(data: TData): TInstance {
       let instance = this.getFromId(this.getOrCreateId(data));
       if (instance === undefined) {
@@ -125,7 +125,7 @@ export abstract class SingletonFactory<
    public release(
       id: TId,
       force?: boolean
-   ): { referenceCount: number; instance: TInstance| null } {
+   ): { referenceCount: number; instance: TInstance | null } {
       const instance = this._instances.get(id);
       if (!instance) {
          return {
@@ -138,6 +138,10 @@ export abstract class SingletonFactory<
          referenceCount: this.updateReferenceCount(id, -1, instance, force),
          instance,
       };
+   }
+
+   public getReferenceCount(id: TId): number {
+      return this._referenceCounts.get(id) ?? 0;
    }
 
    protected get keys(): TId[] {
@@ -162,10 +166,6 @@ export abstract class SingletonFactory<
 
    protected getOrCreateId(data: TIdData): TId {
       return this.getId(data) ?? this.createId(data);
-   }
-
-   protected getReferenceCount(id: TId): number {
-      return this._referenceCounts.get(id) ?? 0;
    }
 
    protected updateReferenceCount(

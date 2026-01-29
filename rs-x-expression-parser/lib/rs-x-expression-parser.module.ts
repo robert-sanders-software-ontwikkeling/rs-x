@@ -1,14 +1,16 @@
-import { 
-   ContainerModule, 
-   defaultIndexValueAccessorList, 
-   type IDeepCloneExcept, 
-   InjectionContainer, 
-   overrideMultiInjectServices, 
+import {
+   ContainerModule,
+   defaultIndexValueAccessorList,
+   type IDeepCloneExcept,
+   InjectionContainer,
+   overrideMultiInjectServices,
    registerMultiInjectServices,
-   RsXCoreInjectionTokens 
+   RsXCoreInjectionTokens
 } from '@rs-x/core';
 import { defaultObjectObserverProxyPairFactoryList, RsXStateManagerInjectionTokens, RsXStateManagerModule } from '@rs-x/state-manager';
 
+import { ExpressionCache } from './expression-cache/expression-cache';
+import type { IExpressionCache } from './expression-cache/expression-cache.type';
 import { ExpressionFactory } from './expression-factory/expression-factory';
 import type { IExpressionFactory } from './expression-factory/expression-factory.interface';
 import { ExpressionManager } from './expression-factory/expression-manager';
@@ -28,6 +30,7 @@ import { ExpressionChangeTransactionManager } from './expresion-change-transacti
 import type { IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
 import { JsEspreeExpressionParser } from './js-espree-expression-parser';
 import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
+
 
 InjectionContainer.load(RsXStateManagerModule);
 
@@ -74,6 +77,12 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
          RsXExpressionParserInjectionTokens.IExpressionObserverFactory
       )
       .to(ExpressionObserverFactory)
+      .inSingletonScope();
+   options
+      .bind<IExpressionCache>(
+         RsXExpressionParserInjectionTokens.IExpressionCache
+      )
+      .to(ExpressionCache)
       .inSingletonScope();
 
    registerMultiInjectServices(options, RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList,
