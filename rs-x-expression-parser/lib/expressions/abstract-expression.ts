@@ -1,19 +1,13 @@
 import { type IDisposableOwner, PENDING } from '@rs-x/core';
 import { type MustProxify } from '@rs-x/state-manager';
 import { type Observable, ReplaySubject, type Subscription } from 'rxjs';
-import { type IExpressionChangeCommitHandler, type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
+import { type IExpressionChangeCommitHandler } from '../expresion-change-transaction-manager.interface';
+import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 import { type ExpressionType, type IExpression } from './interfaces';
 
 export interface IMustProxifyHandler {
    createMustProxifyHandler: (() => MustProxify) | undefined;
    releaseMustProxifyHandler: (() => void) | undefined;
-}
-
-export interface IExpressionInitializeConfig {
-   context?: unknown;
-   mustProxifyHandler?: IMustProxifyHandler;
-   transactionManager?: IExpressionChangeTransactionManager
-   owner?: IDisposableOwner
 }
 
 export abstract class AbstractExpression<T = unknown, PT = unknown>
@@ -41,11 +35,7 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
       );
    }
 
-   public initialize(
-      settings: IExpressionInitializeConfig
-   ): AbstractExpression {
-
-
+   public bind(settings: IExpressionBindConfiguration): AbstractExpression {
       if (!this._parent && settings.transactionManager) {
          this._owner = settings.owner;
          this._commitedSubscription = settings.transactionManager.commited.subscribe(this.onCommited);

@@ -2,4 +2,4 @@
 "@rs-x/core": patch
 ---
 
-Angular support
+Refactor: Make expression creation independent of context

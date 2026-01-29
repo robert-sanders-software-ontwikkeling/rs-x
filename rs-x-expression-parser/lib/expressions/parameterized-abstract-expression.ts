@@ -1,7 +1,7 @@
 import {
    AbstractExpression,
-   type IExpressionInitializeConfig,
 } from './abstract-expression';
+import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 import { type ExpressionType } from './interfaces';
 
 export abstract class ParameterizedExpression<
@@ -16,12 +16,12 @@ export abstract class ParameterizedExpression<
       super(type, expressionString, ...childExpressions);
    }
 
-   public override initialize(
-      settings: IExpressionInitializeConfig
+   public override bind(
+      settings: IExpressionBindConfiguration
    ): AbstractExpression {
-      super.initialize(settings);
+      super.bind(settings);
       this._childExpressions.forEach((childExpression) => {
-         childExpression.initialize(settings);
+         childExpression.bind(settings);
       });
       return this;
    }

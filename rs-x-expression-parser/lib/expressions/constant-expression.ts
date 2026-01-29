@@ -1,5 +1,6 @@
 import { type IExpressionChangeCommitHandler, type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
-import { AbstractExpression, type IExpressionInitializeConfig } from './abstract-expression';
+import { AbstractExpression } from './abstract-expression';
+import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 import { type ExpressionType } from './interfaces';
 
 
@@ -21,11 +22,10 @@ export class ConstantExpression<T> extends AbstractExpression<T> {
       this._value = constValue;
    }
 
-   public override initialize(settings: IExpressionInitializeConfig): AbstractExpression {
-      super.initialize(settings);
+   public override bind(settings: IExpressionBindConfiguration): AbstractExpression {
+      super.bind(settings);
       this._expressionChangeTransactionManager.registerChange(this.root, this._commitHandler);
       return this;
-      
    }
 
    protected override evaluate(): T | undefined {

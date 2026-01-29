@@ -4,11 +4,11 @@ import { type IStateManager } from '../../../rs-x-state-manager/lib';
 import { type IExpressionChangeCommitHandler, type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 import {
    AbstractExpression,
-   type IExpressionInitializeConfig,
 } from './abstract-expression';
 import { type ArrayExpression } from './array-expression';
 import { ConstantNullExpression } from './constant-null-expression';
 import { ExpressionType } from './interfaces';
+import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 
 export class FunctionExpression extends AbstractExpression {
    private _context: unknown;
@@ -39,21 +39,21 @@ export class FunctionExpression extends AbstractExpression {
       this._functionId = guidFactory.create();
    }
 
-   public override initialize(
-      settings: IExpressionInitializeConfig
+   public override bind(
+      settings: IExpressionBindConfiguration
    ): AbstractExpression {
-      this._context = settings.context;
-      super.initialize(settings);
+      this._context = settings.context ?? settings.rootContext;
+      super.bind(settings);
       if (this.objectExpression) {
-         this.objectExpression.initialize(settings);
+         this.objectExpression.bind(settings);
          if (this.computed) {
-            this.functionExpression.initialize(settings);
+            this.functionExpression.bind(settings);
          }
       } else if(this.functionExpression.type !== ExpressionType.Identifier) {
-         this.functionExpression.initialize(settings);
+         this.functionExpression.bind(settings);
       }
 
-      this.argumentsExpression.initialize(settings);
+      this.argumentsExpression.bind(settings);
 
       return this;
    }
