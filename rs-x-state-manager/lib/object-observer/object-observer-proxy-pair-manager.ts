@@ -39,6 +39,7 @@ export class ObjectObserverProxyPairManager
   protected override getGroupId(data: IProxyTarget<unknown>): unknown {
     return data.target;
   }
+  
   protected override getGroupMemberId(data: IProxyTarget<unknown>): unknown {
     return data.shouldWatchIndex;
   }
