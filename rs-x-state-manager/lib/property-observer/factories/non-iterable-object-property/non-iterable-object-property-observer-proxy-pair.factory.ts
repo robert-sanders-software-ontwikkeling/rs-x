@@ -1,12 +1,12 @@
 import {
-   type IErrorLog,
-   type IGuidFactory,
-   type IIndexValueAccessor,
-   Inject,
-   Injectable,
-   type IValueMetadata,
-   RsXCoreInjectionTokens,
-   Type,
+  type IErrorLog,
+  type IGuidFactory,
+  type IIndexValueAccessor,
+  Inject,
+  Injectable,
+  type IValueMetadata,
+  RsXCoreInjectionTokens,
+  Type,
 } from '@rs-x/core';
 
 import type { IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
@@ -19,50 +19,54 @@ import type { IObjectPropertyObserverManager } from './object-property-observer-
 
 @Injectable()
 export class NonIterableObjectPropertyObserverProxyPairFactory extends IndexObserverProxyPairFactory<
-   object,
-   string
+  object,
+  string
 > {
-   constructor(
-      @Inject(RsXStateManagerInjectionTokens.IObjectObserverProxyPairManager)
-      objectObserveryManager: IObjectObserverProxyPairManager,
-      @Inject(RsXStateManagerInjectionTokens.IObjectPropertyObserverManager)
-      objectPropertyObserverManager: IObjectPropertyObserverManager,
-      @Inject(RsXCoreInjectionTokens.IErrorLog)
-      errorLog: IErrorLog,
-      @Inject(RsXCoreInjectionTokens.IGuidFactory)
-      guidFactory: IGuidFactory,
-      @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
-      indexValueAccessor: IIndexValueAccessor,
-      @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
-      proxyRegister: IProxyRegistry,
-      @Inject(RsXCoreInjectionTokens.IValueMetadata)
-      valueMetadata: IValueMetadata,
-   ) {
-      super(
-         objectObserveryManager,
-         objectPropertyObserverManager,
-         errorLog,
-         guidFactory,
-         indexValueAccessor,
-         proxyRegister,
-         valueMetadata
-      );
-   }
+  constructor(
+    @Inject(RsXStateManagerInjectionTokens.IObjectObserverProxyPairManager)
+    objectObserveryManager: IObjectObserverProxyPairManager,
+    @Inject(RsXStateManagerInjectionTokens.IObjectPropertyObserverManager)
+    objectPropertyObserverManager: IObjectPropertyObserverManager,
+    @Inject(RsXCoreInjectionTokens.IErrorLog)
+    errorLog: IErrorLog,
+    @Inject(RsXCoreInjectionTokens.IGuidFactory)
+    guidFactory: IGuidFactory,
+    @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
+    indexValueAccessor: IIndexValueAccessor,
+    @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
+    proxyRegister: IProxyRegistry,
+    @Inject(RsXCoreInjectionTokens.IValueMetadata)
+    valueMetadata: IValueMetadata,
+  ) {
+    super(
+      objectObserveryManager,
+      objectPropertyObserverManager,
+      errorLog,
+      guidFactory,
+      indexValueAccessor,
+      proxyRegister,
+      valueMetadata,
+    );
+  }
 
-   public applies(object: unknown, propertyInfo: IPropertyInfo): boolean {
-      return (
-         !(
-            Array.isArray(object) ||
-            object instanceof Date ||
-            object instanceof Map ||
-            object instanceof Set 
-         ) 
-         && Type.isString(propertyInfo.key) 
-         && !Type.isMethod((Type.toObject(object) ?? {})[propertyInfo.key])
-      );
-   }
+  public applies(object: unknown, propertyInfo: IPropertyInfo): boolean {
+    return (
+      !(
+        Array.isArray(object) ||
+        object instanceof Date ||
+        object instanceof Map ||
+        object instanceof Set
+      ) &&
+      Type.isString(propertyInfo.key) &&
+      !Type.isMethod((Type.toObject(object) ?? {})[propertyInfo.key])
+    );
+  }
 
-   protected setIndexValue(object: Record<string, unknown>, key: string, value: unknown): void {
-      object[key] = value;
-   }
+  protected setIndexValue(
+    object: Record<string, unknown>,
+    key: string,
+    value: unknown,
+  ): void {
+    object[key] = value;
+  }
 }

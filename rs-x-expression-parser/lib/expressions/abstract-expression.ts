@@ -1,190 +1,219 @@
 import { type Observable, ReplaySubject, type Subscription } from 'rxjs';
 
-import { type IDisposableOwner, type IGuidFactory, type IIndexValueAccessor, type IValueMetadata, PENDING } from '@rs-x/core';
+import {
+  type IDisposableOwner,
+  type IGuidFactory,
+  type IIndexValueAccessor,
+  type IValueMetadata,
+  PENDING,
+} from '@rs-x/core';
 import { type IStateManager, type ShouldWatchIndex } from '@rs-x/state-manager';
 
-import { type IExpressionChangeCommitHandler, type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
+import {
+  type IExpressionChangeCommitHandler,
+  type IExpressionChangeTransactionManager,
+} from '../expresion-change-transaction-manager.interface';
 import type { IExpressionServices } from '../expression-services/expression-services.interface';
 
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
-import { type ExpressionType, type IExpression } from './expression-parser.interface';
+import {
+  type ExpressionType,
+  type IExpression,
+} from './expression-parser.interface';
 
 export interface IShouldWatchLeafPredicate {
-   createShouldWatchLeafPredicate: (() => ShouldWatchIndex) | undefined;
-   releaseShouldWatchLeafPredicate: (() => void) | undefined;
+  createShouldWatchLeafPredicate: (() => ShouldWatchIndex) | undefined;
+  releaseShouldWatchLeafPredicate: (() => void) | undefined;
 }
 
-export abstract class AbstractExpression<T = unknown, PT = unknown>
-   implements IExpression<T> {
+export abstract class AbstractExpression<
+  T = unknown,
+  PT = unknown,
+> implements IExpression<T> {
+  protected readonly _childExpressions: AbstractExpression[] = [];
+  private readonly _changed = new ReplaySubject<IExpression>(1);
+  private _parent: AbstractExpression<PT> | undefined;
+  protected _value: T | undefined;
+  private _isDisposed = false;
+  private _oldValue: unknown;
+  private _commitedSubscription: Subscription | undefined;
+  private _owner: IDisposableOwner | undefined;
+  private _services!: IExpressionServices;
 
-   protected readonly _childExpressions: AbstractExpression[] = [];
-   private readonly _changed = new ReplaySubject<IExpression>(1);
-   private _parent: AbstractExpression<PT> | undefined;
-   protected _value: T | undefined;
-   private _isDisposed = false;
-   private _oldValue: unknown;
-   private _commitedSubscription: Subscription | undefined;
-   private _owner: IDisposableOwner | undefined;
-   private _services!:IExpressionServices;
+  protected constructor(
+    public readonly type: ExpressionType,
+    public readonly expressionString: string,
+    ...childExpressions: AbstractExpression[]
+  ) {
+    if (!expressionString) {
+      this.expressionString = this.toString();
+    }
+    this.addChildExpressions(
+      childExpressions.filter((childExpression) => childExpression),
+    );
+  }
 
-   protected constructor(
-      public readonly type: ExpressionType,
-      public readonly expressionString: string,
-      ...childExpressions: AbstractExpression[]
-   ) {
-      if (!expressionString) {
-         this.expressionString = this.toString();
-      }
-      this.addChildExpressions(
-         childExpressions.filter((childExpression) => childExpression)
+  public abstract clone(): this;
+
+  public bind(settings: IExpressionBindConfiguration): AbstractExpression {
+    this._services = settings.services;
+    if (!this._parent && this.transactionManager) {
+      this._owner = settings.owner;
+      this._commitedSubscription = this.transactionManager.commited.subscribe(
+        this.onCommited,
       );
-   }
+    }
 
+    return this;
+  }
 
-   public abstract clone(): this;
+  public get value(): T | undefined {
+    return this._value;
+  }
 
-   public bind(settings: IExpressionBindConfiguration): AbstractExpression {
-      this._services = settings.services;
-      if (!this._parent && this.transactionManager) {
-         this._owner = settings.owner;
-         this._commitedSubscription = this.transactionManager.commited.subscribe(this.onCommited);
-      }
+  public get isRoot(): boolean {
+    return !this.parent;
+  }
 
-      return this;
-   }
+  public get changed(): Observable<IExpression> {
+    return this._changed;
+  }
 
-   public get value(): T | undefined {
-      return this._value;
-   }
+  public get childExpressions(): readonly IExpression[] {
+    return this._childExpressions;
+  }
 
-   public get isRoot(): boolean {
-      return !this.parent;
-   }
+  public get parent(): AbstractExpression<PT> | undefined {
+    return this._parent;
+  }
 
-   public get changed(): Observable<IExpression> {
-      return this._changed;
-   }
+  public dispose(): void {
+    if (this._isDisposed) {
+      return;
+    }
 
-   public get childExpressions(): readonly IExpression[] {
-      return this._childExpressions;
-   }
+    if (!this._owner?.canDispose || this._owner?.canDispose()) {
+      this.internalDispose();
+    }
 
-   public get parent(): AbstractExpression<PT> | undefined {
-      return this._parent;
-   }
+    this._owner?.release?.();
+  }
 
-   public dispose(): void {
-      if (this._isDisposed) {
-         return;
-      }
+  public toString(): string {
+    return this.expressionString;
+  }
 
-      if (!this._owner?.canDispose || this._owner?.canDispose()) {
-         this.internalDispose();
-      }
+  protected get services(): IExpressionServices {
+    return this._services;
+  }
 
-      this._owner?.release?.();
-   }
+  protected get guidFactory(): IGuidFactory {
+    return this._services?.guidFactory;
+  }
 
-   public toString(): string {
-      return this.expressionString;
-   }
+  protected get stateManager(): IStateManager {
+    return this._services?.stateManager;
+  }
 
-   protected get services(): IExpressionServices {
-      return this._services;
-   }
+  protected get indexValueAccessor(): IIndexValueAccessor {
+    return this._services?.indexValueAccessor;
+  }
 
-   protected get guidFactory(): IGuidFactory {
-      return this._services?.guidFactory;
-   }
+  protected get transactionManager(): IExpressionChangeTransactionManager {
+    return this._services?.transactionManager;
+  }
 
-   protected get stateManager(): IStateManager {
-      return this._services?.stateManager;
-   }
+  protected get valueMetadata(): IValueMetadata {
+    return this._services?.valueMetadata;
+  }
 
-   protected get indexValueAccessor(): IIndexValueAccessor {
-      return this._services?.indexValueAccessor;
-   }
+  protected get root(): AbstractExpression {
+    return this.parent ? this.parent.root : this;
+  }
 
-   protected get transactionManager(): IExpressionChangeTransactionManager {
-      return this._services?.transactionManager;
-   }
+  protected static setValue(
+    expression: AbstractExpression,
+    evaluate: () => unknown,
+  ): void {
+    expression._value = evaluate();
+  }
 
-   protected get valueMetadata(): IValueMetadata {
-      return this._services?.valueMetadata;
-   }
+  protected static setParent(
+    expression: AbstractExpression,
+    parent: AbstractExpression,
+  ): void {
+    expression._parent = parent;
+  }
 
-   protected get root(): AbstractExpression {
-      return this.parent ? this.parent.root : this;
-   }
+  protected static clearValue(expression: AbstractExpression): void {
+    expression._value = undefined;
+  }
 
-   protected static setValue(
-      expression: AbstractExpression,
-      evaluate: () => unknown
-   ): void {
-      expression._value = evaluate();
-   }
+  protected abstract evaluate(
+    sender: AbstractExpression,
+    root: AbstractExpression,
+  ): T | undefined;
 
-   protected static setParent(
-      expression: AbstractExpression,
-      parent: AbstractExpression
-   ): void {
-      expression._parent = parent;
-   }
+  protected internalDispose(): void {
+    this._commitedSubscription?.unsubscribe();
+    this._commitedSubscription = undefined;
+    this._childExpressions.forEach((childExpression) =>
+      childExpression.dispose(),
+    );
+    this._isDisposed = true;
+  }
 
-   protected static clearValue(expression: AbstractExpression): void {
-      expression._value = undefined;
-   }
+  protected prepareReevaluation(
+    sender: AbstractExpression,
+    root: AbstractExpression,
+    pendingCommits: Set<IExpressionChangeCommitHandler>,
+  ): boolean {
+    if (this._parent) {
+      return this._parent.prepareReevaluation(sender, root, pendingCommits);
+    }
+    return true;
+  }
 
-   protected abstract evaluate(sender: AbstractExpression, root: AbstractExpression): T | undefined;
+  protected reevaluated(
+    sender: AbstractExpression,
+    root: AbstractExpression,
+    pendingCommits: Set<IExpressionChangeCommitHandler>,
+  ): boolean {
+    return this.prepareReevaluation(sender, root, pendingCommits)
+      ? this.evaluateBottomToTop(sender, root, pendingCommits)
+      : false;
+  }
 
-   protected internalDispose(): void {
-      this._commitedSubscription?.unsubscribe();
-      this._commitedSubscription = undefined;
-      this._childExpressions.forEach((childExpression) =>
-         childExpression.dispose()
-      );
-      this._isDisposed = true;
-   }
+  protected evaluateBottomToTop(
+    sender: AbstractExpression,
+    root: AbstractExpression,
+    pendingCommits: Set<IExpressionChangeCommitHandler>,
+  ): boolean {
+    const value = this.evaluate(sender, root);
+    if (value === PENDING) {
+      return false;
+    }
+    this._value = value;
 
-   protected prepareReevaluation(sender: AbstractExpression, root: AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
-      if (this._parent) {
-         return this._parent.prepareReevaluation(sender, root, pendingCommits);
-      }
-      return true;
-   }
+    if (this.parent) {
+      return this.parent.reevaluated(this, root, pendingCommits);
+    }
+    return true;
+  }
 
-   protected reevaluated(sender: AbstractExpression, root: AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
-      return this.prepareReevaluation(sender, root, pendingCommits)
-         ? this.evaluateBottomToTop(sender, root, pendingCommits)
-         : false;
-   }
+  protected isCommitTarget(sender: AbstractExpression): boolean {
+    return sender === this || sender.root === sender;
+  }
 
-   protected evaluateBottomToTop(sender: AbstractExpression, root: AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
-      const value = this.evaluate(sender, root);
-      if (value === PENDING) {
-         return false;
-      }
-      this._value = value;
+  private onCommited = (sender: AbstractExpression) => {
+    if (this.isCommitTarget(sender) && this._oldValue !== this.value) {
+      this._oldValue = this._value;
+      this._changed.next(this);
+    }
+  };
 
-      if (this.parent) {
-         return this.parent.reevaluated(this, root, pendingCommits);
-      }
-      return true;
-   }
-
-   protected isCommitTarget(sender: AbstractExpression): boolean {
-      return sender === this || sender.root === sender;
-   }
-
-   private onCommited = (sender: AbstractExpression) => {
-      if (this.isCommitTarget(sender) && this._oldValue !== this.value) {
-         this._oldValue = this._value;
-         this._changed.next(this);
-      }
-   };
-
-   private addChildExpressions(expressions: AbstractExpression[]): void {
-      this._childExpressions.push(...expressions);
-      expressions.forEach((expression) => (expression._parent = this));
-   }
+  private addChildExpressions(expressions: AbstractExpression[]): void {
+    this._childExpressions.push(...expressions);
+    expressions.forEach((expression) => (expression._parent = this));
+  }
 }

@@ -1,6 +1,6 @@
 export enum PropertyDescriptorType {
-   Function = 'Function',
-   ReadonlyProperty = 'ReadonlyProperty',
-   Property = 'Property',
-   Field = 'Field',
+  Function = 'Function',
+  ReadonlyProperty = 'ReadonlyProperty',
+  Property = 'Property',
+  Field = 'Field',
 }

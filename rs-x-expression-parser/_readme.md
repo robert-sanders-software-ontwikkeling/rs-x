@@ -12,70 +12,67 @@ This parser forms the core of the **data-binding implementation** for the SPA fr
 
 ### Examples
 
-- **Expression with a promise** — ``promise + 2`` (where `promise` resolves to a number)
-- **Expression with an observable** - ``observable + 2`` (where `observable` emits a number)
+- **Expression with a promise** — `promise + 2` (where `promise` resolves to a number)
+- **Expression with an observable** - `observable + 2` (where `observable` emits a number)
 - **Expression referencing nested async data**
 
-    ```ts
-    {% include_relative ../demo/src/rs-x-expression-parser/member-expression-with-promise.ts %}
-    ```
+  ```ts
+  {% include_relative ../demo/src/rs-x-expression-parser/member-expression-with-promise.ts %}
+  ```
 
 - **Modular expressions** — expressions can reference other expressions:
 
-    ```ts
-    const model = {
-        a: 10,
-        b: 20
-    };
+  ```ts
+  const model = {
+    a: 10,
+    b: 20,
+  };
 
-    const expr1 = expressionFactory.create(model, '(a + 1)');
-    const expr2 = expressionFactory.create(model, '(b + 2)');
+  const expr1 = expressionFactory.create(model, '(a + 1)');
+  const expr2 = expressionFactory.create(model, '(b + 2)');
 
-    const modularModel = {
-        expr1,
-        expr2
-    };
+  const modularModel = {
+    expr1,
+    expr2,
+  };
 
-    const expr3 = expressionFactory.create(modularModel, 'expr1 * expr2');
-    ```
+  const expr3 = expressionFactory.create(modularModel, 'expr1 * expr2');
+  ```
 
 ## Use cases
 
 **Data binding for SPA frameworks and change detection** is the primary reason the expression parser was developed. However, it is a generic solution and can be used in any scenario where actions need to be triggered when data or an expression changes. Below are a few example use cases:
 
 - **Logging and alert conditions**  
-  Trigger alerts based on runtime conditions:  
+  Trigger alerts based on runtime conditions:
   - Monitoring systems
   - Health checks
   - Observability tools
-  
 - **UI logic outside data binding**  
   Declarative UI behavior without relying on a full framework.
 
-- **Workflow and automation engines**  
+- **Workflow and automation engines**
   - CI/CD pipelines
   - Job schedulers
   - Business process automation
-  
-- **Game logic and simulation**  
+- **Game logic and simulation**
   - AI decision trees
   - Ability unlock rules
   - Physics toggles
-  
-- **Spreadsheet-like calculations**  
+- **Spreadsheet-like calculations**
   - Financial dashboards
   - Pricing calculators
   - Quotation systems
-  - 
+  -
 - **Validation engines**  
   Field validation based on the values of other fields.
-
 
 ## Modular Expressions
 
 RS-X supports **modular expressions**, allowing expressions to reference **other expressions** as first-class values.
 
 This enables you to:
+
 - Compose complex calculations from smaller, reusable parts
 - Share intermediate results across multiple expressions
 - Improve readability, maintainability, and testability
@@ -98,7 +95,7 @@ Each expression remains **observable**, and changes propagate efficiently throug
 ```ts
 const model = {
   a: 10,
-  b: 20
+  b: 20,
 };
 
 const expr1 = expressionFactory.create(model, '(a + 1)');
@@ -106,7 +103,7 @@ const expr2 = expressionFactory.create(model, '(b + 2)');
 
 const modularModel = {
   expr1,
-  expr2
+  expr2,
 };
 
 const expr3 = expressionFactory.create(modularModel, 'expr1 * expr2');
@@ -119,6 +116,7 @@ const expr3 = expressionFactory.create(modularModel, 'expr1 * expr2');
 - `expr3` evaluates to `242`
 
 When `a` or `b` changes:
+
 - Only the affected expressions are recalculated
 - Dependent expressions update automatically
 
@@ -133,6 +131,7 @@ expr3.changed.subscribe(() => {
 ```
 
 Changes to:
+
 - `a`
 - `b`
 - `expr1`
@@ -151,6 +150,7 @@ Modular expressions are not only about structure — they also **improve perform
 - No duplicated computation for shared logic
 
 This is especially important when:
+
 - Expressions are computationally expensive
 - Expressions depend on asynchronous or reactive data
 - The same calculation is reused in multiple places (e.g. UI bindings)
@@ -161,7 +161,7 @@ Modular expression support is enabled by adding a **custom index accessor** and 
 
 This clearly illustrates the power of the expression parser: **new data types and reactive models can be seamlessly integrated** by extending the **State Manager** via plugins.
 
-## Complex modular expression example 
+## Complex modular expression example
 
 To get a sense of how powerful **modular expressions** are, we will look at a more realistic example.  
 We are going to create an expression that calculates **credit risk**.
@@ -171,6 +171,7 @@ First, we will show an implementation **without modular expressions**, followed 
 ---
 
 ### Non-Modular example
+
 ```ts
 {% include_relative ../demo/src/rs-x-expression-parser/use-cases/credit-risk-assessment-expression.ts %}
 ```
@@ -218,8 +219,8 @@ to use it.
 ```ts
 import { InjectionContainer } from '@rs-x/core';
 import {
-    RsXExpressionParserInjectionTokens,
-    RsXExpressionParserModule
+  RsXExpressionParserInjectionTokens,
+  RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
 
 InjectionContainer.load(RsXExpressionParserModule);
@@ -229,45 +230,45 @@ There are two ways to get an instance:
 
 1. Using the injection container
 
-    ```ts
-    import { InjectionContainer } from '@rs-x/core';
-    import {
-        IExpressionFactory,
-        RsXExpressionParserInjectionTokens,
-        RsXExpressionParserModule
-    } from '@rs-x/expression-parser';
+   ```ts
+   import { InjectionContainer } from '@rs-x/core';
+   import {
+     IExpressionFactory,
+     RsXExpressionParserInjectionTokens,
+     RsXExpressionParserModule,
+   } from '@rs-x/expression-parser';
 
-    const expressionFactory: IExpressionFactory = InjectionContainer.get(
-        RsXExpressionParserInjectionTokens.IExpressionFactory
-    );
-    ```
+   const expressionFactory: IExpressionFactory = InjectionContainer.get(
+     RsXExpressionParserInjectionTokens.IExpressionFactory,
+   );
+   ```
 
 2. Using the `@Inject` decorator
 
-    ```ts
-    import { Inject } from '@rs-x/core';
-    import {
-        RsXExpressionParserInjectionTokens,
-        RsXExpressionParserModule
-    } from '@rs-x/expression-parser';
+   ```ts
+   import { Inject } from '@rs-x/core';
+   import {
+     RsXExpressionParserInjectionTokens,
+     RsXExpressionParserModule,
+   } from '@rs-x/expression-parser';
 
-    export class MyClass {
-
-        constructor(
-            @Inject(RsXExpressionParserInjectionTokens.IExpressionFactory)
-            private readonly _expressionFactory: IExpressionFactory
-        ) {}
-    }
-    ```
+   export class MyClass {
+     constructor(
+       @Inject(RsXExpressionParserInjectionTokens.IExpressionFactory)
+       private readonly _expressionFactory: IExpressionFactory,
+     ) {}
+   }
+   ```
 
 ## Resolving Identifier Owner
 
 Expressions resolve to data values for there leaves. These values may be constants (such as numbers or strings), but more commonly they are stored as **indexes** within a given **context**. For example, when the context is an object instance, indexes refer to properties or fields; when the context is a `Map`, indexes refer to map keys.
 
 The interface responsible for resolving the owner of an identifier is defined as follows:
+
 ```ts
 export interface IIdentifierOwnerResolver {
-    resolve(index: unknown, context: unknown): object | null;
+  resolve(index: unknown, context: unknown): object | null;
 }
 ```
 
@@ -277,13 +278,22 @@ In `rs-x-expression-parser.module.ts`, the default resolver list is configured a
 
 ```ts
 registerMultiInjectServices(
-    options,
-    RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList,
-    [
-        { target: PropertyOwnerResolver, token: RsXExpressionParserInjectionTokens.PropertyOwnerResolver },
-        { target: ArrayIndexOwnerResolver, token: RsXExpressionParserInjectionTokens.ArrayIndexOwnerResolver },
-        { target: MapKeyOwnerResolver, token: RsXExpressionParserInjectionTokens.MapKeyOwnerResolver },
-    ]
+  options,
+  RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList,
+  [
+    {
+      target: PropertyOwnerResolver,
+      token: RsXExpressionParserInjectionTokens.PropertyOwnerResolver,
+    },
+    {
+      target: ArrayIndexOwnerResolver,
+      token: RsXExpressionParserInjectionTokens.ArrayIndexOwnerResolver,
+    },
+    {
+      target: MapKeyOwnerResolver,
+      token: RsXExpressionParserInjectionTokens.MapKeyOwnerResolver,
+    },
+  ],
 );
 ```
 
@@ -299,17 +309,18 @@ The default configuration includes the following resolvers:
   Resolves the identifier if the context is a `Map` and the specified index exists as a key in that map. Returns the context if resolved; otherwise, returns `null`.
 
 The default resolver list may be overridden by registering a custom list in a consuming module:
+
 ```ts
-    overrideMultiInjectServices(
-      options,
-      RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList,
-      CUSTOM_LIST
-    );
+overrideMultiInjectServices(
+  options,
+  RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList,
+  CUSTOM_LIST,
+);
 ```
+
 A common use case for a custom resolver occurs during data binding. In such scenarios, the initial context is the HTML element on which the data-binding expression is declared, while the identifier may be defined on an ancestor element (for example, a custom element). In this case, the resolver must traverse the parent chain until an element defining the identifier is found. The resolved context is then that element.
 
 This behavior can be implemented by providing a custom `IIdentifierOwnerResolver` that encapsulates the required traversal logic.
-
 
 ## Supported Expresssion types
 
@@ -461,30 +472,30 @@ All non-assignment JavaScript expressions are supported. These expressions can b
 
 ### Member expression
 
-* Member expression
-    ```ts
-    {% include_relative ../demo/src/rs-x-expression-parser/member-expression.ts %}
-    ```
-* Member expression with array
-    ```ts
-    {% include_relative ../demo/src/rs-x-expression-parser/member-expression-with-array.ts %}
-    ```
-* Member expression with map
-    ```ts
-    {% include_relative ../demo/src/rs-x-expression-parser/member-expression-with-map.ts %}
-    ```
-* Member expression with method
-    ```ts
-    {% include_relative ../demo/src/rs-x-expression-parser/member-expression-with-method.ts %}
-    ```
-* Member expression with observable
-    ```ts
-    {% include_relative ../demo/src/rs-x-expression-parser/member-expression-with-observable.ts %}
-    ```
-* Member expression with promise
-    ```ts
-    {% include_relative ../demo/src/rs-x-expression-parser/member-expression-with-promise.ts %}
-    ```
+- Member expression
+  ```ts
+  {% include_relative ../demo/src/rs-x-expression-parser/member-expression.ts %}
+  ```
+- Member expression with array
+  ```ts
+  {% include_relative ../demo/src/rs-x-expression-parser/member-expression-with-array.ts %}
+  ```
+- Member expression with map
+  ```ts
+  {% include_relative ../demo/src/rs-x-expression-parser/member-expression-with-map.ts %}
+  ```
+- Member expression with method
+  ```ts
+  {% include_relative ../demo/src/rs-x-expression-parser/member-expression-with-method.ts %}
+  ```
+- Member expression with observable
+  ```ts
+  {% include_relative ../demo/src/rs-x-expression-parser/member-expression-with-observable.ts %}
+  ```
+- Member expression with promise
+  ```ts
+  {% include_relative ../demo/src/rs-x-expression-parser/member-expression-with-promise.ts %}
+  ```
 
 ### Multiplication expression
 

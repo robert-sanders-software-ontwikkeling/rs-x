@@ -3,26 +3,23 @@ import { BinaryExpression } from './binary-expression';
 import { ExpressionType } from './expression-parser.interface';
 
 export class BitwiseUnsignedRightShiftExpression extends BinaryExpression<
-   number,
-   number
+  number,
+  number
 > {
-   constructor(
-      expressionString: string,
-      leftExpression: AbstractExpression<number>,
-      rightExpression: AbstractExpression<number>
-   ) {
-      super(
-         ExpressionType.BitwiseUnsignedRightShift,
-         expressionString,
-         leftExpression,
-         rightExpression
-      );
-   }
+  constructor(
+    expressionString: string,
+    leftExpression: AbstractExpression<number>,
+    rightExpression: AbstractExpression<number>,
+  ) {
+    super(
+      ExpressionType.BitwiseUnsignedRightShift,
+      expressionString,
+      leftExpression,
+      rightExpression,
+    );
+  }
 
-   protected override evaluateExpression(
-      a: number,
-      b: number
-   ): number {
-      return a >>> b;
-   }
+  protected override evaluateExpression(a: number, b: number): number {
+    return a >>> b;
+  }
 }

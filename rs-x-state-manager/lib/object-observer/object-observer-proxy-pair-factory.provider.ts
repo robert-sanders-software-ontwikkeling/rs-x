@@ -7,12 +7,14 @@ import type { IObjectObserverProxyPairFactoryProvider } from './object-observer-
 
 @Injectable()
 export class ObjectObserverProxyPairFactoryProvider implements IObjectObserverProxyPairFactoryProvider {
-   public readonly factories: readonly IObjectObserverProxyPairFactory[];
+  public readonly factories: readonly IObjectObserverProxyPairFactory[];
 
-   constructor(
-      @MultiInject(RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList)
-      factories: readonly IObjectObserverProxyPairFactory[]
-   ) {
-      this.factories = [...factories].sort((a, b) => b.priority - a.priority);
-   }
+  constructor(
+    @MultiInject(
+      RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList,
+    )
+    factories: readonly IObjectObserverProxyPairFactory[],
+  ) {
+    this.factories = [...factories].sort((a, b) => b.priority - a.priority);
+  }
 }

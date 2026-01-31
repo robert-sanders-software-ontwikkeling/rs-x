@@ -4,7 +4,7 @@ import type { IIdentifierOwnerResolver } from './identifier-owner-resolver.inter
 
 @Injectable()
 export class PropertyOwnerResolver implements IIdentifierOwnerResolver {
-   public resolve(index: string, context: object): object | null {
-      return Type.hasProperty(context, index) ? context : null;
-   }
+  public resolve(index: string, context: object): object | null {
+    return Type.hasProperty(context, index) ? context : null;
+  }
 }

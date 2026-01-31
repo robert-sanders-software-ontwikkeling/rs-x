@@ -2,18 +2,18 @@ import { ProxyRegistry } from '../../../lib/proxies/proxy-registry/proxy-registr
 import { SetProxyFactory } from '../../../lib/proxies/set-proxy/set-proxy.factory';
 
 describe('SetProxyFactory tests', () => {
-   let setProxyFactory: SetProxyFactory;
-   beforeEach(() => {
-      setProxyFactory = new SetProxyFactory(new ProxyRegistry());
-   });
+  let setProxyFactory: SetProxyFactory;
+  beforeEach(() => {
+    setProxyFactory = new SetProxyFactory(new ProxyRegistry());
+  });
 
-   it('will create an instance of set proxy', () => {
-      const actual = setProxyFactory.create({
-         set: new Set(),
-      }).instance;
+  it('will create an instance of set proxy', () => {
+    const actual = setProxyFactory.create({
+      set: new Set(),
+    }).instance;
 
-      expect(actual).toBeDefined();
-      expect(actual.proxy).toBeDefined();
-      expect(actual.observer).toBeDefined();
-   });
+    expect(actual).toBeDefined();
+    expect(actual.proxy).toBeDefined();
+    expect(actual.observer).toBeDefined();
+  });
 });

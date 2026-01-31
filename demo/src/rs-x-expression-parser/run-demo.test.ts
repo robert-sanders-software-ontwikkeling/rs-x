@@ -3,18 +3,17 @@ import dedent from 'dedent';
 import { runDemo } from '../../run-demo';
 
 describe('Expression parser demos', () => {
-    beforeEach(() => {
-        jest.resetModules();
-    });
+  beforeEach(() => {
+    jest.resetModules();
+  });
 
-    it('Node timezone is UTC', () => {
-        expect(process.env.TZ).toEqual('UTC');
-    });
+  it('Node timezone is UTC', () => {
+    expect(process.env.TZ).toEqual('UTC');
+  });
 
-    describe('Real life examples', () => {
-
-        it('Credit / Risk Assessment', async () => {
-            const expected = dedent`
+  describe('Real life examples', () => {
+    it('Credit / Risk Assessment', async () => {
+      const expected = dedent`
                 Running demo: demo/src/rs-x-expression-parser/use-cases/credit-risk-assessment-expression.ts
                 Initial risk: 
                 LOW
@@ -24,11 +23,15 @@ describe('Expression parser demos', () => {
                 HIGH
             `;
 
-            await expect(() => runDemo('rs-x-expression-parser/use-cases/credit-risk-assessment-expression.ts')).toOutputAsync(expected);
-        });
+      await expect(() =>
+        runDemo(
+          'rs-x-expression-parser/use-cases/credit-risk-assessment-expression.ts',
+        ),
+      ).toOutputAsync(expected);
+    });
 
-        it('Credit / Risk Assessment Modular', async () => {
-            const expected = dedent`
+    it('Credit / Risk Assessment Modular', async () => {
+      const expected = dedent`
                 Running demo: demo/src/rs-x-expression-parser/use-cases/credit-risk-assessment-expression-modular.ts
                 Initial risk: 
                 LOW
@@ -38,12 +41,16 @@ describe('Expression parser demos', () => {
                 HIGH
             `;
 
-            await expect(() => runDemo('rs-x-expression-parser/use-cases/credit-risk-assessment-expression-modular.ts')).toOutputAsync(expected);
-        });
+      await expect(() =>
+        runDemo(
+          'rs-x-expression-parser/use-cases/credit-risk-assessment-expression-modular.ts',
+        ),
+      ).toOutputAsync(expected);
     });
+  });
 
-    it('addition-expression.ts', async () => {
-        const expected = dedent`
+  it('addition-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/addition-expression.ts
             Initial value of 'a + b':
             4
@@ -55,11 +62,13 @@ describe('Expression parser demos', () => {
             10
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/addition-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/addition-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('array-expression.ts', async () => {
-        const expected = dedent`
+  it('array-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/array-expression.ts
             Initial value of '[a, ...array, 100]':
             [
@@ -99,11 +108,13 @@ describe('Expression parser demos', () => {
             ]
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/array-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/array-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('bitwise-and-expression.ts', async () => {
-        const expected = dedent`
+  it('bitwise-and-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/bitwise-and-expression.ts
             Initial value of 'a & b':
             1
@@ -115,11 +126,13 @@ describe('Expression parser demos', () => {
             0
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/bitwise-and-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/bitwise-and-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('bitwise-left-shift-expression.ts', async () => {
-        const expected = dedent`
+  it('bitwise-left-shift-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/bitwise-left-shift-expression.ts
             Initial value of 'a << b':
             20
@@ -131,11 +144,13 @@ describe('Expression parser demos', () => {
             32
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/bitwise-left-shift-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/bitwise-left-shift-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('bitwise-not-expression.ts', async () => {
-        const expected = dedent`
+  it('bitwise-not-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/bitwise-not-expression.ts
             Initial value of '~a':
             -6
@@ -145,11 +160,13 @@ describe('Expression parser demos', () => {
             -4
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/bitwise-not-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/bitwise-not-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('bitwise-or-expression.ts', async () => {
-        const expected = dedent`
+  it('bitwise-or-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/bitwise-or-expression.ts
             Initial value of 'a | b':
             7
@@ -161,11 +178,13 @@ describe('Expression parser demos', () => {
             11
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/bitwise-or-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/bitwise-or-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('bitwise-right-shift-expression.ts', async () => {
-        const expected = dedent`
+  it('bitwise-right-shift-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/bitwise-right-shift-expression.ts
             Initial value of 'a >> b':
             1
@@ -177,11 +196,13 @@ describe('Expression parser demos', () => {
             1
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/bitwise-right-shift-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/bitwise-right-shift-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('bitwise-unsigned-right-shift-expression.ts', async () => {
-        const expected = dedent`
+  it('bitwise-unsigned-right-shift-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/bitwise-unsigned-right-shift-expression.ts
             Initial value of 'a >>> b':
             1
@@ -193,11 +214,15 @@ describe('Expression parser demos', () => {
             536870911
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/bitwise-unsigned-right-shift-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo(
+        'rs-x-expression-parser/bitwise-unsigned-right-shift-expression.ts',
+      ),
+    ).toOutputAsync(expected);
+  });
 
-    it('bitwise-xor-expression.ts', async () => {
-        const expected = dedent`
+  it('bitwise-xor-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/bitwise-xor-expression.ts
             Initial value of 'a ^ b':
             6
@@ -209,11 +234,13 @@ describe('Expression parser demos', () => {
             2
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/bitwise-xor-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/bitwise-xor-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('conditional-expression.ts', async () => {
-        const expected = dedent`
+  it('conditional-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/conditional-expression.ts
             Initial value of 'a > b ? c : d':
             200
@@ -229,11 +256,13 @@ describe('Expression parser demos', () => {
             300
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/conditional-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/conditional-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('division-expression.ts', async () => {
-        const expected = dedent`
+  it('division-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/division-expression.ts
             Initial value of 'a / b':
             10
@@ -244,11 +273,13 @@ describe('Expression parser demos', () => {
             5
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/division-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/division-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('equality-expression.ts', async () => {
-        const expected = dedent`
+  it('equality-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/equality-expression.ts
             Initial value of 'a == b':
             false
@@ -260,11 +291,13 @@ describe('Expression parser demos', () => {
             false
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/equality-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/equality-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('exponentiation-expression.ts', async () => {
-        const expected = dedent`
+  it('exponentiation-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/exponentiation-expression.ts
             Initial value of 'a ** b':
             8
@@ -276,11 +309,13 @@ describe('Expression parser demos', () => {
             1024
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/exponentiation-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/exponentiation-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('function-expression.ts', async () => {
-        const expected = dedent`
+  it('function-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/function-expression.ts
             Initial value of 'multiply(a, b)'
             6
@@ -292,11 +327,13 @@ describe('Expression parser demos', () => {
             20
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/function-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/function-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('greater-than-expression.ts', async () => {
-        const expected = dedent`
+  it('greater-than-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/greater-than-expression.ts
             Initial value of 'a > b':
             true
@@ -308,11 +345,13 @@ describe('Expression parser demos', () => {
             true
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/greater-than-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/greater-than-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('greater-than-or-equal-expression.ts', async () => {
-        const expected = dedent`
+  it('greater-than-or-equal-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/greater-than-or-equal-expression.ts
             Initial value of 'a >= b':
             true
@@ -324,11 +363,13 @@ describe('Expression parser demos', () => {
             true
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/greater-than-or-equal-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/greater-than-or-equal-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('in-expression.ts', async () => {
-        const expected = dedent`
+  it('in-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/in-expression.ts
             Initial value of 'propertyName in b':
             true
@@ -340,11 +381,13 @@ describe('Expression parser demos', () => {
             true
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/in-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/in-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('inequality-expression.ts', async () => {
-        const expected = dedent`
+  it('inequality-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/inequality-expression.ts
             Initial value of 'a != b':
             true
@@ -355,11 +398,13 @@ describe('Expression parser demos', () => {
             false
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/inequality-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/inequality-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('instanceof-expression.ts', async () => {
-        const expected = dedent`
+  it('instanceof-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/instanceof-expression.ts
             Initial value of 'a instanceof type':
             true
@@ -371,11 +416,13 @@ describe('Expression parser demos', () => {
             true
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/instanceof-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/instanceof-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('less-than-expression.ts', async () => {
-        const expected = dedent`
+  it('less-than-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/less-than-expression.ts
             Initial value of 'a < b':
             true
@@ -387,11 +434,13 @@ describe('Expression parser demos', () => {
             true
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/less-than-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/less-than-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('less-than-or-equal-expression.ts', async () => {
-        const expected = dedent`
+  it('less-than-or-equal-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/less-than-or-equal-expression.ts
             Initial value of 'a <= b':
             true
@@ -403,11 +452,13 @@ describe('Expression parser demos', () => {
             true
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/less-than-or-equal-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/less-than-or-equal-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('logical-and-expression.ts', async () => {
-        const expected = dedent`
+  it('logical-and-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/logical-and-expression.ts
             Initial value of 'a && b':
             false
@@ -419,11 +470,13 @@ describe('Expression parser demos', () => {
             false
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/logical-and-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/logical-and-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('logical-or-expression.ts', async () => {
-        const expected = dedent`
+  it('logical-or-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/logical-or-expression.ts
             Initial value of 'a || b':
             true
@@ -435,11 +488,13 @@ describe('Expression parser demos', () => {
             true
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/logical-or-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/logical-or-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('logical-not-expression.ts', async () => {
-        const expected = dedent`
+  it('logical-not-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/logical-not-expression.ts
             Initial value of '!a':
             true
@@ -449,11 +504,13 @@ describe('Expression parser demos', () => {
             false
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/logical-not-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/logical-not-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('member-expression.ts', async () => {
-        const expected = dedent`
+  it('member-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/member-expression.ts
             Initial value of 'a.b.c':
             10
@@ -467,11 +524,13 @@ describe('Expression parser demos', () => {
             40
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/member-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/member-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('member-expression-with-array.ts', async () => {
-        const expected = dedent`
+  it('member-expression-with-array.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/member-expression-with-array.ts
             Initial value of 'a.b[1].c.d':
             11
@@ -487,11 +546,13 @@ describe('Expression parser demos', () => {
             330
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/member-expression-with-array.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/member-expression-with-array.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('member-expression-with-map.ts', async () => {
-        const expected = dedent`
+  it('member-expression-with-map.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/member-expression-with-map.ts
             Initial value of 'a.b['b'].c.d':
             2
@@ -507,11 +568,13 @@ describe('Expression parser demos', () => {
             330
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/member-expression-with-map.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/member-expression-with-map.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('member-expression-with-set.ts', async () => {
-        const expected = dedent`
+  it('member-expression-with-set.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/member-expression-with-set.ts
             Initial value of 'a.b':
             {
@@ -543,11 +606,13 @@ describe('Expression parser demos', () => {
             }
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/member-expression-with-set.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/member-expression-with-set.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('member-expression-with-method.ts', async () => {
-        const expected = dedent`
+  it('member-expression-with-method.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/member-expression-with-method.ts
             Initial value of 'a.b.mail(message, subject).messageWithSubject':
             message: Hello, subject: Message
@@ -559,11 +624,13 @@ describe('Expression parser demos', () => {
             message: hi, subject: urgent message
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/member-expression-with-method.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/member-expression-with-method.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('member-expression-with-promise.ts', async () => {
-        const expected = dedent`
+  it('member-expression-with-promise.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/member-expression-with-promise.ts
             Initial value of 'a.b.c.d':
             20
@@ -573,11 +640,13 @@ describe('Expression parser demos', () => {
             200
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/member-expression-with-promise.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/member-expression-with-promise.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('member-expression-with-observable.ts', async () => {
-        const expected = dedent`
+  it('member-expression-with-observable.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/member-expression-with-observable.ts
             Initial value of 'a.b.c.d':
             20
@@ -591,11 +660,13 @@ describe('Expression parser demos', () => {
             400
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/member-expression-with-observable.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/member-expression-with-observable.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('multiplication-expression.ts', async () => {
-        const expected = dedent`
+  it('multiplication-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/multiplication-expression.ts
             Initial value of 'a * b':
             3
@@ -607,11 +678,13 @@ describe('Expression parser demos', () => {
             24
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/multiplication-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/multiplication-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('new-expression.ts', async () => {
-        const expected = dedent`
+  it('new-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/new-expression.ts
             Initial value of 'new type(value)':
             Value
@@ -635,11 +708,13 @@ describe('Expression parser demos', () => {
             }
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/new-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/new-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('nullish-coalescing-expression.ts', async () => {
-        const expected = dedent`
+  it('nullish-coalescing-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/nullish-coalescing-expression.ts
             Initial value of 'a ?? b':
             10
@@ -653,11 +728,13 @@ describe('Expression parser demos', () => {
             6
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/nullish-coalescing-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/nullish-coalescing-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('object-expression.ts', async () => {
-        const expected = dedent`
+  it('object-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/object-expression.ts
             Initial value of '({ a: x, b: y })':
             {
@@ -681,11 +758,13 @@ describe('Expression parser demos', () => {
             }
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/object-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/object-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('remainder-expression.ts', async () => {
-        const expected = dedent`
+  it('remainder-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/remainder-expression.ts
             Initial value of a % b':
             1
@@ -697,11 +776,13 @@ describe('Expression parser demos', () => {
             2
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/remainder-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/remainder-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('sequence-expression.ts', async () => {
-        const expected = dedent`
+  it('sequence-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/sequence-expression.ts
             Initial value of (setB(value), b)':
             100
@@ -713,12 +794,13 @@ describe('Expression parser demos', () => {
             300
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/sequence-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/sequence-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-
-    it('strict-equality-expression.ts', async () => {
-        const expected = dedent`
+  it('strict-equality-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/strict-equality-expression.ts
             Initial value of 'a === b':
             false
@@ -730,11 +812,13 @@ describe('Expression parser demos', () => {
             false
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/strict-equality-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/strict-equality-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('strict-inequality-expression.ts', async () => {
-        const expected = dedent`
+  it('strict-inequality-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/strict-inequality-expression.ts
             Initial value of 'a !== b':
             false
@@ -746,11 +830,13 @@ describe('Expression parser demos', () => {
             false
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/strict-inequality-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/strict-inequality-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('substraction-expression.ts', async () => {
-        const expected = dedent`
+  it('substraction-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/substraction-expression.ts
             Initial value of 'a - b':
             -2
@@ -762,11 +848,13 @@ describe('Expression parser demos', () => {
             2
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/substraction-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/substraction-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('template-string-expression.ts', async () => {
-        const expected = dedent`
+  it('template-string-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/template-string-expression.ts
             Initial value of '\`Say \${message}\`':
             Say hi
@@ -776,11 +864,13 @@ describe('Expression parser demos', () => {
             Say hello
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/template-string-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/template-string-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('typeof-expression.ts', async () => {
-        const expected = dedent`
+  it('typeof-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/typeof-expression.ts
             Initial value of 'typeof a[index]':
             string
@@ -790,11 +880,13 @@ describe('Expression parser demos', () => {
             number
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/typeof-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/typeof-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('unary-negation-expression.ts', async () => {
-        const expected = dedent`
+  it('unary-negation-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/unary-negation-expression.ts
             Initial value of '-value':
             -1
@@ -804,11 +896,13 @@ describe('Expression parser demos', () => {
             5
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/unary-negation-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/unary-negation-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('unary-plus-expression.ts', async () => {
-        const expected = dedent`
+  it('unary-plus-expression.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-expression-parser/unary-plus-expression.ts
             Initial value of '+value':
             2
@@ -818,6 +912,8 @@ describe('Expression parser demos', () => {
             6
         `;
 
-        await expect(() => runDemo('rs-x-expression-parser/unary-plus-expression.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-expression-parser/unary-plus-expression.ts'),
+    ).toOutputAsync(expected);
+  });
 });

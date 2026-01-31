@@ -1,5 +1,11 @@
-import { existsSync,readdirSync, readFileSync, statSync, writeFileSync } from 'fs';
-import { dirname,join } from 'path';
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'fs';
+import { dirname, join } from 'path';
 
 const EXCLUDED_DIRS = ['node_modules', 'dist', '.git'];
 
@@ -13,8 +19,7 @@ function walkDir(dir: string, callback: (filePath: string) => void) {
     const stats = statSync(fullPath);
     if (stats.isDirectory()) {
       walkDir(fullPath, callback);
-    }
-    else if (entry.toLowerCase() === '_readme.md') {
+    } else if (entry.toLowerCase() === '_readme.md') {
       callback(fullPath);
     }
   }
@@ -55,7 +60,10 @@ function updateReadme(readmePath: string) {
   const newContent = updatedLines.join('\n');
   const outputReadmePath = join(dirname(readmePath), 'readme.md');
 
-  if (!existsSync(outputReadmePath) || readFileSync(outputReadmePath, 'utf-8') !== newContent) {
+  if (
+    !existsSync(outputReadmePath) ||
+    readFileSync(outputReadmePath, 'utf-8') !== newContent
+  ) {
     writeFileSync(outputReadmePath, newContent, 'utf-8');
     console.log(`Generated: ${outputReadmePath}`);
   }

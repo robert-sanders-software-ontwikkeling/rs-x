@@ -1,37 +1,43 @@
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-    type IExpressionFactory,
-    RsXExpressionParserInjectionTokens,
-    RsXExpressionParserModule
+  type IExpressionFactory,
+  RsXExpressionParserInjectionTokens,
+  RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionFactory);
+const expressionFactory: IExpressionFactory = InjectionContainer.get(
+  RsXExpressionParserInjectionTokens.IExpressionFactory,
+);
 
 export const run = (async () => {
-    const expressionContext = {
-        a: false
-    };
+  const expressionContext = {
+    a: false,
+  };
 
-   const expression = expressionFactory.create(expressionContext, '!a');
+  const expression = expressionFactory.create(expressionContext, '!a');
 
-    try {
-        // Wait until the expression has been resolved (has a value)
-        await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+  try {
+    // Wait until the expression has been resolved (has a value)
+    await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-        console.log(`Initial value of '!a':`);
-        expression.changed.subscribe((change) => {
-            console.log(change.value);
-        });
+    console.log(`Initial value of '!a':`);
+    expression.changed.subscribe((change) => {
+      console.log(change.value);
+    });
 
-        console.log(`Value of !a' after changing 'a' to 'true':`);
-        await new WaitForEvent(expression, 'changed', { ignoreInitialValue: true }).wait(() => { expressionContext.a = true; });
+    console.log(`Value of !a' after changing 'a' to 'true':`);
+    await new WaitForEvent(expression, 'changed', {
+      ignoreInitialValue: true,
+    }).wait(() => {
+      expressionContext.a = true;
+    });
 
-        console.log(`Final value of '!a':`);
-        console.log(expression.value);
-    } finally {
-        // Always dispose of expressions after use.
-        expression.dispose();
-    }
+    console.log(`Final value of '!a':`);
+    console.log(expression.value);
+  } finally {
+    // Always dispose of expressions after use.
+    expression.dispose();
+  }
 })();

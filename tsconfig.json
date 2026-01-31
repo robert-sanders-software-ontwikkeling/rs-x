@@ -1,74 +1,50 @@
 {
-   "compilerOptions": {
-      "strict": true,
-      "noImplicitReturns": true,
-      "verbatimModuleSyntax": true,
-      "preserveValueImports": false,
-      "forceConsistentCasingInFileNames": true,
-      "resolveJsonModule": true,
-      "outDir": "dist/lib",
-      "target": "ES2022",
-      "module": "ES2022",
-      "moduleResolution": "node",
-      "sourceMap": true,
-      "emitDecoratorMetadata": true,
-      "experimentalDecorators": true,
-      "lib": [
-         "ES2022",
-         "dom"
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitReturns": true,
+    "verbatimModuleSyntax": true,
+    "preserveValueImports": false,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "outDir": "dist/lib",
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "lib": ["ES2022", "dom"],
+    "noImplicitAny": false,
+    "allowSyntheticDefaultImports": true,
+    "downlevelIteration": true,
+    "declaration": true,
+    "esModuleInterop": true,
+    "importHelpers": true,
+    "isolatedModules": false,
+    "declarationMap": true,
+    "useDefineForClassFields": false,
+    "pretty": true,
+    "baseUrl": "./",
+    "inlineSources": true,
+    "noImplicitOverride": true,
+    "paths": {
+      "@rs-x/core": ["rs-x-core/lib/index.ts"],
+      "@rs-x/core/testing": ["rs-x-core/lib/testing/index.ts"],
+      "@rs-x/state-manager": ["rs-x-state-manager/lib/index.ts"],
+      "@rs-x/state-manager/testing": [
+        "rs-x-state-manager/lib/testing/index.ts"
       ],
-      "noImplicitAny": false,
-      "allowSyntheticDefaultImports": true,
-      "downlevelIteration": true,
-      "declaration": true,
-      "esModuleInterop": true,
-      "importHelpers": true,
-      "isolatedModules": false,
-      "declarationMap": true,
-      "useDefineForClassFields": false,
-      "pretty": true,
-      "baseUrl": "./",
-      "inlineSources": true,
-      "noImplicitOverride": true,
-      "paths": {
-         "@rs-x/core": [
-            "rs-x-core/lib/index.ts"
-         ],
-         "@rs-x/core/testing": [
-            "rs-x-core/lib/testing/index.ts"
-         ],
-         "@rs-x/state-manager": [
-            "rs-x-state-manager/lib/index.ts"
-         ],
-         "@rs-x/state-manager/testing": [
-            "rs-x-state-manager/lib/testing/index.ts"
-         ],
-         "@rs-x/expression-parser": [
-            "rs-x-expression-parser/lib/index.ts"
-         ]
-      },
-      "allowJs": true,
-      "typeRoots": [
-         "node_modules/@types",
-         "./types"
-      ],
-      "types": [
-         "jest",
-         "node"
-      ]
-   },
-   "ts-node": {
-      "compilerOptions": {
-         "module": "CommonJS"
-      }
-   },
-   "include": [
-      "./types/declarations.d.ts",
-      "**/*"
-   ],
-   "exclude": [
-      "node_modules",
-      "**/dist",
-      "**/dist/**"
-   ]
+      "@rs-x/expression-parser": ["rs-x-expression-parser/lib/index.ts"]
+    },
+    "allowJs": true,
+    "typeRoots": ["node_modules/@types", "./types"],
+    "types": ["jest", "node"]
+  },
+  "ts-node": {
+    "compilerOptions": {
+      "module": "CommonJS"
+    }
+  },
+  "include": ["./types/declarations.d.ts", "**/*"],
+  "exclude": ["node_modules", "**/dist", "**/dist/**"]
 }

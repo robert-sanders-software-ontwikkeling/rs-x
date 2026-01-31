@@ -5,58 +5,57 @@ import { ObjectObserverProxyPairFactoryMock } from '../../lib/testing/object-obs
 import { ObserverMock } from '../../lib/testing/observer.mock';
 
 describe('ObjectObserverProxyPairManager tests', () => {
-   let objectObserverProxyPairFactory: ObjectObserverProxyPairFactoryMock;
-   let objectObserverProxyPairManager: ObjectObserverProxyPairManager;
-   let guidFactory: GuidFactoryMock;
+  let objectObserverProxyPairFactory: ObjectObserverProxyPairFactoryMock;
+  let objectObserverProxyPairManager: ObjectObserverProxyPairManager;
+  let guidFactory: GuidFactoryMock;
 
-   beforeEach(async () => {
-      objectObserverProxyPairFactory = new ObjectObserverProxyPairFactoryMock();
-      guidFactory = new GuidFactoryMock();
-      objectObserverProxyPairManager = new ObjectObserverProxyPairManager(
-         () => ({ factories: [objectObserverProxyPairFactory] }),
-         new ProxyRegistry(),
-         guidFactory
-      );
-   });
+  beforeEach(async () => {
+    objectObserverProxyPairFactory = new ObjectObserverProxyPairFactoryMock();
+    guidFactory = new GuidFactoryMock();
+    objectObserverProxyPairManager = new ObjectObserverProxyPairManager(
+      () => ({ factories: [objectObserverProxyPairFactory] }),
+      new ProxyRegistry(),
+      guidFactory,
+    );
+  });
 
+  it('will return null for not supported type', () => {
+    guidFactory.create.mockReturnValue('myGuid');
+    objectObserverProxyPairFactory.applies.mockReturnValue(false);
 
-   it('will return null for not supported type', () => {
-      guidFactory.create.mockReturnValue('myGuid');
-      objectObserverProxyPairFactory.applies.mockReturnValue(false);
+    const actual = objectObserverProxyPairManager.create({
+      target: { x: 1 },
+    });
 
-      const actual = objectObserverProxyPairManager.create({
-         target: { x: 1 },
-      });
+    expect(actual).toEqual({
+      id: 'myGuid',
+      instance: null,
+      referenceCount: 1,
+    });
+  });
 
-      expect(actual).toEqual({
-         id: 'myGuid',
-         instance: null,
-         referenceCount: 1,
-      });
-   });
+  it('will create an observer for supported type', () => {
+    guidFactory.create.mockReturnValue('myGuid');
+    const observer = new ObserverMock();
+    objectObserverProxyPairFactory.applies.mockReturnValue(true);
+    objectObserverProxyPairFactory.create.mockReturnValue(observer);
 
-   it('will create an observer for supported type', () => {
-      guidFactory.create.mockReturnValue('myGuid');
-      const observer = new ObserverMock();
-      objectObserverProxyPairFactory.applies.mockReturnValue(true);
-      objectObserverProxyPairFactory.create.mockReturnValue(observer);
+    const actual = objectObserverProxyPairManager.create({
+      target: { x: 1 },
+    });
 
-      const actual = objectObserverProxyPairManager.create({
-         target: { x: 1 },
-      });
-
-      expect(objectObserverProxyPairFactory.create).toHaveBeenCalledTimes(1);
-      expect(objectObserverProxyPairFactory.create).toHaveBeenCalledWith(
-         {
-            canDispose: expect.any(Function),
-            release: expect.any(Function),
-         },
-         { target: { x: 1 } }
-      );
-      expect(actual).toEqual({
-          id: 'myGuid',
-         instance: observer,
-         referenceCount: 1,
-      });
-   });
+    expect(objectObserverProxyPairFactory.create).toHaveBeenCalledTimes(1);
+    expect(objectObserverProxyPairFactory.create).toHaveBeenCalledWith(
+      {
+        canDispose: expect.any(Function),
+        release: expect.any(Function),
+      },
+      { target: { x: 1 } },
+    );
+    expect(actual).toEqual({
+      id: 'myGuid',
+      instance: observer,
+      referenceCount: 1,
+    });
+  });
 });

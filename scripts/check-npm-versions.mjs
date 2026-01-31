@@ -13,7 +13,6 @@ const packageMap = {
 
 const basePath = './';
 
-
 let hasConflict = false;
 
 for (const [pkgName, folderName] of Object.entries(packageMap)) {
@@ -33,13 +32,17 @@ for (const [pkgName, folderName] of Object.entries(packageMap)) {
       console.log(`✅ OK: ${pkgName}@${version} not published yet`);
     }
   } catch (err) {
-    console.error(`❌ Failed to read package.json for ${folderName}: ${err.message}`);
+    console.error(
+      `❌ Failed to read package.json for ${folderName}: ${err.message}`,
+    );
     hasConflict = true;
   }
 }
 
 if (hasConflict) {
-  console.error('Aborting: One or more package versions already exist or failed to read.');
+  console.error(
+    'Aborting: One or more package versions already exist or failed to read.',
+  );
   process.exit(1);
 } else {
   console.log('All package versions are safe to publish.');

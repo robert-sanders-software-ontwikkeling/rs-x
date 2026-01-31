@@ -21,7 +21,7 @@ on:
 
 permissions:
   contents: write
-  id-token: write  # Required for OIDC
+  id-token: write # Required for OIDC
 
 concurrency:
   group: release-${{ github.ref }}
@@ -101,11 +101,11 @@ jobs:
         if: ${{ github.event.inputs.promote_from_next != 'true' && github.event.inputs.dry_run != 'true' }}
         env:
           DIST_TAG: ${{ github.event.inputs.dist_tag || 'latest' }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}   # Only for first-time publishes
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # Only for first-time publishes
         run: |
           set -e
           node scripts/publish-packages.mjs
-    
+
       - name: Configure Git remote with token
         run: |
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git

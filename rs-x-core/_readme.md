@@ -2,25 +2,26 @@
 
 Provides shared core functionality for the RS-X project:
 
-*  [Dependency Injection](#dependency-injection)
-*  [Deep Clone](#deep-clone) 
-*  [Deep Equality](#deep-equality)
-*  [Guid Factory](#guid-factory)
-*  [Index Value Accessor](#index-value-accessor)
-*  [Singleton factory](#singleton-factory)
-*  [Error Log](#error-log)
-*  [WaitForEvent](#waitforevent)
+- [Dependency Injection](#dependency-injection)
+- [Deep Clone](#deep-clone)
+- [Deep Equality](#deep-equality)
+- [Guid Factory](#guid-factory)
+- [Index Value Accessor](#index-value-accessor)
+- [Singleton factory](#singleton-factory)
+- [Error Log](#error-log)
+- [WaitForEvent](#waitforevent)
 
 ## Dependency Injection
+
 Implemented with [Inversify](https://github.com/inversify/InversifyJS).
 
 The following aliases were added to make them consistent with the code style used throughout the project:
 
-* `inject` renamed to `Inject`
-* `multiInject` renamed to `MultiInject`
-* `injectable` renamed to `Injectable`
-* `unmanaged` renamed to `Unmanaged`
-* `preDestroy` renamed to `PreDestroy`
+- `inject` renamed to `Inject`
+- `multiInject` renamed to `MultiInject`
+- `injectable` renamed to `Injectable`
+- `unmanaged` renamed to `Unmanaged`
+- `preDestroy` renamed to `PreDestroy`
 
 In addition, the following extensions were added to Inversify:
 
@@ -93,11 +94,9 @@ Overrides an existing multi-inject list, removing any previous bindings for the 
 - Use this function when you want to completely replace the multi-inject service list.
 - Ensures that `container.getAll(multiInjectToken)` returns only the new services without duplicates.
 
-
-
 ## Deep Clone
 
- - Uses [structuredClone](https://developer.mozilla.org/en-US/docs/Web/API/Window/structuredClone) by default  
+- Uses [structuredClone](https://developer.mozilla.org/en-US/docs/Web/API/Window/structuredClone) by default
 - Falls back to [Lodash `cloneDeepWith`](https://lodash.com/docs/4.17.15#cloneDeepWith) for unsupported types
 
 ### Get an instance of the Deep clone service
@@ -107,10 +106,7 @@ You must load the core module into the injection container if you want
 to use it.
 
 ```ts
-import { 
-    InjectionContainer, 
-    RsXCoreModule 
-} from '@rs-x/core';
+import { InjectionContainer, RsXCoreModule } from '@rs-x/core';
 
 InjectionContainer.load(RsXCoreModule);
 ```
@@ -119,35 +115,30 @@ There are two ways to get an instance:
 
 1. Using the injection container
 
-    ```ts
-    import { 
-        IDeepClone,
-        InjectionContainer, 
-        RsXCoreInjectionTokens 
-    } from '@rs-x/core';
-  
-    const deepClone: IDeepClone = InjectionContainer.get(
-        RsXCoreInjectionTokens.IDeepClone
-    );
-    ```
+   ```ts
+   import {
+     IDeepClone,
+     InjectionContainer,
+     RsXCoreInjectionTokens,
+   } from '@rs-x/core';
+
+   const deepClone: IDeepClone = InjectionContainer.get(
+     RsXCoreInjectionTokens.IDeepClone,
+   );
+   ```
 
 2. Using the `@Inject` decorator
 
-    ```ts
-    import { 
-        IDeepClone,
-        Inject, 
-        RsXCoreInjectionTokens 
-    } from '@rs-x/core';
-   
-    export class MyClass {
+   ```ts
+   import { IDeepClone, Inject, RsXCoreInjectionTokens } from '@rs-x/core';
 
-        constructor(
-            @Inject(RsXCoreInjectionTokens.IDeepClone)
-            private readonly _deepClone: IDeepClone
-        ) {}
-    }
-    ```
+   export class MyClass {
+     constructor(
+       @Inject(RsXCoreInjectionTokens.IDeepClone)
+       private readonly _deepClone: IDeepClone,
+     ) {}
+   }
+   ```
 
 The following example shows how to use deep clone service:
 
@@ -156,6 +147,7 @@ The following example shows how to use deep clone service:
 ```
 
 **Output:**
+
 ```console
 Running demo: demo/src/rs-x-core/deep-clone.ts
 Clone is a copy of the cloned object: true
@@ -179,10 +171,7 @@ You must load the core module into the injection container if you want
 to use it.
 
 ```ts
-import { 
-    InjectionContainer, 
-    RsXCoreModule 
-} from '@rs-x/core';
+import { InjectionContainer, RsXCoreModule } from '@rs-x/core';
 
 InjectionContainer.load(RsXCoreModule);
 ```
@@ -191,35 +180,34 @@ There are two ways to get an instance:
 
 1. Using the injection container
 
-    ```ts
-    import { 
-        IEqualityService,
-        InjectionContainer,
-        RsXCoreInjectionTokens 
-    } from '@rs-x/core';
-  
-    const equalityService: IEqualityService = InjectionContainer.get(
-        RsXCoreInjectionTokens.IEqualityService
-    );
-    ```
+   ```ts
+   import {
+     IEqualityService,
+     InjectionContainer,
+     RsXCoreInjectionTokens,
+   } from '@rs-x/core';
+
+   const equalityService: IEqualityService = InjectionContainer.get(
+     RsXCoreInjectionTokens.IEqualityService,
+   );
+   ```
 
 2. Using the `@Inject` decorator
 
-    ```ts
-    import { 
-        IEqualityService,
-        Inject,
-        RsXCoreInjectionTokens 
-    } from '@rs-x/core';
-   
-    export class MyClass {
+   ```ts
+   import {
+     IEqualityService,
+     Inject,
+     RsXCoreInjectionTokens,
+   } from '@rs-x/core';
 
-        constructor(
-            @Inject(RsXCoreInjectionTokens.IEqualityService)
-            private readonly _equalityService: IEqualityService
-        ) {}
-    }
-    ```
+   export class MyClass {
+     constructor(
+       @Inject(RsXCoreInjectionTokens.IEqualityService)
+       private readonly _equalityService: IEqualityService,
+     ) {}
+   }
+   ```
 
 The following example shows how to use equality service
 
@@ -228,6 +216,7 @@ The following example shows how to use equality service
 ```
 
 **Output:**
+
 ```console
 Running demo: demo/src/rs-x-core/equality-service.ts
 {
@@ -257,10 +246,7 @@ You must load the core module into the injection container if you want
 to use it.
 
 ```ts
-import { 
-    InjectionContainer, 
-    RsXCoreModule 
-} from '@rs-x/core';
+import { InjectionContainer, RsXCoreModule } from '@rs-x/core';
 
 InjectionContainer.load(RsXCoreModule);
 ```
@@ -269,35 +255,30 @@ There are two ways to get an instance:
 
 1. Using the injection container
 
-    ```ts
-    import { 
-        IGuidFactory,
-        InjectionContainer, 
-        RsXCoreInjectionTokens 
-    } from '@rs-x/core';
-  
-    const guidFactory: IGuidFactory = InjectionContainer.get(
-        RsXCoreInjectionTokens.IGuidFactory
-    );
-    ```
+   ```ts
+   import {
+     IGuidFactory,
+     InjectionContainer,
+     RsXCoreInjectionTokens,
+   } from '@rs-x/core';
+
+   const guidFactory: IGuidFactory = InjectionContainer.get(
+     RsXCoreInjectionTokens.IGuidFactory,
+   );
+   ```
 
 2. Using the `@Inject` decorator
 
-    ```ts
-    import { 
-        IGuidFactory,
-        Inject, 
-        RsXCoreInjectionTokens 
-    } from '@rs-x/core';
-   
-    export class MyClass {
+   ```ts
+   import { IGuidFactory, Inject, RsXCoreInjectionTokens } from '@rs-x/core';
 
-        constructor(
-            @Inject(RsXCoreInjectionTokens.IGuidFactory)
-            private readonly _guidFactory: IGuidFactory
-        ) {}
-    }
-    ```
+   export class MyClass {
+     constructor(
+       @Inject(RsXCoreInjectionTokens.IGuidFactory)
+       private readonly _guidFactory: IGuidFactory,
+     ) {}
+   }
+   ```
 
 The following example shows how to use the guid factory
 
@@ -306,6 +287,7 @@ The following example shows how to use the guid factory
 ```
 
 **Output:**
+
 ```console
 Running demo: demo/src/rs-x-core/guid-factory.ts
 Created guid 1f64aabb-a57e-42e7-9edf-71c24773c150
@@ -360,6 +342,7 @@ Normalizes access to object properties, array indices, map keys, and similar ind
 ### Members
 
 ### **priority**
+
 **Type:** `number`  
 Defines the priority of the index value accessor. Higher numbers indicate higher priority when selecting which accessor to use.
 
@@ -461,14 +444,14 @@ Returns `true` if this index value accessor supports the given `(context, index)
 The default `IIndexValueAccessor` implementation internally uses the following list of `IIndexValueAccessor` implementations.  
 The accessors are evaluated in order of **priority**, with higher-priority accessors being checked first:
 
-* **`PropertyValueAccessor`** – accesses properties or fields on an object. Priority = 7
-* **`MethodAccessor`** – accesses methods on an object. Priority = 6
-* **`ArrayIndexAccessor`** – accesses array items. Priority = 5
-* **`MapKeyccessor`** – accesses map items. Priority = 4
-* **`SetKeyAccessor`** – accesses `Set` items. Priority = 3
-* **`ObservableAccessor`** – accesses the latest value emitted by an `Observable`. Priority = 2
-* **`PromiseAccessor`** – accesses the resolved value of a `Promise`. Priority = 1
-* **`DatePropertyAccessor`** – accesses date-related properties. Priority = 0
+- **`PropertyValueAccessor`** – accesses properties or fields on an object. Priority = 7
+- **`MethodAccessor`** – accesses methods on an object. Priority = 6
+- **`ArrayIndexAccessor`** – accesses array items. Priority = 5
+- **`MapKeyccessor`** – accesses map items. Priority = 4
+- **`SetKeyAccessor`** – accesses `Set` items. Priority = 3
+- **`ObservableAccessor`** – accesses the latest value emitted by an `Observable`. Priority = 2
+- **`PromiseAccessor`** – accesses the resolved value of a `Promise`. Priority = 1
+- **`DatePropertyAccessor`** – accesses date-related properties. Priority = 0
 
 The default accessor attempts to find the appropriate index value accessor for a given `(context, index)` pair and delegates the operation to it.
 
@@ -476,15 +459,12 @@ If no suitable index value accessor can be found, an `UnsupportedException` is t
 
 ### Get an instance of the Index Value Accessor Service
 
-The  index value accessor service is registered as a **singleton service**.  
+The index value accessor service is registered as a **singleton service**.  
 You must load the core module into the injection container if you want
 to use it.
 
 ```ts
-import {
-    InjectionContainer,
-    RsXCoreModule
-} from '@rs-x/core';
+import { InjectionContainer, RsXCoreModule } from '@rs-x/core';
 
 InjectionContainer.load(RsXCoreModule);
 ```
@@ -493,35 +473,34 @@ There are two ways to get an instance:
 
 1. Using the injection container
 
-    ```ts
-    import { 
-        IIndexValueAccessor, 
-        InjectionContainer, 
-        RsXCoreInjectionTokens 
-    } from '@rs-x/core';
-  
-    const indexValueAccessor: IIndexValueAccessor = InjectionContainer.get(
-        RsXCoreInjectionTokens.IIndexValueAccessor
-    );
-    ```
+   ```ts
+   import {
+     IIndexValueAccessor,
+     InjectionContainer,
+     RsXCoreInjectionTokens,
+   } from '@rs-x/core';
+
+   const indexValueAccessor: IIndexValueAccessor = InjectionContainer.get(
+     RsXCoreInjectionTokens.IIndexValueAccessor,
+   );
+   ```
 
 2. Using the `@Inject` decorator
 
-    ```ts
-    import { 
-        IIndexValueAccessor,
-        Inject, 
-        RsXCoreInjectionTokens 
-    } from '@rs-x/core';
-   
-    export class MyClass {
+   ```ts
+   import {
+     IIndexValueAccessor,
+     Inject,
+     RsXCoreInjectionTokens,
+   } from '@rs-x/core';
 
-        constructor(
-            @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
-            private readonly _indexValueAccessor: IIndexValueAccessor
-        ) {}
-    }
-    ```
+   export class MyClass {
+     constructor(
+       @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
+       private readonly _indexValueAccessor: IIndexValueAccessor,
+     ) {}
+   }
+   ```
 
 ### Customize the supported index value accessor list
 
@@ -542,6 +521,7 @@ For example, suppose we have a service that patches a property on an object so i
 ```
 
 **Output:**
+
 ```console
  Running demo: demo/src/rs-x-core/implementation-of-singleton-factory.ts
 You can observe the same property multiple times but only one observer will be create:
@@ -555,15 +535,14 @@ Observer 2:
 
 In this example, we have derived two classes from `SingletonFactory`:
 
-* **`PropertyObserverManager`** – ensures that only one `PropertyObserver` is created per property.
-* **`ObjectPropertyObserverManager`** – ensures that only one `PropertyObserverManager` is created per object.
+- **`PropertyObserverManager`** – ensures that only one `PropertyObserver` is created per property.
+- **`ObjectPropertyObserverManager`** – ensures that only one `PropertyObserverManager` is created per object.
 
-It is good practice **not to expose classes derived from `SingletonFactory`** directly, but to use them internally to keep the interface simple.  
+It is good practice **not to expose classes derived from `SingletonFactory`** directly, but to use them internally to keep the interface simple.
 
-For example, we have created a class **`PropertyObserverFactory`** that internally uses `ObjectPropertyObserverManager`.  
+For example, we have created a class **`PropertyObserverFactory`** that internally uses `ObjectPropertyObserverManager`.
 
 The `PropertyObserver` class implements a `dispose` method, which ensures that it is released when there are no references left.
-
 
 ## Error Log
 
@@ -571,44 +550,44 @@ Basic logging using `console.error`
 
 ### interface IErrorLog
 
-
 ```ts
 export interface IErrorLog {
-   readonly error: Observable<IError>;
-   add(error: IError): void;
-   clear(): void;
+  readonly error: Observable<IError>;
+  add(error: IError): void;
+  clear(): void;
 }
 ```
 
 ### Members
 
 ### **error**
+
 **Type:** `Observable<IError>`  
 event emitted when error is added
 
 ---
 
 #### **add(error)**
+
 log a new error and emit error event.
 
 | Parameter | Type     | Description |
 | --------- | -------- | ----------- |
 | **error** | `IError` | error.      |
 
-
-**Returns:** `void` 
+**Returns:** `void`
 
 ---
 
 #### **clear()**
+
 removes all logged errors
 
-**Returns:** `void` 
+**Returns:** `void`
 
 ---
 
 The default implementation uses `console.error` to log an error.
-
 
 ### Get an instance of the Error Log
 
@@ -617,10 +596,7 @@ You must load the core module into the injection container if you want
 to use it.
 
 ```ts
-import { 
-    InjectionContainer,
-    RsXCoreModule
-} from '@rs-x/core';
+import { InjectionContainer, RsXCoreModule } from '@rs-x/core';
 
 InjectionContainer.load(RsXCoreModule);
 ```
@@ -629,35 +605,30 @@ There are two ways to get an instance:
 
 1. Using the injection container
 
-    ```ts
-    import { 
-        IErrorLog, 
-        InjectionContainer, 
-        RsXCoreInjectionTokens 
-    } from '@rs-x/core';
-  
-    const errorLog: IErrorLog = InjectionContainer.get(
-        RsXCoreInjectionTokens.IErrorLog
-    );
-    ```
+   ```ts
+   import {
+     IErrorLog,
+     InjectionContainer,
+     RsXCoreInjectionTokens,
+   } from '@rs-x/core';
+
+   const errorLog: IErrorLog = InjectionContainer.get(
+     RsXCoreInjectionTokens.IErrorLog,
+   );
+   ```
 
 2. Using the `@Inject` decorator
 
-    ```ts
-    import { 
-        IErrorLog,
-        Inject, 
-        RsXCoreInjectionTokens 
-    } from '@rs-x/core';
-   
-    export class MyClass {
+   ```ts
+   import { IErrorLog, Inject, RsXCoreInjectionTokens } from '@rs-x/core';
 
-        constructor(
-            @Inject(RsXCoreInjectionTokens.IErrorLog)
-            private readonly _errorLog: IErrorLog
-        ) {}
-    }
-    ```
+   export class MyClass {
+     constructor(
+       @Inject(RsXCoreInjectionTokens.IErrorLog)
+       private readonly _errorLog: IErrorLog,
+     ) {}
+   }
+   ```
 
 The following example shows how to use the error log
 
@@ -666,6 +637,7 @@ The following example shows how to use the error log
 ```
 
 **Output:**
+
 ```console
 Running demo: demo/src/rs-x-core/error-log.ts
 Emmitted error
@@ -692,7 +664,7 @@ It is particularly useful in **tests**, **async workflows**, and **event-driven 
 - Waits for one or multiple observable emissions
 - Supports synchronous, `Promise`, or `Observable` triggers
 - Optional timeout handling
-- Ability to ignore the initial observable value. For example when the event is implemented with  `BehaviorSubject` or  `ReplaySubject`
+- Ability to ignore the initial observable value. For example when the event is implemented with `BehaviorSubject` or `ReplaySubject`
 
 ---
 
@@ -712,7 +684,6 @@ constructor(
 | eventName | E                    | Name of the observable property to wait on |
 | options   | WaitOptions<T, E, R> | Optional configuration                     |
 
-
 #### `WaitOptions<T, E, R>`
 
 Configuration options for waiting.
@@ -723,9 +694,8 @@ Configuration options for waiting.
 | timeout            | `number`  | 100     | Timeout in milliseconds        |
 | ignoreInitialValue | `boolean` | false   | Ignore the first emitted value |
 
----            
+---
 
- 
 ### Methods
 
 #### **wait(trigger)**
@@ -740,7 +710,6 @@ Waits for the observable to emit the specified number of events after running th
 
 ---
 
-
 ### Example
 
 ```ts
@@ -748,6 +717,7 @@ Waits for the observable to emit the specified number of events after running th
 ```
 
 **Output:**
+
 ```console
 Running demo: demo/src/rs-x-core/wait-for-event.ts
 Emitted events:

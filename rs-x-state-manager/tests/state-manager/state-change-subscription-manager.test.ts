@@ -1,11 +1,11 @@
 import {
-   emptyFunction,
-   ErrorLog,
-   GuidFactory,
-   InjectionContainer,
-   type IPropertyChange,
-   truePredicate,
-   WaitForEvent,
+  emptyFunction,
+  ErrorLog,
+  GuidFactory,
+  InjectionContainer,
+  type IPropertyChange,
+  truePredicate,
+  WaitForEvent,
 } from '@rs-x/core';
 
 import { type IObjectPropertyObserverProxyPairManager } from '../../lib/object-property-observer-proxy-pair-manager.type';
@@ -14,306 +14,306 @@ import { RsXStateManagerInjectionTokens } from '../../lib/rs-x-state-manager-inj
 import { StateChangeSubscriptionManager } from '../../lib/state-manager/state-change-subscription-manager/state-change-subsription-manager';
 
 describe('StateChangeSubscriptionManager tests', () => {
-   let stateChangeSubscriptionManager: StateChangeSubscriptionManager;
+  let stateChangeSubscriptionManager: StateChangeSubscriptionManager;
 
-   beforeAll(async () => {
-      await InjectionContainer.load(RsXStateManagerModule);
-   });
+  beforeAll(async () => {
+    await InjectionContainer.load(RsXStateManagerModule);
+  });
 
-   afterAll(async () => {
-      await InjectionContainer.unload(RsXStateManagerModule);
-   });
+  afterAll(async () => {
+    await InjectionContainer.unload(RsXStateManagerModule);
+  });
 
-   beforeEach(() => {
-      stateChangeSubscriptionManager = new StateChangeSubscriptionManager(
-         InjectionContainer.get(
-            RsXStateManagerInjectionTokens.IObjectPropertyObserverProxyPairManager
-         ),
-         new ErrorLog(),
-         new GuidFactory()
+  beforeEach(() => {
+    stateChangeSubscriptionManager = new StateChangeSubscriptionManager(
+      InjectionContainer.get(
+        RsXStateManagerInjectionTokens.IObjectPropertyObserverProxyPairManager,
+      ),
+      new ErrorLog(),
+      new GuidFactory(),
+    );
+  });
+
+  afterEach(() => {
+    stateChangeSubscriptionManager.dispose();
+  });
+
+  it('can create a recursive and unrecursive observer for a property ', () => {
+    const context = {
+      x: {
+        y: 10,
+      },
+    };
+    const stateChangeSubscrionInfoForContext =
+      stateChangeSubscriptionManager.create(context).instance;
+    const recursiveObserver = stateChangeSubscrionInfoForContext.create({
+      key: 'x',
+      shouldWatchIndex: truePredicate,
+      onChanged: emptyFunction,
+    }).instance;
+    const nonRecursiveObserver = stateChangeSubscrionInfoForContext.create({
+      key: 'x',
+      onChanged: emptyFunction,
+    }).instance;
+
+    expect(recursiveObserver).not.toBeNull();
+    expect(recursiveObserver).not.toBeUndefined();
+    expect(nonRecursiveObserver).not.toBeNull();
+    expect(nonRecursiveObserver).not.toBeUndefined();
+    expect(recursiveObserver).not.toBe(nonRecursiveObserver);
+  });
+
+  it('recursive  observer still works after disposing non recursive observer', async () => {
+    const context = {
+      x: {
+        y: 10,
+      },
+    };
+    const stateChangeSubscriptionInfoForContext =
+      stateChangeSubscriptionManager.create(context).instance;
+    const recursiveObserver = stateChangeSubscriptionInfoForContext.create({
+      key: 'x',
+      shouldWatchIndex: truePredicate,
+      onChanged: emptyFunction,
+    }).instance;
+    const nonRecursiveObserver = stateChangeSubscriptionInfoForContext.create({
+      key: 'x',
+      onChanged: emptyFunction,
+    }).instance;
+
+    nonRecursiveObserver.dispose();
+
+    const recursiveChange = await new WaitForEvent(
+      recursiveObserver,
+      'changed',
+    ).wait(() => {
+      context.x.y = 20;
+    });
+
+    const expected: IPropertyChange = {
+      arguments: [],
+      chain: [
+        { object: context, id: 'x' },
+        { object: context.x, id: 'y' },
+      ],
+      target: context.x,
+      id: 'y',
+      newValue: 20,
+    };
+
+    expect(recursiveChange).toEqual(expected);
+  });
+
+  it('non-recursive observer still works after disposing recursive observer', async () => {
+    const context = {
+      x: {
+        y: 10,
+      },
+    };
+    const stateChangeSubscrionInfoForContext =
+      stateChangeSubscriptionManager.create(context).instance;
+    const recursiveObserver = stateChangeSubscrionInfoForContext.create({
+      key: 'x',
+      shouldWatchIndex: truePredicate,
+      onChanged: emptyFunction,
+    }).instance;
+    const nonRecursiveObserver = stateChangeSubscrionInfoForContext.create({
+      key: 'x',
+      onChanged: emptyFunction,
+    }).instance;
+
+    recursiveObserver.dispose();
+
+    const nonRecursiveChange = await new WaitForEvent(
+      nonRecursiveObserver,
+      'changed',
+    ).wait(() => {
+      context.x = { y: 20 };
+    });
+
+    const expected: IPropertyChange = {
+      arguments: [],
+      chain: [{ object: context, id: 'x' }],
+      target: context,
+      id: 'x',
+      newValue: { y: 20 },
+    };
+
+    expect(nonRecursiveChange).toEqual(expected);
+  });
+
+  it('recursive observer still works after disposing non-recursive observer', async () => {
+    const context = {
+      x: {
+        y: 10,
+      },
+    };
+    const stateChangeSubscrionInfoForContext =
+      stateChangeSubscriptionManager.create(context).instance;
+    const recursiveObserver = stateChangeSubscrionInfoForContext.create({
+      key: 'x',
+      shouldWatchIndex: truePredicate,
+      onChanged: emptyFunction,
+    }).instance;
+    const nonRecursiveObserver = stateChangeSubscrionInfoForContext.create({
+      key: 'x',
+      onChanged: emptyFunction,
+    }).instance;
+
+    recursiveObserver.dispose();
+
+    const nonRecursiveChange = await new WaitForEvent(
+      nonRecursiveObserver,
+      'changed',
+    ).wait(() => {
+      context.x = { y: 20 };
+    });
+
+    const expected: IPropertyChange = {
+      arguments: [],
+      chain: [{ object: context, id: 'x' }],
+      target: context,
+      id: 'x',
+      newValue: { y: 20 },
+    };
+
+    expect(nonRecursiveChange).toEqual(expected);
+  });
+
+  it('recursive and unrecursive observer: no conclict to detect changes ', async () => {
+    const context = {
+      x: {
+        y: 10,
+      },
+    };
+
+    const stateChangeSubscrionInfoForContext =
+      stateChangeSubscriptionManager.create(context).instance;
+    const recursiveObserver = stateChangeSubscrionInfoForContext.create({
+      key: 'x',
+      shouldWatchIndex: truePredicate,
+      onChanged: emptyFunction,
+    }).instance;
+    const nonRecursiveObserver = stateChangeSubscrionInfoForContext.create({
+      key: 'x',
+      onChanged: emptyFunction,
+    }).instance;
+
+    const nonRecursiveChange = await new WaitForEvent(
+      nonRecursiveObserver,
+      'changed',
+    ).wait(() => {
+      context.x.y = 15;
+    });
+
+    const recursiveChange = await new WaitForEvent(
+      recursiveObserver,
+      'changed',
+      { ignoreInitialValue: true },
+    ).wait(() => {
+      context.x.y = 20;
+    });
+
+    expect(nonRecursiveChange).toBeNull();
+    const expected: IPropertyChange = {
+      arguments: [],
+      chain: [
+        { object: context, id: 'x' },
+        { object: context.x, id: 'y' },
+      ],
+      target: context.x,
+      id: 'y',
+      newValue: 20,
+    };
+
+    expect(recursiveChange).toEqual(expected);
+  });
+
+  it('recursive and unrecursive observer:  all proxies have been release when all observers have been disposed', async () => {
+    const propertyObserverProxyPairManager =
+      InjectionContainer.get<IObjectPropertyObserverProxyPairManager>(
+        RsXStateManagerInjectionTokens.IObjectPropertyObserverProxyPairManager,
       );
-   });
+    const context = {
+      x: {
+        y: 10,
+      },
+    };
+    const stateChangeSubscrionInfoForContext =
+      stateChangeSubscriptionManager.create(context).instance;
+    const recursiveObserver = stateChangeSubscrionInfoForContext.create({
+      key: 'x',
+      shouldWatchIndex: truePredicate,
+      onChanged: emptyFunction,
+    }).instance;
+    const nonRecursiveObserver = stateChangeSubscrionInfoForContext.create({
+      key: 'x',
+      onChanged: emptyFunction,
+    }).instance;
 
-   afterEach(() => {
-      stateChangeSubscriptionManager.dispose();
-   });
+    const rootPropertyObserverProxyPairManager =
+      propertyObserverProxyPairManager.getFromId(context);
+    const nestedPropertyObserverProxyPairManager =
+      propertyObserverProxyPairManager.getFromId(context.x);
+    expect(rootPropertyObserverProxyPairManager).toBeDefined();
+    expect(nestedPropertyObserverProxyPairManager).toBeDefined();
 
-   it('can create a recursive and unrecursive observer for a property ', () => {
-      const context = {
-         x: {
-            y: 10,
-         },
-      };
-      const stateChangeSubscrionInfoForContext =
-         stateChangeSubscriptionManager.create(context).instance;
-      const recursiveObserver = stateChangeSubscrionInfoForContext.create({
-         key: 'x',
-         shouldWatchIndex: truePredicate,
-         onChanged: emptyFunction,
-      }).instance;
-      const nonRecursiveObserver = stateChangeSubscrionInfoForContext.create({
-         key: 'x',
-         onChanged: emptyFunction,
-      }).instance;
+    expect(
+      rootPropertyObserverProxyPairManager?.getFromData({
+        key: 'x',
+        shouldWatchIndex: truePredicate,
+      }),
+    ).toBeDefined();
+    expect(
+      rootPropertyObserverProxyPairManager?.getFromData({
+        key: 'x',
+      }),
+    ).toBeDefined();
+    expect(
+      nestedPropertyObserverProxyPairManager?.getFromData({
+        key: 'y',
+        shouldWatchIndex: truePredicate,
+      }),
+    ).toBeDefined();
 
-      expect(recursiveObserver).not.toBeNull();
-      expect(recursiveObserver).not.toBeUndefined();
-      expect(nonRecursiveObserver).not.toBeNull();
-      expect(nonRecursiveObserver).not.toBeUndefined();
-      expect(recursiveObserver).not.toBe(nonRecursiveObserver);
-   });
+    recursiveObserver.dispose();
 
-   it('recursive  observer still works after disposing non recursive observer', async () => {
-      const context = {
-         x: {
-            y: 10,
-         },
-      };
-      const stateChangeSubscriptionInfoForContext =
-         stateChangeSubscriptionManager.create(context).instance;
-      const recursiveObserver = stateChangeSubscriptionInfoForContext.create({
-         key: 'x',
-         shouldWatchIndex: truePredicate,
-         onChanged: emptyFunction,
-      }).instance;
-      const nonRecursiveObserver = stateChangeSubscriptionInfoForContext.create({
-         key: 'x',
-         onChanged: emptyFunction,
-      }).instance;
+    expect(
+      rootPropertyObserverProxyPairManager?.getFromData({
+        key: 'x',
+        shouldWatchIndex: truePredicate,
+      }),
+    ).toBeUndefined();
+    expect(
+      rootPropertyObserverProxyPairManager?.getFromData({
+        key: 'x',
+      }),
+    ).toBeDefined();
+    expect(
+      nestedPropertyObserverProxyPairManager?.getFromData({
+        key: 'y',
+        shouldWatchIndex: truePredicate,
+      }),
+    ).toBeUndefined();
 
-      nonRecursiveObserver.dispose();
+    nonRecursiveObserver.dispose();
 
-      const recursiveChange = await new WaitForEvent(
-         recursiveObserver,
-         'changed'
-      ).wait(() => {
-         context.x.y = 20;
-      });
-
-      const expected: IPropertyChange = {
-         arguments: [],
-         chain: [
-            { object: context, id: 'x' },
-            { object: context.x, id: 'y' },
-         ],
-         target: context.x,
-         id: 'y',
-         newValue: 20,
-      };
-
-      expect(recursiveChange).toEqual(expected);
-   });
-
-   it('non-recursive observer still works after disposing recursive observer', async () => {
-      const context = {
-         x: {
-            y: 10,
-         },
-      };
-      const stateChangeSubscrionInfoForContext =
-         stateChangeSubscriptionManager.create(context).instance;
-      const recursiveObserver = stateChangeSubscrionInfoForContext.create({
-         key: 'x',
-         shouldWatchIndex: truePredicate,
-         onChanged: emptyFunction,
-      }).instance;
-      const nonRecursiveObserver = stateChangeSubscrionInfoForContext.create({
-         key: 'x',
-         onChanged: emptyFunction,
-      }).instance;
-
-      recursiveObserver.dispose();
-
-      const nonRecursiveChange = await new WaitForEvent(
-         nonRecursiveObserver,
-         'changed'
-      ).wait(() => {
-         context.x = { y: 20 };
-      });
-
-      const expected: IPropertyChange = {
-         arguments: [],
-         chain: [{ object: context, id: 'x' }],
-         target: context,
-         id: 'x',
-         newValue: { y: 20 },
-      };
-
-      expect(nonRecursiveChange).toEqual(expected);
-   });
-
-   it('recursive observer still works after disposing non-recursive observer', async () => {
-      const context = {
-         x: {
-            y: 10,
-         },
-      };
-      const stateChangeSubscrionInfoForContext =
-         stateChangeSubscriptionManager.create(context).instance;
-      const recursiveObserver = stateChangeSubscrionInfoForContext.create({
-         key: 'x',
-         shouldWatchIndex: truePredicate,
-         onChanged: emptyFunction,
-      }).instance;
-      const nonRecursiveObserver = stateChangeSubscrionInfoForContext.create({
-         key: 'x',
-         onChanged: emptyFunction,
-      }).instance;
-
-      recursiveObserver.dispose();
-
-      const nonRecursiveChange = await new WaitForEvent(
-         nonRecursiveObserver,
-         'changed'
-      ).wait(() => {
-         context.x = { y: 20 };
-      });
-
-      const expected: IPropertyChange = {
-         arguments: [],
-         chain: [{ object: context, id: 'x' }],
-         target: context,
-         id: 'x',
-         newValue: { y: 20 },
-      };
-
-      expect(nonRecursiveChange).toEqual(expected);
-   });
-
-   it('recursive and unrecursive observer: no conclict to detect changes ', async () => {
-      const context = {
-         x: {
-            y: 10,
-         },
-      };
-
-      const stateChangeSubscrionInfoForContext =
-         stateChangeSubscriptionManager.create(context).instance;
-      const recursiveObserver = stateChangeSubscrionInfoForContext.create({
-         key: 'x',
-         shouldWatchIndex: truePredicate,
-         onChanged: emptyFunction,
-      }).instance;
-      const nonRecursiveObserver = stateChangeSubscrionInfoForContext.create({
-         key: 'x',
-         onChanged: emptyFunction,
-      }).instance;
-
-      const nonRecursiveChange = await new WaitForEvent(
-         nonRecursiveObserver,
-         'changed'
-      ).wait(() => {
-         context.x.y = 15;
-      });
-
-      const recursiveChange = await new WaitForEvent(
-         recursiveObserver,
-         'changed',
-         { ignoreInitialValue: true }
-      ).wait(() => {
-         context.x.y = 20;
-      });
-
-      expect(nonRecursiveChange).toBeNull();
-      const expected: IPropertyChange = {
-         arguments: [],
-         chain: [
-            { object: context, id: 'x' },
-            { object: context.x, id: 'y' },
-         ],
-         target: context.x,
-         id: 'y',
-         newValue: 20,
-      };
-
-      expect(recursiveChange).toEqual(expected);
-   });
-
-   it('recursive and unrecursive observer:  all proxies have been release when all observers have been disposed', async () => {
-      const propertyObserverProxyPairManager =
-         InjectionContainer.get<IObjectPropertyObserverProxyPairManager>(
-            RsXStateManagerInjectionTokens.IObjectPropertyObserverProxyPairManager
-         );
-      const context = {
-         x: {
-            y: 10,
-         },
-      };
-      const stateChangeSubscrionInfoForContext =
-         stateChangeSubscriptionManager.create(context).instance;
-      const recursiveObserver = stateChangeSubscrionInfoForContext.create({
-         key: 'x',
-         shouldWatchIndex: truePredicate,
-         onChanged: emptyFunction,
-      }).instance;
-      const nonRecursiveObserver = stateChangeSubscrionInfoForContext.create({
-         key: 'x',
-         onChanged: emptyFunction,
-      }).instance;
-
-      const rootPropertyObserverProxyPairManager =
-         propertyObserverProxyPairManager.getFromId(context);
-      const nestedPropertyObserverProxyPairManager =
-         propertyObserverProxyPairManager.getFromId(context.x);
-      expect(rootPropertyObserverProxyPairManager).toBeDefined();
-      expect(nestedPropertyObserverProxyPairManager).toBeDefined();
-
-      expect(
-         rootPropertyObserverProxyPairManager?.getFromData({
-            key: 'x',
-            shouldWatchIndex: truePredicate,
-         })
-      ).toBeDefined();
-      expect(
-         rootPropertyObserverProxyPairManager?.getFromData({
-            key: 'x',
-         })
-      ).toBeDefined();
-      expect(
-         nestedPropertyObserverProxyPairManager?.getFromData({
-            key: 'y',
-            shouldWatchIndex: truePredicate,
-         })
-      ).toBeDefined();
-
-      recursiveObserver.dispose();
-
-      expect(
-         rootPropertyObserverProxyPairManager?.getFromData({
-            key: 'x',
-            shouldWatchIndex: truePredicate,
-         })
-      ).toBeUndefined();
-      expect(
-         rootPropertyObserverProxyPairManager?.getFromData({
-            key: 'x',
-         })
-      ).toBeDefined();
-      expect(
-         nestedPropertyObserverProxyPairManager?.getFromData({
-            key: 'y',
-            shouldWatchIndex: truePredicate,
-         })
-      ).toBeUndefined();
-
-      nonRecursiveObserver.dispose();
-
-      expect(
-         rootPropertyObserverProxyPairManager?.getFromId({
-            key: 'x',
-            mustProxify: truePredicate,
-         })
-      ).toBeUndefined();
-      expect(
-         rootPropertyObserverProxyPairManager?.getFromId({
-            key: 'x',
-         })
-      ).toBeUndefined();
-      expect(
-         nestedPropertyObserverProxyPairManager?.getFromId({
-            key: 'y',
-            mustProxify: truePredicate,
-         })
-      ).toBeUndefined();
-   });
+    expect(
+      rootPropertyObserverProxyPairManager?.getFromId({
+        key: 'x',
+        mustProxify: truePredicate,
+      }),
+    ).toBeUndefined();
+    expect(
+      rootPropertyObserverProxyPairManager?.getFromId({
+        key: 'x',
+      }),
+    ).toBeUndefined();
+    expect(
+      nestedPropertyObserverProxyPairManager?.getFromId({
+        key: 'y',
+        mustProxify: truePredicate,
+      }),
+    ).toBeUndefined();
+  });
 });

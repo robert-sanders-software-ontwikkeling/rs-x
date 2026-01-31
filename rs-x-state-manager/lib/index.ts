@@ -11,4 +11,3 @@ export * from './proxies';
 export * from './rs-x-state-manager.module';
 export * from './rs-x-state-manager-injection-tokens';
 export * from './state-manager';
-

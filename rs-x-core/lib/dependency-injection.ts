@@ -1,15 +1,15 @@
 import {
-   type BindToFluentSyntax,
-   Container,
-   ContainerModule,
-   type ContainerModuleLoadOptions,
-   inject,
-   injectable,
-   multiInject,
-   type Newable,
-   preDestroy,
-   type ServiceIdentifier,
-   unmanaged,
+  type BindToFluentSyntax,
+  Container,
+  ContainerModule,
+  type ContainerModuleLoadOptions,
+  inject,
+  injectable,
+  multiInject,
+  type Newable,
+  preDestroy,
+  type ServiceIdentifier,
+  unmanaged,
 } from 'inversify';
 
 import 'reflect-metadata';
@@ -25,17 +25,25 @@ export const InjectionContainer = new Container();
  * --------------------------------------------------------- */
 
 export {
-   Container,
-   ContainerModule, inject as Inject, injectable as Injectable, multiInject as MultiInject, preDestroy as PreDestroy, unmanaged as Unmanaged
+  Container,
+  ContainerModule,
+  inject as Inject,
+  injectable as Injectable,
+  multiInject as MultiInject,
+  preDestroy as PreDestroy,
+  unmanaged as Unmanaged,
 };
 
 /* ---------------------------------------------------------
  * Type-only exports
  * --------------------------------------------------------- */
 
-   export type {
-      BindToFluentSyntax, ContainerModuleLoadOptions, Newable, ServiceIdentifier
-   };
+export type {
+  BindToFluentSyntax,
+  ContainerModuleLoadOptions,
+  Newable,
+  ServiceIdentifier,
+};
 
 /* ---------------------------------------------------------
  * Helper types
@@ -52,7 +60,7 @@ export interface IMultiInjectService {
 }
 
 export type BindMethod = <T>(
-  serviceIdentifier: ServiceIdentifier<T>
+  serviceIdentifier: ServiceIdentifier<T>,
 ) => BindToFluentSyntax<T>;
 
 /* ---------------------------------------------------------
@@ -62,7 +70,7 @@ export type BindMethod = <T>(
 export function registerMultiInjectService(
   container: Container | ContainerModuleLoadOptions,
   target: Newable<unknown>,
-  options: IMultiInjectTokens
+  options: IMultiInjectTokens,
 ): void {
   container.bind(target).to(target).inSingletonScope();
 
@@ -76,20 +84,20 @@ export function registerMultiInjectService(
 export function registerMultiInjectServices(
   container: Container | ContainerModuleLoadOptions,
   multiInjectToken: symbol,
-  services: readonly IMultiInjectService[]
+  services: readonly IMultiInjectService[],
 ): void {
-  services.forEach(service =>
+  services.forEach((service) =>
     registerMultiInjectService(container, service.target, {
       multiInjectToken,
       serviceToken: service.token,
-    })
+    }),
   );
 }
 
 export function overrideMultiInjectServices(
   container: Container | ContainerModuleLoadOptions,
   multiInjectToken: symbol,
-  services: readonly IMultiInjectService[]
+  services: readonly IMultiInjectService[],
 ): void {
   if (container.isBound(multiInjectToken)) {
     container.unbind(multiInjectToken);
@@ -97,7 +105,7 @@ export function overrideMultiInjectServices(
 
   const seen = new Set<Newable<unknown>>();
 
-  services.forEach(service => {
+  services.forEach((service) => {
     if (seen.has(service.target)) {
       return;
     }

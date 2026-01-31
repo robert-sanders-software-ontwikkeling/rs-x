@@ -1,3 +1,3 @@
 export interface IIdentifierOwnerResolver {
-   resolve(index: unknown, context?: unknown): object | null;
+  resolve(index: unknown, context?: unknown): object | null;
 }

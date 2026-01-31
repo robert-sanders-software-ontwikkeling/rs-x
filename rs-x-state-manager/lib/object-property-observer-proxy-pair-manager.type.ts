@@ -3,34 +3,34 @@ import { type IDisposableOwner, type ISingletonFactory } from '@rs-x/core';
 import { type IObserver } from './observer.interface';
 
 export interface IObserverProxyPair<TProxy = unknown> {
-   observer: IObserver;
-   proxy?: TProxy;
-   proxyTarget?: TProxy;
+  observer: IObserver;
+  proxy?: TProxy;
+  proxyTarget?: TProxy;
 }
 
 export type ShouldWatchIndex = (index: unknown, target?: unknown) => boolean;
 
 export interface IPropertyIdInfo {
-   key: unknown;
-   shouldWatchIndex?: ShouldWatchIndex
+  key: unknown;
+  shouldWatchIndex?: ShouldWatchIndex;
 }
 
 export interface IPropertyInfo extends IPropertyIdInfo {
-   value?: unknown;
-   owner?: IDisposableOwner;
-   setValue?: (value: unknown) => boolean;
-   initializeManually?: boolean;
+  value?: unknown;
+  owner?: IDisposableOwner;
+  setValue?: (value: unknown) => boolean;
+  initializeManually?: boolean;
 }
 
 export type IPropertyObserverProxyPairManager = ISingletonFactory<
-   unknown,
-   IPropertyInfo,
-   IObserverProxyPair,
-   IPropertyIdInfo
+  unknown,
+  IPropertyInfo,
+  IObserverProxyPair,
+  IPropertyIdInfo
 >;
 
 export type IObjectPropertyObserverProxyPairManager = ISingletonFactory<
-   unknown,
-   unknown,
-   IPropertyObserverProxyPairManager
+  unknown,
+  unknown,
+  IPropertyObserverProxyPairManager
 >;

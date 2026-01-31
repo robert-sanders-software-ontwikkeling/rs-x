@@ -46,6 +46,12 @@ jobs:
         run: pnpm lint
 
       # ------------------------------
+      # Check formatting (Prettier)
+      # ------------------------------
+      - name: Check formatting
+        run: pnpm format:check
+
+      # ------------------------------
       # Run Node/TS tests
       # ------------------------------
       - name: Run Node tests

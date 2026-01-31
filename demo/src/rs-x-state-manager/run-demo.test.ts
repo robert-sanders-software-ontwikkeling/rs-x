@@ -3,16 +3,16 @@ import dedent from 'dedent';
 import { runDemo } from '../../run-demo';
 
 describe('Statemanager demos', () => {
-    beforeEach(() => {
-        jest.resetModules();
-    });
+  beforeEach(() => {
+    jest.resetModules();
+  });
 
-    it('Node timezone is UTC', () => {
-        expect(process.env.TZ).toEqual('UTC');
-    });
+  it('Node timezone is UTC', () => {
+    expect(process.env.TZ).toEqual('UTC');
+  });
 
-    it('register-non-recursive-state.ts', async () => {
-        const expected = dedent`
+  it('register-non-recursive-state.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-state-manager/register-non-recursive-state.ts
             Initial value:
             {
@@ -31,11 +31,13 @@ describe('Statemanager demos', () => {
             ---
         `;
 
-        await expect(() => runDemo('rs-x-state-manager/register-non-recursive-state.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-state-manager/register-non-recursive-state.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('register-recursive-state.ts', async () => {
-        const expected = dedent`
+  it('register-recursive-state.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-state-manager/register-recursive-state.ts
             Initial value:
             {
@@ -54,11 +56,13 @@ describe('Statemanager demos', () => {
                 y: 30
             }
         `;
-        await expect(() => runDemo('rs-x-state-manager/register-recursive-state.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-state-manager/register-recursive-state.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('register-state-is-idempotent.ts', async () => {
-        const expected = dedent`
+  it('register-state-is-idempotent.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-state-manager/register-state-is-idempotent.ts
             Initial value:
             {
@@ -78,11 +82,13 @@ describe('Statemanager demos', () => {
             ---
         `;
 
-        await expect(() => runDemo('rs-x-state-manager/register-state-is-idempotent.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-state-manager/register-state-is-idempotent.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('register-property.ts', async () => {
-        const expected = dedent`
+  it('register-property.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-state-manager/register-property.ts
             Initial value:
             {
@@ -127,11 +133,13 @@ describe('Statemanager demos', () => {
             }
         `;
 
-        await expect(() => runDemo('rs-x-state-manager/register-property.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-state-manager/register-property.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('register-date.ts', async () => {
-        const expected = dedent`
+  it('register-date.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-state-manager/register-date.ts
 
             ******************************************
@@ -159,11 +167,13 @@ describe('Statemanager demos', () => {
             2023
         `;
 
-        await expect(() => runDemo('rs-x-state-manager/register-date.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-state-manager/register-date.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('register-promise.ts', async () => {
-        const expected = dedent`
+  it('register-promise.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-state-manager/register-promise.ts
             Initial value:
             10
@@ -172,11 +182,13 @@ describe('Statemanager demos', () => {
             Latest value: 30
         `;
 
-        await expect(() => runDemo('rs-x-state-manager/register-promise.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-state-manager/register-promise.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('register-observable.ts', async () => {
-        const expected = dedent`
+  it('register-observable.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-state-manager/register-observable.ts
             Initial value:
             10
@@ -185,11 +197,13 @@ describe('Statemanager demos', () => {
             Latest value: 30
         `;
 
-        await expect(() => runDemo('rs-x-state-manager/register-observable.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-state-manager/register-observable.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('register-array.ts', async () => {
-        const expected = dedent`
+  it('register-array.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-state-manager/register-array.ts
             Initial value:
             [
@@ -228,11 +242,13 @@ describe('Statemanager demos', () => {
             ]
         `;
 
-        await expect(() => runDemo('rs-x-state-manager/register-array.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-state-manager/register-array.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('register-map.ts', async () => {
-        const expected = dedent`
+  it('register-map.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-state-manager/register-map.ts
             Initial value:
             {
@@ -271,11 +287,13 @@ describe('Statemanager demos', () => {
             }
         `;
 
-        await expect(() => runDemo('rs-x-state-manager/register-map.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-state-manager/register-map.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('register-set.ts', async () => {
-        const expected = dedent`
+  it('register-set.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-state-manager/register-set.ts
             Initial value:
             {
@@ -314,12 +332,13 @@ describe('Statemanager demos', () => {
             }
         `;
 
-        await expect(() => runDemo('rs-x-state-manager/register-set.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-state-manager/register-set.ts'),
+    ).toOutputAsync(expected);
+  });
 
-
-    it('register-readonly-property.ts', async () => {
-        const expected = dedent`
+  it('register-readonly-property.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-state-manager/register-readonly-property.ts
             Initial value for readonly property 'aPlusB':
             30
@@ -331,11 +350,13 @@ describe('Statemanager demos', () => {
             300
         `;
 
-        await expect(() => runDemo('rs-x-state-manager/register-readonly-property.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-state-manager/register-readonly-property.ts'),
+    ).toOutputAsync(expected);
+  });
 
-    it('state-manager-customize.ts', async () => {
-        const expected = dedent`
+  it('state-manager-customize.ts', async () => {
+    const expected = dedent`
             Running demo: demo/src/rs-x-state-manager/state-manager-customize.ts
 
             ***********************************************
@@ -384,6 +405,8 @@ describe('Statemanager demos', () => {
             Changing line 1 on page 1 does not emit change:
             ---
         `;
-        await expect(() => runDemo('rs-x-state-manager/state-manager-customize.ts')).toOutputAsync(expected);
-    });
+    await expect(() =>
+      runDemo('rs-x-state-manager/state-manager-customize.ts'),
+    ).toOutputAsync(expected);
+  });
 });

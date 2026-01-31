@@ -1,21 +1,19 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import {
-  unloadRsXExpressionParserModule
-} from '@rs-x/expression-parser';
+import { unloadRsXExpressionParserModule } from '@rs-x/expression-parser';
 
 import { RsxPipe } from './rsx.pipe';
-import { providexRsx} from './rsx.providers';
+import { providexRsx } from './rsx.providers';
 
 @Component({
   template: `{{ expression | rsx: ctx }}`,
   imports: [RsxPipe],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class TestHostComponent {
   public ctx = {
-    x: 100
+    x: 100,
   };
   public expression: string = 'x * 2';
 }
@@ -54,7 +52,6 @@ describe('RsxPipe Integration', () => {
 
     let rendered = fixture.nativeElement.textContent.trim();
     expect(rendered).toBe('400');
-
   });
 
   it('reacts to context changes', async () => {
@@ -66,7 +63,6 @@ describe('RsxPipe Integration', () => {
 
     let rendered = fixture.nativeElement.textContent.trim();
     expect(rendered).toBe('2000');
-
   });
 
   it('reacts to expression changes', async () => {
@@ -78,6 +74,5 @@ describe('RsxPipe Integration', () => {
 
     let rendered = fixture.nativeElement.textContent.trim();
     expect(rendered).toBe('206');
-
   });
 });

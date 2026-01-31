@@ -1,8 +1,8 @@
-import tseslint from "@typescript-eslint/eslint-plugin";
-import tsParser from "@typescript-eslint/parser";
-import importPlugin from "eslint-plugin-import";
-import simpleSort from "eslint-plugin-simple-import-sort";
-import globals from "globals";
+import tseslint from '@typescript-eslint/eslint-plugin';
+import tsParser from '@typescript-eslint/parser';
+import importPlugin from 'eslint-plugin-import';
+import simpleSort from 'eslint-plugin-simple-import-sort';
+import globals from 'globals';
 
 /**
  * ESLint Flat Config for TypeScript (ESLint 9)
@@ -10,70 +10,73 @@ import globals from "globals";
 export default [
   // Ignore compiled and declaration files
   {
-    ignores: ["**/dist/**", "**/*.d.ts"],
+    ignores: ['**/dist/**', '**/*.d.ts'],
   },
 
   // TypeScript files
   {
-    files: ["**/*.ts", "**/*.tsx"],
+    files: ['**/*.ts', '**/*.tsx'],
     languageOptions: {
       parser: tsParser,
       parserOptions: {
-        project: ["./tsconfig.json"],
+        project: ['./tsconfig.json'],
         tsconfigRootDir: process.cwd(),
-        ecmaVersion: "latest",
-        sourceType: "module",
+        ecmaVersion: 'latest',
+        sourceType: 'module',
       },
       globals: globals.node,
     },
 
     plugins: {
-      "@typescript-eslint": tseslint,
+      '@typescript-eslint': tseslint,
       import: importPlugin,
-      "simple-import-sort": simpleSort,
+      'simple-import-sort': simpleSort,
     },
 
     rules: {
       // --- Core TS hygiene ---
-      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/ban-ts-comment": "off",
-      "@typescript-eslint/no-empty-function": "off",
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_' },
+      ],
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/ban-ts-comment': 'off',
+      '@typescript-eslint/no-empty-function': 'off',
 
       // --- Type-only imports ---
-      "@typescript-eslint/consistent-type-imports": [
-        "error",
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
         {
-          prefer: "type-imports",
-          fixStyle: "inline-type-imports",
+          prefer: 'type-imports',
+          fixStyle: 'inline-type-imports',
         },
       ],
 
       // --- Import hygiene ---
-      "import/no-duplicates": "error",
+      'import/no-duplicates': 'error',
 
       // --- Sort imports ---
-      "simple-import-sort/imports": [
-        "error",
+      'simple-import-sort/imports': [
+        'error',
         {
           groups: [
             // Node.js built-ins
-            ["^node:"],
+            ['^node:'],
             // External packages
-            ["^@?\\w"],
+            ['^@?\\w'],
             // Internal packages (your @rs-x scope)
-            ["^(@rs-x)(/.*|$)"],
+            ['^(@rs-x)(/.*|$)'],
             // Parent imports
-            ["^\\.\\.(?!/?$)", "^\\.\\./?$"],
+            ['^\\.\\.(?!/?$)', '^\\.\\./?$'],
             // Relative imports
-            ["^\\./(?=.*/)(?!/?$)", "^\\.(?!/?$)", "^\\./?$"],
+            ['^\\./(?=.*/)(?!/?$)', '^\\.(?!/?$)', '^\\./?$'],
             // Style imports
-            ["^.+\\.s?css$"],
+            ['^.+\\.s?css$'],
           ],
         },
       ],
-      "simple-import-sort/exports": "error",
-       "semi": ["error", "always"],
+      'simple-import-sort/exports': 'error',
+      semi: ['error', 'always'],
     },
   },
 ];

@@ -32,13 +32,9 @@ const jestConfig: Config.InitialOptions = {
   extensionsToTreatAsEsm: ['.ts'],
 
   // 🚫 Exclude Angular package entirely
-  testPathIgnorePatterns: [
-    '<rootDir>/rs-x-angular/',
-  ],
+  testPathIgnorePatterns: ['<rootDir>/rs-x-angular/'],
 
-  modulePathIgnorePatterns: [
-    '<rootDir>/rs-x-angular/',
-  ],
+  modulePathIgnorePatterns: ['<rootDir>/rs-x-angular/'],
 
   // Transforms
   transform: {
@@ -78,9 +74,7 @@ const jestConfig: Config.InitialOptions = {
   coverageReporters: ['html'],
 
   // Path aliases
-  moduleNameMapper: pathsToModuleNameMapper(
-    compilerOptions.paths ?? {},
-  ),
+  moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths ?? {}),
 };
 
 export default jestConfig;

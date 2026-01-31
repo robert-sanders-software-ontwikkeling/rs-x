@@ -7,22 +7,22 @@ import type { IErrorLog } from './error-log.interface';
 
 @Injectable()
 export class ErrorLog implements IErrorLog {
-   private readonly _error: Subject<IError>;
-   
-   constructor() {
-      this._error = new Subject();
-   }
+  private readonly _error: Subject<IError>;
 
-   public get error(): Observable<IError> {
-      return this._error;
-   }
+  constructor() {
+    this._error = new Subject();
+  }
 
-   public add(error: IError): void {
-      console.error(error);
-      this._error.next(error);
-   }
+  public get error(): Observable<IError> {
+    return this._error;
+  }
 
-   public clear(): void {
-      console.clear();
-   }
+  public add(error: IError): void {
+    console.error(error);
+    this._error.next(error);
+  }
+
+  public clear(): void {
+    console.clear();
+  }
 }

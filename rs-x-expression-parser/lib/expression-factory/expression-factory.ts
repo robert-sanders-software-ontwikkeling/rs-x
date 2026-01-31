@@ -9,13 +9,19 @@ import type { IExpressionManager } from './expression-manager.type';
 
 @Injectable()
 export class ExpressionFactory implements IExpressionFactory {
-    constructor(
-        @Inject(RsXExpressionParserInjectionTokens.IExpressionManager)
-        private readonly _expressionManager: IExpressionManager       
-    ) {   
-    }
+  constructor(
+    @Inject(RsXExpressionParserInjectionTokens.IExpressionManager)
+    private readonly _expressionManager: IExpressionManager,
+  ) {}
 
-    public create<T>(context: object, expressionString: string, shouldWatchLeaf?: ShouldWatchIndex): IExpression<T> {
-        return this._expressionManager.create(context).instance.create({expressionString, shouldWatchLeaf}).instance as IExpression<T>; 
-    }
+  public create<T>(
+    context: object,
+    expressionString: string,
+    shouldWatchLeaf?: ShouldWatchIndex,
+  ): IExpression<T> {
+    return this._expressionManager
+      .create(context)
+      .instance.create({ expressionString, shouldWatchLeaf })
+      .instance as IExpression<T>;
+  }
 }

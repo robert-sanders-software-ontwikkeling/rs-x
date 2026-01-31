@@ -9,18 +9,16 @@ import type { IDeepCloneExcept } from './deep-clone-except.interface';
 
 @Injectable()
 export class DeepCloneValueExcept implements IDeepCloneExcept {
-    constructor(
-        @Inject(RsXCoreInjectionTokens.IResolvedValueCache)
-        private readonly _resolvedValueCache: IResolvedValueCache
-    ) {
-
+  constructor(
+    @Inject(RsXCoreInjectionTokens.IResolvedValueCache)
+    private readonly _resolvedValueCache: IResolvedValueCache,
+  ) {}
+  public except(source: unknown): unknown {
+    if (source instanceof Promise || source instanceof Observable) {
+      const value = this._resolvedValueCache.get(source);
+      return value === undefined ? PENDING : value;
     }
-    public except(source: unknown): unknown {
-        if (source instanceof Promise || source instanceof Observable) {
-            const value =  this._resolvedValueCache.get(source);
-            return value === undefined ? PENDING : value;
-        }
 
-        return undefined;
-    }
+    return undefined;
+  }
 }

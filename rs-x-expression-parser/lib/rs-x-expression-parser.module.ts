@@ -1,14 +1,18 @@
 import {
-   ContainerModule,
-   defaultIndexValueAccessorList,
-   defaultValueMetadataList,
-   type IDeepCloneExcept,
-   InjectionContainer,
-   overrideMultiInjectServices,
-   registerMultiInjectServices,
-   RsXCoreInjectionTokens
+  ContainerModule,
+  defaultIndexValueAccessorList,
+  defaultValueMetadataList,
+  type IDeepCloneExcept,
+  InjectionContainer,
+  overrideMultiInjectServices,
+  registerMultiInjectServices,
+  RsXCoreInjectionTokens,
 } from '@rs-x/core';
-import { defaultObjectObserverProxyPairFactoryList, RsXStateManagerInjectionTokens, RsXStateManagerModule } from '@rs-x/state-manager';
+import {
+  defaultObjectObserverProxyPairFactoryList,
+  RsXStateManagerInjectionTokens,
+  RsXStateManagerModule,
+} from '@rs-x/state-manager';
 
 import { ExpressionCache } from './expression-cache/expression-cache';
 import type { IExpressionCache } from './expression-cache/expression-cache.type';
@@ -35,92 +39,119 @@ import type { IExpressionChangeTransactionManager } from './expresion-change-tra
 import { JsEspreeExpressionParser } from './js-espree-expression-parser';
 import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
 
-
 InjectionContainer.load(RsXStateManagerModule);
 
 export const RsXExpressionParserModule = new ContainerModule((options) => {
-   options.unbind(RsXCoreInjectionTokens.DefaultDeepCloneExcept);
-   options
-      .bind<IDeepCloneExcept>(
-         RsXCoreInjectionTokens.DefaultDeepCloneExcept
-      )
-      .to(DeepCloneExceptWithExpressionSupport)
-      .inSingletonScope();
-   options
-      .bind<IExpressionChangeTransactionManager>(
-         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager
-      )
-      .to(ExpressionChangeTransactionManager)
-      .inSingletonScope();
-   options
-      .bind<IExpressionParser>(
-         RsXExpressionParserInjectionTokens.IExpressionParser
-      )
-      .to(JsEspreeExpressionParser)
-      .inSingletonScope();
-   options
-      .bind<IExpressionManager>(
-         RsXExpressionParserInjectionTokens.IExpressionManager
-      )
-      .to(ExpressionManager)
-      .inSingletonScope();
-   options
-      .bind<IIdentifierOwnerResolver>(
-         RsXExpressionParserInjectionTokens.IdentifierOwnerResolver
-      )
-      .to(DefaultIdentifierOwnerResolver)
-      .inSingletonScope();
-   options
-      .bind<IExpressionFactory>(
-         RsXExpressionParserInjectionTokens.IExpressionFactory
-      )
-      .to(ExpressionFactory)
-      .inSingletonScope();
-   options
-      .bind<IExpressionObserverFactory>(
-         RsXExpressionParserInjectionTokens.IExpressionObserverFactory
-      )
-      .to(ExpressionObserverFactory)
-      .inSingletonScope();
-   options
-      .bind<IExpressionCache>(
-         RsXExpressionParserInjectionTokens.IExpressionCache
-      )
-      .to(ExpressionCache)
-      .inSingletonScope();
-   options
-      .bind<IExpressionServices>(
-         RsXExpressionParserInjectionTokens.IExpressionServices
-      )
-      .to(ExpressionServices)
-      .inSingletonScope();
+  options.unbind(RsXCoreInjectionTokens.DefaultDeepCloneExcept);
+  options
+    .bind<IDeepCloneExcept>(RsXCoreInjectionTokens.DefaultDeepCloneExcept)
+    .to(DeepCloneExceptWithExpressionSupport)
+    .inSingletonScope();
+  options
+    .bind<IExpressionChangeTransactionManager>(
+      RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager,
+    )
+    .to(ExpressionChangeTransactionManager)
+    .inSingletonScope();
+  options
+    .bind<IExpressionParser>(
+      RsXExpressionParserInjectionTokens.IExpressionParser,
+    )
+    .to(JsEspreeExpressionParser)
+    .inSingletonScope();
+  options
+    .bind<IExpressionManager>(
+      RsXExpressionParserInjectionTokens.IExpressionManager,
+    )
+    .to(ExpressionManager)
+    .inSingletonScope();
+  options
+    .bind<IIdentifierOwnerResolver>(
+      RsXExpressionParserInjectionTokens.IdentifierOwnerResolver,
+    )
+    .to(DefaultIdentifierOwnerResolver)
+    .inSingletonScope();
+  options
+    .bind<IExpressionFactory>(
+      RsXExpressionParserInjectionTokens.IExpressionFactory,
+    )
+    .to(ExpressionFactory)
+    .inSingletonScope();
+  options
+    .bind<IExpressionObserverFactory>(
+      RsXExpressionParserInjectionTokens.IExpressionObserverFactory,
+    )
+    .to(ExpressionObserverFactory)
+    .inSingletonScope();
+  options
+    .bind<IExpressionCache>(RsXExpressionParserInjectionTokens.IExpressionCache)
+    .to(ExpressionCache)
+    .inSingletonScope();
+  options
+    .bind<IExpressionServices>(
+      RsXExpressionParserInjectionTokens.IExpressionServices,
+    )
+    .to(ExpressionServices)
+    .inSingletonScope();
 
-   registerMultiInjectServices(options, RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList,
-      [
-         { target: PropertyOwnerResolver, token: RsXExpressionParserInjectionTokens.PropertyOwnerResolver },
-         { target: ArrayIndexOwnerResolver, token: RsXExpressionParserInjectionTokens.ArrayIndexOwnerResolver },
-         { target: MapKeyOwnerResolver, token: RsXExpressionParserInjectionTokens.MapKeyOwnerResolver },
-      ]
-   );
+  registerMultiInjectServices(
+    options,
+    RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList,
+    [
+      {
+        target: PropertyOwnerResolver,
+        token: RsXExpressionParserInjectionTokens.PropertyOwnerResolver,
+      },
+      {
+        target: ArrayIndexOwnerResolver,
+        token: RsXExpressionParserInjectionTokens.ArrayIndexOwnerResolver,
+      },
+      {
+        target: MapKeyOwnerResolver,
+        token: RsXExpressionParserInjectionTokens.MapKeyOwnerResolver,
+      },
+    ],
+  );
 
-   overrideMultiInjectServices(options, RsXCoreInjectionTokens.IIndexValueAccessorList, [
-      { target: ExpressionIndexAccessor, token: RsXExpressionParserInjectionTokens.IExpressionIndexAccessor },
-      ...defaultIndexValueAccessorList
-   ]);
+  overrideMultiInjectServices(
+    options,
+    RsXCoreInjectionTokens.IIndexValueAccessorList,
+    [
+      {
+        target: ExpressionIndexAccessor,
+        token: RsXExpressionParserInjectionTokens.IExpressionIndexAccessor,
+      },
+      ...defaultIndexValueAccessorList,
+    ],
+  );
 
-   overrideMultiInjectServices(options, RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList, [
-      { target: ExpressionObserverProxyPairFactory, token: RsXExpressionParserInjectionTokens.IExpressionObserverProxyPairFactory },
-      ...defaultObjectObserverProxyPairFactoryList
-   ]);
+  overrideMultiInjectServices(
+    options,
+    RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList,
+    [
+      {
+        target: ExpressionObserverProxyPairFactory,
+        token:
+          RsXExpressionParserInjectionTokens.IExpressionObserverProxyPairFactory,
+      },
+      ...defaultObjectObserverProxyPairFactoryList,
+    ],
+  );
 
-   overrideMultiInjectServices(options, RsXCoreInjectionTokens.IValueMetadataList, [
-      { target: ExpressionMetadata, token: RsXExpressionParserInjectionTokens.ExpressiomMetadata },
-      ...defaultValueMetadataList
-   ]);
+  overrideMultiInjectServices(
+    options,
+    RsXCoreInjectionTokens.IValueMetadataList,
+    [
+      {
+        target: ExpressionMetadata,
+        token: RsXExpressionParserInjectionTokens.ExpressiomMetadata,
+      },
+      ...defaultValueMetadataList,
+    ],
+  );
 });
 
-
 export async function unloadRsXExpressionParserModule(): Promise<void> {
-   await InjectionContainer.unload(RsXStateManagerModule);
-   await InjectionContainer.unload(RsXExpressionParserModule);
+  await InjectionContainer.unload(RsXStateManagerModule);
+  await InjectionContainer.unload(RsXExpressionParserModule);
 }

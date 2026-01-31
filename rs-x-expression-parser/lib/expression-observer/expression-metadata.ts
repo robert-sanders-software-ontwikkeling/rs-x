@@ -4,17 +4,17 @@ import { AbstractExpression } from '../expressions/abstract-expression';
 
 @Injectable()
 export class ExpressionMetadata implements IValueMetadata {
-    public readonly priority = 300;
+  public readonly priority = 300;
 
-    public isAsync(): boolean {
-        return true;
-    }
+  public isAsync(): boolean {
+    return true;
+  }
 
-    public needsProxy(): boolean {
-         return true;
-    }
+  public needsProxy(): boolean {
+    return true;
+  }
 
-    public applies(value: unknown): boolean {
-         return value instanceof AbstractExpression;
-    }
+  public applies(value: unknown): boolean {
+    return value instanceof AbstractExpression;
+  }
 }

@@ -1,13 +1,13 @@
 import {
-    type DateProperty,
-    type IErrorLog,
-    type IGuidFactory,
-    type IIndexValueAccessor,
-    Inject,
-    Injectable,
-    type IValueMetadata,
-    RsXCoreInjectionTokens,
-    truePredicate
+  type DateProperty,
+  type IErrorLog,
+  type IGuidFactory,
+  type IIndexValueAccessor,
+  Inject,
+  Injectable,
+  type IValueMetadata,
+  RsXCoreInjectionTokens,
+  truePredicate,
 } from '@rs-x/core';
 
 import type { IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
@@ -20,39 +20,38 @@ import type { IDatePropertyObserverProxyPairFactory } from './date-property-obse
 
 @Injectable()
 export class DatePropertyObserverProxyPairFactory
-    extends IndexObserverProxyPairFactory<Date, DateProperty>
-    implements IDatePropertyObserverProxyPairFactory {
+  extends IndexObserverProxyPairFactory<Date, DateProperty>
+  implements IDatePropertyObserverProxyPairFactory
+{
+  constructor(
+    @Inject(RsXStateManagerInjectionTokens.IObjectObserverProxyPairManager)
+    objectObserverManager: IObjectObserverProxyPairManager,
+    @Inject(RsXStateManagerInjectionTokens.IDatePropertyObserverManager)
+    datePropertyObserverManager: IDatePropertyObserverManager,
+    @Inject(RsXCoreInjectionTokens.IErrorLog)
+    errorLog: IErrorLog,
+    @Inject(RsXCoreInjectionTokens.IGuidFactory)
+    guidFactory: IGuidFactory,
+    @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
+    datePropertyAccessor: IIndexValueAccessor,
+    @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
+    proxyRegister: IProxyRegistry,
+    @Inject(RsXCoreInjectionTokens.IValueMetadata)
+    valueMetadata: IValueMetadata,
+  ) {
+    super(
+      objectObserverManager,
+      datePropertyObserverManager,
+      errorLog,
+      guidFactory,
+      datePropertyAccessor,
+      proxyRegister,
+      valueMetadata,
+      truePredicate,
+    );
+  }
 
-    constructor(
-        @Inject(RsXStateManagerInjectionTokens.IObjectObserverProxyPairManager)
-        objectObserverManager: IObjectObserverProxyPairManager,
-        @Inject(RsXStateManagerInjectionTokens.IDatePropertyObserverManager)
-        datePropertyObserverManager: IDatePropertyObserverManager,
-        @Inject(RsXCoreInjectionTokens.IErrorLog)
-        errorLog: IErrorLog,
-        @Inject(RsXCoreInjectionTokens.IGuidFactory)
-        guidFactory: IGuidFactory,
-        @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
-        datePropertyAccessor: IIndexValueAccessor,
-        @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
-        proxyRegister: IProxyRegistry,
-        @Inject(RsXCoreInjectionTokens.IValueMetadata)
-        valueMetadata: IValueMetadata,
-    ) {
-        super(
-            objectObserverManager,
-            datePropertyObserverManager,
-            errorLog,
-            guidFactory,
-            datePropertyAccessor,
-            proxyRegister,
-            valueMetadata,
-            truePredicate
-        );
-    }
-
-    public override applies(object: unknown): boolean {
-        return object instanceof Date;
-    }
-
+  public override applies(object: unknown): boolean {
+    return object instanceof Date;
+  }
 }

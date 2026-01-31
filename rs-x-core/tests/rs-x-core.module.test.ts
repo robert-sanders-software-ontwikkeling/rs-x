@@ -29,376 +29,354 @@ import { SetMetadata } from '../lib/value-metadata/set-metadata';
 import { ValueMetadata } from '../lib/value-metadata/value-metadata';
 
 describe('rs-x core module', () => {
-   beforeAll(async () => {
-      await InjectionContainer.load(RsXCoreModule);
-   });
+  beforeAll(async () => {
+    await InjectionContainer.load(RsXCoreModule);
+  });
 
-   afterAll(async () => {
-      await InjectionContainer.unload(RsXCoreModule);
-   });
+  afterAll(async () => {
+    await InjectionContainer.unload(RsXCoreModule);
+  });
 
-   it('can get a injection container instance', () => {
-      const actual = InjectionContainer.get(
-         RsXCoreInjectionTokens.IInjectionContainer
-      );
-      expect(actual).toBe(InjectionContainer);
-   });
+  it('can get a injection container instance', () => {
+    const actual = InjectionContainer.get(
+      RsXCoreInjectionTokens.IInjectionContainer,
+    );
+    expect(actual).toBe(InjectionContainer);
+  });
 
-   it('injection container is a singelton', () => {
-      const a1 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IInjectionContainer
-      );
-      const a2 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IInjectionContainer
-      );
-      expect(a1).toBe(a2);
-   });
+  it('injection container is a singelton', () => {
+    const a1 = InjectionContainer.get(
+      RsXCoreInjectionTokens.IInjectionContainer,
+    );
+    const a2 = InjectionContainer.get(
+      RsXCoreInjectionTokens.IInjectionContainer,
+    );
+    expect(a1).toBe(a2);
+  });
 
-   it('Can get instance of IErrorLog', () => {
-      const actual = InjectionContainer.get(RsXCoreInjectionTokens.IErrorLog);
-      expect(actual).toBeInstanceOf(ErrorLog);
-   });
+  it('Can get instance of IErrorLog', () => {
+    const actual = InjectionContainer.get(RsXCoreInjectionTokens.IErrorLog);
+    expect(actual).toBeInstanceOf(ErrorLog);
+  });
 
-   it('IErrorLog is a singleton', () => {
-      const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IErrorLog);
-      const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IErrorLog);
-      expect(a1).toBe(a2);
-   });
+  it('IErrorLog is a singleton', () => {
+    const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IErrorLog);
+    const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IErrorLog);
+    expect(a1).toBe(a2);
+  });
 
-   it('can get instance of IPropertyValueAccessor', () => {
-      const actual = InjectionContainer.get(
-         RsXCoreInjectionTokens.IPropertyValueAccessor
-      );
-      expect(actual).toBeInstanceOf(PropertyValueAccessor);
-   });
+  it('can get instance of IPropertyValueAccessor', () => {
+    const actual = InjectionContainer.get(
+      RsXCoreInjectionTokens.IPropertyValueAccessor,
+    );
+    expect(actual).toBeInstanceOf(PropertyValueAccessor);
+  });
 
-   it('IPropertyValueAccessor instance is a singleton', () => {
-      const a1 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IPropertyValueAccessor
-      );
-      const a2 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IPropertyValueAccessor
-      );
-      expect(a1).toBe(a2);
-   });
+  it('IPropertyValueAccessor instance is a singleton', () => {
+    const a1 = InjectionContainer.get(
+      RsXCoreInjectionTokens.IPropertyValueAccessor,
+    );
+    const a2 = InjectionContainer.get(
+      RsXCoreInjectionTokens.IPropertyValueAccessor,
+    );
+    expect(a1).toBe(a2);
+  });
 
-   it('can get instance of IMethodAccessor', () => {
-      const actual = InjectionContainer.get(
-         RsXCoreInjectionTokens.IMethodAccessor
-      );
-      expect(actual).toBeInstanceOf(MethodAccessor);
-   });
+  it('can get instance of IMethodAccessor', () => {
+    const actual = InjectionContainer.get(
+      RsXCoreInjectionTokens.IMethodAccessor,
+    );
+    expect(actual).toBeInstanceOf(MethodAccessor);
+  });
 
-   it('IMethodAccessor instance is a singleton', () => {
-      const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IMethodAccessor);
-      const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IMethodAccessor);
-      expect(a1).toBe(a2);
-   });
+  it('IMethodAccessor instance is a singleton', () => {
+    const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IMethodAccessor);
+    const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IMethodAccessor);
+    expect(a1).toBe(a2);
+  });
 
-   it('can get instance of IArrayIndexAccessor', () => {
-      const actual = InjectionContainer.get(
-         RsXCoreInjectionTokens.IArrayIndexAccessor
-      );
-      expect(actual).toBeInstanceOf(ArrayIndexAccessor);
-   });
+  it('can get instance of IArrayIndexAccessor', () => {
+    const actual = InjectionContainer.get(
+      RsXCoreInjectionTokens.IArrayIndexAccessor,
+    );
+    expect(actual).toBeInstanceOf(ArrayIndexAccessor);
+  });
 
-   it('IArrayIndexAccessor instance is a singleton', () => {
-      const a1 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IArrayIndexAccessor
-      );
-      const a2 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IArrayIndexAccessor
-      );
-      expect(a1).toBe(a2);
-   });
+  it('IArrayIndexAccessor instance is a singleton', () => {
+    const a1 = InjectionContainer.get(
+      RsXCoreInjectionTokens.IArrayIndexAccessor,
+    );
+    const a2 = InjectionContainer.get(
+      RsXCoreInjectionTokens.IArrayIndexAccessor,
+    );
+    expect(a1).toBe(a2);
+  });
 
-   it('can get instance of IMapKeyAccessor', () => {
-      const actual = InjectionContainer.get(
-         RsXCoreInjectionTokens.IMapKeyAccessor
-      );
-      expect(actual).toBeInstanceOf(MapKeyAccessor);
-   });
+  it('can get instance of IMapKeyAccessor', () => {
+    const actual = InjectionContainer.get(
+      RsXCoreInjectionTokens.IMapKeyAccessor,
+    );
+    expect(actual).toBeInstanceOf(MapKeyAccessor);
+  });
 
-   it('IMapKeyAccessor instance is a singleton', () => {
-      const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IMapKeyAccessor);
-      const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IMapKeyAccessor);
-      expect(a1).toBe(a2);
-   });
+  it('IMapKeyAccessor instance is a singleton', () => {
+    const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IMapKeyAccessor);
+    const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IMapKeyAccessor);
+    expect(a1).toBe(a2);
+  });
 
-   it('can get instance of ISetKeyAccessor', () => {
-      const actual = InjectionContainer.get(
-         RsXCoreInjectionTokens.ISetKeyAccessor
-      );
-      expect(actual).toBeInstanceOf(SetKeyAccessor);
-   });
+  it('can get instance of ISetKeyAccessor', () => {
+    const actual = InjectionContainer.get(
+      RsXCoreInjectionTokens.ISetKeyAccessor,
+    );
+    expect(actual).toBeInstanceOf(SetKeyAccessor);
+  });
 
-   it('ISetKeyAccessor instance is a singleton', () => {
-      const a1 = InjectionContainer.get(RsXCoreInjectionTokens.ISetKeyAccessor);
-      const a2 = InjectionContainer.get(RsXCoreInjectionTokens.ISetKeyAccessor);
-      expect(a1).toBe(a2);
-   });
+  it('ISetKeyAccessor instance is a singleton', () => {
+    const a1 = InjectionContainer.get(RsXCoreInjectionTokens.ISetKeyAccessor);
+    const a2 = InjectionContainer.get(RsXCoreInjectionTokens.ISetKeyAccessor);
+    expect(a1).toBe(a2);
+  });
 
+  it('can get instance of IIndexValueAccessor', () => {
+    const actual = InjectionContainer.get(
+      RsXCoreInjectionTokens.IIndexValueAccessor,
+    );
+    expect(actual).toBeInstanceOf(IndexValueAccessor);
+  });
 
-   it('can get instance of IIndexValueAccessor', () => {
-      const actual = InjectionContainer.get(
-         RsXCoreInjectionTokens.IIndexValueAccessor
-      );
-      expect(actual).toBeInstanceOf(IndexValueAccessor);
-   });
+  it('IIndexValueAccessor instance is a singleton', () => {
+    const a1 = InjectionContainer.get(
+      RsXCoreInjectionTokens.IIndexValueAccessor,
+    );
+    const a2 = InjectionContainer.get(
+      RsXCoreInjectionTokens.IIndexValueAccessor,
+    );
+    expect(a1).toBe(a2);
+  });
 
-   it('IIndexValueAccessor instance is a singleton', () => {
-      const a1 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IIndexValueAccessor
-      );
-      const a2 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IIndexValueAccessor
-      );
-      expect(a1).toBe(a2);
-   });
+  it('can get an instance of IIndexValueAccessorList', () => {
+    const actual = InjectionContainer.getAll(
+      RsXCoreInjectionTokens.IIndexValueAccessorList,
+    );
 
-   it('can get an instance of IIndexValueAccessorList', () => {
-      const actual = InjectionContainer.getAll(
-         RsXCoreInjectionTokens.IIndexValueAccessorList
-      );
+    expect(actual.length).toEqual(8);
 
-      expect(actual.length).toEqual(8);
+    expect(actual[0]).toBeInstanceOf(PropertyValueAccessor);
+    expect(actual[1]).toBeInstanceOf(MethodAccessor);
+    expect(actual[2]).toBeInstanceOf(ArrayIndexAccessor);
+    expect(actual[3]).toBeInstanceOf(MapKeyAccessor);
+    expect(actual[4]).toBeInstanceOf(SetKeyAccessor);
+    expect(actual[5]).toBeInstanceOf(ObservableAccessor);
+    expect(actual[6]).toBeInstanceOf(PromiseAccessor);
+    expect(actual[7]).toBeInstanceOf(DatePropertyAccessor);
+  });
 
-      expect(actual[0]).toBeInstanceOf(PropertyValueAccessor);
-      expect(actual[1]).toBeInstanceOf(MethodAccessor);
-      expect(actual[2]).toBeInstanceOf(ArrayIndexAccessor);
-      expect(actual[3]).toBeInstanceOf(MapKeyAccessor);
-      expect(actual[4]).toBeInstanceOf(SetKeyAccessor);
-      expect(actual[5]).toBeInstanceOf(ObservableAccessor);
-      expect(actual[6]).toBeInstanceOf(PromiseAccessor);
-      expect(actual[7]).toBeInstanceOf(DatePropertyAccessor);
-   });
+  it('IIndexValueAccessorList instance is a singelton', () => {
+    const a1 = InjectionContainer.getAll(
+      RsXCoreInjectionTokens.IIndexValueAccessorList,
+    );
+    const a2 = InjectionContainer.getAll(
+      RsXCoreInjectionTokens.IIndexValueAccessorList,
+    );
+    expect(a1[0]).toBe(a2[0]);
+    expect(a1[1]).toBe(a2[1]);
+    expect(a1[2]).toBe(a2[2]);
+    expect(a1[3]).toBe(a2[3]);
+    expect(a1[4]).toBe(a2[4]);
+    expect(a1[5]).toBe(a2[5]);
+    expect(a1[6]).toBe(a2[6]);
+    expect(a1[7]).toBe(a2[7]);
+  });
 
-   it('IIndexValueAccessorList instance is a singelton', () => {
-      const a1 = InjectionContainer.getAll(
-         RsXCoreInjectionTokens.IIndexValueAccessorList
-      );
-      const a2 = InjectionContainer.getAll(
-         RsXCoreInjectionTokens.IIndexValueAccessorList
-      );
-      expect(a1[0]).toBe(a2[0]);
-      expect(a1[1]).toBe(a2[1]);
-      expect(a1[2]).toBe(a2[2]);
-      expect(a1[3]).toBe(a2[3]);
-      expect(a1[4]).toBe(a2[4]);
-      expect(a1[5]).toBe(a2[5]);
-      expect(a1[6]).toBe(a2[6]);
-      expect(a1[7]).toBe(a2[7]);
-   });
+  it('can get an instance of IValueMetadataList', () => {
+    const actual = InjectionContainer.getAll(
+      RsXCoreInjectionTokens.IValueMetadataList,
+    );
 
+    expect(actual.length).toEqual(7);
 
-    it('can get an instance of IValueMetadataList', () => {
-      const actual = InjectionContainer.getAll(
-         RsXCoreInjectionTokens.IValueMetadataList
-      );
+    expect(actual[0]).toBeInstanceOf(ArrayMetadata);
+    expect(actual[1]).toBeInstanceOf(DateMetadata);
+    expect(actual[2]).toBeInstanceOf(DummyMetadata);
+    expect(actual[3]).toBeInstanceOf(MapMetadata);
+    expect(actual[4]).toBeInstanceOf(ObservableMetadata);
+    expect(actual[5]).toBeInstanceOf(PromiseMetadata);
+    expect(actual[6]).toBeInstanceOf(SetMetadata);
+  });
 
-      expect(actual.length).toEqual(7);
+  it('IValueMetadataList instance is a singelton', () => {
+    const a1 = InjectionContainer.getAll(
+      RsXCoreInjectionTokens.IValueMetadataList,
+    );
+    const a2 = InjectionContainer.getAll(
+      RsXCoreInjectionTokens.IValueMetadataList,
+    );
+    expect(a1[0]).toBe(a2[0]);
+    expect(a1[1]).toBe(a2[1]);
+    expect(a1[2]).toBe(a2[2]);
+    expect(a1[3]).toBe(a2[3]);
+    expect(a1[4]).toBe(a2[4]);
+    expect(a1[5]).toBe(a2[5]);
+    expect(a1[6]).toBe(a2[6]);
+  });
 
-      expect(actual[0]).toBeInstanceOf(ArrayMetadata);
-      expect(actual[1]).toBeInstanceOf(DateMetadata);
-      expect(actual[2]).toBeInstanceOf(DummyMetadata);
-      expect(actual[3]).toBeInstanceOf(MapMetadata);
-      expect(actual[4]).toBeInstanceOf(ObservableMetadata);
-      expect(actual[5]).toBeInstanceOf(PromiseMetadata);
-      expect(actual[6]).toBeInstanceOf(SetMetadata);
-     
-   });
+  it('can get instance of IValueMetadata', () => {
+    const actual = InjectionContainer.get(
+      RsXCoreInjectionTokens.IValueMetadata,
+    );
+    expect(actual).toBeInstanceOf(ValueMetadata);
+  });
 
-   it('IValueMetadataList instance is a singelton', () => {
-      const a1 = InjectionContainer.getAll(
-         RsXCoreInjectionTokens.IValueMetadataList
-      );
-      const a2 = InjectionContainer.getAll(
-         RsXCoreInjectionTokens.IValueMetadataList
-      );
-      expect(a1[0]).toBe(a2[0]);
-      expect(a1[1]).toBe(a2[1]);
-      expect(a1[2]).toBe(a2[2]);
-      expect(a1[3]).toBe(a2[3]);
-      expect(a1[4]).toBe(a2[4]);
-      expect(a1[5]).toBe(a2[5]);
-      expect(a1[6]).toBe(a2[6]);
-   });
+  it('IValueMetadata instance is a singleton', () => {
+    const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IValueMetadata);
+    const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IValueMetadata);
+    expect(a1).toBe(a2);
+  });
 
-   it('can get instance of IValueMetadata', () => {
-      const actual = InjectionContainer.get(RsXCoreInjectionTokens.IValueMetadata);
-      expect(actual).toBeInstanceOf(ValueMetadata);
-   });
+  it('can get instance of IDeepClone', () => {
+    const actual = InjectionContainer.get(RsXCoreInjectionTokens.IDeepClone);
+    expect(actual).toBeInstanceOf(DefaultDeepClone);
+  });
 
-   it('IValueMetadata instance is a singleton', () => {
-      const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IValueMetadata);
-      const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IValueMetadata);
-      expect(a1).toBe(a2);
-   });
+  it('IDeepClone instance is a singleton', () => {
+    const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IDeepClone);
+    const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IDeepClone);
+    expect(a1).toBe(a2);
+  });
 
-   it('can get instance of IDeepClone', () => {
-      const actual = InjectionContainer.get(RsXCoreInjectionTokens.IDeepClone);
-      expect(actual).toBeInstanceOf(DefaultDeepClone);
-   });
+  it('can get instance of IEqualityService', () => {
+    const actual = InjectionContainer.get(
+      RsXCoreInjectionTokens.IEqualityService,
+    );
+    expect(actual).toBeInstanceOf(EqualityService);
+  });
 
-   it('IDeepClone instance is a singleton', () => {
-      const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IDeepClone);
-      const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IDeepClone);
-      expect(a1).toBe(a2);
-   });
+  it('IEqualityService instance is a singleton', () => {
+    const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IEqualityService);
+    const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IEqualityService);
+    expect(a1).toBe(a2);
+  });
 
-   it('can get instance of IEqualityService', () => {
-      const actual = InjectionContainer.get(
-         RsXCoreInjectionTokens.IEqualityService
-      );
-      expect(actual).toBeInstanceOf(EqualityService);
-   });
+  it('can get instance of IObservableAccessor', () => {
+    const actual = InjectionContainer.get(
+      RsXCoreInjectionTokens.IObservableAccessor,
+    );
+    expect(actual).toBeInstanceOf(ObservableAccessor);
+  });
 
-   it('IEqualityService instance is a singleton', () => {
-      const a1 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IEqualityService
-      );
-      const a2 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IEqualityService
-      );
-      expect(a1).toBe(a2);
-   });
+  it('IObservableAccessor instance is a singleton', () => {
+    const a1 = InjectionContainer.get(
+      RsXCoreInjectionTokens.IObservableAccessor,
+    );
+    const a2 = InjectionContainer.get(
+      RsXCoreInjectionTokens.IObservableAccessor,
+    );
+    expect(a1).toBe(a2);
+  });
 
-   it('can get instance of IObservableAccessor', () => {
-      const actual = InjectionContainer.get(
-         RsXCoreInjectionTokens.IObservableAccessor
-      );
-      expect(actual).toBeInstanceOf(ObservableAccessor);
-   });
+  it('can get instance of IPromiseAccessor', () => {
+    const actual = InjectionContainer.get(
+      RsXCoreInjectionTokens.IPromiseAccessor,
+    );
+    expect(actual).toBeInstanceOf(PromiseAccessor);
+  });
 
-   it('IObservableAccessor instance is a singleton', () => {
-      const a1 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IObservableAccessor
-      );
-      const a2 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IObservableAccessor
-      );
-      expect(a1).toBe(a2);
-   });
+  it('IPromiseAccessor instance is a singleton', () => {
+    const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IPromiseAccessor);
+    const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IPromiseAccessor);
+    expect(a1).toBe(a2);
+  });
 
-   it('can get instance of IPromiseAccessor', () => {
-      const actual = InjectionContainer.get(
-         RsXCoreInjectionTokens.IPromiseAccessor
-      );
-      expect(actual).toBeInstanceOf(PromiseAccessor);
-   });
+  it('can get instance of ISequenceIdFactory', () => {
+    const actual = InjectionContainer.get(
+      RsXCoreInjectionTokens.ISequenceIdFactory,
+    );
+    expect(actual).toBeInstanceOf(SequenceIdFactory);
+  });
 
-   it('IPromiseAccessor instance is a singleton', () => {
-      const a1 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IPromiseAccessor
-      );
-      const a2 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IPromiseAccessor
-      );
-      expect(a1).toBe(a2);
-   });
+  it('ISequenceIdFactory instance is a singleton', () => {
+    const a1 = InjectionContainer.get(
+      RsXCoreInjectionTokens.ISequenceIdFactory,
+    );
+    const a2 = InjectionContainer.get(
+      RsXCoreInjectionTokens.ISequenceIdFactory,
+    );
+    expect(a1).toBe(a2);
+  });
 
+  it('can get instance of IFunctionCallIndexFactory', () => {
+    const actual = InjectionContainer.get(
+      RsXCoreInjectionTokens.IFunctionCallIndexFactory,
+    );
+    expect(actual).toBeInstanceOf(FunctionCallIndexFactory);
+  });
 
-   it('can get instance of ISequenceIdFactory', () => {
-      const actual = InjectionContainer.get(
-         RsXCoreInjectionTokens.ISequenceIdFactory
-      );
-      expect(actual).toBeInstanceOf(SequenceIdFactory);
-   });
+  it('IFunctionCallIndexFactory instance is a singleton', () => {
+    const a1 = InjectionContainer.get(
+      RsXCoreInjectionTokens.IFunctionCallIndexFactory,
+    );
+    const a2 = InjectionContainer.get(
+      RsXCoreInjectionTokens.IFunctionCallIndexFactory,
+    );
+    expect(a1).toBe(a2);
+  });
 
-   it('ISequenceIdFactory instance is a singleton', () => {
-      const a1 = InjectionContainer.get(
-         RsXCoreInjectionTokens.ISequenceIdFactory
-      );
-      const a2 = InjectionContainer.get(
-         RsXCoreInjectionTokens.ISequenceIdFactory
-      );
-      expect(a1).toBe(a2);
-   });
+  it('can get instance of IFunctionCallResultCacheFactory', () => {
+    const actual = InjectionContainer.get(
+      RsXCoreInjectionTokens.IFunctionCallResultCacheFactory,
+    );
+    expect(actual).toBeInstanceOf(FunctionCallResultCacheFactory);
+  });
 
-   it('can get instance of IFunctionCallIndexFactory', () => {
-      const actual = InjectionContainer.get(
-         RsXCoreInjectionTokens.IFunctionCallIndexFactory
-      );
-      expect(actual).toBeInstanceOf(FunctionCallIndexFactory);
-   });
+  it('IFunctionCallResultCacheFactory instance is a singleton', () => {
+    const a1 = InjectionContainer.get(
+      RsXCoreInjectionTokens.IFunctionCallResultCacheFactory,
+    );
+    const a2 = InjectionContainer.get(
+      RsXCoreInjectionTokens.IFunctionCallResultCacheFactory,
+    );
+    expect(a1).toBe(a2);
+  });
 
-   it('IFunctionCallIndexFactory instance is a singleton', () => {
-      const a1 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IFunctionCallIndexFactory
-      );
-      const a2 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IFunctionCallIndexFactory
-      );
-      expect(a1).toBe(a2);
-   });
+  it('can get instance of IGuidFactory', () => {
+    const actual = InjectionContainer.get(RsXCoreInjectionTokens.IGuidFactory);
+    expect(actual).toBeInstanceOf(GuidFactory);
+  });
 
-   it('can get instance of IFunctionCallResultCacheFactory', () => {
-      const actual = InjectionContainer.get(
-         RsXCoreInjectionTokens.IFunctionCallResultCacheFactory
-      );
-      expect(actual).toBeInstanceOf(FunctionCallResultCacheFactory);
-   });
+  it('IGuidFactory instance is a singleton', () => {
+    const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IGuidFactory);
+    const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IGuidFactory);
+    expect(a1).toBe(a2);
+  });
 
-   it('IFunctionCallResultCacheFactory instance is a singleton', () => {
-      const a1 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IFunctionCallResultCacheFactory
-      );
-      const a2 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IFunctionCallResultCacheFactory
-      );
-      expect(a1).toBe(a2);
-   });
+  it('can get instance of IResolvedValueCache', () => {
+    const actual = InjectionContainer.get(
+      RsXCoreInjectionTokens.IResolvedValueCache,
+    );
+    expect(actual).toBeInstanceOf(ResolvedValueCache);
+  });
 
+  it('IResolvedValueCache instance is a singleton', () => {
+    const a1 = InjectionContainer.get(
+      RsXCoreInjectionTokens.IResolvedValueCache,
+    );
+    const a2 = InjectionContainer.get(
+      RsXCoreInjectionTokens.IResolvedValueCache,
+    );
+    expect(a1).toBe(a2);
+  });
 
-   it('can get instance of IGuidFactory', () => {
-      const actual = InjectionContainer.get(
-         RsXCoreInjectionTokens.IGuidFactory
-      );
-      expect(actual).toBeInstanceOf(GuidFactory);
-   });
+  it('can get instance of IDeepCloneValueGetter', () => {
+    const actual = InjectionContainer.get(
+      RsXCoreInjectionTokens.IDeepCloneExcept,
+    );
+    expect(actual).toBeInstanceOf(DeepCloneValueExcept);
+  });
 
-   it('IGuidFactory instance is a singleton', () => {
-      const a1 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IGuidFactory
-      );
-      const a2 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IGuidFactory
-      );
-      expect(a1).toBe(a2);
-   });
-
-
-   it('can get instance of IResolvedValueCache', () => {
-      const actual = InjectionContainer.get(
-         RsXCoreInjectionTokens.IResolvedValueCache
-      );
-      expect(actual).toBeInstanceOf(ResolvedValueCache);
-   });
-
-   it('IResolvedValueCache instance is a singleton', () => {
-      const a1 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IResolvedValueCache
-      );
-      const a2 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IResolvedValueCache
-      );
-      expect(a1).toBe(a2);
-   });
-
-   it('can get instance of IDeepCloneValueGetter', () => {
-      const actual = InjectionContainer.get(
-         RsXCoreInjectionTokens.IDeepCloneExcept
-      );
-      expect(actual).toBeInstanceOf(DeepCloneValueExcept);
-   });
-
-   it('IDeepCloneValueGetter instance is a singleton', () => {
-      const a1 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IDeepCloneExcept
-      );
-      const a2 = InjectionContainer.get(
-         RsXCoreInjectionTokens.IDeepCloneExcept
-      );
-      expect(a1).toBe(a2);
-   });
+  it('IDeepCloneValueGetter instance is a singleton', () => {
+    const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IDeepCloneExcept);
+    const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IDeepCloneExcept);
+    expect(a1).toBe(a2);
+  });
 });

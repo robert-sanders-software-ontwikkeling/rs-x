@@ -1,3 +1,4 @@
 import { type IObjectObserverProxyPairFactory } from '../object-observer-proxy-pair.factory.interface';
 
-export type  IPlainObjectObserverProxyPairFactory = IObjectObserverProxyPairFactory<Record<string, unknown>>;
+export type IPlainObjectObserverProxyPairFactory =
+  IObjectObserverProxyPairFactory<Record<string, unknown>>;

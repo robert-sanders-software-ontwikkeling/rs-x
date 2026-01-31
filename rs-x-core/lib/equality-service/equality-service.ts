@@ -7,16 +7,16 @@ import type { IEqualityService } from './equality-service.interface';
 
 @Injectable()
 export class EqualityService implements IEqualityService {
-   public isEqual = createCustomEqual({
-      createCustomConfig: (baseConfig) => ({
-         ...baseConfig,
-         areObjectsEqual: (a, b, equalityCheck) => {
-            if (isObservable(a) && isObservable(b)) {
-               return a === b;
-            }
+  public isEqual = createCustomEqual({
+    createCustomConfig: (baseConfig) => ({
+      ...baseConfig,
+      areObjectsEqual: (a, b, equalityCheck) => {
+        if (isObservable(a) && isObservable(b)) {
+          return a === b;
+        }
 
-            return baseConfig.areObjectsEqual(a, b, equalityCheck);
-         },
-      }),
-   });
+        return baseConfig.areObjectsEqual(a, b, equalityCheck);
+      },
+    }),
+  });
 }

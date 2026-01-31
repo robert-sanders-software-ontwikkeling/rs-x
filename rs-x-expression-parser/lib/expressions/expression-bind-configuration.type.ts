@@ -3,7 +3,6 @@ import type { ShouldWatchIndex } from '@rs-x/state-manager';
 
 import type { IExpressionServices } from '../expression-services/expression-services.interface';
 
-
 export interface IBindConfigurationBase {
   readonly services: IExpressionServices;
   readonly owner?: IDisposableOwner;
@@ -15,5 +14,13 @@ export type IExpressionBindConfigurationExtra = {
 };
 
 export type IExpressionBindConfiguration =
-  | (IBindConfigurationBase & IExpressionBindConfigurationExtra & { rootContext: unknown; context?: never })
-  | (IBindConfigurationBase & IExpressionBindConfigurationExtra & { rootContext?: never; context: unknown });
+  | (IBindConfigurationBase &
+      IExpressionBindConfigurationExtra & {
+        rootContext: unknown;
+        context?: never;
+      })
+  | (IBindConfigurationBase &
+      IExpressionBindConfigurationExtra & {
+        rootContext?: never;
+        context: unknown;
+      });
