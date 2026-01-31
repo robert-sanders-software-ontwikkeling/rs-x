@@ -5,7 +5,7 @@ import {
 } from '@rs-x/core';
 
 import type { IDateProxyFactory } from '../../proxies/date-proxy/date-proxy.factory.type';
-import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokens';
 import type { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
 
 import type { IDateObserverProxyPairFactory, IDateOserverProxyPair } from './date-observer-proxy-pair.factory.type';

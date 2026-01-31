@@ -22,10 +22,6 @@ export class MethodAccessor implements IMethodAccessor {
       return [].values();
    }
 
-   public isAsync(): boolean {
-      return false;
-   }
-
    public hasValue(context: object, index: IFunctionCallIndex): boolean {
       return this._functionCallResultCacheFactory.has(context, index);
    }
@@ -43,7 +39,7 @@ export class MethodAccessor implements IMethodAccessor {
    }
 
    public applies(context: unknown, index: IFunctionCallIndex): boolean {
-      if (typeof context !== 'object' || context === null) {
+      if (!index || typeof context !== 'object' || context === null ) {
          return false;
       }
 

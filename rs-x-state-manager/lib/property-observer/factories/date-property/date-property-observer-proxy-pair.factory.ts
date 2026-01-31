@@ -5,13 +5,14 @@ import {
     type IIndexValueAccessor,
     Inject,
     Injectable,
+    type IValueMetadata,
     RsXCoreInjectionTokens,
     truePredicate
 } from '@rs-x/core';
 
 import type { IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
 import type { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
-import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokens';
 import { IndexObserverProxyPairFactory } from '../indexed-value-observer-proxy-pair/indexed-value-observer-proxy-pair.factory';
 
 import type { IDatePropertyObserverManager } from './date-property-observer-manager.type';
@@ -34,7 +35,9 @@ export class DatePropertyObserverProxyPairFactory
         @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
         datePropertyAccessor: IIndexValueAccessor,
         @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
-        proxyRegister: IProxyRegistry
+        proxyRegister: IProxyRegistry,
+        @Inject(RsXCoreInjectionTokens.IValueMetadata)
+        valueMetadata: IValueMetadata,
     ) {
         super(
             objectObserverManager,
@@ -43,6 +46,7 @@ export class DatePropertyObserverProxyPairFactory
             guidFactory,
             datePropertyAccessor,
             proxyRegister,
+            valueMetadata,
             truePredicate
         );
     }

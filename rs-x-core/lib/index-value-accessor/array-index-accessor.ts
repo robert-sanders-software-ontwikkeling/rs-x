@@ -6,10 +6,6 @@ import type { IArrayIndexAccessor } from './array-index-accessor.type';
 export class ArrayIndexAccessor implements IArrayIndexAccessor {
    public readonly priority = 5;
 
-   public isAsync(): boolean {
-      return false;
-   }
-
    public getIndexes(array: unknown[]): IterableIterator<number> {
       return  array.keys();
    }

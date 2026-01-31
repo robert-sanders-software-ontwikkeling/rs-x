@@ -1,7 +1,6 @@
-import { type AnyFunction, Assertion, type IGuidFactory,PENDING, Type  } from '@rs-x/core';
+import { type AnyFunction, Assertion, PENDING, Type } from '@rs-x/core';
 
-import { type IStateManager } from '../../../rs-x-state-manager/lib';
-import { type IExpressionChangeCommitHandler, type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
+import { type IExpressionChangeCommitHandler } from '../expresion-change-transaction-manager.interface';
 
 import {
    AbstractExpression,
@@ -14,7 +13,7 @@ import { ExpressionType } from './expression-parser.interface';
 export class FunctionExpression extends AbstractExpression {
    private _context: unknown;
    private _functionContext: unknown;
-   private readonly _functionId: string;
+   private  _functionId!: string;
 
    constructor(
       expressionString: string,
@@ -25,19 +24,14 @@ export class FunctionExpression extends AbstractExpression {
       public readonly argumentsExpression: ArrayExpression,
       public readonly computed: boolean,
       public readonly optional: boolean,
-       private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
-      private readonly _stateManager: IStateManager,
-      private readonly _guidFactory: IGuidFactory
    ) {
       super(
          ExpressionType.Function,
          expressionString,
-         objectExpression ?? new ConstantNullExpression(_expressionChangeTransactionManager),
+         objectExpression ?? new ConstantNullExpression(),
          functionExpression,
          argumentsExpression
       );
-
-      this._functionId = _guidFactory.create();
    }
 
     public override clone(): this {
@@ -47,28 +41,23 @@ export class FunctionExpression extends AbstractExpression {
          objectExpression: AbstractExpression<object>,
          argumentsExpression: ArrayExpression,
          computed: boolean,
-         optional: boolean,
-         expressionChangeTransactionManager: IExpressionChangeTransactionManager,
-         stateManager: IStateManager,
-         guidFactory: IGuidFactory
+         optional: boolean
       ) => this)(
          this.expressionString,
          this.functionExpression.clone(),
          this.objectExpression?.clone(),
          this.argumentsExpression.clone(),
          this.computed,
-         this.optional,
-         this._expressionChangeTransactionManager,
-         this._stateManager,
-         this._guidFactory
+         this.optional
       );
    }
 
    public override bind(
       settings: IExpressionBindConfiguration
    ): AbstractExpression {
-      this._context = settings.context ?? settings.rootContext;
       super.bind(settings);
+      this._functionId = this.guidFactory.create();
+      this._context = settings.context ?? settings.rootContext;
       if (this.objectExpression) {
          this.objectExpression.bind(settings);
          if (this.computed) {
@@ -133,13 +122,13 @@ export class FunctionExpression extends AbstractExpression {
    }
 
    private releaseResult(): void {
-      this._stateManager.releaseState(this._functionContext, this._functionId);
+      this.stateManager.releaseState(this._functionContext, this._functionId);
       this._functionContext = undefined;
    }
 
 
    private registerResult(result: unknown): unknown {
-      this._stateManager.setState(this._functionContext, this._functionId, result);
+      this.stateManager.setState(this._functionContext, this._functionId, result);
       return result;
    }
 }

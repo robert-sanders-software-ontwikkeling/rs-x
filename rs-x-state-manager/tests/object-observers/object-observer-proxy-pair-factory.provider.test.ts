@@ -2,7 +2,7 @@ import { InjectionContainer } from '@rs-x/core';
 
 import { type IObjectObserverProxyPairFactoryProvider } from '../../lib/object-observer/object-observer-proxy-pair-factory.provider.interface';
 import { RsXStateManagerModule } from '../../lib/rs-x-state-manager.module';
-import { RsXStateManagerInjectionTokens } from '../../lib/rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../lib/rs-x-state-manager-injection-tokens';
 
 describe('ObjectObserverProxyPairFactoryProvider tests', () => {
    let objectObserverFactoryProvider: IObjectObserverProxyPairFactoryProvider;

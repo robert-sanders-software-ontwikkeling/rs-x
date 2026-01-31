@@ -35,21 +35,11 @@ import type {
 
 import {
    type AnyFunction,
-   type IIndexValueAccessor,
-   Inject,
    Injectable,
    ParserException,
-   RsXCoreInjectionTokens,
    Type,
    UnsupportedException
 } from '@rs-x/core';
-import {
-   type IMustProxifyItemHandlerFactory,
-   type IStateManager,
-   RsXStateManagerInjectionTokens
-} from '@rs-x/state-manager';
-
-import type { IGuidFactory } from '../../rs-x-core/lib/guid/guid.factory.interface';
 
 import { AbstractExpression } from './expressions/abstract-expression';
 import { AdditionExpression } from './expressions/addition-expression';
@@ -104,9 +94,7 @@ import { TemplateStringExpression } from './expressions/template-string-expressi
 import { TypeofExpression } from './expressions/typeof-expression';
 import { UnaryNegationExpression } from './expressions/unary-negation-expression';
 import { UnaryPlusExpression } from './expressions/unary-plus-expression';
-import type { IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
 import { IndexExpression } from './expressions';
-import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
 
 enum EspreeExpressionType {
    UnaryExpression = 'UnaryExpression',
@@ -146,13 +134,13 @@ export class JsEspreeExpressionParser implements IExpressionParser {
    public static readonly instance: IExpressionParser;
    private readonly createConstantExpression = {
       string: (literal: Literal) =>
-         new ConstantStringExpression(literal.value as string, this._expressionChangeTransactionManager),
+         new ConstantStringExpression(literal.value as string),
       number: (literal: Literal) =>
-         new ConstantNumberExpression(Number(literal.value), this._expressionChangeTransactionManager),
+         new ConstantNumberExpression(Number(literal.value)),
       boolean: (literal: Literal) =>
-         new ConstantBooleanExpression(Boolean(literal.value), this._expressionChangeTransactionManager),
+         new ConstantBooleanExpression(Boolean(literal.value)),
       bigint: (literal: Literal) =>
-         new ConstantBigIntExpression(BigInt(literal.value as string), this._expressionChangeTransactionManager),
+         new ConstantBigIntExpression(BigInt(literal.value as string)),
    };
    private readonly expressionFactories: {
       [EspreeExpressionType.UnaryExpression]: ExpressionFactory<UnaryExpression>;
@@ -193,18 +181,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       ) => AbstractExpression
    >;
 
-   constructor(
-      @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
-      private readonly _indexValueAccessor: IIndexValueAccessor,
-      @Inject(RsXStateManagerInjectionTokens.IMustProxifyItemHandlerFactory)
-      private readonly _mustProxifyItemHandlerFactory: IMustProxifyItemHandlerFactory,
-      @Inject(RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager)
-      private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
-      @Inject(RsXStateManagerInjectionTokens.IStateManager)
-      private readonly _stateManager: IStateManager,
-      @Inject(RsXCoreInjectionTokens.IGuidFactory)
-      private readonly _guidFactory: IGuidFactory,
-   ) {
+   constructor() {
       this.expressionFactories = {
          [EspreeExpressionType.UnaryExpression]: this.createUnaryExpression,
          [EspreeExpressionType.BinaryExpression]: this.createBinaryExpression,
@@ -327,14 +304,13 @@ export class JsEspreeExpressionParser implements IExpressionParser {
          const regExpLiteral = expression as RegExpLiteral;
          return new ConstantRegExpExpression(
             astToString(expression),
-            new RegExp(regExpLiteral.regex.pattern, regExpLiteral.regex.flags),
-            this._expressionChangeTransactionManager
+            new RegExp(regExpLiteral.regex.pattern, regExpLiteral.regex.flags)
          );
       }
 
       // null literal
       if (expression.value === null) {
-         return new ConstantNullExpression(this._expressionChangeTransactionManager);
+         return new ConstantNullExpression();
       }
 
       // Only allowed types
@@ -408,14 +384,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
          );
          return e.computed ? new IndexExpression(expression) : expression;
       });
-      return new MemberExpression(
-         astToString(expression),
-         pathSegments,
-         this._indexValueAccessor,
-         this._stateManager,
-         this._mustProxifyItemHandlerFactory,
-         this._expressionChangeTransactionManager
-      );
+      return new MemberExpression(astToString(expression), pathSegments);
    };
 
    private createSequenceExpression = (
@@ -432,11 +401,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
    private createIdentifier = (
       expression: Identifier,
    ): AbstractExpression => {
-      return new IdentifierExpression(
-         this._stateManager,
-         expression.name,
-         this._expressionChangeTransactionManager
-      );
+      return new IdentifierExpression(expression.name);
    };
 
    private createArrayExpression = (
@@ -505,11 +470,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
          Type.cast(objectExpression),
          new ArrayExpression(argumentExpressions),
          Type.cast<{ computed: boolean }>(expression.callee).computed,
-         Type.cast<{ optional: boolean }>(expression.callee).optional,
-         this._expressionChangeTransactionManager,
-         this._stateManager,
-         this._guidFactory
-
+         Type.cast<{ optional: boolean }>(expression.callee).optional
       );
    };
 
@@ -569,10 +530,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
             new SpreadExpression(new ArrayExpression(parameters)),
          ]),
          false,
-         false,
-         this._expressionChangeTransactionManager,
-         this._stateManager,
-         this._guidFactory
+         false
       );
    };
 
@@ -581,7 +539,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
    ): { quasis: AbstractExpression[]; parameters: AbstractExpression[] } {
       return {
          quasis: templateLiteral.quasis.map(
-            (quasi) => new ConstantStringExpression(quasi.value.raw, this._expressionChangeTransactionManager)
+            (quasi) => new ConstantStringExpression(quasi.value.raw)
          ),
          parameters: templateLiteral.expressions.map((expression) =>
             this.createExpression(expression)
@@ -912,8 +870,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       const keyExpression =
          propertyExpression.key.type === EspreeExpressionType.Identifier
             ? new ConstantStringExpression(
-               Type.cast<Identifier>(propertyExpression.key).name,
-               this._expressionChangeTransactionManager
+               Type.cast<Identifier>(propertyExpression.key).name
             )
             : this.createExpression(propertyExpression.key);
 

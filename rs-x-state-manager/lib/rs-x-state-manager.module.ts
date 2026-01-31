@@ -13,14 +13,15 @@ import { ObjectObserverProxyPairManager } from './object-observer/object-observe
 import { type IObjectObserverProxyPairManager } from './object-observer/object-observer-proxy-pair-manager.type';
 import { CollectionItemObserverManager } from './property-observer/factories/collection-item/collection-item-observer-manager';
 import { type ICollectionItemObserverManager } from './property-observer/factories/collection-item/collection-item-observer-manager.type';
+import { CollectionItemObserverProxyPairFactory } from './property-observer/factories/collection-item/collection-item-observer-proxy-pair.factory';
 import { DatePropertyObserverManager } from './property-observer/factories/date-property/data-property-observer-manager';
 import { type IDatePropertyObserverManager } from './property-observer/factories/date-property/date-property-observer-manager.type';
 import { DatePropertyObserverProxyPairFactory } from './property-observer/factories/date-property/date-property-observer-proxy-pair.factory';
 import { NonIterableObjectPropertyObserverProxyPairFactory } from './property-observer/factories/non-iterable-object-property/non-iterable-object-property-observer-proxy-pair.factory';
 import { ObjectPropertyObserverManager } from './property-observer/factories/non-iterable-object-property/object-property-observer-manager';
 import { type IObjectPropertyObserverManager } from './property-observer/factories/non-iterable-object-property/object-property-observer-manager.type';
-import { MustProxifyItemHandlerFactory } from './property-observer/must-proxify-item-handler.factory';
-import { type IMustProxifyItemHandlerFactory } from './property-observer/must-proxify-item-handler.factory.type';
+import { ShouldWatchIndexPredicateFactory } from './property-observer/should-watch-index-predicate.factory';
+import type { IShouldWatchIndexPredicateFactory } from './property-observer/should-watch-index-predicate.factory.type';
 import { ArrayProxyFactory } from './proxies/array-proxy/array-proxy.factory';
 import { type IArrayProxyFactory } from './proxies/array-proxy/array-proxy.factory.type';
 import { DateProxyFactory } from './proxies/date-proxy/date-proxy.factory';
@@ -41,8 +42,7 @@ import { StateManager } from './state-manager/state-manager';
 import { type IStateManager } from './state-manager/state-manager.interface';
 import { ObjectPropertyObserverProxyPairManager } from './object-property-observer-proxy-pair-manager';
 import { type IObjectPropertyObserverProxyPairManager } from './object-property-observer-proxy-pair-manager.type';
-import { CollectionItemObserverProxyPairFactory } from './property-observer';
-import { RsXStateManagerInjectionTokens } from './rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from './rs-x-state-manager-injection-tokens';
 
 export const defaultObjectObserverProxyPairFactoryList: readonly IMultiInjectService[] = [
    { target: PlainObjectObserverProxyPairFactory, token: RsXStateManagerInjectionTokens.IPlainObjectObserverProxyPairFactory },
@@ -144,10 +144,10 @@ export const RsXStateManagerModule = new ContainerModule((options) => {
       .to(DatePropertyObserverManager)
       .inSingletonScope();
    options
-      .bind<IMustProxifyItemHandlerFactory>(
-         RsXStateManagerInjectionTokens.IMustProxifyItemHandlerFactory
+      .bind<IShouldWatchIndexPredicateFactory>(
+         RsXStateManagerInjectionTokens.IShouldWatchIndexPredicateFactory
       )
-      .to(MustProxifyItemHandlerFactory)
+      .to(ShouldWatchIndexPredicateFactory)
       .inSingletonScope();
    options
       .bind<IObjectStateManager>(

@@ -13,8 +13,8 @@ import {
 } from '@rs-x/core';
 
 import { AbstractObserver } from '../../abstract-observer';
-import type { MustProxify } from '../../object-property-observer-proxy-pair-manager.type';
-import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
+import type { ShouldWatchIndex } from '../../object-property-observer-proxy-pair-manager.type';
+import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokens';
 import type { IProxyRegistry } from '../proxy-registry/proxy-registry.interface';
 
 import type { IDateObserverProxyPair, IDateProxyData, IDateProxyFactory, IDateProxyIdData } from './date-proxy.factory.type';
@@ -295,8 +295,8 @@ export class DateProxyFactory
         return data.date;
     }
 
-    protected override getGroupMemberId(data: IDateProxyIdData): MustProxify | undefined {
-        return data.mustProxify;
+    protected override getGroupMemberId(data: IDateProxyIdData): ShouldWatchIndex | undefined {
+        return data.shouldWatchIndex;
     }
 
     protected override createInstance(dateProxyData: IDateProxyData, id: string): IDateObserverProxyPair {
@@ -310,7 +310,7 @@ export class DateProxyFactory
             },
             dateProxyData.date,
             this._proxyRegistry,
-            dateProxyData.mustProxify
+            dateProxyData.shouldWatchIndex
         );
         return {
             observer,

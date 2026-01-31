@@ -1,7 +1,7 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
+import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import { AdditionExpression } from '../../lib/expressions/addition-expression';
 import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
@@ -9,6 +9,7 @@ import {
    unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+
 
 describe('AdditionExpression tests', () => {
    let expressionFactory: IExpressionFactory;
@@ -37,9 +38,7 @@ describe('AdditionExpression tests', () => {
    });
 
    it('clone', async () => {
-      const transactionManager: IExpressionChangeTransactionManager = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
-      const context = { a: 1, b: 2 };
+      const services: IExpressionServices = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionServices); const context = { a: 1, b: 2 };
       expression = expressionFactory.create(context, 'a + b');
 
       const clonedExpression = expression.clone();
@@ -51,10 +50,10 @@ describe('AdditionExpression tests', () => {
 
          await new WaitForEvent(clonedExpression, 'changed').wait(() => {
             clonedExpression.bind({
-               transactionManager,
-               rootContext: context
+               rootContext: context,
+               services
             });
-            transactionManager.commit();
+            services.transactionManager.commit();
          });
          expect(clonedExpression.value).toEqual(3);
       }

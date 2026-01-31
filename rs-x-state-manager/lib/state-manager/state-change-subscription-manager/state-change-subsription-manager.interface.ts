@@ -6,7 +6,7 @@ import {
    type ISingletonFactoryWithIdGeneration,
 } from '@rs-x/core';
 
-import { type MustProxify } from '../../object-property-observer-proxy-pair-manager.type';
+import { type ShouldWatchIndex } from '../../object-property-observer-proxy-pair-manager.type';
 import { type IObserver } from '../../observer.interface';
 
 export interface IStateChangeObserverInfo {
@@ -16,7 +16,7 @@ export interface IStateChangeObserverInfo {
 
 export interface IStateChangeSubscriptionIdInfo {
    key: unknown;
-   mustProxify?: MustProxify;
+   shouldWatchIndex?: ShouldWatchIndex;
 }
 export interface IStateChangeSubscriptionInfo
    extends IStateChangeSubscriptionIdInfo {

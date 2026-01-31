@@ -22,5 +22,14 @@ export const RsXCoreInjectionTokens = {
    IDeepCloneList: Symbol('IDeepCloneList'),
    IResolvedValueCache: Symbol('IResolvedValueCache'),
    IDeepCloneExcept: Symbol('IDeepCloneExcept'),
-   DefaultDeepCloneExcept: Symbol('DefaultDeepCloneExcept')
+   DefaultDeepCloneExcept: Symbol('DefaultDeepCloneExcept'),
+   IValueMetadataList:  Symbol('IValueMetadataList'),
+   ArrayMetadata:  Symbol('ArrayMetadata'),
+   DateMetadata:  Symbol('DateMetadata'),
+   DummyMetadata:  Symbol('DummyMetadata'),
+   MapMetadata:  Symbol('MapMetadata'),
+   ObservableMetadata:  Symbol('ObservableMetadata'),
+   PromiseMetadata:  Symbol('PromiseMetadata'),
+   SetMetadata:  Symbol('SetMetadata'),
+   IValueMetadata: Symbol('IValueMetadata'),
 };

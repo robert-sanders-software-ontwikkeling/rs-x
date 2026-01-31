@@ -1,7 +1,7 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
+import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import { BitwiseUnsignedRightShiftExpression } from '../../lib/expressions/bitwise-unsigned-right-shift-expression';
 import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
@@ -38,9 +38,7 @@ describe('BitwiseUnsignedRightShiftExpression tests', () => {
    });
 
    it('clone', async () => {
-      const transactionManager: IExpressionChangeTransactionManager = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
-      const context = { a: 5, b: 2 };
+     const services: IExpressionServices = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionServices);      const context = { a: 5, b: 2 };
       expression = expressionFactory.create(context, 'a >>> b');
 
       const clonedExpression = expression.clone();
@@ -51,12 +49,12 @@ describe('BitwiseUnsignedRightShiftExpression tests', () => {
          expect(clonedExpression.expressionString).toEqual('a >>> b');
 
          await new WaitForEvent(clonedExpression, 'changed').wait(() => {
-            clonedExpression.bind({
-               transactionManager,
-               rootContext: context
+             clonedExpression.bind({
+              rootContext: context,
+               services
             });
 
-            transactionManager.commit();
+           services.transactionManager.commit();
          });
          expect(clonedExpression.value).toEqual(1);
       } finally {

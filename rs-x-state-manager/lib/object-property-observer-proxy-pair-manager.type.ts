@@ -8,11 +8,11 @@ export interface IObserverProxyPair<TProxy = unknown> {
    proxyTarget?: TProxy;
 }
 
-export type MustProxify = (index: unknown, target?: unknown) => boolean;
+export type ShouldWatchIndex = (index: unknown, target?: unknown) => boolean;
 
 export interface IPropertyIdInfo {
    key: unknown;
-   mustProxify?: MustProxify
+   shouldWatchIndex?: ShouldWatchIndex
 }
 
 export interface IPropertyInfo extends IPropertyIdInfo {

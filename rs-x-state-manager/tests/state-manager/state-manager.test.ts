@@ -12,7 +12,7 @@ import { type IArrayProxyFactory } from '../../lib/proxies/array-proxy/array-pro
 import { type IMapProxyFactory } from '../../lib/proxies/map-proxy/map-proxy.factory.type';
 import { type IProxyRegistry } from '../../lib/proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerModule } from '../../lib/rs-x-state-manager.module';
-import { RsXStateManagerInjectionTokens } from '../../lib/rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../lib/rs-x-state-manager-injection-tokens';
 import {
    type IStateChange,
    type IStateManager,

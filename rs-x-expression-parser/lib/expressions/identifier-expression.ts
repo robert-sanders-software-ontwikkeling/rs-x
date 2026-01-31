@@ -1,18 +1,14 @@
 import { type Observable, ReplaySubject, Subject, type Subscription } from 'rxjs';
 
-import { emptyFunction, truePredicate } from '@rs-x/core';
-import { type IContextChanged, type IStateChange, type IStateManager, type MustProxify } from '@rs-x/state-manager';
+import { type IContextChanged, type IStateChange, type IStateManager, type ShouldWatchIndex } from '@rs-x/state-manager';
 
-import { type IExpressionChangeCommitHandler, type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
+import { type IExpressionChangeCommitHandler } from '../expresion-change-transaction-manager.interface';
 
 import {
-   AbstractExpression,
-   type IMustProxifyHandler,
+   AbstractExpression
 } from './abstract-expression';
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 import { ExpressionType } from './expression-parser.interface';
-import { FunctionExpression } from './function-expression';
-import { MemberExpression } from './member-expression';
 
 export class IndexValueObserver {
    private readonly _changeSubscription: Subscription;
@@ -24,7 +20,7 @@ export class IndexValueObserver {
    constructor(
       private _context: unknown,
       private readonly _key: unknown,
-      private readonly _mustProxify: MustProxify | undefined,
+      private readonly _shouldWatchLeaf: ShouldWatchIndex | undefined,
       private readonly _stateManager: IStateManager,
    ) {
       this._changeSubscription = this._stateManager.changed.subscribe(
@@ -33,7 +29,7 @@ export class IndexValueObserver {
 
       this._contextChangeSubscription =
          this._stateManager.contextChanged.subscribe(this.onContextCHanged);
-      const value = this._stateManager.watchState(this._context, this._key, _mustProxify);
+      const value = this._stateManager.watchState(this._context, this._key, this._shouldWatchLeaf);
 
       if (value !== undefined) {
          this.emitChange({
@@ -60,7 +56,7 @@ export class IndexValueObserver {
       }
       this._changeSubscription.unsubscribe();
       this._contextChangeSubscription.unsubscribe();
-      this._stateManager.releaseState(this._context, this._key, this._mustProxify);
+      this._stateManager.releaseState(this._context, this._key, this._shouldWatchLeaf);
       this._isDisposed = true;
    }
 
@@ -83,7 +79,7 @@ export class IndexValueObserver {
 }
 
 export type IIdentifierBindConfiguration = IExpressionBindConfiguration & {
-  currentValue?: unknown;
+   currentValue?: unknown;
 };
 
 export class IdentifierExpression extends AbstractExpression {
@@ -95,9 +91,7 @@ export class IdentifierExpression extends AbstractExpression {
    private readonly _commitHandler: IExpressionChangeCommitHandler;
 
    constructor(
-      private readonly _stateManager: IStateManager,
       expressionString: string,
-      private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
       private readonly _indexValue?: unknown,
    ) {
       super(ExpressionType.Identifier, expressionString);
@@ -110,14 +104,10 @@ export class IdentifierExpression extends AbstractExpression {
 
    public override clone(): this {
       return new (this.constructor as new (
-         stateManager: IStateManager,
          expressionString: string,
-         expressionChangeTransactionManager: IExpressionChangeTransactionManager,
          indexValue?: unknown
       ) => this)(
-         this._stateManager,
          this.expressionString,
-         this._expressionChangeTransactionManager,
          this._indexValue
       );
    }
@@ -128,7 +118,6 @@ export class IdentifierExpression extends AbstractExpression {
       this._isBound = false;
       super.bind(settings);
 
-  
       this._commitAfterInitialized = settings.context !== settings.rootContext;
 
       if (!this._indexValueObserver) {
@@ -161,36 +150,20 @@ export class IdentifierExpression extends AbstractExpression {
    }
 
    private observeChange(settings: IIdentifierBindConfiguration): void {
-      const mustProxifyHandler =
-         settings.mustProxifyHandler ?? this.getDefaultMustProxifyHandler();
-      this.releaseMustProxifyHandler =
-         mustProxifyHandler?.releaseMustProxifyHandler;
+      const context = settings.context ?? settings.rootContext;
       const index = this._indexValue ?? this.expressionString;
+    
 
       this._indexValueObserver = new IndexValueObserver(
-         settings.context ?? settings.rootContext,
+         context,
          index,
-         mustProxifyHandler?.createMustProxifyHandler?.(),
-         this._stateManager,
+         settings.shouldWatchLeaf,
+         this.stateManager,
       );
 
       this._changeSubscription = this._indexValueObserver.changed.subscribe(
          this.onValueChanged
       );
-   }
-
-   private getDefaultMustProxifyHandler(): IMustProxifyHandler {
-      if (!this.parent || !(this.parent instanceof MemberExpression || this.parent instanceof FunctionExpression)) {
-         return {
-            createMustProxifyHandler: () => truePredicate,
-            releaseMustProxifyHandler: emptyFunction,
-         };
-      }
-
-      return {
-         createMustProxifyHandler: undefined,
-         releaseMustProxifyHandler: emptyFunction,
-      };
    }
 
    private disposeObserver(): void {
@@ -211,10 +184,10 @@ export class IdentifierExpression extends AbstractExpression {
       }
       this._value = stateChange.newValue;
 
-      this._expressionChangeTransactionManager.registerChange(this.root, this._commitHandler);
+      this.transactionManager.registerChange(this.root, this._commitHandler);
 
       if (!this._isBound && this._commitAfterInitialized) {
-         this._expressionChangeTransactionManager.commit();
+         this.transactionManager.commit();
       }
    };
 }

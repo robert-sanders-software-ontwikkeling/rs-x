@@ -1,18 +1,12 @@
-import { type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
-
 import { ConstantExpression } from './constant-expression';
 import { ExpressionType } from './expression-parser.interface';
 
 export class ConstantNullExpression extends ConstantExpression<null> {
-   constructor(expressionChangeTransactionManager: IExpressionChangeTransactionManager) {
-      super(ExpressionType.Null, 'null', null, expressionChangeTransactionManager);
+   constructor() {
+      super(ExpressionType.Null, 'null', null);
    }
 
    override clone(): this {
-      return new (this.constructor as new (
-         expressionChangeTransactionManager: IExpressionChangeTransactionManager
-      ) => this)(
-         this._expressionChangeTransactionManager
-      );
+      return new (this.constructor as new () => this)();
    }
 }

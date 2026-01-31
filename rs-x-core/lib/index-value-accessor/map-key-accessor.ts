@@ -7,11 +7,7 @@ export class MapKeyAccessor implements IMapKeyAccessor {
    public readonly priority = 4;
 
    public getIndexes(map: Map<unknown, unknown>): IterableIterator<unknown, unknown, unknown> {
-     return map.keys();
-   }
-
-   public isAsync(): boolean {
-      return false;
+      return map.keys();
    }
 
    public hasValue(map: Map<unknown, unknown>, key: unknown): boolean {

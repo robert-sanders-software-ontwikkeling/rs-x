@@ -1,8 +1,8 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import { BitwiseAndExpression } from '../../lib';
-import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
+import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
+import { BitwiseAndExpression } from '../../lib/expressions/bitwise-and-expression';
 import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
    RsXExpressionParserModule,
@@ -37,9 +37,7 @@ describe('BitwiseAndExpression tests', () => {
    });
 
    it('clone', async () => {
-      const transactionManager: IExpressionChangeTransactionManager = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
-      const context = { a: 5, b: 3 };
+      const services: IExpressionServices = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionServices); const context = { a: 5, b: 3 };
       expression = expressionFactory.create(context, 'a & b');
 
       const clonedExpression = expression.clone();
@@ -51,11 +49,11 @@ describe('BitwiseAndExpression tests', () => {
 
          await new WaitForEvent(clonedExpression, 'changed').wait(() => {
             clonedExpression.bind({
-               transactionManager,
-               rootContext: context
+               rootContext: context,
+               services
             });
 
-            transactionManager.commit();
+            services.transactionManager.commit();
          });
          expect(clonedExpression.value).toEqual(1);
       } finally {
@@ -65,7 +63,7 @@ describe('BitwiseAndExpression tests', () => {
 
    it('will emit change event for initial value', async () => {
       const context = { a: 5, b: 3 };
-      expression = expressionFactory.create(context,'a & b');
+      expression = expressionFactory.create(context, 'a & b');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
          () => { }

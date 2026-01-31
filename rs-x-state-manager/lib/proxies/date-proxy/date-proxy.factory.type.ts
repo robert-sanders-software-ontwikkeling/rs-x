@@ -2,12 +2,12 @@ import { type IDisposableOwner, type ISingletonFactory } from '@rs-x/core';
 
 import {
    type IObserverProxyPair,
-   type MustProxify
+   type ShouldWatchIndex
 } from '../../object-property-observer-proxy-pair-manager.type';
 
 export interface IDateProxyIdData {
    date: Date
-   mustProxify?: MustProxify;
+   shouldWatchIndex?: ShouldWatchIndex;
 }
 
 export interface IDateProxyData extends IDateProxyIdData {

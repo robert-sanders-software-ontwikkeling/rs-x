@@ -651,7 +651,7 @@ describe('DateProxy tests', () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new GuidFactory(), new ProxyRegistryMock()).create(
             {
                date: utCDate(2021, 1, 2),
-               mustProxify: truePredicate
+               shouldWatchIndex: truePredicate
             }
          ).instance as { observer: IObserver; proxy: Date; proxyTarget: unknown; };
 
@@ -694,7 +694,7 @@ describe('DateProxy tests', () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new GuidFactory(), new ProxyRegistryMock()).create(
             {
                date: utCDate(2021, 1, 2),
-               mustProxify: truePredicate
+               shouldWatchIndex: truePredicate
             }
          ).instance as { observer: IObserver; proxy: Date; proxyTarget: unknown; };
 
@@ -736,7 +736,7 @@ describe('DateProxy tests', () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new GuidFactory(), new ProxyRegistryMock()).create(
             {
                date: utCDate(2021, 1, 2),
-               mustProxify: truePredicate
+               shouldWatchIndex: truePredicate
             }
          ).instance as { observer: IObserver; proxy: Date; proxyTarget: unknown; };
 
@@ -778,7 +778,7 @@ describe('DateProxy tests', () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new GuidFactory(), new ProxyRegistryMock()).create(
             {
                date: utCDate(2021, 1, 2),
-               mustProxify: truePredicate
+               shouldWatchIndex: truePredicate
             }
          ).instance as { observer: IObserver; proxy: Date; proxyTarget: unknown; };
 
@@ -821,7 +821,7 @@ describe('DateProxy tests', () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new GuidFactory(), new ProxyRegistryMock()).create(
             {
                date: utCDate(2021, 1, 2),
-               mustProxify: truePredicate
+               shouldWatchIndex: truePredicate
             }
          ).instance as { observer: IObserver; proxy: Date; proxyTarget: unknown; };
 
@@ -863,7 +863,7 @@ describe('DateProxy tests', () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new GuidFactory(), new ProxyRegistryMock()).create(
             {
                date: utCDate(2021, 1, 2),
-               mustProxify: truePredicate
+               shouldWatchIndex: truePredicate
             }
          ).instance as { observer: IObserver; proxy: Date; proxyTarget: unknown; };
 
@@ -906,7 +906,7 @@ describe('DateProxy tests', () => {
          const { observer, proxy, proxyTarget } = new DateProxyFactory(new GuidFactory(), new ProxyRegistryMock()).create(
             {
                date: utCDate(2021, 1, 2),
-               mustProxify: truePredicate
+               shouldWatchIndex: truePredicate
             }
          ).instance as { observer: IObserver; proxy: Date; proxyTarget: unknown; };
 
@@ -950,7 +950,7 @@ describe('DateProxy tests', () => {
             {
                // Mon Jan 07 2030 07:23:45
                date: new Date(1893997425123),
-               mustProxify: truePredicate
+               shouldWatchIndex: truePredicate
             }
          ).instance as { observer: IObserver; proxy: Date; proxyTarget: unknown; };
 
@@ -1078,7 +1078,7 @@ describe('DateProxy tests', () => {
          const { observer, proxy } = new DateProxyFactory(new GuidFactory(), new ProxyRegistryMock()).create(
             {
                date: utCDate(2021, 1, 2),
-               mustProxify: truePredicate
+               shouldWatchIndex: truePredicate
             }
          ).instance as { observer: IObserver; proxy: Date; };
          

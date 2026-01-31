@@ -1,7 +1,7 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
+import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
 import { LessThanExpression } from '../../lib/expressions/less-than-expression';
 import {
@@ -38,9 +38,7 @@ describe('LessThanExpression tests', () => {
    });
 
    it('clone', async () => {
-      const transactionManager: IExpressionChangeTransactionManager = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
-
+     const services: IExpressionServices = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionServices);
       const context = { a: 2, b: 1 };
       expression = expressionFactory.create(context, 'a < b');
 
@@ -52,12 +50,12 @@ describe('LessThanExpression tests', () => {
          expect(clonedExpression.expressionString).toEqual('a < b');
 
          await new WaitForEvent(clonedExpression, 'changed').wait(() => {
-            clonedExpression.bind({
-               transactionManager,
-               rootContext: context
+             clonedExpression.bind({
+              rootContext: context,
+               services
             });
 
-            transactionManager.commit();
+           services.transactionManager.commit();
          });
          expect(clonedExpression.value).toEqual(false);
       } finally {

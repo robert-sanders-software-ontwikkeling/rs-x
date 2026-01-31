@@ -10,7 +10,7 @@ import {
 
 import { type IObjectPropertyObserverProxyPairManager } from '../../lib/object-property-observer-proxy-pair-manager.type';
 import { RsXStateManagerModule } from '../../lib/rs-x-state-manager.module';
-import { RsXStateManagerInjectionTokens } from '../../lib/rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../lib/rs-x-state-manager-injection-tokens';
 import { StateChangeSubscriptionManager } from '../../lib/state-manager/state-change-subscription-manager/state-change-subsription-manager';
 
 describe('StateChangeSubscriptionManager tests', () => {
@@ -48,7 +48,7 @@ describe('StateChangeSubscriptionManager tests', () => {
          stateChangeSubscriptionManager.create(context).instance;
       const recursiveObserver = stateChangeSubscrionInfoForContext.create({
          key: 'x',
-         mustProxify: truePredicate,
+         shouldWatchIndex: truePredicate,
          onChanged: emptyFunction,
       }).instance;
       const nonRecursiveObserver = stateChangeSubscrionInfoForContext.create({
@@ -73,7 +73,7 @@ describe('StateChangeSubscriptionManager tests', () => {
          stateChangeSubscriptionManager.create(context).instance;
       const recursiveObserver = stateChangeSubscriptionInfoForContext.create({
          key: 'x',
-         mustProxify: truePredicate,
+         shouldWatchIndex: truePredicate,
          onChanged: emptyFunction,
       }).instance;
       const nonRecursiveObserver = stateChangeSubscriptionInfoForContext.create({
@@ -114,7 +114,7 @@ describe('StateChangeSubscriptionManager tests', () => {
          stateChangeSubscriptionManager.create(context).instance;
       const recursiveObserver = stateChangeSubscrionInfoForContext.create({
          key: 'x',
-         mustProxify: truePredicate,
+         shouldWatchIndex: truePredicate,
          onChanged: emptyFunction,
       }).instance;
       const nonRecursiveObserver = stateChangeSubscrionInfoForContext.create({
@@ -152,7 +152,7 @@ describe('StateChangeSubscriptionManager tests', () => {
          stateChangeSubscriptionManager.create(context).instance;
       const recursiveObserver = stateChangeSubscrionInfoForContext.create({
          key: 'x',
-         mustProxify: truePredicate,
+         shouldWatchIndex: truePredicate,
          onChanged: emptyFunction,
       }).instance;
       const nonRecursiveObserver = stateChangeSubscrionInfoForContext.create({
@@ -191,7 +191,7 @@ describe('StateChangeSubscriptionManager tests', () => {
          stateChangeSubscriptionManager.create(context).instance;
       const recursiveObserver = stateChangeSubscrionInfoForContext.create({
          key: 'x',
-         mustProxify: truePredicate,
+         shouldWatchIndex: truePredicate,
          onChanged: emptyFunction,
       }).instance;
       const nonRecursiveObserver = stateChangeSubscrionInfoForContext.create({
@@ -243,7 +243,7 @@ describe('StateChangeSubscriptionManager tests', () => {
          stateChangeSubscriptionManager.create(context).instance;
       const recursiveObserver = stateChangeSubscrionInfoForContext.create({
          key: 'x',
-         mustProxify: truePredicate,
+         shouldWatchIndex: truePredicate,
          onChanged: emptyFunction,
       }).instance;
       const nonRecursiveObserver = stateChangeSubscrionInfoForContext.create({
@@ -261,7 +261,7 @@ describe('StateChangeSubscriptionManager tests', () => {
       expect(
          rootPropertyObserverProxyPairManager?.getFromData({
             key: 'x',
-            mustProxify: truePredicate,
+            shouldWatchIndex: truePredicate,
          })
       ).toBeDefined();
       expect(
@@ -272,7 +272,7 @@ describe('StateChangeSubscriptionManager tests', () => {
       expect(
          nestedPropertyObserverProxyPairManager?.getFromData({
             key: 'y',
-            mustProxify: truePredicate,
+            shouldWatchIndex: truePredicate,
          })
       ).toBeDefined();
 
@@ -281,7 +281,7 @@ describe('StateChangeSubscriptionManager tests', () => {
       expect(
          rootPropertyObserverProxyPairManager?.getFromData({
             key: 'x',
-            mustProxify: truePredicate,
+            shouldWatchIndex: truePredicate,
          })
       ).toBeUndefined();
       expect(
@@ -292,7 +292,7 @@ describe('StateChangeSubscriptionManager tests', () => {
       expect(
          nestedPropertyObserverProxyPairManager?.getFromData({
             key: 'y',
-            mustProxify: truePredicate,
+            shouldWatchIndex: truePredicate,
          })
       ).toBeUndefined();
 

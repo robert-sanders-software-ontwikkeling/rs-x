@@ -15,7 +15,7 @@ import {
 import { AbstractObserver } from '../../../abstract-observer';
 import type { IObjectObserverProxyPairManager } from '../../../object-observer';
 import type { IObserver } from '../../../observer.interface';
-import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokens';
 import type { IIndexObserverIdInfo, IIndexObserverInfo } from '../index-observer-info.interface';
 
 import type {
@@ -39,7 +39,11 @@ class CollectionIndexObserver extends AbstractObserver<Collection> {
       errorLog: IErrorLog,
    ) {
       super(owner, collection, _indexValueAccessor.getValue(collection, index), undefined, index);
-      this._collectionObserver = this._objectObserverProxyPairManager.create({ target: collection }).instance.observer;
+      this._collectionObserver = this._objectObserverProxyPairManager.create(
+         { 
+            target: collection
+
+          }).instance.observer;
 
       this._changeSubscription = this._collectionObserver.changed.subscribe({
          next: this.onChanged,

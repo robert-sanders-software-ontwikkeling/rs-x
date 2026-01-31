@@ -2,7 +2,7 @@ import { InjectionContainer, type IPropertyChange, WaitForEvent } from '@rs-x/co
 
 import { type IObjectPropertyObserverManager } from '../../../../lib/property-observer/factories/non-iterable-object-property/object-property-observer-manager.type';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
-import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokens';
 export class Base {
    private _property = 'property';
    public field = 'field';

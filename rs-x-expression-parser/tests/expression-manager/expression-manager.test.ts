@@ -27,8 +27,8 @@ describe('ExpressionManager', () => {
         const context1 = { a: 1 };
         const context2 = { a: 1 };
 
-        const { instance: expression1 } = expressionManager.create(context1).instance.create('a +1 * (2 + 3)');
-        const { instance: expression2 } = expressionManager.create(context2).instance.create('a +1 * (2 + 3)');
+        const { instance: expression1 } = expressionManager.create(context1).instance.create({expressionString: 'a +1 * (2 + 3)'});
+        const { instance: expression2 } = expressionManager.create(context2).instance.create({expressionString: 'a +1 * (2 + 3)'});
 
         const referenceCount = expressionCache.getReferenceCount('a +1 * (2 + 3)');
 
@@ -42,8 +42,8 @@ describe('ExpressionManager', () => {
         const expressionCache: IExpressionCache = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionCache);
         const context1 = { a: 1 };
         const context2 = { a: 1 };
-        const { instance: expression1 } = expressionManager.create(context1).instance.create('a +1 * (2 + 3)');
-        const { instance: expression2 } = expressionManager.create(context2).instance.create('a +1 * (2 + 3)');
+        const { instance: expression1 } = expressionManager.create(context1).instance.create({expressionString: 'a +1 * (2 + 3)'});
+        const { instance: expression2 } = expressionManager.create(context2).instance.create({expressionString: 'a +1 * (2 + 3)'});
 
         expression1.dispose();
         expect(expressionCache.getReferenceCount('a +1 * (2 + 3)')).toEqual(1);

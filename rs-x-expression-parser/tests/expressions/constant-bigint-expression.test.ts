@@ -1,7 +1,7 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
+import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import { ConstantBigIntExpression } from '../../lib/expressions/constant-bigint-expression';
 import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
@@ -37,9 +37,7 @@ describe('ConstantBigIntExpression tests', () => {
    });
 
    it('clone', async () => {
-      const transactionManager: IExpressionChangeTransactionManager = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
-
+     const services: IExpressionServices = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionServices);
       expression = expressionFactory.create({}, '9007199254740991n');
 
       const clonedExpression = expression.clone();
@@ -51,11 +49,10 @@ describe('ConstantBigIntExpression tests', () => {
 
          await new WaitForEvent(clonedExpression, 'changed').wait(() => {
             clonedExpression.bind({
-               transactionManager,
-               rootContext: {}
-            });
+               rootContext: {},
+               services            });
 
-            transactionManager.commit();
+           services.transactionManager.commit();
          });
          expect(clonedExpression.value).toEqual(9007199254740991n);
       } finally {

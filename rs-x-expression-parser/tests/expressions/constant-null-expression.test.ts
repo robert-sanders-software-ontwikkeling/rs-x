@@ -1,7 +1,7 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
+import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import { ConstantNullExpression } from '../../lib/expressions/constant-null-expression';
 import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
@@ -9,6 +9,7 @@ import {
    unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+
 
 
 describe('ConstantNullExpression tests', () => {
@@ -37,9 +38,7 @@ describe('ConstantNullExpression tests', () => {
    });
 
    it('clone', async () => {
-      const transactionManager: IExpressionChangeTransactionManager = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
-
+     const services: IExpressionServices = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionServices);
       expression = expressionFactory.create({}, 'null');
 
       const clonedExpression = expression.clone();
@@ -51,11 +50,11 @@ describe('ConstantNullExpression tests', () => {
 
          await new WaitForEvent(clonedExpression, 'changed').wait(() => {
             clonedExpression.bind({
-               transactionManager,
-               rootContext: {}
+               rootContext: {},
+               services
             });
 
-            transactionManager.commit();
+            services.transactionManager.commit();
          });
          expect(clonedExpression.value).toEqual(null);
       } finally {

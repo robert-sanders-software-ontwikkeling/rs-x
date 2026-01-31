@@ -6,7 +6,7 @@ import type {
    IObservableObserverProxyPair,
    IObservableProxyFactory,
 } from '../../proxies/observable-proxy/observable-proxy.factory.type';
-import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokens';
 import type { IObjectObserverProxyPairFactory } from '../object-observer-proxy-pair.factory.interface';
 import type { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
 

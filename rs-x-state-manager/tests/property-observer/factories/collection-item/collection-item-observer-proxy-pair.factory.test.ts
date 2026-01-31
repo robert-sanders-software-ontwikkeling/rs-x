@@ -11,7 +11,7 @@ import { type IObserver } from '../../../../lib/observer.interface';
 import { type ICollectionItemObserverProxyPairFactory } from '../../../../lib/property-observer/factories/collection-item/collection-item-observer-proxy-pair.factory.type';
 import { type IProxyRegistry } from '../../../../lib/proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
-import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokens';
 
 describe('CollectionItemObserverProxyPairFactory tests', () => {
    let observer1: IObserver | undefined;
@@ -56,7 +56,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
             array,
             {
                key: 0,
-               mustProxify: truePredicate
+               shouldWatchIndex: truePredicate
             }
          ).observer;
 
@@ -97,7 +97,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                array,
                {
                   key: 0,
-                  mustProxify: truePredicate
+                  shouldWatchIndex: truePredicate
                }
             ).observer;
 
@@ -136,7 +136,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                array,
                {
                   key: 0,
-                  mustProxify: truePredicate
+                  shouldWatchIndex: truePredicate
                }
             ).observer;
 
@@ -172,7 +172,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                array,
                {
                   key: 0,
-                  mustProxify: truePredicate
+                  shouldWatchIndex: truePredicate
                }
             ).observer;
 
@@ -199,7 +199,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                array,
                {
                   key: 0,
-                  mustProxify: truePredicate
+                  shouldWatchIndex: truePredicate
                }
             ).observer;
 
@@ -273,7 +273,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                array,
                {
                   key: 0,
-                  mustProxify: truePredicate
+                  shouldWatchIndex: truePredicate
                }
             ).observer;
 
@@ -304,7 +304,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                array,
                {
                   key: 0,
-                  mustProxify: truePredicate
+                  shouldWatchIndex: truePredicate
                }
             ).observer;
 
@@ -334,7 +334,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                array,
                {
                   key: 0,
-                  mustProxify: truePredicate
+                  shouldWatchIndex: truePredicate
                }
             ).observer;
 
@@ -385,7 +385,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
             map,
             {
                key: 'a',
-               mustProxify: truePredicate
+               shouldWatchIndex: truePredicate
             }
          ).observer;
 
@@ -427,7 +427,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                map,
                {
                   key: 'a',
-                  mustProxify: truePredicate
+                  shouldWatchIndex: truePredicate
                }
             ).observer;
 
@@ -466,7 +466,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                map,
                {
                   key: 'a',
-                  mustProxify: truePredicate
+                  shouldWatchIndex: truePredicate
                }
             ).observer;
 
@@ -504,7 +504,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                map,
                {
                   key: 'a',
-                  mustProxify: truePredicate
+                  shouldWatchIndex: truePredicate
                }
             ).observer;
 
@@ -531,7 +531,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                map,
                {
                   key: 'a',
-                  mustProxify: truePredicate
+                  shouldWatchIndex: truePredicate
                }
             ).observer;
 
@@ -615,7 +615,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                map,
                {
                   key: 'a',
-                  mustProxify: truePredicate
+                  shouldWatchIndex: truePredicate
                }
             ).observer;
 
@@ -645,7 +645,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                map,
                {
                   key: 'a',
-                  mustProxify: truePredicate
+                  shouldWatchIndex: truePredicate
                }
             ).observer;
 
@@ -677,7 +677,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                map,
                {
                   key: 'a',
-                  mustProxify: truePredicate
+                  shouldWatchIndex: truePredicate
                }
             ).observer;
 
@@ -728,7 +728,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
             set,
             {
                key: nestedSet,
-               mustProxify: truePredicate
+               shouldWatchIndex: truePredicate
             }
          ).observer;
 
@@ -765,7 +765,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                set,
                {
                   key: nestedSet,
-                  mustProxify: truePredicate
+                  shouldWatchIndex: truePredicate
                }
             ).observer;
 
@@ -803,7 +803,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                set,
                {
                   key: nestedSet,
-                  mustProxify: truePredicate
+                  shouldWatchIndex: truePredicate
                }
             ).observer;
 
@@ -839,7 +839,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                set,
                {
                   key: nestedSet,
-                  mustProxify: truePredicate
+                  shouldWatchIndex: truePredicate
                }
             ).observer;
 
@@ -864,7 +864,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                set,
                {
                   key: nestedSet,
-                  mustProxify: truePredicate
+                  shouldWatchIndex: truePredicate
                }
             ).observer;
 
@@ -938,7 +938,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                set,
                {
                   key: nestedSet,
-                  mustProxify: truePredicate
+                  shouldWatchIndex: truePredicate
                }
             ).observer;
 
@@ -971,7 +971,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
                set,
                {
                   key: nestedSet,
-                  mustProxify: truePredicate
+                  shouldWatchIndex: truePredicate
                }
             ).observer;
 

@@ -7,10 +7,6 @@ import { type IPropertyValueAccessor } from './property-value-accessor.type';
 export class PropertyValueAccessor implements IPropertyValueAccessor {
    public readonly priority = 7;
 
-   public isAsync(): boolean {
-      return false;
-   }
-
    public getIndexes(context: unknown): IterableIterator<string> {
       const obj = Type.toObject(context); 
       if(!obj) {

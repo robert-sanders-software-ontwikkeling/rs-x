@@ -15,9 +15,9 @@ import {
 
 import type {
    IObjectPropertyObserverProxyPairManager,
-   MustProxify,
+   ShouldWatchIndex,
 } from '../object-property-observer-proxy-pair-manager.type';
-import { RsXStateManagerInjectionTokens } from '../rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../rs-x-state-manager-injection-tokens';
 
 import { StateChangeSubscriptionManager } from './state-change-subscription-manager/state-change-subsription-manager';
 import type { IObjectStateManager } from './object-state-manager.interface';
@@ -92,7 +92,7 @@ export class StateManager implements IStateManager {
    public isWatched(
       context: unknown,
       index: unknown,
-      mustProxify?: MustProxify
+      shouldWatchIndex?: ShouldWatchIndex
    ): boolean {
 
       const stateChangeSubscriptionsForContextManager =
@@ -104,7 +104,7 @@ export class StateManager implements IStateManager {
 
       const id = stateChangeSubscriptionsForContextManager.getId({
          key: index,
-         mustProxify,
+         shouldWatchIndex,
       });
       return id ? stateChangeSubscriptionsForContextManager.has(id) : false;
    }
@@ -112,12 +112,11 @@ export class StateManager implements IStateManager {
    public watchState(
       context: unknown,
       index: unknown,
-      mustProxify?: MustProxify
+      shouldWatchIndex?: ShouldWatchIndex
    ): unknown {
-      if (!this.isWatched(context, index, mustProxify)) {
-
+      if (!this.isWatched(context, index, shouldWatchIndex)) {
          const value = this.getState(context, index);
-         this.tryToSubscribeToChange(context, index, mustProxify);
+         this.tryToSubscribeToChange(context, index, shouldWatchIndex);
          return value;
       } else {
          return this.increaseStateReferenceCount(context, index, true);
@@ -127,13 +126,13 @@ export class StateManager implements IStateManager {
    public releaseState(
       context: unknown,
       index: unknown,
-      mustProxify: MustProxify
+      shouldWatchIndex?: ShouldWatchIndex
    ): void {
       if (!this._objectStateManager.getFromId(context)?.has(index)) {
          return;
       }
 
-      this.internalUnregister(context, index, mustProxify);
+      this.internalUnregister(context, index, shouldWatchIndex);
    }
 
    public clear(): void {
@@ -166,11 +165,11 @@ export class StateManager implements IStateManager {
    private unnsubscribeToObserverEvents(
       context: unknown,
       index: unknown,
-      mustProxify: MustProxify | undefined
+      shouldWatchIndex?: ShouldWatchIndex
    ): void {
       const subscriptionsForKey =
          this._stateChangeSubscriptionManager.getFromId(context);
-      const observer = subscriptionsForKey?.getFromData({ key: index, mustProxify });
+      const observer = subscriptionsForKey?.getFromData({ key: index, shouldWatchIndex });
       if (!observer) {
          return;
       }
@@ -181,10 +180,10 @@ export class StateManager implements IStateManager {
    private internalUnregister(
       context: unknown,
       index: unknown,
-      mustProxify: MustProxify | undefined,
+      shouldWatchIndex?: ShouldWatchIndex,
    ): void {
       if (this.canReleaseState(context, index)) {
-         this.unnsubscribeToObserverEvents(context, index, mustProxify);
+         this.unnsubscribeToObserverEvents(context, index, shouldWatchIndex);
       }
    }
 
@@ -245,13 +244,13 @@ export class StateManager implements IStateManager {
    private tryToSubscribeToChange(
       context: unknown,
       index: unknown,
-      mustProxify: MustProxify | undefined,
+      shouldWatchIndex?: ShouldWatchIndex,
       transferedValue?: ITransferedValue
    ): void {
       this._stateChangeSubscriptionManager.create(context).instance.create({
          key: index,
-         mustProxify,
-         onChanged: (change) => this.onChange(change, mustProxify, true),
+         shouldWatchIndex: shouldWatchIndex,
+         onChanged: (change) => this.onChange(change, shouldWatchIndex, true),
          init: (observer) => {
             if (observer.value !== undefined) {
                this.setInitialValue(
@@ -317,7 +316,7 @@ export class StateManager implements IStateManager {
    private tryRebindingNestedState(
       newValue: unknown,
       oldValue: unknown,
-      mustProxify?: MustProxify,
+      shouldWatchIndex?: ShouldWatchIndex,
    ): void {
       const stateChanges = this.getStateChanges(oldValue, newValue);
 
@@ -326,7 +325,7 @@ export class StateManager implements IStateManager {
             this.internalUnregister(
                stateChange.oldContext,
                stateChange.key,
-               mustProxify
+               shouldWatchIndex
             );
          });
 
@@ -348,7 +347,7 @@ export class StateManager implements IStateManager {
             this.tryToSubscribeToChange(
                stateChange.context,
                stateChange.key,
-               mustProxify,
+               shouldWatchIndex,
                {
                   context: stateChange.oldContext,
                   value: stateChange.oldValue,
@@ -418,7 +417,7 @@ export class StateManager implements IStateManager {
       return this.getState(context, id);
    }
 
-   private onChange(change: IPropertyChange, mustProxify: MustProxify | undefined, watched: boolean): void {
+   private onChange(change: IPropertyChange, shouldWatchIndex?: ShouldWatchIndex, watched: boolean = false): void {
       const chainChanges = this.getChainChanges(change.chain);
       if (chainChanges.length === 0) {
          return;
@@ -430,7 +429,7 @@ export class StateManager implements IStateManager {
          const chainLeaf = chainChanges[chainChanges.length - 1];
          const currentValue = this.getCurrentValue(chainLeaf.object, chainLeaf.id);
 
-         this.tryRebindingNestedState(change.newValue, currentValue, mustProxify);
+         this.tryRebindingNestedState(change.newValue, currentValue, shouldWatchIndex);
          this.updateState(
             chainLeaf.object,
             chainLeaf.object,

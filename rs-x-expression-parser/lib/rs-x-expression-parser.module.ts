@@ -1,6 +1,7 @@
 import {
    ContainerModule,
    defaultIndexValueAccessorList,
+   defaultValueMetadataList,
    type IDeepCloneExcept,
    InjectionContainer,
    overrideMultiInjectServices,
@@ -17,9 +18,12 @@ import { ExpressionManager } from './expression-factory/expression-manager';
 import type { IExpressionManager } from './expression-factory/expression-manager.type';
 import { DeepCloneExceptWithExpressionSupport } from './expression-observer/deep-clone-except-with-expression-support';
 import { ExpressionIndexAccessor } from './expression-observer/expression-index-accessor';
+import { ExpressionMetadata } from './expression-observer/expression-metadata';
 import { ExpressionObserverFactory } from './expression-observer/expression-observer.factory';
 import { ExpressionObserverProxyPairFactory } from './expression-observer/expression-observer-proxy-pair.factory';
 import type { IExpressionObserverFactory } from './expression-observer/expression-proxy.factory.type';
+import { ExpressionServices } from './expression-services/expression-services';
+import type { IExpressionServices } from './expression-services/expression-services.interface';
 import type { IExpressionParser } from './expressions/expression-parser.interface';
 import { ArrayIndexOwnerResolver } from './identifier-owner-resolver/array-index-owner-resolver';
 import { DefaultIdentifierOwnerResolver } from './identifier-owner-resolver/default-identifier-owner-resolver';
@@ -84,6 +88,12 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
       )
       .to(ExpressionCache)
       .inSingletonScope();
+   options
+      .bind<IExpressionServices>(
+         RsXExpressionParserInjectionTokens.IExpressionServices
+      )
+      .to(ExpressionServices)
+      .inSingletonScope();
 
    registerMultiInjectServices(options, RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList,
       [
@@ -93,7 +103,6 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
       ]
    );
 
-
    overrideMultiInjectServices(options, RsXCoreInjectionTokens.IIndexValueAccessorList, [
       { target: ExpressionIndexAccessor, token: RsXExpressionParserInjectionTokens.IExpressionIndexAccessor },
       ...defaultIndexValueAccessorList
@@ -102,6 +111,11 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
    overrideMultiInjectServices(options, RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList, [
       { target: ExpressionObserverProxyPairFactory, token: RsXExpressionParserInjectionTokens.IExpressionObserverProxyPairFactory },
       ...defaultObjectObserverProxyPairFactoryList
+   ]);
+
+   overrideMultiInjectServices(options, RsXCoreInjectionTokens.IValueMetadataList, [
+      { target: ExpressionMetadata, token: RsXExpressionParserInjectionTokens.ExpressiomMetadata },
+      ...defaultValueMetadataList
    ]);
 });
 

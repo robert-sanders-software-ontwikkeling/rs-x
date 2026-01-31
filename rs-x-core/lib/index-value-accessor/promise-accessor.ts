@@ -20,10 +20,6 @@ export class PromiseAccessor implements IPromiseAccessor {
       return [].values();
    }
 
-   public isAsync(): boolean {
-      return true;
-   }
-
    public hasValue(context: unknown, index: string): boolean {
       const val = this.getIndexedValue(context, index);
       return this.isCacheable(val) && this._resolvedValueCache.get(val) !== PENDING;
@@ -56,7 +52,7 @@ export class PromiseAccessor implements IPromiseAccessor {
    }
 
    private getIndexedValue(context: unknown, index: string): unknown {
-      return (Type.toObject(context) ?? {} )[index];
+      return (Type.toObject(context) ?? {})[index];
    }
 
    private isCacheable(value: unknown): value is object | Function {

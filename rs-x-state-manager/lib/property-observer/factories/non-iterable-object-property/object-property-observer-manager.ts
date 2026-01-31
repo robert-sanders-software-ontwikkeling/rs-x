@@ -15,7 +15,7 @@ import {
 import { AbstractObserver } from '../../../abstract-observer';
 import type { IObserver } from '../../../observer.interface';
 import type { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
-import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokens';
 
 import type {
    IObjectPropertyObserverManager,

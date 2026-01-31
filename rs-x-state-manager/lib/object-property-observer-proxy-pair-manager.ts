@@ -17,9 +17,9 @@ import type {
    IPropertyIdInfo,
    IPropertyInfo,
    IPropertyObserverProxyPairManager,
-   MustProxify,
+   ShouldWatchIndex,
 } from './object-property-observer-proxy-pair-manager.type';
-import { RsXStateManagerInjectionTokens } from './rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from './rs-x-state-manager-injection-tokens';
 
 class PropertyObserverProxyPairManager
    extends SingletonFactoryWithGuid<
@@ -42,8 +42,8 @@ class PropertyObserverProxyPairManager
       return data.key;
    }
 
-   protected getGroupMemberId(data: IPropertyInfo): MustProxify | undefined {
-      return data.mustProxify;
+   protected getGroupMemberId(data: IPropertyInfo): ShouldWatchIndex | undefined {
+      return data.shouldWatchIndex;
    }
    
    protected createInstance(

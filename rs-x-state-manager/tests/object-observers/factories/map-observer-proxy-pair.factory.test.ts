@@ -8,7 +8,7 @@ import { ObserverGroup } from '../../../lib/observer-group';
 import { type IMapObserverProxyPair, type IMapProxyFactory } from '../../../lib/proxies/map-proxy/map-proxy.factory.type';
 import { type IProxyRegistry } from '../../../lib/proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
-import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokens';
 
 describe('MapObserverProxyPairFactory tests', () => {
    let mapObserverProxyPairFactory: IMapObserverProxyPairFactory;
@@ -101,7 +101,7 @@ describe('MapObserverProxyPairFactory tests', () => {
       ]);
       observer = mapObserverProxyPairFactory.create(disposableOwner, {
          target: objectMap,
-         mustProxify: truePredicate
+         shouldWatchIndex: truePredicate
       }).observer;
 
       const objectPropertyObserverProxyPairManager =
@@ -115,11 +115,11 @@ describe('MapObserverProxyPairFactory tests', () => {
 
       const item1Id = propertyObserverProxyPairManager?.getId({
          key: 'a',
-         mustProxify: truePredicate,
+         shouldWatchIndex: truePredicate,
       });
       const item2Id = propertyObserverProxyPairManager?.getId({
          key: 'b',
-         mustProxify: truePredicate,
+         shouldWatchIndex: truePredicate,
       });
       const mapProxyId = mapProxyFactory.getId({
          map: objectMap,
@@ -168,7 +168,7 @@ describe('MapObserverProxyPairFactory tests', () => {
       ]);
       const observerProxyPair: IMapObserverProxyPair = mapObserverProxyPairFactory.create(
          disposableOwner,
-         { target: objectMap, mustProxify: truePredicate }
+         { target: objectMap, shouldWatchIndex: truePredicate }
       );
       observer = observerProxyPair.observer;
       disposableOwner.canDispose.mockReturnValue(true);
@@ -181,11 +181,11 @@ describe('MapObserverProxyPairFactory tests', () => {
          objectPropertyObserverProxyPairManager.getFromId(objectMap);
       const item1Id = propertyObserverProxyPairManager?.getId({
          key: 'a',
-         mustProxify: truePredicate
+         shouldWatchIndex: truePredicate
       });
       const item2Id = propertyObserverProxyPairManager?.getId({
          key: 'b',
-         mustProxify: truePredicate
+         shouldWatchIndex: truePredicate
       });
 
       expect(mapProxyFactory.getFromId(objectMap)).toBeDefined();
@@ -219,7 +219,7 @@ describe('MapObserverProxyPairFactory tests', () => {
 
       const observerProxyPair: IMapObserverProxyPair = mapObserverProxyPairFactory.create(
          disposableOwner,
-         { target: objectMap, mustProxify }
+         { target: objectMap, shouldWatchIndex: mustProxify }
       );
       observer = observerProxyPair.observer;
 
@@ -248,7 +248,7 @@ describe('MapObserverProxyPairFactory tests', () => {
          ]);
          observer = mapObserverProxyPairFactory.create(disposableOwner, {
             target: objectMap,
-            mustProxify: truePredicate
+            shouldWatchIndex: truePredicate
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -274,7 +274,7 @@ describe('MapObserverProxyPairFactory tests', () => {
          ]);
          observer = mapObserverProxyPairFactory.create(disposableOwner, {
             target: objectMap,
-            mustProxify: truePredicate
+            shouldWatchIndex: truePredicate
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -300,7 +300,7 @@ describe('MapObserverProxyPairFactory tests', () => {
          ]);
          observer = mapObserverProxyPairFactory.create(disposableOwner, {
             target: objectMap,
-            mustProxify: truePredicate
+            shouldWatchIndex: truePredicate
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {

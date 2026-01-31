@@ -4,55 +4,58 @@ import {
    SingletonFactory
 } from '@rs-x/core';
 
-import type { IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 import type { IExpressionCache } from '../expression-cache';
+import type { IExpressionServices } from '../expression-services/expression-services.interface';
 import type { IExpression } from '../expressions/expression-parser.interface';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
 
 import type {
+   IExpressionData,
    IExpressionForContextManager,
+   IExpressionIdData,
    IExpressionManager
 } from './expression-manager.type';
 
 class ExpressionForContextManager
-   extends SingletonFactory<string, string, IExpression>
+   extends SingletonFactory<string, IExpressionData, IExpression, IExpressionIdData>
    implements IExpressionForContextManager {
    constructor(
       private readonly _expressionCache: IExpressionCache,
-      private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
+      private readonly _services: IExpressionServices,
       private readonly _context: object,
       private readonly releaseContext: () => void
    ) {
       super();
    }
 
-   public override getId(expression: string): string {
-      return expression;
+   public override getId(expressionIdData: IExpressionIdData): string {
+      return expressionIdData.expressionString;
    }
 
-   protected override createId(expression: string): string {
+   protected override createId(expressionIdData: IExpressionIdData): string {
       // Ideally, we would normalize the expression string here to avoid duplicates caused by whitespace differences.
       // However, this is a complex task that requires parsing the expression, which is not feasible in this context.
       // Normalization would also need to be fast; otherwise, it defeats the purpose of caching.
 
-      return expression;
+      return expressionIdData.expressionString;
    }
 
-   override create(expressionString: string): { referenceCount: number; instance: IExpression<unknown, unknown>; id: string; } {
-      const result = super.create(expressionString);
+   override create(expressionData: IExpressionData): { referenceCount: number; instance: IExpression<unknown, unknown>; id: string; } {
+      const result = super.create(expressionData);
 
       result.instance.bind({
          rootContext: this._context,
-         transactionManager: this._expressionChangeTransactionManager,
+         services: this._services,
          owner: {
             release: () => {
                this.release(result.id);
                this._expressionCache.release(result.id);
             },
             canDispose: () => this.getReferenceCount(result.id) === 1
-         }
+         },
+         shouldWatchLeaf: expressionData.shouldWatchLeaf
       });
-      this._expressionChangeTransactionManager.commit();
+      this._services.transactionManager.commit();
 
       return result;
    }
@@ -61,8 +64,8 @@ class ExpressionForContextManager
       this.releaseContext();
    }
 
-   protected override createInstance(_: string, id: string): IExpression {
-      return this._expressionCache.create(id).instance;
+   protected override createInstance(expressionData: IExpressionData): IExpression {
+      return this._expressionCache.create(expressionData.expressionString).instance;
    }
 }
 
@@ -83,8 +86,8 @@ export class ExpressionManager
    constructor(
       @Inject(RsXExpressionParserInjectionTokens.IExpressionCache)
       private readonly _expressionCache: IExpressionCache,
-      @Inject(RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager)
-      private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
+      @Inject(RsXExpressionParserInjectionTokens.IExpressionServices)
+       private readonly _services: IExpressionServices,
    ) {
       super();
    }
@@ -95,7 +98,7 @@ export class ExpressionManager
    ): IExpressionForContextManager {
       return new ExpressionForContextManager(
          this._expressionCache,
-         this._expressionChangeTransactionManager,
+         this._services,
          context,
          () => this.release(id)
       );

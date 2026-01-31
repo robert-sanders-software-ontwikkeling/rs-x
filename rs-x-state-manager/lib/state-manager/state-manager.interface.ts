@@ -1,6 +1,6 @@
 import { type Observable } from 'rxjs';
 
-import { type MustProxify } from '../object-property-observer-proxy-pair-manager.type';
+import { type ShouldWatchIndex } from '../object-property-observer-proxy-pair-manager.type';
 
 export interface IContextChanged {
    oldContext: unknown;
@@ -23,10 +23,10 @@ export interface IStateManager {
    isWatched(
       context: unknown,
       index: unknown,
-      mustProxify?: MustProxify
+      shouldWatchIndex?: ShouldWatchIndex
    ): boolean;
-   watchState(context: unknown, index: unknown, mustProxify?: MustProxify): unknown;
-   releaseState(oontext: unknown, index: unknown, mustProxify?: MustProxify): void;
+   watchState(context: unknown, index: unknown, shouldWatchIndex?: ShouldWatchIndex): unknown;
+   releaseState(oontext: unknown, index: unknown, shouldWatchIndex?: ShouldWatchIndex): void;
    getState<T>(context: unknown, index: unknown): T;
    setState<T>(context: unknown, index: unknown, value: T): void;
    clear(): void;

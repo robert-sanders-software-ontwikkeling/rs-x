@@ -1,26 +1,19 @@
 import { type Subscription } from 'rxjs';
 
-import { emptyFunction, type IIndexValueAccessor, PENDING, truePredicate, Type } from '@rs-x/core';
+import { PENDING, Type } from '@rs-x/core';
 import {
-   type IMustProxifyItemHandlerFactory,
-   type IStateManager,
-   type MustProxify,
+   type ShouldWatchIndex
 } from '@rs-x/state-manager';
 
-import { type IExpressionChangeCommitHandler, type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
+import { type IExpressionChangeCommitHandler } from '../expresion-change-transaction-manager.interface';
 
 import {
-   AbstractExpression
+   AbstractExpression,
 } from './abstract-expression';
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 import { ExpressionType } from './expression-parser.interface';
 import { IdentifierExpression, type IIdentifierBindConfiguration, } from './identifier-expression';
 
-interface IMustProxifyHandler {
-   createMustProxifyHandler: (() => MustProxify) | undefined;
-   releaseMustProxifyHandler: (() => void) | undefined;
-   valid: boolean;
-}
 
 interface ISlotChangeSubscription {
    staticIndexExpression: IdentifierExpression;
@@ -36,33 +29,24 @@ export class MemberExpression extends AbstractExpression {
    >();
    private _rebindingSlot = false;
    private readonly _initializeQueue = new Map<AbstractExpression, () => void>();
+   private _shouldWatchLeaf?: ShouldWatchIndex;
 
    constructor(
       expressionString: string,
-      pathSeqments: AbstractExpression[],
-      private readonly _indexValueAccessor: IIndexValueAccessor,
-      private readonly _stateManager: IStateManager,
-      private readonly _mustProxifyItemHandlerFactory: IMustProxifyItemHandlerFactory,
-      private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
+      pathSeqments: AbstractExpression[]
    ) {
       super(ExpressionType.Member, expressionString, ...pathSeqments);
    }
 
-    public override clone(): this {
+   public override clone(): this {
       return new (this.constructor as new (
          expressionString: string,
          pathSeqments: AbstractExpression[],
-         indexValueAccessor: IIndexValueAccessor,
-         stateManager: IStateManager,
-         mustProxifyItemHandlerFactory: IMustProxifyItemHandlerFactory,
-         expressionChangeTransactionManager: IExpressionChangeTransactionManager
+
+
       ) => this)(
          this.expressionString,
          this._childExpressions.map(child => child.clone()),
-         this._indexValueAccessor,
-         this._stateManager,
-         this._mustProxifyItemHandlerFactory,
-         this._expressionChangeTransactionManager
       );
    }
 
@@ -71,13 +55,16 @@ export class MemberExpression extends AbstractExpression {
    ): AbstractExpression {
       super.bind(settings);
 
+      this._shouldWatchLeaf = settings.shouldWatchLeaf;
+
       for (let i = 0; i < this._childExpressions.length; i++) {
          const currentSegment = this._childExpressions[i];
          if (i === 0 || this.isCalculated(currentSegment)) {
             currentSegment.bind({
                ...settings,
-               mustProxifyHandler: this.getMustProxifyHandler(i) as IMustProxifyHandler
-            });
+               shouldWatchLeaf: i === (this._childExpressions.length -1) ? settings.shouldWatchLeaf : undefined
+               
+         });
          }
       }
 
@@ -90,9 +77,9 @@ export class MemberExpression extends AbstractExpression {
       for (const slotObserver of this._slotObservers.values()) {
          this.disposeSlotObserver(slotObserver);
       }
-       this._slotObservers.clear();
+      this._slotObservers.clear();
 
-   
+
       this._initializeQueue.clear();
    }
 
@@ -101,7 +88,7 @@ export class MemberExpression extends AbstractExpression {
       if (senderIndex < 0) {
          return false;
       }
-   
+
       if (this.shouldCancelEvaluate(senderIndex, pendingCommits)) {
          return false;
       }
@@ -155,15 +142,6 @@ export class MemberExpression extends AbstractExpression {
          (this.isCalculated(sender) && this._childExpressions[this._childExpressions.length - 1] === sender);
    }
 
-   private isPending(pathSegement: AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
-      for (const commit of pendingCommits) {
-         if (commit.owner === pathSegement) {
-            return true;
-         }
-      }
-      return false;
-   }
-
    private shouldCancelEvaluate(senderIndex: number, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
       for (const commit of pendingCommits) {
          const index = this._childExpressions.indexOf(commit.owner);
@@ -190,15 +168,18 @@ export class MemberExpression extends AbstractExpression {
       previousPathSegmentValue: unknown,
       pathSegmentIndex: number,
    ): unknown {
-      const mustProxifyInfo = this.getMustProxifyHandler(pathSegmentIndex);
-      if (!mustProxifyInfo.valid) {
+      const isPending = this.isPathSegmentPending(pathSegmentIndex);
+      if (isPending) {
          return PENDING;
       }
+
+      const shouldWatchLeaf = (pathSegmentIndex === this._childExpressions.length -1) ? this._shouldWatchLeaf : undefined;
 
       if (pathSegment.value === undefined) {
          this.bindPathSegement(pathSegment, {
             context: previousPathSegmentValue,
-            mustProxifyHandler: mustProxifyInfo,
+            services: this.services,
+            shouldWatchLeaf
          });
          return PENDING;
       }
@@ -208,7 +189,6 @@ export class MemberExpression extends AbstractExpression {
             pathSegment,
             previousPathSegmentValue,
             pathSegmentIndex,
-            mustProxifyInfo
          );
       }
 
@@ -218,7 +198,8 @@ export class MemberExpression extends AbstractExpression {
 
       this.bindPathSegement(pathSegment, {
          context: previousPathSegmentValue,
-         mustProxifyHandler: mustProxifyInfo,
+         services: this.services,
+         shouldWatchLeaf
       });
 
       return PENDING;
@@ -227,15 +208,14 @@ export class MemberExpression extends AbstractExpression {
    private resolveCalculated(
       current: AbstractExpression,
       previousContext: unknown,
-      index: number,
-      mustProxifyInfo: IMustProxifyHandler
+      index: number
    ): unknown {
       const { value } = current;
       if (value === undefined) {
          return undefined;
       }
 
-      const resolved = this._indexValueAccessor.getResolvedValue(
+      const resolved = this.indexValueAccessor.getResolvedValue(
          previousContext,
          value
       );
@@ -244,7 +224,6 @@ export class MemberExpression extends AbstractExpression {
          index,
          current,
          resolved,
-         mustProxifyInfo
       );
       return resolved;
    }
@@ -256,49 +235,13 @@ export class MemberExpression extends AbstractExpression {
       slotChangeSubscription.staticIndexExpression.dispose();
    }
 
-   private getMustProxifyHandler(currentIndex: number): IMustProxifyHandler {
-       const nextExpression = this._childExpressions[currentIndex + 1];
-      
-      if (nextExpression === undefined) {
-         return this.createMustProxifyHandler(truePredicate);
+   private isPathSegmentPending(currentIndex: number): boolean {
+      const nextExpression = this._childExpressions[currentIndex + 1];
+      if (nextExpression === undefined || nextExpression.type === ExpressionType.Identifier) {
+         return false;
       }
 
-      if (nextExpression.type === ExpressionType.Identifier) {
-         return {
-            releaseMustProxifyHandler: () => this._mustProxifyItemHandlerFactory.release(nextExpression.expressionString),
-            createMustProxifyHandler: () => this._mustProxifyItemHandlerFactory.create(nextExpression.expressionString).instance,
-            valid: true,
-         };
-      }
-
-      if ((nextExpression.value !== undefined && this.isCalculated(nextExpression))) {
-         return {
-            releaseMustProxifyHandler: () =>
-               this._mustProxifyItemHandlerFactory.release(
-                  nextExpression.value
-               ),
-            createMustProxifyHandler: () =>
-               this._mustProxifyItemHandlerFactory.create(nextExpression.value)
-                  .instance,
-            valid: true,
-         };
-      }
-
-      return {
-         releaseMustProxifyHandler: undefined,
-         createMustProxifyHandler: undefined,
-         valid: false,
-      };
-   }
-
-   private createMustProxifyHandler(
-      predicate?: typeof truePredicate
-   ): IMustProxifyHandler {
-      return {
-         releaseMustProxifyHandler: emptyFunction,
-         createMustProxifyHandler: () => predicate as MustProxify,
-         valid: true,
-      };
+      return nextExpression.value === undefined || !this.isCalculated(nextExpression);
    }
 
    private observeSlot(
@@ -306,7 +249,6 @@ export class MemberExpression extends AbstractExpression {
       pathSegmentIndex: number,
       dynamicIndexExpression: AbstractExpression,
       value: unknown,
-      mustProxifyHandler: IMustProxifyHandler
    ): void {
       const slotObserver = this._slotObservers.get(dynamicIndexExpression);
       if (slotObserver) {
@@ -318,19 +260,20 @@ export class MemberExpression extends AbstractExpression {
          this._rebindingSlot = true;
       }
 
-      const staticIndexExpression = new IdentifierExpression(
-         this._stateManager,
-         '',
-         this._expressionChangeTransactionManager,
-         dynamicIndexExpression.value
-      );
+      const staticIndexExpression = new IdentifierExpression('',dynamicIndexExpression.value);
 
       this.bindPathSegement(
          staticIndexExpression,
          {
             context,
             currentValue: value,
-            mustProxifyHandler: mustProxifyHandler,
+            services: {
+               stateManager: this.stateManager,
+               indexValueAccessor: this.indexValueAccessor,
+               guidFactory: this.guidFactory,
+               transactionManager: Type.cast(undefined),
+               valueMetadata: this.valueMetadata
+            }   
          },
          () => {
             let bound = false;
@@ -355,6 +298,15 @@ export class MemberExpression extends AbstractExpression {
       if (!this._rebindingSlot) {
          this.evaluateBottomToTop(sender, this.root, new Set());
       }
+   }
+
+   private isPending(pathSegement: AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
+      for (const commit of pendingCommits) {
+         if (commit.owner === pathSegement) {
+            return true;
+         }
+      }
+      return false;
    }
 
    private isCalculated(expression: AbstractExpression): boolean {

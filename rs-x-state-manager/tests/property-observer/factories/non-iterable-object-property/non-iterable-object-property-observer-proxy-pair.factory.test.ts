@@ -12,7 +12,7 @@ import { type IObserver } from '../../../../lib/observer.interface';
 import { type IIndexObserverProxyPairFactory } from '../../../../lib/property-observer/index-observer-proxy-pair.factory.interface';
 import { type IArrayProxyFactory } from '../../../../lib/proxies/array-proxy/array-proxy.factory.type';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
-import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokens';
 
 describe('non iterableObjectPropertyObserverFactory', () => {
    let disposableOwner: DisposableOwnerMock;
@@ -86,7 +86,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
       const actual = nonIterableObjectPropertyObserverFactory.create(
          disposableOwner,
          object,
-         { key: 'x', mustProxify: truePredicate }
+         { key: 'x', shouldWatchIndex: truePredicate }
       ).proxy;
 
       expect(actual).toBeUndefined();
@@ -98,7 +98,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
       const actual = nonIterableObjectPropertyObserverFactory.create(
          disposableOwner,
          object,
-         { key: 'x', mustProxify: truePredicate }
+         { key: 'x', shouldWatchIndex: truePredicate }
       ).proxy;
 
       const expected = arrayProxyFactory.getFromData({
@@ -125,7 +125,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
 
       nonIterableObjectPropertyObserverFactory.create(disposableOwner, object, {
          key: 'x',
-         mustProxify: truePredicate,
+         shouldWatchIndex: truePredicate,
       });
 
       const expected = arrayProxyFactory.getFromData({
@@ -140,7 +140,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
 
       nonIterableObjectPropertyObserverFactory.create(disposableOwner, object, {
          key: 'x',
-         mustProxify: truePredicate,
+         shouldWatchIndex: truePredicate,
       });
 
       const newArray = [1];
@@ -158,7 +158,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
 
       nonIterableObjectPropertyObserverFactory.create(disposableOwner, object, {
          key: 'x',
-         mustProxify: truePredicate,
+         shouldWatchIndex: truePredicate,
       });
 
       expect(
@@ -193,7 +193,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
       observer = nonIterableObjectPropertyObserverFactory.create(
          disposableOwner,
          object,
-         { key: 'x', mustProxify: truePredicate }
+         { key: 'x', shouldWatchIndex: truePredicate }
       ).observer;
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -215,7 +215,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
       observer = nonIterableObjectPropertyObserverFactory.create(
          disposableOwner,
          object,
-         { key: 'x', mustProxify: truePredicate }
+         { key: 'x', shouldWatchIndex: truePredicate }
       ).observer;
 
       const actual = await new WaitForEvent(observer, 'changed', {
@@ -239,7 +239,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
       observer = nonIterableObjectPropertyObserverFactory.create(
          disposableOwner,
          object,
-         { key: 'x', mustProxify: truePredicate }
+         { key: 'x', shouldWatchIndex: truePredicate }
       ).observer;
       object.x = [1, 2, 3];
 
@@ -268,7 +268,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
       observer = nonIterableObjectPropertyObserverFactory.create(
          disposableOwner,
          object,
-         { key: 'x', mustProxify: truePredicate }
+         { key: 'x', shouldWatchIndex: truePredicate }
       ).observer;
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -309,7 +309,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
       recursiveObserver = nonIterableObjectPropertyObserverFactory.create(
          disposableOwner,
          object,
-         { key: 'x', mustProxify: truePredicate }
+         { key: 'x', shouldWatchIndex: truePredicate }
       ).observer;
       nonRecursiveObserver = nonIterableObjectPropertyObserverFactory.create(
          disposableOwner,
@@ -339,7 +339,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
       recursiveObserver = nonIterableObjectPropertyObserverFactory.create(
          disposableOwner,
          object,
-         { key: 'x', mustProxify: truePredicate }
+         { key: 'x', shouldWatchIndex: truePredicate }
       ).observer;
       nonRecursiveObserver = nonIterableObjectPropertyObserverFactory.create(
          disposableOwner,
@@ -383,7 +383,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
       recursiveObserver = nonIterableObjectPropertyObserverFactory.create(
          disposableOwner,
          object,
-         { key: 'x', mustProxify: truePredicate }
+         { key: 'x', shouldWatchIndex: truePredicate }
       ).observer;
       nonRecursiveObserver = nonIterableObjectPropertyObserverFactory.create(
          disposableOwner,

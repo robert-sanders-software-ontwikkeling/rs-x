@@ -22,12 +22,6 @@ export class IndexValueAccessor implements IIndexValueAccessor {
          .getIndexes(context, index);
    }
 
-   public isAsync(context: unknown, index: unknown): boolean {
-      return this
-         .getIndexAccessor(context, index)
-         .isAsync(context, index);
-   }
-
    public hasValue(context: unknown, index: unknown): boolean {
       return this
          .getIndexAccessor(context, index)

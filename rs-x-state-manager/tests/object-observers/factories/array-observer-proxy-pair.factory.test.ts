@@ -14,7 +14,7 @@ import { ObserverGroup } from '../../../lib/observer-group';
 import { type IArrayObserverProxyPair, type IArrayProxyFactory } from '../../../lib/proxies/array-proxy/array-proxy.factory.type';
 import { type IProxyRegistry } from '../../../lib/proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
-import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokens';
 
 
 
@@ -107,7 +107,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
       const objectArray = [{ x: 1 }, { x: 2 }];
       observer = arrayObserverProxyPairFactory.create(disposableOwner, {
          target: objectArray,
-         mustProxify: truePredicate
+         shouldWatchIndex: truePredicate
       }).observer;
 
       const objectPropertyObserverProxyPairManager =
@@ -121,11 +121,11 @@ describe('ArrayObserverProxyPairFactory tests', () => {
 
       const item1Id = propertyObserverProxyPairManager?.getId({
          key: 0,
-         mustProxify: truePredicate,
+         shouldWatchIndex: truePredicate,
       });
       const item2Id = propertyObserverProxyPairManager?.getId({
          key: 1,
-         mustProxify: truePredicate,
+         shouldWatchIndex: truePredicate,
       });
       const arrayProxyId = arrayProxyFactory.getId({
          array: objectArray,
@@ -173,7 +173,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
       const objectArray = [{ x: 1 }, { x: 2 }];
       const observerProxyPair: IArrayObserverProxyPair = arrayObserverProxyPairFactory.create(
          disposableOwner,
-         { target: objectArray, mustProxify: truePredicate }
+         { target: objectArray, shouldWatchIndex: truePredicate }
       );
       observer = observerProxyPair.observer;
       disposableOwner.canDispose.mockReturnValue(true);
@@ -186,11 +186,11 @@ describe('ArrayObserverProxyPairFactory tests', () => {
          objectPropertyObserverProxyPairManager.getFromId(objectArray);
       const item1Id = propertyObserverProxyPairManager?.getId({
          key: 0,
-         mustProxify: truePredicate
+         shouldWatchIndex: truePredicate
       });
       const item2Id = propertyObserverProxyPairManager?.getId({
          key: 1,
-         mustProxify: truePredicate
+         shouldWatchIndex: truePredicate
       });
 
       expect(arrayProxyFactory.getFromId(objectArray)).toBeDefined();
@@ -220,7 +220,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
 
       const observerProxyPair: IArrayObserverProxyPair = arrayObserverProxyPairFactory.create(
          disposableOwner,
-         { target: objectArray, mustProxify }
+         { target: objectArray, shouldWatchIndex: mustProxify }
       );
       observer = observerProxyPair.observer;
 
@@ -246,7 +246,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
          const array = [{ x: 1 }, { x: 2 }];
          observer = arrayObserverProxyPairFactory.create(disposableOwner, {
             target: array,
-            mustProxify: truePredicate
+            shouldWatchIndex: truePredicate
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -269,7 +269,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
          const array = [{ x: 1 }, { x: 2 }];
          observer = arrayObserverProxyPairFactory.create(disposableOwner, {
             target: array,
-            mustProxify: truePredicate
+            shouldWatchIndex: truePredicate
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -292,7 +292,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
          const array = [{ x: 1 }, { x: 2 }];
          observer = arrayObserverProxyPairFactory.create(disposableOwner, {
             target: array,
-            mustProxify: truePredicate
+            shouldWatchIndex: truePredicate
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {

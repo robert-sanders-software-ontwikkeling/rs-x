@@ -4,6 +4,7 @@ import {
    type IIndexValueAccessor,
    Inject,
    Injectable,
+   type IValueMetadata,
    RsXCoreInjectionTokens,
    Type,
 } from '@rs-x/core';
@@ -11,7 +12,7 @@ import {
 import type { IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
 import type { IPropertyInfo } from '../../../object-property-observer-proxy-pair-manager.type';
 import type { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
-import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokens';
 import { IndexObserverProxyPairFactory } from '../indexed-value-observer-proxy-pair/indexed-value-observer-proxy-pair.factory';
 
 import type { IObjectPropertyObserverManager } from './object-property-observer-manager.type';
@@ -33,7 +34,9 @@ export class NonIterableObjectPropertyObserverProxyPairFactory extends IndexObse
       @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
       indexValueAccessor: IIndexValueAccessor,
       @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
-      proxyRegister: IProxyRegistry
+      proxyRegister: IProxyRegistry,
+      @Inject(RsXCoreInjectionTokens.IValueMetadata)
+      valueMetadata: IValueMetadata,
    ) {
       super(
          objectObserveryManager,
@@ -41,7 +44,8 @@ export class NonIterableObjectPropertyObserverProxyPairFactory extends IndexObse
          errorLog,
          guidFactory,
          indexValueAccessor,
-         proxyRegister
+         proxyRegister,
+         valueMetadata
       );
    }
 

@@ -1,7 +1,7 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
+import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
 import { TemplateStringExpression } from '../../lib/expressions/template-string-expression';
 import {
@@ -38,9 +38,7 @@ describe('TemplateStringExpression tests', () => {
    });
 
    it('clone', async () => {
-      const transactionManager: IExpressionChangeTransactionManager = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
-
+     const services: IExpressionServices = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionServices);
       const context = { name: 'Robert' };
       expression = expressionFactory.create(context, '`Hello ${name}`');
 
@@ -52,12 +50,12 @@ describe('TemplateStringExpression tests', () => {
          expect(clonedExpression.expressionString).toEqual('`Hello ${name}`');
 
          await new WaitForEvent(clonedExpression, 'changed').wait(() => {
-            clonedExpression.bind({
-               transactionManager,
-               rootContext: context
+             clonedExpression.bind({
+              rootContext: context,
+               services
             });
 
-            transactionManager.commit();
+           services.transactionManager.commit();
          });
          expect(clonedExpression.value).toEqual('Hello Robert');
       } finally {

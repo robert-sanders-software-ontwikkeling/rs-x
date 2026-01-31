@@ -16,7 +16,7 @@ import { DatePropertyObserverManager } from '../lib/property-observer/factories/
 import { DatePropertyObserverProxyPairFactory } from '../lib/property-observer/factories/date-property/date-property-observer-proxy-pair.factory';
 import { NonIterableObjectPropertyObserverProxyPairFactory } from '../lib/property-observer/factories/non-iterable-object-property';
 import { ObjectPropertyObserverManager } from '../lib/property-observer/factories/non-iterable-object-property/object-property-observer-manager';
-import { MustProxifyItemHandlerFactory } from '../lib/property-observer/must-proxify-item-handler.factory';
+import { ShouldWatchIndexPredicateFactory } from '../lib/property-observer/should-watch-index-predicate.factory';
 import { ArrayProxyFactory } from '../lib/proxies/array-proxy/array-proxy.factory';
 import { DateProxyFactory } from '../lib/proxies/date-proxy/date-proxy.factory';
 import { MapProxyFactory } from '../lib/proxies/map-proxy/map-proxy.factory';
@@ -28,7 +28,7 @@ import {
    RsXStateManagerModule,
    unloadRsXStateManagerModule,
 } from '../lib/rs-x-state-manager.module';
-import { RsXStateManagerInjectionTokens } from '../lib/rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../lib/rs-x-state-manager-injection-tokens';
 import { ObjectStateManager } from '../lib/state-manager/object-state-manager';
 import { StateManager } from '../lib/state-manager/state-manager';
 
@@ -510,19 +510,19 @@ describe('RsXStateManagerModule', () => {
    });
 
 
-   it('can get an instance of IMustProxifyItemHandlerFactory', () => {
+   it('can get an instance of IShouldWatchIndexPredicateFactory', () => {
       const actual = InjectionContainer.get(
-         RsXStateManagerInjectionTokens.IMustProxifyItemHandlerFactory
+         RsXStateManagerInjectionTokens.IShouldWatchIndexPredicateFactory
       );
-      expect(actual).toBeInstanceOf(MustProxifyItemHandlerFactory);
+      expect(actual).toBeInstanceOf(ShouldWatchIndexPredicateFactory);
    });
 
-   it('IMustProxifyItemHandlerFactory instance is a singelton', () => {
+   it('IShouldWatchIndexPredicateFactory instance is a singelton', () => {
       const a1 = InjectionContainer.get(
-         RsXStateManagerInjectionTokens.IMustProxifyItemHandlerFactory
+         RsXStateManagerInjectionTokens.IShouldWatchIndexPredicateFactory
       );
       const a2 = InjectionContainer.get(
-         RsXStateManagerInjectionTokens.IMustProxifyItemHandlerFactory
+         RsXStateManagerInjectionTokens.IShouldWatchIndexPredicateFactory
       );
       expect(a1).toBe(a2);
    });

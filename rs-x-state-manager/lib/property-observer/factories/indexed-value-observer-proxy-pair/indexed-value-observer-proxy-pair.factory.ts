@@ -4,7 +4,7 @@ import {
    type IGuidFactory,
    type IIndexValueAccessor,
    type IPropertyChange,
-   truePredicate,
+   type IValueMetadata,
    Type,
    UnexpectedException
 } from '@rs-x/core';
@@ -13,7 +13,7 @@ import { type IObjectObserverProxyPairManager } from '../../../object-observer/o
 import {
    type IObserverProxyPair,
    type IPropertyInfo,
-   type MustProxify,
+   type ShouldWatchIndex,
 } from '../../../object-property-observer-proxy-pair-manager.type';
 import { type IObserver } from '../../../observer.interface';
 import { type ObserverGroup } from '../../../observer-group';
@@ -36,6 +36,7 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
       guidFactory: IGuidFactory,
       protected readonly _indexValueAccessor: IIndexValueAccessor,
       private readonly _proxyRegister: IProxyRegistry,
+      private readonly _valueMetadata: IValueMetadata,
       private readonly mustHandleChange?: (change: IPropertyChange) => boolean,
 
    ) {
@@ -63,18 +64,14 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
    ): IObserverProxyPair<TContext> {
       const index = propertyInfo.key as TIndex;
       const valueAtIndex = this._indexValueAccessor.getValue(object, index);
-      const mustProxify = this.getMustProxifyHandler(
-         propertyInfo.mustProxify,
-         object,
-         index
-      );
-      const indexValueObserverProxyPair = mustProxify
+      const needProxy =  this._valueMetadata.needsProxy(valueAtIndex) || propertyInfo.shouldWatchIndex?.(index, object);
+      const indexValueObserverProxyPair = needProxy
          ? this.createIndexValueProxy(
             propertyInfo,
             object,
             index,
             valueAtIndex,
-            mustProxify
+            propertyInfo.shouldWatchIndex,
          )
          : undefined;
       // If we observe the index value than we ask the observer to provide the initial value
@@ -91,7 +88,7 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
          initialValue,
          propertyInfo.initializeManually,
          indexValueObserverProxyPair?.observer,
-         mustProxify
+         propertyInfo.shouldWatchIndex
       );
       return {
          observer: groupObserver,
@@ -100,32 +97,20 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
       };
    }
 
-   private getMustProxifyHandler(
-      mustProxify: MustProxify | undefined,
-      context: unknown,
-      index: unknown
-   ): MustProxify | undefined {
-      if (mustProxify) {
-         return mustProxify;
-      }
-      return this._indexValueAccessor.isAsync(context, index)
-         ? truePredicate
-         : undefined;
-   }
-
+   
    private createIndexValueProxy(
       propertyInfo: IPropertyInfo,
       object: TContext,
       index: TIndex,
       value: unknown,
-      mustProxify: MustProxify
+      shouldWatchIndex: ShouldWatchIndex | undefined
    ): IObserverProxyPair | undefined {
       const setValue =
          propertyInfo.setValue ??
-         ((v: unknown) => this._indexValueAccessor.setValue(object, index, v));
+         (( v: unknown) => this._indexValueAccessor.setValue(object, index, v));
       return this.proxifyIndexValue(
          value,
-         mustProxify,
+         shouldWatchIndex,
          propertyInfo.initializeManually,
          setValue
       );
@@ -138,7 +123,7 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
       initialValue: unknown,
       initializeManually: boolean | undefined,
       indexValueObserver: IObserver | undefined,
-      mustProxify: MustProxify | undefined
+      shouldWatchIndex: ShouldWatchIndex | undefined
    ): ObserverGroup {
       const indexChangeSubscriptionsForContextManager =
          this._indexChangeSubscriptionManager.create(object).instance;
@@ -146,11 +131,11 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
          index,
          initialValue,
          indexValueObserver,
-         mustProxify,
+         shouldWatchIndex,
          initializeManually,
          mustHandleChange: this.mustHandleChange,
          onChanged: (change: IPropertyChange) =>
-            this.onIndexSet(change, id, mustProxify),
+            this.onIndexSet(change, id, shouldWatchIndex),
          owner,
       });
       return Type.cast(indexChangeSubscriptionsForContextManager.getSubsriptionData(id));
@@ -159,11 +144,11 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
    private onIndexSet(
       change: IPropertyChange,
       subsriptionId: string,
-      mustProxify: MustProxify | undefined
+      shouldWatchIndex: ShouldWatchIndex | undefined
    ): void {
 
-      const emitValue = Type.isNullOrUndefined(change.newValue) ||
-         !this._indexValueAccessor.isAsync(change.target, change.id);
+      const isAsync = this._valueMetadata.isAsync(change.newValue);
+      const emitValue = Type.isNullOrUndefined(change.newValue) || !isAsync;
       const observerGroup = this._indexChangeSubscriptionManager
          .getFromId(change.target)
          ?.getSubsriptionData(subsriptionId);
@@ -180,7 +165,8 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
 
       const observers = this.getNestedObservers(
          change,
-         mustProxify
+         isAsync,
+         shouldWatchIndex
       );
 
       observerGroup.replaceObservers(observers);
@@ -188,19 +174,15 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
 
    private getNestedObservers(
       change: IPropertyChange,
-      mustProxify: MustProxify | undefined
+      isAsync: boolean,
+      shouldWatchIndex: ShouldWatchIndex | undefined
    ): IObserver[] {
-      const mustProxifyHandler = this.getMustProxifyHandler(
-         mustProxify,
-         change.target,
-         change.id
-      );
-
+      
       let observers: IObserver[] = [];
-      if (mustProxifyHandler) {
+      if (isAsync || (shouldWatchIndex && shouldWatchIndex(change.target, change.id))) {
          const observerProxyPair = this.proxifyIndexValue(
             change.newValue,
-            mustProxifyHandler,
+            shouldWatchIndex,
             true,
             change.setValue ??
             ((value: unknown) => {
@@ -222,7 +204,7 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
 
    private proxifyIndexValue(
       value: unknown,
-      mustProxify: MustProxify,
+      shouldWatchIndex: ShouldWatchIndex | undefined,
       initializeManually: boolean | undefined,
       setValue: (value: unknown) => void
    ): IObserverProxyPair | undefined {
@@ -230,7 +212,7 @@ export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
       const target = this._proxyRegister.getProxyTarget(value) ?? value;
       const observerProxyPair = this._objectObserveryManager.create({
          target,
-         mustProxify,
+         shouldWatchIndex,
          initializeManually,
       }).instance;
       if (!observerProxyPair) {

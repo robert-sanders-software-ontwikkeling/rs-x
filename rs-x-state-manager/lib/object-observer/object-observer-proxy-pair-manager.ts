@@ -10,7 +10,7 @@ import {
 
 import type { IObserverProxyPair } from '../object-property-observer-proxy-pair-manager.type';
 import type { IProxyRegistry } from '../proxies/proxy-registry/proxy-registry.interface';
-import { RsXStateManagerInjectionTokens } from '../rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../rs-x-state-manager-injection-tokens';
 
 import type { IObjectObserverProxyPairFactoryProvider } from './object-observer-proxy-pair-factory.provider.interface';
 import type {
@@ -41,7 +41,7 @@ export class ObjectObserverProxyPairManager
      return data.target;
    }
    protected override getGroupMemberId(data: IProxyTarget<unknown>): unknown {
-      return data.mustProxify;
+      return data.shouldWatchIndex;
    }
 
    public override create(data: IProxyTarget<unknown>): {

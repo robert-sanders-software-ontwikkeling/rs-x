@@ -21,7 +21,6 @@ import {
    SetObserverProxyPairFactory 
 } from '@rs-x/state-manager';
 
-import { ExpressionObserverProxyPairFactory } from '../lib';
 import { ExpressionChangeTransactionManager } from '../lib/expresion-change-transaction-manager';
 import { ExpressionCache } from '../lib/expression-cache/expression-cache';
 import { ExpressionFactory } from '../lib/expression-factory/expression-factory';
@@ -29,6 +28,8 @@ import { ExpressionManager } from '../lib/expression-factory/expression-manager'
 import { DeepCloneExceptWithExpressionSupport } from '../lib/expression-observer/deep-clone-except-with-expression-support';
 import { ExpressionIndexAccessor } from '../lib/expression-observer/expression-index-accessor';
 import { ExpressionObserverFactory } from '../lib/expression-observer/expression-observer.factory';
+import { ExpressionObserverProxyPairFactory } from '../lib/expression-observer/expression-observer-proxy-pair.factory';
+import { ExpressionServices } from '../lib/expression-services/expression-services';
 import { ArrayIndexOwnerResolver } from '../lib/identifier-owner-resolver/array-index-owner-resolver';
 import { DefaultIdentifierOwnerResolver } from '../lib/identifier-owner-resolver/default-identifier-owner-resolver';
 import { MapKeyOwnerResolver } from '../lib/identifier-owner-resolver/map-key-owner-resolver';
@@ -296,6 +297,24 @@ describe('RsXExpressionParserModule tests', () => {
       );
       expect(a1).toBe(a2);
    });
+
+    it('can get instance of IExpressionServices', () => {
+      const actual = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionServices
+      );
+      expect(actual).toBeInstanceOf(ExpressionServices);
+   });
+
+   it('ExpressionServices instance is a singleton', () => {
+      const a1 = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionServices
+      );
+      const a2 = InjectionContainer.get(
+         RsXExpressionParserInjectionTokens.IExpressionServices
+      );
+      expect(a1).toBe(a2);
+   });
+
 
    it('can get an instance of IObjectObserverProxyPairFactoryList', () => {
       const actual = InjectionContainer.getAll(

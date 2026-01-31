@@ -1,6 +1,6 @@
 import { Injectable, MultiInject } from '@rs-x/core';
 
-import { RsXStateManagerInjectionTokens } from '../rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../rs-x-state-manager-injection-tokens';
 
 import type { IObjectObserverProxyPairFactory } from './object-observer-proxy-pair.factory.interface';
 import type { IObjectObserverProxyPairFactoryProvider } from './object-observer-proxy-pair-factory.provider.interface';

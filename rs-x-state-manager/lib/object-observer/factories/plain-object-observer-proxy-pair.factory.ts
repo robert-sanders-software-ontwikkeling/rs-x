@@ -14,7 +14,7 @@ import type {
 } from '../../object-property-observer-proxy-pair-manager.type';
 import type { IObserver } from '../../observer.interface';
 import { ObserverGroup } from '../../observer-group';
-import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokens';
 import type { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
 
 import { AbstractObjectObserverProxyPairFactory } from './abstract-object-observer-proxy-pair.factory';
@@ -41,7 +41,7 @@ export class PlainObjectObserverProxyPairFactory
    }
 
    protected override createRootObserver(data: IProxyTarget<Record<string, unknown>>): IObserverProxyPair<Record<string, unknown>> | undefined {
-      if(data.mustProxify) {
+      if(!data.shouldWatchIndex) {
          return undefined;
       }
      
@@ -49,6 +49,9 @@ export class PlainObjectObserverProxyPairFactory
       const observers: IObserver[] = [];
 
       for (const index of this._indexAccessor.getIndexes(target)) {
+         if(!data.shouldWatchIndex(index, target)){
+            continue;
+         }
          const { observer } = this._objectPropertyObserverProxyPairManager.create(target).instance.create({
             key: index,
          }).instance;

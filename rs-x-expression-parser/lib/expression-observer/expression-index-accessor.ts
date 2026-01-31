@@ -18,6 +18,10 @@ export class ExpressionIndexAccessor implements IExpressionIndexAccessor {
        return true;
     }
 
+     public needsProxy(): boolean {
+       return true;
+    }
+
     public getResolvedValue(context: unknown, index: string): unknown {
         return Type.cast<IExpression>((Type.toObject(context) ?? {})[index])?.value;
     }

@@ -9,6 +9,6 @@ export * from './observer-group';
 export * from './property-observer';
 export * from './proxies';
 export * from './rs-x-state-manager.module';
-export * from './rs-x-state-manager-injection-tokes';
+export * from './rs-x-state-manager-injection-tokens';
 export * from './state-manager';
 

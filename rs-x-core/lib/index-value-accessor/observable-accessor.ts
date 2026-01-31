@@ -26,10 +26,6 @@ export class ObservableAccessor implements IObservableAccessor {
       return [].values();
    }
 
-   public isAsync(): boolean {
-      return true;
-   }
-
    public getResolvedValue(context: unknown, index: string): unknown {
       if (context instanceof BehaviorSubject) return context.value;
 

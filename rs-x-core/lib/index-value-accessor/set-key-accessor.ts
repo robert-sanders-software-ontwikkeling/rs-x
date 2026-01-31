@@ -11,10 +11,6 @@ export class SetKeyAccessor implements ISetKeyAccessor {
      return new Set(set).values();
    }
 
-   public isAsync(): boolean {
-      return false;
-   }
-
    public hasValue(set: Set<unknown>, key: unknown): boolean {
       return set.has(key);
    }

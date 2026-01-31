@@ -1,8 +1,8 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import { ArrayExpression } from '../../lib';
-import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
+import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
+import { ArrayExpression } from '../../lib/expressions/array-expression';
 import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
    RsXExpressionParserModule,
@@ -37,9 +37,7 @@ describe('Array expression tests', () => {
 
 
    it('clone', async () => {
-      const transactionManager: IExpressionChangeTransactionManager = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
-      const context = { array: [2, 3] };
+      const services: IExpressionServices = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionServices); const context = { array: [2, 3] };
       expression = expressionFactory.create(context, '[1, 2]');
 
       const clonedExpression = expression.clone();
@@ -51,11 +49,11 @@ describe('Array expression tests', () => {
 
          await new WaitForEvent(clonedExpression, 'changed').wait(() => {
             clonedExpression.bind({
-               transactionManager,
-               rootContext: context
+               rootContext: context,
+               services
             });
 
-            transactionManager.commit();
+            services.transactionManager.commit();
          });
          expect(clonedExpression.value).toEqual([1, 2]);
       } finally {
@@ -99,5 +97,44 @@ describe('Array expression tests', () => {
 
       expect(expression.value).toEqual([1, 2, 3, 4]);
       expect(actual).toBe(expression);
+   });
+
+
+   it('will  not watch items by default', async () => {
+      const context = {
+         array: [
+            { value: 2 },
+            { value: 3 }
+         ],
+      };
+      expression = expressionFactory.create(context, ' [1, ...array]');
+
+      expect(context.array[0]).not.isWritableProperty('value');
+      expect(context.array[1]).not.isWritableProperty('value');
+
+
+   });
+
+   it('will  watch item property for which should-watch-index predicate return true  ', async () => {
+      const context = {
+         array: [
+            { x: 2, y: 3 },
+            { x: 4, Y: 5 }
+         ],
+      };
+      expression = expressionFactory.create(context, ' [1, ...array]', (index: unknown, target: unknown) => {
+
+         if (Array.isArray(target)) {
+            return true;
+         }
+
+         return index === 'x';
+      });
+
+      expect(context.array[0]).isWritableProperty('x');
+      expect(context.array[1]).isWritableProperty('x');
+      expect(context.array[0]).not.isWritableProperty('y');
+      expect(context.array[1]).not.isWritableProperty('y');
+
    });
 });

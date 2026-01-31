@@ -1,4 +1,4 @@
 export * from './factories';
 export * from './index-observer-proxy-pair.factory.interface';
-export * from './must-proxify-item-handler.factory';
-export * from './must-proxify-item-handler.factory.type';
+export * from './should-watch-index-predicate.factory';
+export * from './should-watch-index-predicate.factory.type';

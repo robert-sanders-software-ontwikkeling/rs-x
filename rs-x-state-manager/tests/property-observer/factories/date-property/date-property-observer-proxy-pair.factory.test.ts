@@ -10,7 +10,7 @@ import { type IProxyRegistry } from '../../../../lib';
 import { type IObserver } from '../../../../lib/observer.interface';
 import { type IDatePropertyObserverProxyPairFactory } from '../../../../lib/property-observer/factories/date-property/date-property-observer-proxy-pair.factory.type';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
-import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokens';
 
 describe('IDatePropertyObserverProxyPairFactory tests', () => {
    let disposableOwner: DisposableOwnerMock;

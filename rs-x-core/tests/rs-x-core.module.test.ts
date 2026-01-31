@@ -19,6 +19,14 @@ import { SetKeyAccessor } from '../lib/index-value-accessor/set-key-accessor';
 import { RsXCoreInjectionTokens } from '../lib/rs-x-core.injection-tokens';
 import { RsXCoreModule } from '../lib/rs-x-core.module';
 import { SequenceIdFactory } from '../lib/sequence-id/sequence-id.factory';
+import { ArrayMetadata } from '../lib/value-metadata/array-metadata';
+import { DateMetadata } from '../lib/value-metadata/date-metadata';
+import { DummyMetadata } from '../lib/value-metadata/dummy-metadata';
+import { MapMetadata } from '../lib/value-metadata/map-metadata';
+import { ObservableMetadata } from '../lib/value-metadata/observable-metadata';
+import { PromiseMetadata } from '../lib/value-metadata/promise-metadata';
+import { SetMetadata } from '../lib/value-metadata/set-metadata';
+import { ValueMetadata } from '../lib/value-metadata/value-metadata';
 
 describe('rs-x core module', () => {
    beforeAll(async () => {
@@ -180,6 +188,51 @@ describe('rs-x core module', () => {
       expect(a1[5]).toBe(a2[5]);
       expect(a1[6]).toBe(a2[6]);
       expect(a1[7]).toBe(a2[7]);
+   });
+
+
+    it('can get an instance of IValueMetadataList', () => {
+      const actual = InjectionContainer.getAll(
+         RsXCoreInjectionTokens.IValueMetadataList
+      );
+
+      expect(actual.length).toEqual(7);
+
+      expect(actual[0]).toBeInstanceOf(ArrayMetadata);
+      expect(actual[1]).toBeInstanceOf(DateMetadata);
+      expect(actual[2]).toBeInstanceOf(DummyMetadata);
+      expect(actual[3]).toBeInstanceOf(MapMetadata);
+      expect(actual[4]).toBeInstanceOf(ObservableMetadata);
+      expect(actual[5]).toBeInstanceOf(PromiseMetadata);
+      expect(actual[6]).toBeInstanceOf(SetMetadata);
+     
+   });
+
+   it('IValueMetadataList instance is a singelton', () => {
+      const a1 = InjectionContainer.getAll(
+         RsXCoreInjectionTokens.IValueMetadataList
+      );
+      const a2 = InjectionContainer.getAll(
+         RsXCoreInjectionTokens.IValueMetadataList
+      );
+      expect(a1[0]).toBe(a2[0]);
+      expect(a1[1]).toBe(a2[1]);
+      expect(a1[2]).toBe(a2[2]);
+      expect(a1[3]).toBe(a2[3]);
+      expect(a1[4]).toBe(a2[4]);
+      expect(a1[5]).toBe(a2[5]);
+      expect(a1[6]).toBe(a2[6]);
+   });
+
+   it('can get instance of IValueMetadata', () => {
+      const actual = InjectionContainer.get(RsXCoreInjectionTokens.IValueMetadata);
+      expect(actual).toBeInstanceOf(ValueMetadata);
+   });
+
+   it('IValueMetadata instance is a singleton', () => {
+      const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IValueMetadata);
+      const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IValueMetadata);
+      expect(a1).toBe(a2);
    });
 
    it('can get instance of IDeepClone', () => {

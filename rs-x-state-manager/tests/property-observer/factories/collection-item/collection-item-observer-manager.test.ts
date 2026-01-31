@@ -5,7 +5,7 @@ import { type IArrayProxyFactory } from '../../../../lib/proxies/array-proxy/arr
 import { type IMapProxyFactory } from '../../../../lib/proxies/map-proxy/map-proxy.factory.type';
 import { type ISetProxyFactory } from '../../../../lib/proxies/set-proxy/set-proxy.factory.type';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
-import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokens';
 
 describe('ICollectionItemObserverManager tests', () => {
    let collectionItemObserverManager: ICollectionItemObserverManager;

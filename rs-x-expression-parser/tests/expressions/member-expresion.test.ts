@@ -1,9 +1,9 @@
 import { BehaviorSubject, of } from 'rxjs';
 
-import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
+import { emptyFunction, InjectionContainer, truePredicate, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
+import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
 import { MemberExpression } from '../../lib/expressions/member-expression';
 import {
@@ -39,9 +39,8 @@ describe('Member expression tests', () => {
    });
 
    it('clone', async () => {
-      const transactionManager: IExpressionChangeTransactionManager = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
-
+      const services: IExpressionServices = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionServices);
+       
       const context = { a: { b: 1 } };
       expression = expressionFactory.create(context, 'a.b');
 
@@ -54,11 +53,11 @@ describe('Member expression tests', () => {
 
          await new WaitForEvent(clonedExpression, 'changed').wait(() => {
             clonedExpression.bind({
-               transactionManager,
-               rootContext: context
+               rootContext: context,
+               services
             });
 
-            transactionManager.commit();
+           services.transactionManager.commit();
          });
          expect(clonedExpression.value).toEqual(1);
       } finally {
@@ -211,9 +210,7 @@ describe('Member expression tests', () => {
          };
          expression = expressionFactory.create(context, 'map["b"]');
 
-         const actual = (await new WaitForEvent(expression, 'changed').wait(
-            () => { }
-         )) as IExpression;
+         const actual = (await new WaitForEvent(expression, 'changed').wait(emptyFunction)) as IExpression;
 
          expect(actual.value).toEqual(2);
          expect(actual).toBe(expression);
@@ -232,9 +229,7 @@ describe('Member expression tests', () => {
          };
          expression = expressionFactory.create(context, 'nestedA.map[key]');
 
-         const actual = (await new WaitForEvent(expression, 'changed').wait(
-            () => { }
-         )) as IExpression;
+         const actual = (await new WaitForEvent(expression, 'changed').wait(emptyFunction)) as IExpression;
 
          expect(actual.value).toEqual(3);
          expect(actual).toBe(expression);
@@ -255,7 +250,7 @@ describe('Member expression tests', () => {
          expression = expressionFactory.create(context, 'nestedA.map[key]');
 
          // Wait till the expression has been initialized before changing value
-         await new WaitForEvent(expression, 'changed').wait(() => { });
+         await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
 
          const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
@@ -405,7 +400,7 @@ describe('Member expression tests', () => {
          // Wait till the expression has been initialized before changing value
          await new WaitForEvent(expression, 'changed').wait(() => { });
 
-         const actual = (await new WaitForEvent(expression, 'changed', {}).wait(() => {
+         const actual = (await new WaitForEvent(expression, 'changed',).wait(() => {
             context.x = of({
                y: { z: of(200) },
             });
@@ -894,7 +889,7 @@ describe('Member expression tests', () => {
 
    });
 
-   it('Only relevant identifiers will be observed.', async () => {
+   it('Only non-root path segments and the specified leave properties will be observed.”', async () => {
       const expressionContext = {
          a: {
             b: {
@@ -905,15 +900,43 @@ describe('Member expression tests', () => {
          },
          f: 40
       };
-      const expression = expressionFactory.create(expressionContext, 'a.b');
+      expression = expressionFactory.create(expressionContext, 'a.b', (index: unknown, target: unknown) => {
+         return (index === 'b' && target === expressionContext.a) || (index === 'c' && target === expressionContext.a.b);
+
+      });
       await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
       expect(expressionContext).isWritableProperty('a');
       expect(expressionContext.a).isWritableProperty('b');
       expect(expressionContext.a.b).isWritableProperty('c');
-      expect(expressionContext.a.b).isWritableProperty('d');
+      expect(expressionContext.a.b).not.isWritableProperty('d');
       expect(expressionContext.a).not.isWritableProperty('e');
       expect(expressionContext).not.isWritableProperty('f');
+
+   });
+
+   it('Will not watch leaf objects recursively by default', async () => {
+
+      const expressionContext = {
+         a: {
+            b: {
+               c: 10,
+               d: 20,
+            },
+            e: 30
+         },
+         f: 40
+      };
+      expression = expressionFactory.create(expressionContext, 'a.b');
+      await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+      expect(expressionContext).isWritableProperty('a');
+      expect(expressionContext.a).isWritableProperty('b');
+      expect(expressionContext.a.b).not.isWritableProperty('c');
+      expect(expressionContext.a.b).not.isWritableProperty('d');
+      expect(expressionContext.a).not.isWritableProperty('e');
+      expect(expressionContext).not.isWritableProperty('f');
+
    });
 
    it('Watched identifiers will be released when the associated expressions are disposed.', async () => {
@@ -927,7 +950,30 @@ describe('Member expression tests', () => {
          },
          f: 40
       };
-      const expression = expressionFactory.create(expressionContext, 'a.b');
+      expression = expressionFactory.create(expressionContext, 'a.b', truePredicate);
+      await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+      expect(expressionContext).isWritableProperty('a');
+      expect(expressionContext.a).isWritableProperty('b');
+      expect(expressionContext.a.b).isWritableProperty('c');
+      expect(expressionContext.a.b).isWritableProperty('d');
+      expect(expressionContext.a).not.isWritableProperty('e');
+      expect(expressionContext).not.isWritableProperty('f');
+
+   });
+
+   it('Watched identifiers will be released when the associated expressions are disposed.', async () => {
+      const expressionContext = {
+         a: {
+            b: {
+               c: 10,
+               d: 20,
+            },
+            e: 30
+         },
+         f: 40
+      };
+      expression = expressionFactory.create(expressionContext, 'a.b', truePredicate);
       await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
       expect(expressionContext).isWritableProperty('a');
@@ -971,7 +1017,7 @@ describe('Member expression tests', () => {
       expect(expressionContext).isWritableProperty('a');
       expect(expressionContext.a).isWritableProperty('b');
       expect(expressionContext.a.b).isWritableProperty('c');
-      expect(expressionContext.a.b).isWritableProperty('d');
+      expect(expressionContext.a.b).not.isWritableProperty('d');
       expect(expressionContext.a).not.isWritableProperty('e');
       expect(expressionContext).not.isWritableProperty('f');
 
@@ -980,7 +1026,7 @@ describe('Member expression tests', () => {
       expect(expressionContext).isWritableProperty('a');
       expect(expressionContext.a).isWritableProperty('b');
       expect(expressionContext.a.b).isWritableProperty('c');
-      expect(expressionContext.a.b).isWritableProperty('d');
+      expect(expressionContext.a.b).not.isWritableProperty('d');
       expect(expressionContext.a).not.isWritableProperty('e');
       expect(expressionContext).not.isWritableProperty('f');
 
@@ -995,14 +1041,12 @@ describe('Member expression tests', () => {
 
       expression3.dispose();
 
-
       expect(expressionContext).not.isWritableProperty('a');
       expect(expressionContext.a).not.isWritableProperty('b');
       expect(expressionContext.a.b).not.isWritableProperty('c');
       expect(expressionContext.a.b).not.isWritableProperty('d');
       expect(expressionContext.a).not.isWritableProperty('e');
       expect(expressionContext).not.isWritableProperty('f');
-
 
    });
 });

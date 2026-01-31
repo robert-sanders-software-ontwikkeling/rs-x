@@ -1,6 +1,6 @@
 import { type IDisposableOwner, type IErrorLog, type IIndexValueAccessor, truePredicate } from '@rs-x/core';
 
-import { type IObjectPropertyObserverProxyPairManager, type IObserverProxyPair, type MustProxify } from '../../object-property-observer-proxy-pair-manager.type';
+import { type IObjectPropertyObserverProxyPairManager, type IObserverProxyPair, type ShouldWatchIndex } from '../../object-property-observer-proxy-pair-manager.type';
 import { type IObserver } from '../../observer.interface';
 import { ObserverGroup } from '../../observer-group';
 import { type IObjectObserverProxyPairFactory } from '../object-observer-proxy-pair.factory.interface';
@@ -34,7 +34,7 @@ export abstract class AbstractObjectObserverProxyPairFactory<
          () => rootObserver?.observer,
          this._observerRootObserver
       );
-      this.onObserverGroupCreate(data.target, observerGroup, data.mustProxify);
+      this.onObserverGroupCreate(data.target, observerGroup, data.shouldWatchIndex);
       const rootObserver = this.createRootObserver(data);
       if (!data.initializeManually) {
          observerGroup.init();
@@ -62,10 +62,10 @@ export abstract class AbstractObjectObserverProxyPairFactory<
    protected onObserverGroupCreate(
       target: TTarget,
       observerGroup: ObserverGroup,
-      mustProxify: MustProxify | undefined
+      shouldWatchIndex: ShouldWatchIndex | undefined
    ): void {
 
-      if(!mustProxify) {
+      if(!shouldWatchIndex) {
          return;
       }
 
@@ -73,12 +73,12 @@ export abstract class AbstractObjectObserverProxyPairFactory<
 
       const indexes = this._indexAccessor.getIndexes(target);
       for (const index of indexes) {
-         if (!mustProxify(index, target)) {
+         if (!shouldWatchIndex(index, target)) {
             continue;
          }
          const { observer } = this._objectPropertyObserverProxyPairManager.create(target).instance.create({
             key: index,
-            mustProxify,
+            shouldWatchIndex: shouldWatchIndex,
 
          }).instance;
          observers.push(observer);

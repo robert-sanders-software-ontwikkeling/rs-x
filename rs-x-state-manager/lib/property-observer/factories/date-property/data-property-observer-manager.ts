@@ -15,8 +15,8 @@ import {
 import { AbstractObserver } from '../../../abstract-observer';
 import type { IObserver } from '../../../observer.interface';
 import type { IDateProxyFactory } from '../../../proxies/date-proxy/date-proxy.factory.type';
-import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokes';
-import type { IMustProxifyItemHandlerFactory } from '../../must-proxify-item-handler.factory.type';
+import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokens';
+import type { IShouldWatchIndexPredicateFactory } from '../../should-watch-index-predicate.factory.type';
 
 import type {
     IDatePropertyObserverIdInfo,
@@ -25,7 +25,7 @@ import type {
     IProperForDataObserverManager
 } from './date-property-observer-manager.type';
 
-class DatePropertybserver extends AbstractObserver<Date> {
+class DatePropertyObserver extends AbstractObserver<Date> {
     private _oldValue: unknown;
     private readonly _dateChangeSubscription: Subscription;
 
@@ -80,7 +80,7 @@ class ProperForDataObserverManager
         private readonly _dateProxyFactory: IDateProxyFactory,
         private readonly _datePropertyAccessor: IDatePropertyAccessor,
         private readonly _errorLog: IErrorLog,
-        private readonly _mustProxifyItemHandlerFactory: IMustProxifyItemHandlerFactory,
+        private readonly _mustProxifyItemHandlerFactory: IShouldWatchIndexPredicateFactory,
         private readonly releaseObject: () => void
     ) {
         super();
@@ -102,12 +102,15 @@ class ProperForDataObserverManager
     ): IObserver {
         const dateObserver = this._dateProxyFactory.create({
             date: this._date,
-            mustProxify: this._mustProxifyItemHandlerFactory.create(id).instance
+            shouldWatchIndex: this._mustProxifyItemHandlerFactory.create(this._date, id)
         }).instance.observer;
-        return new DatePropertybserver(
+        return new DatePropertyObserver(
             {
                 canDispose: () => this.getReferenceCount(id) === 1,
-                release: () => this.release(id)
+                release: () => {
+                    this.release(id);
+                    this._mustProxifyItemHandlerFactory.release(this._date, id);
+                }
             },
             this._date,
             data.index,
@@ -141,8 +144,8 @@ export class DatePropertyObserverManager
         private readonly _errorLog: IErrorLog,
         @Inject(RsXCoreInjectionTokens.IDatePropertyAccessor)
         private readonly _datePropertyAccessor: IDatePropertyAccessor,
-        @Inject(RsXStateManagerInjectionTokens.IMustProxifyItemHandlerFactory)
-        private readonly _mustProxifyItemHandlerFactory: IMustProxifyItemHandlerFactory
+        @Inject(RsXStateManagerInjectionTokens.IShouldWatchIndexPredicateFactory)
+        private readonly _mustProxifyItemHandlerFactory: IShouldWatchIndexPredicateFactory
     ) {
         super();
     }

@@ -1,16 +1,17 @@
 import { type Observable, ReplaySubject, type Subscription } from 'rxjs';
 
-import { type IDisposableOwner, PENDING } from '@rs-x/core';
-import { type MustProxify } from '@rs-x/state-manager';
+import { type IDisposableOwner, type IGuidFactory, type IIndexValueAccessor, type IValueMetadata, PENDING } from '@rs-x/core';
+import { type IStateManager, type ShouldWatchIndex } from '@rs-x/state-manager';
 
-import { type IExpressionChangeCommitHandler } from '../expresion-change-transaction-manager.interface';
+import { type IExpressionChangeCommitHandler, type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
+import type { IExpressionServices } from '../expression-services/expression-services.interface';
 
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 import { type ExpressionType, type IExpression } from './expression-parser.interface';
 
-export interface IMustProxifyHandler {
-   createMustProxifyHandler: (() => MustProxify) | undefined;
-   releaseMustProxifyHandler: (() => void) | undefined;
+export interface IShouldWatchLeafPredicate {
+   createShouldWatchLeafPredicate: (() => ShouldWatchIndex) | undefined;
+   releaseShouldWatchLeafPredicate: (() => void) | undefined;
 }
 
 export abstract class AbstractExpression<T = unknown, PT = unknown>
@@ -24,6 +25,7 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
    private _oldValue: unknown;
    private _commitedSubscription: Subscription | undefined;
    private _owner: IDisposableOwner | undefined;
+   private _services!:IExpressionServices;
 
    protected constructor(
       public readonly type: ExpressionType,
@@ -42,9 +44,10 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
    public abstract clone(): this;
 
    public bind(settings: IExpressionBindConfiguration): AbstractExpression {
-      if (!this._parent && settings.transactionManager) {
+      this._services = settings.services;
+      if (!this._parent && this.transactionManager) {
          this._owner = settings.owner;
-         this._commitedSubscription = settings.transactionManager.commited.subscribe(this.onCommited);
+         this._commitedSubscription = this.transactionManager.commited.subscribe(this.onCommited);
       }
 
       return this;
@@ -84,6 +87,30 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
 
    public toString(): string {
       return this.expressionString;
+   }
+
+   protected get services(): IExpressionServices {
+      return this._services;
+   }
+
+   protected get guidFactory(): IGuidFactory {
+      return this._services?.guidFactory;
+   }
+
+   protected get stateManager(): IStateManager {
+      return this._services?.stateManager;
+   }
+
+   protected get indexValueAccessor(): IIndexValueAccessor {
+      return this._services?.indexValueAccessor;
+   }
+
+   protected get transactionManager(): IExpressionChangeTransactionManager {
+      return this._services?.transactionManager;
+   }
+
+   protected get valueMetadata(): IValueMetadata {
+      return this._services?.valueMetadata;
    }
 
    protected get root(): AbstractExpression {
@@ -132,7 +159,7 @@ export abstract class AbstractExpression<T = unknown, PT = unknown>
          : false;
    }
 
-   protected evaluateBottomToTop(sender: AbstractExpression, root: AbstractExpression,  pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
+   protected evaluateBottomToTop(sender: AbstractExpression, root: AbstractExpression, pendingCommits: Set<IExpressionChangeCommitHandler>): boolean {
       const value = this.evaluate(sender, root);
       if (value === PENDING) {
          return false;

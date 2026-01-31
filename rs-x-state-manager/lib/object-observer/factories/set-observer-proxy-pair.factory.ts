@@ -11,7 +11,7 @@ import type {
    ISetObserverProxyPair,
    ISetProxyFactory,
 } from '../../proxies/set-proxy/set-proxy.factory.type';
-import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokens';
 import type { IProxyTarget } from '../object-observer-proxy-pair-manager.type';
 
 import { AbstractObjectObserverProxyPairFactory } from './abstract-object-observer-proxy-pair.factory';

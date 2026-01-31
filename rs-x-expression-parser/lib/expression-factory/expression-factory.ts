@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@rs-x/core';
+import type { ShouldWatchIndex } from '@rs-x/state-manager';
 
 import type { IExpression } from '../expressions/expression-parser.interface';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
@@ -14,7 +15,7 @@ export class ExpressionFactory implements IExpressionFactory {
     ) {   
     }
 
-    public create<T>(context: object, expression: string): IExpression<T> {
-        return this._expressionManager.create(context).instance.create(expression).instance as IExpression<T>; 
+    public create<T>(context: object, expressionString: string, shouldWatchLeaf?: ShouldWatchIndex): IExpression<T> {
+        return this._expressionManager.create(context).instance.create({expressionString, shouldWatchLeaf}).instance as IExpression<T>; 
     }
 }

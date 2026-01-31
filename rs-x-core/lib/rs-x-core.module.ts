@@ -28,6 +28,15 @@ import { type IResolvedValueCache } from './index-value-accessor/resolved-value-
 import { SetKeyAccessor } from './index-value-accessor/set-key-accessor';
 import { SequenceIdFactory } from './sequence-id/sequence-id.factory';
 import { type ISequenceIdFactory } from './sequence-id/sequence-id-factory.interface';
+import { ArrayMetadata } from './value-metadata/array-metadata';
+import { DateMetadata } from './value-metadata/date-metadata';
+import { DummyMetadata } from './value-metadata/dummy-metadata';
+import { MapMetadata } from './value-metadata/map-metadata';
+import { ObservableMetadata } from './value-metadata/observable-metadata';
+import { PromiseMetadata } from './value-metadata/promise-metadata';
+import { SetMetadata } from './value-metadata/set-metadata';
+import { ValueMetadata } from './value-metadata/value-metadata';
+import type { IValueMetadata } from './value-metadata/value-metadata.interface';
 import {
    type Container,
    ContainerModule,
@@ -52,6 +61,17 @@ export const defaultDeeoCloneList: readonly IMultiInjectService[] = [
    { target: StructuredDeepClone, token: RsXCoreInjectionTokens.IStructuredDeepClone },
    { target: LodashDeepClone, token: RsXCoreInjectionTokens.ILodashDeepClone },
 ];
+
+export const defaultValueMetadataList: readonly IMultiInjectService[] = [
+   { target: ArrayMetadata, token: RsXCoreInjectionTokens.ArrayMetadata },
+   { target: DateMetadata, token: RsXCoreInjectionTokens.DateMetadata },
+   { target: DummyMetadata, token: RsXCoreInjectionTokens.DummyMetadata },
+   { target: MapMetadata, token: RsXCoreInjectionTokens.MapMetadata },
+   { target: ObservableMetadata, token: RsXCoreInjectionTokens.ObservableMetadata },
+   { target: PromiseMetadata, token: RsXCoreInjectionTokens.PromiseMetadata },
+   { target: SetMetadata, token: RsXCoreInjectionTokens.SetMetadata },
+];
+
 
 export const RsXCoreModule = new ContainerModule((options) => {
    options
@@ -93,17 +113,21 @@ export const RsXCoreModule = new ContainerModule((options) => {
       .bind<IResolvedValueCache>(RsXCoreInjectionTokens.IResolvedValueCache)
       .to(ResolvedValueCache)
       .inSingletonScope();
-    options
+   options
       .bind<IDeepCloneExcept>(RsXCoreInjectionTokens.IDeepCloneExcept)
       .to(DeepCloneValueExcept)
       .inSingletonScope();
 
-      options
+   options
       .bind<IDeepCloneExcept>(RsXCoreInjectionTokens.DefaultDeepCloneExcept)
       .to(DeepCloneValueExcept)
       .inSingletonScope();
 
-      
+   options
+      .bind<IValueMetadata>(RsXCoreInjectionTokens.IValueMetadata)
+      .to(ValueMetadata)
+      .inSingletonScope();
+
    registerMultiInjectServices(
       options,
       RsXCoreInjectionTokens.IIndexValueAccessorList,
@@ -113,5 +137,10 @@ export const RsXCoreModule = new ContainerModule((options) => {
       options,
       RsXCoreInjectionTokens.IDeepCloneList,
       defaultDeeoCloneList
+   );
+   registerMultiInjectServices(
+      options,
+      RsXCoreInjectionTokens.IValueMetadataList,
+      defaultValueMetadataList
    );
 });

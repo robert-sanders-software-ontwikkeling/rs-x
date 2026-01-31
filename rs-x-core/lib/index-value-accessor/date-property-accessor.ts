@@ -40,10 +40,6 @@ export class DatePropertyAccessor implements IDatePropertyAccessor {
         time: (date) => date.getTime(),
     };
 
-    public isAsync(): boolean {
-        return false;
-    }
-
     public getIndexes(): IterableIterator<DateProperty> {
         return dataProperties.values();
     }

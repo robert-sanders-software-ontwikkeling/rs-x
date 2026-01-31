@@ -12,14 +12,14 @@ import {
    type IChangeSubscriptionsCreateMethods,
    type IGroupedChangeSubscriptionsForContextManager,
 } from '../../../grouped-change-subscriptions-for-context-manager';
-import { type MustProxify } from '../../../object-property-observer-proxy-pair-manager.type';
+import { type ShouldWatchIndex } from '../../../object-property-observer-proxy-pair-manager.type';
 import { type IObserver } from '../../../observer.interface';
 import { ObserverGroup } from '../../../observer-group';
 import { type IIndexObserverInfo } from '../index-observer-info.interface';
 
 export interface ISubscriptionIdInfo<TIndex> {
    index: TIndex;
-   mustProxify?: MustProxify;
+   shouldWatchIndex?: ShouldWatchIndex;
 }
 export interface ISubscriptionInfo<TIndex>
    extends ISubscriptionIdInfo<TIndex>,
@@ -40,7 +40,7 @@ export type IIndexSetObserverManager<TIndex> = ISingletonFactory<
    unknown,
    unknown,
    ISingletonFactory<
-      MustProxify | TIndex,
+      ShouldWatchIndex | TIndex,
       IIndexObserverInfo<TIndex>,
       IObserver,
       ISubscriptionIdInfo<TIndex>
@@ -75,8 +75,8 @@ class IndexChangeSubscriptionsForContextManager<TIndex>
       return data.index;
    }
 
-   protected getGroupMemberId(data: ISubscriptionIdInfo<TIndex>): MustProxify | undefined {
-      return data.mustProxify;
+   protected getGroupMemberId(data: ISubscriptionIdInfo<TIndex>): ShouldWatchIndex | undefined {
+      return data.shouldWatchIndex;
    }
 
    protected createObserver(

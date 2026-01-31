@@ -8,7 +8,7 @@ import { type IDateObserverProxyPairFactory } from '../../../lib/object-observer
 import { type IObserver } from '../../../lib/observer.interface';
 import { type IDateProxyFactory } from '../../../lib/proxies/date-proxy/date-proxy.factory.type';
 import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
-import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokens';
 
 
 describe('DateObserverProxyPairFactory tests', () => {

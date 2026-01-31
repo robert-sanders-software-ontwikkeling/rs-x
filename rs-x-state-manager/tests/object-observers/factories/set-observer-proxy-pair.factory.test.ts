@@ -8,7 +8,7 @@ import { ObserverGroup } from '../../../lib/observer-group';
 import { type IProxyRegistry } from '../../../lib/proxies/proxy-registry/proxy-registry.interface';
 import { type ISetObserverProxyPair, type ISetProxyFactory } from '../../../lib/proxies/set-proxy/set-proxy.factory.type';
 import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
-import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokens';
 
 describe('SetObserverProxyPairFactory tests', () => {
    let setObserverProxyPairFactory: ISetObserverProxyPairFactory;
@@ -103,7 +103,7 @@ describe('SetObserverProxyPairFactory tests', () => {
       ]);
       observer = setObserverProxyPairFactory.create(disposableOwner, {
          target: objectSet,
-         mustProxify: truePredicate
+         shouldWatchIndex: truePredicate
       }).observer;
 
       const objectPropertyObserverProxyPairManager =
@@ -117,11 +117,11 @@ describe('SetObserverProxyPairFactory tests', () => {
 
       const item1Id = propertyObserverProxyPairManager?.getId({
          key: item1,
-         mustProxify: truePredicate,
+         shouldWatchIndex: truePredicate,
       });
       const item2Id = propertyObserverProxyPairManager?.getId({
          key: item2,
-         mustProxify: truePredicate,
+         shouldWatchIndex: truePredicate,
       });
       const mapProxyId = setProxyFactory.getId({
          set: objectSet,
@@ -172,7 +172,7 @@ describe('SetObserverProxyPairFactory tests', () => {
       ]);
       const observerProxyPair: ISetObserverProxyPair = setObserverProxyPairFactory.create(
          disposableOwner,
-         { target: objectSet, mustProxify: truePredicate }
+         { target: objectSet, shouldWatchIndex: truePredicate }
       );
       observer = observerProxyPair.observer;
       disposableOwner.canDispose.mockReturnValue(true);
@@ -185,11 +185,11 @@ describe('SetObserverProxyPairFactory tests', () => {
          objectPropertyObserverProxyPairManager.getFromId(objectSet);
       const item1Id = propertyObserverProxyPairManager?.getId({
          key: item1,
-         mustProxify: truePredicate
+         shouldWatchIndex: truePredicate
       });
       const item2Id = propertyObserverProxyPairManager?.getId({
          key: item2,
-         mustProxify: truePredicate
+         shouldWatchIndex: truePredicate
       });
 
       expect(setProxyFactory.getFromId(objectSet)).toBeDefined();
@@ -230,7 +230,7 @@ describe('SetObserverProxyPairFactory tests', () => {
 
       const observerProxyPair: ISetObserverProxyPair = setObserverProxyPairFactory.create(
          disposableOwner,
-         { target: objectSet, mustProxify }
+         { target: objectSet, shouldWatchIndex: mustProxify }
       );
       observer = observerProxyPair.observer;
 
@@ -259,7 +259,7 @@ describe('SetObserverProxyPairFactory tests', () => {
          ]);
          observer = setObserverProxyPairFactory.create(disposableOwner, {
             target: objectSet,
-            mustProxify: truePredicate
+            shouldWatchIndex: truePredicate
          }).observer;
 
          const item3 = { x: 3 };
@@ -287,7 +287,7 @@ describe('SetObserverProxyPairFactory tests', () => {
          ]);
          observer = setObserverProxyPairFactory.create(disposableOwner, {
             target: objectSet,
-            mustProxify: truePredicate
+            shouldWatchIndex: truePredicate
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -314,7 +314,7 @@ describe('SetObserverProxyPairFactory tests', () => {
          ]);
          observer = setObserverProxyPairFactory.create(disposableOwner, {
             target: objectSet,
-            mustProxify: truePredicate
+            shouldWatchIndex: truePredicate
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {

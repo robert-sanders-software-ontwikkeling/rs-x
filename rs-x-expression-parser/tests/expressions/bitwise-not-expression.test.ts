@@ -1,7 +1,7 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
+import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import { BitwiseNotExpression } from '../../lib/expressions/bitwise-not-expression';
 import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
@@ -38,9 +38,7 @@ describe('BitwiseNotExpression tests', () => {
    });
 
    it('clone', async () => {
-      const transactionManager: IExpressionChangeTransactionManager = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
-      const context = { a: 5 };
+      const services: IExpressionServices = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionServices); const context = { a: 5 };
       expression = expressionFactory.create(context, '~a');
 
       const clonedExpression = expression.clone();
@@ -52,11 +50,11 @@ describe('BitwiseNotExpression tests', () => {
 
          await new WaitForEvent(clonedExpression, 'changed').wait(() => {
             clonedExpression.bind({
-               transactionManager,
-               rootContext: context
+               rootContext: context,
+               services
             });
 
-            transactionManager.commit();
+            services.transactionManager.commit();
          });
          expect(clonedExpression.value).toEqual(-6);
       } finally {

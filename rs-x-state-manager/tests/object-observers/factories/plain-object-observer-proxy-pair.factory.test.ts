@@ -6,7 +6,7 @@ import { type IObjectPropertyObserverProxyPairManager, type IObserverProxyPair }
 import { type IObserver } from '../../../lib/observer.interface';
 import { ObserverGroup } from '../../../lib/observer-group';
 import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
-import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokes';
+import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokens';
 
 describe('PlainIbjectObserverProxyPairFactory tests', () => {
    let plainObjectObserverProxyPairFactory: IPlainObjectObserverProxyPairFactory;
@@ -109,7 +109,7 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
       const mustProxify = (index) => index !== 'z';
       observer = plainObjectObserverProxyPairFactory.create(disposableOwner, {
          target: plainObject,
-         mustProxify,
+         shouldWatchIndex: mustProxify,
       }).observer;
 
       const objectPropertyObserverProxyPairManager =
@@ -127,17 +127,17 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
 
       const xId = propertyObserverProxyPairManager?.getId({
          key: 'x',
-         mustProxify,
+         shouldWatchIndex: mustProxify,
       });
       const nestedId = propertyObserverProxyPairManager?.getId({
          key: 'nested',
-         mustProxify,
+         shouldWatchIndex: mustProxify,
       });
 
 
       const yId = nestedPropertyObserverProxyPairManager?.getId({
          key: 'y',
-         mustProxify,
+         shouldWatchIndex: mustProxify,
       });
 
 
@@ -171,7 +171,7 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
       };
       const observerProxyPair: IObserverProxyPair = plainObjectObserverProxyPairFactory.create(
          disposableOwner,
-         { target: plainObject, mustProxify: truePredicate }
+         { target: plainObject, shouldWatchIndex: truePredicate }
       );
       observer = observerProxyPair.observer;
       disposableOwner.canDispose.mockReturnValue(true);
@@ -186,15 +186,15 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
          objectPropertyObserverProxyPairManager.getFromId(plainObject.nested);
       const xId = propertyObserverProxyPairManager?.getId({
          key: 'x',
-         mustProxify: truePredicate,
+         shouldWatchIndex: truePredicate,
       });
       const nestedId = propertyObserverProxyPairManager?.getId({
          key: 'nested',
-         mustProxify: truePredicate,
+         shouldWatchIndex: truePredicate,
       });
       const yId = nestedPropertyObserverProxyPairManager?.getId({
          key: 'y',
-         mustProxify: truePredicate,
+         shouldWatchIndex: truePredicate,
       });
 
       expect(propertyObserverProxyPairManager?.getFromId(xId)).toBeDefined();
@@ -253,7 +253,7 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
 
       const observerProxyPair: IObserverProxyPair = plainObjectObserverProxyPairFactory.create(
          disposableOwner,
-         { target: plainObject, mustProxify }
+         { target: plainObject, shouldWatchIndex: mustProxify }
       );
       observer = observerProxyPair.observer;
 
@@ -281,7 +281,7 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
          };
          observer = plainObjectObserverProxyPairFactory.create(disposableOwner, {
             target: plainObject,
-            mustProxify: truePredicate
+            shouldWatchIndex: truePredicate
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -308,7 +308,7 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
          };
          observer = plainObjectObserverProxyPairFactory.create(disposableOwner, {
             target: plainObject,
-            mustProxify: truePredicate
+            shouldWatchIndex: truePredicate
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -335,7 +335,7 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
          };
          observer = plainObjectObserverProxyPairFactory.create(disposableOwner, {
             target: plainObject,
-            mustProxify: truePredicate
+            shouldWatchIndex: truePredicate
          }).observer;
 
          const actual = await new WaitForEvent(observer, 'changed').wait(() => {
