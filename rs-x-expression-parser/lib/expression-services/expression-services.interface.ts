@@ -3,9 +3,7 @@ import type {
   IIndexValueAccessor,
   IValueMetadata,
 } from '@rs-x/core';
-import type {
-  IStateManager,
-} from '@rs-x/state-manager';
+import type { IStateManager } from '@rs-x/state-manager';
 
 import type { IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 

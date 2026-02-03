@@ -1,9 +1,9 @@
 import { type Observable, ReplaySubject, type Subscription } from 'rxjs';
 
 import {
-  IndexWatchRule,
   type IContextChanged,
   type IIndexWatchRule,
+  IndexWatchRule,
   type IStateChange,
   type IStateManager,
 } from '@rs-x/state-manager';

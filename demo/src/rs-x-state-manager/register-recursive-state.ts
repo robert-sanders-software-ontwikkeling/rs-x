@@ -1,9 +1,10 @@
-import { InjectionContainer, printValue, truePredicate } from '@rs-x/core';
+import { InjectionContainer, printValue } from '@rs-x/core';
 import {
   type IStateChange,
   type IStateManager,
   RsXStateManagerInjectionTokens,
   RsXStateManagerModule,
+  watchIndexRecursiveRule,
 } from '@rs-x/state-manager';
 
 // Load the state manager module into the injection container
@@ -29,7 +30,7 @@ export const run = (() => {
     // so we pass a predicate that always returns true.
     // This will emit an initial value { y: 10 }
     console.log('Initial value:');
-    stateManager.watchState(stateContext, 'x', truePredicate);
+    stateManager.watchState(stateContext, 'x', watchIndexRecursiveRule);
 
     console.log('Changed value:');
     // This will emit the new value { y: 10 }
@@ -47,6 +48,6 @@ export const run = (() => {
   } finally {
     changedSubscription.unsubscribe();
     // Always release the state when it is no longer needed.
-    stateManager.releaseState(stateContext, 'x', truePredicate);
+    stateManager.releaseState(stateContext, 'x', watchIndexRecursiveRule);
   }
 })();

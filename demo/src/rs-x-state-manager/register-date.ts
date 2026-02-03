@@ -5,7 +5,7 @@ import {
   type IStateManager,
   RsXStateManagerInjectionTokens,
   RsXStateManagerModule,
-  watchIndexRecursiveRule
+  watchIndexRecursiveRule,
 } from '@rs-x/state-manager';
 
 // Load the state manager module into the injection container
@@ -21,7 +21,9 @@ function watchDate(stateManager: IStateManager) {
   };
   const changeSubscription = stateManager.changed.subscribe(
     (change: IStateChange) => {
-      console.log(`${change.index}: ${(change.newValue as Date).toUTCString()}`);
+      console.log(
+        `${change.index}: ${(change.newValue as Date).toUTCString()}`,
+      );
     },
   );
   try {

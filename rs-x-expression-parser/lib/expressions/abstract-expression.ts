@@ -7,10 +7,7 @@ import {
   type IValueMetadata,
   PENDING,
 } from '@rs-x/core';
-import type {
-  IIndexWatchRule,
-  IStateManager,
-} from '@rs-x/state-manager';
+import type { IIndexWatchRule, IStateManager } from '@rs-x/state-manager';
 
 import {
   type IExpressionChangeCommitHandler,

@@ -1,10 +1,11 @@
-import { InjectionContainer, printValue, truePredicate } from '@rs-x/core';
+import { InjectionContainer, printValue } from '@rs-x/core';
 import {
   type IProxyRegistry,
   type IStateChange,
   type IStateManager,
   RsXStateManagerInjectionTokens,
   RsXStateManagerModule,
+  watchIndexRecursiveRule,
 } from '@rs-x/state-manager';
 
 // Load the state manager module into the injection container
@@ -28,7 +29,7 @@ export const run = (() => {
   try {
     // This will emit a change event with the initial (current) value.
     console.log('Initial value:');
-    stateManager.watchState(stateContext, 'set', truePredicate);
+    stateManager.watchState(stateContext, 'set', watchIndexRecursiveRule);
 
     console.log('Changed value:');
     const proxyRegister: IProxyRegistry = InjectionContainer.get(
@@ -41,6 +42,6 @@ export const run = (() => {
   } finally {
     changeSubscription.unsubscribe();
     // Always release the state when it is no longer needed.
-    stateManager.releaseState(stateContext, 'set', truePredicate);
+    stateManager.releaseState(stateContext, 'set', watchIndexRecursiveRule);
   }
 })();

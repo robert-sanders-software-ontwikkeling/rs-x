@@ -13,6 +13,7 @@ import {
 } from '@rs-x/core';
 
 import { AbstractObserver } from '../../../abstract-observer';
+import { IndexWatchRule } from '../../../index-watch-rule-registry';
 import type { IObserver } from '../../../observer.interface';
 import type { IDateProxyFactory } from '../../../proxies/date-proxy/date-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokens';
@@ -23,7 +24,6 @@ import type {
   IDatePropertyObserverManager,
   IProperForDataObserverManager,
 } from './date-property-observer-manager.type';
-import { IndexWatchRule } from '../../../index-watch-rule-registry';
 
 class DatePropertyObserver extends AbstractObserver<Date> {
   private _oldValue: unknown;
@@ -106,11 +106,8 @@ class ProperForDataObserverManager
   ): IObserver {
     const indexWatchPredicate = (targetIndex, target, context) =>
       targetIndex === index && target === context;
-    
-    const indexWatchRule = new IndexWatchRule(
-      this._date,
-      indexWatchPredicate,
-    );
+
+    const indexWatchRule = new IndexWatchRule(this._date, indexWatchPredicate);
     const dateObserver = this._dateProxyFactory.create({
       date: this._date,
       indexWatchRule,

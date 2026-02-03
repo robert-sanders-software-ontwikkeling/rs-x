@@ -15,27 +15,25 @@ import {
   overrideMultiInjectServices,
   RsXCoreInjectionTokens,
   SingletonFactory,
-  truePredicate,
   Type,
 } from '@rs-x/core';
-import type {
-  IIndexObserverInfo,
-  IObjectObserverProxyPairFactory,
-  IObjectObserverProxyPairManager,
-  IObserverProxyPair,
-  IPropertyInfo,
-  IProxyRegistry,
-  IProxyTarget,
-  IStateChange,
-  IStateManager,
-} from '@rs-x/state-manager';
 import {
   AbstractObserver,
   defaultObjectObserverProxyPairFactoryList,
   defaultPropertyObserverProxyPairFactoryList,
+  type IIndexObserverInfo,
   IndexObserverProxyPairFactory,
+  type IObjectObserverProxyPairFactory,
+  type IObjectObserverProxyPairManager,
+  type IObserverProxyPair,
+  type IPropertyInfo,
+  type IProxyRegistry,
+  type IProxyTarget,
+  type IStateChange,
+  type IStateManager,
   RsXStateManagerInjectionTokens,
   RsXStateManagerModule,
+  watchIndexRecursiveRule,
 } from '@rs-x/state-manager';
 
 const MyInjectTokens = {
@@ -197,11 +195,6 @@ export class TextDocumentIndexAccessor implements IIndexValueAccessor<
     return [].values();
   }
 
-  // Indicate whether the value is async. For example when the value is a Promise
-  public isAsync(_context: TextDocument, _index: ITextDocumentIndex): boolean {
-    return false;
-  }
-
   // Here it is the same as getValue.
   // For example, for a Promise accessor getValue returns the promise
   // and getResolvedValue returns the resolved promise value
@@ -255,7 +248,7 @@ export class TextDocumentInxdexObserverProxyPairFactory extends IndexObserverPro
   ) {
     super(
       objectObserverManager,
-      textDocumenIndexObserverManager,
+      Type.cast(textDocumenIndexObserverManager),
       errorLog,
       guidFactory,
       indexValueAccessor,
@@ -512,7 +505,7 @@ function testMonitorTextDocument(
     console.log('\n***********************************************');
     console.log('Start watching the whole book\n');
     console.log('My initial book:\n');
-    stateManager.watchState(stateContext, 'myBook', truePredicate);
+    stateManager.watchState(stateContext, 'myBook', watchIndexRecursiveRule);
 
     console.log('\nUpdate second line on the first page:\n');
     console.log('My book after change:\n');
@@ -522,7 +515,7 @@ function testMonitorTextDocument(
     );
   } finally {
     // Stop monitoring the whole book
-    stateManager.releaseState(stateContext, 'myBook', truePredicate);
+    stateManager.releaseState(stateContext, 'myBook', watchIndexRecursiveRule);
     bookSubscription.unsubscribe();
   }
 }
@@ -534,7 +527,7 @@ function testMonitoreSpecificLineInDocument(
   const line3OnPage1Index = { pageIndex: 0, lineIndex: 2 };
   const lineSubscription = stateManager.changed.subscribe(
     (change: IStateChange) => {
-      const documentIndex = change.key as ITextDocumentIndex;
+      const documentIndex = change.index as ITextDocumentIndex;
       console.log(
         `Line ${documentIndex.lineIndex + 1} on page ${documentIndex.pageIndex + 1} has changed to '${change.newValue}'`,
       );

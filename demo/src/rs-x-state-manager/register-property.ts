@@ -1,14 +1,10 @@
-import {
-  InjectionContainer,
-  printValue,
-  Type,
-} from '@rs-x/core';
+import { InjectionContainer, printValue, Type } from '@rs-x/core';
 import {
   type IStateChange,
   type IStateManager,
   RsXStateManagerInjectionTokens,
   RsXStateManagerModule,
-  watchIndexRecursiveRule
+  watchIndexRecursiveRule,
 } from '@rs-x/state-manager';
 
 // Load the state manager module into the injection container
