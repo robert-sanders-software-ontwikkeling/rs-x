@@ -1,6 +1,6 @@
 {
   "name": "@rs-x/angular",
-  "version": "0.4.11",
+  "version": "0.4.12",
   "description": "Angular integration for RS-X, providing the RsxPipe",
   "type": "module",
   "module": "fesm2022/rs-x-angular.mjs",

@@ -1,6 +1,6 @@
 {
   "name": "@rs-x/core",
-  "version": "0.4.11",
+  "version": "0.4.12",
   "description": "Core reactive primitives, dependency injection, and state foundations for the RS-X framework",
   "type": "module",
   "main": "./dist/index.js",
