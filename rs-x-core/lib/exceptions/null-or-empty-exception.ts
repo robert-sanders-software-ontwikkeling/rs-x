@@ -1,5 +1,7 @@
-export class NullOrEmptyException extends Error {
-   constructor(argumentName: string) {
-      super(`'${argumentName}' cannot be null or empty`);
-   }
+import { CustomError } from './custome-error';
+
+export class NullOrEmptyException extends CustomError {
+  constructor(argumentName: string) {
+    super(`'${argumentName}' cannot be null or empty`, 'NullOrEmptyException');
+  }
 }

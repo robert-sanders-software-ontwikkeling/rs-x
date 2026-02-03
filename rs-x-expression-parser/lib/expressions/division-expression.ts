@@ -3,23 +3,20 @@ import { BinaryExpression } from './binary-expression';
 import { ExpressionType } from './expression-parser.interface';
 
 export class DivisionExpression extends BinaryExpression<number, number> {
-   constructor(
-      expressionString: string,
-      leftExpression: AbstractExpression<number>,
-      rightExpression: AbstractExpression<number>
-   ) {
-      super(
-         ExpressionType.Division,
-         expressionString,
-         leftExpression,
-         rightExpression
-      );
-   }
+  constructor(
+    expressionString: string,
+    leftExpression: AbstractExpression<number>,
+    rightExpression: AbstractExpression<number>,
+  ) {
+    super(
+      ExpressionType.Division,
+      expressionString,
+      leftExpression,
+      rightExpression,
+    );
+  }
 
-   protected override evaluateExpression(
-      a: number,
-      b: number
-   ): number {
-      return a / b;
-   }
+  protected override evaluateExpression(a: number, b: number): number {
+    return a / b;
+  }
 }

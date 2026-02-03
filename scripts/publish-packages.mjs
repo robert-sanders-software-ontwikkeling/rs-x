@@ -8,10 +8,13 @@ const NODE_AUTH_TOKEN = process.env.NODE_AUTH_TOKEN;
 
 const angularDist = 'rs-x-angular/dist/rsx';
 
-const nodeLibFolders = ['rs-x-core', 'rs-x-state-manager', 'rs-x-expression-parser'];
+const nodeLibFolders = [
+  'rs-x-core',
+  'rs-x-state-manager',
+  'rs-x-expression-parser',
+];
 const nodePackageFolders = [...nodeLibFolders, angularDist];
 const changelogFolders = [...nodeLibFolders, 'rs-x-angular/projects/rsx'];
-
 
 // ---------------- UTILITIES ----------------
 function run(cmd, envOverrides = {}) {
@@ -65,8 +68,7 @@ function patchAngularPackage() {
   const parserVersion = getLocalPackageVersion('rs-x-expression-parser');
 
   pkgJson.peerDependencies ??= {};
-  pkgJson.peerDependencies['@rs-x/core'] =
-    toMajorRange(coreVersion);
+  pkgJson.peerDependencies['@rs-x/core'] = toMajorRange(coreVersion);
   pkgJson.peerDependencies['@rs-x/expression-parser'] =
     toMajorRange(parserVersion);
 
@@ -79,37 +81,51 @@ function publishFolder(folder, pkgName) {
   const firstPublish = !pnpmInfoExists(pkgName);
 
   if (firstPublish && !NODE_AUTH_TOKEN) {
-    console.error(`Error: NODE_AUTH_TOKEN missing for first-time publish of ${pkgName}`);
+    console.error(
+      `Error: NODE_AUTH_TOKEN missing for first-time publish of ${pkgName}`,
+    );
     process.exit(1);
   }
 
   if (firstPublish) {
     console.log(`🚀 First-time publish of ${pkgName}`);
     // Pass NODE_AUTH_TOKEN for first-time publish
-    run(`pnpm publish ${folder} --tag ${DIST_TAG} --access public --no-git-checks`, {
-      NODE_AUTH_TOKEN
-    });
+    run(
+      `pnpm publish ${folder} --tag ${DIST_TAG} --access public --no-git-checks`,
+      {
+        NODE_AUTH_TOKEN,
+      },
+    );
   } else {
     console.log(`🔐 OIDC publish with provenance for ${pkgName}`);
     // Do not pass NODE_AUTH_TOKEN for provenance
-    run(`pnpm publish ${folder} --tag ${DIST_TAG} --access public --provenance --no-git-checks`);
+    run(
+      `pnpm publish ${folder} --tag ${DIST_TAG} --access public --provenance --no-git-checks`,
+    );
   }
 }
 
 function dryRun() {
   console.log('=== Pre-flight dry-run check ===');
   for (const folder of nodePackageFolders) {
-    const pkgJson = JSON.parse(fs.readFileSync(path.join(folder, 'package.json'), 'utf-8'));
+    const pkgJson = JSON.parse(
+      fs.readFileSync(path.join(folder, 'package.json'), 'utf-8'),
+    );
     const firstPublish = !pnpmInfoExists(pkgJson.name);
 
     if (firstPublish) {
       console.log(`Dry-run for first-time publish: ${pkgJson.name}`);
       // Use NODE_AUTH_TOKEN only for first-time publish
-      run(`pnpm publish ${folder} --dry-run --tag ${DIST_TAG} --access public --no-git-checks`, { NODE_AUTH_TOKEN });
+      run(
+        `pnpm publish ${folder} --dry-run --tag ${DIST_TAG} --access public --no-git-checks`,
+        { NODE_AUTH_TOKEN },
+      );
     } else {
       console.log(`Dry-run with OIDC/provenance: ${pkgJson.name}`);
       // Unset NODE_AUTH_TOKEN for provenance
-      run(`pnpm publish ${folder} --dry-run --tag ${DIST_TAG} --access public --provenance --no-git-checks`);
+      run(
+        `pnpm publish ${folder} --dry-run --tag ${DIST_TAG} --access public --provenance --no-git-checks`,
+      );
     }
   }
 
@@ -119,7 +135,9 @@ function dryRun() {
 function publish() {
   console.log('=== Publishing Node packages ===');
   for (const folder of nodePackageFolders) {
-    const pkgJson = JSON.parse(fs.readFileSync(path.join(folder, 'package.json'), 'utf-8'));
+    const pkgJson = JSON.parse(
+      fs.readFileSync(path.join(folder, 'package.json'), 'utf-8'),
+    );
     publishFolder(folder, pkgJson.name);
   }
   console.log('=== All packages published successfully! ===');
@@ -129,7 +147,9 @@ function generateRootChangelog() {
   console.log('=== Generating root-level CHANGELOG.md ===');
 
   // Node + Angular packages
-  const changelogFiles = changelogFolders.map(f => path.join(f, 'CHANGELOG.md'));
+  const changelogFiles = changelogFolders.map((f) =>
+    path.join(f, 'CHANGELOG.md'),
+  );
 
   let combined = '';
   for (const file of changelogFiles) {

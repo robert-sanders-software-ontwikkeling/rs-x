@@ -14,18 +14,10 @@
     "experimentalDecorators": true,
     "baseUrl": "./",
     "paths": {
-      "rsx": [
-        "./dist/rsx"
-      ],
-      "@rs-x/core": [
-        "../rs-x-core/lib/index.ts"
-      ],
-      "@rs-x/state-manager": [
-        "../rs-x-state-manager/lib/index.ts"
-      ],
-      "@rs-x/expression-parser": [
-        "../rs-x-expression-parser/lib/index.ts"
-      ],
+      "rsx": ["./dist/rsx"],
+      "@rs-x/core": ["../rs-x-core/lib/index.ts"],
+      "@rs-x/state-manager": ["../rs-x-state-manager/lib/index.ts"],
+      "@rs-x/expression-parser": ["../rs-x-expression-parser/lib/index.ts"]
     },
     "importHelpers": true,
     "target": "ES2022",

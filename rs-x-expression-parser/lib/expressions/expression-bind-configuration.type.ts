@@ -1,19 +1,26 @@
 import type { IDisposableOwner } from '@rs-x/core';
+import type { IIndexWatchRule } from '@rs-x/state-manager/lib';
 
-import type { IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
-
-import type { IMustProxifyHandler } from './abstract-expression';
+import type { IExpressionServices } from '../expression-services/expression-services.interface';
 
 export interface IBindConfigurationBase {
-  mustProxifyHandler?: IMustProxifyHandler;
-  transactionManager?: IExpressionChangeTransactionManager;
-  owner?: IDisposableOwner;
+  readonly services: IExpressionServices;
+  readonly owner?: IDisposableOwner;
+  readonly leafIndexWatchRule?: IIndexWatchRule;
 }
 
 export type IExpressionBindConfigurationExtra = {
-  currentValue?: unknown;
+  readonly currentValue?: unknown;
 };
 
 export type IExpressionBindConfiguration =
-  | (IBindConfigurationBase & IExpressionBindConfigurationExtra & { rootContext: unknown; context?: never })
-  | (IBindConfigurationBase & IExpressionBindConfigurationExtra & { rootContext?: never; context: unknown });
+  | (IBindConfigurationBase &
+      IExpressionBindConfigurationExtra & {
+        rootContext: unknown;
+        context?: never;
+      })
+  | (IBindConfigurationBase &
+      IExpressionBindConfigurationExtra & {
+        rootContext?: never;
+        context: unknown;
+      });

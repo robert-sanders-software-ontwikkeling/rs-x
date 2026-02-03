@@ -1,20 +1,20 @@
 {
-    "exportall.config.relExclusion": [
-        "/rs-x-core/lib/testing",
-        "/rs-x-state-manager/lib/testing"
-    ],
-    "jest.nodeEnv": {
-        "TZ": "UTC"
-    },
-    "typescript.updateImportsOnFileMove.enabled": "never",
-    "[typescript]": {
-        "editor.codeActionsOnSave": {
-            "source.organizeImports": "never",
-            "source.fixAll.eslint": "always"
-        }
-    },
+  "exportall.config.relExclusion": [
+    "/rs-x-core/lib/testing",
+    "/rs-x-state-manager/lib/testing"
+  ],
+  "jest.nodeEnv": {
+    "TZ": "UTC"
+  },
+  "typescript.updateImportsOnFileMove.enabled": "never",
+  "[typescript]": {
     "editor.codeActionsOnSave": {
-        "source.organizeImports": "never",
-        "source.fixAll.eslint": "always"
+      "source.organizeImports": "never",
+      "source.fixAll.eslint": "always"
     }
+  },
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "never",
+    "source.fixAll.eslint": "always"
+  }
 }

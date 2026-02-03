@@ -10,7 +10,7 @@ const PACKAGES = [
   '@rs-x/core',
   '@rs-x/state-manager',
   '@rs-x/expression-parser',
-  '@rs-x/angular'
+  '@rs-x/angular',
 ];
 
 function run(cmd) {
@@ -24,16 +24,22 @@ for (const pkg of PACKAGES) {
 
   try {
     nextVersion = JSON.parse(
-      execSync(`pnpm info ${pkg} version --json --tag ${DIST_TAG_NEXT}`).toString()
+      execSync(
+        `pnpm info ${pkg} version --json --tag ${DIST_TAG_NEXT}`,
+      ).toString(),
     );
   } catch {
-    console.log(`⚠️  ${pkg} has no version under tag '${DIST_TAG_NEXT}' → skipping`);
+    console.log(
+      `⚠️  ${pkg} has no version under tag '${DIST_TAG_NEXT}' → skipping`,
+    );
     continue;
   }
 
   try {
     latestVersion = JSON.parse(
-      execSync(`pnpm info ${pkg} version --json --tag ${DIST_TAG_LATEST}`).toString()
+      execSync(
+        `pnpm info ${pkg} version --json --tag ${DIST_TAG_LATEST}`,
+      ).toString(),
     );
   } catch {
     latestVersion = null; // no latest version yet

@@ -2,25 +2,26 @@
 
 Provides shared core functionality for the RS-X project:
 
-*  [Dependency Injection](#dependency-injection)
-*  [Deep Clone](#deep-clone) 
-*  [Deep Equality](#deep-equality)
-*  [Guid Factory](#guid-factory)
-*  [Index Value Accessor](#index-value-accessor)
-*  [Singleton factory](#singleton-factory)
-*  [Error Log](#error-log)
-*  [WaitForEvent](#waitforevent)
+- [Dependency Injection](#dependency-injection)
+- [Deep Clone](#deep-clone)
+- [Deep Equality](#deep-equality)
+- [Guid Factory](#guid-factory)
+- [Index Value Accessor](#index-value-accessor)
+- [Singleton factory](#singleton-factory)
+- [Error Log](#error-log)
+- [WaitForEvent](#waitforevent)
 
 ## Dependency Injection
+
 Implemented with [Inversify](https://github.com/inversify/InversifyJS).
 
 The following aliases were added to make them consistent with the code style used throughout the project:
 
-* `inject` renamed to `Inject`
-* `multiInject` renamed to `MultiInject`
-* `injectable` renamed to `Injectable`
-* `unmanaged` renamed to `Unmanaged`
-* `preDestroy` renamed to `PreDestroy`
+- `inject` renamed to `Inject`
+- `multiInject` renamed to `MultiInject`
+- `injectable` renamed to `Injectable`
+- `unmanaged` renamed to `Unmanaged`
+- `preDestroy` renamed to `PreDestroy`
 
 In addition, the following extensions were added to Inversify:
 
@@ -93,11 +94,9 @@ Overrides an existing multi-inject list, removing any previous bindings for the 
 - Use this function when you want to completely replace the multi-inject service list.
 - Ensures that `container.getAll(multiInjectToken)` returns only the new services without duplicates.
 
-
-
 ## Deep Clone
 
- - Uses [structuredClone](https://developer.mozilla.org/en-US/docs/Web/API/Window/structuredClone) by default  
+- Uses [structuredClone](https://developer.mozilla.org/en-US/docs/Web/API/Window/structuredClone) by default
 - Falls back to [Lodash `cloneDeepWith`](https://lodash.com/docs/4.17.15#cloneDeepWith) for unsupported types
 
 ### Get an instance of the Deep clone service
@@ -107,10 +106,7 @@ You must load the core module into the injection container if you want
 to use it.
 
 ```ts
-import { 
-    InjectionContainer, 
-    RsXCoreModule 
-} from '@rs-x/core';
+import { InjectionContainer, RsXCoreModule } from '@rs-x/core';
 
 InjectionContainer.load(RsXCoreModule);
 ```
@@ -119,67 +115,65 @@ There are two ways to get an instance:
 
 1. Using the injection container
 
-    ```ts
-    import { 
-        IDeepClone,
-        InjectionContainer, 
-        RsXCoreInjectionTokens 
-    } from '@rs-x/core';
-  
-    const deepClone: IDeepClone = InjectionContainer.get(
-        RsXCoreInjectionTokens.IDeepClone
-    );
-    ```
+   ```ts
+   import {
+     IDeepClone,
+     InjectionContainer,
+     RsXCoreInjectionTokens,
+   } from '@rs-x/core';
+
+   const deepClone: IDeepClone = InjectionContainer.get(
+     RsXCoreInjectionTokens.IDeepClone,
+   );
+   ```
 
 2. Using the `@Inject` decorator
 
-    ```ts
-    import { 
-        IDeepClone,
-        Inject, 
-        RsXCoreInjectionTokens 
-    } from '@rs-x/core';
-   
-    export class MyClass {
+   ```ts
+   import { IDeepClone, Inject, RsXCoreInjectionTokens } from '@rs-x/core';
 
-        constructor(
-            @Inject(RsXCoreInjectionTokens.IDeepClone)
-            private readonly _deepClone: IDeepClone
-        ) {}
-    }
-    ```
+   export class MyClass {
+     constructor(
+       @Inject(RsXCoreInjectionTokens.IDeepClone)
+       private readonly _deepClone: IDeepClone,
+     ) {}
+   }
+   ```
 
 The following example shows how to use deep clone service:
 
 ```ts
 import {
-    IDeepClone,
-    InjectionContainer,
-    printValue,
-    RsXCoreInjectionTokens,
-    RsXCoreModule
+  IDeepClone,
+  InjectionContainer,
+  printValue,
+  RsXCoreInjectionTokens,
+  RsXCoreModule,
 } from '@rs-x/core';
 
 // Load the core module into the injection container
 InjectionContainer.load(RsXCoreModule);
-const deepClone: IDeepClone = InjectionContainer.get(RsXCoreInjectionTokens.IDeepClone);
+const deepClone: IDeepClone = InjectionContainer.get(
+  RsXCoreInjectionTokens.IDeepClone,
+);
 
 export const run = (() => {
-    const object = {
-        a: 10,
-        nested: {
-            b: 20
-        }
-    };
-    const clone = deepClone.clone(object);
+  const object = {
+    a: 10,
+    nested: {
+      b: 20,
+    },
+  };
+  const clone = deepClone.clone(object);
 
-    console.log(`Clone is a copy of the cloned object: ${object !== clone}`)
-    console.log('Cloned object');
-    printValue(clone);
+  console.log(`Clone is a copy of the cloned object: ${object !== clone}`);
+  console.log('Cloned object');
+  printValue(clone);
 })();
 ```
 
 **Output:**
+
 ```console
 Running demo: demo/src/rs-x-core/deep-clone.ts
 Clone is a copy of the cloned object: true
@@ -203,10 +197,7 @@ You must load the core module into the injection container if you want
 to use it.
 
 ```ts
-import { 
-    InjectionContainer, 
-    RsXCoreModule 
-} from '@rs-x/core';
+import { InjectionContainer, RsXCoreModule } from '@rs-x/core';
 
 InjectionContainer.load(RsXCoreModule);
 ```
@@ -215,75 +206,77 @@ There are two ways to get an instance:
 
 1. Using the injection container
 
-    ```ts
-    import { 
-        IEqualityService,
-        InjectionContainer,
-        RsXCoreInjectionTokens 
-    } from '@rs-x/core';
-  
-    const equalityService: IEqualityService = InjectionContainer.get(
-        RsXCoreInjectionTokens.IEqualityService
-    );
-    ```
+   ```ts
+   import {
+     IEqualityService,
+     InjectionContainer,
+     RsXCoreInjectionTokens,
+   } from '@rs-x/core';
+
+   const equalityService: IEqualityService = InjectionContainer.get(
+     RsXCoreInjectionTokens.IEqualityService,
+   );
+   ```
 
 2. Using the `@Inject` decorator
 
-    ```ts
-    import { 
-        IEqualityService,
-        Inject,
-        RsXCoreInjectionTokens 
-    } from '@rs-x/core';
-   
-    export class MyClass {
+   ```ts
+   import {
+     IEqualityService,
+     Inject,
+     RsXCoreInjectionTokens,
+   } from '@rs-x/core';
 
-        constructor(
-            @Inject(RsXCoreInjectionTokens.IEqualityService)
-            private readonly _equalityService: IEqualityService
-        ) {}
-    }
-    ```
+   export class MyClass {
+     constructor(
+       @Inject(RsXCoreInjectionTokens.IEqualityService)
+       private readonly _equalityService: IEqualityService,
+     ) {}
+   }
+   ```
 
 The following example shows how to use equality service
 
 ```ts
 import {
-    IEqualityService,
-    InjectionContainer,
-    printValue,
-    RsXCoreInjectionTokens,
-    RsXCoreModule
+  IEqualityService,
+  InjectionContainer,
+  printValue,
+  RsXCoreInjectionTokens,
+  RsXCoreModule,
 } from '@rs-x/core';
 
 // Load the core module into the injection container
 InjectionContainer.load(RsXCoreModule);
-const equalityService: IEqualityService = InjectionContainer.get(RsXCoreInjectionTokens.IEqualityService);
+const equalityService: IEqualityService = InjectionContainer.get(
+  RsXCoreInjectionTokens.IEqualityService,
+);
 
 export const run = (() => {
-    const object1 = {
-        a: 10,
-        nested: {
-            b: 20
-        }
-    };
-    const object2 = {
-        a: 10,
-        nested: {
-            b: 20
-        }
-    };
+  const object1 = {
+    a: 10,
+    nested: {
+      b: 20,
+    },
+  };
+  const object2 = {
+    a: 10,
+    nested: {
+      b: 20,
+    },
+  };
 
-    printValue(object1);
-    console.log('is equal to')
-    printValue(object2);
+  printValue(object1);
+  console.log('is equal to');
+  printValue(object2);
 
-    const result = equalityService.isEqual(object1, object2);
-    console.log(`Result: ${result}`)
+  const result = equalityService.isEqual(object1, object2);
+  console.log(`Result: ${result}`);
 })();
 ```
 
 **Output:**
+
 ```console
 Running demo: demo/src/rs-x-core/equality-service.ts
 {
@@ -313,10 +306,7 @@ You must load the core module into the injection container if you want
 to use it.
 
 ```ts
-import { 
-    InjectionContainer, 
-    RsXCoreModule 
-} from '@rs-x/core';
+import { InjectionContainer, RsXCoreModule } from '@rs-x/core';
 
 InjectionContainer.load(RsXCoreModule);
 ```
@@ -325,57 +315,55 @@ There are two ways to get an instance:
 
 1. Using the injection container
 
-    ```ts
-    import { 
-        IGuidFactory,
-        InjectionContainer, 
-        RsXCoreInjectionTokens 
-    } from '@rs-x/core';
-  
-    const guidFactory: IGuidFactory = InjectionContainer.get(
-        RsXCoreInjectionTokens.IGuidFactory
-    );
-    ```
+   ```ts
+   import {
+     IGuidFactory,
+     InjectionContainer,
+     RsXCoreInjectionTokens,
+   } from '@rs-x/core';
+
+   const guidFactory: IGuidFactory = InjectionContainer.get(
+     RsXCoreInjectionTokens.IGuidFactory,
+   );
+   ```
 
 2. Using the `@Inject` decorator
 
-    ```ts
-    import { 
-        IGuidFactory,
-        Inject, 
-        RsXCoreInjectionTokens 
-    } from '@rs-x/core';
-   
-    export class MyClass {
+   ```ts
+   import { IGuidFactory, Inject, RsXCoreInjectionTokens } from '@rs-x/core';
 
-        constructor(
-            @Inject(RsXCoreInjectionTokens.IGuidFactory)
-            private readonly _guidFactory: IGuidFactory
-        ) {}
-    }
-    ```
+   export class MyClass {
+     constructor(
+       @Inject(RsXCoreInjectionTokens.IGuidFactory)
+       private readonly _guidFactory: IGuidFactory,
+     ) {}
+   }
+   ```
 
 The following example shows how to use the guid factory
 
 ```ts
 import {
-    IGuidFactory,
-    InjectionContainer,
-    RsXCoreInjectionTokens,
-    RsXCoreModule
+  IGuidFactory,
+  InjectionContainer,
+  RsXCoreInjectionTokens,
+  RsXCoreModule,
 } from '@rs-x/core';
 
 // Load the core module into the injection container
 InjectionContainer.load(RsXCoreModule);
-const guidFactory: IGuidFactory = InjectionContainer.get(RsXCoreInjectionTokens.IGuidFactory);
+const guidFactory: IGuidFactory = InjectionContainer.get(
+  RsXCoreInjectionTokens.IGuidFactory,
+);
 
 export const run = (() => {
-    const guid = guidFactory.create();
-    console.log(`Created guid: ${guid}`)
+  const guid = guidFactory.create();
+  console.log(`Created guid: ${guid}`);
 })();
 ```
 
 **Output:**
+
 ```console
 Running demo: demo/src/rs-x-core/guid-factory.ts
 Created guid 1f64aabb-a57e-42e7-9edf-71c24773c150
@@ -430,6 +418,7 @@ Normalizes access to object properties, array indices, map keys, and similar ind
 ### Members
 
 ### **priority**
+
 **Type:** `number`  
 Defines the priority of the index value accessor. Higher numbers indicate higher priority when selecting which accessor to use.
 
@@ -531,14 +520,14 @@ Returns `true` if this index value accessor supports the given `(context, index)
 The default `IIndexValueAccessor` implementation internally uses the following list of `IIndexValueAccessor` implementations.  
 The accessors are evaluated in order of **priority**, with higher-priority accessors being checked first:
 
-* **`PropertyValueAccessor`** – accesses properties or fields on an object. Priority = 7
-* **`MethodAccessor`** – accesses methods on an object. Priority = 6
-* **`ArrayIndexAccessor`** – accesses array items. Priority = 5
-* **`MapKeyccessor`** – accesses map items. Priority = 4
-* **`SetKeyAccessor`** – accesses `Set` items. Priority = 3
-* **`ObservableAccessor`** – accesses the latest value emitted by an `Observable`. Priority = 2
-* **`PromiseAccessor`** – accesses the resolved value of a `Promise`. Priority = 1
-* **`DatePropertyAccessor`** – accesses date-related properties. Priority = 0
+- **`PropertyValueAccessor`** – accesses properties or fields on an object. Priority = 7
+- **`MethodAccessor`** – accesses methods on an object. Priority = 6
+- **`ArrayIndexAccessor`** – accesses array items. Priority = 5
+- **`MapKeyccessor`** – accesses map items. Priority = 4
+- **`SetKeyAccessor`** – accesses `Set` items. Priority = 3
+- **`ObservableAccessor`** – accesses the latest value emitted by an `Observable`. Priority = 2
+- **`PromiseAccessor`** – accesses the resolved value of a `Promise`. Priority = 1
+- **`DatePropertyAccessor`** – accesses date-related properties. Priority = 0
 
 The default accessor attempts to find the appropriate index value accessor for a given `(context, index)` pair and delegates the operation to it.
 
@@ -546,15 +535,12 @@ If no suitable index value accessor can be found, an `UnsupportedException` is t
 
 ### Get an instance of the Index Value Accessor Service
 
-The  index value accessor service is registered as a **singleton service**.  
+The index value accessor service is registered as a **singleton service**.  
 You must load the core module into the injection container if you want
 to use it.
 
 ```ts
-import {
-    InjectionContainer,
-    RsXCoreModule
-} from '@rs-x/core';
+import { InjectionContainer, RsXCoreModule } from '@rs-x/core';
 
 InjectionContainer.load(RsXCoreModule);
 ```
@@ -563,35 +549,34 @@ There are two ways to get an instance:
 
 1. Using the injection container
 
-    ```ts
-    import { 
-        IIndexValueAccessor, 
-        InjectionContainer, 
-        RsXCoreInjectionTokens 
-    } from '@rs-x/core';
-  
-    const indexValueAccessor: IIndexValueAccessor = InjectionContainer.get(
-        RsXCoreInjectionTokens.IIndexValueAccessor
-    );
-    ```
+   ```ts
+   import {
+     IIndexValueAccessor,
+     InjectionContainer,
+     RsXCoreInjectionTokens,
+   } from '@rs-x/core';
+
+   const indexValueAccessor: IIndexValueAccessor = InjectionContainer.get(
+     RsXCoreInjectionTokens.IIndexValueAccessor,
+   );
+   ```
 
 2. Using the `@Inject` decorator
 
-    ```ts
-    import { 
-        IIndexValueAccessor,
-        Inject, 
-        RsXCoreInjectionTokens 
-    } from '@rs-x/core';
-   
-    export class MyClass {
+   ```ts
+   import {
+     IIndexValueAccessor,
+     Inject,
+     RsXCoreInjectionTokens,
+   } from '@rs-x/core';
 
-        constructor(
-            @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
-            private readonly _indexValueAccessor: IIndexValueAccessor
-        ) {}
-    }
-    ```
+   export class MyClass {
+     constructor(
+       @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
+       private readonly _indexValueAccessor: IIndexValueAccessor,
+     ) {}
+   }
+   ```
 
 ### Customize the supported index value accessor list
 
@@ -657,257 +642,261 @@ For example, suppose we have a service that patches a property on an object so i
 
 ```ts
 import {
-    IDisposable,
-    IDisposableOwner,
-    InvalidOperationException,
-    IPropertyChange,
-    IPropertyDescriptor,
-    PropertyDescriptorType,
-    SingletonFactory,
-    Type,
-    UnsupportedException
+  IDisposable,
+  IDisposableOwner,
+  InvalidOperationException,
+  IPropertyChange,
+  IPropertyDescriptor,
+  PropertyDescriptorType,
+  SingletonFactory,
+  Type,
+  UnsupportedException,
 } from '@rs-x/core';
 import { Observable, Subject } from 'rxjs';
 
 interface IObserver extends IDisposable {
-    changed: Observable<IPropertyChange>;
+  changed: Observable<IPropertyChange>;
 }
 
 class PropertObserver implements IObserver {
-    private _isDisposed = false;
-    private _value: unknown;
-    private _propertyDescriptorWithTarget: IPropertyDescriptor;
-    private readonly _changed = new Subject<IPropertyChange>();
+  private _isDisposed = false;
+  private _value: unknown;
+  private _propertyDescriptorWithTarget: IPropertyDescriptor;
+  private readonly _changed = new Subject<IPropertyChange>();
 
-    constructor(
-        private readonly _owner: IDisposableOwner,
-        private readonly _target: object,
-        private readonly _propertyName: string,
-    ) {
-        this.patch();
+  constructor(
+    private readonly _owner: IDisposableOwner,
+    private readonly _target: object,
+    private readonly _propertyName: string,
+  ) {
+    this.patch();
+  }
+
+  public get changed(): Observable<IPropertyChange> {
+    return this._changed;
+  }
+
+  public dispose(): void {
+    if (this._isDisposed) {
+      return;
     }
 
-    public get changed(): Observable<IPropertyChange> {
-        return this._changed;
+    if (!this._owner?.canDispose || this._owner.canDispose()) {
+      const propertyName = this._propertyName as string;
+      const value = this._target[propertyName];
+      //to prevent errors if is was non configurable
+      delete this._target[propertyName];
+
+      if (
+        this._propertyDescriptorWithTarget.type !==
+        PropertyDescriptorType.Function
+      ) {
+        this._target[propertyName] = value;
+      }
+
+      this._propertyDescriptorWithTarget = undefined;
     }
 
-    public dispose(): void {
-        if (this._isDisposed) {
-            return;
-        }
+    this._owner?.release?.();
+  }
 
-        if (!this._owner?.canDispose || this._owner.canDispose()) {
-            const propertyName = this._propertyName as string;
-            const value = this._target[propertyName];
-            //to prevent errors if is was non configurable
-            delete this._target[propertyName];
+  private patch(): void {
+    const descriptorWithTarget = Type.getPropertyDescriptor(
+      this._target,
+      this._propertyName,
+    );
+    const descriptor = descriptorWithTarget.descriptor;
+    let newDescriptor: PropertyDescriptor;
 
-            if (
-                this._propertyDescriptorWithTarget.type !==
-                PropertyDescriptorType.Function
-            ) {
-                this._target[propertyName] = value
-            }
-
-            this._propertyDescriptorWithTarget = undefined;
-        }
-
-        this._owner?.release?.();
+    if (descriptorWithTarget.type === PropertyDescriptorType.Function) {
+      throw new UnsupportedException('Methods are not supported');
+    } else if (!descriptor.get && !descriptor.set) {
+      newDescriptor = this.createFieldPropertyDescriptor(descriptorWithTarget);
+    } else if (descriptor.set) {
+      newDescriptor =
+        this.createWritablePropertyDescriptor(descriptorWithTarget);
+    } else {
+      throw new InvalidOperationException(
+        `Property '${this._propertyName}' can not be watched because it is readonly`,
+      );
     }
 
-    private patch(): void {
-        const descriptorWithTarget = Type.getPropertyDescriptor(
-            this._target,
-            this._propertyName
-        );
-        const descriptor = descriptorWithTarget.descriptor;
-        let newDescriptor: PropertyDescriptor;
+    Object.defineProperty(this._target, this._propertyName, newDescriptor);
 
-        if (descriptorWithTarget.type === PropertyDescriptorType.Function) {
-            throw new UnsupportedException('Methods are not supported')
-        } else if (!descriptor.get && !descriptor.set) {
-            newDescriptor =
-                this.createFieldPropertyDescriptor(descriptorWithTarget);
-        } else if (descriptor.set) {
-            newDescriptor =
-                this.createWritablePropertyDescriptor(descriptorWithTarget);
-        } else {
-            throw new InvalidOperationException(
-                `Property '${this._propertyName}' can not be watched because it is readonly`
-            );
-        }
+    this._propertyDescriptorWithTarget = descriptorWithTarget;
+  }
 
-        Object.defineProperty(this._target, this._propertyName, newDescriptor);
+  private emitChange(change: Partial<IPropertyChange>, id: unknown) {
+    this._value = change.newValue;
 
-        this._propertyDescriptorWithTarget = descriptorWithTarget;
-    }
+    this._changed.next({
+      arguments: [],
+      ...change,
+      chain: [{ object: this._target, id: this._propertyName }],
+      target: this._target,
+      id,
+    });
+  }
 
-    private emitChange(change: Partial<IPropertyChange>, id: unknown) {
-        this._value = change.newValue;
+  private createFieldPropertyDescriptor(
+    descriptorWithTarget: IPropertyDescriptor,
+  ): PropertyDescriptor {
+    const newDescriptor = { ...descriptorWithTarget.descriptor };
 
-        this._changed.next({
-            arguments: [],
-            ...change,
-            chain: [{ object: this._target, id: this._propertyName }],
-            target: this._target,
-            id,
-        });
-    }
+    newDescriptor.get = () => this._value;
+    delete newDescriptor.writable;
+    delete newDescriptor.value;
 
-    private createFieldPropertyDescriptor(
-        descriptorWithTarget: IPropertyDescriptor
-    ): PropertyDescriptor {
-        const newDescriptor = { ...descriptorWithTarget.descriptor };
+    newDescriptor.set = (value) => {
+      if (value !== this._value) {
+        this.emitChange({ newValue: value }, this._propertyName);
+      }
+    };
 
-        newDescriptor.get = () => this._value;
-        delete newDescriptor.writable;
-        delete newDescriptor.value;
+    this._value = this._target[this._propertyName];
 
-        newDescriptor.set = (value) => {
-            if (value !== this._value) {
-                this.emitChange({ newValue: value, }, this._propertyName);
-            }
-        };
+    return newDescriptor;
+  }
 
-        this._value = this._target[this._propertyName];
+  private createWritablePropertyDescriptor(
+    descriptorWithTarget: IPropertyDescriptor,
+  ): PropertyDescriptor {
+    const newDescriptor = { ...descriptorWithTarget.descriptor };
+    const oldSetter = descriptorWithTarget.descriptor.set;
+    newDescriptor.set = (value) => {
+      const oldValue = this._target[this._propertyName];
+      if (value !== oldValue) {
+        oldSetter.call(this._target, value);
+        this.emitChange({ newValue: value }, this._propertyName);
+      }
+    };
 
-        return newDescriptor;
-    }
+    this._value = this._target[this._propertyName];
 
-    private createWritablePropertyDescriptor(
-        descriptorWithTarget: IPropertyDescriptor
-    ): PropertyDescriptor {
-        const newDescriptor = { ...descriptorWithTarget.descriptor };
-        const oldSetter = descriptorWithTarget.descriptor.set;
-        newDescriptor.set = (value) => {
-            const oldValue = this._target[this._propertyName];
-            if (value !== oldValue) {
-                oldSetter.call(this._target, value);
-                this.emitChange({ newValue: value }, this._propertyName);
-            }
-        };
-
-        this._value = this._target[this._propertyName];
-
-        return newDescriptor;
-    }
+    return newDescriptor;
+  }
 }
 
-class PropertyObserverManager
-    extends SingletonFactory<
-        string,
-        string,
-        IObserver,
-        string
-    > {
-    constructor(
-        private readonly _object: object,
-        private readonly releaseObject: () => void
-    ) {
-        super();
-    }
+class PropertyObserverManager extends SingletonFactory<
+  string,
+  string,
+  IObserver,
+  string
+> {
+  constructor(
+    private readonly _object: object,
+    private readonly releaseObject: () => void,
+  ) {
+    super();
+  }
 
-    public override getId(propertyName: string): string {
-        return propertyName;
-    }
+  public override getId(propertyName: string): string {
+    return propertyName;
+  }
 
-    protected override createId(propertyName: string): string {
-        return propertyName;
-    }
+  protected override createId(propertyName: string): string {
+    return propertyName;
+  }
 
-    protected override createInstance(
-        propertyName: string,
-        id: string
-    ): IObserver {
-        return new PropertObserver(
-            {
-                canDispose: () => this.getReferenceCount(id) === 1,
-                release: () => this.release(id),
-            },
-            this._object,
-            propertyName
-        );
-    }
+  protected override createInstance(
+    propertyName: string,
+    id: string,
+  ): IObserver {
+    return new PropertObserver(
+      {
+        canDispose: () => this.getReferenceCount(id) === 1,
+        release: () => this.release(id),
+      },
+      this._object,
+      propertyName,
+    );
+  }
 
-    protected override onReleased(): void {
-        this.releaseObject();
-    }
+  protected override onReleased(): void {
+    this.releaseObject();
+  }
 
-    protected override releaseInstance(observer: IObserver): void {
-        observer.dispose();
-    }
+  protected override releaseInstance(observer: IObserver): void {
+    observer.dispose();
+  }
 }
 
-class ObjectPropertyObserverManager
-    extends SingletonFactory<object, object, PropertyObserverManager> {
-    constructor() { super(); }
+class ObjectPropertyObserverManager extends SingletonFactory<
+  object,
+  object,
+  PropertyObserverManager
+> {
+  constructor() {
+    super();
+  }
 
-    public override getId(context: object): object {
-        return context;
-    }
+  public override getId(context: object): object {
+    return context;
+  }
 
-    protected override createId(context: object): object {
-        return context;
-    }
+  protected override createId(context: object): object {
+    return context;
+  }
 
-    protected override createInstance(
-        context: object
-    ): PropertyObserverManager {
-        return new PropertyObserverManager(
-            context,
-            () => this.release(context)
-        );
-    }
-    protected override releaseInstance(propertyObserverManager: PropertyObserverManager): void {
-        propertyObserverManager.dispose();
-    }
+  protected override createInstance(context: object): PropertyObserverManager {
+    return new PropertyObserverManager(context, () => this.release(context));
+  }
+  protected override releaseInstance(
+    propertyObserverManager: PropertyObserverManager,
+  ): void {
+    propertyObserverManager.dispose();
+  }
 }
 
 class PropertyObserverFactory {
-    private readonly _objectPropertyObserverManager = new ObjectPropertyObserverManager();
+  private readonly _objectPropertyObserverManager =
+    new ObjectPropertyObserverManager();
 
-    public create(context: object, propertyName: string): IObserver {
-        return this._objectPropertyObserverManager
-            .create(context).instance
-            .create(propertyName).instance;
-    }
+  public create(context: object, propertyName: string): IObserver {
+    return this._objectPropertyObserverManager
+      .create(context)
+      .instance.create(propertyName).instance;
+  }
 }
 
 export const run = (() => {
-    const context = {
-        a: 10
-    };
-    const propertyObserverFactory = new PropertyObserverFactory();
+  const context = {
+    a: 10,
+  };
+  const propertyObserverFactory = new PropertyObserverFactory();
 
-    const aObserver1 = propertyObserverFactory.create(context, 'a');
-    const aObserver2 = propertyObserverFactory.create(context, 'a');
+  const aObserver1 = propertyObserverFactory.create(context, 'a');
+  const aObserver2 = propertyObserverFactory.create(context, 'a');
 
-    const changeSubsription1 = aObserver1.changed.subscribe((change) => {
-        console.log('Observer 1:')
-        console.log(change.newValue)
-    });
-    const changeSubsription2 = aObserver1.changed.subscribe((change) => {
-        console.log('Observer 2:')
-        console.log(change.newValue)
-    });
+  const changeSubsription1 = aObserver1.changed.subscribe((change) => {
+    console.log('Observer 1:');
+    console.log(change.newValue);
+  });
+  const changeSubsription2 = aObserver1.changed.subscribe((change) => {
+    console.log('Observer 2:');
+    console.log(change.newValue);
+  });
 
-    console.log('You can observe the same property multiple times but only one observer will be create:');
-    console.log(aObserver1 === aObserver2);
+  console.log(
+    'You can observe the same property multiple times but only one observer will be create:',
+  );
+  console.log(aObserver1 === aObserver2);
 
-    console.log('Changing value to 20:')
+  console.log('Changing value to 20:');
 
-    context.a = 20;
+  context.a = 20;
 
-    // Dispose of the observers 
-    aObserver1.dispose();
-    aObserver2.dispose();
-    // Unsubsribe to the changed event
-    changeSubsription1.unsubscribe();
-    changeSubsription2.unsubscribe();
+  // Dispose of the observers
+  aObserver1.dispose();
+  aObserver2.dispose();
+  // Unsubsribe to the changed event
+  changeSubsription1.unsubscribe();
+  changeSubsription2.unsubscribe();
 })();
 ```
 
 **Output:**
+
 ```console
  Running demo: demo/src/rs-x-core/implementation-of-singleton-factory.ts
 You can observe the same property multiple times but only one observer will be create:
@@ -921,15 +910,14 @@ Observer 2:
 
 In this example, we have derived two classes from `SingletonFactory`:
 
-* **`PropertyObserverManager`** – ensures that only one `PropertyObserver` is created per property.
-* **`ObjectPropertyObserverManager`** – ensures that only one `PropertyObserverManager` is created per object.
+- **`PropertyObserverManager`** – ensures that only one `PropertyObserver` is created per property.
+- **`ObjectPropertyObserverManager`** – ensures that only one `PropertyObserverManager` is created per object.
 
-It is good practice **not to expose classes derived from `SingletonFactory`** directly, but to use them internally to keep the interface simple.  
+It is good practice **not to expose classes derived from `SingletonFactory`** directly, but to use them internally to keep the interface simple.
 
-For example, we have created a class **`PropertyObserverFactory`** that internally uses `ObjectPropertyObserverManager`.  
+For example, we have created a class **`PropertyObserverFactory`** that internally uses `ObjectPropertyObserverManager`.
 
 The `PropertyObserver` class implements a `dispose` method, which ensures that it is released when there are no references left.
-
 
 ## Error Log
 
@@ -937,44 +925,44 @@ Basic logging using `console.error`
 
 ### interface IErrorLog
 
-
 ```ts
 export interface IErrorLog {
-   readonly error: Observable<IError>;
-   add(error: IError): void;
-   clear(): void;
+  readonly error: Observable<IError>;
+  add(error: IError): void;
+  clear(): void;
 }
 ```
 
 ### Members
 
 ### **error**
+
 **Type:** `Observable<IError>`  
 event emitted when error is added
 
 ---
 
 #### **add(error)**
+
 log a new error and emit error event.
 
 | Parameter | Type     | Description |
 | --------- | -------- | ----------- |
 | **error** | `IError` | error.      |
 
-
-**Returns:** `void` 
+**Returns:** `void`
 
 ---
 
 #### **clear()**
+
 removes all logged errors
 
-**Returns:** `void` 
+**Returns:** `void`
 
 ---
 
 The default implementation uses `console.error` to log an error.
-
 
 ### Get an instance of the Error Log
 
@@ -983,10 +971,7 @@ You must load the core module into the injection container if you want
 to use it.
 
 ```ts
-import { 
-    InjectionContainer,
-    RsXCoreModule
-} from '@rs-x/core';
+import { InjectionContainer, RsXCoreModule } from '@rs-x/core';
 
 InjectionContainer.load(RsXCoreModule);
 ```
@@ -995,75 +980,73 @@ There are two ways to get an instance:
 
 1. Using the injection container
 
-    ```ts
-    import { 
-        IErrorLog, 
-        InjectionContainer, 
-        RsXCoreInjectionTokens 
-    } from '@rs-x/core';
-  
-    const errorLog: IErrorLog = InjectionContainer.get(
-        RsXCoreInjectionTokens.IErrorLog
-    );
-    ```
+   ```ts
+   import {
+     IErrorLog,
+     InjectionContainer,
+     RsXCoreInjectionTokens,
+   } from '@rs-x/core';
+
+   const errorLog: IErrorLog = InjectionContainer.get(
+     RsXCoreInjectionTokens.IErrorLog,
+   );
+   ```
 
 2. Using the `@Inject` decorator
 
-    ```ts
-    import { 
-        IErrorLog,
-        Inject, 
-        RsXCoreInjectionTokens 
-    } from '@rs-x/core';
-   
-    export class MyClass {
+   ```ts
+   import { IErrorLog, Inject, RsXCoreInjectionTokens } from '@rs-x/core';
 
-        constructor(
-            @Inject(RsXCoreInjectionTokens.IErrorLog)
-            private readonly _errorLog: IErrorLog
-        ) {}
-    }
-    ```
+   export class MyClass {
+     constructor(
+       @Inject(RsXCoreInjectionTokens.IErrorLog)
+       private readonly _errorLog: IErrorLog,
+     ) {}
+   }
+   ```
 
 The following example shows how to use the error log
 
 ```ts
 import {
-    IErrorLog,
-    InjectionContainer,
-    printValue,
-    RsXCoreInjectionTokens,
-    RsXCoreModule
+  IErrorLog,
+  InjectionContainer,
+  printValue,
+  RsXCoreInjectionTokens,
+  RsXCoreModule,
 } from '@rs-x/core';
 
 // Load the core module into the injection container
 InjectionContainer.load(RsXCoreModule);
-const errorLog: IErrorLog = InjectionContainer.get(RsXCoreInjectionTokens.IErrorLog);
+const errorLog: IErrorLog = InjectionContainer.get(
+  RsXCoreInjectionTokens.IErrorLog,
+);
 
 export const run = (() => {
-    const context = {
-        name: 'My error context'
-    };
-    const changeSubscription = errorLog.error.subscribe(e => {
-        console.log('Emmitted error');
-        printValue(e);
-    });
+  const context = {
+    name: 'My error context',
+  };
+  const changeSubscription = errorLog.error.subscribe((e) => {
+    console.log('Emmitted error');
+    printValue(e);
+  });
 
-    try {
-        throw new Error('Oops an error');
-    } catch (e) {
-        errorLog.add({
-            exception: e,
-            message: 'Oops',
-            context,
-        });
-    } finally {
-        changeSubscription.unsubscribe();
-    }
+  try {
+    throw new Error('Oops an error');
+  } catch (e) {
+    errorLog.add({
+      exception: e,
+      message: 'Oops',
+      context,
+    });
+  } finally {
+    changeSubscription.unsubscribe();
+  }
 })();
 ```
 
 **Output:**
+
 ```console
 Running demo: demo/src/rs-x-core/error-log.ts
 Emmitted error
@@ -1090,7 +1073,7 @@ It is particularly useful in **tests**, **async workflows**, and **event-driven 
 - Waits for one or multiple observable emissions
 - Supports synchronous, `Promise`, or `Observable` triggers
 - Optional timeout handling
-- Ability to ignore the initial observable value. For example when the event is implemented with  `BehaviorSubject` or  `ReplaySubject`
+- Ability to ignore the initial observable value. For example when the event is implemented with `BehaviorSubject` or `ReplaySubject`
 
 ---
 
@@ -1110,7 +1093,6 @@ constructor(
 | eventName | E                    | Name of the observable property to wait on |
 | options   | WaitOptions<T, E, R> | Optional configuration                     |
 
-
 #### `WaitOptions<T, E, R>`
 
 Configuration options for waiting.
@@ -1121,9 +1103,8 @@ Configuration options for waiting.
 | timeout            | `number`  | 100     | Timeout in milliseconds        |
 | ignoreInitialValue | `boolean` | false   | Ignore the first emitted value |
 
----            
+---
 
- 
 ### Methods
 
 #### **wait(trigger)**
@@ -1138,42 +1119,39 @@ Waits for the observable to emit the specified number of events after running th
 
 ---
 
-
 ### Example
 
 ```ts
-import {
-    printValue,
-    WaitForEvent,
-
-} from '@rs-x/core';
+import { printValue, WaitForEvent } from '@rs-x/core';
 import { Observable, Subject } from 'rxjs';
 
 export const run = (async () => {
-    class MyEventContext {
-        private readonly _message = new Subject<string>();
+  class MyEventContext {
+    private readonly _message = new Subject<string>();
 
-
-        public get message(): Observable<string> {
-            return this._message;
-        }
-
-        public emitMessage(message: string): void {
-            this._message.next(message);
-        }
+    public get message(): Observable<string> {
+      return this._message;
     }
 
-    const eventContext = new MyEventContext();
-    const result = await new WaitForEvent(eventContext, 'message', { count: 2 }).wait(() => {
-        eventContext.emitMessage('Hello');
-        eventContext.emitMessage('hi');
-    });
-    console.log('Emitted events:');
-    printValue(result);
+    public emitMessage(message: string): void {
+      this._message.next(message);
+    }
+  }
+
+  const eventContext = new MyEventContext();
+  const result = await new WaitForEvent(eventContext, 'message', {
+    count: 2,
+  }).wait(() => {
+    eventContext.emitMessage('Hello');
+    eventContext.emitMessage('hi');
+  });
+  console.log('Emitted events:');
+  printValue(result);
 })();
 ```
 
 **Output:**
+
 ```console
 Running demo: demo/src/rs-x-core/wait-for-event.ts
 Emitted events:

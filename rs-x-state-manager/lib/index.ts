@@ -1,5 +1,6 @@
 export * from './abstract-observer';
 export * from './grouped-change-subscriptions-for-context-manager';
+export * from './index-watch-rule-registry';
 export * from './object-change.interface';
 export * from './object-observer';
 export * from './object-property-observer-proxy-pair-manager';
@@ -9,6 +10,5 @@ export * from './observer-group';
 export * from './property-observer';
 export * from './proxies';
 export * from './rs-x-state-manager.module';
-export * from './rs-x-state-manager-injection-tokes';
+export * from './rs-x-state-manager-injection-tokens';
 export * from './state-manager';
-

@@ -9,30 +9,27 @@ import type { IExpressionObserverProxyPair } from './expression-observer-proxy-p
 import type { IExpressionObserverFactory } from './expression-proxy.factory.type';
 
 @Injectable()
-export class ExpressionObserverProxyPairFactory
-   implements IExpressionObserverProxyPairFactory {
+export class ExpressionObserverProxyPairFactory implements IExpressionObserverProxyPairFactory {
+  public readonly priority = 100;
 
-   public readonly priority = 100;
+  constructor(
+    @Inject(RsXExpressionParserInjectionTokens.IExpressionObserverFactory)
+    private readonly _expressionObserverFactory: IExpressionObserverFactory,
+  ) {}
 
-   constructor(
-      @Inject(RsXExpressionParserInjectionTokens.IExpressionObserverFactory)
-      private readonly _expressionObserverFactory: IExpressionObserverFactory
-   ) {
-   }
+  public create(
+    owner: IDisposableOwner,
+    proxyTarget: IProxyTarget<AbstractExpression>,
+  ): IExpressionObserverProxyPair {
+    return {
+      observer: this._expressionObserverFactory.create({
+        owner,
+        expression: proxyTarget.target,
+      }).instance,
+    };
+  }
 
-   public create(
-      owner: IDisposableOwner,
-      proxyTarget: IProxyTarget<AbstractExpression>
-   ): IExpressionObserverProxyPair {
-      return {
-         observer: this._expressionObserverFactory.create({
-            owner,
-            expression: proxyTarget.target
-         }).instance
-      };
-   }
-
-   public applies(object: unknown): boolean {
-      return object instanceof AbstractExpression;
-   }
+  public applies(object: unknown): boolean {
+    return object instanceof AbstractExpression;
+  }
 }

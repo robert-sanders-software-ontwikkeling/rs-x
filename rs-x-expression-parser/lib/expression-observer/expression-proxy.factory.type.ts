@@ -4,12 +4,12 @@ import { type IObserver } from '@rs-x/state-manager';
 import type { AbstractExpression } from '../expressions/abstract-expression';
 
 export interface IExpressionObserverData {
-   owner?: IDisposableOwner;
-   expression: AbstractExpression;
+  owner?: IDisposableOwner;
+  expression: AbstractExpression;
 }
 
 export type IExpressionObserverFactory = ISingletonFactory<
-   AbstractExpression,
-   IExpressionObserverData,
-   IObserver
+  AbstractExpression,
+  IExpressionObserverData,
+  IObserver
 >;

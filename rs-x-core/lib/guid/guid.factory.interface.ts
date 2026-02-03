@@ -1,3 +1,3 @@
 export interface IGuidFactory {
-    create(): string;
+  create(): string;
 }

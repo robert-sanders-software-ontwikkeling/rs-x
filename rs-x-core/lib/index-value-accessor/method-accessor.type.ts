@@ -2,4 +2,7 @@ import { type IDisposableFunctionCallIndex } from '../function-call-index/functi
 
 import { type IIndexValueAccessor } from './index-value-accessor.interface';
 
-export type IMethodAccessor = IIndexValueAccessor<object, IDisposableFunctionCallIndex>;
+export type IMethodAccessor = IIndexValueAccessor<
+  object,
+  IDisposableFunctionCallIndex
+>;

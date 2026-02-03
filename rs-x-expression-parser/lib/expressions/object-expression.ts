@@ -5,30 +5,31 @@ import { type PropertyExpression } from './property-expression';
 import { type SpreadExpression } from './spread-expression';
 
 export class ObjectExpression extends ParameterizedExpression<object> {
-   constructor(
+  constructor(
+    expressionString: string,
+    propertyExpressions: (PropertyExpression | SpreadExpression)[],
+  ) {
+    super(
+      ExpressionType.Object,
+      expressionString,
+      ...(propertyExpressions as AbstractExpression[]),
+    );
+  }
+
+  public override clone(): this {
+    return new (this.constructor as new (
       expressionString: string,
-      propertyExpressions: (PropertyExpression | SpreadExpression)[]
-   ) {
-      super(
-         ExpressionType.Object,
-         expressionString,
-         ...(propertyExpressions as AbstractExpression[])
-      );
-   }
+      propertyExpressions: (PropertyExpression | SpreadExpression)[],
+    ) => this)(
+      this.expressionString,
+      this._childExpressions.map((child) => child.clone()) as (
+        | PropertyExpression
+        | SpreadExpression
+      )[],
+    );
+  }
 
-    public override clone(): this {
-      return new (this.constructor as new (
-         expressionString: string,
-         propertyExpressions: (PropertyExpression | SpreadExpression)[]
-      ) => this)(
-         this.expressionString,
-         this._childExpressions.map(child => child.clone()) as (PropertyExpression | SpreadExpression)[]
-      );
-   }
-
-   protected evaluateExpression(
-      ...args: unknown[]
-   ): object {
-      return Object.assign({}, ...args);
-   }
+  protected evaluateExpression(...args: unknown[]): object {
+    return Object.assign({}, ...args);
+  }
 }

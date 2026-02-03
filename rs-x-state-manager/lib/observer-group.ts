@@ -1,151 +1,155 @@
 import { ReplaySubject, type Subscription } from 'rxjs';
 
-import { type IDisposableOwner, type IErrorLog, type IPropertyChange, Type } from '@rs-x/core';
+import {
+  type IDisposableOwner,
+  type IErrorLog,
+  type IPropertyChange,
+  Type,
+} from '@rs-x/core';
 
 import { AbstractObserver } from './abstract-observer';
 import { type IObserver } from './observer.interface';
 
 export class ObserverGroup extends AbstractObserver {
-   private readonly _subscriptions = new Map<IObserver, Subscription>();
-   private _rootChangeSubscription: Subscription | undefined;
-   private readonly _observers: IObserver[] = [];
-   private readonly mustHandleChange: (change: IPropertyChange) => boolean;
-   private _rootObserver: IObserver | undefined;
-   private _isInitialized = false;
-   protected _parent: ObserverGroup | undefined;
+  private readonly _subscriptions = new Map<IObserver, Subscription>();
+  private _rootChangeSubscription: Subscription | undefined;
+  private readonly _observers: IObserver[] = [];
+  private readonly mustHandleChange: (change: IPropertyChange) => boolean;
+  private _rootObserver: IObserver | undefined;
+  private _isInitialized = false;
+  protected _parent: ObserverGroup | undefined;
 
-   constructor(
-      owner: IDisposableOwner | undefined,
-      target: unknown,
-      initialValue: unknown,
-      mustHandleChange: ((change: IPropertyChange) => boolean) | undefined,
-      private readonly _errorLog: IErrorLog,
-      id?: unknown,
-      private readonly getRootObserver?: () => IObserver | undefined,
-      private readonly _observeRootObserver?: boolean
-   ) {
-      super(owner, target, initialValue, new ReplaySubject(1), id);
-      this.mustHandleChange = mustHandleChange ?? (() => true);
-   }
+  constructor(
+    owner: IDisposableOwner | undefined,
+    target: unknown,
+    initialValue: unknown,
+    mustHandleChange: ((change: IPropertyChange) => boolean) | undefined,
+    private readonly _errorLog: IErrorLog,
+    id?: unknown,
+    private readonly getRootObserver?: () => IObserver | undefined,
+    private readonly _observeRootObserver?: boolean,
+  ) {
+    super(owner, target, initialValue, new ReplaySubject(1), id);
+    this.mustHandleChange = mustHandleChange ?? (() => true);
+  }
 
-   public get rootObserver(): IObserver | undefined {
-      if (!this._rootObserver && this.getRootObserver) {
-         this._rootObserver = this.getRootObserver();
-      }
-      return this._rootObserver;
-   }
+  public get rootObserver(): IObserver | undefined {
+    if (!this._rootObserver && this.getRootObserver) {
+      this._rootObserver = this.getRootObserver();
+    }
+    return this._rootObserver;
+  }
 
-   public override init(): void {
-      if (this._isInitialized) {
-         return;
-      }
+  public override init(): void {
+    if (this._isInitialized) {
+      return;
+    }
 
-      this._isInitialized = true;
-      this.rootObserver?.init();
-      this._observers.forEach((observer) => observer.init());
+    this._isInitialized = true;
+    this.rootObserver?.init();
+    this._observers.forEach((observer) => observer.init());
 
-      if (this._observeRootObserver && this._rootObserver) {
-    this._rootChangeSubscription = this._rootObserver.changed.subscribe({
+    if (this._observeRootObserver && this._rootObserver) {
+      this._rootChangeSubscription = this._rootObserver.changed.subscribe({
         next: this.emitChange,
         error: (e) => {
-            const target = this._rootObserver!.target;
-            this._errorLog.add({
-                message: `Failed to handle change for ${Type.getConstructorName(target)}[${this._rootObserver!.id}]`,
-                exception: e,
-                context: target as object,
-                fatal: true,
-            });
+          const target = this._rootObserver!.target;
+          this._errorLog.add({
+            message: `Failed to handle change for ${Type.getConstructorName(target)}[${this._rootObserver!.id}]`,
+            exception: e,
+            context: target as object,
+            fatal: true,
+          });
         },
+      });
+    }
+  }
+
+  public addObservers(observers: IObserver[]): ObserverGroup {
+    this._observers.push(...observers);
+
+    observers
+      .filter((observer) => observer instanceof ObserverGroup)
+      .forEach((observer) => (observer._parent = this));
+
+    observers.forEach((observer) =>
+      this._subscriptions.set(
+        observer,
+        observer.changed.subscribe({
+          next: this.emitChange,
+          error: (e) =>
+            this._errorLog.add({
+              message: 'Failed to handle change emitted',
+              exception: e,
+              context: this,
+              fatal: true,
+            }),
+        }),
+      ),
+    );
+    return this;
+  }
+
+  public replaceObservers(observers: IObserver[]): void {
+    this.unsubscribeToObservers();
+    this.addObservers(observers);
+
+    this._observers.forEach((observer) => observer.init());
+  }
+
+  public emitValue(newValue: unknown): void {
+    this.emitChange({
+      arguments: [],
+      target: this.target,
+      chain: [{ context: this.target, index: this.id }],
+      index: this.id,
+      newValue,
     });
-}
-   }
+  }
 
-   public addObservers(observers: IObserver[]): ObserverGroup {
-      this._observers.push(...observers);
+  public removeObserver(target: unknown, id: unknown): void {
+    const index = this._observers.findIndex(
+      (observer) => observer.target === target && observer.id === id,
+    );
+    if (index === -1) {
+      return;
+    }
 
-      observers
-         .filter((observer) => observer instanceof ObserverGroup)
-         .forEach((observer) => (observer._parent = this));
+    const subscription = this._subscriptions.get(this._observers[index]);
+    if (subscription) {
+      subscription.unsubscribe();
+      this._subscriptions.delete(this._observers[index]);
+    }
 
-      observers.forEach((observer) =>
-         this._subscriptions.set(
-            observer,
-            observer.changed.subscribe({
-               next: this.emitChange,
-               error: (e) =>
-                  this._errorLog.add({
-                     message: 'Failed to handle change emitted',
-                     exception: e,
-                     context: this,
-                     fatal: true,
-                  }),
-            })
-         )
-      );
-      return this;
-   }
+    this._observers.splice(index, 1);
+  }
 
+  protected override disposeInternal(): void {
+    this.rootObserver?.dispose();
+    this.unsubscribeToObservers();
+  }
 
-   public replaceObservers( observers: IObserver[]): void {
-      this.unsubscribeToObservers();
-      this.addObservers(observers);
+  protected override emitChange = (change: IPropertyChange) => {
+    if (!change || !this.mustHandleChange(change)) {
+      return;
+    }
 
-      this._observers.forEach((observer) => observer.init());
-   }
-   
-   public emitValue(newValue: unknown): void {
-      this.emitChange({
-         arguments: [],
-         target: this.target,
-         chain: [{ object: this.target, id: this.id }],
-         id: this.id,
-         newValue,
-      });
-   }
+    const isThisTarget = change.target === this.target;
+    const chain =
+      isThisTarget || Type.isNullOrUndefined(this.id)
+        ? change.chain
+        : [{ context: this.target, index: this.id }, ...(change.chain ?? [])];
+    super.emitChange({
+      ...change,
+      chain,
+    });
+  };
 
-   public removeObserver(target: unknown, id: unknown): void {
-      const index = this._observers.findIndex(
-         (observer) => observer.target === target && observer.id === id
-      );
-      if (index === -1) {
-         return;
-      }
-
-      const subscription = this._subscriptions.get(this._observers[index]);
-      if (subscription) {
-         subscription.unsubscribe();
-         this._subscriptions.delete(this._observers[index]);
-      }
-
-      this._observers.splice(index, 1);
-   }
-
-   protected override disposeInternal(): void {
-      this.rootObserver?.dispose();
-      this.unsubscribeToObservers();
-   }
-
-   protected override emitChange = (change: IPropertyChange) => {
-      if (!change || !this.mustHandleChange(change)) {
-         return;
-      }
-
-      const isThisTarget = change.target === this.target;
-      const chain =
-         isThisTarget || Type.isNullOrUndefined(this.id)
-            ? change.chain
-            : [{ object: this.target, id: this.id }, ...(change.chain ?? [])];
-      super.emitChange({
-         ...change,
-         chain,
-      });
-   };
-
-   private unsubscribeToObservers(): void {
-      this._subscriptions.forEach((subscription) => subscription.unsubscribe());
-      this._subscriptions.clear();
-      this._observers.forEach((observer) => observer.dispose());
-      this._observers.length = 0;
-      this._rootChangeSubscription?.unsubscribe();
-   }
+  private unsubscribeToObservers(): void {
+    this._subscriptions.forEach((subscription) => subscription.unsubscribe());
+    this._subscriptions.clear();
+    this._observers.forEach((observer) => observer.dispose());
+    this._observers.length = 0;
+    this._rootChangeSubscription?.unsubscribe();
+  }
 }

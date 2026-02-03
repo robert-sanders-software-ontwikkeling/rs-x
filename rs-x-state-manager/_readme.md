@@ -7,9 +7,9 @@ A context can be an object, and an index can be a property name — but it is no
 
 Examples of state indexes:
 
-- Object property or field → index = property or field name  
-- Array item → index = numeric position  
-- Map item → index = map key  
+- Object property or field → index = property or field name
+- Array item → index = numeric position
+- Map item → index = map key
 
 The State Manager does **not** automatically know how to detect changes for every state value data type, nor how to patch the corresponding state setter. Therefore, it relies on two services:
 
@@ -19,45 +19,38 @@ The State Manager does **not** automatically know how to detect changes for ever
 - A service implementing `IIndexValueAccessor`  
   Responsible for retrieving the current value.
 
-
 The **State Manager** has the followng interface:
+
 ```ts
 export interface IStateManager {
-    readonly changed: Observable<IStateChange>;
-    readonly contextChanged: Observable<IContextChanged>;
-    readonly startChangeCycle: Observable<void>;
-    readonly endChangeCycle: Observable<void>;
+  readonly changed: Observable<IStateChange>;
+  readonly contextChanged: Observable<IContextChanged>;
+  readonly startChangeCycle: Observable<void>;
+  readonly endChangeCycle: Observable<void>;
 
-    isWatched(
-        context: unknown,
-        index: unknown,
-        mustProxify: MustProxify
-    ): boolean;
+  isWatched(
+    context: unknown,
+    index: unknown,
+    mustProxify: MustProxify,
+  ): boolean;
 
-    watchState(
-        context: unknown, 
-        index: unknown, 
-        mustProxify?: MustProxify
-    ): unknown;
+  watchState(
+    context: unknown,
+    index: unknown,
+    mustProxify?: MustProxify,
+  ): unknown;
 
-    releaseState(
-        oontext: unknown, 
-        index: unknown, 
-        mustProxify?: MustProxify
-    ): void;
+  releaseState(
+    oontext: unknown,
+    index: unknown,
+    mustProxify?: MustProxify,
+  ): void;
 
-    getState<T>(
-        context: unknown, 
-        index: unknown
-    ): T;
+  getState<T>(context: unknown, index: unknown): T;
 
-    setState<T>(
-        context: unknown, 
-        index: unknown, 
-        value: T
-    ): void;
+  setState<T>(context: unknown, index: unknown, value: T): void;
 
-    clear(): void;
+  clear(): void;
 }
 ```
 
@@ -66,12 +59,14 @@ export interface IStateManager {
 ## Members
 
 ### **changed**
+
 **Type:** `Observable<IStateChange>`  
 Emits whenever a state item value changes.
 
 ---
 
 ### **contextChanged**
+
 **Type:** `Observable<IContextChanged>`  
 Emits whenever an entire context is replaced.  
 This happens, for example, when a nested object is replaced.
@@ -79,38 +74,42 @@ This happens, for example, when a nested object is replaced.
 ---
 
 ### **startChangeCycle**
+
 **Type:** `Observable<void>`  
 Emits at the start of processing a state item change.
 
 ---
 
 ### **endChangeCycle**
+
 **Type:** `Observable<void>`  
 Emits at the end of processing a state item change.
 
 ---
 
 ### **isWatched(context, index, mustProxify)**
+
 Returns whether the state item identified by the `(context, index, mustProxify)` triplet is currently being watched.
 
-| Parameter       | Type                       | Description                                                     |
-| --------------- | -------------------------- | --------------------------------------------------------------- |
-| **context**     | `unknown`                  | The context to which the state index belongs.                   |
-| **index**       | `unknown`                  | The index identifying the state on the given context.           |
-| **mustProxify** | `MustProxify` *(optional)* | Predicate determining whether a nested state value must be proxified. It should be the same predicate that was passed to `watchState`.               |
+| Parameter       | Type                       | Description                                                                                                                            |
+| --------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **context**     | `unknown`                  | The context to which the state index belongs.                                                                                          |
+| **index**       | `unknown`                  | The index identifying the state on the given context.                                                                                  |
+| **mustProxify** | `MustProxify` _(optional)_ | Predicate determining whether a nested state value must be proxified. It should be the same predicate that was passed to `watchState`. |
 
 **Returns:** `boolean`
 
 ---
 
 ### **watchState(context, index, mustProxify?)**
+
 Watches a state item identified by the `(context, index, mustProxify)` triplet so that its value is proxified and tracked.
 
-| Parameter       | Type                       | Description                                                     |
-| --------------- | -------------------------- | --------------------------------------------------------------- |
-| **context**     | `unknown`                  | The state context.                                              |
-| **index**       | `unknown`                  | The index identifying the state on the given context.           |
-| **mustProxify** | `MustProxify` *(optional)* | Predicate determining whether a nested state value must be proxified.|
+| Parameter       | Type                       | Description                                                           |
+| --------------- | -------------------------- | --------------------------------------------------------------------- |
+| **context**     | `unknown`                  | The state context.                                                    |
+| **index**       | `unknown`                  | The index identifying the state on the given context.                 |
+| **mustProxify** | `MustProxify` _(optional)_ | Predicate determining whether a nested state value must be proxified. |
 
 **Returns:**  
 `unknown` — the state item value if it was already being watched; otherwise `undefined`.
@@ -118,46 +117,50 @@ Watches a state item identified by the `(context, index, mustProxify)` triplet s
 ---
 
 ### **releaseState(context, index, mustProxify?)**
+
 Releases the state item identified by the `(context, index, mustProxify)` triplet.  
 Each call to `watchState` should have a corresponding `releaseState` call to ensure the state item is released when it is no longer needed.
 
-| Parameter       | Type                       | Description                                                     |
-| --------------- | -------------------------- | --------------------------------------------------------------- |
-| **context**     | `unknown`                  | The state context.                                              |
-| **index**       | `unknown`                  | The index identifying the state on the given context.           |
-| **mustProxify** | `MustProxify` *(optional)* | Predicate determining whether a nested state value must be proxified. It should be the same predicate that was passed to `watchState`. .              |
+| Parameter       | Type                       | Description                                                                                                                              |
+| --------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **context**     | `unknown`                  | The state context.                                                                                                                       |
+| **index**       | `unknown`                  | The index identifying the state on the given context.                                                                                    |
+| **mustProxify** | `MustProxify` _(optional)_ | Predicate determining whether a nested state value must be proxified. It should be the same predicate that was passed to `watchState`. . |
 
 **Returns:** `void`
 
 ---
 
 ### **getState(context, index)**
+
 Retrieves the current state item value identified by the `(context, index)` pair.
 
-| Parameter   | Type      | Description                                                     |
-| ----------- | --------- | --------------------------------------------------------------- |
-| **context** | `unknown` | The state context.                                              |
-| **index**   | `unknown` | The index identifying the state on the given context.           |
+| Parameter   | Type      | Description                                           |
+| ----------- | --------- | ----------------------------------------------------- |
+| **context** | `unknown` | The state context.                                    |
+| **index**   | `unknown` | The index identifying the state on the given context. |
 
 **Returns:** `unknown`
 
 ---
 
 ### **setState(context, index, value)**
+
 Sets the value of the state item identified by the `(context, index)` pair.
 
 Unlike `watchState`, `setState` does **not** track changes. It does not patch setters or proxify values.  
 A change event is emitted on the first `setState` call and again whenever the value changes in subsequent calls.
 
-| Parameter   | Type      | Description                                                     |
-| ----------- | --------- | --------------------------------------------------------------- |
-| **context** | `unknown` | The state context.                                              |
-| **index**   | `unknown` | The index identifying the state on the given context.           |
-| **value**   | `unknown` | The state value.                                                |
+| Parameter   | Type      | Description                                           |
+| ----------- | --------- | ----------------------------------------------------- |
+| **context** | `unknown` | The state context.                                    |
+| **index**   | `unknown` | The index identifying the state on the given context. |
+| **value**   | `unknown` | The state value.                                      |
 
 ---
 
 ### **clear()**
+
 Releases all registered state items.
 
 **Returns:** `void`
@@ -183,10 +186,13 @@ There are two ways to get an instance:
 
 ```ts
 import { InjectionContainer } from '@rs-x/core';
-import { IIStateManager, RsXStateManagerInjectionTokens } from '@rs-x/state-manager';
+import {
+  IIStateManager,
+  RsXStateManagerInjectionTokens,
+} from '@rs-x/state-manager';
 
 const stateManager: IIStateManager = InjectionContainer.get(
-    RsXStateManagerInjectionTokens.IStateManager
+  RsXStateManagerInjectionTokens.IStateManager,
 );
 ```
 
@@ -194,14 +200,16 @@ const stateManager: IIStateManager = InjectionContainer.get(
 
 ```ts
 import { Inject } from '@rs-x/core';
-import { IIStateManager, RsXStateManagerInjectionTokens } from '@rs-x/state-manager';
+import {
+  IIStateManager,
+  RsXStateManagerInjectionTokens,
+} from '@rs-x/state-manager';
 
 export class MyClass {
-
-    constructor(
-        @Inject(RsXStateManagerInjectionTokens.IStateManager)
-        private readonly _stateManager: IIStateManager
-    ) {}
+  constructor(
+    @Inject(RsXStateManagerInjectionTokens.IStateManager)
+    private readonly _stateManager: IIStateManager,
+  ) {}
 }
 ```
 
@@ -211,7 +219,8 @@ export class MyClass {
 
 There are two variants:
 
-### Non-recursive  
+### Non-recursive
+
 Monitors only assignment of a **new value** to the index.
 
 ```ts
@@ -241,8 +250,9 @@ stateContext.x.y = 30 will not emit any change:
 
 ---
 
-### Recursive  
-Monitors assignments **and** changes *inside* the value.  
+### Recursive
+
+Monitors assignments **and** changes _inside_ the value.  
 Example: if the value is an object, internal object changes are also observed. You can make a state item recursive by passing in a **mustProxify** predicate to a **watchState** call. The mustProxify will be called for every nested index. If you return true it will watch the index otherwise not.
 
 ```ts
@@ -335,7 +345,7 @@ You can override this factory list by providing your own custom provider service
 | Observable  | Not indexable                                                                                                                                                                | Subscribe              | [example](#observable)           |
 | Custom type | user defined                                                                                                                                                                 | user defined           | [example](#customtype)           |
 
-State item is identified by a **context**,  **index** and **mustProxify** predicate for a recursive state item
+State item is identified by a **context**, **index** and **mustProxify** predicate for a recursive state item
 The manager checks each observer factory to determine support based on the **context** and **index**.
 
 Behavior:
@@ -346,11 +356,15 @@ Behavior:
 The following example illustrates the different state types:
 
 ### Object property/field
+
 **Example**
+
 ```ts
 {% include_relative ../demo/src/rs-x-state-manager/register-property.ts %}
 ```
+
 **Output:**
+
 ```console
 Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-property.ts
 Initial value:
@@ -397,11 +411,15 @@ Latest value:
 ```
 
 ### Date
+
 **Example**
+
 ```ts
 {% include_relative ../demo/src/rs-x-state-manager/register-date.ts %}
 ```
+
 **Output:**
+
 ```console
 Running demo: demo/src/rs-x-state-manager/register-date.ts
 
@@ -431,11 +449,15 @@ Latest value:
 ```
 
 ### Array
+
 **Example**
+
 ```ts
 {% include_relative ../demo/src/rs-x-state-manager/register-array.ts %}
 ```
+
 **Output:**
+
 ```console
 Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-array.ts
 Initial value:
@@ -476,11 +498,15 @@ Latest value:
 ```
 
 ### Map
+
 **Example**
+
 ```ts
 {% include_relative ../demo/src/rs-x-state-manager/register-map.ts %}
 ```
+
 **Output:**
+
 ```console
 Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-map.ts
 Initial value:
@@ -539,11 +565,15 @@ Latest value:
 ```
 
 ### Set
+
 **Example**
+
 ```ts
 {% include_relative ../demo/src/rs-x-state-manager/register-set.ts %}
 ```
+
 **Output:**
+
 ```console
 Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-set.ts
 Initial value:
@@ -584,11 +614,15 @@ Latest value:
 ```
 
 ### Promise
+
 **Example**
+
 ```ts
 {% include_relative ../demo/src/rs-x-state-manager/register-promise.ts %}
 ```
+
 **Output:**
+
 ```console
 Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-promise.ts
 Initial value:
@@ -599,11 +633,15 @@ Latest value: 30
 ```
 
 ### Observable
+
 **Example**
+
 ```ts
 {% include_relative ../demo/src/rs-x-state-manager/register-observable.ts %}
 ```
+
 **Output:**
+
 ```console
 Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/register-observable.ts
 Initial value:
@@ -614,18 +652,22 @@ Latest value: 30
 ```
 
 ### Custom type
-1. Create an accessor to retrieve index values on your type.  
-2. Create a factory to create an observer for your data type.  
+
+1. Create an accessor to retrieve index values on your type.
+2. Create a factory to create an observer for your data type.
 3. Create a factory to create an observer for an index on your data instance.
 
 The following example demonstrates adding support for a custom `TextDocument` class:
 
 **Example**
-```ts
+
+````ts
 {% include_relative ../demo/src/rs-x-state-manager/state-manager-customize.ts %}
 ```nclude_relative ../demo/src/rs-x-state-manager/register-set.ts %}
-```
+````
+
 **Output:**
+
 ```console
 Running demo: /Users/robertsanders/projects/rs-x/demo/src/rs-x-state-manager/state-manager-customize.ts
 
@@ -675,4 +717,3 @@ Page 1:
 Changing line 1 on page 1 does not emit change:
 ---
 ```
-

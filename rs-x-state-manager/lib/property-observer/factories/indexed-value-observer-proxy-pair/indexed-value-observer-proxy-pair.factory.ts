@@ -1,19 +1,19 @@
 import {
-   type IDisposableOwner,
-   type IErrorLog,
-   type IGuidFactory,
-   type IIndexValueAccessor,
-   type IPropertyChange,
-   truePredicate,
-   Type,
-   UnexpectedException
+  type IDisposableOwner,
+  type IErrorLog,
+  type IGuidFactory,
+  type IIndexValueAccessor,
+  type IPropertyChange,
+  type IValueMetadata,
+  Type,
+  UnexpectedException,
 } from '@rs-x/core';
 
+import type { IIndexWatchRule } from '../../../index-watch-rule-registry/index-watch-rule.interface';
 import { type IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
 import {
-   type IObserverProxyPair,
-   type IPropertyInfo,
-   type MustProxify,
+  type IObserverProxyPair,
+  type IPropertyInfo,
 } from '../../../object-property-observer-proxy-pair-manager.type';
 import { type IObserver } from '../../../observer.interface';
 import { type ObserverGroup } from '../../../observer-group';
@@ -21,226 +21,206 @@ import { type IProxyRegistry } from '../../../proxies/proxy-registry/proxy-regis
 import { type IIndexObserverProxyPairFactory } from '../../index-observer-proxy-pair.factory.interface';
 
 import {
-   type IIndexSetObserverManager,
-   IndexChangeSubscriptionManager,
+  type IIndexSetObserverManager,
+  IndexChangeSubscriptionManager,
 } from './index-change-subscription-manager';
 
-export abstract class IndexObserverProxyPairFactory<TContext, TIndex>
-   implements IIndexObserverProxyPairFactory<TContext> {
-   private readonly _indexChangeSubscriptionManager: IndexChangeSubscriptionManager<TIndex>;
+export abstract class IndexObserverProxyPairFactory<
+  TContext,
+  TIndex,
+> implements IIndexObserverProxyPairFactory<TContext> {
+  private readonly _indexChangeSubscriptionManager: IndexChangeSubscriptionManager<TIndex>;
 
-   protected constructor(
-      private readonly _objectObserveryManager: IObjectObserverProxyPairManager,
-      indexSetObserverManager: IIndexSetObserverManager<TIndex>,
-      errorLog: IErrorLog,
-      guidFactory: IGuidFactory,
-      protected readonly _indexValueAccessor: IIndexValueAccessor,
-      private readonly _proxyRegister: IProxyRegistry,
-      private readonly mustHandleChange?: (change: IPropertyChange) => boolean,
-
-   ) {
-      this._indexChangeSubscriptionManager =
-         new IndexChangeSubscriptionManager<TIndex>(
-            indexSetObserverManager,
-            errorLog,
-            guidFactory
-         );
-   }
-
-   public dispose(): void {
-      this._indexChangeSubscriptionManager.dispose();
-   }
-
-   public abstract applies(
-      object: unknown,
-      propertyInfo: IPropertyInfo
-   ): boolean;
-
-   public create(
-      owner: IDisposableOwner,
-      object: TContext,
-      propertyInfo: IPropertyInfo
-   ): IObserverProxyPair<TContext> {
-      const index = propertyInfo.key as TIndex;
-      const valueAtIndex = this._indexValueAccessor.getValue(object, index);
-      const mustProxify = this.getMustProxifyHandler(
-         propertyInfo.mustProxify,
-         object,
-         index
+  protected constructor(
+    private readonly _objectObserveryManager: IObjectObserverProxyPairManager,
+    indexSetObserverManager: IIndexSetObserverManager<TIndex>,
+    errorLog: IErrorLog,
+    guidFactory: IGuidFactory,
+    protected readonly _indexValueAccessor: IIndexValueAccessor,
+    private readonly _proxyRegister: IProxyRegistry,
+    private readonly _valueMetadata: IValueMetadata,
+    private readonly mustHandleChange?: (change: IPropertyChange) => boolean,
+  ) {
+    this._indexChangeSubscriptionManager =
+      new IndexChangeSubscriptionManager<TIndex>(
+        indexSetObserverManager,
+        errorLog,
+        guidFactory,
       );
-      const indexValueObserverProxyPair = mustProxify
-         ? this.createIndexValueProxy(
-            propertyInfo,
-            object,
-            index,
-            valueAtIndex,
-            mustProxify
-         )
-         : undefined;
-      // If we observe the index value than we ask the observer to provide the initial value
-      // For example for promise observer we don't want to use the index value because the value
-      // will be a promise and the value should be the resolved value. In this case the initial
-      // value should be undefined and the resolved value will be emitted later
-      const initialValue = indexValueObserverProxyPair
-         ? indexValueObserverProxyPair.observer.value
-         : valueAtIndex;;
-      const groupObserver = this.createGroupObserver(
-         owner,
-         object,
-         index,
-         initialValue,
-         propertyInfo.initializeManually,
-         indexValueObserverProxyPair?.observer,
-         mustProxify
+  }
+
+  public dispose(): void {
+    this._indexChangeSubscriptionManager.dispose();
+  }
+
+  public abstract applies(
+    object: unknown,
+    propertyInfo: IPropertyInfo,
+  ): boolean;
+
+  public create(
+    owner: IDisposableOwner,
+    object: TContext,
+    propertyInfo: IPropertyInfo,
+  ): IObserverProxyPair<TContext> {
+    const index = propertyInfo.index as TIndex;
+    const valueAtIndex = this._indexValueAccessor.getValue(object, index);
+    const needProxy =
+      this._valueMetadata.isAsync(valueAtIndex) ||
+      propertyInfo.indexWatchRule?.test?.(index, object);
+    const indexValueObserverProxyPair = needProxy
+      ? this.createIndexValueProxy(
+          propertyInfo,
+          object,
+          index,
+          valueAtIndex,
+          propertyInfo.indexWatchRule,
+        )
+      : undefined;
+    // If we observe the index value than we ask the observer to provide the initial value
+    // For example for promise observer we don't want to use the index value because the value
+    // will be a promise and the value should be the resolved value. In this case the initial
+    // value should be undefined and the resolved value will be emitted later
+    const initialValue = indexValueObserverProxyPair
+      ? indexValueObserverProxyPair.observer.value
+      : valueAtIndex;
+    const groupObserver = this.createGroupObserver(
+      owner,
+      object,
+      index,
+      initialValue,
+      propertyInfo.initializeManually,
+      indexValueObserverProxyPair?.observer,
+      propertyInfo.indexWatchRule,
+    );
+    return {
+      observer: groupObserver,
+      proxy: indexValueObserverProxyPair?.proxy as TContext,
+      proxyTarget: valueAtIndex as TContext,
+    };
+  }
+
+  private createIndexValueProxy(
+    propertyInfo: IPropertyInfo,
+    object: TContext,
+    index: TIndex,
+    value: unknown,
+    indexWatchRule: IIndexWatchRule | undefined,
+  ): IObserverProxyPair | undefined {
+    const setValue =
+      propertyInfo.setValue ??
+      ((v: unknown) => this._indexValueAccessor.setValue(object, index, v));
+    return this.proxifyIndexValue(
+      value,
+      indexWatchRule,
+      propertyInfo.initializeManually,
+      setValue,
+    );
+  }
+
+  private createGroupObserver(
+    owner: IDisposableOwner,
+    object: TContext,
+    index: TIndex,
+    initialValue: unknown,
+    initializeManually: boolean | undefined,
+    indexValueObserver: IObserver | undefined,
+    indexWatchRule: IIndexWatchRule | undefined,
+  ): ObserverGroup {
+    const indexChangeSubscriptionsForContextManager =
+      this._indexChangeSubscriptionManager.create(object).instance;
+    const { id } = indexChangeSubscriptionsForContextManager.create({
+      index,
+      initialValue,
+      indexValueObserver,
+      indexWatchRule,
+      initializeManually,
+      mustHandleChange: this.mustHandleChange,
+      onChanged: (change: IPropertyChange) =>
+        this.onIndexSet(change, id, indexWatchRule),
+      owner,
+    });
+    return Type.cast(
+      indexChangeSubscriptionsForContextManager.getSubsriptionData(id),
+    );
+  }
+
+  private onIndexSet(
+    change: IPropertyChange,
+    subsriptionId: string,
+    indexWatchRule: IIndexWatchRule | undefined,
+  ): void {
+    const isAsync = this._valueMetadata.isAsync(change.newValue);
+    const emitValue = Type.isNullOrUndefined(change.newValue) || !isAsync;
+    const observerGroup = this._indexChangeSubscriptionManager
+      .getFromId(change.target)
+      ?.getSubsriptionData(subsriptionId);
+
+    if (!observerGroup) {
+      throw new UnexpectedException(
+        `Observer group not found for subscription id ${subsriptionId}`,
       );
-      return {
-         observer: groupObserver,
-         proxy: indexValueObserverProxyPair?.proxy as TContext,
-         proxyTarget: valueAtIndex as TContext,
-      };
-   }
+    }
 
-   private getMustProxifyHandler(
-      mustProxify: MustProxify | undefined,
-      context: unknown,
-      index: unknown
-   ): MustProxify | undefined {
-      if (mustProxify) {
-         return mustProxify;
-      }
-      return this._indexValueAccessor.isAsync(context, index)
-         ? truePredicate
-         : undefined;
-   }
+    if (emitValue) {
+      observerGroup.emitValue(change.newValue);
+    }
 
-   private createIndexValueProxy(
-      propertyInfo: IPropertyInfo,
-      object: TContext,
-      index: TIndex,
-      value: unknown,
-      mustProxify: MustProxify
-   ): IObserverProxyPair | undefined {
-      const setValue =
-         propertyInfo.setValue ??
-         ((v: unknown) => this._indexValueAccessor.setValue(object, index, v));
-      return this.proxifyIndexValue(
-         value,
-         mustProxify,
-         propertyInfo.initializeManually,
-         setValue
-      );
-   }
+    const observers = this.getNestedObservers(change, isAsync, indexWatchRule);
 
-   private createGroupObserver(
-      owner: IDisposableOwner,
-      object: TContext,
-      index: TIndex,
-      initialValue: unknown,
-      initializeManually: boolean | undefined,
-      indexValueObserver: IObserver | undefined,
-      mustProxify: MustProxify | undefined
-   ): ObserverGroup {
-      const indexChangeSubscriptionsForContextManager =
-         this._indexChangeSubscriptionManager.create(object).instance;
-      const { id } = indexChangeSubscriptionsForContextManager.create({
-         index,
-         initialValue,
-         indexValueObserver,
-         mustProxify,
-         initializeManually,
-         mustHandleChange: this.mustHandleChange,
-         onChanged: (change: IPropertyChange) =>
-            this.onIndexSet(change, id, mustProxify),
-         owner,
-      });
-      return Type.cast(indexChangeSubscriptionsForContextManager.getSubsriptionData(id));
-   }
+    observerGroup.replaceObservers(observers);
+  }
 
-   private onIndexSet(
-      change: IPropertyChange,
-      subsriptionId: string,
-      mustProxify: MustProxify | undefined
-   ): void {
-
-      const emitValue = Type.isNullOrUndefined(change.newValue) ||
-         !this._indexValueAccessor.isAsync(change.target, change.id);
-      const observerGroup = this._indexChangeSubscriptionManager
-         .getFromId(change.target)
-         ?.getSubsriptionData(subsriptionId);
-
-      if (!observerGroup) {
-         throw new UnexpectedException(
-            `Observer group not found for subscription id ${subsriptionId}`
-         );
-      }
-
-      if (emitValue) {
-         observerGroup.emitValue(change.newValue);
-      }
-
-      const observers = this.getNestedObservers(
-         change,
-         mustProxify
-      );
-
-      observerGroup.replaceObservers(observers);
-   }
-
-   private getNestedObservers(
-      change: IPropertyChange,
-      mustProxify: MustProxify | undefined
-   ): IObserver[] {
-      const mustProxifyHandler = this.getMustProxifyHandler(
-         mustProxify,
-         change.target,
-         change.id
+  private getNestedObservers(
+    change: IPropertyChange,
+    isAsync: boolean,
+    indexWatchRule: IIndexWatchRule | undefined,
+  ): IObserver[] {
+    let observers: IObserver[] = [];
+    if (
+      isAsync ||
+      (indexWatchRule && indexWatchRule.test(change.index, change.target))
+    ) {
+      const observerProxyPair = this.proxifyIndexValue(
+        change.newValue,
+        indexWatchRule as IIndexWatchRule,
+        true,
+        change.setValue ??
+          ((value: unknown) => {
+            const obj = Type.toObject(change.target);
+            if (obj) {
+              obj[change.index as string] = value;
+            }
+          }),
       );
 
-      let observers: IObserver[] = [];
-      if (mustProxifyHandler) {
-         const observerProxyPair = this.proxifyIndexValue(
-            change.newValue,
-            mustProxifyHandler,
-            true,
-            change.setValue ??
-            ((value: unknown) => {
-               const obj = Type.toObject(change.target);
-               if (obj) {
-                  obj[change.id as string] = value;
-               }
-
-            })
-         );
-
-         if (observerProxyPair) {
-            observers.push(observerProxyPair.observer);
-
-         }
+      if (observerProxyPair) {
+        observers.push(observerProxyPair.observer);
       }
-      return observers;
-   }
+    }
+    return observers;
+  }
 
-   private proxifyIndexValue(
-      value: unknown,
-      mustProxify: MustProxify,
-      initializeManually: boolean | undefined,
-      setValue: (value: unknown) => void
-   ): IObserverProxyPair | undefined {
+  private proxifyIndexValue(
+    value: unknown,
+    indexWatchRule: IIndexWatchRule | undefined,
+    initializeManually: boolean | undefined,
+    setValue: (value: unknown) => void,
+  ): IObserverProxyPair | undefined {
+    const target = this._proxyRegister.getProxyTarget(value) ?? value;
+    const observerProxyPair = this._objectObserveryManager.create({
+      target,
+      indexWatchRule,
+      initializeManually,
+    }).instance;
+    if (!observerProxyPair) {
+      return undefined;
+    }
 
-      const target = this._proxyRegister.getProxyTarget(value) ?? value;
-      const observerProxyPair = this._objectObserveryManager.create({
-         target,
-         mustProxify,
-         initializeManually,
-      }).instance;
-      if (!observerProxyPair) {
-         return undefined;
-      }
+    if (observerProxyPair.proxy !== undefined) {
+      setValue(observerProxyPair.proxy);
+    }
 
-      if (observerProxyPair.proxy !== undefined) {
-         setValue(observerProxyPair.proxy);
-      }
-
-      return observerProxyPair;
-   }
+    return observerProxyPair;
+  }
 }

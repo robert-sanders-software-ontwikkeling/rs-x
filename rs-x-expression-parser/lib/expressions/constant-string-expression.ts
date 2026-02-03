@@ -1,10 +1,8 @@
-import { type IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
-
 import { ConstantExpression } from './constant-expression';
 import { ExpressionType } from './expression-parser.interface';
 
 export class ConstantStringExpression extends ConstantExpression<string> {
-   constructor(value: string, expressionChangeTransactionManager: IExpressionChangeTransactionManager) {
-      super(ExpressionType.String, value, value, expressionChangeTransactionManager);
-   }
+  constructor(value: string) {
+    super(ExpressionType.String, value, value);
+  }
 }

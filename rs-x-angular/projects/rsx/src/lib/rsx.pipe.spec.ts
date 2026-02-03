@@ -8,12 +8,11 @@ import {
   type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
-  unloadRsXExpressionParserModule
+  unloadRsXExpressionParserModule,
 } from '@rs-x/expression-parser';
 
 import { RsxPipe } from './rsx.pipe';
 import { IExpressionFactoryToken } from './rsx.providers';
-
 
 describe('RsxPipe', () => {
   let pipe: RsxPipe;
@@ -22,8 +21,9 @@ describe('RsxPipe', () => {
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
-    expressionFactory = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionFactory);
-
+    expressionFactory = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionFactory,
+    );
   });
 
   afterAll(async () => {
@@ -32,7 +32,7 @@ describe('RsxPipe', () => {
 
   beforeEach(() => {
     cdr = Type.cast({
-      markForCheck: vi.fn()
+      markForCheck: vi.fn(),
     });
 
     pipe = runInInjectionContext(
@@ -45,14 +45,16 @@ describe('RsxPipe', () => {
             return expressionFactory;
           }
           throw new Error(`No provider for ${token}`);
-        }
+        },
       },
-      () => new RsxPipe()
+      () => new RsxPipe(),
     );
   });
 
   it('will thrown an error when not passing in null|undefined, IExpression, or string', async () => {
-    expect(() => pipe.transform(Type.cast<IExpression>({}), {})).toThrow(new UnsupportedException(`string or IExpression expected`));
+    expect(() => pipe.transform(Type.cast<IExpression>({}), {})).toThrow(
+      new UnsupportedException(`string or IExpression expected`),
+    );
   });
 
   it('evaluates a simple expression string', async () => {
@@ -66,7 +68,6 @@ describe('RsxPipe', () => {
     expect(actual).toEqual(12);
   });
 
-
   it('evaluates a simple expression', async () => {
     const expression = expressionFactory.create({ x: 10 }, 'x + 2');
     try {
@@ -77,7 +78,6 @@ describe('RsxPipe', () => {
       const actual = pipe.transform(expression);
 
       expect(actual).toEqual(12);
-
     } finally {
       expression.dispose();
     }
@@ -153,7 +153,6 @@ describe('RsxPipe', () => {
 
       expect(createSpy).toHaveBeenCalledTimes(1);
       expect(createSpy).toBeCalledWith(newCtx, 'x + 2');
-
     } finally {
       createSpy.mockRestore();
     }
@@ -162,9 +161,11 @@ describe('RsxPipe', () => {
   it('dipose old expression when expression string changes', async () => {
     const ctx = { x: 10 };
     pipe.transform('x + 2', ctx);
-    const disposeExpressionSpy = vi.spyOn(Type.cast<{ disposeExpression: () => void }>(pipe), 'disposeExpression');
+    const disposeExpressionSpy = vi.spyOn(
+      Type.cast<{ disposeExpression: () => void }>(pipe),
+      'disposeExpression',
+    );
     try {
-
       pipe.transform('x + 2', ctx);
 
       expect(disposeExpressionSpy).not.toHaveBeenCalled();
@@ -180,9 +181,11 @@ describe('RsxPipe', () => {
   it('dipose old expression when context changes', async () => {
     const ctx = { x: 10 };
     pipe.transform('x + 2', ctx);
-    const disposeExpressionSpy = vi.spyOn(Type.cast<{ disposeExpression: () => void }>(pipe), 'disposeExpression');
+    const disposeExpressionSpy = vi.spyOn(
+      Type.cast<{ disposeExpression: () => void }>(pipe),
+      'disposeExpression',
+    );
     try {
-
       pipe.transform('x + 2', ctx);
 
       expect(disposeExpressionSpy).not.toHaveBeenCalled();
@@ -197,15 +200,17 @@ describe('RsxPipe', () => {
 
   it('disposeExpression will dispose expression if it owns it', () => {
     pipe.transform('x + 2', { x: 1 });
-    const pipeWithExpression = Type.cast<{ _expression: IExpression, _changedSubscription?: Subscription }>(pipe);
+    const pipeWithExpression = Type.cast<{
+      _expression: IExpression;
+      _changedSubscription?: Subscription;
+    }>(pipe);
     const disposeSpy = vi.spyOn(pipeWithExpression._expression, 'dispose');
 
     pipe.transform(null);
 
     expect(disposeSpy).toHaveBeenCalledTimes(1);
-
   });
- 
+
   it('disposeExpression will not dispose expression if doesn not own it', () => {
     const expression = expressionFactory.create({ x: 1 }, 'x + 2');
     try {
@@ -222,17 +227,25 @@ describe('RsxPipe', () => {
 
   it('disposeExpression will will unsubscribe to changed event', () => {
     pipe.transform('x + 2', { x: 1 });
-    const pipeWithExpression = Type.cast<{ _expression: IExpression, _changedSubscription?: Subscription }>(pipe);
+    const pipeWithExpression = Type.cast<{
+      _expression: IExpression;
+      _changedSubscription?: Subscription;
+    }>(pipe);
 
-    const unsubscribeExpression = vi.spyOn(pipeWithExpression._changedSubscription as Subscription, 'unsubscribe');
+    const unsubscribeExpression = vi.spyOn(
+      pipeWithExpression._changedSubscription as Subscription,
+      'unsubscribe',
+    );
 
     pipe.transform('x + 2', { x: 2 });
     expect(unsubscribeExpression).toHaveBeenCalledTimes(1);
-
   });
 
   it('cleans up expressions on destroy', () => {
-    const disposeSpy = vi.spyOn(Type.cast<{ disposeExpression: () => void }>(pipe), 'disposeExpression');
+    const disposeSpy = vi.spyOn(
+      Type.cast<{ disposeExpression: () => void }>(pipe),
+      'disposeExpression',
+    );
 
     pipe.ngOnDestroy();
 

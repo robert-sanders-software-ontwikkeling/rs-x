@@ -1,4 +1,4 @@
 export interface IDisposableOwner {
-   canDispose?(): boolean;
-   release(): void;
+  canDispose?(): boolean;
+  release(): void;
 }

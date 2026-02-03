@@ -1,4 +1,4 @@
 export interface IDeepClone {
-   readonly priority: number;
-   clone(source: unknown): unknown;
+  readonly priority: number;
+  clone(source: unknown): unknown;
 }

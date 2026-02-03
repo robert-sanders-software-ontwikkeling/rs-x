@@ -1,5 +1,5 @@
 ---
-"@rs-x/core": patch
+'@rs-x/core': patch
 ---
 
 Implemented expression cloning

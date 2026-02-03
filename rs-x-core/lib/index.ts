@@ -12,4 +12,5 @@ export * from './rs-x-core.module';
 export * from './sequence-id';
 export * from './singleton-factory';
 export * from './types';
+export * from './value-metadata';
 export * from './wait-for-event';

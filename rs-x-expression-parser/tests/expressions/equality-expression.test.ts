@@ -1,111 +1,114 @@
 import { InjectionContainer, Type, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
+import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import { EqualityExpression } from '../../lib/expressions/equality-expression';
-import { ExpressionType, type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
-   RsXExpressionParserModule,
-   unloadRsXExpressionParserModule,
+  ExpressionType,
+  type IExpression,
+} from '../../lib/expressions/expression-parser.interface';
+import {
+  RsXExpressionParserModule,
+  unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
 
-
 describe('EqualityExpression tests', () => {
-   let expressionFactory: IExpressionFactory;
-   let expression: IExpression | undefined;
+  let expressionFactory: IExpressionFactory;
+  let expression: IExpression | undefined;
 
-   beforeAll(async () => {
-      await InjectionContainer.load(RsXExpressionParserModule);
-      expressionFactory = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IExpressionFactory
-      );
-   });
+  beforeAll(async () => {
+    await InjectionContainer.load(RsXExpressionParserModule);
+    expressionFactory = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionFactory,
+    );
+  });
 
-   afterAll(async () => {
-      await unloadRsXExpressionParserModule();
-   });
+  afterAll(async () => {
+    await unloadRsXExpressionParserModule();
+  });
 
-   afterEach(() => {
-      expression?.dispose();
-      expression = undefined;
-   });
+  afterEach(() => {
+    expression?.dispose();
+    expression = undefined;
+  });
 
-   it('type', () => {
-      const context = { a: 1, b: 2 };
-      expression = expressionFactory.create(context, 'a == b');
-      expect(expression.type).toEqual(ExpressionType.Equality);
-   });
+  it('type', () => {
+    const context = { a: 1, b: 2 };
+    expression = expressionFactory.create(context, 'a == b');
+    expect(expression.type).toEqual(ExpressionType.Equality);
+  });
 
-   it('clone', async () => {
-      const transactionManager: IExpressionChangeTransactionManager = InjectionContainer.get(
-         RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
+  it('clone', async () => {
+    const services: IExpressionServices = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionServices,
+    );
+    const context = { a: 1, b: 2 };
+    expression = expressionFactory.create(context, 'a == b');
 
-      const context = { a: 1, b: 2 };
-      expression = expressionFactory.create(context, 'a == b');
+    const clonedExpression = expression.clone();
 
-      const clonedExpression = expression.clone();
+    try {
+      expect(clonedExpression).toBeInstanceOf(EqualityExpression);
+      expect(clonedExpression.type).toEqual(ExpressionType.Equality);
+      expect(clonedExpression.expressionString).toEqual('a == b');
 
-      try {
-         expect(clonedExpression).toBeInstanceOf(EqualityExpression);
-         expect(clonedExpression.type).toEqual(ExpressionType.Equality);
-         expect(clonedExpression.expressionString).toEqual('a == b');
+      await new WaitForEvent(clonedExpression, 'changed').wait(() => {
+        clonedExpression.bind({
+          rootContext: context,
+          services,
+        });
 
-         await new WaitForEvent(clonedExpression, 'changed').wait(() => {
-            clonedExpression.bind({
-               transactionManager,
-               rootContext: context
-            });
+        services.transactionManager.commit();
+      });
+      expect(clonedExpression.value).toEqual(false);
+    } finally {
+      clonedExpression.dispose();
+    }
+  });
 
-            transactionManager.commit();
-         });
-         expect(clonedExpression.value).toEqual(false);
-      } finally {
-         clonedExpression.dispose();
-      }
-   });
+  it('will emit change event for initial value: false', async () => {
+    const context = { a: 1, b: 2 };
+    expression = expressionFactory.create(context, 'a == b');
 
-   it('will emit change event for initial value: false', async () => {
-      const context = { a: 1, b: 2 };
-      expression = expressionFactory.create(context, 'a == b');
+    const actual = (await new WaitForEvent(expression, 'changed').wait(
+      () => {},
+    )) as IExpression;
 
-      const actual = (await new WaitForEvent(expression, 'changed').wait(
-         () => { }
-      )) as IExpression;
+    expect(actual.value).toEqual(false);
+    expect(actual).toBe(expression);
+  });
 
-      expect(actual.value).toEqual(false);
-      expect(actual).toBe(expression);
-   });
+  it('will emit change event for initial value: true', async () => {
+    const context = { a: 1, b: 1 };
+    expression = expressionFactory.create(context, 'a == b');
 
-   it('will emit change event for initial value: true', async () => {
-      const context = { a: 1, b: 1 };
-      expression = expressionFactory.create(context, 'a == b');
+    const actual = (await new WaitForEvent(expression, 'changed').wait(
+      () => {},
+    )) as IExpression;
 
-      const actual = await new WaitForEvent(expression, 'changed').wait(() => { }) as IExpression;
+    expect(actual.value).toEqual(true);
+    expect(actual).toBe(expression);
+  });
 
-      expect(actual.value).toEqual(true);
-      expect(actual).toBe(expression);
-   });
+  it('will emit change event when operands changes', async () => {
+    const context = {
+      a: {
+        b: 3,
+      },
+      c: 2,
+    };
+    expression = expressionFactory.create(context, 'a.b == c');
+    // Wait till the expression has been initialized before changing value
+    await new WaitForEvent(expression, 'changed').wait(() => {});
 
-   it('will emit change event when operands changes', async () => {
-      const context = {
-         a: {
-            b: 3,
-         },
-         c: 2,
-      };
-      expression = expressionFactory.create(context, 'a.b == c');
-      // Wait till the expression has been initialized before changing value
-      await new WaitForEvent(expression, 'changed').wait(() => { });
+    const actual = (await new WaitForEvent(expression, 'changed', {
+      ignoreInitialValue: true,
+    }).wait(() => {
+      context.a.b = Type.cast('2');
+    })) as IExpression;
 
-
-      const actual = (await new WaitForEvent(expression, 'changed', {
-         ignoreInitialValue: true,
-      }).wait(() => {
-         context.a.b = Type.cast('2');
-      })) as IExpression;
-
-      expect(actual.value).toEqual(true);
-      expect(actual).toBe(expression);
-   });
+    expect(actual.value).toEqual(true);
+    expect(actual).toBe(expression);
+  });
 });

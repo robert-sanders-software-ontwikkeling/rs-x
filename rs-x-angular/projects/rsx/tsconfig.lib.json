@@ -8,12 +8,6 @@
     "declarationMap": true,
     "types": []
   },
-  "include": [
-    "src/**/*.ts",
-    "vitest.config.ts",
-    "setup-vitest.ts"
-  ],
-  "exclude": [
-    "**/*.spec.ts"
-  ]
+  "include": ["src/**/*.ts", "vitest.config.ts", "setup-vitest.ts"],
+  "exclude": ["**/*.spec.ts"]
 }

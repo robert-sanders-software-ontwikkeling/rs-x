@@ -5,26 +5,26 @@ import { BinaryExpression } from './binary-expression';
 import { ExpressionType } from './expression-parser.interface';
 
 export class InstanceofExpression extends BinaryExpression<
-   boolean,
-   ConstructorType
+  boolean,
+  ConstructorType
 > {
-   constructor(
-      expressionString: string,
-      leftExpression: AbstractExpression,
-      rightExpression: AbstractExpression<ConstructorType>
-   ) {
-      super(
-         ExpressionType.Instanceof,
-         expressionString,
-         leftExpression,
-         rightExpression
-      );
-   }
+  constructor(
+    expressionString: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression<ConstructorType>,
+  ) {
+    super(
+      ExpressionType.Instanceof,
+      expressionString,
+      leftExpression,
+      rightExpression,
+    );
+  }
 
-   protected override evaluateExpression(
-      object: object,
-      type: ConstructorType
-   ): boolean {
-      return object instanceof type;
-   }
+  protected override evaluateExpression(
+    object: object,
+    type: ConstructorType,
+  ): boolean {
+    return object instanceof type;
+  }
 }

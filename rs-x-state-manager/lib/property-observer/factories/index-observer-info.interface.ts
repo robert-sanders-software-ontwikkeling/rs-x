@@ -1,8 +1,8 @@
-
 export interface IIndexObserverIdInfo<TIndex = unknown> {
-   index: TIndex;
+  index: TIndex;
 }
-export interface IIndexObserverInfo<TIndex = unknown>
-   extends IIndexObserverIdInfo<TIndex> {
-   initialValue?: unknown;
+export interface IIndexObserverInfo<
+  TIndex = unknown,
+> extends IIndexObserverIdInfo<TIndex> {
+  initialValue?: unknown;
 }

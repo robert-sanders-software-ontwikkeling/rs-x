@@ -3,23 +3,20 @@ import { BinaryExpression } from './binary-expression';
 import { ExpressionType } from './expression-parser.interface';
 
 export class LessThanOrEqualExpression extends BinaryExpression<boolean> {
-   constructor(
-      expressionString: string,
-      leftExpression: AbstractExpression<number>,
-      rightExpression: AbstractExpression<number>
-   ) {
-      super(
-         ExpressionType.LessThanOrEqual,
-         expressionString,
-         leftExpression,
-         rightExpression
-      );
-   }
+  constructor(
+    expressionString: string,
+    leftExpression: AbstractExpression<number>,
+    rightExpression: AbstractExpression<number>,
+  ) {
+    super(
+      ExpressionType.LessThanOrEqual,
+      expressionString,
+      leftExpression,
+      rightExpression,
+    );
+  }
 
-   protected override evaluateExpression(
-      a: number,
-      b: number
-   ): boolean {
-      return a <= b;
-   }
+  protected override evaluateExpression(a: number, b: number): boolean {
+    return a <= b;
+  }
 }

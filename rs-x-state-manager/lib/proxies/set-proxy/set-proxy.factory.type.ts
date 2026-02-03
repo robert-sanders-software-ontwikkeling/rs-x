@@ -1,21 +1,18 @@
 import { type IDisposableOwner, type ISingletonFactory } from '@rs-x/core';
 
-import {
-   type IObserverProxyPair
-} from '../../object-property-observer-proxy-pair-manager.type';
+import { type IObserverProxyPair } from '../../object-property-observer-proxy-pair-manager.type';
 
 export interface ISetProxifyIdData {
-   set: Set<unknown>;
-
+  set: Set<unknown>;
 }
 export interface ISetProxifyData extends ISetProxifyIdData {
-   owner?: IDisposableOwner;
+  owner?: IDisposableOwner;
 }
 
 export type ISetObserverProxyPair = IObserverProxyPair<Set<unknown>>;
 export type ISetProxyFactory = ISingletonFactory<
-   Set<unknown>,
-   ISetProxifyData,
-   ISetObserverProxyPair,
-   ISetProxifyIdData
+  Set<unknown>,
+  ISetProxifyData,
+  ISetObserverProxyPair,
+  ISetProxifyIdData
 >;
