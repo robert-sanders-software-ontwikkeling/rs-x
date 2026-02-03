@@ -7,7 +7,6 @@ import {
   RsXCoreInjectionTokens,
 } from '@rs-x/core';
 import {
-  type IIndexWatchRuleRegistry,
   type IStateManager,
   RsXStateManagerInjectionTokens,
 } from '@rs-x/state-manager';
@@ -32,7 +31,5 @@ export class ExpressionServices implements IExpressionServices {
     public readonly guidFactory: IGuidFactory,
     @Inject(RsXCoreInjectionTokens.IValueMetadata)
     public readonly valueMetadata: IValueMetadata,
-    @Inject(RsXStateManagerInjectionTokens.IIndexWatchRuleRegistry)
-    public readonly indexWatchRuleRegistry: IIndexWatchRuleRegistry,
   ) {}
 }

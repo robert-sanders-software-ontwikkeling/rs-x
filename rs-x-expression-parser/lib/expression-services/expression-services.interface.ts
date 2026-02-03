@@ -4,7 +4,6 @@ import type {
   IValueMetadata,
 } from '@rs-x/core';
 import type {
-  IIndexWatchRuleRegistry,
   IStateManager,
 } from '@rs-x/state-manager';
 
@@ -16,5 +15,4 @@ export interface IExpressionServices {
   readonly indexValueAccessor: IIndexValueAccessor;
   readonly guidFactory: IGuidFactory;
   readonly valueMetadata: IValueMetadata;
-  readonly indexWatchRuleRegistry: IIndexWatchRuleRegistry;
 }

@@ -1,10 +1,11 @@
-import { InjectionContainer, truePredicate, utCDate } from '@rs-x/core';
+import { InjectionContainer, utCDate } from '@rs-x/core';
 import {
   type IProxyRegistry,
   type IStateChange,
   type IStateManager,
   RsXStateManagerInjectionTokens,
   RsXStateManagerModule,
+  watchIndexRecursiveRule
 } from '@rs-x/state-manager';
 
 // Load the state manager module into the injection container
@@ -20,12 +21,12 @@ function watchDate(stateManager: IStateManager) {
   };
   const changeSubscription = stateManager.changed.subscribe(
     (change: IStateChange) => {
-      console.log(`${change.key}: ${(change.newValue as Date).toUTCString()}`);
+      console.log(`${change.index}: ${(change.newValue as Date).toUTCString()}`);
     },
   );
   try {
     console.log('Initial value:');
-    stateManager.watchState(stateContext, 'date', truePredicate);
+    stateManager.watchState(stateContext, 'date', watchIndexRecursiveRule);
 
     console.log('Changed value:');
     stateContext.date.setFullYear(2023);
@@ -40,7 +41,7 @@ function watchDate(stateManager: IStateManager) {
   } finally {
     changeSubscription.unsubscribe();
     // Always release the state when it is no longer needed.
-    stateManager.releaseState(stateContext, 'date', truePredicate);
+    stateManager.releaseState(stateContext, 'date', watchIndexRecursiveRule);
   }
 }
 

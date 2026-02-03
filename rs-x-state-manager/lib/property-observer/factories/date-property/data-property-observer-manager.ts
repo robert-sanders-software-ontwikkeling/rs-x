@@ -13,7 +13,6 @@ import {
 } from '@rs-x/core';
 
 import { AbstractObserver } from '../../../abstract-observer';
-import type { IIndexWatchRuleRegistry } from '../../../index-watch-rule-registry/index-watch-rule-registry.type';
 import type { IObserver } from '../../../observer.interface';
 import type { IDateProxyFactory } from '../../../proxies/date-proxy/date-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokens';
@@ -24,6 +23,7 @@ import type {
   IDatePropertyObserverManager,
   IProperForDataObserverManager,
 } from './date-property-observer-manager.type';
+import { IndexWatchRule } from '../../../index-watch-rule-registry';
 
 class DatePropertyObserver extends AbstractObserver<Date> {
   private _oldValue: unknown;
@@ -87,7 +87,6 @@ class ProperForDataObserverManager
     private readonly _dateProxyFactory: IDateProxyFactory,
     private readonly _datePropertyAccessor: IDatePropertyAccessor,
     private readonly _errorLog: IErrorLog,
-    private readonly _indexWatchPredicateRegistry: IIndexWatchRuleRegistry,
     private readonly releaseObject: () => void,
   ) {
     super();
@@ -108,14 +107,8 @@ class ProperForDataObserverManager
     const indexWatchPredicate = (targetIndex, target, context) =>
       targetIndex === index && target === context;
     
-    const indexWatchRule = this._indexWatchPredicateRegistry.register(
+    const indexWatchRule = new IndexWatchRule(
       this._date,
-      index,
-      indexWatchPredicate,
-    );
-    this._indexWatchPredicateRegistry.register(
-      this._date,
-      index,
       indexWatchPredicate,
     );
     const dateObserver = this._dateProxyFactory.create({
@@ -125,14 +118,7 @@ class ProperForDataObserverManager
     return new DatePropertyObserver(
       {
         canDispose: () => this.getReferenceCount(index) === 1,
-        release: () => {
-          this.release(index);
-          this._indexWatchPredicateRegistry.unregister(
-            this._date,
-            index,
-            indexWatchPredicate,
-          );
-        },
+        release: () => this.release(index),
       },
       this._date,
       data.index,
@@ -163,8 +149,6 @@ export class DatePropertyObserverManager
     private readonly _errorLog: IErrorLog,
     @Inject(RsXCoreInjectionTokens.IDatePropertyAccessor)
     private readonly _datePropertyAccessor: IDatePropertyAccessor,
-    @Inject(RsXStateManagerInjectionTokens.IIndexWatchRuleRegistry)
-    private readonly _indexWatchTestRuleRegistry: IIndexWatchRuleRegistry,
   ) {
     super();
   }
@@ -183,7 +167,6 @@ export class DatePropertyObserverManager
       this._dateProxyFactory,
       this._datePropertyAccessor,
       this._errorLog,
-      this._indexWatchTestRuleRegistry,
       () => this.release(date),
     );
   }

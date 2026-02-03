@@ -9,7 +9,6 @@ import {
 } from '@rs-x/core';
 import type {
   IIndexWatchRule,
-  IIndexWatchRuleRegistry,
   IStateManager,
 } from '@rs-x/state-manager';
 
@@ -130,10 +129,6 @@ export abstract class AbstractExpression<
 
   protected get valueMetadata(): IValueMetadata {
     return this._services?.valueMetadata;
-  }
-
-  protected get indexWatchRuleRegistry(): IIndexWatchRuleRegistry {
-    return this._services?.indexWatchRuleRegistry;
   }
 
   protected get root(): AbstractExpression {

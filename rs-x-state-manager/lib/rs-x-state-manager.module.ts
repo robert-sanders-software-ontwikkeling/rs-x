@@ -6,8 +6,6 @@ import {
   RsXCoreModule,
 } from '@rs-x/core';
 
-import { IndexWatchRuleRegistry } from './index-watch-rule-registry/index-watch-rule-registry';
-import type { IIndexWatchRuleRegistry } from './index-watch-rule-registry/index-watch-rule-registry.type';
 import { ArrayObserverProxyPairFactory } from './object-observer/factories/array-observer-proxy-pair.factory';
 import { DateObserverProxyPairFactory } from './object-observer/factories/date-observer-proxy-pair.factory';
 import { MapObserverProxyPairFactory } from './object-observer/factories/map-observer-proxy-pair.factory';
@@ -182,12 +180,6 @@ export const RsXStateManagerModule = new ContainerModule((options) => {
       RsXStateManagerInjectionTokens.IDatePropertyObserverManager,
     )
     .to(DatePropertyObserverManager)
-    .inSingletonScope();
-  options
-    .bind<IIndexWatchRuleRegistry>(
-      RsXStateManagerInjectionTokens.IIndexWatchRuleRegistry,
-    )
-    .to(IndexWatchRuleRegistry)
     .inSingletonScope();
   options
     .bind<IObjectStateManager>(

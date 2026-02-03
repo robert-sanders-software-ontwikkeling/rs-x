@@ -1,6 +1,7 @@
 import { type Observable, ReplaySubject, type Subscription } from 'rxjs';
 
 import {
+  IndexWatchRule,
   type IContextChanged,
   type IIndexWatchRule,
   type IStateChange,
@@ -127,9 +128,8 @@ export class IdentifierExpression extends AbstractExpression {
     this._context = settings.context ?? settings.rootContext;
     this._commitAfterInitialized = settings.context !== settings.rootContext;
 
-    this._indexWatchRule = this.indexWatchRuleRegistry.register(
+    this._indexWatchRule = new IndexWatchRule(
       this._context,
-      this._indexValue ?? this.expressionString,
       this.shouldWatchIndex,
     );
 
@@ -156,7 +156,6 @@ export class IdentifierExpression extends AbstractExpression {
     super.internalDispose();
     this.releaseMustProxifyHandler?.();
     this.disposeObserver();
-    this._indexWatchRule?.dispose();
     this._indexWatchRule = undefined;
   }
 

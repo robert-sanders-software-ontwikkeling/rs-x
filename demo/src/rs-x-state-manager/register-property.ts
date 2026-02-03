@@ -1,7 +1,6 @@
 import {
   InjectionContainer,
   printValue,
-  truePredicate,
   Type,
 } from '@rs-x/core';
 import {
@@ -9,6 +8,7 @@ import {
   type IStateManager,
   RsXStateManagerInjectionTokens,
   RsXStateManagerModule,
+  watchIndexRecursiveRule
 } from '@rs-x/state-manager';
 
 // Load the state manager module into the injection container
@@ -60,7 +60,7 @@ export const run = (() => {
     // Otherwise, only assigning a new value to stateContext.b would emit a change event.
     // This will emit a change event with the initial (current) value.
     console.log('Initial value:');
-    stateManager.watchState(stateContext, 'b', truePredicate);
+    stateManager.watchState(stateContext, 'b', watchIndexRecursiveRule);
 
     console.log(
       '\nReplacing stateContext.b.nested.nested will emit a change event',
@@ -79,6 +79,6 @@ export const run = (() => {
   } finally {
     changeSubscription.unsubscribe();
     // Always release the state when it is no longer needed.
-    stateManager.releaseState(stateContext, 'b', truePredicate);
+    stateManager.releaseState(stateContext, 'b', watchIndexRecursiveRule);
   }
 })();
