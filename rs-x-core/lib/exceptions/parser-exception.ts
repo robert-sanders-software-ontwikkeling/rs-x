@@ -1,10 +1,12 @@
-export class ParserException extends Error {
+import { CustomError } from './custome-error';
+
+export class ParserException extends CustomError {
   constructor(
     public readonly expression: string,
     message: string,
     public readonly position?: number,
   ) {
-    super(createMessage(expression, message, position ?? 0));
+    super(createMessage(expression, message, position ?? 0), 'ParserException');
   }
 }
 

@@ -1,6 +1,7 @@
 import { Observable, Subject } from 'rxjs';
 
 import {
+  Assertion,
   type IChainPart,
   type IEqualityService,
   type IErrorLog,
@@ -11,12 +12,11 @@ import {
   type IPropertyChange,
   PENDING,
   RsXCoreInjectionTokens,
+  truePredicate,
 } from '@rs-x/core';
 
-import type {
-  IObjectPropertyObserverProxyPairManager,
-  ShouldWatchIndex,
-} from '../object-property-observer-proxy-pair-manager.type';
+import type { IIndexWatchRule } from '../index-watch-rule-registry/index-watch-rule.interface';
+import type { IObjectPropertyObserverProxyPairManager } from '../object-property-observer-proxy-pair-manager.type';
 import { RsXStateManagerInjectionTokens } from '../rs-x-state-manager-injection-tokens';
 
 import { StateChangeSubscriptionManager } from './state-change-subscription-manager/state-change-subsription-manager';
@@ -26,11 +26,13 @@ import type {
   IStateChange,
   IStateManager,
 } from './state-manager.interface';
-
 interface ITransferedValue {
   value: unknown;
   context: unknown;
+  shouldEmitChange?: (context: unknown, index: unknown) => boolean;
 }
+
+type EmittedPair = readonly [unknown, unknown];
 
 interface IChainPartChange extends IChainPart {
   oldValue: unknown;
@@ -89,10 +91,14 @@ export class StateManager implements IStateManager {
     return this._objectStateManager.toString();
   }
 
+  [Symbol.for('nodejs.util.inspect.custom')]() {
+    return `${this.constructor.name}`;
+  }
+
   public isWatched(
     context: unknown,
     index: unknown,
-    shouldWatchIndex?: ShouldWatchIndex,
+    indexWatchRule?: IIndexWatchRule,
   ): boolean {
     const stateChangeSubscriptionsForContextManager =
       this._stateChangeSubscriptionManager.getFromId(context);
@@ -102,8 +108,8 @@ export class StateManager implements IStateManager {
     }
 
     const id = stateChangeSubscriptionsForContextManager.getId({
-      key: index,
-      shouldWatchIndex,
+      index: index,
+      indexWatchRule,
     });
     return id ? stateChangeSubscriptionsForContextManager.has(id) : false;
   }
@@ -111,11 +117,11 @@ export class StateManager implements IStateManager {
   public watchState(
     context: unknown,
     index: unknown,
-    shouldWatchIndex?: ShouldWatchIndex,
+    indexWatchRule?: IIndexWatchRule,
   ): unknown {
-    if (!this.isWatched(context, index, shouldWatchIndex)) {
+    if (!this.isWatched(context, index, indexWatchRule)) {
       const value = this.getState(context, index);
-      this.tryToSubscribeToChange(context, index, shouldWatchIndex);
+      this.tryToSubscribeToChange(context, index, indexWatchRule);
       return value;
     } else {
       return this.increaseStateReferenceCount(context, index, true);
@@ -125,13 +131,13 @@ export class StateManager implements IStateManager {
   public releaseState(
     context: unknown,
     index: unknown,
-    shouldWatchIndex?: ShouldWatchIndex,
+    indexWatchRule?: IIndexWatchRule,
   ): void {
     if (!this._objectStateManager.getFromId(context)?.has(index)) {
       return;
     }
 
-    this.internalUnregister(context, index, shouldWatchIndex);
+    this.internalUnregister(context, index, indexWatchRule);
   }
 
   public clear(): void {
@@ -148,6 +154,7 @@ export class StateManager implements IStateManager {
     this.internalSetState(context, index, value, {
       context,
       value: this.getState(context, index),
+      shouldEmitChange: truePredicate,
     });
   }
 
@@ -165,13 +172,18 @@ export class StateManager implements IStateManager {
       transferValue.context,
       false,
     );
-    this.emitChange(
-      context,
-      index,
-      value,
-      transferValue.value,
-      transferValue.context,
-    );
+    if (
+      !transferValue?.shouldEmitChange ||
+      transferValue.shouldEmitChange(context, index)
+    ) {
+      this.emitChange(
+        context,
+        index,
+        value,
+        transferValue.value,
+        transferValue.context,
+      );
+    }
   }
 
   private getOldValue(context: unknown, index: unknown): unknown {
@@ -182,13 +194,13 @@ export class StateManager implements IStateManager {
   private unnsubscribeToObserverEvents(
     context: unknown,
     index: unknown,
-    shouldWatchIndex?: ShouldWatchIndex,
+    indexWatchRule?: IIndexWatchRule | undefined,
   ): void {
     const subscriptionsForKey =
       this._stateChangeSubscriptionManager.getFromId(context);
     const observer = subscriptionsForKey?.getFromData({
-      key: index,
-      shouldWatchIndex,
+      index: index,
+      indexWatchRule,
     });
     if (!observer) {
       return;
@@ -200,10 +212,10 @@ export class StateManager implements IStateManager {
   private internalUnregister(
     context: unknown,
     index: unknown,
-    shouldWatchIndex?: ShouldWatchIndex,
+    indexWatchRule?: IIndexWatchRule | undefined,
   ): void {
     if (this.canReleaseState(context, index)) {
-      this.unnsubscribeToObserverEvents(context, index, shouldWatchIndex);
+      this.unnsubscribeToObserverEvents(context, index, indexWatchRule);
     }
   }
 
@@ -220,7 +232,7 @@ export class StateManager implements IStateManager {
     this._changed.next({
       oldContext: oldContext ?? context,
       context,
-      key: index,
+      index: index,
       oldValue,
       newValue,
     });
@@ -264,13 +276,13 @@ export class StateManager implements IStateManager {
   private tryToSubscribeToChange(
     context: unknown,
     index: unknown,
-    shouldWatchIndex?: ShouldWatchIndex,
+    indexWatchRule?: IIndexWatchRule,
     transferedValue?: ITransferedValue,
   ): void {
     this._stateChangeSubscriptionManager.create(context).instance.create({
-      key: index,
-      shouldWatchIndex: shouldWatchIndex,
-      onChanged: (change) => this.onChange(change, shouldWatchIndex, true),
+      index: index,
+      indexWatchRule,
+      onChanged: (change) => this.onChange(change, true),
       init: (observer) => {
         if (observer.value !== undefined) {
           this.setInitialValue(
@@ -304,9 +316,9 @@ export class StateManager implements IStateManager {
     }
 
     return Array.from(oldState.ids())
-      .map((id) => {
-        const { value: oldValue, watched } = oldState.getFromId(id) ?? {};
-        const newValue = this.getValue(newContext, id);
+      .map((index) => {
+        const { value: oldValue, watched } = oldState.getFromId(index) ?? {};
+        const newValue = this.getValue(newContext, index);
 
         if (
           oldContext === newContext &&
@@ -315,16 +327,15 @@ export class StateManager implements IStateManager {
           return [];
         }
 
-        let pendingId: string | null = null;
         if (newValue === PENDING) {
           this._pending.set(newContext, oldValue);
         }
-        const stateInfo = {
+        const stateInfo: IStateChange = {
           oldContext,
           context: newContext,
-          key: id,
+          index,
           oldValue,
-          newValue: pendingId ?? newValue,
+          newValue: newValue,
           watched,
         };
         return newValue === PENDING
@@ -334,60 +345,85 @@ export class StateManager implements IStateManager {
       .reduce((a, b) => a.concat(b), []);
   }
 
-  private tryRebindingNestedState(
-    newValue: unknown,
-    oldValue: unknown,
-    shouldWatchIndex?: ShouldWatchIndex,
-  ): void {
+  private tryRebindingNestedState(newValue: unknown, oldValue: unknown): void {
     const stateChanges = this.getStateChanges(oldValue, newValue);
+    if (stateChanges.length === 0) {
+      return;
+    }
 
-    stateChanges.forEach((stateChange) => {
-      this.internalUnregister(
-        stateChange.oldContext,
-        stateChange.key,
-        shouldWatchIndex,
-      );
-    });
+    const emitted: EmittedPair[] = [];
 
-    stateChanges
-      .filter((stateChange) => stateChange.context !== stateChange.oldContext)
-      .forEach((stateChange) =>
-        this._contextChanged.next({
-          context: stateChange.context,
-          oldContext: stateChange.oldContext,
-          key: stateChange.key,
-        }),
-      );
+    const shouldEmitChange = (context: unknown, index: unknown): boolean => {
+      if (emitted.some(([c, i]) => c === context && i === index)) {
+        return false;
+      }
+      emitted.push([context, index]);
+      return true;
+    };
 
-    stateChanges
-      .filter((stateChange) => stateChange.watched)
-      .forEach((stateChange) =>
-        this.tryToSubscribeToChange(
-          stateChange.context,
-          stateChange.key,
-          shouldWatchIndex,
-          {
-            context: stateChange.oldContext,
-            value: stateChange.oldValue,
-          },
-        ),
+    for (const stateChange of stateChanges) {
+      Assertion.assert(
+        () => stateChange.context !== stateChange.oldContext,
+        'Expected old and new context not to be equal',
       );
 
-    stateChanges
-      .filter((stateChange) => !stateChange.watched)
-      .forEach((stateChange) =>
+      this._contextChanged.next({
+        context: stateChange.context,
+        oldContext: stateChange.oldContext,
+        index: stateChange.index,
+      });
+
+      if (!stateChange.watched) {
+        this.internalUnregister(
+          stateChange.oldContext,
+          stateChange.index,
+          undefined,
+        );
         this.internalSetState(
           stateChange.context,
-          stateChange.key,
+          stateChange.index,
           stateChange.newValue,
           {
             context: stateChange.oldContext,
             value: stateChange.oldValue,
           },
-        ),
-      );
-  }
+        );
+        continue;
+      }
 
+      const instanceGroupInfos =
+        this._stateChangeSubscriptionManager.instanceGroupInfoEntriesForContext(
+          stateChange.oldContext,
+        );
+
+      const rebindingOptions = {
+        context: stateChange.oldContext,
+        value: stateChange.oldValue,
+        shouldEmitChange,
+      };
+
+      for (const { groupMemberId } of instanceGroupInfos) {
+        const indexWatchRule = groupMemberId as IIndexWatchRule;
+
+        this.internalUnregister(
+          stateChange.oldContext,
+          stateChange.index,
+          indexWatchRule,
+        );
+
+        if (indexWatchRule) {
+          indexWatchRule.context = stateChange.context;
+        }
+
+        this.tryToSubscribeToChange(
+          stateChange.context,
+          stateChange.index,
+          indexWatchRule,
+          rebindingOptions,
+        );
+      }
+    }
+  }
   private setInitialValue(
     context: unknown,
     index: unknown,
@@ -402,13 +438,18 @@ export class StateManager implements IStateManager {
       initialValue,
       watched,
     );
-    this.emitChange(
-      context,
-      index,
-      initialValue,
-      transferedValue?.value,
-      transferedValue?.context,
-    );
+    if (
+      !transferedValue?.shouldEmitChange ||
+      transferedValue.shouldEmitChange(context, index)
+    ) {
+      this.emitChange(
+        context,
+        index,
+        initialValue,
+        transferedValue?.value,
+        transferedValue?.context,
+      );
+    }
   }
 
   private getChainChanges(chain: IChainPart[] | undefined): IChainPartChange[] {
@@ -418,15 +459,15 @@ export class StateManager implements IStateManager {
 
     const registeredChainParts = chain.filter((chainPart) =>
       this._stateChangeSubscriptionManager.isRegistered(
-        chainPart.object,
-        chainPart.id,
+        chainPart.context,
+        chainPart.index,
       ),
     );
 
     return registeredChainParts.map((chainPart) => ({
       ...chainPart,
-      oldValue: this.getOldValue(chainPart.object, chainPart.id),
-      value: this.getValue(chainPart.object, chainPart.id),
+      oldValue: this.getOldValue(chainPart.context, chainPart.index),
+      value: this.getValue(chainPart.context, chainPart.index),
     }));
   }
 
@@ -440,11 +481,7 @@ export class StateManager implements IStateManager {
     return this.getState(context, id);
   }
 
-  private onChange(
-    change: IPropertyChange,
-    shouldWatchIndex?: ShouldWatchIndex,
-    watched: boolean = false,
-  ): void {
+  private onChange(change: IPropertyChange, watched: boolean = false): void {
     const chainChanges = this.getChainChanges(change.chain);
     if (chainChanges.length === 0) {
       return;
@@ -454,25 +491,24 @@ export class StateManager implements IStateManager {
 
     try {
       const chainLeaf = chainChanges[chainChanges.length - 1];
-      const currentValue = this.getCurrentValue(chainLeaf.object, chainLeaf.id);
-
-      this.tryRebindingNestedState(
-        change.newValue,
-        currentValue,
-        shouldWatchIndex,
+      const currentValue = this.getCurrentValue(
+        chainLeaf.context,
+        chainLeaf.index,
       );
+
+      this.tryRebindingNestedState(change.newValue, currentValue);
       this.updateState(
-        chainLeaf.object,
-        chainLeaf.object,
-        chainLeaf.id,
+        chainLeaf.context,
+        chainLeaf.context,
+        chainLeaf.index,
         chainLeaf.value,
         watched,
       );
 
       chainChanges.forEach((chainChange) =>
         this.emitChange(
-          chainChange.object,
-          chainChange.id,
+          chainChange.context,
+          chainChange.index,
           chainChange.value,
           chainChange.oldValue,
         ),

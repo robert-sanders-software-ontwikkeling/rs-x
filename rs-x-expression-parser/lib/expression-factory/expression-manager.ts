@@ -59,7 +59,7 @@ class ExpressionForContextManager
         },
         canDispose: () => this.getReferenceCount(result.id) === 1,
       },
-      shouldWatchLeaf: expressionData.shouldWatchLeaf,
+      leafIndexWatchRule: expressionData.leafIndexWatchRule,
     });
     this._services.transactionManager.commit();
 

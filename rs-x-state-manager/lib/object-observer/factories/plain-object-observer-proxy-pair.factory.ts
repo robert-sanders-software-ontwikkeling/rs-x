@@ -51,7 +51,7 @@ export class PlainObjectObserverProxyPairFactory
   protected override createRootObserver(
     data: IProxyTarget<Record<string, unknown>>,
   ): IObserverProxyPair<Record<string, unknown>> | undefined {
-    if (!data.shouldWatchIndex) {
+    if (!data.indexWatchRule) {
       return undefined;
     }
 
@@ -59,13 +59,13 @@ export class PlainObjectObserverProxyPairFactory
     const observers: IObserver[] = [];
 
     for (const index of this._indexAccessor.getIndexes(target)) {
-      if (!data.shouldWatchIndex(index, target)) {
+      if (!data.indexWatchRule.test(index, target)) {
         continue;
       }
       const { observer } = this._objectPropertyObserverProxyPairManager
         .create(target)
         .instance.create({
-          key: index,
+          index: index,
         }).instance;
       observers.push(observer);
     }

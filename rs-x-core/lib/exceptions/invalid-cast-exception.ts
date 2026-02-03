@@ -1,5 +1,7 @@
-export class InvalidCastException extends Error {
+import { CustomError } from './custome-error';
+
+export class InvalidCastException extends CustomError {
   constructor(message: string) {
-    super(message);
+    super(message, 'InvalidCastException');
   }
 }

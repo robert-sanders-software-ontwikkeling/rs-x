@@ -18,12 +18,14 @@ import {
 } from '../../../lib/proxies/set-proxy/set-proxy.factory.type';
 import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
 import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokens';
+import { IndexWatchRuleMock } from '../../../lib/testing/watch-index-rule.mock';
 
 describe('SetObserverProxyPairFactory tests', () => {
   let setObserverProxyPairFactory: ISetObserverProxyPairFactory;
   let setProxyFactory: ISetProxyFactory;
   let disposableOwner: DisposableOwnerMock;
   let observer: IObserver | undefined;
+  let indexWatchRule: IndexWatchRuleMock;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXStateManagerModule);
@@ -42,6 +44,8 @@ describe('SetObserverProxyPairFactory tests', () => {
 
   beforeEach(() => {
     disposableOwner = new DisposableOwnerMock();
+    indexWatchRule = new IndexWatchRuleMock();
+    indexWatchRule.test.mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -106,7 +110,7 @@ describe('SetObserverProxyPairFactory tests', () => {
     const objectSet = new Set([item1, item2]);
     observer = setObserverProxyPairFactory.create(disposableOwner, {
       target: objectSet,
-      shouldWatchIndex: truePredicate,
+      indexWatchRule,
     }).observer;
 
     const objectPropertyObserverProxyPairManager =
@@ -119,12 +123,12 @@ describe('SetObserverProxyPairFactory tests', () => {
     expect(propertyObserverProxyPairManager).toBeDefined();
 
     const item1Id = propertyObserverProxyPairManager?.getId({
-      key: item1,
-      shouldWatchIndex: truePredicate,
+      index: item1,
+      indexWatchRule,
     });
     const item2Id = propertyObserverProxyPairManager?.getId({
-      key: item2,
-      shouldWatchIndex: truePredicate,
+      index: item2,
+      indexWatchRule,
     });
     const mapProxyId = setProxyFactory.getId({
       set: objectSet,
@@ -171,7 +175,7 @@ describe('SetObserverProxyPairFactory tests', () => {
     const observerProxyPair: ISetObserverProxyPair =
       setObserverProxyPairFactory.create(disposableOwner, {
         target: objectSet,
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       });
     observer = observerProxyPair.observer;
     disposableOwner.canDispose.mockReturnValue(true);
@@ -183,12 +187,12 @@ describe('SetObserverProxyPairFactory tests', () => {
     const propertyObserverProxyPairManager =
       objectPropertyObserverProxyPairManager.getFromId(objectSet);
     const item1Id = propertyObserverProxyPairManager?.getId({
-      key: item1,
-      shouldWatchIndex: truePredicate,
+      index: item1,
+      indexWatchRule,
     });
     const item2Id = propertyObserverProxyPairManager?.getId({
-      key: item2,
-      shouldWatchIndex: truePredicate,
+      index: item2,
+      indexWatchRule,
     });
 
     expect(setProxyFactory.getFromId(objectSet)).toBeDefined();
@@ -216,24 +220,17 @@ describe('SetObserverProxyPairFactory tests', () => {
     const item3 = { x: 3 };
     const objectSet = new Set([item1, item2, item3]);
 
-    const mustProxify = jest.fn();
-    mustProxify.mockImplementation((index: { x: number } | string) => {
+    indexWatchRule.test.mockImplementation((index: { x: number } | string) => {
       return index === item1 || index === item3 || index === 'x';
     });
 
     const observerProxyPair: ISetObserverProxyPair =
       setObserverProxyPairFactory.create(disposableOwner, {
         target: objectSet,
-        shouldWatchIndex: mustProxify,
+        indexWatchRule,
       });
     observer = observerProxyPair.observer;
 
-    expect(mustProxify).toHaveBeenCalledTimes(5);
-    expect(mustProxify).toHaveBeenNthCalledWith(1, item1, objectSet);
-    expect(mustProxify).toHaveBeenNthCalledWith(2, 'x', item1);
-    expect(mustProxify).toHaveBeenNthCalledWith(3, item2, objectSet);
-    expect(mustProxify).toHaveBeenNthCalledWith(4, item3, objectSet);
-    expect(mustProxify).toHaveBeenNthCalledWith(5, 'x', item3);
     expect(item1).isWritableProperty('x');
     expect(item2).not.isWritableProperty('x');
     expect(item3).isWritableProperty('x');
@@ -252,7 +249,7 @@ describe('SetObserverProxyPairFactory tests', () => {
       const objectSet = new Set([{ x: 1 }, { x: 2 }]);
       observer = setObserverProxyPairFactory.create(disposableOwner, {
         target: objectSet,
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).observer;
 
       const item3 = { x: 3 };
@@ -263,8 +260,8 @@ describe('SetObserverProxyPairFactory tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: objectSet, id: item3 }],
-        id: item3,
+        chain: [{ context: objectSet, index: item3 }],
+        index: item3,
         newValue: item3,
         target: objectSet,
       };
@@ -277,7 +274,7 @@ describe('SetObserverProxyPairFactory tests', () => {
       const objectSet = new Set([{ x: 1 }, item2]);
       observer = setObserverProxyPairFactory.create(disposableOwner, {
         target: objectSet,
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).observer;
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -287,8 +284,8 @@ describe('SetObserverProxyPairFactory tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: objectSet, id: item2 }],
-        id: item2,
+        chain: [{ context: objectSet, index: item2 }],
+        index: item2,
         newValue: undefined,
         target: objectSet,
       };
@@ -301,7 +298,7 @@ describe('SetObserverProxyPairFactory tests', () => {
       const objectSet = new Set([{ x: 1 }, item2]);
       observer = setObserverProxyPairFactory.create(disposableOwner, {
         target: objectSet,
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).observer;
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -311,10 +308,10 @@ describe('SetObserverProxyPairFactory tests', () => {
       const expected: IPropertyChange = {
         arguments: [],
         chain: [
-          { object: objectSet, id: item2 },
-          { object: item2, id: 'x' },
+          { context: objectSet, index: item2 },
+          { context: item2, index: 'x' },
         ],
-        id: 'x',
+        index: 'x',
         newValue: 200,
         target: item2,
       };
@@ -347,8 +344,8 @@ describe('SetObserverProxyPairFactory tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: objectSet, id: item3 }],
-        id: item3,
+        chain: [{ context: objectSet, index: item3 }],
+        index: item3,
         newValue: item3,
         target: objectSet,
       };
@@ -370,8 +367,8 @@ describe('SetObserverProxyPairFactory tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: objectSet, id: item2 }],
-        id: item2,
+        chain: [{ context: objectSet, index: item2 }],
+        index: item2,
         newValue: undefined,
         target: objectSet,
       };

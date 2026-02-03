@@ -1,12 +1,13 @@
 import { type Subscription } from 'rxjs';
 
 import {
+  type IInstanceGroupInfo,
   type IPropertyChange,
   type ISingletonFactory,
   type ISingletonFactoryWithIdGeneration,
 } from '@rs-x/core';
 
-import { type ShouldWatchIndex } from '../../object-property-observer-proxy-pair-manager.type';
+import type { IIndexWatchRule } from '../../index-watch-rule-registry/index-watch-rule.interface';
 import { type IObserver } from '../../observer.interface';
 
 export interface IStateChangeObserverInfo {
@@ -15,8 +16,8 @@ export interface IStateChangeObserverInfo {
 }
 
 export interface IStateChangeSubscriptionIdInfo {
-  key: unknown;
-  shouldWatchIndex?: ShouldWatchIndex;
+  index: unknown;
+  indexWatchRule?: IIndexWatchRule;
 }
 export interface IStateChangeSubscriptionInfo extends IStateChangeSubscriptionIdInfo {
   onChanged: (change: IPropertyChange) => void;
@@ -36,4 +37,7 @@ export interface IStateChangeSubscriptionManager extends ISingletonFactory<
   IStateChangeSubscriptionsForContextManager
 > {
   isRegistered(context: unknown, key: unknown): boolean;
+  instanceGroupInfoEntriesForContext(
+    context: unknown,
+  ): IterableIterator<IInstanceGroupInfo<string, IObserver>>;
 }

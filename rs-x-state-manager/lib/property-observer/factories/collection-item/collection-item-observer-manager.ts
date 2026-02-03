@@ -71,7 +71,7 @@ class CollectionIndexObserver extends AbstractObserver<Collection> {
   }
 
   private onChanged = (change: IPropertyChange) => {
-    if (change.id !== this.id) {
+    if (change.index !== this.id) {
       return;
     }
 

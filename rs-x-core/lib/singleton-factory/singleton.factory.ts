@@ -152,8 +152,22 @@ export abstract class SingletonFactory<
     return this._referenceCounts.get(id) ?? 0;
   }
 
-  protected get keys(): TId[] {
-    return Array.from(this._instances.keys());
+  protected get keys(): MapIterator<TId> {
+    return this._instances.keys();
+  }
+
+  protected get instances(): MapIterator<TInstance> {
+    return this._instances.values();
+  }
+
+  protected replaceKey(oldKey: TId, newKey: TId): void {
+    const instance = this.getFromId(oldKey);
+    if (instance == undefined) {
+      return;
+    }
+
+    this._instances.delete(oldKey);
+    this._instances.set(newKey, instance);
   }
 
   protected onDisposeInstance = (id: TId, dispose: () => void): boolean => {

@@ -265,7 +265,7 @@ export class TextDocumentInxdexObserverProxyPairFactory extends IndexObserverPro
   }
 
   public applies(object: unknown, propertyInfo: IPropertyInfo): boolean {
-    const documentKey = propertyInfo.key as ITextDocumentIndex;
+    const documentKey = propertyInfo.index as ITextDocumentIndex;
     return (
       object instanceof TextDocument &&
       documentKey?.lineIndex >= 0 &&
@@ -391,7 +391,7 @@ class TextDocumentIndexObserver extends AbstractObserver<
   }
 
   private readonly onChange = (change: IPropertyChange) => {
-    const changeIndex = change.id as ITextDocumentIndex;
+    const changeIndex = change.index as ITextDocumentIndex;
     if (
       changeIndex.lineIndex === this.id?.lineIndex &&
       changeIndex.pageIndex === this.id?.pageIndex
@@ -430,7 +430,7 @@ class TextDocumentObserver extends AbstractObserver<TextDocument> {
         textDocument.setLine(index, text);
         this.emitChange({
           arguments: [],
-          id: index,
+          index: index,
           target: textDocument,
           newValue: text,
         });

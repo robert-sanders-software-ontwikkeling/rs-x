@@ -3,7 +3,10 @@ import type {
   IIndexValueAccessor,
   IValueMetadata,
 } from '@rs-x/core';
-import type { IStateManager } from '@rs-x/state-manager';
+import type {
+  IIndexWatchRuleRegistry,
+  IStateManager,
+} from '@rs-x/state-manager';
 
 import type { IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 
@@ -13,4 +16,5 @@ export interface IExpressionServices {
   readonly indexValueAccessor: IIndexValueAccessor;
   readonly guidFactory: IGuidFactory;
   readonly valueMetadata: IValueMetadata;
+  readonly indexWatchRuleRegistry: IIndexWatchRuleRegistry;
 }

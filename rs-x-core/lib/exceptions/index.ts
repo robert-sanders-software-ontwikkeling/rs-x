@@ -1,5 +1,7 @@
 export * from './argument-exception';
+export * from './assert-exception';
 export * from './assertion';
+export * from './custome-error';
 export * from './invalid-cast-exception';
 export * from './invalid-operation-exception';
 export * from './null-or-empty-exception';

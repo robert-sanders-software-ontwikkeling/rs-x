@@ -12,9 +12,11 @@ import { type IObjectPropertyObserverProxyPairManager } from '../../lib/object-p
 import { RsXStateManagerModule } from '../../lib/rs-x-state-manager.module';
 import { RsXStateManagerInjectionTokens } from '../../lib/rs-x-state-manager-injection-tokens';
 import { StateChangeSubscriptionManager } from '../../lib/state-manager/state-change-subscription-manager/state-change-subsription-manager';
+import { IndexWatchRuleMock } from '../../lib/testing/watch-index-rule.mock';
 
 describe('StateChangeSubscriptionManager tests', () => {
   let stateChangeSubscriptionManager: StateChangeSubscriptionManager;
+  let indexWatchRule: IndexWatchRuleMock;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXStateManagerModule);
@@ -32,6 +34,8 @@ describe('StateChangeSubscriptionManager tests', () => {
       new ErrorLog(),
       new GuidFactory(),
     );
+    indexWatchRule = new IndexWatchRuleMock();
+    indexWatchRule.test.mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -47,12 +51,12 @@ describe('StateChangeSubscriptionManager tests', () => {
     const stateChangeSubscrionInfoForContext =
       stateChangeSubscriptionManager.create(context).instance;
     const recursiveObserver = stateChangeSubscrionInfoForContext.create({
-      key: 'x',
-      shouldWatchIndex: truePredicate,
+      index: 'x',
+      indexWatchRule,
       onChanged: emptyFunction,
     }).instance;
     const nonRecursiveObserver = stateChangeSubscrionInfoForContext.create({
-      key: 'x',
+      index: 'x',
       onChanged: emptyFunction,
     }).instance;
 
@@ -72,12 +76,12 @@ describe('StateChangeSubscriptionManager tests', () => {
     const stateChangeSubscriptionInfoForContext =
       stateChangeSubscriptionManager.create(context).instance;
     const recursiveObserver = stateChangeSubscriptionInfoForContext.create({
-      key: 'x',
-      shouldWatchIndex: truePredicate,
+      index: 'x',
+      indexWatchRule,
       onChanged: emptyFunction,
     }).instance;
     const nonRecursiveObserver = stateChangeSubscriptionInfoForContext.create({
-      key: 'x',
+      index: 'x',
       onChanged: emptyFunction,
     }).instance;
 
@@ -93,11 +97,11 @@ describe('StateChangeSubscriptionManager tests', () => {
     const expected: IPropertyChange = {
       arguments: [],
       chain: [
-        { object: context, id: 'x' },
-        { object: context.x, id: 'y' },
+        { context: context, index: 'x' },
+        { context: context.x, index: 'y' },
       ],
       target: context.x,
-      id: 'y',
+      index: 'y',
       newValue: 20,
     };
 
@@ -113,12 +117,12 @@ describe('StateChangeSubscriptionManager tests', () => {
     const stateChangeSubscrionInfoForContext =
       stateChangeSubscriptionManager.create(context).instance;
     const recursiveObserver = stateChangeSubscrionInfoForContext.create({
-      key: 'x',
-      shouldWatchIndex: truePredicate,
+      index: 'x',
+      indexWatchRule,
       onChanged: emptyFunction,
     }).instance;
     const nonRecursiveObserver = stateChangeSubscrionInfoForContext.create({
-      key: 'x',
+      index: 'x',
       onChanged: emptyFunction,
     }).instance;
 
@@ -133,9 +137,9 @@ describe('StateChangeSubscriptionManager tests', () => {
 
     const expected: IPropertyChange = {
       arguments: [],
-      chain: [{ object: context, id: 'x' }],
+      chain: [{ context: context, index: 'x' }],
       target: context,
-      id: 'x',
+      index: 'x',
       newValue: { y: 20 },
     };
 
@@ -151,12 +155,12 @@ describe('StateChangeSubscriptionManager tests', () => {
     const stateChangeSubscrionInfoForContext =
       stateChangeSubscriptionManager.create(context).instance;
     const recursiveObserver = stateChangeSubscrionInfoForContext.create({
-      key: 'x',
-      shouldWatchIndex: truePredicate,
+      index: 'x',
+      indexWatchRule,
       onChanged: emptyFunction,
     }).instance;
     const nonRecursiveObserver = stateChangeSubscrionInfoForContext.create({
-      key: 'x',
+      index: 'x',
       onChanged: emptyFunction,
     }).instance;
 
@@ -171,9 +175,9 @@ describe('StateChangeSubscriptionManager tests', () => {
 
     const expected: IPropertyChange = {
       arguments: [],
-      chain: [{ object: context, id: 'x' }],
+      chain: [{ context: context, index: 'x' }],
       target: context,
-      id: 'x',
+      index: 'x',
       newValue: { y: 20 },
     };
 
@@ -190,12 +194,12 @@ describe('StateChangeSubscriptionManager tests', () => {
     const stateChangeSubscrionInfoForContext =
       stateChangeSubscriptionManager.create(context).instance;
     const recursiveObserver = stateChangeSubscrionInfoForContext.create({
-      key: 'x',
-      shouldWatchIndex: truePredicate,
+      index: 'x',
+      indexWatchRule,
       onChanged: emptyFunction,
     }).instance;
     const nonRecursiveObserver = stateChangeSubscrionInfoForContext.create({
-      key: 'x',
+      index: 'x',
       onChanged: emptyFunction,
     }).instance;
 
@@ -218,11 +222,11 @@ describe('StateChangeSubscriptionManager tests', () => {
     const expected: IPropertyChange = {
       arguments: [],
       chain: [
-        { object: context, id: 'x' },
-        { object: context.x, id: 'y' },
+        { context: context, index: 'x' },
+        { context: context.x, index: 'y' },
       ],
       target: context.x,
-      id: 'y',
+      index: 'y',
       newValue: 20,
     };
 
@@ -242,12 +246,12 @@ describe('StateChangeSubscriptionManager tests', () => {
     const stateChangeSubscrionInfoForContext =
       stateChangeSubscriptionManager.create(context).instance;
     const recursiveObserver = stateChangeSubscrionInfoForContext.create({
-      key: 'x',
-      shouldWatchIndex: truePredicate,
+      index: 'x',
+      indexWatchRule,
       onChanged: emptyFunction,
     }).instance;
     const nonRecursiveObserver = stateChangeSubscrionInfoForContext.create({
-      key: 'x',
+      index: 'x',
       onChanged: emptyFunction,
     }).instance;
 
@@ -260,19 +264,19 @@ describe('StateChangeSubscriptionManager tests', () => {
 
     expect(
       rootPropertyObserverProxyPairManager?.getFromData({
-        key: 'x',
-        shouldWatchIndex: truePredicate,
+        index: 'x',
+        indexWatchRule,
       }),
     ).toBeDefined();
     expect(
       rootPropertyObserverProxyPairManager?.getFromData({
-        key: 'x',
+        index: 'x',
       }),
     ).toBeDefined();
     expect(
       nestedPropertyObserverProxyPairManager?.getFromData({
-        key: 'y',
-        shouldWatchIndex: truePredicate,
+        index: 'y',
+        indexWatchRule,
       }),
     ).toBeDefined();
 
@@ -280,19 +284,19 @@ describe('StateChangeSubscriptionManager tests', () => {
 
     expect(
       rootPropertyObserverProxyPairManager?.getFromData({
-        key: 'x',
-        shouldWatchIndex: truePredicate,
+        index: 'x',
+        indexWatchRule,
       }),
     ).toBeUndefined();
     expect(
       rootPropertyObserverProxyPairManager?.getFromData({
-        key: 'x',
+        index: 'x',
       }),
     ).toBeDefined();
     expect(
       nestedPropertyObserverProxyPairManager?.getFromData({
-        key: 'y',
-        shouldWatchIndex: truePredicate,
+        index: 'y',
+        indexWatchRule,
       }),
     ).toBeUndefined();
 

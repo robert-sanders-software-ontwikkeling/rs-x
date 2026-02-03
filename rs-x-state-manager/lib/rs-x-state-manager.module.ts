@@ -6,6 +6,8 @@ import {
   RsXCoreModule,
 } from '@rs-x/core';
 
+import { IndexWatchRuleRegistry } from './index-watch-rule-registry/index-watch-rule-registry';
+import type { IIndexWatchRuleRegistry } from './index-watch-rule-registry/index-watch-rule-registry.type';
 import { ArrayObserverProxyPairFactory } from './object-observer/factories/array-observer-proxy-pair.factory';
 import { DateObserverProxyPairFactory } from './object-observer/factories/date-observer-proxy-pair.factory';
 import { MapObserverProxyPairFactory } from './object-observer/factories/map-observer-proxy-pair.factory';
@@ -26,8 +28,6 @@ import { DatePropertyObserverProxyPairFactory } from './property-observer/factor
 import { NonIterableObjectPropertyObserverProxyPairFactory } from './property-observer/factories/non-iterable-object-property/non-iterable-object-property-observer-proxy-pair.factory';
 import { ObjectPropertyObserverManager } from './property-observer/factories/non-iterable-object-property/object-property-observer-manager';
 import { type IObjectPropertyObserverManager } from './property-observer/factories/non-iterable-object-property/object-property-observer-manager.type';
-import { ShouldWatchIndexPredicateFactory } from './property-observer/should-watch-index-predicate.factory';
-import type { IShouldWatchIndexPredicateFactory } from './property-observer/should-watch-index-predicate.factory.type';
 import { ArrayProxyFactory } from './proxies/array-proxy/array-proxy.factory';
 import { type IArrayProxyFactory } from './proxies/array-proxy/array-proxy.factory.type';
 import { DateProxyFactory } from './proxies/date-proxy/date-proxy.factory';
@@ -184,10 +184,10 @@ export const RsXStateManagerModule = new ContainerModule((options) => {
     .to(DatePropertyObserverManager)
     .inSingletonScope();
   options
-    .bind<IShouldWatchIndexPredicateFactory>(
-      RsXStateManagerInjectionTokens.IShouldWatchIndexPredicateFactory,
+    .bind<IIndexWatchRuleRegistry>(
+      RsXStateManagerInjectionTokens.IIndexWatchRuleRegistry,
     )
-    .to(ShouldWatchIndexPredicateFactory)
+    .to(IndexWatchRuleRegistry)
     .inSingletonScope();
   options
     .bind<IObjectStateManager>(

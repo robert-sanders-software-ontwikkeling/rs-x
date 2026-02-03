@@ -16,11 +16,13 @@ import { type IObserver } from '../../../lib/observer.interface';
 import { ObserverGroup } from '../../../lib/observer-group';
 import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
 import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokens';
+import { IndexWatchRuleMock } from '../../../lib/testing/watch-index-rule.mock';
 
 describe('PlainIbjectObserverProxyPairFactory tests', () => {
   let plainObjectObserverProxyPairFactory: IPlainObjectObserverProxyPairFactory;
   let disposableOwner: DisposableOwnerMock;
   let observer: IObserver | undefined;
+  let indexWatchRule: IndexWatchRuleMock;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXStateManagerModule);
@@ -37,6 +39,8 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
 
   beforeEach(() => {
     disposableOwner = new DisposableOwnerMock();
+    indexWatchRule = new IndexWatchRuleMock();
+    indexWatchRule.test.mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -56,57 +60,7 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
     expect(actual).toEqual(false);
   });
 
-  it('create will return Observergroup', async () => {
-    const plainObject = {
-      x: 1,
-      nested: {
-        y: 2,
-      },
-    };
-    observer = plainObjectObserverProxyPairFactory.create(disposableOwner, {
-      target: plainObject,
-    }).observer;
-
-    const objectPropertyObserverProxyPairManager =
-      InjectionContainer.get<IObjectPropertyObserverProxyPairManager>(
-        RsXStateManagerInjectionTokens.IObjectPropertyObserverProxyPairManager,
-      );
-    const propertyObserverProxyPairManager =
-      objectPropertyObserverProxyPairManager.getFromId(plainObject);
-
-    const xId = propertyObserverProxyPairManager?.getId({
-      key: 'x',
-    });
-    const nestedId = propertyObserverProxyPairManager?.getId({
-      key: 'nested',
-    });
-
-    const rootObserver = new ObserverGroup(
-      undefined,
-      plainObject,
-      plainObject,
-      truePredicate,
-      new ErrorLog(),
-    ).addObservers([
-      propertyObserverProxyPairManager?.getFromId(xId)?.observer as IObserver,
-      propertyObserverProxyPairManager?.getFromId(nestedId)
-        ?.observer as IObserver,
-    ]);
-
-    const expected = new ObserverGroup(
-      disposableOwner,
-      plainObject,
-      plainObject,
-      truePredicate,
-      new ErrorLog(),
-      undefined,
-      () => rootObserver,
-    );
-
-    expect(observer).observerEqualTo(expected);
-  });
-
-  it('create will return  an Observergroup with item observers when setting mustProxify', async () => {
+  it('create will return  an Observergroup with item observers for which index-watch-rule return true', async () => {
     const plainObject = {
       x: 1,
       nested: {
@@ -115,10 +69,10 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
       z: 200,
     };
 
-    const mustProxify = (index) => index !== 'z';
+    indexWatchRule.test.mockImplementation((index) => index !== 'z');
     observer = plainObjectObserverProxyPairFactory.create(disposableOwner, {
       target: plainObject,
-      shouldWatchIndex: mustProxify,
+      indexWatchRule,
     }).observer;
 
     const objectPropertyObserverProxyPairManager =
@@ -135,17 +89,17 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
     expect(nestedPropertyObserverProxyPairManager).toBeDefined();
 
     const xId = propertyObserverProxyPairManager?.getId({
-      key: 'x',
-      shouldWatchIndex: mustProxify,
+      index: 'x',
+      indexWatchRule,
     });
     const nestedId = propertyObserverProxyPairManager?.getId({
-      key: 'nested',
-      shouldWatchIndex: mustProxify,
+      index: 'nested',
+      indexWatchRule,
     });
 
     const yId = nestedPropertyObserverProxyPairManager?.getId({
-      key: 'y',
-      shouldWatchIndex: mustProxify,
+      index: 'y',
+      indexWatchRule,
     });
 
     const expected = new ObserverGroup(
@@ -182,7 +136,7 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
     const observerProxyPair: IObserverProxyPair =
       plainObjectObserverProxyPairFactory.create(disposableOwner, {
         target: plainObject,
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       });
     observer = observerProxyPair.observer;
     disposableOwner.canDispose.mockReturnValue(true);
@@ -196,16 +150,16 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
     const nestedPropertyObserverProxyPairManager =
       objectPropertyObserverProxyPairManager.getFromId(plainObject.nested);
     const xId = propertyObserverProxyPairManager?.getId({
-      key: 'x',
-      shouldWatchIndex: truePredicate,
+      index: 'x',
+      indexWatchRule,
     });
     const nestedId = propertyObserverProxyPairManager?.getId({
-      key: 'nested',
-      shouldWatchIndex: truePredicate,
+      index: 'nested',
+      indexWatchRule,
     });
     const yId = nestedPropertyObserverProxyPairManager?.getId({
-      key: 'y',
-      shouldWatchIndex: truePredicate,
+      index: 'y',
+      indexWatchRule,
     });
 
     expect(propertyObserverProxyPairManager?.getFromId(xId)).toBeDefined();
@@ -231,7 +185,7 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
     expect(plainObject.nested).not.isWritableProperty('y');
   });
 
-  it('will only patch root field when no mustProxify handler is passed in', () => {
+  it('will not patch any field when no index-watch-rule is passed in', () => {
     const plainObject = {
       a: 1,
       b: 2,
@@ -247,14 +201,14 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
       });
     observer = observerProxyPair.observer;
 
-    expect(plainObject).isWritableProperty('a');
-    expect(plainObject).isWritableProperty('b');
-    expect(plainObject).isWritableProperty('nested');
+    expect(plainObject).not.isWritableProperty('a');
+    expect(plainObject).not.isWritableProperty('b');
+    expect(plainObject).not.isWritableProperty('nested');
     expect(plainObject.nested).not.isWritableProperty('c');
     expect(plainObject.nested).not.isWritableProperty('d');
   });
 
-  it('will only patch fields for which mustProxify returns true', () => {
+  it('will only patch fields for which watch-index-rule returns true', () => {
     const plainObject = {
       a: 1,
       b: 2,
@@ -264,24 +218,16 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
       },
     };
 
-    const mustProxify = jest.fn();
-    mustProxify.mockImplementation(
+    indexWatchRule.test.mockImplementation(
       (index: string) => index === 'a' || index === 'c' || index === 'nested',
     );
 
     const observerProxyPair: IObserverProxyPair =
       plainObjectObserverProxyPairFactory.create(disposableOwner, {
         target: plainObject,
-        shouldWatchIndex: mustProxify,
+        indexWatchRule,
       });
     observer = observerProxyPair.observer;
-
-    expect(mustProxify).toHaveBeenCalledTimes(5);
-    expect(mustProxify).toHaveBeenNthCalledWith(1, 'a', plainObject);
-    expect(mustProxify).toHaveBeenNthCalledWith(2, 'b', plainObject);
-    expect(mustProxify).toHaveBeenNthCalledWith(3, 'nested', plainObject);
-    expect(mustProxify).toHaveBeenNthCalledWith(4, 'c', plainObject.nested);
-    expect(mustProxify).toHaveBeenNthCalledWith(5, 'd', plainObject.nested);
 
     expect(plainObject).isWritableProperty('a');
     expect(plainObject).not.isWritableProperty('b');
@@ -300,7 +246,7 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
       };
       observer = plainObjectObserverProxyPairFactory.create(disposableOwner, {
         target: plainObject,
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).observer;
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -309,8 +255,8 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: plainObject, id: 'x' }],
-        id: 'x',
+        chain: [{ context: plainObject, index: 'x' }],
+        index: 'x',
         newValue: 100,
         target: plainObject,
       };
@@ -327,7 +273,7 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
       };
       observer = plainObjectObserverProxyPairFactory.create(disposableOwner, {
         target: plainObject,
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).observer;
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -336,8 +282,8 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: plainObject, id: 'nested' }],
-        id: 'nested',
+        chain: [{ context: plainObject, index: 'nested' }],
+        index: 'nested',
         newValue: { y: 200 },
         target: plainObject,
       };
@@ -354,7 +300,7 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
       };
       observer = plainObjectObserverProxyPairFactory.create(disposableOwner, {
         target: plainObject,
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).observer;
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -364,10 +310,10 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
       const expected: IPropertyChange = {
         arguments: [],
         chain: [
-          { object: plainObject, id: 'nested' },
-          { object: plainObject.nested, id: 'y' },
+          { context: plainObject, index: 'nested' },
+          { context: plainObject.nested, index: 'y' },
         ],
-        id: 'y',
+        index: 'y',
         newValue: 300,
         target: plainObject.nested,
       };
@@ -386,6 +332,7 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
       };
       observer = plainObjectObserverProxyPairFactory.create(disposableOwner, {
         target: plainObject,
+        indexWatchRule,
       }).observer;
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -394,8 +341,8 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: plainObject, id: 'x' }],
-        id: 'x',
+        chain: [{ context: plainObject, index: 'x' }],
+        index: 'x',
         newValue: 100,
         target: plainObject,
       };
@@ -412,6 +359,7 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
       };
       observer = plainObjectObserverProxyPairFactory.create(disposableOwner, {
         target: plainObject,
+        indexWatchRule,
       }).observer;
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -420,8 +368,8 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: plainObject, id: 'nested' }],
-        id: 'nested',
+        chain: [{ context: plainObject, index: 'nested' }],
+        index: 'nested',
         newValue: { y: 200 },
         target: plainObject,
       };
@@ -429,7 +377,7 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
       expect(actual).toEqual(expected);
     });
 
-    it(`non change event is emitted when setting y = 300 in '{ x: 1, nested: { y:2 } }'`, async () => {
+    it(`nchange event is emitted when setting y = 300 in '{ x: 1, nested: { y:2 } }'`, async () => {
       const plainObject = {
         x: 1,
         nested: {
@@ -438,13 +386,25 @@ describe('PlainIbjectObserverProxyPairFactory tests', () => {
       };
       observer = plainObjectObserverProxyPairFactory.create(disposableOwner, {
         target: plainObject,
+        indexWatchRule,
       }).observer;
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
         plainObject.nested.y = 300;
       });
 
-      expect(actual).toBeNull();
+      const expected: IPropertyChange = {
+        arguments: [],
+        chain: [
+          { context: plainObject, index: 'nested' },
+          { context: plainObject.nested, index: 'y' },
+        ],
+        index: 'y',
+        newValue: 300,
+        target: plainObject.nested,
+      };
+
+      expect(actual).toEqual(expected);
     });
   });
 });

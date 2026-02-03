@@ -90,9 +90,9 @@ class PropertObserver implements IObserver {
     this._changed.next({
       arguments: [],
       ...change,
-      chain: [{ object: this._target, id: this._propertyName }],
+      chain: [{ context: this._target, index: this._propertyName }],
       target: this._target,
-      id,
+      index: id,
     });
   }
 

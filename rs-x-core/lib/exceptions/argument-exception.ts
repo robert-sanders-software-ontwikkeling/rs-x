@@ -1,5 +1,7 @@
-export class ArgumentException extends Error {
+import { CustomError } from './custome-error';
+
+export class ArgumentException extends CustomError {
   constructor(message: string) {
-    super(message);
+    super(message, 'ArgumentException');
   }
 }

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@rs-x/core';
-import type { ShouldWatchIndex } from '@rs-x/state-manager';
+import type { IIndexWatchRule } from '@rs-x/state-manager';
 
 import type { IExpression } from '../expressions/expression-parser.interface';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
@@ -17,11 +17,11 @@ export class ExpressionFactory implements IExpressionFactory {
   public create<T>(
     context: object,
     expressionString: string,
-    shouldWatchLeaf?: ShouldWatchIndex,
+    leafIndexWatchRule?: IIndexWatchRule,
   ): IExpression<T> {
     return this._expressionManager
       .create(context)
-      .instance.create({ expressionString, shouldWatchLeaf })
+      .instance.create({ expressionString, leafIndexWatchRule })
       .instance as IExpression<T>;
   }
 }

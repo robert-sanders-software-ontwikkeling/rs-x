@@ -62,7 +62,7 @@ class ObservableProxy extends AbstractObserver<
       arguments: [],
       chain: [],
       target: this.target,
-      id: this.id,
+      index: this.id,
       newValue,
     });
   };

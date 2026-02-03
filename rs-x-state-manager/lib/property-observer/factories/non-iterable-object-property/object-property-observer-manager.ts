@@ -136,9 +136,9 @@ class PropertObserver extends AbstractObserver {
       super.emitChange({
         arguments: [],
         ...change,
-        chain: [{ object: this.target, id: this.id }],
+        chain: [{ context: this.target, index: this.id }],
         target: this.target,
-        id,
+        index: id,
         setValue: this.setValue,
       });
       this._emitingChange = false;

@@ -1,12 +1,12 @@
 import type { IDisposableOwner } from '@rs-x/core';
-import type { ShouldWatchIndex } from '@rs-x/state-manager';
+import type { IIndexWatchRule } from '@rs-x/state-manager/lib';
 
 import type { IExpressionServices } from '../expression-services/expression-services.interface';
 
 export interface IBindConfigurationBase {
   readonly services: IExpressionServices;
   readonly owner?: IDisposableOwner;
-  readonly shouldWatchLeaf?: ShouldWatchIndex;
+  readonly leafIndexWatchRule?: IIndexWatchRule;
 }
 
 export type IExpressionBindConfigurationExtra = {

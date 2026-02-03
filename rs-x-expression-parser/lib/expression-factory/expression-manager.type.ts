@@ -1,5 +1,5 @@
 import { type ISingletonFactory } from '@rs-x/core';
-import type { ShouldWatchIndex } from '@rs-x/state-manager';
+import type { IIndexWatchRule } from '@rs-x/state-manager';
 
 import type { IExpression } from '../expressions/expression-parser.interface';
 
@@ -13,7 +13,7 @@ export interface IExpressionIdData {
 }
 
 export interface IExpressionData extends IExpressionIdData {
-  shouldWatchLeaf?: ShouldWatchIndex;
+  leafIndexWatchRule?: IIndexWatchRule;
 }
 
 export type IExpressionForContextManager = ISingletonFactory<

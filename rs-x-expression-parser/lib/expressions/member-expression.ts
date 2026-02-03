@@ -1,7 +1,6 @@
 import { type Subscription } from 'rxjs';
 
 import { PENDING, Type } from '@rs-x/core';
-import { type ShouldWatchIndex } from '@rs-x/state-manager';
 
 import { type IExpressionChangeCommitHandler } from '../expresion-change-transaction-manager.interface';
 
@@ -27,7 +26,6 @@ export class MemberExpression extends AbstractExpression {
   >();
   private _rebindingSlot = false;
   private readonly _initializeQueue = new Map<AbstractExpression, () => void>();
-  private _shouldWatchLeaf?: ShouldWatchIndex;
 
   constructor(expressionString: string, pathSeqments: AbstractExpression[]) {
     super(ExpressionType.Member, expressionString, ...pathSeqments);
@@ -48,18 +46,10 @@ export class MemberExpression extends AbstractExpression {
   ): AbstractExpression {
     super.bind(settings);
 
-    this._shouldWatchLeaf = settings.shouldWatchLeaf;
-
     for (let i = 0; i < this._childExpressions.length; i++) {
       const currentSegment = this._childExpressions[i];
       if (i === 0 || this.isCalculated(currentSegment)) {
-        currentSegment.bind({
-          ...settings,
-          shouldWatchLeaf:
-            i === this._childExpressions.length - 1
-              ? settings.shouldWatchLeaf
-              : undefined,
-        });
+        currentSegment.bind(settings);
       }
     }
 
@@ -195,16 +185,11 @@ export class MemberExpression extends AbstractExpression {
       return PENDING;
     }
 
-    const shouldWatchLeaf =
-      pathSegmentIndex === this._childExpressions.length - 1
-        ? this._shouldWatchLeaf
-        : undefined;
-
     if (pathSegment.value === undefined) {
       this.bindPathSegement(pathSegment, {
         context: previousPathSegmentValue,
         services: this.services,
-        shouldWatchLeaf,
+        leafIndexWatchRule: this.leafIndexWatchRule,
       });
       return PENDING;
     }
@@ -224,7 +209,7 @@ export class MemberExpression extends AbstractExpression {
     this.bindPathSegement(pathSegment, {
       context: previousPathSegmentValue,
       services: this.services,
-      shouldWatchLeaf,
+      leafIndexWatchRule: this.leafIndexWatchRule,
     });
 
     return PENDING;
@@ -296,12 +281,10 @@ export class MemberExpression extends AbstractExpression {
         context,
         currentValue: value,
         services: {
-          stateManager: this.stateManager,
-          indexValueAccessor: this.indexValueAccessor,
-          guidFactory: this.guidFactory,
+          ...this.services,
           transactionManager: Type.cast(undefined),
-          valueMetadata: this.valueMetadata,
         },
+        leafIndexWatchRule: this.leafIndexWatchRule,
       },
       () => {
         let bound = false;

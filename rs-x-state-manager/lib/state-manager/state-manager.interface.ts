@@ -1,11 +1,11 @@
 import { type Observable } from 'rxjs';
 
-import { type ShouldWatchIndex } from '../object-property-observer-proxy-pair-manager.type';
+import type { IIndexWatchRule } from '../index-watch-rule-registry/index-watch-rule.interface';
 
 export interface IContextChanged {
   oldContext: unknown;
   context: unknown;
-  key: unknown;
+  index: unknown;
 }
 export interface IStateChange extends IContextChanged {
   oldValue: unknown;
@@ -21,17 +21,17 @@ export interface IStateManager {
   isWatched(
     context: unknown,
     index: unknown,
-    shouldWatchIndex?: ShouldWatchIndex,
+    indexWatchRule?: IIndexWatchRule,
   ): boolean;
   watchState(
     context: unknown,
     index: unknown,
-    shouldWatchIndex?: ShouldWatchIndex,
+    indexWatchRule?: IIndexWatchRule,
   ): unknown;
   releaseState(
     oontext: unknown,
     index: unknown,
-    shouldWatchIndex?: ShouldWatchIndex,
+    indexWatchRule?: IIndexWatchRule,
   ): void;
   getState<T>(context: unknown, index: unknown): T;
   setState<T>(context: unknown, index: unknown, value: T): void;

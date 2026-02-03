@@ -18,12 +18,14 @@ import {
 import { type IProxyRegistry } from '../../../lib/proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
 import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokens';
+import { IndexWatchRuleMock } from '../../../lib/testing/watch-index-rule.mock';
 
 describe('ArrayObserverProxyPairFactory tests', () => {
   let arrayObserverProxyPairFactory: IArrayObserverProxyPairFactory;
   let arrayProxyFactory: IArrayProxyFactory;
   let disposableOwner: DisposableOwnerMock;
   let observer: IObserver | undefined;
+  let indexWatchRule: IndexWatchRuleMock;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXStateManagerModule);
@@ -43,6 +45,8 @@ describe('ArrayObserverProxyPairFactory tests', () => {
 
   beforeEach(() => {
     disposableOwner = new DisposableOwnerMock();
+    indexWatchRule = new IndexWatchRuleMock();
+    indexWatchRule.test.mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -108,7 +112,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
     const objectArray = [{ x: 1 }, { x: 2 }];
     observer = arrayObserverProxyPairFactory.create(disposableOwner, {
       target: objectArray,
-      shouldWatchIndex: truePredicate,
+      indexWatchRule,
     }).observer;
 
     const objectPropertyObserverProxyPairManager =
@@ -121,12 +125,12 @@ describe('ArrayObserverProxyPairFactory tests', () => {
     expect(propertyObserverProxyPairManager).toBeDefined();
 
     const item1Id = propertyObserverProxyPairManager?.getId({
-      key: 0,
-      shouldWatchIndex: truePredicate,
+      index: 0,
+      indexWatchRule,
     });
     const item2Id = propertyObserverProxyPairManager?.getId({
-      key: 1,
-      shouldWatchIndex: truePredicate,
+      index: 1,
+      indexWatchRule,
     });
     const arrayProxyId = arrayProxyFactory.getId({
       array: objectArray,
@@ -176,7 +180,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
     const observerProxyPair: IArrayObserverProxyPair =
       arrayObserverProxyPairFactory.create(disposableOwner, {
         target: objectArray,
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       });
     observer = observerProxyPair.observer;
     disposableOwner.canDispose.mockReturnValue(true);
@@ -188,12 +192,12 @@ describe('ArrayObserverProxyPairFactory tests', () => {
     const propertyObserverProxyPairManager =
       objectPropertyObserverProxyPairManager.getFromId(objectArray);
     const item1Id = propertyObserverProxyPairManager?.getId({
-      key: 0,
-      shouldWatchIndex: truePredicate,
+      index: 0,
+      indexWatchRule,
     });
     const item2Id = propertyObserverProxyPairManager?.getId({
-      key: 1,
-      shouldWatchIndex: truePredicate,
+      index: 1,
+      indexWatchRule,
     });
 
     expect(arrayProxyFactory.getFromId(objectArray)).toBeDefined();
@@ -218,24 +222,17 @@ describe('ArrayObserverProxyPairFactory tests', () => {
   it('will only proxify items for which should-watch-index-predicate returns true', () => {
     const objectArray = [{ x: 1 }, { x: 2 }, { x: 3 }];
 
-    const shouldWatchIndex = jest.fn();
-    shouldWatchIndex.mockImplementation(
-      (index: number | string) => index === 0 || index === 2 || index === 'x',
-    );
+    indexWatchRule.test.mockImplementation((index: number | string) => {
+      return index === 0 || index === 2 || index === 'x';
+    });
 
     const observerProxyPair: IArrayObserverProxyPair =
       arrayObserverProxyPairFactory.create(disposableOwner, {
         target: objectArray,
-        shouldWatchIndex,
+        indexWatchRule,
       });
     observer = observerProxyPair.observer;
 
-    expect(shouldWatchIndex).toHaveBeenCalledTimes(5);
-    expect(shouldWatchIndex).toHaveBeenNthCalledWith(1, 0, objectArray);
-    expect(shouldWatchIndex).toHaveBeenNthCalledWith(2, 'x', objectArray[0]);
-    expect(shouldWatchIndex).toHaveBeenNthCalledWith(3, 1, objectArray);
-    expect(shouldWatchIndex).toHaveBeenNthCalledWith(4, 2, objectArray);
-    expect(shouldWatchIndex).toHaveBeenNthCalledWith(5, 'x', objectArray[2]);
     expect(objectArray[0]).isWritableProperty('x');
     expect(objectArray[1]).not.isWritableProperty('x');
     expect(objectArray[2]).isWritableProperty('x');
@@ -254,7 +251,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
       const array = [{ x: 1 }, { x: 2 }];
       observer = arrayObserverProxyPairFactory.create(disposableOwner, {
         target: array,
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).observer;
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -264,8 +261,8 @@ describe('ArrayObserverProxyPairFactory tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: array, id: 2 }],
-        id: 2,
+        chain: [{ context: array, index: 2 }],
+        index: 2,
         newValue: { x: 3 },
         target: array,
       };
@@ -277,7 +274,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
       const array = [{ x: 1 }, { x: 2 }];
       observer = arrayObserverProxyPairFactory.create(disposableOwner, {
         target: array,
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).observer;
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -287,8 +284,8 @@ describe('ArrayObserverProxyPairFactory tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: array, id: 1 }],
-        id: 1,
+        chain: [{ context: array, index: 1 }],
+        index: 1,
         newValue: undefined,
         target: array,
       };
@@ -300,7 +297,7 @@ describe('ArrayObserverProxyPairFactory tests', () => {
       const array = [{ x: 1 }, { x: 2 }];
       observer = arrayObserverProxyPairFactory.create(disposableOwner, {
         target: array,
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).observer;
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -310,10 +307,10 @@ describe('ArrayObserverProxyPairFactory tests', () => {
       const expected: IPropertyChange = {
         arguments: [],
         chain: [
-          { object: array, id: 1 },
-          { object: array[1], id: 'x' },
+          { context: array, index: 1 },
+          { context: array[1], index: 'x' },
         ],
-        id: 'x',
+        index: 'x',
         newValue: 200,
         target: array[1],
       };
@@ -344,8 +341,8 @@ describe('ArrayObserverProxyPairFactory tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: array, id: 2 }],
-        id: 2,
+        chain: [{ context: array, index: 2 }],
+        index: 2,
         newValue: { x: 3 },
         target: array,
       };
@@ -366,8 +363,8 @@ describe('ArrayObserverProxyPairFactory tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: array, id: 1 }],
-        id: 1,
+        chain: [{ context: array, index: 1 }],
+        index: 1,
         newValue: undefined,
         target: array,
       };

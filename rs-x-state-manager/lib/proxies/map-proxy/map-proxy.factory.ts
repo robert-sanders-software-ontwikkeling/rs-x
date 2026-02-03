@@ -121,8 +121,8 @@ export class MapProxy extends AbstractObserver<
   ): void {
     this.emitChange({
       arguments: [],
-      chain: [{ object: originalMap, id: key }],
-      id: key,
+      chain: [{ context: originalMap, index: key }],
+      index: key,
       target: originalMap,
       newValue: value,
     });

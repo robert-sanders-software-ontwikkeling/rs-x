@@ -12,14 +12,14 @@ import {
   type IChangeSubscriptionsCreateMethods,
   type IGroupedChangeSubscriptionsForContextManager,
 } from '../../../grouped-change-subscriptions-for-context-manager';
-import { type ShouldWatchIndex } from '../../../object-property-observer-proxy-pair-manager.type';
+import type { IIndexWatchRule } from '../../../index-watch-rule-registry/index-watch-rule.interface';
 import { type IObserver } from '../../../observer.interface';
 import { ObserverGroup } from '../../../observer-group';
 import { type IIndexObserverInfo } from '../index-observer-info.interface';
 
 export interface ISubscriptionIdInfo<TIndex> {
   index: TIndex;
-  shouldWatchIndex?: ShouldWatchIndex;
+  indexWatchRule: IIndexWatchRule | undefined;
 }
 export interface ISubscriptionInfo<TIndex>
   extends ISubscriptionIdInfo<TIndex>, IChangeSubscriptionsCreateMethods {
@@ -39,7 +39,7 @@ export type IIndexSetObserverManager<TIndex> = ISingletonFactory<
   unknown,
   unknown,
   ISingletonFactory<
-    ShouldWatchIndex | TIndex,
+    IIndexWatchRule | TIndex,
     IIndexObserverInfo<TIndex>,
     IObserver,
     ISubscriptionIdInfo<TIndex>
@@ -76,8 +76,8 @@ class IndexChangeSubscriptionsForContextManager<TIndex>
 
   protected getGroupMemberId(
     data: ISubscriptionIdInfo<TIndex>,
-  ): ShouldWatchIndex | undefined {
-    return data.shouldWatchIndex;
+  ): IIndexWatchRule | undefined {
+    return data.indexWatchRule;
   }
 
   protected createObserver(
@@ -110,7 +110,7 @@ class IndexChangeSubscriptionsForContextManager<TIndex>
           this.release(id);
         },
       },
-      this._context,
+      this.context,
       data.initialValue,
       data.mustHandleChange,
       this._errorLog,

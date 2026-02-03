@@ -49,7 +49,7 @@ describe('IDatePropertyObserverProxyPairFactory tests', () => {
     const { observer } = datePropertyObserverProxyPairFactory.create(
       disposableOwner,
       date,
-      { key: 'year' },
+      { index: 'year' },
     );
 
     const dateProxy = proxyRegistry.getProxy<Date>(date);
@@ -60,9 +60,9 @@ describe('IDatePropertyObserverProxyPairFactory tests', () => {
 
     const expected: IPropertyChange = {
       arguments: [],
-      chain: [{ object: date, id: 'year' }],
+      chain: [{ context: date, index: 'year' }],
       target: date,
-      id: 'year',
+      index: 'year',
       newValue: 2024,
     };
     expect(actual).toEqual(expected);

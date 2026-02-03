@@ -13,10 +13,10 @@ import {
 } from '@rs-x/core';
 
 import { AbstractObserver } from '../../../abstract-observer';
+import type { IIndexWatchRuleRegistry } from '../../../index-watch-rule-registry/index-watch-rule-registry.type';
 import type { IObserver } from '../../../observer.interface';
 import type { IDateProxyFactory } from '../../../proxies/date-proxy/date-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokens';
-import type { IShouldWatchIndexPredicateFactory } from '../../should-watch-index-predicate.factory.type';
 
 import type {
   IDatePropertyObserverIdInfo,
@@ -64,7 +64,7 @@ class DatePropertyObserver extends AbstractObserver<Date> {
   }
 
   private onDateChanged = (change: IPropertyChange) => {
-    if (change.id !== this.id || change.newValue === this._oldValue) {
+    if (change.index !== this.id || change.newValue === this._oldValue) {
       return;
     }
 
@@ -87,7 +87,7 @@ class ProperForDataObserverManager
     private readonly _dateProxyFactory: IDateProxyFactory,
     private readonly _datePropertyAccessor: IDatePropertyAccessor,
     private readonly _errorLog: IErrorLog,
-    private readonly _mustProxifyItemHandlerFactory: IShouldWatchIndexPredicateFactory,
+    private readonly _indexWatchPredicateRegistry: IIndexWatchRuleRegistry,
     private readonly releaseObject: () => void,
   ) {
     super();
@@ -103,21 +103,35 @@ class ProperForDataObserverManager
 
   protected override createInstance(
     data: IDatePropertyObserverInfo,
-    id: DateProperty,
+    index: DateProperty,
   ): IObserver {
+    const indexWatchPredicate = (targetIndex, target, context) =>
+      targetIndex === index && target === context;
+    
+    const indexWatchRule = this._indexWatchPredicateRegistry.register(
+      this._date,
+      index,
+      indexWatchPredicate,
+    );
+    this._indexWatchPredicateRegistry.register(
+      this._date,
+      index,
+      indexWatchPredicate,
+    );
     const dateObserver = this._dateProxyFactory.create({
       date: this._date,
-      shouldWatchIndex: this._mustProxifyItemHandlerFactory.create(
-        this._date,
-        id,
-      ),
+      indexWatchRule,
     }).instance.observer;
     return new DatePropertyObserver(
       {
-        canDispose: () => this.getReferenceCount(id) === 1,
+        canDispose: () => this.getReferenceCount(index) === 1,
         release: () => {
-          this.release(id);
-          this._mustProxifyItemHandlerFactory.release(this._date, id);
+          this.release(index);
+          this._indexWatchPredicateRegistry.unregister(
+            this._date,
+            index,
+            indexWatchPredicate,
+          );
         },
       },
       this._date,
@@ -149,8 +163,8 @@ export class DatePropertyObserverManager
     private readonly _errorLog: IErrorLog,
     @Inject(RsXCoreInjectionTokens.IDatePropertyAccessor)
     private readonly _datePropertyAccessor: IDatePropertyAccessor,
-    @Inject(RsXStateManagerInjectionTokens.IShouldWatchIndexPredicateFactory)
-    private readonly _mustProxifyItemHandlerFactory: IShouldWatchIndexPredicateFactory,
+    @Inject(RsXStateManagerInjectionTokens.IIndexWatchRuleRegistry)
+    private readonly _indexWatchTestRuleRegistry: IIndexWatchRuleRegistry,
   ) {
     super();
   }
@@ -169,7 +183,7 @@ export class DatePropertyObserverManager
       this._dateProxyFactory,
       this._datePropertyAccessor,
       this._errorLog,
-      this._mustProxifyItemHandlerFactory,
+      this._indexWatchTestRuleRegistry,
       () => this.release(date),
     );
   }

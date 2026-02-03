@@ -1,4 +1,5 @@
-import { InjectionContainer, WaitForEvent } from '@rs-x/core';
+import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
+import { IndexWatchRuleMock } from '@rs-x/state-manager/testing';
 
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
@@ -120,9 +121,8 @@ describe('Array expression tests', () => {
         { x: 4, Y: 5 },
       ],
     };
-    expression = expressionFactory.create(
-      context,
-      ' [1, ...array]',
+
+    const indexWatchRule = new IndexWatchRuleMock(
       (index: unknown, target: unknown) => {
         if (Array.isArray(target)) {
           return true;
@@ -131,6 +131,13 @@ describe('Array expression tests', () => {
         return index === 'x';
       },
     );
+    expression = expressionFactory.create(
+      context,
+      ' [1, ...array]',
+      indexWatchRule,
+    );
+
+    await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
     expect(context.array[0]).isWritableProperty('x');
     expect(context.array[1]).isWritableProperty('x');

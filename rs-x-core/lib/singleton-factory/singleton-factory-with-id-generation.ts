@@ -2,7 +2,10 @@ import { InvalidOperationException } from '../exceptions';
 import { type IGuidFactory } from '../guid';
 
 import { SingletonFactory } from './singleton.factory';
-import { type ISingletonFactoryWithIdGeneration } from './singleton-factory-with-id-generation.interface';
+import {
+  type IInstanceGroupInfo,
+  type ISingletonFactoryWithIdGeneration,
+} from './singleton-factory-with-id-generation.interface';
 
 export abstract class SingletonFactoryWithIdGeneration<
   TId,
@@ -14,6 +17,26 @@ export abstract class SingletonFactoryWithIdGeneration<
   implements ISingletonFactoryWithIdGeneration<TId, TData, TInstance, TIdData>
 {
   private readonly _groupedData = new Map<unknown, Map<unknown, TId>>();
+
+  public *instanceGroupInfoEntries(): IterableIterator<
+    IInstanceGroupInfo<TId, TInstance>
+  > {
+    for (const groupId of this.groupIds) {
+      const group = this.getGroup(groupId);
+      if (!group) {
+        continue;
+      }
+
+      for (const [groupMemberId, id] of group) {
+        const instance = this.getFromId(id);
+        if (!instance) {
+          continue;
+        }
+
+        yield { groupId, groupMemberId, id, instance };
+      }
+    }
+  }
 
   public getId(data: TIdData): TId | undefined {
     const groupId = this.getGroupId(data);
@@ -28,6 +51,14 @@ export abstract class SingletonFactoryWithIdGeneration<
   protected abstract getGroupId(data: TIdData): unknown;
   protected abstract getGroupMemberId(data: TIdData): unknown;
   protected abstract createUniqueId(data: TIdData): TId;
+
+  protected get groupIds(): MapIterator<unknown> {
+    return this._groupedData.keys();
+  }
+
+  protected getGroup<T>(groupId: unknown): Map<T, TId> | undefined {
+    return this._groupedData.get(groupId) as Map<T, TId>;
+  }
 
   protected createId(data: TData): TId {
     const groupId = this.getGroupId(data);

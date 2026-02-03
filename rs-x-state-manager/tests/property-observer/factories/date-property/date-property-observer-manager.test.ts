@@ -110,10 +110,10 @@ describe('IDatePropertyObserverManager tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: date, id: 'year' }],
+        chain: [{ context: date, index: 'year' }],
         target: date,
         newValue: 2024,
-        id: 'year',
+        index: 'year',
       };
       expect(actual).toEqual(expected);
     });

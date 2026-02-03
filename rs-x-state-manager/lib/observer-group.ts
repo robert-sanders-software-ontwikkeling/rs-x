@@ -101,8 +101,8 @@ export class ObserverGroup extends AbstractObserver {
     this.emitChange({
       arguments: [],
       target: this.target,
-      chain: [{ object: this.target, id: this.id }],
-      id: this.id,
+      chain: [{ context: this.target, index: this.id }],
+      index: this.id,
       newValue,
     });
   }
@@ -138,7 +138,7 @@ export class ObserverGroup extends AbstractObserver {
     const chain =
       isThisTarget || Type.isNullOrUndefined(this.id)
         ? change.chain
-        : [{ object: this.target, id: this.id }, ...(change.chain ?? [])];
+        : [{ context: this.target, index: this.id }, ...(change.chain ?? [])];
     super.emitChange({
       ...change,
       chain,

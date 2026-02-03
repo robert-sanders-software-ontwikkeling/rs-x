@@ -13,7 +13,7 @@ import {
 } from '@rs-x/core';
 
 import { AbstractObserver } from '../../abstract-observer';
-import type { ShouldWatchIndex } from '../../object-property-observer-proxy-pair-manager.type';
+import type { IIndexWatchRule } from '../../index-watch-rule-registry/index-watch-rule.interface';
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokens';
 import type { IProxyRegistry } from '../proxy-registry/proxy-registry.interface';
 
@@ -197,7 +197,7 @@ class DateProxy extends AbstractObserver<Date, Date, undefined> {
     owner: IDisposableOwner,
     initialValue: Date,
     private readonly _proxyRegistry: IProxyRegistry,
-    private readonly _filter?: (propertyName: DateProperty) => boolean,
+    private readonly indexWatchRule?: IIndexWatchRule,
   ) {
     super(owner, Type.cast(undefined), initialValue, new Subject(), undefined);
 
@@ -231,34 +231,34 @@ class DateProxy extends AbstractObserver<Date, Date, undefined> {
 
   private emitChanges(
     oldTimestamp: number,
-    newDate: Date,
+    date: Date,
     propertyName: string,
   ): void {
     const oldDate = new Date(oldTimestamp);
 
-    if (!this._filter) {
+    if (!this.indexWatchRule) {
       this.emitChange({
         arguments: [],
-        chain: [{ object: newDate, id: propertyName }],
-        id: propertyName,
-        target: newDate,
-        newValue: newDate,
+        chain: [{ context: date, index: propertyName }],
+        index: propertyName,
+        target: date,
+        newValue: date,
       });
       return;
     }
 
     for (const setterMetaData of this._dateSetterMetadata.values()) {
-      if (!this._filter(setterMetaData.name)) {
+      if (!this.indexWatchRule.test(setterMetaData.name, date)) {
         continue;
       }
       const oldValue = oldDate[setterMetaData.getterName].call(oldDate);
-      const newValue = newDate[setterMetaData.getterName].call(newDate);
+      const newValue = date[setterMetaData.getterName].call(date);
       if (oldValue !== newValue) {
         this.emitChange({
           arguments: [],
-          chain: [{ object: newDate, id: setterMetaData.name }],
-          id: setterMetaData.name,
-          target: newDate,
+          chain: [{ context: date, index: setterMetaData.name }],
+          index: setterMetaData.name,
+          target: date,
           newValue: newValue,
         });
       }
@@ -276,8 +276,8 @@ class DateProxy extends AbstractObserver<Date, Date, undefined> {
     if (oldTimeStamp !== target.getTime()) {
       this.emitChange({
         arguments: [value],
-        chain: [{ object: target, id: 0 }],
-        id: 0,
+        chain: [{ context: target, index: 0 }],
+        index: 0,
         target,
         newValue: target,
       });
@@ -314,8 +314,8 @@ export class DateProxyFactory
 
   protected override getGroupMemberId(
     data: IDateProxyIdData,
-  ): ShouldWatchIndex | undefined {
-    return data.shouldWatchIndex;
+  ): IIndexWatchRule | undefined {
+    return data.indexWatchRule;
   }
 
   protected override createInstance(
@@ -332,7 +332,7 @@ export class DateProxyFactory
       },
       dateProxyData.date,
       this._proxyRegistry,
-      dateProxyData.shouldWatchIndex,
+      dateProxyData.indexWatchRule,
     );
     return {
       observer,

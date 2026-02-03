@@ -101,9 +101,9 @@ describe('ICollectionItemObserverManager tests', () => {
 
         const expected: IPropertyChange = {
           arguments: [],
-          chain: [{ object: array, id: 1 }],
+          chain: [{ context: array, index: 1 }],
           target: array,
-          id: 1,
+          index: 1,
           newValue: undefined,
         };
         expect(actual).toEqual(expected);
@@ -121,13 +121,15 @@ describe('ICollectionItemObserverManager tests', () => {
           proxy.pop();
         });
 
-        expect(actual).toEqual({
+        const expected: IPropertyChange = {
           arguments: [],
-          chain: [{ object: array, id: 2 }],
+          chain: [{ context: array, index: 2 }],
           target: array,
-          id: 2,
+          index: 2,
           newValue: undefined,
-        });
+        };
+
+        expect(actual).toEqual(expected);
       });
 
       it('will not emit change if value does not change', async () => {
@@ -237,10 +239,10 @@ describe('ICollectionItemObserverManager tests', () => {
 
         const expected: IPropertyChange = {
           arguments: [],
-          chain: [{ object: map, id: 'a' }],
+          chain: [{ context: map, index: 'a' }],
           target: map,
           newValue: undefined,
-          id: 'a',
+          index: 'a',
         };
         expect(actual).toEqual(expected);
       });
@@ -264,10 +266,10 @@ describe('ICollectionItemObserverManager tests', () => {
 
         const expected: IPropertyChange = {
           arguments: [],
-          chain: [{ object: map, id: 'a' }],
+          chain: [{ context: map, index: 'a' }],
           target: map,
           newValue: 10,
-          id: 'a',
+          index: 'a',
         };
         expect(actual).toEqual(expected);
       });
@@ -369,10 +371,10 @@ describe('ICollectionItemObserverManager tests', () => {
 
         const expected: IPropertyChange = {
           arguments: [],
-          chain: [{ object: set, id: 1 }],
+          chain: [{ context: set, index: 1 }],
           target: set,
           newValue: undefined,
-          id: 1,
+          index: 1,
         };
         expect(actual).toEqual(expected);
       });

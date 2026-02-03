@@ -102,8 +102,8 @@ describe('IObjectPropertyObserverManager: PropertObserver tests', () => {
     const expected: IPropertyChange = {
       arguments: [],
       target: object,
-      chain: [{ object: object, id: 'field' }],
-      id: 'field',
+      chain: [{ context: object, index: 'field' }],
+      index: 'field',
       newValue: 'hi',
       setValue: actual.setValue,
     };
@@ -134,8 +134,8 @@ describe('IObjectPropertyObserverManager: PropertObserver tests', () => {
     const expected: IPropertyChange = {
       arguments: [],
       target: object,
-      chain: [{ object: object, id: 'property' }],
-      id: 'property',
+      chain: [{ context: object, index: 'property' }],
+      index: 'property',
       newValue: 'hi',
       setValue: actual.setValue,
     };
@@ -167,8 +167,8 @@ describe('IObjectPropertyObserverManager: PropertObserver tests', () => {
     const expected: IPropertyChange = {
       arguments: [6],
       target: object,
-      chain: [{ object: object, id: 'method' }],
-      id: 'method',
+      chain: [{ context: object, index: 'method' }],
+      index: 'method',
       newValue: 120,
       setValue: actual.setValue,
     };

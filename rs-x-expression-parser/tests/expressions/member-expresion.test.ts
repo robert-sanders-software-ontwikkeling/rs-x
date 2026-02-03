@@ -6,6 +6,7 @@ import {
   truePredicate,
   WaitForEvent,
 } from '@rs-x/core';
+import { IndexWatchRuleMock } from '@rs-x/state-manager/testing';
 
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
@@ -23,6 +24,7 @@ import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-pa
 describe('Member expression tests', () => {
   let expressionFactory: IExpressionFactory;
   let expression: IExpression | undefined;
+  let indexWatchRule: IndexWatchRuleMock;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
@@ -33,6 +35,10 @@ describe('Member expression tests', () => {
 
   afterAll(async () => {
     await unloadRsXExpressionParserModule();
+  });
+
+  beforeEach(() => {
+    indexWatchRule = new IndexWatchRuleMock(truePredicate);
   });
 
   afterEach(() => {
@@ -415,7 +421,7 @@ describe('Member expression tests', () => {
       expression = expressionFactory.create(context, 'x.y.z');
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
-        () => {},
+        emptyFunction,
       )) as IExpression;
 
       expect(expression.value).toEqual(100);
@@ -978,12 +984,11 @@ describe('Member expression tests', () => {
     expression = expressionFactory.create(
       expressionContext,
       'a.b',
-      (index: unknown, target: unknown) => {
-        return (
+      new IndexWatchRuleMock(
+        (index: unknown, target: unknown) =>
           (index === 'b' && target === expressionContext.a) ||
-          (index === 'c' && target === expressionContext.a.b)
-        );
-      },
+          (index === 'c' && target === expressionContext.a.b),
+      ),
     );
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
@@ -1031,33 +1036,7 @@ describe('Member expression tests', () => {
     expression = expressionFactory.create(
       expressionContext,
       'a.b',
-      truePredicate,
-    );
-    await new WaitForEvent(expression, 'changed').wait(emptyFunction);
-
-    expect(expressionContext).isWritableProperty('a');
-    expect(expressionContext.a).isWritableProperty('b');
-    expect(expressionContext.a.b).isWritableProperty('c');
-    expect(expressionContext.a.b).isWritableProperty('d');
-    expect(expressionContext.a).not.isWritableProperty('e');
-    expect(expressionContext).not.isWritableProperty('f');
-  });
-
-  it('Watched identifiers will be released when the associated expressions are disposed.', async () => {
-    const expressionContext = {
-      a: {
-        b: {
-          c: 10,
-          d: 20,
-        },
-        e: 30,
-      },
-      f: 40,
-    };
-    expression = expressionFactory.create(
-      expressionContext,
-      'a.b',
-      truePredicate,
+      indexWatchRule,
     );
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 

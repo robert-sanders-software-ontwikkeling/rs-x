@@ -7,7 +7,11 @@ import {
   type IValueMetadata,
   PENDING,
 } from '@rs-x/core';
-import { type IStateManager, type ShouldWatchIndex } from '@rs-x/state-manager';
+import type {
+  IIndexWatchRule,
+  IIndexWatchRuleRegistry,
+  IStateManager,
+} from '@rs-x/state-manager';
 
 import {
   type IExpressionChangeCommitHandler,
@@ -20,11 +24,6 @@ import {
   type ExpressionType,
   type IExpression,
 } from './expression-parser.interface';
-
-export interface IShouldWatchLeafPredicate {
-  createShouldWatchLeafPredicate: (() => ShouldWatchIndex) | undefined;
-  releaseShouldWatchLeafPredicate: (() => void) | undefined;
-}
 
 export abstract class AbstractExpression<
   T = unknown,
@@ -39,6 +38,7 @@ export abstract class AbstractExpression<
   private _commitedSubscription: Subscription | undefined;
   private _owner: IDisposableOwner | undefined;
   private _services!: IExpressionServices;
+  private _leafIndexWatchRule?: IIndexWatchRule | undefined;
 
   protected constructor(
     public readonly type: ExpressionType,
@@ -57,6 +57,7 @@ export abstract class AbstractExpression<
 
   public bind(settings: IExpressionBindConfiguration): AbstractExpression {
     this._services = settings.services;
+    this._leafIndexWatchRule = settings.leafIndexWatchRule;
     if (!this._parent && this.transactionManager) {
       this._owner = settings.owner;
       this._commitedSubscription = this.transactionManager.commited.subscribe(
@@ -111,6 +112,10 @@ export abstract class AbstractExpression<
     return this._services?.guidFactory;
   }
 
+  protected get leafIndexWatchRule(): IIndexWatchRule | undefined {
+    return this._leafIndexWatchRule;
+  }
+
   protected get stateManager(): IStateManager {
     return this._services?.stateManager;
   }
@@ -125,6 +130,10 @@ export abstract class AbstractExpression<
 
   protected get valueMetadata(): IValueMetadata {
     return this._services?.valueMetadata;
+  }
+
+  protected get indexWatchRuleRegistry(): IIndexWatchRuleRegistry {
+    return this._services?.indexWatchRuleRegistry;
   }
 
   protected get root(): AbstractExpression {

@@ -1,5 +1,6 @@
 import { InjectionContainer } from '@rs-x/core';
 
+import { IndexWatchRuleRegistry } from '../lib/index-watch-rule-registry/index-watch-rule-registry';
 import { ArrayObserverProxyPairFactory } from '../lib/object-observer/factories/array-observer-proxy-pair.factory';
 import { DateObserverProxyPairFactory } from '../lib/object-observer/factories/date-observer-proxy-pair.factory';
 import { MapObserverProxyPairFactory } from '../lib/object-observer/factories/map-observer-proxy-pair.factory';
@@ -16,7 +17,6 @@ import { DatePropertyObserverManager } from '../lib/property-observer/factories/
 import { DatePropertyObserverProxyPairFactory } from '../lib/property-observer/factories/date-property/date-property-observer-proxy-pair.factory';
 import { NonIterableObjectPropertyObserverProxyPairFactory } from '../lib/property-observer/factories/non-iterable-object-property';
 import { ObjectPropertyObserverManager } from '../lib/property-observer/factories/non-iterable-object-property/object-property-observer-manager';
-import { ShouldWatchIndexPredicateFactory } from '../lib/property-observer/should-watch-index-predicate.factory';
 import { ArrayProxyFactory } from '../lib/proxies/array-proxy/array-proxy.factory';
 import { DateProxyFactory } from '../lib/proxies/date-proxy/date-proxy.factory';
 import { MapProxyFactory } from '../lib/proxies/map-proxy/map-proxy.factory';
@@ -507,19 +507,19 @@ describe('RsXStateManagerModule', () => {
     expect(a1).not.toBe(a2);
   });
 
-  it('can get an instance of IShouldWatchIndexPredicateFactory', () => {
+  it('can get an instance of IIndexWatchRuleRegistry', () => {
     const actual = InjectionContainer.get(
-      RsXStateManagerInjectionTokens.IShouldWatchIndexPredicateFactory,
+      RsXStateManagerInjectionTokens.IIndexWatchRuleRegistry,
     );
-    expect(actual).toBeInstanceOf(ShouldWatchIndexPredicateFactory);
+    expect(actual).toBeInstanceOf(IndexWatchRuleRegistry);
   });
 
-  it('IShouldWatchIndexPredicateFactory instance is a singelton', () => {
+  it('IIndexWatchTestRuleRegistry instance is a singelton', () => {
     const a1 = InjectionContainer.get(
-      RsXStateManagerInjectionTokens.IShouldWatchIndexPredicateFactory,
+      RsXStateManagerInjectionTokens.IIndexWatchRuleRegistry,
     );
     const a2 = InjectionContainer.get(
-      RsXStateManagerInjectionTokens.IShouldWatchIndexPredicateFactory,
+      RsXStateManagerInjectionTokens.IIndexWatchRuleRegistry,
     );
     expect(a1).toBe(a2);
   });

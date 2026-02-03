@@ -1,5 +1,6 @@
 import { type IDisposableOwner, type ISingletonFactory } from '@rs-x/core';
 
+import type { IIndexWatchRule } from './index-watch-rule-registry/index-watch-rule.interface';
 import { type IObserver } from './observer.interface';
 
 export interface IObserverProxyPair<TProxy = unknown> {
@@ -8,14 +9,12 @@ export interface IObserverProxyPair<TProxy = unknown> {
   proxyTarget?: TProxy;
 }
 
-export type ShouldWatchIndex = (index: unknown, target?: unknown) => boolean;
-
-export interface IPropertyIdInfo {
-  key: unknown;
-  shouldWatchIndex?: ShouldWatchIndex;
+export interface IIndexInfo {
+  index: unknown;
+  indexWatchRule?: IIndexWatchRule;
 }
 
-export interface IPropertyInfo extends IPropertyIdInfo {
+export interface IPropertyInfo extends IIndexInfo {
   value?: unknown;
   owner?: IDisposableOwner;
   setValue?: (value: unknown) => boolean;
@@ -26,7 +25,7 @@ export type IPropertyObserverProxyPairManager = ISingletonFactory<
   unknown,
   IPropertyInfo,
   IObserverProxyPair,
-  IPropertyIdInfo
+  IIndexInfo
 >;
 
 export type IObjectPropertyObserverProxyPairManager = ISingletonFactory<

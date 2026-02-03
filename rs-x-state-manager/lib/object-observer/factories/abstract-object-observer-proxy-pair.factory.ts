@@ -5,10 +5,10 @@ import {
   truePredicate,
 } from '@rs-x/core';
 
+import type { IIndexWatchRule } from '../../index-watch-rule-registry/index-watch-rule.interface';
 import {
   type IObjectPropertyObserverProxyPairManager,
   type IObserverProxyPair,
-  type ShouldWatchIndex,
 } from '../../object-property-observer-proxy-pair-manager.type';
 import { type IObserver } from '../../observer.interface';
 import { ObserverGroup } from '../../observer-group';
@@ -43,11 +43,7 @@ export abstract class AbstractObjectObserverProxyPairFactory<
       () => rootObserver?.observer,
       this._observerRootObserver,
     );
-    this.onObserverGroupCreate(
-      data.target,
-      observerGroup,
-      data.shouldWatchIndex,
-    );
+    this.onObserverGroupCreate(data.target, observerGroup, data.indexWatchRule);
     const rootObserver = this.createRootObserver(data);
     if (!data.initializeManually) {
       observerGroup.init();
@@ -74,9 +70,9 @@ export abstract class AbstractObjectObserverProxyPairFactory<
   protected onObserverGroupCreate(
     target: TTarget,
     observerGroup: ObserverGroup,
-    shouldWatchIndex: ShouldWatchIndex | undefined,
+    indexWatchRule?: IIndexWatchRule,
   ): void {
-    if (!shouldWatchIndex) {
+    if (!indexWatchRule) {
       return;
     }
 
@@ -84,14 +80,14 @@ export abstract class AbstractObjectObserverProxyPairFactory<
 
     const indexes = this._indexAccessor.getIndexes(target);
     for (const index of indexes) {
-      if (!shouldWatchIndex(index, target)) {
+      if (!indexWatchRule.test(index, target)) {
         continue;
       }
       const { observer } = this._objectPropertyObserverProxyPairManager
         .create(target)
         .instance.create({
-          key: index,
-          shouldWatchIndex: shouldWatchIndex,
+          index: index,
+          indexWatchRule,
         }).instance;
       observers.push(observer);
     }

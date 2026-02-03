@@ -140,8 +140,8 @@ describe('SetProxy tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: setData.set, id: newItem }],
-        id: newItem,
+        chain: [{ context: setData.set, index: newItem }],
+        index: newItem,
         newValue: newItem,
         target: setData.set,
       };
@@ -158,8 +158,8 @@ describe('SetProxy tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: setData.set, id: item1 }],
-        id: item1,
+        chain: [{ context: setData.set, index: item1 }],
+        index: item1,
         newValue: undefined,
         target: setData.set,
       };
@@ -179,15 +179,15 @@ describe('SetProxy tests', () => {
       const expected: IPropertyChange[] = [
         {
           arguments: [],
-          chain: [{ object: setData.set, id: item1 }],
-          id: item1,
+          chain: [{ context: setData.set, index: item1 }],
+          index: item1,
           newValue: undefined,
           target: setData.set,
         },
         {
           arguments: [],
-          chain: [{ object: setData.set, id: item2 }],
-          id: item2,
+          chain: [{ context: setData.set, index: item2 }],
+          index: item2,
           newValue: undefined,
           target: setData.set,
         },

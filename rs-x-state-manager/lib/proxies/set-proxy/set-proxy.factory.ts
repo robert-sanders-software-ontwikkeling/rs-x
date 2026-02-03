@@ -97,8 +97,8 @@ export class SetProxy extends AbstractObserver<
   ): void {
     this.emitChange({
       arguments: [],
-      chain: [{ object: originalSet, id }],
-      id,
+      chain: [{ context: originalSet, index: id }],
+      index: id,
       target: originalSet,
       newValue: value,
     });

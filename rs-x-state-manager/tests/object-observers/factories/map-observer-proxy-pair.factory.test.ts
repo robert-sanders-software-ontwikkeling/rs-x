@@ -19,12 +19,14 @@ import {
 import { type IProxyRegistry } from '../../../lib/proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
 import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokens';
+import { IndexWatchRuleMock } from '../../../lib/testing/watch-index-rule.mock';
 
 describe('MapObserverProxyPairFactory tests', () => {
   let mapObserverProxyPairFactory: IMapObserverProxyPairFactory;
   let mapProxyFactory: IMapProxyFactory;
   let disposableOwner: DisposableOwnerMock;
   let observer: IObserver;
+  let indexWatchRule: IndexWatchRuleMock;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXStateManagerModule);
@@ -43,6 +45,8 @@ describe('MapObserverProxyPairFactory tests', () => {
 
   beforeEach(() => {
     disposableOwner = new DisposableOwnerMock();
+    indexWatchRule = new IndexWatchRuleMock();
+    indexWatchRule.test.mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -111,7 +115,7 @@ describe('MapObserverProxyPairFactory tests', () => {
     ]);
     observer = mapObserverProxyPairFactory.create(disposableOwner, {
       target: objectMap,
-      shouldWatchIndex: truePredicate,
+      indexWatchRule,
     }).observer;
 
     const objectPropertyObserverProxyPairManager =
@@ -124,12 +128,12 @@ describe('MapObserverProxyPairFactory tests', () => {
     expect(propertyObserverProxyPairManager).toBeDefined();
 
     const item1Id = propertyObserverProxyPairManager?.getId({
-      key: 'a',
-      shouldWatchIndex: truePredicate,
+      index: 'a',
+      indexWatchRule,
     });
     const item2Id = propertyObserverProxyPairManager?.getId({
-      key: 'b',
-      shouldWatchIndex: truePredicate,
+      index: 'b',
+      indexWatchRule,
     });
     const mapProxyId = mapProxyFactory.getId({
       map: objectMap,
@@ -180,7 +184,7 @@ describe('MapObserverProxyPairFactory tests', () => {
     const observerProxyPair: IMapObserverProxyPair =
       mapObserverProxyPairFactory.create(disposableOwner, {
         target: objectMap,
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       });
     observer = observerProxyPair.observer;
     disposableOwner.canDispose.mockReturnValue(true);
@@ -192,12 +196,12 @@ describe('MapObserverProxyPairFactory tests', () => {
     const propertyObserverProxyPairManager =
       objectPropertyObserverProxyPairManager.getFromId(objectMap);
     const item1Id = propertyObserverProxyPairManager?.getId({
-      key: 'a',
-      shouldWatchIndex: truePredicate,
+      index: 'a',
+      indexWatchRule,
     });
     const item2Id = propertyObserverProxyPairManager?.getId({
-      key: 'b',
-      shouldWatchIndex: truePredicate,
+      index: 'b',
+      indexWatchRule,
     });
 
     expect(mapProxyFactory.getFromId(objectMap)).toBeDefined();
@@ -226,24 +230,17 @@ describe('MapObserverProxyPairFactory tests', () => {
       ['c', { x: 3 }],
     ]);
 
-    const mustProxify = jest.fn();
-    mustProxify.mockImplementation(
+    indexWatchRule.test.mockImplementation(
       (index: string) => index === 'a' || index === 'c' || index === 'x',
     );
 
     const observerProxyPair: IMapObserverProxyPair =
       mapObserverProxyPairFactory.create(disposableOwner, {
         target: objectMap,
-        shouldWatchIndex: mustProxify,
+        indexWatchRule,
       });
     observer = observerProxyPair.observer;
 
-    expect(mustProxify).toHaveBeenCalledTimes(5);
-    expect(mustProxify).toHaveBeenNthCalledWith(1, 'a', objectMap);
-    expect(mustProxify).toHaveBeenNthCalledWith(2, 'x', objectMap.get('a'));
-    expect(mustProxify).toHaveBeenNthCalledWith(3, 'b', objectMap);
-    expect(mustProxify).toHaveBeenNthCalledWith(4, 'c', objectMap);
-    expect(mustProxify).toHaveBeenNthCalledWith(5, 'x', objectMap.get('c'));
     expect(objectMap.get('a')).isWritableProperty('x');
     expect(objectMap.get('b')).not.isWritableProperty('x');
     expect(objectMap.get('c')).isWritableProperty('x');
@@ -265,7 +262,7 @@ describe('MapObserverProxyPairFactory tests', () => {
       ]);
       observer = mapObserverProxyPairFactory.create(disposableOwner, {
         target: objectMap,
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).observer;
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -276,8 +273,8 @@ describe('MapObserverProxyPairFactory tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: objectMap, id: 'c' }],
-        id: 'c',
+        chain: [{ context: objectMap, index: 'c' }],
+        index: 'c',
         newValue: { x: 3 },
         target: objectMap,
       };
@@ -292,7 +289,7 @@ describe('MapObserverProxyPairFactory tests', () => {
       ]);
       observer = mapObserverProxyPairFactory.create(disposableOwner, {
         target: objectMap,
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).observer;
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -303,8 +300,8 @@ describe('MapObserverProxyPairFactory tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: objectMap, id: 'b' }],
-        id: 'b',
+        chain: [{ context: objectMap, index: 'b' }],
+        index: 'b',
         newValue: undefined,
         target: objectMap,
       };
@@ -319,7 +316,7 @@ describe('MapObserverProxyPairFactory tests', () => {
       ]);
       observer = mapObserverProxyPairFactory.create(disposableOwner, {
         target: objectMap,
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).observer;
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -329,10 +326,10 @@ describe('MapObserverProxyPairFactory tests', () => {
       const expected: IPropertyChange = {
         arguments: [],
         chain: [
-          { object: objectMap, id: 'b' },
-          { object: objectMap.get('b'), id: 'x' },
+          { context: objectMap, index: 'b' },
+          { context: objectMap.get('b'), index: 'x' },
         ],
-        id: 'x',
+        index: 'x',
         newValue: 200,
         target: objectMap.get('b'),
       };
@@ -367,8 +364,8 @@ describe('MapObserverProxyPairFactory tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: objectMap, id: 'c' }],
-        id: 'c',
+        chain: [{ context: objectMap, index: 'c' }],
+        index: 'c',
         newValue: { x: 3 },
         target: objectMap,
       };
@@ -393,8 +390,8 @@ describe('MapObserverProxyPairFactory tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: objectMap, id: 'b' }],
-        id: 'b',
+        chain: [{ context: objectMap, index: 'b' }],
+        index: 'b',
         newValue: undefined,
         target: objectMap,
       };

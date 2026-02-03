@@ -1,12 +1,12 @@
 export interface IChainPart {
-  object: unknown;
-  id: unknown;
+  context: unknown;
+  index: unknown;
 }
 
 export interface IPropertyChange {
   chain?: IChainPart[];
   target: unknown;
-  id?: unknown;
+  index?: unknown;
   newValue?: unknown;
   arguments?: unknown[];
   setValue?: (value: unknown) => void;

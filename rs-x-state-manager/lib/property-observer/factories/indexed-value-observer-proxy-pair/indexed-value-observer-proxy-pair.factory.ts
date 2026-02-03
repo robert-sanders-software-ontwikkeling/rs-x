@@ -9,11 +9,11 @@ import {
   UnexpectedException,
 } from '@rs-x/core';
 
+import type { IIndexWatchRule } from '../../../index-watch-rule-registry/index-watch-rule.interface';
 import { type IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
 import {
   type IObserverProxyPair,
   type IPropertyInfo,
-  type ShouldWatchIndex,
 } from '../../../object-property-observer-proxy-pair-manager.type';
 import { type IObserver } from '../../../observer.interface';
 import { type ObserverGroup } from '../../../observer-group';
@@ -63,18 +63,18 @@ export abstract class IndexObserverProxyPairFactory<
     object: TContext,
     propertyInfo: IPropertyInfo,
   ): IObserverProxyPair<TContext> {
-    const index = propertyInfo.key as TIndex;
+    const index = propertyInfo.index as TIndex;
     const valueAtIndex = this._indexValueAccessor.getValue(object, index);
     const needProxy =
-      this._valueMetadata.needsProxy(valueAtIndex) ||
-      propertyInfo.shouldWatchIndex?.(index, object);
+      this._valueMetadata.isAsync(valueAtIndex) ||
+      propertyInfo.indexWatchRule?.test?.(index, object);
     const indexValueObserverProxyPair = needProxy
       ? this.createIndexValueProxy(
           propertyInfo,
           object,
           index,
           valueAtIndex,
-          propertyInfo.shouldWatchIndex,
+          propertyInfo.indexWatchRule,
         )
       : undefined;
     // If we observe the index value than we ask the observer to provide the initial value
@@ -91,7 +91,7 @@ export abstract class IndexObserverProxyPairFactory<
       initialValue,
       propertyInfo.initializeManually,
       indexValueObserverProxyPair?.observer,
-      propertyInfo.shouldWatchIndex,
+      propertyInfo.indexWatchRule,
     );
     return {
       observer: groupObserver,
@@ -105,14 +105,14 @@ export abstract class IndexObserverProxyPairFactory<
     object: TContext,
     index: TIndex,
     value: unknown,
-    shouldWatchIndex: ShouldWatchIndex | undefined,
+    indexWatchRule: IIndexWatchRule | undefined,
   ): IObserverProxyPair | undefined {
     const setValue =
       propertyInfo.setValue ??
       ((v: unknown) => this._indexValueAccessor.setValue(object, index, v));
     return this.proxifyIndexValue(
       value,
-      shouldWatchIndex,
+      indexWatchRule,
       propertyInfo.initializeManually,
       setValue,
     );
@@ -125,7 +125,7 @@ export abstract class IndexObserverProxyPairFactory<
     initialValue: unknown,
     initializeManually: boolean | undefined,
     indexValueObserver: IObserver | undefined,
-    shouldWatchIndex: ShouldWatchIndex | undefined,
+    indexWatchRule: IIndexWatchRule | undefined,
   ): ObserverGroup {
     const indexChangeSubscriptionsForContextManager =
       this._indexChangeSubscriptionManager.create(object).instance;
@@ -133,11 +133,11 @@ export abstract class IndexObserverProxyPairFactory<
       index,
       initialValue,
       indexValueObserver,
-      shouldWatchIndex,
+      indexWatchRule,
       initializeManually,
       mustHandleChange: this.mustHandleChange,
       onChanged: (change: IPropertyChange) =>
-        this.onIndexSet(change, id, shouldWatchIndex),
+        this.onIndexSet(change, id, indexWatchRule),
       owner,
     });
     return Type.cast(
@@ -148,7 +148,7 @@ export abstract class IndexObserverProxyPairFactory<
   private onIndexSet(
     change: IPropertyChange,
     subsriptionId: string,
-    shouldWatchIndex: ShouldWatchIndex | undefined,
+    indexWatchRule: IIndexWatchRule | undefined,
   ): void {
     const isAsync = this._valueMetadata.isAsync(change.newValue);
     const emitValue = Type.isNullOrUndefined(change.newValue) || !isAsync;
@@ -166,11 +166,7 @@ export abstract class IndexObserverProxyPairFactory<
       observerGroup.emitValue(change.newValue);
     }
 
-    const observers = this.getNestedObservers(
-      change,
-      isAsync,
-      shouldWatchIndex,
-    );
+    const observers = this.getNestedObservers(change, isAsync, indexWatchRule);
 
     observerGroup.replaceObservers(observers);
   }
@@ -178,22 +174,22 @@ export abstract class IndexObserverProxyPairFactory<
   private getNestedObservers(
     change: IPropertyChange,
     isAsync: boolean,
-    shouldWatchIndex: ShouldWatchIndex | undefined,
+    indexWatchRule: IIndexWatchRule | undefined,
   ): IObserver[] {
     let observers: IObserver[] = [];
     if (
       isAsync ||
-      (shouldWatchIndex && shouldWatchIndex(change.target, change.id))
+      (indexWatchRule && indexWatchRule.test(change.index, change.target))
     ) {
       const observerProxyPair = this.proxifyIndexValue(
         change.newValue,
-        shouldWatchIndex,
+        indexWatchRule as IIndexWatchRule,
         true,
         change.setValue ??
           ((value: unknown) => {
             const obj = Type.toObject(change.target);
             if (obj) {
-              obj[change.id as string] = value;
+              obj[change.index as string] = value;
             }
           }),
       );
@@ -207,14 +203,14 @@ export abstract class IndexObserverProxyPairFactory<
 
   private proxifyIndexValue(
     value: unknown,
-    shouldWatchIndex: ShouldWatchIndex | undefined,
+    indexWatchRule: IIndexWatchRule | undefined,
     initializeManually: boolean | undefined,
     setValue: (value: unknown) => void,
   ): IObserverProxyPair | undefined {
     const target = this._proxyRegister.getProxyTarget(value) ?? value;
     const observerProxyPair = this._objectObserveryManager.create({
       target,
-      shouldWatchIndex,
+      indexWatchRule,
       initializeManually,
     }).instance;
     if (!observerProxyPair) {

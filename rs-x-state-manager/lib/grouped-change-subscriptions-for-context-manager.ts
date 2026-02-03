@@ -47,12 +47,16 @@ export abstract class GroupedChangeSubscriptionsForContextManager<
   >();
 
   constructor(
-    protected readonly _context: unknown,
+    private _context: unknown,
     private readonly releaseContext: () => void,
     protected readonly _errorLog: IErrorLog,
     guidFactory: IGuidFactory,
   ) {
     super(guidFactory);
+  }
+
+  protected get context(): unknown {
+    return this._context;
   }
 
   public getSubsriptionData(id: string): TSubsriptionData | undefined {

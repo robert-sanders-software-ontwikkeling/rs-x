@@ -43,9 +43,7 @@ export const RsXStateManagerInjectionTokens = {
   ICollectionItemObserverProxyPairFactory: Symbol(
     'ICollectionItemObserverProxyPairFactory',
   ),
-  IShouldWatchIndexPredicateFactory: Symbol(
-    'IShouldWatchIndexPredicateFactory',
-  ),
+  IIndexWatchRuleRegistry: Symbol('IIndexWatchRuleRegistry'),
   IObjectStateManager: Symbol('IObjectStateManager'),
   IPropertyObserverProxyPairFactoryProvider: Symbol(
     'IPropertyObserverProxyPairFactoryProvider',

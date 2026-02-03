@@ -1,5 +1,7 @@
-export class InvalidOperationException extends Error {
+import { CustomError } from './custome-error';
+
+export class InvalidOperationException extends CustomError {
   constructor(message: string) {
-    super(message);
+    super(message, 'InvalidOperationException');
   }
 }

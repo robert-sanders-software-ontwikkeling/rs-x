@@ -1,7 +1,6 @@
 import {
   InjectionContainer,
   type IPropertyChange,
-  truePredicate,
   Type,
   WaitForEvent,
 } from '@rs-x/core';
@@ -12,6 +11,7 @@ import { type ICollectionItemObserverProxyPairFactory } from '../../../../lib/pr
 import { type IProxyRegistry } from '../../../../lib/proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
 import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokens';
+import { IndexWatchRuleMock } from '../../../../lib/testing/watch-index-rule.mock';
 
 describe('CollectionItemObserverProxyPairFactory tests', () => {
   let observer1: IObserver | undefined;
@@ -19,6 +19,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
   let proxyRegister: IProxyRegistry;
   let collectionItemObserverProxyPairFactory: ICollectionItemObserverProxyPairFactory;
   let disposableOwner: DisposableOwnerMock;
+  let indexWatchRule: IndexWatchRuleMock;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXStateManagerModule);
@@ -36,6 +37,11 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
     await InjectionContainer.unload(RsXStateManagerModule);
   });
 
+  beforeEach(() => {
+    indexWatchRule = new IndexWatchRuleMock();
+    indexWatchRule.test.mockReturnValue(true);
+  });
+
   afterEach(() => {
     if (observer1) {
       observer1.dispose();
@@ -46,23 +52,29 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
       observer2.dispose();
       observer2 = undefined;
     }
+    indexWatchRule = new IndexWatchRuleMock();
   });
 
   describe('Array', () => {
     it('Will observe the item at the given key for a recursive observer.', async () => {
-      const nestedArray = [];
-      const array = [nestedArray];
+      const nestedArray1 = [];
+      const nestedArray2 = [];
+      const array = [nestedArray1, nestedArray2];
 
       observer1 = collectionItemObserverProxyPairFactory.create(
         disposableOwner,
         array,
         {
-          key: 0,
-          shouldWatchIndex: truePredicate,
+          index: 1,
+          indexWatchRule,
         },
       ).observer;
 
-      expect(array[0]).toBe(proxyRegister.getProxy(nestedArray));
+      expect(proxyRegister.getProxy(nestedArray1)).toBeUndefined();
+      expect(proxyRegister.getProxy(nestedArray2)).toBeDefined();
+
+      expect(array[0]).toBe(nestedArray1);
+      expect(array[1]).toBe(proxyRegister.getProxy(nestedArray2));
     });
 
     it('A non-recursive observer will not observe the item at the given key.', async () => {
@@ -72,7 +84,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
       observer1 = collectionItemObserverProxyPairFactory.create(
         disposableOwner,
         array,
-        { key: 0 },
+        { index: 0 },
       ).observer;
 
       expect(proxyRegister.getProxy(nestedArray)).toBeUndefined();
@@ -87,15 +99,15 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         observer1 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           array,
-          { key: 0 },
+          { index: 0 },
         ).observer;
 
         observer2 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           array,
           {
-            key: 0,
-            shouldWatchIndex: truePredicate,
+            index: 0,
+            indexWatchRule,
           },
         ).observer;
 
@@ -107,9 +119,9 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
 
         const expected: IPropertyChange = {
           arguments: [],
-          chain: [{ object: array, id: 0 }],
+          chain: [{ context: array, index: 0 }],
           target: array,
-          id: 0,
+          index: 0,
           newValue: newValue,
         };
         expect(actual).toDeepEqualCircular(expected);
@@ -122,15 +134,15 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         observer1 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           array,
-          { key: 0 },
+          { index: 0 },
         ).observer;
 
         observer2 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           array,
           {
-            key: 0,
-            shouldWatchIndex: truePredicate,
+            index: 0,
+            indexWatchRule,
           },
         ).observer;
 
@@ -142,9 +154,9 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
 
         const expected: IPropertyChange = {
           arguments: [],
-          chain: [{ object: array, id: 0 }],
+          chain: [{ context: array, index: 0 }],
           target: array,
-          id: 0,
+          index: 0,
           newValue: newValue,
         };
         expect(actual).toDeepEqualCircular(expected);
@@ -156,15 +168,15 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         observer1 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           array,
-          { key: 0 },
+          { index: 0 },
         ).observer;
 
         observer2 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           array,
           {
-            key: 0,
-            shouldWatchIndex: truePredicate,
+            index: 0,
+            indexWatchRule,
           },
         ).observer;
 
@@ -181,15 +193,15 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         observer1 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           array,
-          { key: 0 },
+          { index: 0 },
         ).observer;
 
         observer2 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           array,
           {
-            key: 0,
-            shouldWatchIndex: truePredicate,
+            index: 0,
+            indexWatchRule,
           },
         ).observer;
 
@@ -200,11 +212,11 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         const expected: IPropertyChange = {
           arguments: [],
           chain: [
-            { object: array, id: 0 },
-            { object: nestedArray, id: 1 },
+            { context: array, index: 0 },
+            { context: nestedArray, index: 1 },
           ],
           target: nestedArray,
-          id: 1,
+          index: 1,
           newValue: 20,
         };
         expect(actual).toDeepEqualCircular(expected);
@@ -217,7 +229,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         observer1 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           array,
-          { key: 0 },
+          { index: 0 },
         ).observer;
 
         const actual = await new WaitForEvent(observer1, 'changed').wait(() => {
@@ -227,9 +239,9 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
 
         const expected: IPropertyChange = {
           arguments: [],
-          chain: [{ object: array, id: 0 }],
+          chain: [{ context: array, index: 0 }],
           target: array,
-          id: 0,
+          index: 0,
           newValue: 10,
         };
         expect(actual).toEqual(expected);
@@ -241,7 +253,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         observer1 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           array,
-          { key: 0 },
+          { index: 0 },
         ).observer;
 
         const arrayProxy = proxyRegister.getProxy<number[]>(array);
@@ -261,8 +273,8 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
           disposableOwner,
           array,
           {
-            key: 0,
-            shouldWatchIndex: truePredicate,
+            index: 0,
+            indexWatchRule,
           },
         ).observer;
 
@@ -273,11 +285,11 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         const expected: IPropertyChange = {
           arguments: [],
           chain: [
-            { object: array, id: 0 },
-            { object: nestedArray, id: 1 },
+            { context: array, index: 0 },
+            { context: nestedArray, index: 1 },
           ],
           target: nestedArray,
-          id: 1,
+          index: 1,
           newValue: undefined,
         };
         expect(actual).toDeepEqualCircular(expected);
@@ -291,8 +303,8 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
           disposableOwner,
           array,
           {
-            key: 0,
-            shouldWatchIndex: truePredicate,
+            index: 0,
+            indexWatchRule,
           },
         ).observer;
 
@@ -304,10 +316,10 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
           arguments: [],
           target: nestedArray,
           chain: [
-            { object: array, id: 0 },
-            { object: nestedArray, id: 1 },
+            { context: array, index: 0 },
+            { context: nestedArray, index: 1 },
           ],
-          id: 1,
+          index: 1,
           newValue: 20,
         };
         expect(actual).toDeepEqualCircular(expected);
@@ -321,8 +333,8 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
           disposableOwner,
           array,
           {
-            key: 0,
-            shouldWatchIndex: truePredicate,
+            index: 0,
+            indexWatchRule,
           },
         ).observer;
 
@@ -333,12 +345,12 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         const expected: IPropertyChange = {
           arguments: [],
           chain: [
-            { object: array, id: 0 },
-            { object: nestedArray, id: 0 },
-            { object: nestedArray[0], id: 'x' },
+            { context: array, index: 0 },
+            { context: nestedArray, index: 0 },
+            { context: nestedArray[0], index: 'x' },
           ],
           target: nestedArray[0],
-          id: 'x',
+          index: 'x',
           newValue: 100,
         };
         expect(actual).toDeepEqualCircular(expected);
@@ -349,7 +361,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         observer1 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           array,
-          { key: 0 },
+          { index: 0 },
         ).observer;
         const arrayProxy = proxyRegister.getProxy<number[]>(array);
 
@@ -371,8 +383,8 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         disposableOwner,
         map,
         {
-          key: 'a',
-          shouldWatchIndex: truePredicate,
+          index: 'a',
+          indexWatchRule,
         },
       ).observer;
 
@@ -389,7 +401,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
       observer1 = collectionItemObserverProxyPairFactory.create(
         disposableOwner,
         map,
-        { key: 'a' },
+        { index: 'a' },
       ).observer;
 
       expect(proxyRegister.getProxy(nestedMap)).toBeUndefined();
@@ -404,15 +416,15 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         observer1 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           map,
-          { key: 'a' },
+          { index: 'a' },
         ).observer;
 
         observer2 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           map,
           {
-            key: 'a',
-            shouldWatchIndex: truePredicate,
+            index: 'a',
+            indexWatchRule,
           },
         ).observer;
 
@@ -424,9 +436,9 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
 
         const expected: IPropertyChange = {
           arguments: [],
-          chain: [{ object: map, id: 'a' }],
+          chain: [{ context: map, index: 'a' }],
           target: map,
-          id: 'a',
+          index: 'a',
           newValue: newValue,
         };
         expect(actual).toDeepEqualCircular(expected);
@@ -439,15 +451,15 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         observer1 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           map,
-          { key: 'a' },
+          { index: 'a' },
         ).observer;
 
         observer2 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           map,
           {
-            key: 'a',
-            shouldWatchIndex: truePredicate,
+            index: 'a',
+            indexWatchRule,
           },
         ).observer;
 
@@ -459,9 +471,9 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
 
         const expected: IPropertyChange = {
           arguments: [],
-          chain: [{ object: map, id: 'a' }],
+          chain: [{ context: map, index: 'a' }],
           target: map,
-          id: 'a',
+          index: 'a',
           newValue: newValue,
         };
         expect(actual).toDeepEqualCircular(expected);
@@ -473,15 +485,15 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         observer1 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           map,
-          { key: 'a' },
+          { index: 'a' },
         ).observer;
 
         observer2 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           map,
           {
-            key: 'a',
-            shouldWatchIndex: truePredicate,
+            index: 'a',
+            indexWatchRule,
           },
         ).observer;
 
@@ -498,15 +510,15 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         observer1 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           map,
-          { key: 'a' },
+          { index: 'a' },
         ).observer;
 
         observer2 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           map,
           {
-            key: 'a',
-            shouldWatchIndex: truePredicate,
+            index: 'a',
+            indexWatchRule,
           },
         ).observer;
 
@@ -517,11 +529,11 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         const expected: IPropertyChange = {
           arguments: [],
           chain: [
-            { object: map, id: 'a' },
-            { object: nestedMap, id: 'b' },
+            { context: map, index: 'a' },
+            { context: nestedMap, index: 'b' },
           ],
           target: nestedMap,
-          id: 'b',
+          index: 'b',
           newValue: 20,
         };
         expect(actual).toDeepEqualCircular(expected);
@@ -538,7 +550,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         observer1 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           map,
-          { key: 'a' },
+          { index: 'a' },
         ).observer;
 
         const mapProxy = proxyRegister.getProxy<Map<string, number>>(map);
@@ -549,9 +561,9 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
 
         const expected: IPropertyChange = {
           arguments: [],
-          chain: [{ object: map, id: 'a' }],
+          chain: [{ context: map, index: 'a' }],
           target: map,
-          id: 'a',
+          index: 'a',
           newValue: 10,
         };
         expect(actual).toEqual(expected);
@@ -566,7 +578,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         observer1 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           map,
-          { key: 'a' },
+          { index: 'a' },
         ).observer;
 
         const mapProxy = proxyRegister.getProxy<Map<string, number>>(map);
@@ -589,8 +601,8 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
           disposableOwner,
           map,
           {
-            key: 'a',
-            shouldWatchIndex: truePredicate,
+            index: 'a',
+            indexWatchRule,
           },
         ).observer;
 
@@ -601,11 +613,11 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         const expected: IPropertyChange = {
           arguments: [],
           chain: [
-            { object: map, id: 'a' },
-            { object: nestedMap, id: 'y' },
+            { context: map, index: 'a' },
+            { context: nestedMap, index: 'y' },
           ],
           target: map.get('a'),
-          id: 'y',
+          index: 'y',
           newValue: undefined,
         };
         expect(actual).toDeepEqualCircular(expected);
@@ -619,8 +631,8 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
           disposableOwner,
           map,
           {
-            key: 'a',
-            shouldWatchIndex: truePredicate,
+            index: 'a',
+            indexWatchRule,
           },
         ).observer;
 
@@ -632,10 +644,10 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
           arguments: [],
           target: nestedMap,
           chain: [
-            { object: map, id: 'a' },
-            { object: nestedMap, id: 'b' },
+            { context: map, index: 'a' },
+            { context: nestedMap, index: 'b' },
           ],
-          id: 'b',
+          index: 'b',
           newValue: 10,
         };
         expect(actual).toDeepEqualCircular(expected);
@@ -649,8 +661,8 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
           disposableOwner,
           map,
           {
-            key: 'a',
-            shouldWatchIndex: truePredicate,
+            index: 'a',
+            indexWatchRule,
           },
         ).observer;
 
@@ -661,12 +673,12 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         const expected: IPropertyChange = {
           arguments: [],
           chain: [
-            { object: map, id: 'a' },
-            { object: nestedMap, id: 'z' },
-            { object: nestedMap.get('z'), id: 'x' },
+            { context: map, index: 'a' },
+            { context: nestedMap, index: 'z' },
+            { context: nestedMap.get('z'), index: 'x' },
           ],
           target: nestedMap.get('z'),
-          id: 'x',
+          index: 'x',
           newValue: 100,
         };
         expect(actual).toDeepEqualCircular(expected);
@@ -677,7 +689,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         observer1 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           map,
-          { key: 'a' },
+          { index: 'a' },
         ).observer;
         const mapProxy = proxyRegister.getProxy<Map<string, number>>(map);
 
@@ -699,8 +711,8 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         disposableOwner,
         set,
         {
-          key: nestedSet,
-          shouldWatchIndex: truePredicate,
+          index: nestedSet,
+          indexWatchRule,
         },
       ).observer;
 
@@ -714,7 +726,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
       observer1 = collectionItemObserverProxyPairFactory.create(
         disposableOwner,
         set,
-        { key: nestedSet },
+        { index: nestedSet },
       ).observer;
 
       expect(proxyRegister.getProxy(nestedSet)).toBeUndefined();
@@ -729,15 +741,15 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         observer1 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           set,
-          { key: nestedSet },
+          { index: nestedSet },
         ).observer;
 
         observer2 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           set,
           {
-            key: nestedSet,
-            shouldWatchIndex: truePredicate,
+            index: nestedSet,
+            indexWatchRule,
           },
         ).observer;
 
@@ -748,9 +760,9 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
 
         const expected: IPropertyChange = {
           arguments: [],
-          chain: [{ object: set, id: nestedSet }],
+          chain: [{ context: set, index: nestedSet }],
           target: set,
-          id: nestedSet,
+          index: nestedSet,
           newValue: undefined,
         };
         expect(actual).toDeepEqualCircular(expected);
@@ -763,15 +775,15 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         observer1 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           set,
-          { key: nestedSet },
+          { index: nestedSet },
         ).observer;
 
         observer2 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           set,
           {
-            key: nestedSet,
-            shouldWatchIndex: truePredicate,
+            index: nestedSet,
+            indexWatchRule,
           },
         ).observer;
 
@@ -782,9 +794,9 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
 
         const expected: IPropertyChange = {
           arguments: [],
-          chain: [{ object: set, id: nestedSet }],
+          chain: [{ context: set, index: nestedSet }],
           target: set,
-          id: nestedSet,
+          index: nestedSet,
           newValue: undefined,
         };
         expect(actual).toDeepEqualCircular(expected);
@@ -797,15 +809,15 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         observer1 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           set,
-          { key: nestedSet },
+          { index: nestedSet },
         ).observer;
 
         observer2 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           set,
           {
-            key: nestedSet,
-            shouldWatchIndex: truePredicate,
+            index: nestedSet,
+            indexWatchRule,
           },
         ).observer;
 
@@ -822,15 +834,15 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         observer1 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           set,
-          { key: nestedSet },
+          { index: nestedSet },
         ).observer;
 
         observer2 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           set,
           {
-            key: nestedSet,
-            shouldWatchIndex: truePredicate,
+            index: nestedSet,
+            indexWatchRule,
           },
         ).observer;
 
@@ -841,11 +853,11 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         const expected: IPropertyChange = {
           arguments: [],
           chain: [
-            { object: set, id: nestedSet },
-            { object: nestedSet, id: 10 },
+            { context: set, index: nestedSet },
+            { context: nestedSet, index: 10 },
           ],
           target: nestedSet,
-          id: 10,
+          index: 10,
           newValue: 10,
         };
         expect(actual).toDeepEqualCircular(expected);
@@ -859,7 +871,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         observer1 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           set,
-          { key: 1 },
+          { index: 1 },
         ).observer;
 
         const actual = await new WaitForEvent(observer1, 'changed').wait(() => {
@@ -869,9 +881,9 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
 
         const expected: IPropertyChange = {
           arguments: [],
-          chain: [{ object: set, id: 1 }],
+          chain: [{ context: set, index: 1 }],
           target: set,
-          id: 1,
+          index: 1,
           newValue: undefined,
         };
         expect(actual).toEqual(expected);
@@ -883,7 +895,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         observer1 = collectionItemObserverProxyPairFactory.create(
           disposableOwner,
           set,
-          { key: 1 },
+          { index: 1 },
         ).observer;
 
         const mapProxy = proxyRegister.getProxy<Set<number>>(set);
@@ -903,8 +915,8 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
           disposableOwner,
           set,
           {
-            key: nestedSet,
-            shouldWatchIndex: truePredicate,
+            index: nestedSet,
+            indexWatchRule,
           },
         ).observer;
 
@@ -915,11 +927,11 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         const expected: IPropertyChange = {
           arguments: [],
           chain: [
-            { object: set, id: nestedSet },
-            { object: nestedSet, id: 100 },
+            { context: set, index: nestedSet },
+            { context: nestedSet, index: 100 },
           ],
           target: nestedSet,
-          id: 100,
+          index: 100,
           newValue: undefined,
         };
         expect(actual).toDeepEqualCircular(expected);
@@ -934,8 +946,8 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
           disposableOwner,
           set,
           {
-            key: nestedSet,
-            shouldWatchIndex: truePredicate,
+            index: nestedSet,
+            indexWatchRule,
           },
         ).observer;
 
@@ -946,12 +958,12 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
         const expected: IPropertyChange = {
           arguments: [],
           chain: [
-            { object: set, id: nestedSet },
-            { object: nestedSet, id: nestedObject },
-            { object: nestedObject, id: 'x' },
+            { context: set, index: nestedSet },
+            { context: nestedSet, index: nestedObject },
+            { context: nestedObject, index: 'x' },
           ],
           target: nestedObject,
-          id: 'x',
+          index: 'x',
           newValue: 100,
         };
         expect(actual).toDeepEqualCircular(expected);

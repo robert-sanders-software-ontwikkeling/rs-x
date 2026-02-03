@@ -27,7 +27,7 @@ describe('PropertyObserverProxyPairManager tests', () => {
   });
 
   it('will throw an error for unsupported type', () => {
-    expect(() => propertyObserverManager.create({ key: 'x' })).toThrow(
+    expect(() => propertyObserverManager.create({ index: 'x' })).toThrow(
       new UnsupportedException(
         'No observer factory found for given object of type Object for given id x',
       ),
@@ -37,16 +37,16 @@ describe('PropertyObserverProxyPairManager tests', () => {
   it('will try to find property observer factory for give type ', () => {
     observerFactories[1].applies.mockReturnValue(true);
 
-    propertyObserverManager.create({ key: 'x' });
+    propertyObserverManager.create({ index: 'x' });
 
     expect(observerFactories[0].applies).toHaveBeenCalledTimes(1);
     expect(observerFactories[0].applies).toHaveBeenCalledWith(object, {
-      key: 'x',
+      index: 'x',
     });
 
     expect(observerFactories[1].applies).toHaveBeenCalledTimes(1);
     expect(observerFactories[1].applies).toHaveBeenCalledWith(object, {
-      key: 'x',
+      index: 'x',
     });
   });
 
@@ -58,7 +58,7 @@ describe('PropertyObserverProxyPairManager tests', () => {
     };
     observerFactories[0].create.mockReturnValue(expected);
 
-    const actual = propertyObserverManager.create({ key: 'x' }).instance;
+    const actual = propertyObserverManager.create({ index: 'x' }).instance;
 
     expect(observerFactories[0].create).toHaveBeenCalledTimes(1);
     expect(observerFactories[0].create).toHaveBeenCalledWith(
@@ -67,7 +67,7 @@ describe('PropertyObserverProxyPairManager tests', () => {
         release: expect.any(Function),
       },
       object,
-      { key: 'x' },
+      { index: 'x' },
     );
     expect(observerFactories[1].create).not.toHaveBeenCalled();
     expect(actual).toBe(expected);
@@ -80,7 +80,7 @@ describe('PropertyObserverProxyPairManager tests', () => {
     };
     observerFactories[0].applies.mockReturnValue(true);
     observerFactories[0].create.mockReturnValue(observerProxyPair);
-    const { id } = propertyObserverManager.create({ key: 'x' });
+    const { id } = propertyObserverManager.create({ index: 'x' });
 
     propertyObserverManager.release(id);
 

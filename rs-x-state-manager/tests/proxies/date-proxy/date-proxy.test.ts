@@ -1,7 +1,6 @@
 import {
   GuidFactory,
   type IPropertyChange,
-  truePredicate,
   utCDate,
   WaitForEvent,
 } from '@rs-x/core';
@@ -9,8 +8,16 @@ import {
 import type { IObserver } from '../../../lib';
 import { DateProxyFactory } from '../../../lib/proxies/date-proxy/date-proxy.factory';
 import { ProxyRegistryMock } from '../../../lib/testing/proxies/proxy-registry.mock';
+import { IndexWatchRuleMock } from '../../../lib/testing/watch-index-rule.mock';
 
 describe('DateProxy tests', () => {
+  let indexWatchRule: IndexWatchRuleMock;
+
+  beforeEach(() => {
+    indexWatchRule = new IndexWatchRuleMock();
+    indexWatchRule.test.mockReturnValue(true);
+  });
+
   it('Node timezone is UTC', () => {
     expect(process.env.TZ).toEqual('UTC');
   });
@@ -688,10 +695,10 @@ describe('DateProxy tests', () => {
         proxy.setFullYear(2022);
       });
 
-      const expected = {
+      const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: proxyTarget, id: 'year' }],
-        id: 'year',
+        chain: [{ context: proxyTarget, index: 'year' }],
+        index: 'year',
         newValue: utCDate(2022, 1, 2),
         target: proxyTarget,
       };
@@ -704,7 +711,7 @@ describe('DateProxy tests', () => {
         new ProxyRegistryMock(),
       ).create({
         date: utCDate(2021, 1, 2),
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).instance as { observer: IObserver; proxy: Date; proxyTarget: unknown };
 
       const actual = await new WaitForEvent(observer, 'changed', {
@@ -716,22 +723,22 @@ describe('DateProxy tests', () => {
       const expected: IPropertyChange[] = [
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'year' }],
-          id: 'year',
+          chain: [{ context: proxyTarget, index: 'year' }],
+          index: 'year',
           newValue: 2022,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'utcYear' }],
-          id: 'utcYear',
+          chain: [{ context: proxyTarget, index: 'utcYear' }],
+          index: 'utcYear',
           newValue: 2022,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'time' }],
-          id: 'time',
+          chain: [{ context: proxyTarget, index: 'time' }],
+          index: 'time',
           newValue: new Date(2022, 1, 2).getTime(),
           target: proxyTarget,
         },
@@ -746,7 +753,7 @@ describe('DateProxy tests', () => {
         new ProxyRegistryMock(),
       ).create({
         date: utCDate(2021, 1, 2),
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).instance as { observer: IObserver; proxy: Date; proxyTarget: unknown };
 
       const actual = await new WaitForEvent(observer, 'changed', {
@@ -758,22 +765,22 @@ describe('DateProxy tests', () => {
       const expected: IPropertyChange[] = [
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'month' }],
-          id: 'month',
+          chain: [{ context: proxyTarget, index: 'month' }],
+          index: 'month',
           newValue: 2,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'utcMonth' }],
-          id: 'utcMonth',
+          chain: [{ context: proxyTarget, index: 'utcMonth' }],
+          index: 'utcMonth',
           newValue: 2,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'time' }],
-          id: 'time',
+          chain: [{ context: proxyTarget, index: 'time' }],
+          index: 'time',
           newValue: utCDate(2021, 2, 2).getTime(),
           target: proxyTarget,
         },
@@ -787,7 +794,7 @@ describe('DateProxy tests', () => {
         new ProxyRegistryMock(),
       ).create({
         date: utCDate(2021, 1, 2),
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).instance as { observer: IObserver; proxy: Date; proxyTarget: unknown };
 
       const actual = await new WaitForEvent(observer, 'changed', {
@@ -799,22 +806,22 @@ describe('DateProxy tests', () => {
       const expected: IPropertyChange[] = [
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'date' }],
-          id: 'date',
+          chain: [{ context: proxyTarget, index: 'date' }],
+          index: 'date',
           newValue: 3,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'utcDate' }],
-          id: 'utcDate',
+          chain: [{ context: proxyTarget, index: 'utcDate' }],
+          index: 'utcDate',
           newValue: 3,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'time' }],
-          id: 'time',
+          chain: [{ context: proxyTarget, index: 'time' }],
+          index: 'time',
           newValue: utCDate(2021, 1, 3).getTime(),
           target: proxyTarget,
         },
@@ -828,7 +835,7 @@ describe('DateProxy tests', () => {
         new ProxyRegistryMock(),
       ).create({
         date: utCDate(2021, 1, 2),
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).instance as { observer: IObserver; proxy: Date; proxyTarget: unknown };
 
       const actual = await new WaitForEvent(observer, 'changed', {
@@ -840,22 +847,22 @@ describe('DateProxy tests', () => {
       const expected: IPropertyChange[] = [
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'hours' }],
-          id: 'hours',
+          chain: [{ context: proxyTarget, index: 'hours' }],
+          index: 'hours',
           newValue: 3,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'utcHours' }],
-          id: 'utcHours',
+          chain: [{ context: proxyTarget, index: 'utcHours' }],
+          index: 'utcHours',
           newValue: 3,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'time' }],
-          id: 'time',
+          chain: [{ context: proxyTarget, index: 'time' }],
+          index: 'time',
           newValue: utCDate(2021, 1, 2, 3).getTime(),
           target: proxyTarget,
         },
@@ -869,7 +876,7 @@ describe('DateProxy tests', () => {
         new ProxyRegistryMock(),
       ).create({
         date: utCDate(2021, 1, 2),
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).instance as { observer: IObserver; proxy: Date; proxyTarget: unknown };
 
       const actual = await new WaitForEvent(observer, 'changed', {
@@ -881,22 +888,22 @@ describe('DateProxy tests', () => {
       const expected: IPropertyChange[] = [
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'minutes' }],
-          id: 'minutes',
+          chain: [{ context: proxyTarget, index: 'minutes' }],
+          index: 'minutes',
           newValue: 3,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'utcMinutes' }],
-          id: 'utcMinutes',
+          chain: [{ context: proxyTarget, index: 'utcMinutes' }],
+          index: 'utcMinutes',
           newValue: 3,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'time' }],
-          id: 'time',
+          chain: [{ context: proxyTarget, index: 'time' }],
+          index: 'time',
           newValue: utCDate(2021, 1, 2, 0, 3).getTime(),
           target: proxyTarget,
         },
@@ -910,7 +917,7 @@ describe('DateProxy tests', () => {
         new ProxyRegistryMock(),
       ).create({
         date: utCDate(2021, 1, 2),
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).instance as { observer: IObserver; proxy: Date; proxyTarget: unknown };
 
       const actual = await new WaitForEvent(observer, 'changed', {
@@ -922,22 +929,22 @@ describe('DateProxy tests', () => {
       const expected: IPropertyChange[] = [
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'seconds' }],
-          id: 'seconds',
+          chain: [{ context: proxyTarget, index: 'seconds' }],
+          index: 'seconds',
           newValue: 3,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'utcSeconds' }],
-          id: 'utcSeconds',
+          chain: [{ context: proxyTarget, index: 'utcSeconds' }],
+          index: 'utcSeconds',
           newValue: 3,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'time' }],
-          id: 'time',
+          chain: [{ context: proxyTarget, index: 'time' }],
+          index: 'time',
           newValue: utCDate(2021, 1, 2, 0, 0, 3).getTime(),
           target: proxyTarget,
         },
@@ -951,7 +958,7 @@ describe('DateProxy tests', () => {
         new ProxyRegistryMock(),
       ).create({
         date: utCDate(2021, 1, 2),
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).instance as { observer: IObserver; proxy: Date; proxyTarget: unknown };
 
       const actual = await new WaitForEvent(observer, 'changed', {
@@ -963,22 +970,22 @@ describe('DateProxy tests', () => {
       const expected: IPropertyChange[] = [
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'milliseconds' }],
-          id: 'milliseconds',
+          chain: [{ context: proxyTarget, index: 'milliseconds' }],
+          index: 'milliseconds',
           newValue: 3,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'utcMilliseconds' }],
-          id: 'utcMilliseconds',
+          chain: [{ context: proxyTarget, index: 'utcMilliseconds' }],
+          index: 'utcMilliseconds',
           newValue: 3,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'time' }],
-          id: 'time',
+          chain: [{ context: proxyTarget, index: 'time' }],
+          index: 'time',
           newValue: utCDate(2021, 1, 2, 0, 0, 0, 3).getTime(),
           target: proxyTarget,
         },
@@ -993,7 +1000,7 @@ describe('DateProxy tests', () => {
       ).create({
         // Mon Jan 07 2030 07:23:45
         date: new Date(1893997425123),
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).instance as { observer: IObserver; proxy: Date; proxyTarget: unknown };
 
       const actual = await new WaitForEvent(observer, 'changed', {
@@ -1006,106 +1013,106 @@ describe('DateProxy tests', () => {
       const expected: IPropertyChange[] = [
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'year' }],
-          id: 'year',
+          chain: [{ context: proxyTarget, index: 'year' }],
+          index: 'year',
           newValue: 2022,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'utcYear' }],
-          id: 'utcYear',
+          chain: [{ context: proxyTarget, index: 'utcYear' }],
+          index: 'utcYear',
           newValue: 2022,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'month' }],
-          id: 'month',
+          chain: [{ context: proxyTarget, index: 'month' }],
+          index: 'month',
           newValue: 10,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'utcMonth' }],
-          id: 'utcMonth',
+          chain: [{ context: proxyTarget, index: 'utcMonth' }],
+          index: 'utcMonth',
           newValue: 10,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'date' }],
-          id: 'date',
+          chain: [{ context: proxyTarget, index: 'date' }],
+          index: 'date',
           newValue: 3,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'utcDate' }],
-          id: 'utcDate',
+          chain: [{ context: proxyTarget, index: 'utcDate' }],
+          index: 'utcDate',
           newValue: 3,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'hours' }],
-          id: 'hours',
+          chain: [{ context: proxyTarget, index: 'hours' }],
+          index: 'hours',
           newValue: 8,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'utcHours' }],
-          id: 'utcHours',
+          chain: [{ context: proxyTarget, index: 'utcHours' }],
+          index: 'utcHours',
           newValue: 8,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'minutes' }],
-          id: 'minutes',
+          chain: [{ context: proxyTarget, index: 'minutes' }],
+          index: 'minutes',
           newValue: 54,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'utcMinutes' }],
-          id: 'utcMinutes',
+          chain: [{ context: proxyTarget, index: 'utcMinutes' }],
+          index: 'utcMinutes',
           newValue: 54,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'seconds' }],
-          id: 'seconds',
+          chain: [{ context: proxyTarget, index: 'seconds' }],
+          index: 'seconds',
           newValue: 12,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'utcSeconds' }],
-          id: 'utcSeconds',
+          chain: [{ context: proxyTarget, index: 'utcSeconds' }],
+          index: 'utcSeconds',
           newValue: 12,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'milliseconds' }],
-          id: 'milliseconds',
+          chain: [{ context: proxyTarget, index: 'milliseconds' }],
+          index: 'milliseconds',
           newValue: 987,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'utcMilliseconds' }],
-          id: 'utcMilliseconds',
+          chain: [{ context: proxyTarget, index: 'utcMilliseconds' }],
+          index: 'utcMilliseconds',
           newValue: 987,
           target: proxyTarget,
         },
         {
           arguments: [],
-          chain: [{ object: proxyTarget, id: 'time' }],
-          id: 'time',
+          chain: [{ context: proxyTarget, index: 'time' }],
+          index: 'time',
           newValue: 1667465652987,
           target: proxyTarget,
         },
@@ -1119,7 +1126,7 @@ describe('DateProxy tests', () => {
         new ProxyRegistryMock(),
       ).create({
         date: utCDate(2021, 1, 2),
-        shouldWatchIndex: truePredicate,
+        indexWatchRule,
       }).instance as { observer: IObserver; proxy: Date };
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {

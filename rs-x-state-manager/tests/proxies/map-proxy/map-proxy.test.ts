@@ -166,8 +166,8 @@ describe('MapProxy tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: mapData.map, id: 'c' }],
-        id: 'c',
+        chain: [{ context: mapData.map, index: 'c' }],
+        index: 'c',
         newValue: 3,
         target: mapData.map,
       };
@@ -184,8 +184,8 @@ describe('MapProxy tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: mapData.map, id: 'b' }],
-        id: 'b',
+        chain: [{ context: mapData.map, index: 'b' }],
+        index: 'b',
         newValue: 20,
         target: mapData.map,
       };
@@ -203,8 +203,8 @@ describe('MapProxy tests', () => {
 
       const expected: IPropertyChange = {
         arguments: [],
-        chain: [{ object: mapData.map, id: 'b' }],
-        id: 'b',
+        chain: [{ context: mapData.map, index: 'b' }],
+        index: 'b',
         newValue: undefined,
         target: mapData.map,
       };
@@ -224,15 +224,15 @@ describe('MapProxy tests', () => {
       const expected: IPropertyChange[] = [
         {
           arguments: [],
-          chain: [{ object: mapData.map, id: 'a' }],
-          id: 'a',
+          chain: [{ context: mapData.map, index: 'a' }],
+          index: 'a',
           newValue: undefined,
           target: mapData.map,
         },
         {
           arguments: [],
-          chain: [{ object: mapData.map, id: 'b' }],
-          id: 'b',
+          chain: [{ context: mapData.map, index: 'b' }],
+          index: 'b',
           newValue: undefined,
           target: mapData.map,
         },

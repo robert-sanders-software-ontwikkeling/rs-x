@@ -10,14 +10,14 @@ import {
   UnsupportedException,
 } from '@rs-x/core';
 
+import type { IIndexWatchRule } from './index-watch-rule-registry/index-watch-rule.interface';
 import type { IIndexObserverProxyPairFactory } from './property-observer/index-observer-proxy-pair.factory.interface';
 import type {
+  IIndexInfo,
   IObjectPropertyObserverProxyPairManager,
   IObserverProxyPair,
-  IPropertyIdInfo,
   IPropertyInfo,
   IPropertyObserverProxyPairManager,
-  ShouldWatchIndex,
 } from './object-property-observer-proxy-pair-manager.type';
 import { RsXStateManagerInjectionTokens } from './rs-x-state-manager-injection-tokens';
 
@@ -25,7 +25,7 @@ class PropertyObserverProxyPairManager
   extends SingletonFactoryWithGuid<
     IPropertyInfo,
     IObserverProxyPair,
-    IPropertyIdInfo
+    IIndexInfo
   >
   implements IPropertyObserverProxyPairManager
 {
@@ -39,13 +39,11 @@ class PropertyObserverProxyPairManager
   }
 
   protected getGroupId(data: IPropertyInfo): unknown {
-    return data.key;
+    return data.index;
   }
 
-  protected getGroupMemberId(
-    data: IPropertyInfo,
-  ): ShouldWatchIndex | undefined {
-    return data.shouldWatchIndex;
+  protected getGroupMemberId(data: IPropertyInfo): IIndexWatchRule | undefined {
+    return data.indexWatchRule;
   }
 
   protected createInstance(
@@ -84,7 +82,7 @@ class PropertyObserverProxyPairManager
 
     if (!observerFactory) {
       throw new UnsupportedException(
-        `No observer factory found for given object of type ${Type.getConstructorName(this._object)} for given id ${propertyInfo.key}`,
+        `No observer factory found for given object of type ${Type.getConstructorName(this._object)} for given id ${propertyInfo.index}`,
       );
     }
 

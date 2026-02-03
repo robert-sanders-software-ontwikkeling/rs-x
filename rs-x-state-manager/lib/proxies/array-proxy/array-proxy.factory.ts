@@ -195,8 +195,8 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
   ): void {
     this.emitChange({
       arguments: [],
-      chain: [{ object: originaArray, id: index }],
-      id: index,
+      chain: [{ context: originaArray, index: index }],
+      index: index,
       target: originaArray,
       newValue: value,
     });

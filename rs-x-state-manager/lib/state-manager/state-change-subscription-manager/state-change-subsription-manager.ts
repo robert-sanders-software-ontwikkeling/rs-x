@@ -1,14 +1,13 @@
 import {
   type IErrorLog,
   type IGuidFactory,
+  type IInstanceGroupInfo,
   SingletonFactory,
 } from '@rs-x/core';
 
 import { GroupedChangeSubscriptionsForContextManager } from '../../grouped-change-subscriptions-for-context-manager';
-import {
-  type IObjectPropertyObserverProxyPairManager,
-  type ShouldWatchIndex,
-} from '../../object-property-observer-proxy-pair-manager.type';
+import type { IIndexWatchRule } from '../../index-watch-rule-registry/index-watch-rule.interface';
+import { type IObjectPropertyObserverProxyPairManager } from '../../object-property-observer-proxy-pair-manager.type';
 import { type IObserver } from '../../observer.interface';
 
 import {
@@ -37,13 +36,13 @@ class StateChangeSubscriptionsForContextManager
   }
 
   protected getGroupId(data: IStateChangeSubscriptionIdInfo): unknown {
-    return data.key;
+    return data.index;
   }
 
   protected getGroupMemberId(
     data: IStateChangeSubscriptionIdInfo,
-  ): ShouldWatchIndex | undefined {
-    return data.shouldWatchIndex;
+  ): IIndexWatchRule | undefined {
+    return data.indexWatchRule;
   }
 
   protected createObserver(
@@ -53,9 +52,9 @@ class StateChangeSubscriptionsForContextManager
   ): { subscriptionData: undefined; observer: IObserver } {
     const objectObserver = this._objectObserverManager.create(context).instance;
     const observer = objectObserver.create({
-      key: data.key,
+      index: data.index,
       initializeManually: true,
-      shouldWatchIndex: data.shouldWatchIndex,
+      indexWatchRule: data.indexWatchRule,
       owner: {
         release: () => this.release(id),
       },
@@ -86,6 +85,15 @@ export class StateChangeSubscriptionManager
 
   public getId(context: unknown): unknown {
     return context;
+  }
+
+  public instanceGroupInfoEntriesForContext(
+    context: unknown,
+  ): IterableIterator<IInstanceGroupInfo<string, IObserver>> {
+    return (
+      this.getFromId(context)?.instanceGroupInfoEntries() ??
+      [][Symbol.iterator]()
+    );
   }
 
   public isRegistered(context: unknown, key: unknown): boolean {

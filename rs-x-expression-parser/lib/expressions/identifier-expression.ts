@@ -1,15 +1,10 @@
-import {
-  type Observable,
-  ReplaySubject,
-  Subject,
-  type Subscription,
-} from 'rxjs';
+import { type Observable, ReplaySubject, type Subscription } from 'rxjs';
 
 import {
   type IContextChanged,
+  type IIndexWatchRule,
   type IStateChange,
   type IStateManager,
-  type ShouldWatchIndex,
 } from '@rs-x/state-manager';
 
 import { type IExpressionChangeCommitHandler } from '../expresion-change-transaction-manager.interface';
@@ -22,14 +17,14 @@ export class IndexValueObserver {
   private readonly _changeSubscription: Subscription;
   private readonly _contextChangeSubscription: Subscription;
   private readonly _changed = new ReplaySubject<IStateChange>(1);
-  private readonly _contextChanged = new Subject<IContextChanged>();
   private _isDisposed = false;
 
   constructor(
     private _context: unknown,
-    private readonly _key: unknown,
-    private readonly _shouldWatchLeaf: ShouldWatchIndex | undefined,
+    private readonly _index: unknown,
+    private readonly _indexWatchRule: IIndexWatchRule | undefined,
     private readonly _stateManager: IStateManager,
+    private readonly setContext: (context: unknown) => void,
   ) {
     this._changeSubscription = this._stateManager.changed.subscribe(
       this.emitChange,
@@ -39,13 +34,13 @@ export class IndexValueObserver {
       this._stateManager.contextChanged.subscribe(this.onContextCHanged);
     const value = this._stateManager.watchState(
       this._context,
-      this._key,
-      this._shouldWatchLeaf,
+      this._index,
+      this._indexWatchRule,
     );
 
     if (value !== undefined) {
       this.emitChange({
-        key: this._key,
+        index: this._index,
         context: this._context,
         oldContext: this._context,
         oldValue: undefined,
@@ -58,10 +53,6 @@ export class IndexValueObserver {
     return this._changed;
   }
 
-  public get contextChanged(): Observable<IContextChanged> {
-    return this._contextChanged;
-  }
-
   public dispose(): void {
     if (this._isDisposed) {
       return;
@@ -70,8 +61,8 @@ export class IndexValueObserver {
     this._contextChangeSubscription.unsubscribe();
     this._stateManager.releaseState(
       this._context,
-      this._key,
-      this._shouldWatchLeaf,
+      this._index,
+      this._indexWatchRule,
     );
     this._isDisposed = true;
   }
@@ -81,14 +72,14 @@ export class IndexValueObserver {
   }
 
   private onContextCHanged = (change: IContextChanged) => {
-    if (this._context === change.oldContext && change.key === this._key) {
+    if (this._context === change.oldContext && change.index === this._index) {
       this._context = change.context;
-      this._contextChanged.next(change);
+      this.setContext(this._context);
     }
   };
 
   private emitChange = (change: IStateChange) => {
-    if (this._context === change.context && change.key === this._key) {
+    if (this._context === change.context && change.index === this._index) {
       this._changed.next(change);
     }
   };
@@ -105,6 +96,8 @@ export class IdentifierExpression extends AbstractExpression {
   private releaseMustProxifyHandler: (() => void) | undefined;
   private _commitAfterInitialized: boolean | undefined;
   private readonly _commitHandler: IExpressionChangeCommitHandler;
+  private _context: unknown;
+  private _indexWatchRule!: IIndexWatchRule | undefined;
 
   constructor(
     expressionString: string,
@@ -131,21 +124,28 @@ export class IdentifierExpression extends AbstractExpression {
     this._isBound = false;
     super.bind(settings);
 
+    this._context = settings.context ?? settings.rootContext;
     this._commitAfterInitialized = settings.context !== settings.rootContext;
 
+    this._indexWatchRule = this.indexWatchRuleRegistry.register(
+      this._context,
+      this._indexValue ?? this.expressionString,
+      this.shouldWatchIndex,
+    );
+
     if (!this._indexValueObserver) {
-      this.observeChange(settings);
+      this.observeChange();
     } else {
       const newValue = this._indexValueObserver.getValue(
-        settings.context,
+        this._context,
         this._indexValue ?? this.expressionString,
       );
       this.onValueChanged({
-        key: this._indexValue ?? this.expressionString,
-        context: settings.context,
+        index: this._indexValue ?? this.expressionString,
+        context: this._context,
         oldValue: this._value,
         newValue,
-        oldContext: settings.context,
+        oldContext: this._context,
       });
     }
     this._isBound = true;
@@ -156,21 +156,64 @@ export class IdentifierExpression extends AbstractExpression {
     super.internalDispose();
     this.releaseMustProxifyHandler?.();
     this.disposeObserver();
+    this._indexWatchRule?.dispose();
+    this._indexWatchRule = undefined;
   }
 
   protected override evaluate(): unknown {
     return this._value;
   }
 
-  private observeChange(settings: IIdentifierBindConfiguration): void {
-    const context = settings.context ?? settings.rootContext;
+  private get isLeaf(): boolean {
+    return (
+      !this.parent ||
+      this.parent.childExpressions[this.parent.childExpressions.length - 1] ===
+        this
+    );
+  }
+
+  private get isMemberExpressionSegment(): boolean {
+    return (
+      this.parent?.type === ExpressionType.Member &&
+      this.parent.childExpressions.includes(this)
+    );
+  }
+
+  private shouldWatchIndex = (
+    targetIndex: unknown,
+    target: unknown,
+  ): boolean => {
     const index = this._indexValue ?? this.expressionString;
 
+    // Fast reject: rule-based watching only
+    if (index !== targetIndex || this._context !== target) {
+      return !!this.leafIndexWatchRule?.test(targetIndex, target);
+    }
+
+    const value = this.indexValueAccessor.getValue(target, index);
+
+    if (!this.isLeaf && this.isMemberExpressionSegment) {
+      return this.valueMetadata.needsProxy(value);
+    }
+
+    if (this.isLeaf) {
+      return (
+        this.valueMetadata.needsProxy(value) ||
+        !!this.leafIndexWatchRule?.test(targetIndex, target)
+      );
+    }
+
+    return false;
+  };
+
+  private observeChange(): void {
+    const index = this._indexValue ?? this.expressionString;
     this._indexValueObserver = new IndexValueObserver(
-      context,
+      this._context,
       index,
-      settings.shouldWatchLeaf,
+      this._indexWatchRule,
       this.stateManager,
+      (context) => (this._context = context),
     );
 
     this._changeSubscription = this._indexValueObserver.changed.subscribe(

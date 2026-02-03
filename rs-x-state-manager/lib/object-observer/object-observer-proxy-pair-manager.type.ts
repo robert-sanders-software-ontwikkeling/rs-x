@@ -1,14 +1,12 @@
 import { type ISingletonFactory } from '@rs-x/core';
 
-import {
-  type IObserverProxyPair,
-  type ShouldWatchIndex,
-} from '../object-property-observer-proxy-pair-manager.type';
+import type { IIndexWatchRule } from '../index-watch-rule-registry/index-watch-rule.interface';
+import { type IObserverProxyPair } from '../object-property-observer-proxy-pair-manager.type';
 
 export interface IProxyTarget<TTarget> {
   initializeManually?: boolean;
   target: TTarget;
-  shouldWatchIndex?: ShouldWatchIndex;
+  indexWatchRule?: IIndexWatchRule;
 }
 
 export type IObjectObserverProxyPairManager<TTarget = unknown> =

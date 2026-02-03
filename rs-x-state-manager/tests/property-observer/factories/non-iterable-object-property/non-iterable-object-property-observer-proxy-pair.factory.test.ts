@@ -3,7 +3,6 @@ import { of } from 'rxjs';
 import {
   InjectionContainer,
   type IPropertyChange,
-  truePredicate,
   WaitForEvent,
 } from '@rs-x/core';
 import { DisposableOwnerMock } from '@rs-x/core/testing';
@@ -13,6 +12,7 @@ import { type IIndexObserverProxyPairFactory } from '../../../../lib/property-ob
 import { type IArrayProxyFactory } from '../../../../lib/proxies/array-proxy/array-proxy.factory.type';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
 import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokens';
+import { IndexWatchRuleMock } from '../../../../lib/testing/watch-index-rule.mock';
 
 describe('non iterableObjectPropertyObserverFactory', () => {
   let disposableOwner: DisposableOwnerMock;
@@ -21,6 +21,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
   let nonRecursiveObserver: IObserver | undefined;
   let arrayProxyFactory: IArrayProxyFactory;
   let nonIterableObjectPropertyObserverFactory: IIndexObserverProxyPairFactory;
+  let indexWatchRule: IndexWatchRuleMock;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXStateManagerModule);
@@ -31,6 +32,11 @@ describe('non iterableObjectPropertyObserverFactory', () => {
     arrayProxyFactory = InjectionContainer.get<IArrayProxyFactory>(
       RsXStateManagerInjectionTokens.IArrayProxyFactory,
     );
+  });
+
+  beforeEach(() => {
+    indexWatchRule = new IndexWatchRuleMock();
+    indexWatchRule.test.mockReturnValue(true);
   });
 
   afterAll(async () => {
@@ -53,28 +59,28 @@ describe('non iterableObjectPropertyObserverFactory', () => {
   it('applies return true if object is not iterable', () => {
     const actual = nonIterableObjectPropertyObserverFactory.applies(
       {},
-      { key: 'x' },
+      { index: 'x' },
     );
     expect(actual).toEqual(true);
   });
 
   it('applies return false if object is array', () => {
     const actual = nonIterableObjectPropertyObserverFactory.applies([], {
-      key: 'x',
+      index: 'x',
     });
     expect(actual).toEqual(false);
   });
 
   it('applies return false if object is Map', () => {
     const actual = nonIterableObjectPropertyObserverFactory.applies(new Map(), {
-      key: 'x',
+      index: 'x',
     });
     expect(actual).toEqual(false);
   });
 
   it('applies return false if object is Set', () => {
     const actual = nonIterableObjectPropertyObserverFactory.applies(new Set(), {
-      key: 'x',
+      index: 'x',
     });
     expect(actual).toEqual(false);
   });
@@ -84,7 +90,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
     const actual = nonIterableObjectPropertyObserverFactory.create(
       disposableOwner,
       object,
-      { key: 'x', shouldWatchIndex: truePredicate },
+      { index: 'x', indexWatchRule },
     ).proxy;
 
     expect(actual).toBeUndefined();
@@ -96,7 +102,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
     const actual = nonIterableObjectPropertyObserverFactory.create(
       disposableOwner,
       object,
-      { key: 'x', shouldWatchIndex: truePredicate },
+      { index: 'x', indexWatchRule },
     ).proxy;
 
     const expected = arrayProxyFactory.getFromData({
@@ -111,7 +117,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
     const actual = nonIterableObjectPropertyObserverFactory.create(
       disposableOwner,
       object,
-      { key: 'x' },
+      { index: 'x' },
     ).proxy;
 
     expect(actual).toBeUndefined();
@@ -122,8 +128,8 @@ describe('non iterableObjectPropertyObserverFactory', () => {
     const object = { x: array };
 
     nonIterableObjectPropertyObserverFactory.create(disposableOwner, object, {
-      key: 'x',
-      shouldWatchIndex: truePredicate,
+      index: 'x',
+      indexWatchRule,
     });
 
     const expected = arrayProxyFactory.getFromData({
@@ -137,8 +143,8 @@ describe('non iterableObjectPropertyObserverFactory', () => {
     const object = { x: array };
 
     nonIterableObjectPropertyObserverFactory.create(disposableOwner, object, {
-      key: 'x',
-      shouldWatchIndex: truePredicate,
+      index: 'x',
+      indexWatchRule,
     });
 
     const newArray = [1];
@@ -155,8 +161,8 @@ describe('non iterableObjectPropertyObserverFactory', () => {
     const object = { x: oldArray };
 
     nonIterableObjectPropertyObserverFactory.create(disposableOwner, object, {
-      key: 'x',
-      shouldWatchIndex: truePredicate,
+      index: 'x',
+      indexWatchRule,
     });
 
     expect(
@@ -191,7 +197,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
     observer = nonIterableObjectPropertyObserverFactory.create(
       disposableOwner,
       object,
-      { key: 'x', shouldWatchIndex: truePredicate },
+      { index: 'x', indexWatchRule },
     ).observer;
 
     const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -200,7 +206,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
 
     const expected: IPropertyChange = {
       arguments: [],
-      chain: [{ object, id: 'x' }],
+      chain: [{ context: object, index: 'x' }],
       newValue: 20,
       target: object.x,
     };
@@ -213,7 +219,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
     observer = nonIterableObjectPropertyObserverFactory.create(
       disposableOwner,
       object,
-      { key: 'x', shouldWatchIndex: truePredicate },
+      { index: 'x', indexWatchRule },
     ).observer;
 
     const actual = await new WaitForEvent(observer, 'changed', {
@@ -224,7 +230,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
 
     const expected: IPropertyChange = {
       arguments: [],
-      chain: [{ object, id: 'x' }],
+      chain: [{ context: object, index: 'x' }],
       newValue: 20,
       target: object.x,
     };
@@ -237,7 +243,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
     observer = nonIterableObjectPropertyObserverFactory.create(
       disposableOwner,
       object,
-      { key: 'x', shouldWatchIndex: truePredicate },
+      { index: 'x', indexWatchRule },
     ).observer;
     object.x = [1, 2, 3];
 
@@ -250,10 +256,10 @@ describe('non iterableObjectPropertyObserverFactory', () => {
     const expected: IPropertyChange = {
       arguments: [],
       chain: [
-        { object, id: 'x' },
-        { object: object.x, id: 3 },
+        { context: object, index: 'x' },
+        { context: object.x, index: 3 },
       ],
-      id: 3,
+      index: 3,
       newValue: 4,
       target: object.x,
     };
@@ -266,7 +272,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
     observer = nonIterableObjectPropertyObserverFactory.create(
       disposableOwner,
       object,
-      { key: 'x', shouldWatchIndex: truePredicate },
+      { index: 'x', indexWatchRule },
     ).observer;
 
     const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -276,10 +282,10 @@ describe('non iterableObjectPropertyObserverFactory', () => {
     const expected: IPropertyChange = {
       arguments: [],
       chain: [
-        { object, id: 'x' },
-        { object: object.x, id: 0 },
+        { context: object, index: 'x' },
+        { context: object.x, index: 0 },
       ],
-      id: 0,
+      index: 0,
       newValue: 1,
       target: object.x,
     };
@@ -292,7 +298,7 @@ describe('non iterableObjectPropertyObserverFactory', () => {
     observer = nonIterableObjectPropertyObserverFactory.create(
       disposableOwner,
       object,
-      { key: 'x' },
+      { index: 'x' },
     ).observer;
 
     const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -307,12 +313,12 @@ describe('non iterableObjectPropertyObserverFactory', () => {
     recursiveObserver = nonIterableObjectPropertyObserverFactory.create(
       disposableOwner,
       object,
-      { key: 'x', shouldWatchIndex: truePredicate },
+      { index: 'x', indexWatchRule },
     ).observer;
     nonRecursiveObserver = nonIterableObjectPropertyObserverFactory.create(
       disposableOwner,
       object,
-      { key: 'x' },
+      { index: 'x' },
     ).observer;
 
     let actual = await new WaitForEvent(recursiveObserver, 'changed').wait(
@@ -337,12 +343,12 @@ describe('non iterableObjectPropertyObserverFactory', () => {
     recursiveObserver = nonIterableObjectPropertyObserverFactory.create(
       disposableOwner,
       object,
-      { key: 'x', shouldWatchIndex: truePredicate },
+      { index: 'x', indexWatchRule },
     ).observer;
     nonRecursiveObserver = nonIterableObjectPropertyObserverFactory.create(
       disposableOwner,
       object,
-      { key: 'x' },
+      { index: 'x' },
     ).observer;
 
     let actual = await new WaitForEvent(recursiveObserver, 'changed').wait(
@@ -353,8 +359,8 @@ describe('non iterableObjectPropertyObserverFactory', () => {
 
     let expected: IPropertyChange = {
       arguments: [],
-      chain: [{ object, id: 'x' }],
-      id: 'x',
+      chain: [{ context: object, index: 'x' }],
+      index: 'x',
       newValue: [1],
       target: object,
     };
@@ -368,8 +374,8 @@ describe('non iterableObjectPropertyObserverFactory', () => {
 
     expected = {
       arguments: [],
-      chain: [{ object, id: 'x' }],
-      id: 'x',
+      chain: [{ context: object, index: 'x' }],
+      index: 'x',
       newValue: [2],
       target: object,
     };
@@ -381,12 +387,12 @@ describe('non iterableObjectPropertyObserverFactory', () => {
     recursiveObserver = nonIterableObjectPropertyObserverFactory.create(
       disposableOwner,
       object,
-      { key: 'x', shouldWatchIndex: truePredicate },
+      { index: 'x', indexWatchRule },
     ).observer;
     nonRecursiveObserver = nonIterableObjectPropertyObserverFactory.create(
       disposableOwner,
       object,
-      { key: 'x' },
+      { index: 'x' },
     ).observer;
 
     let actual = await new WaitForEvent(recursiveObserver, 'changed').wait(
@@ -398,10 +404,10 @@ describe('non iterableObjectPropertyObserverFactory', () => {
     const expected: IPropertyChange = {
       arguments: [],
       chain: [
-        { object, id: 'x' },
-        { object: object.x, id: 0 },
+        { context: object, index: 'x' },
+        { context: object.x, index: 0 },
       ],
-      id: 0,
+      index: 0,
       newValue: 1,
       target: object.x,
     };
