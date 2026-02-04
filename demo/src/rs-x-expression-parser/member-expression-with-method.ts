@@ -17,7 +17,7 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     message: 'Hello',
     subject: 'Message',
     a: {
@@ -32,7 +32,7 @@ export const run = (async () => {
   };
 
   const expression = expressionFactory.create(
-    expressionContext,
+    model,
     'a.b.mail(message, subject).messageWithSubject',
   );
 
@@ -53,7 +53,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.message = 'hi';
+      model.message = 'hi';
     });
 
     console.log(
@@ -62,7 +62,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.subject = 'urgent message';
+      model.subject = 'urgent message';
     });
 
     console.log(

@@ -17,7 +17,7 @@ export const run = (() => {
   );
   const item1 = [1, 2];
   const item2 = [3, 4];
-  const stateContext = {
+  const model = {
     set: new Set([item1, item2]),
   };
   const changeSubscription = stateManager.changed.subscribe(
@@ -29,7 +29,7 @@ export const run = (() => {
   try {
     // This will emit a change event with the initial (current) value.
     console.log('Initial value:');
-    stateManager.watchState(stateContext, 'set', watchIndexRecursiveRule);
+    stateManager.watchState(model, 'set', watchIndexRecursiveRule);
 
     console.log('Changed value:');
     const proxyRegister: IProxyRegistry = InjectionContainer.get(
@@ -38,10 +38,10 @@ export const run = (() => {
     proxyRegister.getProxy<number[]>(item2).push(5);
 
     console.log('Latest value:');
-    printValue(stateManager.getState(stateContext, 'set'));
+    printValue(stateManager.getState(model, 'set'));
   } finally {
     changeSubscription.unsubscribe();
     // Always release the state when it is no longer needed.
-    stateManager.releaseState(stateContext, 'set', watchIndexRecursiveRule);
+    stateManager.releaseState(model, 'set', watchIndexRecursiveRule);
   }
 })();

@@ -17,15 +17,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     type: Date,
     a: new Date(),
   };
 
-  const expression = expressionFactory.create(
-    expressionContext,
-    'a instanceof type',
-  );
+  const expression = expressionFactory.create(model, 'a instanceof type');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -42,7 +39,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = Type.cast(new Number(2));
+      model.a = Type.cast(new Number(2));
     });
 
     console.log(
@@ -51,7 +48,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.type = Type.cast(Number);
+      model.type = Type.cast(Number);
     });
 
     console.log(`Final value of 'a instanceof type':`);

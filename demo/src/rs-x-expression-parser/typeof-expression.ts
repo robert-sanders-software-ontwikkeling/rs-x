@@ -12,15 +12,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     index: 0,
     a: ['1', 1],
   };
 
-  const expression = expressionFactory.create(
-    expressionContext,
-    'typeof a[index]',
-  );
+  const expression = expressionFactory.create(model, 'typeof a[index]');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -35,7 +32,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.index = 1;
+      model.index = 1;
     });
 
     console.log(`Final value of 'typeof a[index]':`);

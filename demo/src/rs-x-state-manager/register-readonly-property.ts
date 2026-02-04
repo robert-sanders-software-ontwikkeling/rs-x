@@ -14,7 +14,7 @@ export const run = (() => {
     RsXStateManagerInjectionTokens.IStateManager,
   );
 
-  class StateContext {
+  class MyModel {
     private readonly _aPlusBId = 'a+b';
     private _a = 10;
     private _b = 20;
@@ -54,7 +54,7 @@ export const run = (() => {
     }
   }
 
-  const stateContext = new StateContext();
+  const model = new MyModel();
   const changeSubscription = stateManager.changed.subscribe(
     (change: IStateChange) => {
       printValue(change.newValue);
@@ -63,22 +63,22 @@ export const run = (() => {
 
   try {
     console.log(`Initial value for readonly property 'aPlusB':`);
-    console.log(stateContext.aPlusB);
+    console.log(model.aPlusB);
 
     console.log(
-      `set 'stateContext.a' to '100' will emit a change event for readonly property 'aPlusB'`,
+      `set 'model.a' to '100' will emit a change event for readonly property 'aPlusB'`,
     );
     console.log(`Changed value for readonly property 'aPlusB':`);
-    stateContext.a = 100;
+    model.a = 100;
 
     console.log(
-      `set 'stateContext.b' to '200' will emit a change event for readonly property 'aPlusB'`,
+      `set 'model.b' to '200' will emit a change event for readonly property 'aPlusB'`,
     );
     console.log(`Changed value for readonly property 'aPlusB':`);
-    stateContext.b = 200;
+    model.b = 200;
   } finally {
     changeSubscription.unsubscribe();
     // Always release the state when it is no longer needed.
-    stateContext.dispose();
+    model.dispose();
   }
 })();

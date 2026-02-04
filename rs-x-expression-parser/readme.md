@@ -24,7 +24,7 @@ This parser forms the core of the **data-binding implementation** for the SPA fr
     WaitForEvent,
   } from '@rs-x/core';
   import {
-    IExpressionFactory,
+    type IExpressionFactory,
     RsXExpressionParserInjectionTokens,
     RsXExpressionParserModule,
   } from '@rs-x/expression-parser';
@@ -36,7 +36,7 @@ This parser forms the core of the **data-binding implementation** for the SPA fr
   );
 
   export const run = (async () => {
-    const expressionContext = {
+    const model = {
       a: {
         b: Promise.resolve({
           c: Promise.resolve({
@@ -46,7 +46,7 @@ This parser forms the core of the **data-binding implementation** for the SPA fr
       },
     };
 
-    const expression = expressionFactory.create(expressionContext, `a.b.c.d`);
+    const expression = expressionFactory.create(model, `a.b.c.d`);
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -63,7 +63,7 @@ This parser forms the core of the **data-binding implementation** for the SPA fr
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a = {
+        model.a = {
           b: Promise.resolve({ c: Promise.resolve({ d: 200 }) }),
         };
       });
@@ -75,6 +75,7 @@ This parser forms the core of the **data-binding implementation** for the SPA fr
       expression.dispose();
     }
   })();
+
   ```
 
 - **Modular expressions** — expressions can reference other expressions:
@@ -230,13 +231,14 @@ First, we will show an implementation **without modular expressions**, followed 
 ### Non-Modular example
 
 ```ts
+import { BehaviorSubject } from 'rxjs';
+
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
-import { BehaviorSubject } from 'rxjs';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
@@ -376,18 +378,20 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Modular example
 
 ```ts
+import { BehaviorSubject } from 'rxjs';
+
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
-import { BehaviorSubject } from 'rxjs';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
@@ -528,6 +532,7 @@ export const run = (async () => {
     basePersonalRisk.dispose();
   }
 })();
+
 ```
 
 ### Limitations of the Non-Modular Implementation
@@ -679,7 +684,7 @@ All non-assignment JavaScript expressions are supported. These expressions can b
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -691,12 +696,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 1,
     b: 3,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a + b');
+  const expression = expressionFactory.create(model, 'a + b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -711,14 +716,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 6;
+      model.a = 6;
     });
 
     console.log(`Value of 'a + b' after changing 'b' to '4':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 4;
+      model.b = 4;
     });
 
     console.log(`Final value of 'a + b':`);
@@ -728,6 +733,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Array expression
@@ -740,7 +746,7 @@ import {
   WaitForEvent,
 } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -752,15 +758,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 3,
     array: [1, 2],
   };
 
-  const expression = expressionFactory.create(
-    expressionContext,
-    '[a, ...array, 100]',
-  );
+  const expression = expressionFactory.create(model, '[a, ...array, 100]');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -775,7 +778,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 6;
+      model.a = 6;
     });
 
     console.log(
@@ -784,7 +787,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.array.push(3);
+      model.array.push(3);
     });
 
     console.log(
@@ -793,7 +796,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.array = [100, 200];
+      model.array = [100, 200];
     });
 
     console.log(`Final value of '[a, ...array, 100]':`);
@@ -803,6 +806,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Bitwise and expression
@@ -810,7 +814,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -822,12 +826,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 5,
     b: 3,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a & b');
+  const expression = expressionFactory.create(model, 'a & b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -842,14 +846,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 2;
+      model.a = 2;
     });
 
     console.log(`Value of 'a & b' after changing 'b' to '8':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 8;
+      model.b = 8;
     });
 
     console.log(`Final value of 'a & b':`);
@@ -859,6 +863,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Bitwise left shift expression
@@ -866,7 +871,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -878,12 +883,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 5,
     b: 2,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a << b');
+  const expression = expressionFactory.create(model, 'a << b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -898,14 +903,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 4;
+      model.a = 4;
     });
 
     console.log(`Value of 'a << b' after changing 'b' to '3':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 3;
+      model.b = 3;
     });
 
     console.log(`Final value of 'a << b':`);
@@ -915,6 +920,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Bitwise not expression
@@ -922,7 +928,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -934,11 +940,11 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 5,
   };
 
-  const expression = expressionFactory.create(expressionContext, '~a');
+  const expression = expressionFactory.create(model, '~a');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -953,7 +959,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 3;
+      model.a = 3;
     });
 
     console.log(`Final value of '~a':`);
@@ -963,6 +969,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Bitwise or expression
@@ -970,7 +977,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -982,12 +989,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 5,
     b: 2,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a | b');
+  const expression = expressionFactory.create(model, 'a | b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1002,14 +1009,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 10;
+      model.a = 10;
     });
 
     console.log(`Value of 'a | b' after changing 'b' to '3':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 3;
+      model.b = 3;
     });
 
     console.log(`Final value of 'a | b':`);
@@ -1019,6 +1026,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Bitwise right shift expression
@@ -1026,7 +1034,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -1038,12 +1046,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 5,
     b: 2,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a >> b');
+  const expression = expressionFactory.create(model, 'a >> b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1058,14 +1066,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 10;
+      model.a = 10;
     });
 
     console.log(`Value of 'a >> b' after changing 'b' to '3':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 3;
+      model.b = 3;
     });
 
     console.log(`Final value of 'a >> b':`);
@@ -1075,6 +1083,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Bitwise unsigned right shift expression
@@ -1082,7 +1091,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -1094,12 +1103,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 5,
     b: 2,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a >>> b');
+  const expression = expressionFactory.create(model, 'a >>> b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1114,14 +1123,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = -5;
+      model.a = -5;
     });
 
     console.log(`Value of 'a >>> b' after changing 'b' to '3':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 3;
+      model.b = 3;
     });
 
     console.log(`Final value of 'a >>> b':`);
@@ -1131,6 +1140,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Bitwise xor expression
@@ -1138,7 +1148,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -1150,12 +1160,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 5,
     b: 3,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a ^ b');
+  const expression = expressionFactory.create(model, 'a ^ b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1170,14 +1180,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 10;
+      model.a = 10;
     });
 
     console.log(`Value of 'a ^ b' after changing 'b' to '8':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 8;
+      model.b = 8;
     });
 
     console.log(`Final value of 'a ^ b':`);
@@ -1187,6 +1197,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Conditional expression
@@ -1194,7 +1205,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -1206,17 +1217,14 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 1,
     b: 2,
     c: 100,
     d: 200,
   };
 
-  const expression = expressionFactory.create(
-    expressionContext,
-    'a > b ? c : d',
-  );
+  const expression = expressionFactory.create(model, 'a > b ? c : d');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1231,28 +1239,28 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.d = 300;
+      model.d = 300;
     });
 
     console.log(`Value of 'a > b ? c : d' after changing 'a' to '3':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 3;
+      model.a = 3;
     });
 
     console.log(`Value of 'a > b ? c : d' after changing c to '2000':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.c = 2000;
+      model.c = 2000;
     });
 
     console.log(`Value of 'a > b ? c : d' after changing 'b' to '4':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 4;
+      model.b = 4;
     });
 
     console.log(`Final value of 'a > b ? c : d':`);
@@ -1262,6 +1270,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Division expression
@@ -1269,7 +1278,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -1281,12 +1290,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 20,
     b: 2,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a / b');
+  const expression = expressionFactory.create(model, 'a / b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1301,14 +1310,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 10;
+      model.a = 10;
     });
 
     console.log(`Value of 'a /b b' after changing 'b' to '2':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 2;
+      model.b = 2;
     });
 
     console.log(`Final value of 'a / b':`);
@@ -1318,6 +1327,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Equality expression
@@ -1325,7 +1335,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -1337,12 +1347,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 3,
     b: 2,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a == b');
+  const expression = expressionFactory.create(model, 'a == b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1357,14 +1367,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 2;
+      model.a = 2;
     });
 
     console.log(`Value of 'a == b' after changing 'b' to '4':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 4;
+      model.b = 4;
     });
 
     console.log(`Final value of 'a == b':`);
@@ -1374,6 +1384,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Exponentiation expression
@@ -1381,7 +1392,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -1393,12 +1404,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 2,
     b: 3,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a ** b');
+  const expression = expressionFactory.create(model, 'a ** b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1413,14 +1424,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 4;
+      model.a = 4;
     });
 
     console.log(`Value of 'a ** b' after changing 'b' to '5':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 5;
+      model.b = 5;
     });
 
     console.log(`Final value of 'a ** b':`);
@@ -1430,6 +1441,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Function expression
@@ -1437,7 +1449,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -1449,7 +1461,7 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 2,
     b: 3,
     multiply(a: number, b: number) {
@@ -1457,10 +1469,7 @@ export const run = (async () => {
     },
   };
 
-  const expression = expressionFactory.create(
-    expressionContext,
-    'multiply(a, b)',
-  );
+  const expression = expressionFactory.create(model, 'multiply(a, b)');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1475,14 +1484,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 4;
+      model.a = 4;
     });
 
     console.log(`Value of 'mutiply(a, b)' after changing 'b' to '5':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 5;
+      model.b = 5;
     });
 
     console.log(`Final value of 'multiply(a, b)':`);
@@ -1492,6 +1501,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Greater than expression
@@ -1499,7 +1509,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -1511,12 +1521,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 3,
     b: 2,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a > b');
+  const expression = expressionFactory.create(model, 'a > b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1531,14 +1541,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 2;
+      model.a = 2;
     });
 
     console.log(`Value of 'a > b' after changing 'b' to '1':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 1;
+      model.b = 1;
     });
 
     console.log(`Final value of 'a > b':`);
@@ -1548,6 +1558,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Greater than or equal expression
@@ -1555,7 +1566,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -1567,12 +1578,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 3,
     b: 2,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a >= b');
+  const expression = expressionFactory.create(model, 'a >= b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1587,14 +1598,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 1;
+      model.a = 1;
     });
 
     console.log(`Value of 'a >= b' after changing 'b' to '0':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 0;
+      model.b = 0;
     });
 
     console.log(`Final value of 'a >= b':`);
@@ -1604,6 +1615,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### In expression
@@ -1616,7 +1628,7 @@ import {
   WaitForEvent,
 } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -1628,17 +1640,14 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     propertyName: 'hello',
     b: {
       hello: 'hi',
     },
   };
 
-  const expression = expressionFactory.create(
-    expressionContext,
-    'propertyName in b',
-  );
+  const expression = expressionFactory.create(model, 'propertyName in b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1653,14 +1662,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.propertyName = 'x';
+      model.propertyName = 'x';
     });
 
     console.log(`Value of 'propertyName in b' after changing 'b' to '{x: 1}':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = Type.cast({ x: 1 });
+      model.b = Type.cast({ x: 1 });
     });
 
     console.log(`Final value of 'propertyName in b':`);
@@ -1670,6 +1679,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Inequality expression
@@ -1677,7 +1687,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -1689,12 +1699,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 1,
     b: 2,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a != b');
+  const expression = expressionFactory.create(model, 'a != b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1709,14 +1719,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 2;
+      model.a = 2;
     });
 
     console.log(`Value of 'a != b' after changing 'b' to '2':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 2;
+      model.b = 2;
     });
 
     console.log(`Final value of 'a != b':`);
@@ -1726,6 +1736,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Instanceof expression
@@ -1738,7 +1749,7 @@ import {
   WaitForEvent,
 } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -1750,15 +1761,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     type: Date,
     a: new Date(),
   };
 
-  const expression = expressionFactory.create(
-    expressionContext,
-    'a instanceof type',
-  );
+  const expression = expressionFactory.create(model, 'a instanceof type');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1775,7 +1783,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = Type.cast(new Number(2));
+      model.a = Type.cast(new Number(2));
     });
 
     console.log(
@@ -1784,7 +1792,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.type = Type.cast(Number);
+      model.type = Type.cast(Number);
     });
 
     console.log(`Final value of 'a instanceof type':`);
@@ -1794,6 +1802,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Less than expression
@@ -1801,7 +1810,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -1813,12 +1822,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 2,
     b: 3,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a < b');
+  const expression = expressionFactory.create(model, 'a < b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1833,14 +1842,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 3;
+      model.a = 3;
     });
 
     console.log(`Value of 'a < b' after changing 'b' to '4':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 4;
+      model.b = 4;
     });
 
     console.log(`Final value of 'a < b':`);
@@ -1850,6 +1859,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Less than or equal expression
@@ -1857,7 +1867,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -1869,12 +1879,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 2,
     b: 3,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a <= b');
+  const expression = expressionFactory.create(model, 'a <= b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1889,14 +1899,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 4;
+      model.a = 4;
     });
 
     console.log(`Value of 'a < b' after changing 'b' to '4':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 4;
+      model.b = 4;
     });
 
     console.log(`Final value of 'a <= b':`);
@@ -1906,6 +1916,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Logical and expression
@@ -1913,7 +1924,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -1925,12 +1936,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: false,
     b: true,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a && b');
+  const expression = expressionFactory.create(model, 'a && b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1945,14 +1956,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = true;
+      model.a = true;
     });
 
     console.log(`Value of 'a && b' after changing 'b' to 'false':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = false;
+      model.b = false;
     });
 
     console.log(`Final value of 'a && b':`);
@@ -1962,6 +1973,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Logical not expression
@@ -1969,7 +1981,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -1981,11 +1993,11 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: false,
   };
 
-  const expression = expressionFactory.create(expressionContext, '!a');
+  const expression = expressionFactory.create(model, '!a');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2000,7 +2012,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = true;
+      model.a = true;
     });
 
     console.log(`Final value of '!a':`);
@@ -2010,6 +2022,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Logical or expression
@@ -2017,7 +2030,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -2029,12 +2042,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: true,
     b: false,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a || b');
+  const expression = expressionFactory.create(model, 'a || b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2049,14 +2062,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = false;
+      model.a = false;
     });
 
     console.log(`Value of 'a || b' after changing 'b' to 'true':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = true;
+      model.b = true;
     });
 
     console.log(`Final value of 'a || b':`);
@@ -2066,12 +2079,12 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Member expression
 
 - Member expression
-
   ```ts
   import {
     emptyFunction,
@@ -2080,7 +2093,7 @@ export const run = (async () => {
     WaitForEvent,
   } from '@rs-x/core';
   import {
-    IExpressionFactory,
+    type IExpressionFactory,
     RsXExpressionParserInjectionTokens,
     RsXExpressionParserModule,
   } from '@rs-x/expression-parser';
@@ -2092,7 +2105,7 @@ export const run = (async () => {
   );
 
   export const run = (async () => {
-    const expressionContext = {
+    const model = {
       a: {
         b: {
           c: 10,
@@ -2100,7 +2113,7 @@ export const run = (async () => {
       },
     };
 
-    const expression = expressionFactory.create(expressionContext, 'a.b.c');
+    const expression = expressionFactory.create(model, 'a.b.c');
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -2115,21 +2128,21 @@ export const run = (async () => {
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a = { b: { c: 20 } };
+        model.a = { b: { c: 20 } };
       });
 
       console.log(`Value of 'a.b.c' after changing 'b' to '{c: 30}':`);
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a.b = { c: 30 };
+        model.a.b = { c: 30 };
       });
 
       console.log(`Value of 'a.b.c' after changing c to '40':`);
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a.b.c = 40;
+        model.a.b.c = 40;
       });
 
       console.log(`Final value of 'a.b.c':`);
@@ -2139,10 +2152,9 @@ export const run = (async () => {
       expression.dispose();
     }
   })();
+
   ```
-
 - Member expression with array
-
   ```ts
   import {
     emptyFunction,
@@ -2151,7 +2163,7 @@ export const run = (async () => {
     WaitForEvent,
   } from '@rs-x/core';
   import {
-    IExpressionFactory,
+    type IExpressionFactory,
     RsXExpressionParserInjectionTokens,
     RsXExpressionParserModule,
   } from '@rs-x/expression-parser';
@@ -2163,7 +2175,7 @@ export const run = (async () => {
   );
 
   export const run = (async () => {
-    const expressionContext = {
+    const model = {
       a: {
         b: [
           {
@@ -2181,10 +2193,7 @@ export const run = (async () => {
       x: { y: 1 },
     };
 
-    const expression = expressionFactory.create(
-      expressionContext,
-      'a.b[1].c.d',
-    );
+    const expression = expressionFactory.create(model, 'a.b[1].c.d');
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -2201,7 +2210,7 @@ export const run = (async () => {
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a = {
+        model.a = {
           b: [
             {
               c: {
@@ -2223,7 +2232,7 @@ export const run = (async () => {
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a.b[1] = {
+        model.a.b[1] = {
           c: {
             d: 120,
           },
@@ -2234,14 +2243,14 @@ export const run = (async () => {
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a.b[1].c = { d: 220 };
+        model.a.b[1].c = { d: 220 };
       });
 
       console.log(`Value of 'a.b[1].c.d' after changing b[1].c.d to '330':`);
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a.b[1].c.d = 330;
+        model.a.b[1].c.d = 330;
       });
 
       console.log(`Final value of 'a.b[1].c.d':`);
@@ -2251,19 +2260,19 @@ export const run = (async () => {
       expression.dispose();
     }
   })();
+
   ```
-
 - Member expression with map
-
   ```ts
   import {
     emptyFunction,
     InjectionContainer,
     printValue,
+    Type,
     WaitForEvent,
   } from '@rs-x/core';
   import {
-    IExpressionFactory,
+    type IExpressionFactory,
     RsXExpressionParserInjectionTokens,
     RsXExpressionParserModule,
   } from '@rs-x/expression-parser';
@@ -2275,7 +2284,7 @@ export const run = (async () => {
   );
 
   export const run = (async () => {
-    const expressionContext = {
+    const model: { a: { b: Map<string, { c: { d: number } }> } } = {
       a: {
         b: new Map([
           ['a', { c: { d: 1 } }],
@@ -2284,10 +2293,7 @@ export const run = (async () => {
       },
     };
 
-    const expression = expressionFactory.create(
-      expressionContext,
-      `a.b['b'].c.d`,
-    );
+    const expression = expressionFactory.create(model, `a.b['b'].c.d`);
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -2304,7 +2310,7 @@ export const run = (async () => {
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a = {
+        model.a = {
           b: new Map([
             ['a', { c: { d: 11 } }],
             ['b', { c: { d: 21 } }],
@@ -2318,7 +2324,7 @@ export const run = (async () => {
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a.b.set('b', { c: { d: 120 } });
+        model.a.b.set('b', { c: { d: 120 } });
       });
 
       console.log(
@@ -2327,14 +2333,14 @@ export const run = (async () => {
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a.b.get('b').c = { d: 220 };
+        (Type.toObject(model.a.b.get('b')) ?? {}).c = { d: 220 };
       });
 
       console.log(`Value of 'a.b['b'].c.d' after changing b[1].c.d to '330':`);
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a.b.get('b').c.d = 330;
+        (Type.toObject(model.a.b.get('b')?.c) ?? {}).d = 330;
       });
 
       console.log(`Final value of 'a.b['b'].c.d':`);
@@ -2344,10 +2350,9 @@ export const run = (async () => {
       expression.dispose();
     }
   })();
+
   ```
-
 - Member expression with method
-
   ```ts
   import {
     emptyFunction,
@@ -2356,7 +2361,7 @@ export const run = (async () => {
     WaitForEvent,
   } from '@rs-x/core';
   import {
-    IExpressionFactory,
+    type IExpressionFactory,
     RsXExpressionParserInjectionTokens,
     RsXExpressionParserModule,
   } from '@rs-x/expression-parser';
@@ -2368,7 +2373,7 @@ export const run = (async () => {
   );
 
   export const run = (async () => {
-    const expressionContext = {
+    const model = {
       message: 'Hello',
       subject: 'Message',
       a: {
@@ -2383,7 +2388,7 @@ export const run = (async () => {
     };
 
     const expression = expressionFactory.create(
-      expressionContext,
+      model,
       'a.b.mail(message, subject).messageWithSubject',
     );
 
@@ -2404,7 +2409,7 @@ export const run = (async () => {
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.message = 'hi';
+        model.message = 'hi';
       });
 
       console.log(
@@ -2413,7 +2418,7 @@ export const run = (async () => {
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.subject = 'urgent message';
+        model.subject = 'urgent message';
       });
 
       console.log(
@@ -2425,11 +2430,12 @@ export const run = (async () => {
       expression.dispose();
     }
   })();
+
   ```
-
 - Member expression with observable
-
   ```ts
+  import { BehaviorSubject } from 'rxjs';
+
   import {
     emptyFunction,
     InjectionContainer,
@@ -2437,11 +2443,10 @@ export const run = (async () => {
     WaitForEvent,
   } from '@rs-x/core';
   import {
-    IExpressionFactory,
+    type IExpressionFactory,
     RsXExpressionParserInjectionTokens,
     RsXExpressionParserModule,
   } from '@rs-x/expression-parser';
-  import { BehaviorSubject } from 'rxjs';
 
   // Load the expression parser module into the injection container
   InjectionContainer.load(RsXExpressionParserModule);
@@ -2452,14 +2457,14 @@ export const run = (async () => {
   export const run = (async () => {
     const nestedObservable = new BehaviorSubject({ d: 200 });
     const rootObservable = new BehaviorSubject({ c: nestedObservable });
-    const expressionContext = {
+    const model = {
       a: {
         b: new BehaviorSubject({
           c: new BehaviorSubject({ d: 20 }),
         }),
       },
     };
-    const expression = expressionFactory.create(expressionContext, `a.b.c.d`);
+    const expression = expressionFactory.create(model, `a.b.c.d`);
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -2476,7 +2481,7 @@ export const run = (async () => {
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a = { b: rootObservable };
+        model.a = { b: rootObservable };
       });
 
       console.log(
@@ -2506,10 +2511,9 @@ export const run = (async () => {
       expression.dispose();
     }
   })();
+
   ```
-
 - Member expression with promise
-
   ```ts
   import {
     emptyFunction,
@@ -2518,7 +2522,7 @@ export const run = (async () => {
     WaitForEvent,
   } from '@rs-x/core';
   import {
-    IExpressionFactory,
+    type IExpressionFactory,
     RsXExpressionParserInjectionTokens,
     RsXExpressionParserModule,
   } from '@rs-x/expression-parser';
@@ -2530,7 +2534,7 @@ export const run = (async () => {
   );
 
   export const run = (async () => {
-    const expressionContext = {
+    const model = {
       a: {
         b: Promise.resolve({
           c: Promise.resolve({
@@ -2540,7 +2544,7 @@ export const run = (async () => {
       },
     };
 
-    const expression = expressionFactory.create(expressionContext, `a.b.c.d`);
+    const expression = expressionFactory.create(model, `a.b.c.d`);
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -2557,7 +2561,7 @@ export const run = (async () => {
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a = {
+        model.a = {
           b: Promise.resolve({ c: Promise.resolve({ d: 200 }) }),
         };
       });
@@ -2569,6 +2573,7 @@ export const run = (async () => {
       expression.dispose();
     }
   })();
+
   ```
 
 ### Multiplication expression
@@ -2576,7 +2581,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -2588,12 +2593,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 1,
     b: 3,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a * b');
+  const expression = expressionFactory.create(model, 'a * b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2608,14 +2613,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 6;
+      model.a = 6;
     });
 
     console.log(`Value of 'a * b' after changing 'b' to '4':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 4;
+      model.b = 4;
     });
 
     console.log(`Final value of 'a * b':`);
@@ -2625,6 +2630,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### New expression
@@ -2634,10 +2640,11 @@ import {
   emptyFunction,
   InjectionContainer,
   printValue,
+  Type,
   WaitForEvent,
 } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -2659,18 +2666,15 @@ export const run = (async () => {
     }
   }
 
-  const expressionContext = {
+  const model = {
     type: Value,
     value: 10,
   };
 
-  const expression = expressionFactory.create(
-    expressionContext,
-    'new type(value)',
-  );
+  const expression = expressionFactory.create(model, 'new type(value)');
 
   function print(instance: unknown): void {
-    console.log(instance.constructor.name);
+    console.log(Type.getConstructorName(instance));
     printValue(instance);
   }
 
@@ -2687,14 +2691,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.value = 20;
+      model.value = 20;
     });
 
     console.log(`Value of 'new type(value)' after changing 'type' to 'Add10':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.type = Add10;
+      model.type = Add10;
     });
 
     console.log(`Final value of 'new type(value)':`);
@@ -2704,6 +2708,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Nullish coalescing expression
@@ -2711,7 +2716,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -2723,12 +2728,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model: { a: null | number; b: number } = {
     a: null,
     b: 10,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a ?? b');
+  const expression = expressionFactory.create(model, 'a ?? b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2743,21 +2748,21 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 6;
+      model.b = 6;
     });
 
     console.log(`Value of 'a ?? b' after changing 'a' to '10':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 10;
+      model.a = 10;
     });
 
     console.log(`Value of 'a ?? b' after changing 'a' to 'null':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = null;
+      model.a = null;
     });
 
     console.log(`Final value of 'a ?? b'':`);
@@ -2767,6 +2772,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Object expression
@@ -2779,7 +2785,7 @@ import {
   WaitForEvent,
 } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -2791,15 +2797,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     x: 10,
     y: 20,
   };
 
-  const expression = expressionFactory.create(
-    expressionContext,
-    '({ a: x, b: y })',
-  );
+  const expression = expressionFactory.create(model, '({ a: x, b: y })');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2814,14 +2817,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.x = 100;
+      model.x = 100;
     });
 
     console.log(`Value of '({ a: x, b: y })' after changing 'y' to '200':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.y = 200;
+      model.y = 200;
     });
 
     console.log(`Final value of '({ a: x, b: y })':`);
@@ -2831,6 +2834,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Remainder expression
@@ -2838,7 +2842,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -2850,12 +2854,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 5,
     b: 2,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a % b');
+  const expression = expressionFactory.create(model, 'a % b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2870,14 +2874,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 6;
+      model.a = 6;
     });
 
     console.log(`Value of 'a % b after changing 'b' to '4':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 4;
+      model.b = 4;
     });
 
     console.log(`Final value of 'a % b':`);
@@ -2887,6 +2891,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Sequence expression
@@ -2894,7 +2899,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -2906,7 +2911,7 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     b: 2,
     value: 100,
     setB(v: number) {
@@ -2914,10 +2919,7 @@ export const run = (async () => {
     },
   };
 
-  const expression = expressionFactory.create(
-    expressionContext,
-    '(setB(value), b)',
-  );
+  const expression = expressionFactory.create(model, '(setB(value), b)');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2934,14 +2936,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.value = 200;
+      model.value = 200;
     });
 
     console.log(`Value of '(setB(value)', b)' after changing 'b' to '300':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 300;
+      model.b = 300;
     });
 
     console.log(`Final value of '(setB(value), b)':`);
@@ -2951,6 +2953,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Strict equality expression
@@ -2958,7 +2961,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -2970,12 +2973,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 3,
     b: 2 as string | number,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a === b');
+  const expression = expressionFactory.create(model, 'a === b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2990,14 +2993,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 2;
+      model.a = 2;
     });
 
     console.log(`Value of 'a === b' after changing 'b' to '"2"':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = '2';
+      model.b = '2';
     });
 
     console.log(`Final value of 'a === b':`);
@@ -3007,6 +3010,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Strict inequality expression
@@ -3014,7 +3018,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -3026,12 +3030,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 2 as string | number,
     b: 2 as string | number,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a !== b');
+  const expression = expressionFactory.create(model, 'a !== b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -3046,14 +3050,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = '2';
+      model.a = '2';
     });
 
     console.log(`Value of 'a !== b' after changing 'b' to '"2"':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = '2';
+      model.b = '2';
     });
 
     console.log(`Final value of 'a !== b':`);
@@ -3063,6 +3067,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Substraction expression
@@ -3070,7 +3075,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -3082,12 +3087,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 1,
     b: 3,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a - b');
+  const expression = expressionFactory.create(model, 'a - b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -3102,14 +3107,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 6;
+      model.a = 6;
     });
 
     console.log(`Value of 'a - b' after changing 'b' to '4':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 4;
+      model.b = 4;
     });
 
     console.log(`Final value of 'a - b':`);
@@ -3119,6 +3124,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Template string expression
@@ -3126,7 +3132,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -3138,14 +3144,11 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     message: 'hi',
   };
 
-  const expression = expressionFactory.create(
-    expressionContext,
-    '`Say ${message}`',
-  );
+  const expression = expressionFactory.create(model, '`Say ${message}`');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -3162,7 +3165,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.message = 'hello';
+      model.message = 'hello';
     });
 
     console.log("Final value of '`Say ${message}`':");
@@ -3172,6 +3175,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Typeof expression
@@ -3179,7 +3183,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -3191,15 +3195,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     index: 0,
     a: ['1', 1],
   };
 
-  const expression = expressionFactory.create(
-    expressionContext,
-    'typeof a[index]',
-  );
+  const expression = expressionFactory.create(model, 'typeof a[index]');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -3214,7 +3215,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.index = 1;
+      model.index = 1;
     });
 
     console.log(`Final value of 'typeof a[index]':`);
@@ -3224,6 +3225,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Unary negation expression
@@ -3231,7 +3233,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -3243,11 +3245,11 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     value: 1,
   };
 
-  const expression = expressionFactory.create(expressionContext, '-value');
+  const expression = expressionFactory.create(model, '-value');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -3262,7 +3264,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.value = -5;
+      model.value = -5;
     });
 
     console.log(`Final value of '-value':`);
@@ -3272,6 +3274,7 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```
 
 ### Unary plus expression
@@ -3279,7 +3282,7 @@ export const run = (async () => {
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import {
-  IExpressionFactory,
+  type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -3291,11 +3294,11 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     value: '2',
   };
 
-  const expression = expressionFactory.create(expressionContext, '+value');
+  const expression = expressionFactory.create(model, '+value');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -3310,7 +3313,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.value = '6';
+      model.value = '6';
     });
 
     console.log(`Final value of '+value':`);
@@ -3320,4 +3323,5 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
+
 ```

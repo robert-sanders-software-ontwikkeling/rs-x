@@ -183,15 +183,15 @@ export class TextDocumentIndexAccessor implements IIndexValueAccessor<
 > {
   public readonly priority!: 200;
 
-  public hasValue(context: TextDocument, index: ITextDocumentIndex): boolean {
-    return context.getLine(index) !== undefined;
+  public hasValue(
+    textDocument: TextDocument,
+    index: ITextDocumentIndex,
+  ): boolean {
+    return textDocument.getLine(index) !== undefined;
   }
 
   // We don’t have any properties that can be iterated through.
-  public getIndexes(
-    _context: TextDocument,
-    _index?: ITextDocumentIndex,
-  ): IterableIterator<ITextDocumentIndex> {
+  public getIndexes(): IterableIterator<ITextDocumentIndex> {
     return [].values();
   }
 
@@ -199,29 +199,29 @@ export class TextDocumentIndexAccessor implements IIndexValueAccessor<
   // For example, for a Promise accessor getValue returns the promise
   // and getResolvedValue returns the resolved promise value
   public getResolvedValue(
-    context: TextDocument,
+    textDocument: TextDocument,
     index: ITextDocumentIndex,
   ): string | undefined {
-    return this.getValue(context, index);
+    return this.getValue(textDocument, index);
   }
 
   public getValue(
-    context: TextDocument,
+    textDocument: TextDocument,
     index: ITextDocumentIndex,
   ): string | undefined {
-    return context.getLine(index);
+    return textDocument.getLine(index);
   }
 
   public setValue(
-    context: TextDocument,
+    textDocument: TextDocument,
     index: ITextDocumentIndex,
     value: string,
   ): void {
-    context.setLine(index, value);
+    textDocument.setLine(index, value);
   }
 
-  public applies(context: unknown, _index: ITextDocumentIndex): boolean {
-    return context instanceof TextDocument;
+  public applies(textDocument: unknown, _index: ITextDocumentIndex): boolean {
+    return textDocument instanceof TextDocument;
   }
 }
 
@@ -493,10 +493,10 @@ InjectionContainer.load(MyModule);
 
 function testMonitorTextDocument(
   stateManager: IStateManager,
-  stateContext: { myBook: TextDocument },
+  model: { myBook: TextDocument },
 ): void {
   const bookSubscription = stateManager.changed.subscribe(() => {
-    console.log(stateContext.myBook.toString());
+    console.log(model.myBook.toString());
   });
 
   // We observe the whole book
@@ -505,24 +505,24 @@ function testMonitorTextDocument(
     console.log('\n***********************************************');
     console.log('Start watching the whole book\n');
     console.log('My initial book:\n');
-    stateManager.watchState(stateContext, 'myBook', watchIndexRecursiveRule);
+    stateManager.watchState(model, 'myBook', watchIndexRecursiveRule);
 
     console.log('\nUpdate second line on the first page:\n');
     console.log('My book after change:\n');
-    stateContext.myBook.setLine(
+    model.myBook.setLine(
       { pageIndex: 0, lineIndex: 1 },
       'In a far far away land',
     );
   } finally {
     // Stop monitoring the whole book
-    stateManager.releaseState(stateContext, 'myBook', watchIndexRecursiveRule);
+    stateManager.releaseState(model, 'myBook', watchIndexRecursiveRule);
     bookSubscription.unsubscribe();
   }
 }
 
 function testMonitoreSpecificLineInDocument(
   stateManager: IStateManager,
-  stateContext: { myBook: TextDocument },
+  model: { myBook: TextDocument },
 ): void {
   const line3OnPage1Index = { pageIndex: 0, lineIndex: 2 };
   const lineSubscription = stateManager.changed.subscribe(
@@ -532,7 +532,7 @@ function testMonitoreSpecificLineInDocument(
         `Line ${documentIndex.lineIndex + 1} on page ${documentIndex.pageIndex + 1} has changed to '${change.newValue}'`,
       );
       console.log('My book after change:\n');
-      console.log(stateContext.myBook.toString());
+      console.log(model.myBook.toString());
     },
   );
 
@@ -545,12 +545,12 @@ function testMonitoreSpecificLineInDocument(
 
     console.log('\n***********************************************');
     console.log('Start watching line 3 on page 1\n');
-    stateManager.watchState(stateContext.myBook, line3OnPage1Index);
+    stateManager.watchState(model.myBook, line3OnPage1Index);
 
     const proxRegistry: IProxyRegistry = InjectionContainer.get(
       RsXStateManagerInjectionTokens.IProxyRegistry,
     );
-    const bookProxy: TextDocument = proxRegistry.getProxy(stateContext.myBook);
+    const bookProxy: TextDocument = proxRegistry.getProxy(model.myBook);
 
     bookProxy.setLine(line3OnPage1Index, 'a prince was born');
 
@@ -559,7 +559,7 @@ function testMonitoreSpecificLineInDocument(
     bookProxy.setLine({ pageIndex: 0, lineIndex: 0 }, 'a troll was born');
   } finally {
     // Stop monitoring line 3 on page 1.
-    stateManager.releaseState(stateContext.myBook, line3OnPage1Index);
+    stateManager.releaseState(model.myBook, line3OnPage1Index);
     lineSubscription.unsubscribe();
   }
 }
@@ -568,12 +568,12 @@ export const run = (() => {
   const stateManager: IStateManager = InjectionContainer.get(
     RsXStateManagerInjectionTokens.IStateManager,
   );
-  const stateContext = {
+  const model = {
     myBook: new TextDocument([
       ['Once upon a time', 'bla bla'],
       ['bla bla', 'They lived happily ever after.', 'The end'],
     ]),
   };
-  testMonitorTextDocument(stateManager, stateContext);
-  testMonitoreSpecificLineInDocument(stateManager, stateContext);
+  testMonitorTextDocument(stateManager, model);
+  testMonitoreSpecificLineInDocument(stateManager, model);
 })();

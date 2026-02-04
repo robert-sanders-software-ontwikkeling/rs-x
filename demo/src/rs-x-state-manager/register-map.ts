@@ -15,7 +15,7 @@ const stateManager: IStateManager = InjectionContainer.get(
 );
 
 export const run = (() => {
-  const stateContext = {
+  const model = {
     map: new Map([
       ['a', [1, 2]],
       ['b', [3, 4]],
@@ -31,16 +31,16 @@ export const run = (() => {
   try {
     // This will emit a change event with the initial (current) value.
     console.log('Initial value:');
-    stateManager.watchState(stateContext, 'map', watchIndexRecursiveRule);
+    stateManager.watchState(model, 'map', watchIndexRecursiveRule);
 
     console.log('Changed value:');
-    stateContext.map.get('b')?.push(5);
+    model.map.get('b')?.push(5);
 
     console.log('Latest value:');
-    printValue(stateManager.getState(stateContext, 'map'));
+    printValue(stateManager.getState(model, 'map'));
   } finally {
     changeSubscription.unsubscribe();
     // Always release the state when it is no longer needed.
-    stateManager.releaseState(stateContext, 'array', watchIndexRecursiveRule);
+    stateManager.releaseState(model, 'array', watchIndexRecursiveRule);
   }
 })();

@@ -14,7 +14,7 @@ export const run = (() => {
     RsXStateManagerInjectionTokens.IStateManager,
   );
 
-  const stateContext = {
+  const model = {
     x: { y: 10 },
   };
 
@@ -28,23 +28,23 @@ export const run = (() => {
 
   try {
     // This will emit the new value { y: 10 }
-    stateManager.watchState(stateContext, 'x');
+    stateManager.watchState(model, 'x');
 
     console.log('Changed value:');
     // This will emit the new value { y: 10 }
-    stateContext.x = {
+    model.x = {
       y: 20,
     };
 
     console.log(`Latest value:`);
-    printValue(stateManager.getState(stateContext, 'x'));
+    printValue(stateManager.getState(model, 'x'));
 
     // This will emit no change because the state is not recursive.
-    console.log('\nstateContext.x.y = 30 will not emit any change:\n---\n');
-    stateContext.x.y = 30;
+    console.log('\nmodel.x.y = 30 will not emit any change:\n---\n');
+    model.x.y = 30;
   } finally {
     changedSubsription.unsubscribe();
     // Always release the state when it is no longer needed.
-    stateManager.releaseState(stateContext, 'x');
+    stateManager.releaseState(model, 'x');
   }
 })();

@@ -28,15 +28,12 @@ export const run = (async () => {
     }
   }
 
-  const expressionContext = {
+  const model = {
     type: Value,
     value: 10,
   };
 
-  const expression = expressionFactory.create(
-    expressionContext,
-    'new type(value)',
-  );
+  const expression = expressionFactory.create(model, 'new type(value)');
 
   function print(instance: unknown): void {
     console.log(Type.getConstructorName(instance));
@@ -56,14 +53,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.value = 20;
+      model.value = 20;
     });
 
     console.log(`Value of 'new type(value)' after changing 'type' to 'Add10':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.type = Add10;
+      model.type = Add10;
     });
 
     console.log(`Final value of 'new type(value)':`);

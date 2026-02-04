@@ -21,14 +21,14 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 export const run = (async () => {
   const nestedObservable = new BehaviorSubject({ d: 200 });
   const rootObservable = new BehaviorSubject({ c: nestedObservable });
-  const expressionContext = {
+  const model = {
     a: {
       b: new BehaviorSubject({
         c: new BehaviorSubject({ d: 20 }),
       }),
     },
   };
-  const expression = expressionFactory.create(expressionContext, `a.b.c.d`);
+  const expression = expressionFactory.create(model, `a.b.c.d`);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -45,7 +45,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = { b: rootObservable };
+      model.a = { b: rootObservable };
     });
 
     console.log(

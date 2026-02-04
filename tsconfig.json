@@ -2,7 +2,7 @@
   "compilerOptions": {
     "strict": true,
     "noImplicitReturns": true,
-    "verbatimModuleSyntax": true,
+    "verbatimModuleSyntax": false,
     "preserveValueImports": false,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,

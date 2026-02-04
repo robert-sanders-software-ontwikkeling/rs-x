@@ -2,6 +2,7 @@ import { APP_INITIALIZER, InjectionToken, type Provider } from '@angular/core';
 
 import { InjectionContainer } from '@rs-x/core';
 import {
+  type IExpressionChangeTransactionManager,
   type IExpressionFactory,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
@@ -10,6 +11,11 @@ import {
 export const IExpressionFactoryToken = new InjectionToken<IExpressionFactory>(
   'IExpressionFactoryProvider',
 );
+
+export const IExpressionChangeTransactionManagerToken =
+  new InjectionToken<IExpressionChangeTransactionManager>(
+    'IExpressionChangeTransactionManager',
+  );
 
 function initializeRsx(): () => Promise<void> {
   return () => {
@@ -36,6 +42,13 @@ export function providexRsx(): Provider[] {
       useFactory: () =>
         InjectionContainer.get(
           RsXExpressionParserInjectionTokens.IExpressionFactory,
+        ),
+    },
+    {
+      provide: IExpressionChangeTransactionManagerToken,
+      useFactory: () =>
+        InjectionContainer.get(
+          RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager,
         ),
     },
   ];
