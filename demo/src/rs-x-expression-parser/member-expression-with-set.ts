@@ -17,13 +17,13 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: {
       b: new Set([1, 2]),
     },
   };
 
-  const expression = expressionFactory.create(expressionContext, `a.b`);
+  const expression = expressionFactory.create(model, `a.b`);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -40,7 +40,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = {
+      model.a = {
         b: new Set([10, 20, 30]),
       };
     });
@@ -49,21 +49,21 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a.b = new Set([100, 200]);
+      model.a.b = new Set([100, 200]);
     });
 
     console.log(`Value of 'a.b' after adding 300 to b':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a.b.add(300);
+      model.a.b.add(300);
     });
 
     console.log(`Value of 'a.b' after deleting 200 from b':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a.b.delete(200);
+      model.a.b.delete(200);
     });
 
     console.log(`Final value of 'a.b':`);

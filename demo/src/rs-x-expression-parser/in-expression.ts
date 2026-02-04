@@ -17,17 +17,14 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     propertyName: 'hello',
     b: {
       hello: 'hi',
     },
   };
 
-  const expression = expressionFactory.create(
-    expressionContext,
-    'propertyName in b',
-  );
+  const expression = expressionFactory.create(model, 'propertyName in b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -42,14 +39,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.propertyName = 'x';
+      model.propertyName = 'x';
     });
 
     console.log(`Value of 'propertyName in b' after changing 'b' to '{x: 1}':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = Type.cast({ x: 1 });
+      model.b = Type.cast({ x: 1 });
     });
 
     console.log(`Final value of 'propertyName in b':`);

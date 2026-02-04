@@ -16,7 +16,7 @@ function watchDate(stateManager: IStateManager) {
   console.log('* Watching date');
   console.log('******************************************\n');
 
-  const stateContext = {
+  const model = {
     date: utCDate(2021, 2, 5),
   };
   const changeSubscription = stateManager.changed.subscribe(
@@ -28,22 +28,20 @@ function watchDate(stateManager: IStateManager) {
   );
   try {
     console.log('Initial value:');
-    stateManager.watchState(stateContext, 'date', watchIndexRecursiveRule);
+    stateManager.watchState(model, 'date', watchIndexRecursiveRule);
 
     console.log('Changed value:');
-    stateContext.date.setFullYear(2023);
+    model.date.setFullYear(2023);
 
     console.log('Set value:');
-    stateContext.date = new Date(2024, 5, 6);
+    model.date = new Date(2024, 5, 6);
 
     console.log('Latest value:');
-    console.log(
-      stateManager.getState<Date>(stateContext, 'date').toUTCString(),
-    );
+    console.log(stateManager.getState<Date>(model, 'date').toUTCString());
   } finally {
     changeSubscription.unsubscribe();
     // Always release the state when it is no longer needed.
-    stateManager.releaseState(stateContext, 'date', watchIndexRecursiveRule);
+    stateManager.releaseState(model, 'date', watchIndexRecursiveRule);
   }
 }
 

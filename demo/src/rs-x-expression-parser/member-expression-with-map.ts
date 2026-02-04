@@ -18,7 +18,7 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext: { a: { b: Map<string, { c: { d: number } }> } } = {
+  const model: { a: { b: Map<string, { c: { d: number } }> } } = {
     a: {
       b: new Map([
         ['a', { c: { d: 1 } }],
@@ -27,10 +27,7 @@ export const run = (async () => {
     },
   };
 
-  const expression = expressionFactory.create(
-    expressionContext,
-    `a.b['b'].c.d`,
-  );
+  const expression = expressionFactory.create(model, `a.b['b'].c.d`);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -47,7 +44,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = {
+      model.a = {
         b: new Map([
           ['a', { c: { d: 11 } }],
           ['b', { c: { d: 21 } }],
@@ -61,7 +58,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a.b.set('b', { c: { d: 120 } });
+      model.a.b.set('b', { c: { d: 120 } });
     });
 
     console.log(
@@ -70,14 +67,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      (Type.toObject(expressionContext.a.b.get('b')) ?? {}).c = { d: 220 };
+      (Type.toObject(model.a.b.get('b')) ?? {}).c = { d: 220 };
     });
 
     console.log(`Value of 'a.b['b'].c.d' after changing b[1].c.d to '330':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      (Type.toObject(expressionContext.a.b.get('b')?.c) ?? {}).d = 330;
+      (Type.toObject(model.a.b.get('b')?.c) ?? {}).d = 330;
     });
 
     console.log(`Final value of 'a.b['b'].c.d':`);

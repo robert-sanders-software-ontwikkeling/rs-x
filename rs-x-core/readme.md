@@ -144,7 +144,7 @@ The following example shows how to use deep clone service:
 
 ```ts
 import {
-  IDeepClone,
+  type IDeepClone,
   InjectionContainer,
   printValue,
   RsXCoreInjectionTokens,
@@ -239,7 +239,7 @@ The following example shows how to use equality service
 
 ```ts
 import {
-  IEqualityService,
+  type IEqualityService,
   InjectionContainer,
   printValue,
   RsXCoreInjectionTokens,
@@ -344,7 +344,7 @@ The following example shows how to use the guid factory
 
 ```ts
 import {
-  IGuidFactory,
+  type IGuidFactory,
   InjectionContainer,
   RsXCoreInjectionTokens,
   RsXCoreModule,
@@ -584,52 +584,61 @@ You can customize the index value accessor list by overriding it:
 
     ```ts
     import {
-        ArrayIndexAccessor,
-        ContainerModule,
-        IIndexValueAccessor,
-        InjectionContainer,
-        overrideMultiInjectServices,
-        PropertyValueAccessor,
-        RsXCoreInjectionTokens,
-        RsXCoreModule
+      ArrayIndexAccessor,
+      ContainerModule,
+      type IIndexValueAccessor,
+      InjectionContainer,
+      overrideMultiInjectServices,
+      PropertyValueAccessor,
+      RsXCoreInjectionTokens,
+      RsXCoreModule,
     } from '@rs-x/core';
 
     // Load the core module into the injection container
     InjectionContainer.load(RsXCoreModule);
 
     export const MyModule = new ContainerModule((options) => {
-        overrideMultiInjectServices(options, RsXCoreInjectionTokens.IIndexValueAccessorList,
-            [
-                { target: PropertyValueAccessor, token: RsXCoreInjectionTokens.IPropertyValueAccessor },
-                { target: ArrayIndexAccessor, token: RsXCoreInjectionTokens.IArrayIndexAccessor },
-            ]
-        );
+      overrideMultiInjectServices(
+        options,
+        RsXCoreInjectionTokens.IIndexValueAccessorList,
+        [
+          {
+            target: PropertyValueAccessor,
+            token: RsXCoreInjectionTokens.IPropertyValueAccessor,
+          },
+          {
+            target: ArrayIndexAccessor,
+            token: RsXCoreInjectionTokens.IArrayIndexAccessor,
+          },
+        ],
+      );
     });
 
     InjectionContainer.load(MyModule);
-    const indexValueAccessor: IIndexValueAccessor = InjectionContainer.get(RsXCoreInjectionTokens.IIndexValueAccessor);
+    const indexValueAccessor: IIndexValueAccessor = InjectionContainer.get(
+      RsXCoreInjectionTokens.IIndexValueAccessor,
+    );
 
     export const run = (() => {
-        const object = {
-            a: 10,
-            array: [1, 2],
-            map: new Map([['x', 300]])
-        };
-        const aValue = indexValueAccessor.getValue(object, 'a');
-        console.log(`Value of field 'a': ${aValue} `);
+      const object = {
+        a: 10,
+        array: [1, 2],
+        map: new Map([['x', 300]]),
+      };
+      const aValue = indexValueAccessor.getValue(object, 'a');
+      console.log(`Value of field 'a': ${aValue} `);
 
-        const arrayValue = indexValueAccessor.getValue(object.array, 1);
-        console.log(`Value of 'array[1]': ${arrayValue} `);
+      const arrayValue = indexValueAccessor.getValue(object.array, 1);
+      console.log(`Value of 'array[1]': ${arrayValue} `);
 
-        let errrThrown = false;
-        try {
-             indexValueAccessor.getValue(object.map, 'x')
-        } catch {
-            errrThrown = true
-        }
+      let errrThrown = false;
+      try {
+        indexValueAccessor.getValue(object.map, 'x');
+      } catch {
+        errrThrown = true;
+      }
 
-        console.log(`Value of 'map['x'] will throw error: ${errrThrown}`);
-
+      console.log(`Value of 'map['x'] will throw error: ${errrThrown}`);
     })();
 
     ```
@@ -641,18 +650,19 @@ Besides static singleton services registered via the dependency injection framew
 For example, suppose we have a service that patches a property on an object so it can emit an event whenever the property value changes. In this scenario, we want to ensure that the property is patched **only once**. The example below shows how we can use `SingletonFactory` to implement this:
 
 ```ts
+import { type Observable, Subject } from 'rxjs';
+
 import {
-  IDisposable,
-  IDisposableOwner,
+  type IDisposable,
+  type IDisposableOwner,
   InvalidOperationException,
-  IPropertyChange,
-  IPropertyDescriptor,
+  type IPropertyChange,
+  type IPropertyDescriptor,
   PropertyDescriptorType,
   SingletonFactory,
   Type,
   UnsupportedException,
 } from '@rs-x/core';
-import { Observable, Subject } from 'rxjs';
 
 interface IObserver extends IDisposable {
   changed: Observable<IPropertyChange>;
@@ -661,7 +671,7 @@ interface IObserver extends IDisposable {
 class PropertObserver implements IObserver {
   private _isDisposed = false;
   private _value: unknown;
-  private _propertyDescriptorWithTarget: IPropertyDescriptor;
+  private _propertyDescriptorWithTarget: IPropertyDescriptor | undefined;
   private readonly _changed = new Subject<IPropertyChange>();
 
   constructor(
@@ -688,7 +698,7 @@ class PropertObserver implements IObserver {
       delete this._target[propertyName];
 
       if (
-        this._propertyDescriptorWithTarget.type !==
+        this._propertyDescriptorWithTarget?.type !==
         PropertyDescriptorType.Function
       ) {
         this._target[propertyName] = value;
@@ -732,9 +742,9 @@ class PropertObserver implements IObserver {
     this._changed.next({
       arguments: [],
       ...change,
-      chain: [{ object: this._target, id: this._propertyName }],
+      chain: [{ context: this._target, index: this._propertyName }],
       target: this._target,
-      id,
+      index: id,
     });
   }
 
@@ -762,7 +772,9 @@ class PropertObserver implements IObserver {
     descriptorWithTarget: IPropertyDescriptor,
   ): PropertyDescriptor {
     const newDescriptor = { ...descriptorWithTarget.descriptor };
-    const oldSetter = descriptorWithTarget.descriptor.set;
+    const oldSetter = descriptorWithTarget.descriptor.set as (
+      v: unknown,
+    ) => void;
     newDescriptor.set = (value) => {
       const oldValue = this._target[this._propertyName];
       if (value !== oldValue) {
@@ -1009,11 +1021,12 @@ The following example shows how to use the error log
 
 ```ts
 import {
-  IErrorLog,
+  type IErrorLog,
   InjectionContainer,
   printValue,
   RsXCoreInjectionTokens,
   RsXCoreModule,
+  Type,
 } from '@rs-x/core';
 
 // Load the core module into the injection container
@@ -1035,7 +1048,7 @@ export const run = (() => {
     throw new Error('Oops an error');
   } catch (e) {
     errorLog.add({
-      exception: e,
+      exception: Type.cast(e),
       message: 'Oops',
       context,
     });
@@ -1122,8 +1135,9 @@ Waits for the observable to emit the specified number of events after running th
 ### Example
 
 ```ts
+import { type Observable, Subject } from 'rxjs';
+
 import { printValue, WaitForEvent } from '@rs-x/core';
-import { Observable, Subject } from 'rxjs';
 
 export const run = (async () => {
   class MyEventContext {

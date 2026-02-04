@@ -17,15 +17,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 3,
     array: [1, 2],
   };
 
-  const expression = expressionFactory.create(
-    expressionContext,
-    '[a, ...array, 100]',
-  );
+  const expression = expressionFactory.create(model, '[a, ...array, 100]');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -40,7 +37,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 6;
+      model.a = 6;
     });
 
     console.log(
@@ -49,7 +46,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.array.push(3);
+      model.array.push(3);
     });
 
     console.log(
@@ -58,7 +55,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.array = [100, 200];
+      model.array = [100, 200];
     });
 
     console.log(`Final value of '[a, ...array, 100]':`);

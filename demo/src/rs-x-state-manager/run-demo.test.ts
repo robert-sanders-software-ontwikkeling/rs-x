@@ -27,7 +27,7 @@ describe('Statemanager demos', () => {
                 y: 20
             }
 
-            stateContext.x.y = 30 will not emit any change:
+            model.x.y = 30 will not emit any change:
             ---
         `;
 
@@ -104,7 +104,7 @@ describe('Statemanager demos', () => {
                 }
             }
 
-            Replacing stateContext.b.nested.nested will emit a change event
+            Replacing model.b.nested.nested will emit a change event
             Changed value:
             {
                 a: 10
@@ -342,10 +342,10 @@ describe('Statemanager demos', () => {
             Running demo: demo/src/rs-x-state-manager/register-readonly-property.ts
             Initial value for readonly property 'aPlusB':
             30
-            set 'stateContext.a' to '100' will emit a change event for readonly property 'aPlusB'
+            set 'model.a' to '100' will emit a change event for readonly property 'aPlusB'
             Changed value for readonly property 'aPlusB':
             120
-            set 'stateContext.b' to '200' will emit a change event for readonly property 'aPlusB'
+            set 'model.b' to '200' will emit a change event for readonly property 'aPlusB'
             Changed value for readonly property 'aPlusB':
             300
         `;

@@ -17,7 +17,7 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: {
       b: {
         c: 10,
@@ -25,7 +25,7 @@ export const run = (async () => {
     },
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a.b.c');
+  const expression = expressionFactory.create(model, 'a.b.c');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -40,21 +40,21 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = { b: { c: 20 } };
+      model.a = { b: { c: 20 } };
     });
 
     console.log(`Value of 'a.b.c' after changing 'b' to '{c: 30}':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a.b = { c: 30 };
+      model.a.b = { c: 30 };
     });
 
     console.log(`Value of 'a.b.c' after changing c to '40':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a.b.c = 40;
+      model.a.b.c = 40;
     });
 
     console.log(`Final value of 'a.b.c':`);

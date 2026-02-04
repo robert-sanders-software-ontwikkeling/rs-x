@@ -15,7 +15,7 @@ interface INestStateConext {
   nested?: INestStateConext;
 }
 
-class StateContext {
+class MyModel {
   private _b: INestStateConext = {
     a: 10,
     nested: {
@@ -43,7 +43,7 @@ export const run = (() => {
     RsXStateManagerInjectionTokens.IStateManager,
   );
 
-  const stateContext = new StateContext();
+  const model = new MyModel();
 
   const changeSubscription = stateManager.changed.subscribe(
     (change: IStateChange) => {
@@ -53,17 +53,15 @@ export const run = (() => {
 
   try {
     // Observe property `b` recursively.
-    // Otherwise, only assigning a new value to stateContext.b would emit a change event.
+    // Otherwise, only assigning a new value to model.b would emit a change event.
     // This will emit a change event with the initial (current) value.
     console.log('Initial value:');
-    stateManager.watchState(stateContext, 'b', watchIndexRecursiveRule);
+    stateManager.watchState(model, 'b', watchIndexRecursiveRule);
 
-    console.log(
-      '\nReplacing stateContext.b.nested.nested will emit a change event',
-    );
+    console.log('\nReplacing model.b.nested.nested will emit a change event');
     console.log('Changed value:');
 
-    (Type.toObject(stateContext.b.nested) ?? {}).nested = {
+    (Type.toObject(model.b.nested) ?? {}).nested = {
       a: -30,
       nested: {
         a: -40,
@@ -71,10 +69,10 @@ export const run = (() => {
     };
 
     console.log(`Latest value:`);
-    printValue(stateManager.getState(stateContext, 'b'));
+    printValue(stateManager.getState(model, 'b'));
   } finally {
     changeSubscription.unsubscribe();
     // Always release the state when it is no longer needed.
-    stateManager.releaseState(stateContext, 'b', watchIndexRecursiveRule);
+    stateManager.releaseState(model, 'b', watchIndexRecursiveRule);
   }
 })();

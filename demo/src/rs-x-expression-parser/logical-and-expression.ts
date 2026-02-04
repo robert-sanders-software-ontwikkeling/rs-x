@@ -12,12 +12,12 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: false,
     b: true,
   };
 
-  const expression = expressionFactory.create(expressionContext, 'a && b');
+  const expression = expressionFactory.create(model, 'a && b');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -32,14 +32,14 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = true;
+      model.a = true;
     });
 
     console.log(`Value of 'a && b' after changing 'b' to 'false':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = false;
+      model.b = false;
     });
 
     console.log(`Final value of 'a && b':`);

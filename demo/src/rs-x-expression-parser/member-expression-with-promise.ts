@@ -17,7 +17,7 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: {
       b: Promise.resolve({
         c: Promise.resolve({
@@ -27,7 +27,7 @@ export const run = (async () => {
     },
   };
 
-  const expression = expressionFactory.create(expressionContext, `a.b.c.d`);
+  const expression = expressionFactory.create(model, `a.b.c.d`);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -44,7 +44,7 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = {
+      model.a = {
         b: Promise.resolve({ c: Promise.resolve({ d: 200 }) }),
       };
     });

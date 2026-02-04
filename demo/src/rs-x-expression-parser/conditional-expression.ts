@@ -12,17 +12,14 @@ const expressionFactory: IExpressionFactory = InjectionContainer.get(
 );
 
 export const run = (async () => {
-  const expressionContext = {
+  const model = {
     a: 1,
     b: 2,
     c: 100,
     d: 200,
   };
 
-  const expression = expressionFactory.create(
-    expressionContext,
-    'a > b ? c : d',
-  );
+  const expression = expressionFactory.create(model, 'a > b ? c : d');
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -37,28 +34,28 @@ export const run = (async () => {
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.d = 300;
+      model.d = 300;
     });
 
     console.log(`Value of 'a > b ? c : d' after changing 'a' to '3':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.a = 3;
+      model.a = 3;
     });
 
     console.log(`Value of 'a > b ? c : d' after changing c to '2000':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.c = 2000;
+      model.c = 2000;
     });
 
     console.log(`Value of 'a > b ? c : d' after changing 'b' to '4':`);
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      expressionContext.b = 4;
+      model.b = 4;
     });
 
     console.log(`Final value of 'a > b ? c : d':`);

@@ -13,7 +13,7 @@ export const run = (() => {
   const stateManager: IStateManager = InjectionContainer.get(
     RsXStateManagerInjectionTokens.IStateManager,
   );
-  const stateContext = {
+  const model = {
     x: { y: 10 },
   };
   const changedSubscription = stateManager.changed.subscribe(
@@ -26,28 +26,28 @@ export const run = (() => {
     // Register is idempotent: you can register the same state multiple times.
     // For every register call, make sure you call unregister when you're done.
     console.log('Initial value:');
-    stateManager.watchState(stateContext, 'x');
-    stateManager.watchState(stateContext, 'x');
+    stateManager.watchState(model, 'x');
+    stateManager.watchState(model, 'x');
 
     console.log('Changed value:');
-    stateContext.x = { y: 20 };
+    model.x = { y: 20 };
 
-    stateManager.releaseState(stateContext, 'x');
+    stateManager.releaseState(model, 'x');
 
     console.log(
       'Changed event is still emitted after unregister because one observer remains.',
     );
     console.log('Changed value:');
-    stateContext.x = { y: 30 };
+    model.x = { y: 30 };
 
-    stateManager.releaseState(stateContext, 'x');
+    stateManager.releaseState(model, 'x');
 
     console.log(
       'Changed event is no longer emitted after the last observer unregisters.',
     );
     console.log('Changed value:');
     console.log('---');
-    stateContext.x = { y: 30 };
+    model.x = { y: 30 };
   } finally {
     changedSubscription.unsubscribe();
   }
