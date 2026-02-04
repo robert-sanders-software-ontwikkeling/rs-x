@@ -170,7 +170,6 @@ export const run = (() => {
   console.log('Cloned object');
   printValue(clone);
 })();
-
 ```
 
 **Output:**
@@ -274,7 +273,6 @@ export const run = (() => {
   const result = equalityService.isEqual(object1, object2);
   console.log(`Result: ${result}`);
 })();
-
 ```
 
 **Output:**
@@ -362,7 +360,6 @@ export const run = (() => {
   const guid = guidFactory.create();
   console.log(`Created guid: ${guid}`);
 })();
-
 ```
 
 **Output:**
@@ -908,7 +905,6 @@ export const run = (() => {
   changeSubsription1.unsubscribe();
   changeSubsription2.unsubscribe();
 })();
-
 ```
 
 **Output:**
@@ -1060,7 +1056,6 @@ export const run = (() => {
     changeSubscription.unsubscribe();
   }
 })();
-
 ```
 
 **Output:**
@@ -1167,7 +1162,6 @@ export const run = (async () => {
   console.log('Emitted events:');
   printValue(result);
 })();
-
 ```
 
 **Output:**

@@ -274,7 +274,6 @@ export const run = (() => {
     stateManager.releaseState(model, 'x');
   }
 })();
-
 ```
 
 **Output:**
@@ -359,7 +358,6 @@ export const run = (() => {
     stateManager.releaseState(model, 'x', watchIndexRecursiveRule);
   }
 })();
-
 ```
 
 **Output:**
@@ -466,7 +464,6 @@ export const run = (() => {
     model.dispose();
   }
 })();
-
 ```
 
 **Output:**
@@ -548,7 +545,6 @@ export const run = (() => {
     changedSubscription.unsubscribe();
   }
 })();
-
 ```
 
 **Output:**
@@ -679,7 +675,6 @@ export const run = (() => {
     stateManager.releaseState(model, 'b', watchIndexRecursiveRule);
   }
 })();
-
 ```
 
 **Output:**
@@ -818,7 +813,6 @@ export const run = (() => {
   watchDate(stateManager);
   watchDateProperty(stateManager);
 })();
-
 ```
 
 **Output:**
@@ -902,7 +896,6 @@ export const run = (() => {
     stateManager.releaseState(model, 'array', watchIndexRecursiveRule);
   }
 })();
-
 ```
 
 **Output:**
@@ -997,7 +990,6 @@ export const run = (() => {
     stateManager.releaseState(model, 'array', watchIndexRecursiveRule);
   }
 })();
-
 ```
 
 **Output:**
@@ -1111,7 +1103,6 @@ export const run = (() => {
     stateManager.releaseState(model, 'set', watchIndexRecursiveRule);
   }
 })();
-
 ```
 
 **Output:**
@@ -1210,7 +1201,6 @@ export const run = (async () => {
     stateManager.releaseState(model, 'promise');
   }
 })();
-
 ```
 
 **Output:**
@@ -1280,7 +1270,6 @@ export const run = (async () => {
     stateManager.releaseState(model, 'observable');
   }
 })();
-
 ```
 
 **Output:**

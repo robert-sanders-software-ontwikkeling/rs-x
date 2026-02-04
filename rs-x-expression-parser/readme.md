@@ -75,7 +75,6 @@ This parser forms the core of the **data-binding implementation** for the SPA fr
       expression.dispose();
     }
   })();
-
   ```
 
 - **Modular expressions** — expressions can reference other expressions:
@@ -378,7 +377,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Modular example
@@ -532,7 +530,6 @@ export const run = (async () => {
     basePersonalRisk.dispose();
   }
 })();
-
 ```
 
 ### Limitations of the Non-Modular Implementation
@@ -733,7 +730,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Array expression
@@ -806,7 +802,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Bitwise and expression
@@ -863,7 +858,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Bitwise left shift expression
@@ -920,7 +914,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Bitwise not expression
@@ -969,7 +962,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Bitwise or expression
@@ -1026,7 +1018,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Bitwise right shift expression
@@ -1083,7 +1074,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Bitwise unsigned right shift expression
@@ -1140,7 +1130,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Bitwise xor expression
@@ -1197,7 +1186,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Conditional expression
@@ -1270,7 +1258,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Division expression
@@ -1327,7 +1314,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Equality expression
@@ -1384,7 +1370,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Exponentiation expression
@@ -1441,7 +1426,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Function expression
@@ -1501,7 +1485,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Greater than expression
@@ -1558,7 +1541,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Greater than or equal expression
@@ -1615,7 +1597,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### In expression
@@ -1679,7 +1660,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Inequality expression
@@ -1736,7 +1716,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Instanceof expression
@@ -1802,7 +1781,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Less than expression
@@ -1859,7 +1837,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Less than or equal expression
@@ -1916,7 +1893,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Logical and expression
@@ -1973,7 +1949,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Logical not expression
@@ -2022,7 +1997,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Logical or expression
@@ -2079,12 +2053,12 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Member expression
 
 - Member expression
+
   ```ts
   import {
     emptyFunction,
@@ -2152,9 +2126,10 @@ export const run = (async () => {
       expression.dispose();
     }
   })();
-
   ```
+
 - Member expression with array
+
   ```ts
   import {
     emptyFunction,
@@ -2260,9 +2235,10 @@ export const run = (async () => {
       expression.dispose();
     }
   })();
-
   ```
+
 - Member expression with map
+
   ```ts
   import {
     emptyFunction,
@@ -2350,9 +2326,10 @@ export const run = (async () => {
       expression.dispose();
     }
   })();
-
   ```
+
 - Member expression with method
+
   ```ts
   import {
     emptyFunction,
@@ -2430,9 +2407,10 @@ export const run = (async () => {
       expression.dispose();
     }
   })();
-
   ```
+
 - Member expression with observable
+
   ```ts
   import { BehaviorSubject } from 'rxjs';
 
@@ -2511,9 +2489,10 @@ export const run = (async () => {
       expression.dispose();
     }
   })();
-
   ```
+
 - Member expression with promise
+
   ```ts
   import {
     emptyFunction,
@@ -2573,7 +2552,6 @@ export const run = (async () => {
       expression.dispose();
     }
   })();
-
   ```
 
 ### Multiplication expression
@@ -2630,7 +2608,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### New expression
@@ -2708,7 +2685,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Nullish coalescing expression
@@ -2772,7 +2748,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Object expression
@@ -2834,7 +2809,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Remainder expression
@@ -2891,7 +2865,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Sequence expression
@@ -2953,7 +2926,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Strict equality expression
@@ -3010,7 +2982,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Strict inequality expression
@@ -3067,7 +3038,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Substraction expression
@@ -3124,7 +3094,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Template string expression
@@ -3175,7 +3144,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Typeof expression
@@ -3225,7 +3193,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Unary negation expression
@@ -3274,7 +3241,6 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
 
 ### Unary plus expression
@@ -3323,5 +3289,4 @@ export const run = (async () => {
     expression.dispose();
   }
 })();
-
 ```
