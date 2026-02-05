@@ -31,10 +31,10 @@ const jestConfig: Config.InitialOptions = {
   testEnvironment: 'jest-environment-jsdom',
   extensionsToTreatAsEsm: ['.ts'],
 
-  // 🚫 Exclude Angular package entirely
-  testPathIgnorePatterns: ['<rootDir>/rs-x-angular/'],
+  // Exclude Angular and React package entirely
+  testPathIgnorePatterns: ['<rootDir>/rs-x-angular/', '<rootDir>/rs-x-react/'],
 
-  modulePathIgnorePatterns: ['<rootDir>/rs-x-angular/'],
+  modulePathIgnorePatterns: ['<rootDir>/rs-x-angular/', '<rootDir>/rs-x-react/'],
 
   // Transforms
   transform: {

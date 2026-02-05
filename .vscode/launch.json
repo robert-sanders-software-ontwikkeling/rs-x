@@ -16,20 +16,37 @@
       "autoAttachChildProcesses": true,
       "console": "integratedTerminal"
     },
-
     {
       "type": "node",
       "request": "launch",
       "name": "Debug selected mjs file",
       "program": "${file}",
       "cwd": "${workspaceFolder}",
-      "runtimeArgs": ["--loader", "ts-node/esm"],
+      "runtimeArgs": [
+        "--loader",
+        "ts-node/esm"
+      ],
       "autoAttachChildProcesses": true,
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "env": {
         "NODE_OPTIONS": "--experimental-specifier-resolution=node"
       }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Vitest: RS-X React Tests",
+      "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
+      "args": [
+        "run",
+        "${file}", // run the currently active file
+        "--config",
+        "${workspaceFolder}/rs-x-react/vitest.config.ts" // ✅ React config
+      ],
+      "cwd": "${workspaceFolder}/rs-x-react",
+      "autoAttachChildProcesses": true,
+      "console": "integratedTerminal"
     }
   ]
 }

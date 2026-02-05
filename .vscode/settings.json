@@ -1,7 +1,8 @@
 {
   "exportall.config.relExclusion": [
     "/rs-x-core/lib/testing",
-    "/rs-x-state-manager/lib/testing"
+    "/rs-x-state-manager/lib/testing",
+    "/rs-x-react/src/__tests__"
   ],
   "jest.nodeEnv": {
     "TZ": "UTC"
