@@ -34,7 +34,10 @@ const jestConfig: Config.InitialOptions = {
   // Exclude Angular and React package entirely
   testPathIgnorePatterns: ['<rootDir>/rs-x-angular/', '<rootDir>/rs-x-react/'],
 
-  modulePathIgnorePatterns: ['<rootDir>/rs-x-angular/', '<rootDir>/rs-x-react/'],
+  modulePathIgnorePatterns: [
+    '<rootDir>/rs-x-angular/',
+    '<rootDir>/rs-x-react/',
+  ],
 
   // Transforms
   transform: {

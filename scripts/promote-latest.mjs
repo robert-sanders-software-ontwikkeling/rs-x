@@ -11,7 +11,7 @@ const PACKAGES = [
   '@rs-x/state-manager',
   '@rs-x/expression-parser',
   '@rs-x/angular',
-  '@rs-x/react'
+  '@rs-x/react',
 ];
 
 function run(cmd) {

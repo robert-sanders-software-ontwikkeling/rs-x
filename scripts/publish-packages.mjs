@@ -12,7 +12,7 @@ const nodeLibFolders = [
   'rs-x-core',
   'rs-x-state-manager',
   'rs-x-expression-parser',
-  'rs-x-react'
+  'rs-x-react',
 ];
 const nodePackageFolders = [...nodeLibFolders, angularDist];
 const changelogFolders = [...nodeLibFolders, 'rs-x-angular/projects/rsx'];

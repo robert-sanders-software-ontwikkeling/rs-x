@@ -1,8 +1,13 @@
-import { useEffect, useState, useRef } from 'react';
-import { IExpression } from '@rs-x/expression-parser';
+import { useEffect, useRef,useState } from 'react';
+
+import { type IExpression } from '@rs-x/expression-parser';
+
 import { getExpressionFactory } from '../expressionFactory';
 
-export function useRsxExpression<T>(expressionString: string, model: object): T | undefined {
+export function useRsxExpression<T>(
+  expressionString: string,
+  model: object,
+): T | undefined {
   const [value, setValue] = useState<T | undefined>();
   const expressionRef = useRef<IExpression<T>>();
 
@@ -14,7 +19,9 @@ export function useRsxExpression<T>(expressionString: string, model: object): T 
 
   useEffect(() => {
     const expression = expressionRef.current!;
-    const changeSubscription = expression.changed.subscribe(() => setValue(expression.value));
+    const changeSubscription = expression.changed.subscribe(() =>
+      setValue(expression.value),
+    );
     setValue(expression.value); // initialize
     return () => {
       changeSubscription.unsubscribe();
