@@ -79,3 +79,9 @@ jobs:
       # ------------------------------
       - name: Run Angular tests
         run: pnpm run test:angular
+
+      # ------------------------------
+      # Run React tests
+      # ------------------------------
+      - name: Run  React tests
+        run: pnpm run test:react

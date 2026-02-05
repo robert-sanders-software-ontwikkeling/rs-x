@@ -9,6 +9,7 @@ const packageMap = {
   '@rs-x/state-manager': 'rs-x-state-manager',
   '@rs-x/expression-parser': 'rs-x-expression-parser',
   '@rs-x/angular': 'rs-x-angular/projects/rsx',
+  '@rs-x/react': 'rs-x-react',
 };
 
 const basePath = './';

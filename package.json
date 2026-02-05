@@ -20,6 +20,7 @@
     "build:react": "pnpm --filter @rs-x/react run build",
     "test": "cross-env TZ=UTC pnpm jest --runInBand --no-cache --config jest.config.ts",
     "test:angular": "pnpm --prefix rs-x-angular run test",
+    "test:react": "pnpm --prefix rs-x-react run test",
     "test:coverage": "cross-env TZ=UTC pnpm jest --coverage",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

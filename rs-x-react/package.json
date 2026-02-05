@@ -30,6 +30,7 @@
     },
     "scripts": {
         "build": "tsup src/index.ts --format esm --dts --external react react-dom --tsconfig ../tsconfig.build.json",
+        "test": "vitest",
         "clean": "rimraf dist"
     },
     "peerDependencies": {
