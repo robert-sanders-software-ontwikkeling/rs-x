@@ -110,10 +110,10 @@ importers:
   rs-x-angular/projects/rsx:
     dependencies:
       '@angular/common':
-        specifier: ^21.1.0
+        specifier: '>=21.1.0'
         version: 21.1.1(@angular/core@21.1.1(@angular/compiler@21.1.1)(rxjs@7.8.2)(zone.js@0.16.0))(rxjs@7.8.2)
       '@angular/core':
-        specifier: ^21.1.0
+        specifier: '>=21.1.0'
         version: 21.1.1(@angular/compiler@21.1.1)(rxjs@7.8.2)(zone.js@0.16.0)
       '@rs-x/core':
         specifier: workspace:*
@@ -122,7 +122,7 @@ importers:
         specifier: workspace:*
         version: link:../../../rs-x-expression-parser
       rxjs:
-        specifier: ^7.8.0
+        specifier: '>=7.8.0'
         version: 7.8.2
 
   rs-x-core:
@@ -184,10 +184,10 @@ importers:
         specifier: workspace:*
         version: link:../rs-x-state-manager
       react:
-        specifier: ^18.2.0
+        specifier: '>=18.2.0'
         version: 18.3.1
       react-dom:
-        specifier: ^18.2.0
+        specifier: '>=18.2.0'
         version: 18.3.1(react@18.3.1)
     devDependencies:
       '@testing-library/react':
