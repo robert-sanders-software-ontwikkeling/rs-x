@@ -60,13 +60,10 @@ jobs:
 
       # ---------------- BUILD ----------------
       - name: Build Node libraries
-        run: |
-          pnpm --filter '@rs-x/core' run build
-          pnpm --filter '@rs-x/state-manager' run build
-          pnpm --filter '@rs-x/expression-parser' run build
+        run: pnpm run build:libs
 
       - name: Build Angular package
-        run: pnpm --prefix rs-x-angular run build:angular
+        run: pnpm run build:angular
 
       # ---------------- ROLLBACK GUARD ----------------
       - name: Abort if versions already exist on npm
