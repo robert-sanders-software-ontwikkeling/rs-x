@@ -6,7 +6,7 @@ import { AbstractExpression, type IExpression } from '@rs-x/expression-parser';
 import { getExpressionFactory } from '../expressionFactory';
 
 export function useRsxExpression<T>(
-  expression: string | AbstractExpression,
+  expression: string | IExpression<T>,
   model?: object,
 ): T | undefined {
   if (Type.isString(expression) && !model) {
@@ -15,27 +15,19 @@ export function useRsxExpression<T>(
     );
   }
   const [value, setValue] = useState<T | undefined>();
-  const expressionRef = useRef<AbstractExpression<T>>();
+  const expressionRef = useRef<IExpression<T>>();
 
   useEffect(() => {
-    // Dispose previous expression if we owned it
-    if (
-      expressionRef.current?.dispose &&
-      expressionRef.current instanceof AbstractExpression
-    ) {
-      // previous expression cleanup handled below
-    }
-
     // Create expression and capture ownership
-    let expr: IExpression;
+    let expressionTree: IExpression;
     let ownsExpression = false;
 
     if (Type.isString(expression)) {
       const factory = getExpressionFactory();
-      expr = factory.create<T>(model as object, expression);
+      expressionTree = factory.create<T>(model as object, expression);
       ownsExpression = true;
     } else if (expression instanceof AbstractExpression) {
-      expr = expression;
+      expressionTree = expression;
       ownsExpression = false;
     } else {
       throw new Error(
@@ -43,16 +35,18 @@ export function useRsxExpression<T>(
       );
     }
 
-    expressionRef.current = expr;
+    expressionRef.current = expressionTree;
 
     // Subscribe to changes
-    const sub = expr.changed.subscribe(() => setValue(expr.value));
-    setValue(expr.value); // initialize
+    const changedSubscription = expressionTree.changed.subscribe(() =>
+      setValue(expressionTree.value),
+    );
+    setValue(expressionTree.value ?? null); // initialize
 
     return () => {
-      sub.unsubscribe();
+      changedSubscription.unsubscribe();
       if (ownsExpression) {
-        expr.dispose(); // only dispose if we created it
+        expressionTree.dispose(); // only dispose if we created it
       }
     };
   }, [expression, model]); // recreate if expression string or model changes

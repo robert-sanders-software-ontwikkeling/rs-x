@@ -8,7 +8,6 @@ import { type IExpression } from '@rs-x/expression-parser';
 import { getExpressionFactory } from '../expressionFactory';
 import { useRsxExpression } from '../hooks/useRsxExpression';
 
-// Component binding a real RS-X expression
 const TestComponent: React.FC<{
   model: { x: number; r: number };
   expression: string | IExpression;
