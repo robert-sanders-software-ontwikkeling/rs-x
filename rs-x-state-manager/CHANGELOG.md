@@ -1,5 +1,12 @@
 # @rs-x/state-manager
 
+## 0.4.16
+
+### Patch Changes
+
+- Updated dependencies [f3bc0ce]
+  - @rs-x/core@0.4.16
+
 ## 0.4.12
 
 ### Patch Changes
