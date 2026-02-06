@@ -7,7 +7,8 @@
     "rs-x-core",
     "rs-x-state-manager",
     "rs-x-expression-parser",
-    "rs-x-angular/projects/rsx"
+    "rs-x-angular/projects/rsx",
+    "rs-x-react"
   ],
   "scripts": {
     "build:libs": "pnpm --filter '@rs-x/core' run build && pnpm --filter '@rs-x/state-manager' run build && pnpm --filter '@rs-x/expression-parser' run build &&  pnpm --filter '@rs-x/react' run build",
