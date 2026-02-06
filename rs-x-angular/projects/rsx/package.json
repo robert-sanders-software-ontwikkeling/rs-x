@@ -35,9 +35,9 @@
     "provenance": true
   },
   "peerDependencies": {
-    "@angular/core": "^21.1.0",
-    "@angular/common": "^21.1.0",
-    "rxjs": "^7.8.0",
+    "@angular/core": ">=21.1.0",
+    "@angular/common": ">=21.1.0",
+    "rxjs": ">=7.8.0",
     "@rs-x/core": "workspace:*",
     "@rs-x/expression-parser": "workspace:*"
   },
