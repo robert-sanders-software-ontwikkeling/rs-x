@@ -1,33 +1,61 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { type IExpression } from '@rs-x/expression-parser';
+import { ArgumentException, Type } from '@rs-x/core';
+import { AbstractExpression, type IExpression } from '@rs-x/expression-parser';
 
 import { getExpressionFactory } from '../expressionFactory';
 
 export function useRsxExpression<T>(
-  expressionString: string,
-  model: object,
+  expression: string | AbstractExpression,
+  model?: object,
 ): T | undefined {
-  const [value, setValue] = useState<T | undefined>();
-  const expressionRef = useRef<IExpression<T>>();
-
-  // Initialize expression once
-  if (!expressionRef.current) {
-    const factory = getExpressionFactory();
-    expressionRef.current = factory.create<T>(model, expressionString);
+  if (Type.isString(expression) && !model) {
+    throw new ArgumentException(
+      'model is required when expression is a string',
+    );
   }
+  const [value, setValue] = useState<T | undefined>();
+  const expressionRef = useRef<AbstractExpression<T>>();
 
   useEffect(() => {
-    const expression = expressionRef.current!;
-    const changeSubscription = expression.changed.subscribe(() =>
-      setValue(expression.value),
-    );
-    setValue(expression.value); // initialize
+    // Dispose previous expression if we owned it
+    if (
+      expressionRef.current?.dispose &&
+      expressionRef.current instanceof AbstractExpression
+    ) {
+      // previous expression cleanup handled below
+    }
+
+    // Create expression and capture ownership
+    let expr: IExpression;
+    let ownsExpression = false;
+
+    if (Type.isString(expression)) {
+      const factory = getExpressionFactory();
+      expr = factory.create<T>(model as object, expression);
+      ownsExpression = true;
+    } else if (expression instanceof AbstractExpression) {
+      expr = expression;
+      ownsExpression = false;
+    } else {
+      throw new Error(
+        'useRsxExpression: expression must be a string or an IExpression',
+      );
+    }
+
+    expressionRef.current = expr;
+
+    // Subscribe to changes
+    const sub = expr.changed.subscribe(() => setValue(expr.value));
+    setValue(expr.value); // initialize
+
     return () => {
-      changeSubscription.unsubscribe();
-      expression.dispose();
+      sub.unsubscribe();
+      if (ownsExpression) {
+        expr.dispose(); // only dispose if we created it
+      }
     };
-  }, []);
+  }, [expression, model]); // recreate if expression string or model changes
 
   return value;
 }
