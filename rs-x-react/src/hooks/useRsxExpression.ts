@@ -2,40 +2,42 @@ import { useEffect, useRef, useState } from 'react';
 
 import { ArgumentException, Type } from '@rs-x/core';
 import { AbstractExpression, type IExpression } from '@rs-x/expression-parser';
+import { type IIndexWatchRule } from '@rs-x/state-manager';
 
 import { getExpressionFactory } from '../expressionFactory';
 
+export interface IUseRsxExpressionOptions {
+  model?: object;
+  leafWatchRule?: IIndexWatchRule;
+}
+
 export function useRsxExpression<T>(
-  expression: string | AbstractExpression,
-  model?: object,
-): T | undefined {
+  expression: string | IExpression<T>,
+  options?: IUseRsxExpressionOptions,
+): T | null {
+  const { model, leafWatchRule } = options || {};
   if (Type.isString(expression) && !model) {
     throw new ArgumentException(
       'model is required when expression is a string',
     );
   }
-  const [value, setValue] = useState<T | undefined>();
-  const expressionRef = useRef<AbstractExpression<T>>();
+  const [value, setValue] = useState<T | null>(null);
+  const expressionRef = useRef<IExpression<T>>();
 
   useEffect(() => {
-    // Dispose previous expression if we owned it
-    if (
-      expressionRef.current?.dispose &&
-      expressionRef.current instanceof AbstractExpression
-    ) {
-      // previous expression cleanup handled below
-    }
-
-    // Create expression and capture ownership
-    let expr: IExpression;
+    let expressionTree: IExpression;
     let ownsExpression = false;
 
     if (Type.isString(expression)) {
       const factory = getExpressionFactory();
-      expr = factory.create<T>(model as object, expression);
+      expressionTree = factory.create<T>(
+        model as object,
+        expression,
+        leafWatchRule,
+      );
       ownsExpression = true;
     } else if (expression instanceof AbstractExpression) {
-      expr = expression;
+      expressionTree = expression;
       ownsExpression = false;
     } else {
       throw new Error(
@@ -43,19 +45,20 @@ export function useRsxExpression<T>(
       );
     }
 
-    expressionRef.current = expr;
+    expressionRef.current = expressionTree;
 
-    // Subscribe to changes
-    const sub = expr.changed.subscribe(() => setValue(expr.value));
-    setValue(expr.value); // initialize
+    const changedSubscription = expressionTree.changed.subscribe(() => {
+      setValue(expressionTree.value);
+    });
+    setValue(expressionTree.value ?? null);
 
     return () => {
-      sub.unsubscribe();
+      changedSubscription.unsubscribe();
       if (ownsExpression) {
-        expr.dispose(); // only dispose if we created it
+        expressionTree.dispose(); // only dispose if we created it
       }
     };
-  }, [expression, model]); // recreate if expression string or model changes
+  }, [expression, model, leafWatchRule]); // recreate if expression string or model changes
 
   return value;
 }
