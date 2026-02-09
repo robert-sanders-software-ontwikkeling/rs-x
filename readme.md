@@ -174,7 +174,6 @@ RS-X is actively evolving. The roadmap below shows **progress**, **planned featu
     - Improves developer understanding of **data flow and change propagation**.
     - Enables advanced debugging workflows beyond traditional state tools.
     - Forms the foundation for powerful **RS-X developer tooling**.
-      
 - **TS Transformer / Plugin — ⚙️ Planned**
   - **Aim:** Provide **compile-time syntax validation** for RS-X expressions written in tagged template literals or lambda-like strings.
   - **Goal:** Offer **IntelliSense / autocomplete** for all properties on the provided context, preventing invalid identifiers from compiling.
