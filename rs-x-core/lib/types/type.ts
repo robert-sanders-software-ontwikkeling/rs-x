@@ -36,6 +36,10 @@ export class Type {
     return true;
   }
 
+  public static isIterableCollection(value: unknown): boolean {
+    return Array.isArray(value) || value instanceof Map || value instanceof Set;
+  }
+
   public static isPositiveInteger(value: unknown): boolean {
     return (
       (typeof value === 'number' && Number.isInteger(value) && value >= 0) ||
