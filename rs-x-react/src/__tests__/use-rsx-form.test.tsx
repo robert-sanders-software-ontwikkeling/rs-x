@@ -20,13 +20,18 @@ describe('useRsxForm', () => {
     renderHook(() => useRsxForm(form));
 
     // All fields should be watched
-    expect(useRsxExpression).toHaveBeenCalledWith('age', form.customer);
-    expect(useRsxExpression).toHaveBeenCalledWith('income', form.customer);
-    expect(useRsxExpression).toHaveBeenCalledWith('score', form.credit);
-    expect(useRsxExpression).toHaveBeenCalledWith(
-      'outstandingDebt',
-      form.credit,
-    );
+    expect(useRsxExpression).toHaveBeenCalledWith('age', {
+      model: form.customer,
+    });
+    expect(useRsxExpression).toHaveBeenCalledWith('income', {
+      model: form.customer,
+    });
+    expect(useRsxExpression).toHaveBeenCalledWith('score', {
+      model: form.credit,
+    });
+    expect(useRsxExpression).toHaveBeenCalledWith('outstandingDebt', {
+      model: form.credit,
+    });
   });
 
   it('respects mustWatch filter', () => {
@@ -36,8 +41,8 @@ describe('useRsxForm', () => {
 
     renderHook(() => useRsxForm(form, mustWatch));
 
-    expect(useRsxExpression).toHaveBeenCalledWith('a', form);
-    expect(useRsxExpression).not.toHaveBeenCalledWith('b', form);
-    expect(useRsxExpression).toHaveBeenCalledWith('c', form);
+    expect(useRsxExpression).toHaveBeenCalledWith('a', { model: form });
+    expect(useRsxExpression).not.toHaveBeenCalledWith('b', { model: form });
+    expect(useRsxExpression).toHaveBeenCalledWith('c', { model: form });
   });
 });
