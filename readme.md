@@ -157,7 +157,24 @@ RS-X is actively evolving. The roadmap below shows **progress**, **planned featu
     - Improves **rendering efficiency** by updating only affected components.
     - Allows your data model to act as the **single source of truth**.
     - Any changes to the model are **automatically detected** by the RS-X framework — no extra work is needed from the developer.
-
+- **Expression Tree Visualizer & Debugger (Chrome Extension)** — 🧪 **Planned**
+  - **Aim:** Provide deep insight into how RS-X expressions are evaluated and updated in real time.
+  - **Goal:** Visualize expression trees and animate how data changes propagate through them.
+  - **Concept:**
+    - Expression trees are evaluated **bottom-up**.
+    - Leaves represent **constants or identifiers**.
+    - When an identifier’s value changes, the animation highlights only the **affected paths** and shows how re-evaluation flows upward.
+  - **Features:**
+    - View all **active expressions** used in the application.
+    - Inspect expression trees and their dependencies.
+    - **Live-edit data** and immediately see how expressions update.
+    - Add **breakpoints** at any node in the tree to pause and inspect evaluation.
+  - **Impact:**
+    - Makes complex reactivity **transparent and debuggable**.
+    - Improves developer understanding of **data flow and change propagation**.
+    - Enables advanced debugging workflows beyond traditional state tools.
+    - Forms the foundation for powerful **RS-X developer tooling**.
+      
 - **TS Transformer / Plugin — ⚙️ Planned**
   - **Aim:** Provide **compile-time syntax validation** for RS-X expressions written in tagged template literals or lambda-like strings.
   - **Goal:** Offer **IntelliSense / autocomplete** for all properties on the provided context, preventing invalid identifiers from compiling.
