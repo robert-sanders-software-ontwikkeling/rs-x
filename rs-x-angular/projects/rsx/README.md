@@ -1,4 +1,4 @@
-# RS-X Angular Extension
+# RS-X Angular Pipe
 
 The **RS-X Angular Extension** provides seamless integration of RS-X expressions within Angular templates. It allows you to bind expressions to your data models, making your templates fully reactive without extra boilerplate.
 

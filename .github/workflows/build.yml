@@ -1,7 +1,7 @@
 name: Build & Test Monorepo
 
 on:
-  push: 
+  push:
     branches:
       - feature/**
       - fix/**

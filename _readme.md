@@ -91,7 +91,7 @@ RS-X is actively evolving. The roadmap below shows **progress**, **planned featu
     - Allows you to define the data model for your app as the **single source of truth**.
     - Any changes to the model are **automatically detected** by the RS-X framework — no extra work is needed from the developer.
 
-- **React Extension** — ⚙️ **Planned**
+- **React Extension** — ✅ **Done**
   - **Aim:** Enable the use of RS-X expressions directly within React components.
   - **Goal:** Make **data binding to complex data in React easy and efficient**, providing hooks and utilities that automatically subscribe to expression changes and trigger re-renders.
   - **Objective:** Support both synchronous and asynchronous data sources, allowing modular expressions to seamlessly update components when underlying data changes.
@@ -234,7 +234,8 @@ RS-X is actively evolving. The roadmap below shows **progress**, **planned featu
 - [rs-x-core](./rs-x-core/readme.md): Provides shared core functionality for the RS-X project
 - [rs-x-state-manager](./rs-x-state-manager/readme.md): Implements a centralized state management system that provides an efficient way to observe, update, and synchronize state changes across your application. It supports reactive updates, ensuring that components or services depending on the state stay consistent automatically.
 - [rs-x-expression-parser](./rs-x-expression-parser/readme.md): Implements a JavaScript expression parser that translates a JavaScript expression string into an observable expression tree. The parser automatically registers identifiers in the expression tree with the State Manager. Identifiers are resolved using the Identifier Owner Resolver service, which can be replaced with a custom implementation if needed. This parser serves as the core of the data binding system for the SPA framework, enabling transparent mixing of synchronous and asynchronous data.
-- [rs-x-angular](./rs-x-angular/projects/rsx/README.md):
+- [rs-x-angular](./rs-x-angular/projects/rsx/README.md): Implements an **Aangular pipe** to provide seamless integration of RS-X expressions within Angular templates. It allows you to bind expressions to your data models, making your templates fully reactive without extra boilerplat
+- [rs-x-react](./rs-x-react/readme.md): Implement **React hooks** to provide seamless integration of RS-X expressions within React. It allows you to bind expressions to your data models, making your templates fully reactive without extra boilerplate.
 
 ## Getting started
 
