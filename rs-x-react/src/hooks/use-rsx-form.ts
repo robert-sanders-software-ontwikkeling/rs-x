@@ -13,7 +13,7 @@ export function useRsxForm<T extends Record<string, unknown>>(
     form,
     (formSection, field) => {
       if (_mustWath(formSection, field)) {
-        useRsxExpression(field, { model: formSection });
+        useRsxExpression(field, {model: formSection});
       }
     },
     true,
