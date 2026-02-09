@@ -35,6 +35,8 @@
     "@angular/platform-browser-dynamic": "21.1.0",
     "@changesets/cli": "^2.29.8",
     "@swc/core": "^1.15.10",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/espree": "10.1.0",
     "@types/estraverse": "5.1.7",
     "@types/jest": "^30.0.0",
@@ -52,6 +54,7 @@
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
     "jest-transform-stub": "^2.0.0",
+    "jsdom": "^28.0.0",
     "ng-packagr": "^21.1.0",
     "npm-run-all": "^4.1.5",
     "prettier": "^3.8.1",
@@ -61,7 +64,7 @@
     "ts-node": "^10.9.2",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.8",
+    "vitest": "^4.0.18",
     "zone.js": "^0.16.0"
   }
 }
