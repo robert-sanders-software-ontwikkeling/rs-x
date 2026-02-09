@@ -48,7 +48,7 @@ describe('useRsxExpression E2E (real RS-X)', () => {
   });
 
   it('renders initial value', async () => {
-    const model: IModel = { numbers: Promise.resolve([10, 20, 30]) };
+    const model = { numbers: Promise.resolve([10, 20, 30]) };
 
     render(<TestComponentWithRepeater model={model} />);
 
@@ -58,7 +58,7 @@ describe('useRsxExpression E2E (real RS-X)', () => {
   });
 
   it('reactively updates view when model numbers change asynchronously', async () => {
-    const model: IModel = { numbers: Promise.resolve([10, 20, 30]) };
+    const model = { numbers: Promise.resolve([10, 20, 30]) };
 
     const { rerender } = render(<TestComponentWithRepeater model={model} />);
 
