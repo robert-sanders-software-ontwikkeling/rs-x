@@ -1,2 +1,2 @@
-export * from './expressionFactory';
+export * from './expression.factory';
 export * from './hooks';

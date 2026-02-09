@@ -4,7 +4,7 @@ import { ArgumentException, Type } from '@rs-x/core';
 import { AbstractExpression, type IExpression } from '@rs-x/expression-parser';
 import { type IIndexWatchRule } from '@rs-x/state-manager';
 
-import { getExpressionFactory } from '../expressionFactory';
+import { getExpressionFactory } from '../expression.factory';
 
 export interface IUseRsxExpressionOptions {
   model?: object;

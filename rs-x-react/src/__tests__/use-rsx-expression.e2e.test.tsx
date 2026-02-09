@@ -6,8 +6,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type IExpression } from '@rs-x/expression-parser';
 import { type IIndexWatchRule } from '@rs-x/state-manager';
 
-import { getExpressionFactory } from '../expressionFactory';
-import { useRsxExpression } from '../hooks/useRsxExpression';
+import { getExpressionFactory } from '../expression.factory';
+import { useRsxExpression } from '../hooks/use-rsx-expression';
 
 // Component binding a real RS-X expression
 const TestComponent: React.FC<{
