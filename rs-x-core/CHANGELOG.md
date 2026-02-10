@@ -1,5 +1,11 @@
 # @rs-x/core
 
+## 0.4.22
+
+### Patch Changes
+
+- f3bc0ce: React rs-x extension
+
 ## 0.4.12
 
 ### Patch Changes
