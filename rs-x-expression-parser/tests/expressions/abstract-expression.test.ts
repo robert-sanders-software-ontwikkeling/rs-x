@@ -1,6 +1,6 @@
 import { BehaviorSubject } from 'rxjs';
 
-import { InjectionContainer, WaitForEvent } from '@rs-x/core';
+import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 
 import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import { type IExpression } from '../../lib/expressions/expression-parser.interface';
@@ -278,5 +278,70 @@ describe('AbstractExpression tests', () => {
 
     expect(actual.value).toEqual(6);
     expect(actual).toBe(expression);
+  });
+
+  it('does not update unrelated expressions when state references are replaced', async () => {
+    const rows = [
+      {
+        a: 1,
+        b: 2,
+      },
+      {
+        a: 3,
+        b: 4,
+      },
+    ];
+
+    const model = {
+      rows: Promise.resolve(rows),
+      selected: null as { a: number; b: number } | null,
+    };
+
+    const selectedExpression = expressionFactory.create(model, 'selected');
+
+    const row1Expression = expressionFactory.create<number>(rows[0], 'a+b');
+    const row2Expression = expressionFactory.create<number>(rows[1], 'a+b');
+
+    await new WaitForEvent(selectedExpression, 'changed', {
+      ignoreInitialValue: true,
+    }).wait(emptyFunction);
+    await new WaitForEvent(row1Expression, 'changed', {
+      ignoreInitialValue: true,
+    }).wait(emptyFunction);
+    await new WaitForEvent(row2Expression, 'changed', {
+      ignoreInitialValue: true,
+    }).wait(emptyFunction);
+
+    let row1ExpressionChangeCount = 0;
+    let row2ExpressionChangeCount = 0;
+    let selectedChangeCount = 0;
+
+    row1Expression.changed.subscribe(() => {
+      row1ExpressionChangeCount++;
+    });
+
+    row2Expression.changed.subscribe(() => {
+      row2ExpressionChangeCount++;
+    });
+
+    selectedExpression.changed.subscribe(() => {
+      selectedChangeCount++;
+    });
+
+    await new WaitForEvent(selectedExpression, 'changed', {
+      ignoreInitialValue: true,
+    }).wait(() => {
+      model.selected = rows[0];
+    });
+
+    await new WaitForEvent(selectedExpression, 'changed', {
+      ignoreInitialValue: true,
+    }).wait(() => {
+      model.selected = rows[1]; // this will now trigger (1) and (2) while it should only trigger (2)
+    });
+
+    expect(row1ExpressionChangeCount).toEqual(1);
+    expect(row2ExpressionChangeCount).toEqual(1);
+    expect(selectedChangeCount).toEqual(3);
   });
 });

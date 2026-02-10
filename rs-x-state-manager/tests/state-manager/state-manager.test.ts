@@ -83,7 +83,7 @@ describe('StateManager tests', () => {
     it('Set state', () => {
       const context = {};
 
-      stateManager.setState(context, 'x', 10);
+      stateManager.setState(context, 'x', 10, undefined);
 
       const actual = stateManager.getState(context, 'x');
       expect(actual).toEqual(10);
@@ -99,11 +99,11 @@ describe('StateManager tests', () => {
         },
       };
 
-      stateManager.setState(context, 'root', value);
+      stateManager.setState(context, 'root', value, undefined);
       stateManager.watchState(value, 'x');
       stateManager.watchState(value, 'nested');
       stateManager.watchState(value.nested, 'y');
-      stateManager.setState(value.nested, 'z', value.nested.z);
+      stateManager.setState(value.nested, 'z', value.nested.z, undefined);
 
       const newValue = {
         x: 100,
@@ -115,7 +115,7 @@ describe('StateManager tests', () => {
       const actual = await new WaitForEvent(stateManager, 'changed', {
         count: 5,
       }).wait(() => {
-        stateManager.setState(context, 'root', newValue);
+        stateManager.setState(context, 'root', newValue, undefined);
       });
 
       const expected: IStateChange[] = [
@@ -539,7 +539,7 @@ describe('StateManager tests', () => {
       const indexWatchRule = new IndexWatchRuleMock(truePredicate);
 
       await new WaitForEvent(stateManager, 'changed').wait(() => {
-        stateManager.watchState(object, 'x', {indexWatchRule});
+        stateManager.watchState(object, 'x', { indexWatchRule });
       });
 
       const actual = await new WaitForEvent(stateManager, 'changed').wait(
@@ -872,20 +872,22 @@ describe('StateManager tests', () => {
         (index, target) => index === 'value' && target === object.nested.nested,
       );
 
-      stateManager.watchState(object, 'nested', {indexWatchRule: indexWatchRuleNested1});
+      stateManager.watchState(object, 'nested', {
+        indexWatchRule: indexWatchRuleNested1,
+      });
 
-      stateManager.watchState(object.nested, 'value', {indexWatchRule: indexWatchRuleValue1});
-      stateManager.watchState(object.nested, 'nested',  {indexWatchRule: indexWatchRuleNested2});
-      stateManager.watchState(
-        object.nested,
-        'nested',
-         {indexWatchRule: indexWatchRuleNested2Recursive},
-      );
-      stateManager.watchState(
-        object.nested.nested,
-        'value',
-         {indexWatchRule: indexWatchRuleValue2},
-      );
+      stateManager.watchState(object.nested, 'value', {
+        indexWatchRule: indexWatchRuleValue1,
+      });
+      stateManager.watchState(object.nested, 'nested', {
+        indexWatchRule: indexWatchRuleNested2,
+      });
+      stateManager.watchState(object.nested, 'nested', {
+        indexWatchRule: indexWatchRuleNested2Recursive,
+      });
+      stateManager.watchState(object.nested.nested, 'value', {
+        indexWatchRule: indexWatchRuleValue2,
+      });
 
       const actual = await new WaitForEvent(stateManager, 'changed', {
         count: 3,
@@ -1114,7 +1116,7 @@ describe('StateManager tests', () => {
 
     const indexWatchRule = new IndexWatchRuleMock(truePredicate);
 
-    stateManager.watchState(object, 'nested', {indexWatchRule});
+    stateManager.watchState(object, 'nested', { indexWatchRule });
     stateManager.watchState(object.nested.nested, 'value');
 
     const actual = await new WaitForEvent(stateManager, 'changed', {

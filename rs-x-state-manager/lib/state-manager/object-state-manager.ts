@@ -30,7 +30,12 @@ export class StateForObjectManager
     return data.key;
   }
 
-  public set(key: unknown, value: unknown, watched: boolean, ownerId: unknown): void {
+  public set(
+    key: unknown,
+    value: unknown,
+    watched: boolean,
+    ownerId: unknown,
+  ): void {
     const state = this.getFromId(key);
 
     if (state) {
@@ -60,7 +65,7 @@ export class StateForObjectManager
       value: data.value,
       valueCopy: this.deepClone(data.key, data.value),
       watched: data.watched,
-      ownerId: data.ownerId
+      ownerId: data.ownerId,
     };
   }
 
@@ -95,7 +100,7 @@ export class ObjectStateManager
     newValue: unknown,
     oldContext: unknown,
     watched: boolean,
-    ownerId: unknown
+    ownerId: unknown,
   ): void {
     let stateForObjectManagerForNewContext: IStateForObjectManager | undefined;
     const stateForObjectManagerForOldContext = this.getFromId(oldContext);
@@ -119,7 +124,7 @@ export class ObjectStateManager
         key,
         value: newValue,
         watched,
-        ownerId
+        ownerId,
       });
     }
   }

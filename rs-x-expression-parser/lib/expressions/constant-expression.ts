@@ -25,7 +25,10 @@ export class ConstantExpression<T> extends AbstractExpression<T> {
     settings: IExpressionBindConfiguration,
   ): AbstractExpression {
     super.bind(settings);
-    this.transactionManager.registerChange(this.root, this._commitHandler);
+    this.transactionManager.registerChange(
+      this.evaluationRoot,
+      this._commitHandler,
+    );
     return this;
   }
 

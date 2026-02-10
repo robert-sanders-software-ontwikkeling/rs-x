@@ -14,8 +14,8 @@ export interface IStateChange extends IContextChanged {
 }
 
 export interface IStateOptions {
-    indexWatchRule?: IIndexWatchRule;
-    ownerId?: string;
+  indexWatchRule?: IIndexWatchRule;
+  ownerId?: unknown;
 }
 
 export interface IStateManager {
@@ -39,6 +39,11 @@ export interface IStateManager {
     indexWatchRule?: IIndexWatchRule,
   ): void;
   getState<T>(context: unknown, index: unknown): T;
-  setState<T>(context: unknown, index: unknown, value: T): void;
+  setState<T>(
+    context: unknown,
+    index: unknown,
+    value: T,
+    ownerId: unknown,
+  ): void;
   clear(): void;
 }

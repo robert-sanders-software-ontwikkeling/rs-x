@@ -4,7 +4,7 @@ export interface IState {
   value: unknown;
   valueCopy: unknown;
   watched: boolean;
-  ownerId: unknown
+  ownerId: unknown;
 }
 
 export interface IValueKey {
@@ -13,7 +13,7 @@ export interface IValueKey {
 export interface IValueWithKey extends IValueKey {
   value: unknown;
   watched: boolean;
-  ownerId: unknown
+  ownerId: unknown;
 }
 
 export interface IStateForObjectManager extends ISingletonFactory<
@@ -36,7 +36,7 @@ export interface IObjectStateManager extends ISingletonFactory<
     newValue: unknown,
     oldContext: unknown,
     watched: boolean,
-    ownerId: unknown
+    ownerId: unknown,
   ): void;
   isRegistered(context: unknown, key: unknown): boolean;
 }

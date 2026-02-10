@@ -128,8 +128,12 @@ export abstract class AbstractExpression<
     return this._services?.valueMetadata;
   }
 
-  protected get root(): AbstractExpression {
-    return this.parent ? this.parent.root : this;
+  protected get evaluationRoot(): AbstractExpression {
+    return this.parent ? this.parent.evaluationRoot : this;
+  }
+
+  protected get absoluteRoot(): AbstractExpression {
+    return this.parent ? this.parent.absoluteRoot : this;
   }
 
   protected static setValue(
@@ -203,7 +207,7 @@ export abstract class AbstractExpression<
   }
 
   protected isCommitTarget(sender: AbstractExpression): boolean {
-    return sender === this || sender.root === sender;
+    return sender === this || sender.evaluationRoot === sender;
   }
 
   private onCommited = (sender: AbstractExpression) => {

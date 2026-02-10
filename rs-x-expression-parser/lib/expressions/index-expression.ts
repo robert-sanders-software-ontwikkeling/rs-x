@@ -13,7 +13,7 @@ export class IndexExpression extends ParameterizedExpression {
     ) => this)(this._childExpressions[0].clone());
   }
 
-  protected override get root(): AbstractExpression {
+  protected override get evaluationRoot(): AbstractExpression {
     return this;
   }
 

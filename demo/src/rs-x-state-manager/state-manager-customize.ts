@@ -505,7 +505,9 @@ function testMonitorTextDocument(
     console.log('\n***********************************************');
     console.log('Start watching the whole book\n');
     console.log('My initial book:\n');
-    stateManager.watchState(model, 'myBook', watchIndexRecursiveRule);
+    stateManager.watchState(model, 'myBook', {
+      indexWatchRule: watchIndexRecursiveRule,
+    });
 
     console.log('\nUpdate second line on the first page:\n');
     console.log('My book after change:\n');
