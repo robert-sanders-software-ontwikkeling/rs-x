@@ -30,7 +30,9 @@ export const run = (() => {
     // so we pass a predicate that always returns true.
     // This will emit an initial value { y: 10 }
     console.log('Initial value:');
-    stateManager.watchState(model, 'x', watchIndexRecursiveRule);
+    stateManager.watchState(model, 'x', {
+      indexWatchRule: watchIndexRecursiveRule,
+    });
 
     console.log('Changed value:');
     // This will emit the new value { y: 10 }

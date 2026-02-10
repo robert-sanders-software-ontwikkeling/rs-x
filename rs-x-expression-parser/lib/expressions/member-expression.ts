@@ -309,7 +309,7 @@ export class MemberExpression extends AbstractExpression {
 
   private onSlotChanged(sender: AbstractExpression): void {
     if (!this._rebindingSlot) {
-      this.evaluateBottomToTop(sender, this.root, new Set());
+      this.evaluateBottomToTop(sender, this.evaluationRoot, new Set());
     }
   }
 

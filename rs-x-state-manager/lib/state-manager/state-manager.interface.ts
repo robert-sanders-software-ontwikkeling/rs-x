@@ -13,6 +13,11 @@ export interface IStateChange extends IContextChanged {
   watched?: boolean;
 }
 
+export interface IStateOptions {
+  indexWatchRule?: IIndexWatchRule;
+  ownerId?: unknown;
+}
+
 export interface IStateManager {
   readonly changed: Observable<IStateChange>;
   readonly contextChanged: Observable<IContextChanged>;
@@ -26,7 +31,7 @@ export interface IStateManager {
   watchState(
     context: unknown,
     index: unknown,
-    indexWatchRule?: IIndexWatchRule,
+    options?: IStateOptions,
   ): unknown;
   releaseState(
     oontext: unknown,
@@ -34,6 +39,11 @@ export interface IStateManager {
     indexWatchRule?: IIndexWatchRule,
   ): void;
   getState<T>(context: unknown, index: unknown): T;
-  setState<T>(context: unknown, index: unknown, value: T): void;
+  setState<T>(
+    context: unknown,
+    index: unknown,
+    value: T,
+    ownerId: unknown,
+  ): void;
   clear(): void;
 }

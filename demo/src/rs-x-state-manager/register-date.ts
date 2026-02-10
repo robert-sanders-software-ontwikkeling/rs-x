@@ -28,7 +28,9 @@ function watchDate(stateManager: IStateManager) {
   );
   try {
     console.log('Initial value:');
-    stateManager.watchState(model, 'date', watchIndexRecursiveRule);
+    stateManager.watchState(model, 'date', {
+      indexWatchRule: watchIndexRecursiveRule,
+    });
 
     console.log('Changed value:');
     model.date.setFullYear(2023);

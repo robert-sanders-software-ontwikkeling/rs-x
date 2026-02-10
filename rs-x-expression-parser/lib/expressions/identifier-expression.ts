@@ -26,6 +26,7 @@ export class IndexValueObserver {
     private readonly _indexWatchRule: IIndexWatchRule | undefined,
     private readonly _stateManager: IStateManager,
     private readonly setContext: (context: unknown) => void,
+    ownerId: unknown,
   ) {
     this._changeSubscription = this._stateManager.changed.subscribe(
       this.emitChange,
@@ -33,11 +34,10 @@ export class IndexValueObserver {
 
     this._contextChangeSubscription =
       this._stateManager.contextChanged.subscribe(this.onContextCHanged);
-    const value = this._stateManager.watchState(
-      this._context,
-      this._index,
-      this._indexWatchRule,
-    );
+    const value = this._stateManager.watchState(this._context, this._index, {
+      indexWatchRule: this._indexWatchRule,
+      ownerId,
+    });
 
     if (value !== undefined) {
       this.emitChange({
@@ -213,6 +213,7 @@ export class IdentifierExpression extends AbstractExpression {
       this._indexWatchRule,
       this.stateManager,
       (context) => (this._context = context),
+      this.absoluteRoot,
     );
 
     this._changeSubscription = this._indexValueObserver.changed.subscribe(
@@ -241,7 +242,10 @@ export class IdentifierExpression extends AbstractExpression {
     }
     this._value = stateChange.newValue;
 
-    this.transactionManager.registerChange(this.root, this._commitHandler);
+    this.transactionManager.registerChange(
+      this.evaluationRoot,
+      this._commitHandler,
+    );
 
     if (!this._isBound && this._commitAfterInitialized) {
       this.transactionManager.commit();

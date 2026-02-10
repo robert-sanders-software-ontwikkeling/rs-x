@@ -31,7 +31,9 @@ export const run = (() => {
   try {
     // This will emit a change event with the initial (current) value.
     console.log('Initial value:');
-    stateManager.watchState(model, 'map', watchIndexRecursiveRule);
+    stateManager.watchState(model, 'map', {
+      indexWatchRule: watchIndexRecursiveRule,
+    });
 
     console.log('Changed value:');
     model.map.get('b')?.push(5);

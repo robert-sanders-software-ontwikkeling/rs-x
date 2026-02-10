@@ -50,7 +50,7 @@ export const run = (() => {
     }
 
     private setAPlusB(): void {
-      stateManager.setState(this, this._aPlusBId, this._a + this._b);
+      stateManager.setState(this, this._aPlusBId, this._a + this._b, undefined);
     }
   }
 

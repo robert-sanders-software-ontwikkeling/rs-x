@@ -29,7 +29,9 @@ export const run = (() => {
   try {
     // This will emit a change event with the initial (current) value.
     console.log('Initial value:');
-    stateManager.watchState(model, 'set', watchIndexRecursiveRule);
+    stateManager.watchState(model, 'set', {
+      indexWatchRule: watchIndexRecursiveRule,
+    });
 
     console.log('Changed value:');
     const proxyRegister: IProxyRegistry = InjectionContainer.get(

@@ -30,14 +30,19 @@ export class StateForObjectManager
     return data.key;
   }
 
-  public set(key: unknown, value: unknown, watched: boolean): void {
+  public set(
+    key: unknown,
+    value: unknown,
+    watched: boolean,
+    ownerId: unknown,
+  ): void {
     const state = this.getFromId(key);
 
     if (state) {
       state.valueCopy = this.deepClone(key, value);
       state.value = value;
     } else {
-      this.create({ key, value, watched });
+      this.create({ key, value, watched, ownerId });
     }
   }
 
@@ -60,6 +65,7 @@ export class StateForObjectManager
       value: data.value,
       valueCopy: this.deepClone(data.key, data.value),
       watched: data.watched,
+      ownerId: data.ownerId,
     };
   }
 
@@ -94,6 +100,7 @@ export class ObjectStateManager
     newValue: unknown,
     oldContext: unknown,
     watched: boolean,
+    ownerId: unknown,
   ): void {
     let stateForObjectManagerForNewContext: IStateForObjectManager | undefined;
     const stateForObjectManagerForOldContext = this.getFromId(oldContext);
@@ -111,12 +118,13 @@ export class ObjectStateManager
     }
 
     if (stateForObjectManagerForNewContext) {
-      stateForObjectManagerForNewContext.set(key, newValue, watched);
+      stateForObjectManagerForNewContext.set(key, newValue, watched, ownerId);
     } else if (newValue !== undefined) {
       this.create(newContext).instance.create({
         key,
         value: newValue,
         watched,
+        ownerId,
       });
     }
   }

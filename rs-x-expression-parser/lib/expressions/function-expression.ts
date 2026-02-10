@@ -129,7 +129,12 @@ export class FunctionExpression extends AbstractExpression {
   }
 
   private registerResult(result: unknown): unknown {
-    this.stateManager.setState(this._functionContext, this._functionId, result);
+    this.stateManager.setState(
+      this._functionContext,
+      this._functionId,
+      result,
+      this.absoluteRoot,
+    );
     return result;
   }
 }

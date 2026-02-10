@@ -56,7 +56,9 @@ export const run = (() => {
     // Otherwise, only assigning a new value to model.b would emit a change event.
     // This will emit a change event with the initial (current) value.
     console.log('Initial value:');
-    stateManager.watchState(model, 'b', watchIndexRecursiveRule);
+    stateManager.watchState(model, 'b', {
+      indexWatchRule: watchIndexRecursiveRule,
+    });
 
     console.log('\nReplacing model.b.nested.nested will emit a change event');
     console.log('Changed value:');

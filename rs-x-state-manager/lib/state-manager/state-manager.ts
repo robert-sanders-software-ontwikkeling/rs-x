@@ -25,7 +25,9 @@ import type {
   IContextChanged,
   IStateChange,
   IStateManager,
+  IStateOptions,
 } from './state-manager.interface';
+
 interface ITransferedValue {
   value: unknown;
   context: unknown;
@@ -117,14 +119,24 @@ export class StateManager implements IStateManager {
   public watchState(
     context: unknown,
     index: unknown,
-    indexWatchRule?: IIndexWatchRule,
+    options?: IStateOptions,
   ): unknown {
-    if (!this.isWatched(context, index, indexWatchRule)) {
+    if (!this.isWatched(context, index, options?.indexWatchRule)) {
       const value = this.getState(context, index);
-      this.tryToSubscribeToChange(context, index, indexWatchRule);
+      this.tryToSubscribeToChange(
+        context,
+        index,
+        options?.ownerId,
+        options?.indexWatchRule,
+      );
       return value;
     } else {
-      return this.increaseStateReferenceCount(context, index, true);
+      return this.increaseStateReferenceCount(
+        context,
+        index,
+        true,
+        options?.ownerId,
+      );
     }
   }
 
@@ -150,12 +162,23 @@ export class StateManager implements IStateManager {
       ?.value as T;
   }
 
-  public setState<T>(context: unknown, index: unknown, value: T): void {
-    this.internalSetState(context, index, value, {
+  public setState<T>(
+    context: unknown,
+    index: unknown,
+    value: T,
+    ownerId: unknown,
+  ): void {
+    this.internalSetState(
       context,
-      value: this.getState(context, index),
-      shouldEmitChange: truePredicate,
-    });
+      index,
+      value,
+      {
+        context,
+        value: this.getState(context, index),
+        shouldEmitChange: truePredicate,
+      },
+      ownerId,
+    );
   }
 
   private internalSetState(
@@ -163,14 +186,16 @@ export class StateManager implements IStateManager {
     index: unknown,
     value: unknown,
     transferValue: ITransferedValue,
+    ownerId: unknown | undefined,
   ) {
-    this.tryRebindingNestedState(value, transferValue.value);
+    this.tryRebindingNestedState(value, transferValue.value, ownerId);
     this._objectStateManager.replaceState(
       index,
       context,
       value,
       transferValue.context,
       false,
+      ownerId,
     );
     if (
       !transferValue?.shouldEmitChange ||
@@ -244,6 +269,7 @@ export class StateManager implements IStateManager {
     index: unknown,
     newValue: unknown,
     watched: boolean,
+    ownerId: unknown,
   ): void {
     this._objectStateManager.replaceState(
       index,
@@ -251,6 +277,7 @@ export class StateManager implements IStateManager {
       newValue,
       oldContext,
       watched,
+      ownerId,
     );
   }
 
@@ -265,24 +292,26 @@ export class StateManager implements IStateManager {
     context: unknown,
     index: unknown,
     watched: boolean,
+    ownerId: unknown,
   ): unknown {
     const state = this.getState(context, index);
     this._objectStateManager
       .create(context)
-      .instance.create({ value: state, key: index, watched });
+      .instance.create({ value: state, key: index, watched, ownerId });
     return state;
   }
 
   private tryToSubscribeToChange(
     context: unknown,
     index: unknown,
+    ownerId: unknown,
     indexWatchRule?: IIndexWatchRule,
     transferedValue?: ITransferedValue,
   ): void {
     this._stateChangeSubscriptionManager.create(context).instance.create({
       index: index,
       indexWatchRule,
-      onChanged: (change) => this.onChange(change, true),
+      onChanged: (change) => this.onChange(change, true, ownerId),
       init: (observer) => {
         if (observer.value !== undefined) {
           this.setInitialValue(
@@ -291,6 +320,7 @@ export class StateManager implements IStateManager {
             observer.value,
             transferedValue,
             true,
+            ownerId,
           );
         }
         observer.init();
@@ -309,6 +339,7 @@ export class StateManager implements IStateManager {
   private getStateChanges(
     oldContext: unknown,
     newContext: unknown,
+    parentOwnerId: unknown,
   ): IStateChange[] {
     const oldState = this._objectStateManager.getFromId(oldContext);
     if (!oldState) {
@@ -317,7 +348,15 @@ export class StateManager implements IStateManager {
 
     return Array.from(oldState.ids())
       .map((index) => {
-        const { value: oldValue, watched } = oldState.getFromId(index) ?? {};
+        const {
+          value: oldValue,
+          watched,
+          ownerId,
+        } = oldState.getFromId(index) ?? {};
+
+        if (ownerId !== parentOwnerId) {
+          return [];
+        }
         const newValue = this.getValue(newContext, index);
 
         if (
@@ -340,13 +379,17 @@ export class StateManager implements IStateManager {
         };
         return newValue === PENDING
           ? [stateInfo]
-          : [stateInfo, ...this.getStateChanges(oldValue, newValue)];
+          : [stateInfo, ...this.getStateChanges(oldValue, newValue, ownerId)];
       })
       .reduce((a, b) => a.concat(b), []);
   }
 
-  private tryRebindingNestedState(newValue: unknown, oldValue: unknown): void {
-    const stateChanges = this.getStateChanges(oldValue, newValue);
+  private tryRebindingNestedState(
+    newValue: unknown,
+    oldValue: unknown,
+    ownerId: unknown,
+  ): void {
+    const stateChanges = this.getStateChanges(oldValue, newValue, ownerId);
     if (stateChanges.length === 0) {
       return;
     }
@@ -387,6 +430,7 @@ export class StateManager implements IStateManager {
             context: stateChange.oldContext,
             value: stateChange.oldValue,
           },
+          ownerId,
         );
         continue;
       }
@@ -418,6 +462,7 @@ export class StateManager implements IStateManager {
         this.tryToSubscribeToChange(
           stateChange.context,
           stateChange.index,
+          ownerId,
           indexWatchRule,
           rebindingOptions,
         );
@@ -430,6 +475,7 @@ export class StateManager implements IStateManager {
     initialValue: unknown,
     transferedValue: ITransferedValue | undefined,
     watched: boolean,
+    ownerId: unknown,
   ): void {
     this.updateState(
       context,
@@ -437,6 +483,7 @@ export class StateManager implements IStateManager {
       index,
       initialValue,
       watched,
+      ownerId,
     );
     if (
       !transferedValue?.shouldEmitChange ||
@@ -471,17 +518,26 @@ export class StateManager implements IStateManager {
     }));
   }
 
-  private getCurrentValue(context: unknown, id: unknown): unknown {
+  private getCurrentValue(context: unknown, index: unknown): unknown {
     const value = this._pending.get(context);
     if (value !== undefined) {
       this._pending.delete(context);
       return value;
     }
 
-    return this.getState(context, id);
+    return this.getState(context, index);
   }
 
-  private onChange(change: IPropertyChange, watched: boolean = false): void {
+  private getOwnerId(context: unknown, index: unknown): unknown {
+    return this._objectStateManager.getFromId(context)?.getFromId(index)
+      ?.ownerId;
+  }
+
+  private onChange(
+    change: IPropertyChange,
+    watched: boolean = false,
+    ownerId: unknown,
+  ): void {
     const chainChanges = this.getChainChanges(change.chain);
     if (chainChanges.length === 0) {
       return;
@@ -496,13 +552,14 @@ export class StateManager implements IStateManager {
         chainLeaf.index,
       );
 
-      this.tryRebindingNestedState(change.newValue, currentValue);
+      this.tryRebindingNestedState(change.newValue, currentValue, ownerId);
       this.updateState(
         chainLeaf.context,
         chainLeaf.context,
         chainLeaf.index,
         chainLeaf.value,
         watched,
+        ownerId,
       );
 
       chainChanges.forEach((chainChange) =>
