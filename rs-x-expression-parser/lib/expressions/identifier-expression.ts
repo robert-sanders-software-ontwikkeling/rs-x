@@ -36,7 +36,7 @@ export class IndexValueObserver {
     const value = this._stateManager.watchState(
       this._context,
       this._index,
-      this._indexWatchRule,
+      {indexWatchRule:this._indexWatchRule},
     );
 
     if (value !== undefined) {
