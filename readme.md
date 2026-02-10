@@ -138,7 +138,7 @@ RS-X is actively evolving. The roadmap below shows **progress**, **planned featu
     - Enables RS-X to **update only what changes**, improving performance and efficiency.
     - Simplifies state management by keeping the data model reactive without extra developer effort.
 
-- [**Angular Extension**](rs-x-angular/README.md) — ✅ **Done**
+- [**Angular Extension**](rs-x-angular/projects/rsx/README.md) — ✅ **Done**
   - **Aim:** Enable the use of RS-X expressions directly within Angular templates.
   - **Goal:** Make **data binding to complex data in Angular easy and efficient** — the `rsx-pipe` can fully replace the `async` pipe or Angular `signals`. See [Using rsx-pipe](https://stackblitz.com/~/github.com/robert-sanders-software-ontwikkeling/rs-x-angular-demo) for a working demo.
   - **Objective:** Provide a reactive bridge between your data model and the UI, ensuring that Angular templates automatically update when the underlying data changes.
@@ -148,7 +148,7 @@ RS-X is actively evolving. The roadmap below shows **progress**, **planned featu
     - Allows you to define the data model for your app as the **single source of truth**.
     - Any changes to the model are **automatically detected** by the RS-X framework — no extra work is needed from the developer.
 
-- **React Extension** — ✅ **Done**
+- [**React Extension**](rs-x-react/readme.md)  — ✅ **Done**
   - **Aim:** Enable the use of RS-X expressions directly within React components.
   - **Goal:** Make **data binding to complex data in React easy and efficient**, providing hooks and utilities that automatically subscribe to expression changes and trigger re-renders.
   - **Objective:** Support both synchronous and asynchronous data sources, allowing modular expressions to seamlessly update components when underlying data changes.
@@ -158,6 +158,15 @@ RS-X is actively evolving. The roadmap below shows **progress**, **planned featu
     - Allows your data model to act as the **single source of truth**.
     - Any changes to the model are **automatically detected** by the RS-X framework — no extra work is needed from the developer.
 
+- **Developer Chrome Plugin** — ⏳ **In progress**
+  - **Aim:** Provide developers with a tool to inspect and debug RS-X expressions and application state directly in the browser.
+  - **Goal:** Allow tracking of expressions and the data model within an application, making it easy to monitor changes and understand reactive flows.
+  - **Objective:** Enable setting breakpoints on expressions and observing state updates in real time, helping developers diagnose issues efficiently.
+  - **Impact:**
+    - Simplifies debugging of reactive expressions and application state.
+    - Provides visibility into RS-X internals without modifying application code.
+    - Improves developer productivity by making state changes and expression updates transparent and traceable.
+      
 - **TS Transformer / Plugin — ⚙️ Planned**
   - **Aim:** Provide **compile-time syntax validation** for RS-X expressions written in tagged template literals or lambda-like strings.
   - **Goal:** Offer **IntelliSense / autocomplete** for all properties on the provided context, preventing invalid identifiers from compiling.
@@ -200,16 +209,7 @@ RS-X is actively evolving. The roadmap below shows **progress**, **planned featu
     - Keeps HTML templates **reactive and consistent** with the underlying data model.
     - Simplifies integration between HTML templates and RS-X expression trees, reducing boilerplate and potential errors.
 
-- **Developer Chrome Plugin** — ⚙️ **Planned**
-  - **Aim:** Provide developers with a tool to inspect and debug RS-X expressions and application state directly in the browser.
-  - **Goal:** Allow tracking of expressions and the data model within an application, making it easy to monitor changes and understand reactive flows.
-  - **Objective:** Enable setting breakpoints on expressions and observing state updates in real time, helping developers diagnose issues efficiently.
-  - **Impact:**
-    - Simplifies debugging of reactive expressions and application state.
-    - Provides visibility into RS-X internals without modifying application code.
-    - Improves developer productivity by making state changes and expression updates transparent and traceable.
-
-- **RS-X Presentation Layer** — 🔧 **In progress / Needs refactoring**
+- **RS-X Presentation Layer** — ⚙️ **Planned**
   - **Aim:** Provide a flexible framework for building UI components with RS-X, keeping presentation and logic separate.
   - **Goal:** Allow users to define components internally as [Custom Elements](https://developer.mozilla.org/en-US/docs/Web/API/Web_components) while maintaining simplicity and readability in templates.
   - **Objective:** Enable developers to separate **presentation (HTML templates)** from application logic, staying as close as possible to the **HTML standard** and keeping templates expressive and easy to maintain.
@@ -249,7 +249,7 @@ RS-X is actively evolving. The roadmap below shows **progress**, **planned featu
       - **Behavioral directives** — identified by appending `.attach` to the directive name. They attach **behavior or logic** to a specific element without altering the DOM structure.
   - **Impact:** Streamlines UI development, keeps templates declarative and maintainable, and demonstrates RS-X’s **fine-grained reactive capabilities**.
 
-- **Content Projection** — 🔧 **Mostly done / Needs refactoring**
+- **Content Projection** — ⚙️ **Planned**
   - **Aim:** Provide a flexible system for injecting dynamic content into RS-X components using slots.
   - **Goal:** Allow developers to define multiple named slots in component templates for reusable and customizable layouts.
   - **Objective:** Enable content projection within components so that different sections (e.g., header, body) can be dynamically populated while keeping templates clean and maintainable.
@@ -265,7 +265,7 @@ RS-X is actively evolving. The roadmap below shows **progress**, **planned featu
     - Allows **dynamic content injection**, improving component modularity.
     - Enhances maintainability and readability of complex templates.
 
-- **Theming Support** — 🔧 **Mostly done / Needs refactoring**
+- **Theming Support** — ⚙️ **Planned**
 - - **Aim:** Enable flexible theming for RS-X components, allowing easy visual customization.
   - **Goal:** Allow developers to define custom themes and switch between them simply by setting a `theme` property.
   - **Objective:** Leverage **CSS variables** to inject theme-specific styles into components, making it straightforward to apply consistent branding across the app.
@@ -274,7 +274,7 @@ RS-X is actively evolving. The roadmap below shows **progress**, **planned featu
     - Provides a consistent and maintainable approach to styling RS-X components.
     - Makes theme changes dynamic without requiring component code modifications.
 
-- **Component Library** — ⚙️ **Planned / Ongoing**
+- **Component Library** — ⚙️ **Planned**
   - **Aim:** Provide a versatile set of reusable UI components for RS-X applications.
   - **Goal:** Allow users to influence the development roadmap through a **voting system**, prioritizing which components should be built first.
   - **Objective:** Deliver high-quality, reusable components such as:
