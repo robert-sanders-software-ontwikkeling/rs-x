@@ -13,12 +13,17 @@ import {
 } from 'inversify';
 
 import 'reflect-metadata';
+import { Type } from './types/type';
 
 /* ---------------------------------------------------------
  * Runtime values
  * --------------------------------------------------------- */
 
 export const InjectionContainer = new Container();
+
+
+window.RSX_INJECTION_CONTAINER = InjectionContainer
+
 
 /* ---------------------------------------------------------
  * Runtime re-exports (decorators & classes)
