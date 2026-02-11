@@ -3,4 +3,6 @@ packages:
   - 'rs-x-state-manager'
   - 'rs-x-expression-parser'
   - 'rs-x-react'
+  - 'rs-x-dev-tools'
   - 'rs-x-angular/projects/*'
+  - 'rs-x-expression-editor'

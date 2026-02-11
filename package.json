@@ -8,7 +8,9 @@
     "rs-x-state-manager",
     "rs-x-expression-parser",
     "rs-x-angular/projects/rsx",
-    "rs-x-react"
+    "rs-x-react",
+    "rs-x-dev-tools",
+    "@rs-x/expression-editor"
   ],
   "scripts": {
     "build:libs": "pnpm --filter '@rs-x/core' run build && pnpm --filter '@rs-x/state-manager' run build && pnpm --filter '@rs-x/expression-parser' run build &&  pnpm --filter '@rs-x/react' run build",
@@ -19,6 +21,7 @@
     "build:state-manager": "pnpm --filter @rs-x/state-manager run build",
     "build:expression-parser": "pnpm --filter @rs-x/expression-parser run build",
     "build:react": "pnpm --filter @rs-x/react run build",
+    "build:devtools": "pnpm --filter @rs-x/dev-tools run build",
     "test": "cross-env TZ=UTC pnpm jest --runInBand --no-cache --config jest.config.ts",
     "test:angular": "pnpm --prefix rs-x-angular run test",
     "test:react": "pnpm --prefix rs-x-react run test",
@@ -34,17 +37,22 @@
     "@angular/core": "^21.1.0",
     "@angular/platform-browser-dynamic": "21.1.0",
     "@changesets/cli": "^2.29.8",
+    "@monaco-editor/react": "^4.7.0",
     "@swc/core": "^1.15.10",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
+    "@types/chrome": "^0.1.36",
     "@types/espree": "10.1.0",
     "@types/estraverse": "5.1.7",
     "@types/jest": "^30.0.0",
     "@types/lodash.clonedeepwith": "^4.5.9",
     "@types/node": "^25.0.10",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@typescript-eslint/eslint-plugin": "^8.53.1",
     "@typescript-eslint/parser": "^8.53.1",
     "@ungap/structured-clone": "^1.3.0",
+    "babel-plugin-react-compiler": "^1.0.0",
     "cross-env": "^10.1.0",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
@@ -58,6 +66,9 @@
     "ng-packagr": "^21.1.0",
     "npm-run-all": "^4.1.5",
     "prettier": "^3.8.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-resizable-panels": "^4.6.2",
     "rimraf": "^6.1.2",
     "rxjs": "^7.8.2",
     "ts-jest": "^29.4.6",
@@ -66,5 +77,8 @@
     "typescript": "^5.9.3",
     "vitest": "^4.0.18",
     "zone.js": "^0.16.0"
+  },
+  "dependencies": {
+    "react-icons": "^5.5.0"
   }
 }
