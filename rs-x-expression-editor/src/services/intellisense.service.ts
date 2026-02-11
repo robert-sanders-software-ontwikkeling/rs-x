@@ -1,24 +1,18 @@
 import type * as monaco from "monaco-editor";
 
 /**
- * Service to provide intellisense for expressions based on a JS model object.
+ * Provides intelligent autocomplete for expressions based on a JS model.
  */
 export class ModelIntellisenseService {
   public model: Record<string, unknown> = {};
   public monaco?: typeof monaco;
 
-  /** Update the model from editor content */
-  public updateModelFromEditor(editorModel: monaco.editor.ITextModel): void {
-    try {
-      // Parse safely as JavaScript object
-      // eslint-disable-next-line no-new-func
-      this.model = new Function(`return ${editorModel.getValue()}`)() as Record<string, unknown>;
-    } catch {
-      this.model = {}; // fallback on parse error
-    }
+  /** Set or update the model object */
+  public setModel(model: Record<string, unknown>): void {
+    this.model = model;
   }
 
-  /** Register completion provider for Monaco editor */
+  /** Register Monaco completion provider */
   public registerCompletionProvider(monacoInstance: typeof monaco): void {
     this.monaco = monacoInstance;
 
@@ -28,9 +22,7 @@ export class ModelIntellisenseService {
         editorModel: monaco.editor.ITextModel,
         position: monaco.Position
       ): monaco.languages.ProviderResult<monaco.languages.CompletionList> => {
-        if (!this.monaco) {
-          return { suggestions: [] };
-        }
+        if (!this.monaco) return { suggestions: [] };
 
         const range = this.getWordRangeAtPosition(editorModel, position);
         const textBeforeCursor = editorModel.getValueInRange({
@@ -41,16 +33,16 @@ export class ModelIntellisenseService {
         });
 
         const memberExpression = this.getCurrentMemberExpression(textBeforeCursor);
-        const suggestions = this.getSuggestionsForMemberExpression(memberExpression, range);
+        const suggestions = this.getSuggestions(memberExpression, range);
 
         return { suggestions };
       }
     });
   }
 
-  /** Extracts the member expression immediately before the cursor */
+  /** Extract the member expression immediately before the cursor */
   private getCurrentMemberExpression(textBeforeCursor: string): string {
-    const match = textBeforeCursor.match(/([\w$][\w\d$]*(\.[\w$][\w\d$]*)*)$/);
+    const match = textBeforeCursor.match(/[\w$][\w\d$]*(\.[\w$][\w\d$]*)*\.?$/);
     return match ? match[0] : "";
   }
 
@@ -59,23 +51,21 @@ export class ModelIntellisenseService {
     editorModel: monaco.editor.ITextModel,
     position: monaco.Position
   ): monaco.IRange {
-    const wordInfo = editorModel.getWordUntilPosition(position);
+    const word = editorModel.getWordUntilPosition(position);
     return new this.monaco!.Range(
       position.lineNumber,
-      wordInfo.startColumn,
+      word.startColumn,
       position.lineNumber,
-      wordInfo.endColumn
+      word.endColumn
     );
   }
 
   /** Generate completion items for a member expression like "b.c" */
-  private getSuggestionsForMemberExpression(
+  private getSuggestions(
     memberExpression: string,
     range: monaco.IRange
   ): monaco.languages.CompletionItem[] {
-    if (!this.monaco) {
-      return [];
-    }
+    if (!this.monaco) return [];
 
     const { objectAtPath, lastSegment } = this.resolveMemberExpression(memberExpression);
 
@@ -83,30 +73,39 @@ export class ModelIntellisenseService {
       return [];
     }
 
+    // Only return direct properties of the objectAtPath that match lastSegment
     return Object.keys(objectAtPath as Record<string, unknown>)
       .filter((key) => key.startsWith(lastSegment))
-      .map((key) => {
-        return {
-          label: key,
-          kind: this.monaco!.languages.CompletionItemKind.Property,
-          insertText: key,
-          range
-        } as monaco.languages.CompletionItem;
-      });
+      .map((key) => ({
+        label: key,
+        kind: this.monaco!.languages.CompletionItemKind.Property,
+        insertText: key,
+        range
+      }) as monaco.languages.CompletionItem);
   }
 
-  /** Resolve the object at the given member expression path and the last segment */
+  /**
+   * Resolve the member expression to the object whose keys should be suggested
+   * and the last segment being typed
+   */
   private resolveMemberExpression(
     memberExpression: string
   ): { objectAtPath: unknown; lastSegment: string } {
-    // Split by dot
-    const parts = memberExpression.split(".");
+    // Remove trailing dot if present
+    const cleaned = memberExpression.endsWith(".")
+      ? memberExpression.slice(0, -1)
+      : memberExpression;
 
-    // Determine last segment (after trailing dot it is "")
-    let lastSegment = parts.pop() || "";
+    // Split into path segments
+    const parts = cleaned.split(".").filter(Boolean);
 
+    // Last segment is what user is currently typing (empty if trailing dot)
+    const lastSegment = memberExpression.endsWith(".")
+      ? ""
+      : parts.pop() || "";
+
+    // Traverse all parts except lastSegment to get the object for suggestions
     let current: unknown = this.model;
-
     for (const part of parts) {
       if (current && typeof current === "object" && !Array.isArray(current)) {
         current = (current as Record<string, unknown>)[part];
