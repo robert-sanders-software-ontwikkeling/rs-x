@@ -1,11 +1,15 @@
 import type * as monaco from "monaco-editor";
 
+
 /**
  * Provides intelligent autocomplete for expressions based on a JS model.
  */
 export class ModelIntellisenseService {
   public model: Record<string, unknown> = {};
   public monaco?: typeof monaco;
+
+
+  
 
   /** Set or update the model object */
   public setModel(model: Record<string, unknown>): void {
@@ -16,7 +20,7 @@ export class ModelIntellisenseService {
   public registerCompletionProvider(monacoInstance: typeof monaco): void {
     this.monaco = monacoInstance;
 
-    monacoInstance.languages.registerCompletionItemProvider("javascript", {
+    monacoInstance.languages.registerCompletionItemProvider("typescript", {
       triggerCharacters: "_$abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.".split(""),
 
       provideCompletionItems: (
