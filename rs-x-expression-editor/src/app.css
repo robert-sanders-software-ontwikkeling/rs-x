@@ -11,6 +11,10 @@ html, body, #root, .app {
   height: 100%;
   width: 100%;
   display: flex;
+
+  /* 🔥 fix voor nested panels */
+  min-height: 0;
+  min-width: 0;
 }
 
 .panel-stack {
@@ -18,6 +22,10 @@ html, body, #root, .app {
   flex-direction: column;
   height: 100%;
   width: 100%;
+
+  /* 🔥 fix voor vertical Group resize */
+  flex: 1;
+  min-height: 0;
 }
 
 .panel {
@@ -28,6 +36,10 @@ html, body, #root, .app {
   border-radius: 4px;
   margin: 2px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+
+  /* 🔥 fix voor resizing */
+  min-height: 0;
+  min-width: 0;
 }
 
 /* Panel headers */
@@ -112,6 +124,10 @@ html, body, #root, .app {
   flex: 1;
   overflow: auto;
   padding: 4px;
+
+  /* 🔥 fix voor resizing */
+  min-height: 0;
+  min-width: 0;
 }
 
 .separator {
@@ -124,4 +140,5 @@ html, body, #root, .app {
   height: 4px;
   cursor: row-resize;
   background-color: #444;
+  flex-shrink: 0; /* 🔥 fix */
 }

@@ -92,7 +92,7 @@ export const App: React.FC = () => {
             </div>
 
             <Group orientation='vertical' className='panel-stack'>
-              <Panel defaultSize={30} className='panel'>
+              <Panel defaultSize={30} minSize={10} className='panel'>
                 <div className='panel-header'>Model Editor</div>
                 <div className='editor-wrapper'>
                   <Editor
@@ -108,7 +108,7 @@ export const App: React.FC = () => {
 
               <Separator className='separator-horizontal' />
 
-              <Panel defaultSize={40} className='panel'>
+              <Panel defaultSize={40} minSize={10} className='panel'>
                 <div className='panel-header'>Expression Editor</div>
                 <div className='editor-wrapper'>
                   <Editor
@@ -118,7 +118,7 @@ export const App: React.FC = () => {
                     options={{
                       suggestOnTriggerCharacters: true,
                       quickSuggestions: true,
-                      wordBasedSuggestions: "off",  // <-- correct type
+                      wordBasedSuggestions: "off",
                     }}
                     onMount={handleExpressionMount}
                   />
@@ -127,7 +127,7 @@ export const App: React.FC = () => {
 
               <Separator className='separator-horizontal' />
 
-              <Panel defaultSize={30} className='panel'>
+              <Panel defaultSize={30} minSize={10} className='panel'>
                 <div className='panel-header'>Errors</div>
                 <div className='errors-panel'>
                   <p>No errors</p>
