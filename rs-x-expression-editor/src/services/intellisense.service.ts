@@ -18,11 +18,14 @@ export class ModelIntellisenseService {
 
     monacoInstance.languages.registerCompletionItemProvider("javascript", {
       triggerCharacters: "_$abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.".split(""),
+
       provideCompletionItems: (
         editorModel: monaco.editor.ITextModel,
         position: monaco.Position
       ): monaco.languages.ProviderResult<monaco.languages.CompletionList> => {
-        if (!this.monaco) return { suggestions: [] };
+        if (!this.monaco) {
+          return { suggestions: [] };
+        }
 
         const range = this.getWordRangeAtPosition(editorModel, position);
         const textBeforeCursor = editorModel.getValueInRange({
@@ -60,7 +63,7 @@ export class ModelIntellisenseService {
     );
   }
 
-  /** Generate completion items for a member expression like "b.c" */
+  /** Generate completion items for a member expression */
   private getSuggestions(
     memberExpression: string,
     range: monaco.IRange
@@ -73,7 +76,7 @@ export class ModelIntellisenseService {
       return [];
     }
 
-    // Only return direct properties of the objectAtPath that match lastSegment
+    // Only return direct keys of the object
     return Object.keys(objectAtPath as Record<string, unknown>)
       .filter((key) => key.startsWith(lastSegment))
       .map((key) => ({
@@ -84,37 +87,33 @@ export class ModelIntellisenseService {
       }) as monaco.languages.CompletionItem);
   }
 
-  /**
-   * Resolve the member expression to the object whose keys should be suggested
-   * and the last segment being typed
-   */
-  private resolveMemberExpression(
+ private resolveMemberExpression(
     memberExpression: string
-  ): { objectAtPath: unknown; lastSegment: string } {
-    // Remove trailing dot if present
-    const cleaned = memberExpression.endsWith(".")
-      ? memberExpression.slice(0, -1)
-      : memberExpression;
+): { objectAtPath: unknown; lastSegment: string } {
+    const fullExpr = memberExpression.trim();
+    if (!fullExpr) return { objectAtPath: {}, lastSegment: "" };
 
-    // Split into path segments
-    const parts = cleaned.split(".").filter(Boolean);
+    // Split all segments
+    const parts = fullExpr.split(".").filter(Boolean);
 
-    // Last segment is what user is currently typing (empty if trailing dot)
-    const lastSegment = memberExpression.endsWith(".")
-      ? ""
-      : parts.pop() || "";
+    // Last segment is what user is typing
+    const lastSegment = fullExpr.endsWith(".") ? "" : parts.pop() || "";
 
-    // Traverse all parts except lastSegment to get the object for suggestions
+    // Traverse all **parent segments** (everything except last segment)
     let current: unknown = this.model;
     for (const part of parts) {
-      if (current && typeof current === "object" && !Array.isArray(current)) {
-        current = (current as Record<string, unknown>)[part];
-      } else {
+        if (current && typeof current === "object" && !Array.isArray(current)) {
+            current = (current as Record<string, unknown>)[part];
+        } else {
+            current = {};
+            break;
+        }
+    }
+
+    if (!current || typeof current !== "object" || Array.isArray(current)) {
         current = {};
-        break;
-      }
     }
 
     return { objectAtPath: current, lastSegment };
-  }
+}
 }
