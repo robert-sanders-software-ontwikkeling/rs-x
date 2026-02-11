@@ -72,3 +72,4 @@ Feedback is very welcome.
   - [@rs-x/state-manager](https://www.npmjs.com/package/@rs-x/state-manager)
   - [@rs-x/expression-parser](https://www.npmjs.com/package/@rs-x/expression-parser)
   - [@rs-x/angular](https://www.npmjs.com/package/@rs-x/angular)
+  - [@rsx/react](https://www.npmjs.com/package/@rs-x/react)
