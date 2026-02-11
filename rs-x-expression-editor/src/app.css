@@ -1,0 +1,127 @@
+html, body, #root, .app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Fira Code', monospace;
+  background-color: #1e1e2f;
+  color: #f0f0f0;
+}
+
+.panels-container {
+  height: 100%;
+  width: 100%;
+  display: flex;
+}
+
+.panel-stack {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: #2b2b3b;
+  border-radius: 4px;
+  margin: 2px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+/* Panel headers */
+.panel-header {
+  padding: 6px 12px;
+  font-weight: 600;
+  background-color: #323248;
+  border-bottom: 1px solid #444;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #f0f0f0;
+}
+
+/* Top bar for cancel/save buttons */
+.top-bar {
+  display: flex;
+  justify-content: flex-start; /* left align */
+  gap: 8px;
+  padding: 6px 12px;
+  background-color: #2f2f44;
+  border-bottom: 1px solid #444;
+  align-items: center;
+}
+
+/* Buttons styling */
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  font-size: 0.95em;
+  font-weight: 500;
+  border: 1px solid #666;
+  border-radius: 4px;
+  background-color: #3a3a5a;
+  color: #f0f0f0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  background-color: #4a4a7a;
+  border-color: #888;
+}
+
+.btn:active {
+  background-color: #3a3a6a;
+  border-color: #555;
+}
+
+.add-btn {
+  background-color: #4b6fff;
+  border-color: #2f4fff;
+  color: white;
+}
+
+.add-btn:hover {
+  background-color: #5c7fff;
+}
+
+.cancel-btn {
+  background-color: #d9534f;
+  border-color: #c9302c;
+}
+
+.cancel-btn:hover {
+  background-color: #e06b6b;
+}
+
+.save-btn {
+  background-color: #5cb85c;
+  border-color: #4cae4c;
+}
+
+.save-btn:hover {
+  background-color: #6cc66c;
+}
+
+.editor-wrapper,
+.errors-panel {
+  flex: 1;
+  overflow: auto;
+  padding: 4px;
+}
+
+.separator {
+  width: 4px;
+  cursor: col-resize;
+  background-color: #444;
+}
+
+.separator-horizontal {
+  height: 4px;
+  cursor: row-resize;
+  background-color: #444;
+}

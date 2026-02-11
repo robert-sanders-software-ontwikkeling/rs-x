@@ -1,0 +1,24 @@
+{
+  "name": "@rs-x/expression-editor",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "dev": "vite",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@rs-x/core": "workspace:*",
+    "@rs-x/expression-parser": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "@vitejs/plugin-react": "^5.1.4"
+  },
+  "peerDependencies": {
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  }
+}
