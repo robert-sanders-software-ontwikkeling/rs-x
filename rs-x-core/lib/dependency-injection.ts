@@ -22,7 +22,7 @@ import { Type } from './types/type';
 export const InjectionContainer = new Container();
 
 
-window.RSX_INJECTION_CONTAINER = InjectionContainer
+window.RSX_INJECTION_CONTAINER = InjectionContainer;
 
 
 /* ---------------------------------------------------------
