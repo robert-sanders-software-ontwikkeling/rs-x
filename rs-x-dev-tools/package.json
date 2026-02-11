@@ -1,0 +1,58 @@
+{
+  "name": "@rs-x/dev-tools",
+  "version": "0.4.21",
+  "description": "RS-X DevTools for inspecting reactive state and expressions",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x"
+  },
+  "homepage": "https://github.com/robert-sanders-software-ontwikkeling/rs-x",
+  "bugs": {
+    "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsup && npm run copy-assets",
+    "copy-assets": "mkdir -p dist/panel dist/icons && cp src/dev-tools.html dist/ && cp src/panel/*.css dist/panel/ && cp src/panel/*.html dist/panel/ && cp manifest.json dist/ && cp -r src/icons/* dist/icons/"
+  },
+  "dependencies": {
+    "@rs-x/core": "workspace:*",
+    "@rs-x/state-manager": "workspace:*",
+    "@rs-x/expression-parser": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "tsup": "^8.5.1",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18",
+    "rimraf": "^6.1.2"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "keywords": [
+    "rs-x",
+    "devtools",
+    "reactive",
+    "state",
+    "expressions",
+    "debugging"
+  ]
+}

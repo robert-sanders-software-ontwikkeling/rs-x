@@ -1,0 +1,15 @@
+body {
+  margin: 0;
+  font-family: sans-serif;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+pre {
+  background: #f4f4f4;
+  padding: 10px;
+  border-radius: 6px;
+  overflow-x: auto;
+}
