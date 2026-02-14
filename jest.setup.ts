@@ -1,6 +1,9 @@
 import structuredCloneModule from '@ungap/structured-clone';
 
+import 'fake-indexeddb/auto';
+
 import { customMatchers } from './custom-matchers';
+
 
 class ResizeObserverMock {
   public disconnect = jest.fn();

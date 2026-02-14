@@ -7,6 +7,13 @@ html, body, #root, .app {
   color: #f0f0f0;
 }
 
+.fullscreen-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
 .panels-container {
   height: 100%;
   width: 100%;
@@ -92,31 +99,40 @@ html, body, #root, .app {
 }
 
 .add-btn {
-  background-color: #4b6fff;
-  border-color: #2f4fff;
-  color: white;
+  background-color: #3f4f8a;
+  border-color: #35437a;
+  color: #f0f0f0;
 }
 
 .add-btn:hover {
-  background-color: #5c7fff;
-}
-
-.cancel-btn {
-  background-color: #d9534f;
-  border-color: #c9302c;
-}
-
-.cancel-btn:hover {
-  background-color: #e06b6b;
+  background-color: #4b5fa3;
+  border-color: #3f4f8a;
 }
 
 .save-btn {
-  background-color: #5cb85c;
-  border-color: #4cae4c;
+  background-color: #3f5f4f;
+  border-color: #355244;
+  color: #e6f3ec;
 }
 
 .save-btn:hover {
-  background-color: #6cc66c;
+  background-color: #4a7560;
+  border-color: #3f5f4f;
+}
+
+.save-btn:active {
+  background-color: #355244;
+}
+
+.save-btn:disabled {
+  background-color: #2b3a34;
+  border-color: #2b3a34;
+  color: #6a7a72;
+  cursor: not-allowed;
+}
+
+.save-btn:disabled:hover {
+  background-color: #c8e6c9; /* hover geen effect */
 }
 
 .editor-wrapper,

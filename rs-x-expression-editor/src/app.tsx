@@ -1,137 +1,243 @@
-import React, { useRef, useState } from 'react';
-import { Group, Panel, Separator } from 'react-resizable-panels';
-import Editor from '@monaco-editor/react';
 import type { OnMount } from '@monaco-editor/react';
-import { FaPlus, FaCheck, FaTimes } from 'react-icons/fa';
-import type * as monaco from 'monaco-editor';
+import { InjectionContainer } from '@rs-x/core';
+import React, { useEffect, useState } from 'react';
+import { Group, Panel, Separator } from 'react-resizable-panels';
+import { IExpressionManager, RsXExpressionParserInjectionTokens } from '../../rs-x-expression-parser/lib';
+
+import { ModelList } from './components/model-list/model-list.component';
+import { Spinner } from './components/spinner/spinner.component';
+import { TSEditor } from './components/ts-editor/ts-editor.component';
+
+import { ObjectViewer } from './components/object-viewer/object-viewer.component';
+import { useExpressionEditorState } from './hooks/use-expression-editor-state';
+import type { IExpressionEditorState } from './models/expression-editor-state.interface';
+import { ExpressionEditorStateBuilder } from './services/expression-editor-state-builder';
+import { ExpressionEdtitorStateSerializer } from './services/expression-editor-state-serializer';
+import { ModelIntellisenseService } from './services/model-intellisense.service';
 
 import './app.css';
-import { ModelIntellisenseService } from './services/intellisense.service';
 
+const emptyModel = '(\n\t{\n\n\t}\n)';
 
 export const App: React.FC = () => {
-  const expressionEditorRef = useRef<monaco.editor.IStandaloneCodeEditor>(null);
-  const modelEditorRef = useRef<monaco.editor.IStandaloneCodeEditor>(null);
+  const deserializedState = useExpressionEditorState();
 
-  const [addingExpression, setAddingExpression] = useState(false);
-  const [modelValue, setModelValue] = useState<string>(''); // <-- empty by default
+  if (!deserializedState) {
+    return (
+      <div className="fullscreen-loader">
+        <Spinner size={60} />
+      </div>
+    );
+  }
 
-  const intellisenseService = new ModelIntellisenseService();
+  return <AppLoaded initialState={deserializedState} />;
+};
 
+type AppLoadedProps = {
+  initialState: IExpressionEditorState;
+};
 
+const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
+  const [currentState, setCurrentState] = useState<IExpressionEditorState>(initialState);
 
-  const handleModelChange = (value: string | undefined) =>
-    value &&
-    (() => {
-      try {
-        const model = new Function(`return ${value}`)(); // evaluate JS safely (expression only)
-        intellisenseService.model = model;
-        setModelValue(value);
-      } catch {
-        // ignore parse errors
-      }
-    })();
+  const expressionManager = InjectionContainer.get<IExpressionManager>(
+    RsXExpressionParserInjectionTokens.IExpressionManager
+  );
 
-  // Button handlers
-  const handleAddExpression = () => setAddingExpression(true);
-  const handleCancel = () => setAddingExpression(false);
-  const handleSave = () => {
-    alert('Expression saved!');
-    setAddingExpression(false);
+  useEffect(() => {
+    const id = setTimeout(() => {
+      ExpressionEdtitorStateSerializer.getInstance()
+        .serialize(currentState)
+        .catch(console.error);
+    }, 300);
+
+    return () => clearTimeout(id);
+  }, [currentState]);
+
+  const handleAddModel = () =>
+    setCurrentState(prev =>
+      new ExpressionEditorStateBuilder(prev)
+        .setAddingModel(true)
+        .state
+    );
+
+  const handleAddExpression = (model: object) => {
+    setCurrentState(prev =>
+      new ExpressionEditorStateBuilder(prev)
+        .setAddingExpression(true)
+        .selectModel(model, true)
+        .state
+    );
+
+    ModelIntellisenseService.getInstance().model = model;
   };
 
-  // Register expression editor intellisense
-  const handleExpressionMount: OnMount = (editor, monacoInstance) => {
-    expressionEditorRef.current = editor;
-    intellisenseService.registerCompletionProvider(monacoInstance);
+  function getSelectedModelString(): string | undefined {
+    return currentState.modelsWithExpressions.find(modelWithExpressions => modelWithExpressions.selected)?.modelString;
+  }
+
+  const handleCancel = () => {
+    setCurrentState(prev => {
+      const b = new ExpressionEditorStateBuilder(prev);
+
+      if (prev.addingExpression) return b.setAddingExpression(false).state;
+      if (prev.addingModel) return b.setAddingModel(false).state;
+
+      return prev;
+    });
   };
 
-  const handleModelMount: OnMount = (editor) => (modelEditorRef.current = editor);
+  const saveModel = (name: string, modelString: string) => {
+    try {
+      const model = new Function(`return ${modelString}`)();
+      setCurrentState(prev =>
+        new ExpressionEditorStateBuilder(prev)
+          .addModel(name, modelString, model)
+          .setAddingModel(false)
+          .state
+      );
+    } catch (e) {
+      setCurrentState(prev =>
+        new ExpressionEditorStateBuilder(prev)
+          .setError(e instanceof Error ? e.message : String(e))
+          .state
+      );
+    }
+  };
+
+  const saveExpression = (name: string, expressionString: string) => {
+    const trimmed = expressionString?.trim();
+    if (!trimmed) return;
+
+    const selectedModel = currentState.modelsWithExpressions.find(m => m.selected)?.model;
+    if (!selectedModel) return;
+
+    try {
+      const { instance: expression } = expressionManager
+        .create(selectedModel)
+        .instance.create({ expressionString: trimmed });
+
+      setCurrentState(prev =>
+        new ExpressionEditorStateBuilder(prev)
+          .addExpression(selectedModel, name, expression)
+          .setAddingExpression(false)
+          .state
+      );
+    } catch (e) {
+      setCurrentState(prev =>
+        new ExpressionEditorStateBuilder(prev)
+          .setError(e instanceof Error ? e.message : String(e))
+          .state
+      );
+    }
+  };
+
+  const handleExpressionMount: OnMount = (_, monacoInstance) => {
+    ModelIntellisenseService.getInstance().registerCompletionProvider(monacoInstance);
+  };
+
+  const onSelectExpression = (mode: object, selectedExpressionIndex: number) => {
+    setCurrentState(prev =>
+      new ExpressionEditorStateBuilder(prev)
+        .selectExpression(mode, selectedExpressionIndex)
+        .state
+    );
+  };
+
+  const onDeleteExpression = (mode: object, selectedExpressionIndex: number) => {
+    setCurrentState(prev =>
+      new ExpressionEditorStateBuilder(prev)
+        .deleteExpression(mode, selectedExpressionIndex)
+        .state
+    );
+  };
+
+  const onEditExpression = (mode: object, selectedExpressionIndex: number) => {
+    setCurrentState(prev =>
+      new ExpressionEditorStateBuilder(prev)
+        .editExpression(mode, selectedExpressionIndex)
+        .state
+    );
+  };
 
   return (
-    <div className='app'>
-      <Group orientation='horizontal' className='panels-container'>
-        {/* Columns 1 & 2 */}
-        {!addingExpression && (
-          <>
-            <Panel defaultSize={25} className='panel'>
-              <div className='panel-header'>
-                Expression List
-                <button className='btn add-btn' onClick={handleAddExpression}>
-                  <FaPlus /> Add
-                </button>
-              </div>
-              <div className='editor-wrapper'>
-                <p>List of expressions...</p>
-              </div>
-            </Panel>
-
-            <Separator className='separator' />
-
-            <Panel defaultSize={15} className='panel'>
-              <div className='panel-header'>Expression Tree</div>
-              <div className='editor-wrapper'>
-                <p>Tree of selected expression...</p>
-              </div>
-            </Panel>
-
-            <Separator className='separator' />
-          </>
+    <div className="app">
+      <Group orientation="horizontal" className="panels-container">
+        {!currentState.addingModel && !currentState.addingExpression && (
+          <Panel defaultSize={25} className="panel">
+            <ModelList
+              modelsWithExpressions={currentState.modelsWithExpressions}
+              handleAddModel={handleAddModel}
+              handleAddExpression={handleAddExpression}
+              onSelectExpression={onSelectExpression}
+              onEditExpression={onDeleteExpression}
+              onDeleteExpression={onEditExpression}
+            />
+          </Panel>
         )}
 
-        {/* Column 3: Right stacked panels */}
-        {addingExpression && (
-          <Panel defaultSize={60} className='panel'>
-            <div className='top-bar'>
-              <button className='btn save-btn' onClick={handleSave}>
-                <FaCheck /> Save
-              </button>
-              <button className='btn cancel-btn' onClick={handleCancel}>
-                <FaTimes /> Cancel
-              </button>
-            </div>
+        {currentState.addingModel && (
+          <Panel defaultSize={60} className="panel">
+            <Group orientation="vertical" className="panel-stack">
+              <Panel defaultSize={70} minSize={10} className="panel">
+                <TSEditor
+                  header="Model Editor"
+                  value={emptyModel}
+                  save={saveModel}
+                  cancel={handleCancel}
+                />
+              </Panel>
 
-            <Group orientation='vertical' className='panel-stack'>
-              <Panel defaultSize={30} minSize={10} className='panel'>
-                <div className='panel-header'>Model Editor</div>
-                <div className='editor-wrapper'>
-                  <Editor
-                    height='100%'
-                    defaultLanguage='typescript'
-                    value={modelValue}
-                    theme='vs-dark'
-                    onChange={handleModelChange}
-                    onMount={handleModelMount}
-                  />
+              <Separator className="separator-horizontal" />
+
+              <Panel defaultSize={30} minSize={10} className="panel">
+                <div className="panel-header">Errors</div>
+                <div className="errors-panel">
+                  <p>{currentState.error}</p>
+                </div>
+              </Panel>
+            </Group>
+          </Panel>
+        )}
+
+        {currentState.addingExpression && (
+          <Panel defaultSize={60} className="panel">
+            <Group orientation="horizontal" className="panels-container">
+              <Panel defaultSize={30} minSize={15} className="panel">
+                <div className="panel-header">Model</div>
+                <div className="editor-wrapper">
+                  <ObjectViewer modelString={getSelectedModelString()} />
+
                 </div>
               </Panel>
 
-              <Separator className='separator-horizontal' />
+              <Separator className="separator" />
 
-              <Panel defaultSize={40} minSize={10} className='panel'>
-                <div className='panel-header'>Expression Editor</div>
-                <div className='editor-wrapper'>
-                  <Editor
-                    height='100%'
-                    defaultLanguage='typescript'
-                    theme='vs-dark'
-                    options={{
-                      suggestOnTriggerCharacters: true,
-                      quickSuggestions: true,
-                      wordBasedSuggestions: "off",
-                    }}
-                    onMount={handleExpressionMount}
-                  />
-                </div>
-              </Panel>
+              <Panel defaultSize={70} minSize={30} className="panel">
+                <Group orientation="vertical" className="panel-stack">
+                  <Panel defaultSize={70} minSize={10} className="panel">
+                    <TSEditor
+                      header="Expression Editor"
+                      options={{
+                        suggestOnTriggerCharacters: true,
+                        quickSuggestions: true,
+                        wordBasedSuggestions: 'off',
+                      }}
+                      save={saveExpression}
+                      cancel={handleCancel}
+                      onMount={handleExpressionMount}
+                    />
+                  </Panel>
 
-              <Separator className='separator-horizontal' />
+                  <Separator className="separator-horizontal" />
 
-              <Panel defaultSize={30} minSize={10} className='panel'>
-                <div className='panel-header'>Errors</div>
-                <div className='errors-panel'>
-                  <p>No errors</p>
-                </div>
+                  <Panel defaultSize={30} minSize={10} className="panel">
+                    <div className="panel-header">Errors</div>
+                    <div className="errors-panel">
+                      <p>{currentState.error}</p>
+                    </div>
+                  </Panel>
+                </Group>
               </Panel>
             </Group>
           </Panel>

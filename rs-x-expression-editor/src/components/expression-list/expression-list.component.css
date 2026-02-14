@@ -1,0 +1,96 @@
+/* Container */
+.expression-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  overflow-y: auto;
+}
+
+/* Empty state */
+.expression-empty {
+  opacity: 0.6;
+  padding: 6px;
+  font-style: italic;
+}
+
+/* Row */
+.expression-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  background-color: #2f2f44;
+  border: 1px solid #444;
+  border-radius: 4px;
+
+  padding: 6px 10px;
+  cursor: pointer;
+
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.expression-item:hover {
+  background-color: #3a3a5a;
+  border-color: #555;
+}
+
+/* Selected row */
+.expression-item.is-selected {
+  border-color: #5c7cfa;
+  background-color: #35385a;
+  box-shadow: 0 0 0 1px rgba(92, 124, 250, 0.35);
+}
+
+/* Expression text */
+.expression-code {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.9rem;
+  color: #9cdcfe;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 70%;
+}
+
+/* Selected expression text */
+.expression-item.is-selected .expression-code {
+  color: #cfe1ff;
+}
+
+/* Right-side buttons */
+.expression-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* Icon buttons (inherits your .btn styling) */
+.icon-btn {
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Edit button (subtle blue) */
+.edit-btn {
+  background-color: #44486a;
+  border-color: #555a80;
+  color: #f0f0f0;
+}
+
+.edit-btn:hover {
+  background-color: #565c88;
+}
+
+/* Delete button (subtle red, not too bright) */
+.delete-btn {
+  background-color: #5a2f3a;
+  border-color: #6b3a46;
+  color: #f0f0f0;
+}
+
+.delete-btn:hover {
+  background-color: #7a3f4f;
+}

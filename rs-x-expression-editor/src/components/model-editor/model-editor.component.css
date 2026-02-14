@@ -1,0 +1,205 @@
+/* model-editor.component.css */
+
+.me-root {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.me-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.me-title {
+  font-weight: 700;
+  color: #f0f0f0;
+}
+
+.me-filter {
+  flex: 1;
+  max-width: 360px;
+  padding: 6px 10px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #2f2f44;
+  color: #f0f0f0;
+  outline: none;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.9rem;
+}
+
+.me-filter:focus {
+  border-color: #5c7cfa;
+}
+
+.me-field {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #2b2b3b;
+}
+
+.me-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.me-key {
+  font-weight: 600;
+  color: #9cdcfe;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.me-path {
+  font-size: 12px;
+  opacity: 0.6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.me-control {
+  min-width: 0;
+}
+
+.me-input,
+.me-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #1f1f2e;
+  color: #f0f0f0;
+  outline: none;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.me-input:focus,
+.me-textarea:focus {
+  border-color: #5c7cfa;
+}
+
+.me-textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+/* Toggle (boolean) */
+.me-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
+  font-family: 'Fira Code', monospace;
+}
+
+.me-toggle input {
+  transform: translateY(1px);
+}
+
+/* Inline row (Date field etc.) */
+.me-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.me-muted {
+  opacity: 0.7;
+  color: #cfcfe0;
+}
+
+/* Sections */
+.me-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.me-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* Collections container */
+.me-collection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Card for array items / map entries / set values */
+.me-card {
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #2b2b3b;
+  padding: 8px;
+}
+
+.me-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.me-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Map layout */
+.me-map-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 10px;
+}
+
+.me-map-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Buttons (assumes your .btn base class exists; these are safe additions) */
+.me-small-btn {
+  padding: 4px 10px;
+  font-size: 0.9em;
+  border-radius: 4px;
+}
+
+/* Destructive button (subtle red, matches your theme) */
+.me-danger {
+  background-color: #5a2f3a;
+  border-color: #6b3a46;
+  color: #f0f0f0;
+}
+
+.me-danger:hover {
+  background-color: #7a3f4f;
+}
+
+/* Improve spacing when ModelEditor is placed inside your panels */
+.me-root .me-section:first-child {
+  margin-top: 4px;
+}

@@ -1,0 +1,53 @@
+.expression-tree {
+  background-color: #0f172a;
+  font-family: monospace;
+  width: 100%;
+}
+
+/* Node wrapper */
+.tree-node {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.tree-node:hover {
+  transform: scale(1.05);
+}
+
+/* Node circle */
+.tree-node-circle {
+  fill: #1e293b;
+  stroke: #4fc3f7;
+  stroke-width: 2;
+  transition: fill 0.2s ease, stroke 0.2s ease;
+}
+
+.tree-node:hover .tree-node-circle {
+  fill: #334155;
+  stroke: #38bdf8;
+}
+
+/* Expression text */
+.tree-node-expression {
+  fill: #ffffff;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* Value text */
+.tree-node-value {
+  fill: #9cdcfe;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+/* Edges */
+.tree-edge {
+  stroke: #64748b;
+  stroke-width: 1.5;
+  transition: stroke 0.2s ease;
+}
+
+.tree-node:hover ~ .tree-edge {
+  stroke: #94a3b8;
+}

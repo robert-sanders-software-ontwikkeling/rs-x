@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@rs-x/core": "workspace:*",
+    "@rs-x/react": "workspace:*",
     "@rs-x/expression-parser": "workspace:*"
   },
   "devDependencies": {

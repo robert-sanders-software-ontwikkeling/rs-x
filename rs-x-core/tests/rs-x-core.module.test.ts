@@ -1,3 +1,4 @@
+import { ObjectStorage } from '../lib';
 import { DeepCloneValueExcept } from '../lib/deep-clone/deep-clone-except';
 import { DefaultDeepClone } from '../lib/deep-clone/default-deep-clone';
 import { InjectionContainer } from '../lib/dependency-injection';
@@ -377,6 +378,33 @@ describe('rs-x core module', () => {
   it('IDeepCloneValueGetter instance is a singleton', () => {
     const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IDeepCloneExcept);
     const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IDeepCloneExcept);
+    expect(a1).toBe(a2);
+  });
+
+  it('can get instance of IDBFactory', () => {
+    const actual = InjectionContainer.get(
+      RsXCoreInjectionTokens.IDBFactory,
+    );
+    expect(actual).toBe(window.indexedDB);
+  });
+
+  it('IDBFactory instance is a singleton', () => {
+    const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IDBFactory);
+    const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IDBFactory);
+    expect(a1).toBe(a2);
+  });
+
+
+  it('can get instance of IObjectStorage', () => {
+    const actual = InjectionContainer.get(
+      RsXCoreInjectionTokens.IObjectStorage,
+    );
+    expect(actual).toBeInstanceOf(ObjectStorage);
+  });
+
+  it('IObjectStorage instance is a singleton', () => {
+    const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IObjectStorage);
+    const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IObjectStorage);
     expect(a1).toBe(a2);
   });
 });

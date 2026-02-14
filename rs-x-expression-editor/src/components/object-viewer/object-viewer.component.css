@@ -1,0 +1,67 @@
+/* Container */
+.js-object-view {
+  font-family: 'Fira Code', monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  background-color: #1e1e2f;
+  color: #d4d4d4;
+  padding: 12px;
+  margin: 0;
+  border-radius: 4px;
+
+  white-space: pre;     /* preserve formatting */
+  tab-size: 2;          /* 🔥 fix huge indentation */
+  overflow: auto;
+}
+
+/* Scrollbar (optional but nice) */
+.js-object-view::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.js-object-view::-webkit-scrollbar-thumb {
+  background-color: #444;
+  border-radius: 4px;
+}
+
+.js-object-view::-webkit-scrollbar-thumb:hover {
+  background-color: #555;
+}
+
+/* Syntax Highlighting */
+
+/* Keys */
+.js-object-view .token-key {
+  color: #9cdcfe; /* light blue */
+}
+
+/* Strings */
+.js-object-view .token-string {
+  color: #ce9178; /* soft orange */
+}
+
+/* Numbers */
+.js-object-view .token-number {
+  color: #b5cea8; /* soft green */
+}
+
+/* Booleans */
+.js-object-view .token-boolean {
+  color: #569cd6; /* blue */
+}
+
+/* Null */
+.js-object-view .token-null {
+  color: #c586c0; /* purple */
+}
+
+/* Keywords like new */
+.js-object-view .token-keyword {
+  color: #c586c0;
+}
+
+/* Braces & punctuation */
+.js-object-view .token-punctuation {
+  color: #d4d4d4;
+}

@@ -1,27 +1,29 @@
-import type * as monaco from "monaco-editor";
+import type * as monaco from 'monaco-editor';
 
-
-/**
- * Provides intelligent autocomplete for expressions based on a JS model.
- */
 export class ModelIntellisenseService {
-  public model: Record<string, unknown> = {};
+  private static _instance: ModelIntellisenseService;
+  public model: object = {};
   public monaco?: typeof monaco;
 
+  private constructor() { }
 
-  
+  public static getInstance(): ModelIntellisenseService {
+    if (!this._instance) {
+      this._instance = new ModelIntellisenseService();
+    }
+    return this._instance
+  }
 
-  /** Set or update the model object */
-  public setModel(model: Record<string, unknown>): void {
+  public setModel(model: object): void {
     this.model = model;
   }
 
-  /** Register Monaco completion provider */
+
   public registerCompletionProvider(monacoInstance: typeof monaco): void {
     this.monaco = monacoInstance;
 
-    monacoInstance.languages.registerCompletionItemProvider("typescript", {
-      triggerCharacters: "_$abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.".split(""),
+    monacoInstance.languages.registerCompletionItemProvider('typescript', {
+      triggerCharacters: '_$abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.'.split(''),
 
       provideCompletionItems: (
         editorModel: monaco.editor.ITextModel,
@@ -50,7 +52,7 @@ export class ModelIntellisenseService {
   /** Extract the member expression immediately before the cursor */
   private getCurrentMemberExpression(textBeforeCursor: string): string {
     const match = textBeforeCursor.match(/[\w$][\w\d$]*(\.[\w$][\w\d$]*)*\.?$/);
-    return match ? match[0] : "";
+    return match ? match[0] : '';
   }
 
   /** Get the range of the current word at the cursor */
@@ -76,7 +78,7 @@ export class ModelIntellisenseService {
 
     const { objectAtPath, lastSegment } = this.resolveMemberExpression(memberExpression);
 
-    if (!objectAtPath || typeof objectAtPath !== "object" || Array.isArray(objectAtPath)) {
+    if (!objectAtPath || typeof objectAtPath !== 'object' || Array.isArray(objectAtPath)) {
       return [];
     }
 
@@ -91,33 +93,33 @@ export class ModelIntellisenseService {
       }) as monaco.languages.CompletionItem);
   }
 
- private resolveMemberExpression(
+  private resolveMemberExpression(
     memberExpression: string
-): { objectAtPath: unknown; lastSegment: string } {
+  ): { objectAtPath: unknown; lastSegment: string } {
     const fullExpr = memberExpression.trim();
-    if (!fullExpr) return { objectAtPath: {}, lastSegment: "" };
+    if (!fullExpr) return { objectAtPath: {}, lastSegment: '' };
 
     // Split all segments
-    const parts = fullExpr.split(".").filter(Boolean);
+    const parts = fullExpr.split('.').filter(Boolean);
 
     // Last segment is what user is typing
-    const lastSegment = fullExpr.endsWith(".") ? "" : parts.pop() || "";
+    const lastSegment = fullExpr.endsWith('.') ? '' : parts.pop() || '';
 
     // Traverse all **parent segments** (everything except last segment)
     let current: unknown = this.model;
     for (const part of parts) {
-        if (current && typeof current === "object" && !Array.isArray(current)) {
-            current = (current as Record<string, unknown>)[part];
-        } else {
-            current = {};
-            break;
-        }
+      if (current && typeof current === 'object' && !Array.isArray(current)) {
+        current = (current as Record<string, unknown>)[part];
+      } else {
+        current = {};
+        break;
+      }
     }
 
-    if (!current || typeof current !== "object" || Array.isArray(current)) {
-        current = {};
+    if (!current || typeof current !== 'object' || Array.isArray(current)) {
+      current = {};
     }
 
     return { objectAtPath: current, lastSegment };
-}
+  }
 }
