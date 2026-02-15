@@ -1,6 +1,9 @@
 import React from 'react';
 import './spinner.component.css';
 
+
+
+
 export interface ISpinnerProps {
   size?: number;        // diameter in px
   thickness?: number;   // border thickness

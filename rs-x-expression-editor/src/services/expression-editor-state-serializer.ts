@@ -14,6 +14,10 @@ interface ISerializedModelWithExpressions {
 }
 
 interface ISerializedExpressionEditorState {
+    error?: string;
+    addingModel?: boolean;
+    addingExpression?: boolean;
+    selectedModelIndex?: number;
     modelsWithExpressions: ISerializedModelWithExpressions[]
 }
 
@@ -33,12 +37,15 @@ export class ExpressionEdtitorStateSerializer {
 
     public async serialize(state: IExpressionEditorState): Promise<void> {
         const serializedState: ISerializedExpressionEditorState = {
+            error: state.error,
+            addingExpression: state.addingExpression,
+            addingModel: state.addingModel,
+            selectedModelIndex: state.selectedModelIndex,
             modelsWithExpressions: state.modelsWithExpressions.map(modelWithExpressions => ({
-                selected: modelWithExpressions.selected,
-                selectedExpressionIndex: modelWithExpressions.selectedExpressionIndex,
-                editingExpressionIndex: modelWithExpressions.editingExpressionIndex,
                 name: modelWithExpressions.name,
                 modelString: modelWithExpressions.modelString,
+                selectedExpressionIndex: modelWithExpressions.selectedExpressionIndex,
+                editingExpressionIndex: modelWithExpressions.editingExpressionIndex,
                 expressions: modelWithExpressions.expressions.map(expression => expression.expressionString)
             }))
         }
@@ -55,8 +62,11 @@ export class ExpressionEdtitorStateSerializer {
         }
 
         return {
+            error: deserializeState.error,
+            addingModel: deserializeState.addingModel,
+            addingExpression: deserializeState.addingExpression,
+            selectedModelIndex: deserializeState.selectedModelIndex,
             modelsWithExpressions: deserializeState.modelsWithExpressions.map((modelWithExpressions) => {
-
                 const model = new Function(`return ${modelWithExpressions.modelString}`)();
                 return {
                     name: modelWithExpressions.name,

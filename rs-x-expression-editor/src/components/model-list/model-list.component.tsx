@@ -8,10 +8,10 @@ import { ExpressionList } from '../expression-list/expression-list.component';
 export interface IModelListProps {
     modelsWithExpressions: IModelWithExpressions[];
     handleAddModel: () => void
-    handleAddExpression: (model: object) => void,
-    onSelectExpression: (mode: object, index: number) => void,
-    onDeleteExpression: (mode: object, index: number) => void,
-    onEditExpression: (mode: object, index: number) => void,
+    handleAddExpression: (modelIndex: number) => void,
+    onSelectExpression: (modelIndex: number, expressionIndex: number) => void,
+    onDeleteExpression: (modelIndex: number, expressionIndex: number) => void,
+    onEditExpression: (modelIndex: number, expressionIndex: number) => void,
 }
 
 export const ModelList: React.FC<IModelListProps> = ({
@@ -23,12 +23,12 @@ export const ModelList: React.FC<IModelListProps> = ({
     onEditExpression
 }) => {
 
-    const panels: AccordionPanel[] = modelsWithExpressions.map(modelWithExpressions => ({
+    const panels: AccordionPanel[] = modelsWithExpressions.map((modelWithExpressions, modelIndex) => ({
         id: modelWithExpressions.name,
         header: (
             <>
                 <span>{modelWithExpressions.name}</span>
-                <button className='btn add-btn' onClick={() => handleAddExpression(modelWithExpressions.model)}>
+                <button className='btn add-btn' onClick={() => handleAddExpression(modelIndex)}>
                     <FaPlus /> Add Expression
                 </button>
             </>
@@ -36,7 +36,7 @@ export const ModelList: React.FC<IModelListProps> = ({
         body: <ExpressionList
             expressions={modelWithExpressions.expressions}
             selectedExpressionIndex={modelWithExpressions.selectedExpressionIndex}
-            model= {modelWithExpressions.model}
+            modelIndex= {modelIndex}
             onSelect={onSelectExpression}
             onDelete={onDeleteExpression}
             onEdit={onEditExpression}

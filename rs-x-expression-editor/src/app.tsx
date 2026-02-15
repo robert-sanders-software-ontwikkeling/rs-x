@@ -1,6 +1,6 @@
 import type { OnMount } from '@monaco-editor/react';
 import { InjectionContainer } from '@rs-x/core';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import { IExpressionManager, RsXExpressionParserInjectionTokens } from '../../rs-x-expression-parser/lib';
 
@@ -16,6 +16,8 @@ import { ExpressionEdtitorStateSerializer } from './services/expression-editor-s
 import { ModelIntellisenseService } from './services/model-intellisense.service';
 
 import './app.css';
+import { ModelEditor } from './components/model-editor/model-editor.component';
+
 
 const emptyModel = '(\n\t{\n\n\t}\n)';
 
@@ -49,39 +51,63 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
       ExpressionEdtitorStateSerializer.getInstance()
         .serialize(currentState)
         .catch(console.error);
-    }, 300);
+    }, 200);
 
-    return () => clearTimeout(id);
+    return () => {
+      clearTimeout(id);
+    };
   }, [currentState]);
 
-  const handleAddModel = () =>
-    setCurrentState(prev =>
-      new ExpressionEditorStateBuilder(prev)
-        .setAddingModel(true)
-        .state
-    );
+  const selectedModel =
+    currentState.modelsWithExpressions[currentState.selectedModelIndex as number];
 
-  const handleAddExpression = (model: object) => {
-    setCurrentState(prev =>
-      new ExpressionEditorStateBuilder(prev)
-        .setAddingExpression(true)
-        .selectModel(model, true)
-        .state
-    );
+  const selectedExpressionIndex =
+    selectedModel?.selectedExpressionIndex ?? null;
 
-    ModelIntellisenseService.getInstance().model = model;
+  const isEditingSelectedExpression =
+    selectedModel != null &&
+    selectedExpressionIndex != null &&
+    selectedModel.editingExpressionIndex === selectedExpressionIndex;
+
+  const shouldShowRightDetailsPanel =
+    !currentState.addingModel &&
+    !currentState.addingExpression &&
+    selectedModel != null &&
+    selectedExpressionIndex != null &&
+    !isEditingSelectedExpression;
+
+  const handleAddModel = () => {
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev).setAddingModel(true).state;
+    });
   };
 
-  function getSelectedModelString(): string | undefined {
-    return currentState.modelsWithExpressions.find(modelWithExpressions => modelWithExpressions.selected)?.modelString;
-  }
+  const handleAddExpression = (modelIndex: number) => {
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev)
+        .setAddingExpression(true)
+        .selectModel(modelIndex)
+        .state;
+    });
+
+
+    ModelIntellisenseService.getInstance().model = currentState.modelsWithExpressions[modelIndex]?.model;
+  };
+
+  const getSelectedModelString = (): string | undefined => {
+    return selectedModel?.modelString;
+  };
 
   const handleCancel = () => {
-    setCurrentState(prev => {
+    setCurrentState((prev) => {
       const b = new ExpressionEditorStateBuilder(prev);
 
-      if (prev.addingExpression) return b.setAddingExpression(false).state;
-      if (prev.addingModel) return b.setAddingModel(false).state;
+      if (prev.addingExpression) {
+        return b.setAddingExpression(false).state;
+      }
+      if (prev.addingModel) {
+        return b.setAddingModel(false).state;
+      }
 
       return prev;
     });
@@ -90,45 +116,49 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const saveModel = (name: string, modelString: string) => {
     try {
       const model = new Function(`return ${modelString}`)();
-      setCurrentState(prev =>
-        new ExpressionEditorStateBuilder(prev)
+      setCurrentState((prev) => {
+        return new ExpressionEditorStateBuilder(prev)
           .addModel(name, modelString, model)
           .setAddingModel(false)
-          .state
-      );
+          .state;
+      });
     } catch (e) {
-      setCurrentState(prev =>
-        new ExpressionEditorStateBuilder(prev)
+      setCurrentState((prev) => {
+        return new ExpressionEditorStateBuilder(prev)
           .setError(e instanceof Error ? e.message : String(e))
-          .state
-      );
+          .state;
+      });
     }
   };
 
   const saveExpression = (name: string, expressionString: string) => {
     const trimmed = expressionString?.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      return;
+    }
 
-    const selectedModel = currentState.modelsWithExpressions.find(m => m.selected)?.model;
-    if (!selectedModel) return;
+    const modelObj = selectedModel?.model;
+    if (!modelObj) {
+      return;
+    }
 
     try {
       const { instance: expression } = expressionManager
-        .create(selectedModel)
+        .create(modelObj)
         .instance.create({ expressionString: trimmed });
 
-      setCurrentState(prev =>
-        new ExpressionEditorStateBuilder(prev)
-          .addExpression(selectedModel, name, expression)
+      setCurrentState((prev) => {
+        return new ExpressionEditorStateBuilder(prev)
+          .addExpression(modelObj, name, expression)
           .setAddingExpression(false)
-          .state
-      );
+          .state;
+      });
     } catch (e) {
-      setCurrentState(prev =>
-        new ExpressionEditorStateBuilder(prev)
+      setCurrentState((prev) => {
+        return new ExpressionEditorStateBuilder(prev)
           .setError(e instanceof Error ? e.message : String(e))
-          .state
-      );
+          .state;
+      });
     }
   };
 
@@ -136,56 +166,78 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     ModelIntellisenseService.getInstance().registerCompletionProvider(monacoInstance);
   };
 
-  const onSelectExpression = (mode: object, selectedExpressionIndex: number) => {
-    setCurrentState(prev =>
-      new ExpressionEditorStateBuilder(prev)
-        .selectExpression(mode, selectedExpressionIndex)
-        .state
-    );
+  const onSelectExpression = (modelIndex: number, index: number) => {
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev).selectExpression(modelIndex, index).state;
+    });
   };
 
-  const onDeleteExpression = (mode: object, selectedExpressionIndex: number) => {
-    setCurrentState(prev =>
-      new ExpressionEditorStateBuilder(prev)
-        .deleteExpression(mode, selectedExpressionIndex)
-        .state
-    );
+  const onDeleteExpression = (modelIndex: number, index: number) => {
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev).deleteExpression(modelIndex, index).state;
+    });
   };
 
-  const onEditExpression = (mode: object, selectedExpressionIndex: number) => {
-    setCurrentState(prev =>
-      new ExpressionEditorStateBuilder(prev)
-        .editExpression(mode, selectedExpressionIndex)
-        .state
-    );
+  const onEditExpression = (modelIndex: number, index: number) => {
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev).editExpression(modelIndex, index).state;
+    });
+  };
+
+  const onModelChange = (model: object) => {
+
   };
 
   return (
     <div className="app">
       <Group orientation="horizontal" className="panels-container">
+        {/* LEFT: model list (only when not adding model/expression) */}
         {!currentState.addingModel && !currentState.addingExpression && (
-          <Panel defaultSize={25} className="panel">
-            <ModelList
-              modelsWithExpressions={currentState.modelsWithExpressions}
-              handleAddModel={handleAddModel}
-              handleAddExpression={handleAddExpression}
-              onSelectExpression={onSelectExpression}
-              onEditExpression={onDeleteExpression}
-              onDeleteExpression={onEditExpression}
-            />
-          </Panel>
+          <>
+            <Panel defaultSize={shouldShowRightDetailsPanel ? 55 : 100} minSize={25} className="panel">
+              <ModelList
+                modelsWithExpressions={currentState.modelsWithExpressions}
+                handleAddModel={handleAddModel}
+                handleAddExpression={handleAddExpression}
+                onSelectExpression={onSelectExpression}
+                onEditExpression={onEditExpression}
+                onDeleteExpression={onDeleteExpression}
+              />
+            </Panel>
+
+            {shouldShowRightDetailsPanel && <Separator className="separator" />}
+
+            {/* RIGHT: details panel (ONLY when an expression is selected AND not editing) */}
+            {shouldShowRightDetailsPanel && (
+              <Panel defaultSize={45} minSize={25} className="panel">
+                <Group orientation="vertical" className="panel-stack">
+                  <Panel defaultSize={65} minSize={20} className="panel">
+                    <div className="panel-header">Model</div>
+                    <div className="editor-wrapper">
+                      <ModelEditor model={selectedModel.model} onCommit={onModelChange} />
+                    </div>
+                  </Panel>
+
+                  <Separator className="separator-horizontal" />
+
+                  <Panel defaultSize={35} minSize={15} className="panel">
+                    <div className="panel-header">Expression Tree</div>
+                    <div className="errors-panel">
+                      <i>Coming soon…</i>
+                    </div>
+                  </Panel>
+                </Group>
+              </Panel>
+            )}
+          </>
         )}
 
+        {/* ADD MODEL FLOW */}
         {currentState.addingModel && (
-          <Panel defaultSize={60} className="panel">
+          <Panel defaultSize={100} className="panel">
             <Group orientation="vertical" className="panel-stack">
               <Panel defaultSize={70} minSize={10} className="panel">
-                <TSEditor
-                  header="Model Editor"
-                  value={emptyModel}
-                  save={saveModel}
-                  cancel={handleCancel}
-                />
+                <TSEditor header="Model Editor" value={emptyModel} save={saveModel} cancel={handleCancel} />
               </Panel>
 
               <Separator className="separator-horizontal" />
@@ -200,14 +252,14 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
           </Panel>
         )}
 
+        {/* ADD EXPRESSION FLOW */}
         {currentState.addingExpression && (
-          <Panel defaultSize={60} className="panel">
+          <Panel defaultSize={100} className="panel">
             <Group orientation="horizontal" className="panels-container">
               <Panel defaultSize={30} minSize={15} className="panel">
                 <div className="panel-header">Model</div>
                 <div className="editor-wrapper">
                   <ObjectViewer modelString={getSelectedModelString()} />
-
                 </div>
               </Panel>
 

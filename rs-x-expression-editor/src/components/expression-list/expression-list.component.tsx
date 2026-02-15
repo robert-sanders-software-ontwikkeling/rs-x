@@ -4,17 +4,17 @@ import { FaEdit, FaTrash } from 'react-icons/fa';
 import './expression-list.component.css';
 
 export interface IExpressionListProps {
-    model: object,
+    modelIndex:number,
     expressions: IExpression[];
     selectedExpressionIndex: number | null;
 
-    onSelect: (model:object, index: number) => void;
-    onEdit: (model:object, index: number) => void;
-    onDelete: (model:object, index: number) => void;
+    onSelect: (modelIndex:number, expressionIndex: number) => void;
+    onEdit: (modelIndex:number, expressionIndex: number) => void;
+    onDelete: (modelIndex:number, expressionIndex: number) => void;
 }
 
 export const ExpressionList: React.FC<IExpressionListProps> = ({
-    model,
+    modelIndex,
     expressions,
     selectedExpressionIndex,
     onSelect,
@@ -27,18 +27,18 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
 
     return (
         <div className="expression-list">
-            {expressions.map((expr, index) => {
-                const isSelected = selectedExpressionIndex === index;
+            {expressions.map((expr, expressionIndex) => {
+                const isSelected = selectedExpressionIndex === expressionIndex;
 
                 return (
                     <div
-                        key={`${index}-${expr.expressionString}`}
+                        key={`${expressionIndex}-${expr.expressionString}`}
                         className={`expression-item ${isSelected ? 'is-selected' : ''}`}
-                        onClick={() => onSelect(model, index)}
+                        onClick={() => onSelect(modelIndex, expressionIndex)}
                         role="button"
                         tabIndex={0}
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') onSelect(model, index);
+                            if (e.key === 'Enter' || e.key === ' ') onSelect(modelIndex, expressionIndex);
                         }}
                     >
                         <div className="expression-code">{expr.expressionString}</div>
@@ -47,10 +47,7 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
                             <button
                                 className="btn icon-btn edit-btn"
                                 title="Edit"
-                                onClick={() => {
-                                    onSelect(model, index);  // ✅ edit selects too
-                                    onEdit(model, index);
-                                }}
+                                onClick={() => onEdit(modelIndex, expressionIndex)}
                             >
                                 <FaEdit />
                             </button>
@@ -58,7 +55,7 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
                             <button
                                 className="btn icon-btn delete-btn"
                                 title="Delete"
-                                onClick={() => onDelete(model,index)}
+                                onClick={() => onDelete(modelIndex,expressionIndex)}
                             >
                                 <FaTrash />
                             </button>

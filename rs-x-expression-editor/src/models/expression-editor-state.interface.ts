@@ -5,5 +5,6 @@ export interface IExpressionEditorState  {
     error?: string;
     addingModel?: boolean;
     addingExpression?: boolean;
+    selectedModelIndex?: number;
     modelsWithExpressions:IModelWithExpressions[]
 }

@@ -1,205 +1,116 @@
-/* model-editor.component.css */
-
 .me-root {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 10px;
+  gap: 12px;
   height: 100%;
-  box-sizing: border-box;
+  min-height: 0;
 }
 
-.me-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.me-title {
-  font-weight: 700;
-  color: #f0f0f0;
-}
-
-.me-filter {
-  flex: 1;
-  max-width: 360px;
-  padding: 6px 10px;
-  border: 1px solid #444;
-  border-radius: 4px;
-  background: #2f2f44;
-  color: #f0f0f0;
-  outline: none;
-  font-family: 'Fira Code', monospace;
-  font-size: 0.9rem;
-}
-
-.me-filter:focus {
-  border-color: #5c7cfa;
-}
-
-.me-field {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 10px;
-  padding: 8px;
-  border: 1px solid #444;
-  border-radius: 4px;
-  background: #2b2b3b;
-}
-
-.me-label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.me-key {
+.me-header {
+  font-size: 18px;
   font-weight: 600;
-  color: #9cdcfe;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  padding: 8px 12px;
+  background-color: #323248;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
 }
 
-.me-path {
-  font-size: 12px;
-  opacity: 0.6;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.me-control {
-  min-width: 0;
-}
-
-.me-input,
-.me-textarea {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 6px 10px;
-  border: 1px solid #444;
-  border-radius: 4px;
-  background: #1f1f2e;
-  color: #f0f0f0;
-  outline: none;
-  font-family: 'Fira Code', monospace;
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
-.me-input:focus,
-.me-textarea:focus {
-  border-color: #5c7cfa;
-}
-
-.me-textarea {
-  min-height: 90px;
-  resize: vertical;
-}
-
-/* Toggle (boolean) */
-.me-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  user-select: none;
-  font-family: 'Fira Code', monospace;
-}
-
-.me-toggle input {
-  transform: translateY(1px);
-}
-
-/* Inline row (Date field etc.) */
-.me-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.me-muted {
-  opacity: 0.7;
-  color: #cfcfe0;
-}
-
-/* Sections */
 .me-section {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.me-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-/* Collections container */
-.me-collection {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* Card for array items / map entries / set values */
-.me-card {
-  border: 1px solid #444;
-  border-radius: 4px;
-  background: #2b2b3b;
-  padding: 8px;
-}
-
-.me-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.me-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* Map layout */
-.me-map-grid {
+.me-field {
   display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 10px;
+  grid-template-columns: max-content 1fr;
+  gap: 12px;
+  align-items: center;
+
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.18);
 }
 
-.me-map-col {
+.me-label {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
+  max-width: 220px;
+  overflow: hidden;
 }
 
-/* Buttons (assumes your .btn base class exists; these are safe additions) */
-.me-small-btn {
-  padding: 4px 10px;
-  font-size: 0.9em;
-  border-radius: 4px;
+.me-key {
+  font-weight: 600;
+  color: #8ecdf5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Destructive button (subtle red, matches your theme) */
-.me-danger {
-  background-color: #5a2f3a;
-  border-color: #6b3a46;
+.me-control {
+  min-width: 0;
+}
+
+.me-input {
+  width: 100%;
+  padding: 6px 8px;
+  background: #1e1e2f;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  color: #fff;
+  min-width: 0;
+}
+
+.me-input:focus {
+  outline: none;
+  border-color: #4b6fff;
+}
+
+.me-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   color: #f0f0f0;
 }
 
-.me-danger:hover {
-  background-color: #7a3f4f;
+.me-muted {
+  opacity: 0.6;
+  font-size: 13px;
 }
 
-/* Improve spacing when ModelEditor is placed inside your panels */
-.me-root .me-section:first-child {
-  margin-top: 4px;
+.me-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.me-undo {
+  background: #44475a;
+  color: #fff;
+}
+
+.me-undo:hover {
+  background: #50546b;
+}
+
+.me-commit {
+  background: #3f7f54;
+  color: #fff;
+}
+
+.me-commit:hover {
+  background: #4a9161;
 }
