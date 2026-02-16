@@ -240,6 +240,7 @@ export class IdentifierExpression extends AbstractExpression {
     if (this.value === stateChange.newValue) {
       return;
     }
+    this._oldValue = this._value;
     this._value = stateChange.newValue;
 
     this.transactionManager.registerChange(

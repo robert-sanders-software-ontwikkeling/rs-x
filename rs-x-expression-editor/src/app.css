@@ -1,7 +1,4 @@
-html,
-body,
-#root,
-.app {
+html, body, #root, .app {
   height: 100%;
   margin: 0;
   padding: 0;
@@ -22,7 +19,6 @@ body,
   width: 100%;
   display: flex;
 
-  /* 🔥 fix voor nested panels */
   min-height: 0;
   min-width: 0;
 }
@@ -33,7 +29,6 @@ body,
   height: 100%;
   width: 100%;
 
-  /* 🔥 fix voor vertical Group resize */
   flex: 1;
   min-height: 0;
   min-width: 0;
@@ -46,14 +41,12 @@ body,
   background-color: #2b2b3b;
   border-radius: 4px;
   margin: 2px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
 
-  /* 🔥 fix voor resizing */
   min-height: 0;
   min-width: 0;
 }
 
-/* Panel headers */
 .panel-header {
   padding: 6px 12px;
   font-weight: 600;
@@ -65,76 +58,13 @@ body,
   color: #f0f0f0;
 }
 
-/* ✅ Added: header row + buttons used by Details panel */
 .panel-header-row {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   gap: 10px;
 }
 
-.panel-header-button {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: inherit;
-  border-radius: 8px;
-  padding: 6px 10px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.panel-header-button:hover {
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.panel-header-button:active {
-  transform: translateY(1px);
-}
-
-/* ✅ Added: "View details" empty state */
-.panel-empty-center {
-  height: 100%;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-
-  /* 🔥 fix for nested flex/scroll */
-  min-height: 0;
-  min-width: 0;
-}
-
-.panel-primary-button {
-  background: rgba(120, 180, 255, 0.2);
-  border: 1px solid rgba(120, 180, 255, 0.35);
-  color: inherit;
-  border-radius: 10px;
-  padding: 10px 14px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.panel-primary-button:hover {
-  background: rgba(120, 180, 255, 0.28);
-}
-
-.panel-primary-button:active {
-  transform: translateY(1px);
-}
-
-/* Top bar for cancel/save buttons */
-.top-bar {
-  display: flex;
-  justify-content: flex-start; /* left align */
-  gap: 8px;
-  padding: 6px 12px;
-  background-color: #2f2f44;
-  border-bottom: 1px solid #444;
-  align-items: center;
-}
-
-/* Buttons styling */
 .btn {
   display: flex;
   align-items: center;
@@ -171,39 +101,12 @@ body,
   border-color: #3f4f8a;
 }
 
-.save-btn {
-  background-color: #3f5f4f;
-  border-color: #355244;
-  color: #e6f3ec;
-}
-
-.save-btn:hover {
-  background-color: #4a7560;
-  border-color: #3f5f4f;
-}
-
-.save-btn:active {
-  background-color: #355244;
-}
-
-.save-btn:disabled {
-  background-color: #2b3a34;
-  border-color: #2b3a34;
-  color: #6a7a72;
-  cursor: not-allowed;
-}
-
-.save-btn:disabled:hover {
-  background-color: #2b3a34; /* hover geen effect */
-}
-
 .editor-wrapper,
 .errors-panel {
   flex: 1;
   overflow: auto;
   padding: 4px;
 
-  /* 🔥 fix voor resizing */
   min-height: 0;
   min-width: 0;
 }
@@ -212,12 +115,70 @@ body,
   width: 4px;
   cursor: col-resize;
   background-color: #444;
-  flex-shrink: 0; /* 🔥 fix */
 }
 
 .separator-horizontal {
   height: 4px;
   cursor: row-resize;
   background-color: #444;
-  flex-shrink: 0; /* 🔥 fix */
+  flex-shrink: 0;
+}
+
+/* ✅ CRITICAL: a real sized box for absolute children */
+.panel-content {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+
+  position: relative;
+  overflow: hidden;
+}
+
+/* ✅ CRITICAL: forced scroll host that always has height */
+.scroll-host {
+  position: absolute;
+  inset: 0;
+
+  min-height: 0;
+  min-width: 0;
+
+  overflow: auto;      /* ✅ scrollbar here */
+  overflow-x: hidden;
+
+  padding: 6px;
+}
+
+/* Header icon button */
+.panel-header-icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 28px;
+
+  border: 1px solid #666;
+  border-radius: 6px;
+  background-color: #3a3a5a;
+  color: #f0f0f0;
+
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.panel-header-icon-button:hover {
+  background-color: #4a4a7a;
+  border-color: #888;
+}
+
+.panel-header-icon-button:active {
+  background-color: #3a3a6a;
+  border-color: #555;
+}
+
+.panel-header-icon-button:disabled {
+  background-color: #2b2b3b;
+  border-color: #2b2b3b;
+  color: #6a7a72;
+  cursor: not-allowed;
 }

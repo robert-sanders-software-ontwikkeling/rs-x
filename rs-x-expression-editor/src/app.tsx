@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import { IExpressionChangeHistory, IExpressionManager, RsXExpressionParserInjectionTokens } from '../../rs-x-expression-parser/lib';
 
+import { FaTrash } from 'react-icons/fa';
+
 import { ModelList } from './components/model-list/model-list.component';
 import { Spinner } from './components/spinner/spinner.component';
 import { TSEditor } from './components/ts-editor/ts-editor.component';
@@ -43,7 +45,6 @@ type AppLoadedProps = {
 const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const [currentState, setCurrentState] = useState<IExpressionEditorState>(initialState);
 
-  // ✅ Right panel visibility toggle (details)
   const [isRightPanelOpen, setIsRightPanelOpen] = useState<boolean>(() => {
     const selectedModel = initialState.modelsWithExpressions[initialState.selectedModelIndex as number];
     const selectedExpressionIndex = selectedModel?.selectedExpressionIndex ?? null;
@@ -78,7 +79,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const isEditing =
     currentState.addingModel || currentState.addingExpression;
 
-  // ✅ When selecting an expression, auto-open right panel (unless editing)
   useEffect(() => {
     if (isEditing) {
       return;
@@ -90,11 +90,9 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     }
   }, [selectedExpressionIndex, isEditing]);
 
-  // ✅ Show right panel only when selected expression AND open AND not editing
   const shouldShowRightDetailsPanel =
     !isEditing && selectedExpressionIndex !== null && isRightPanelOpen;
 
-  // ✅ Hide left list ONLY when right panel is visible (selected + open) and not editing
   const shouldShowLeftListPanel =
     currentState.addingModel ||
     currentState.addingExpression ||
@@ -225,7 +223,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     });
   };
 
-  const onModelChange = (modelIndex: number, model: object,) => {
+  const onModelChange = (modelIndex: number, model: object) => {
     setCurrentState((prev) => {
       return new ExpressionEditorStateBuilder(prev).setModel(modelIndex, model).state;
     });
@@ -238,19 +236,32 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   };
 
   const onHistoryChanged = (modelIndex: number, expressionIndex: number, history: IExpressionChangeHistory[][]) => {
-
     setCurrentState((prev) => {
       return new ExpressionEditorStateBuilder(prev).setExpressionHistory(modelIndex, expressionIndex, history).state;
     });
-  }
+  };
+
+  const onClearSelectedHistory = () => {
+    const modelIndex = currentState.selectedModelIndex as number;
+    const exprIndex = selectedModel?.selectedExpressionIndex ?? null;
+
+    if (exprIndex === null || exprIndex === undefined) {
+      return;
+    }
+
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev).setExpressionHistory(modelIndex, exprIndex, []).state;
+    });
+  };
+
+  const selectedHistoryCount = selectedExpression?.changeHistory?.length ?? 0;
+  const canClearSelectedHistory = selectedExpressionIndex !== null && selectedHistoryCount > 0;
 
   return (
     <div className='app'>
       <Group orientation='horizontal' className='panels-container'>
-        {/* VIEW MODE */}
         {!currentState.addingModel && !currentState.addingExpression && (
           <>
-            {/* LEFT LIST: always visible when right panel is hidden */}
             {shouldShowLeftListPanel && (
               <Panel defaultSize={100} minSize={25} className='panel'>
                 <ModelList
@@ -267,7 +278,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
               </Panel>
             )}
 
-            {/* RIGHT DETAILS: only render when open */}
             {shouldShowRightDetailsPanel && (
               <>
                 <Separator className='separator' />
@@ -276,7 +286,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                     <span>Details</span>
                     <button
                       type='button'
-                      className='panel-header-button'
+                      className='btn'
                       onClick={() => {
                         onCloseRightPanel();
                       }}
@@ -287,25 +297,47 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                   </div>
 
                   <Group orientation='horizontal' className='panels-container'>
-                    {/* LEFT SIDE: Model (top) + Change History (bottom) */}
                     <Panel defaultSize={20} minSize={10} className='panel'>
                       <Group orientation='vertical' className='panel-stack'>
                         <Panel defaultSize={70} minSize={20} className='panel'>
                           <div className='panel-header'>Model</div>
                           <div className='editor-wrapper'>
-                            <ModelEditor modelIndex={currentState.selectedModelIndex as number} model={selectedModel.model} onCommit={onModelChange} />
+                            <ModelEditor
+                              modelIndex={currentState.selectedModelIndex as number}
+                              model={selectedModel.model}
+                              onCommit={onModelChange}
+                            />
                           </div>
                         </Panel>
 
                         <Separator className='separator-horizontal' />
 
                         <Panel defaultSize={30} minSize={15} className='panel'>
-                          <div className='panel-header'>Change History</div>
-                          <div className='errors-panel'>
-                            <ExpressionChangeHistoryView 
-                              modelIndex={currentState.selectedModelIndex as number} 
-                              expressionIndex={selectedModel?.selectedExpressionIndex as number}
-                              expressionInfo={selectedExpression} change={onHistoryChanged } />
+                          <div className='panel-header panel-header-row'>
+                            <span>Change History</span>
+                            <button
+                              type='button'
+                              className='panel-header-icon-button'
+                              disabled={!canClearSelectedHistory}
+                              onClick={() => {
+                                onClearSelectedHistory();
+                              }}
+                              title='Clear full history for this expression'
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
+
+                          {/* ✅ CRITICAL: real sized box + absolute scroll host */}
+                          <div className='panel-content'>
+                            <div className='scroll-host'>
+                              <ExpressionChangeHistoryView
+                                modelIndex={currentState.selectedModelIndex as number}
+                                expressionIndex={selectedModel?.selectedExpressionIndex as number}
+                                expressionInfo={selectedExpression}
+                                change={onHistoryChanged}
+                              />
+                            </div>
                           </div>
                         </Panel>
                       </Group>
@@ -313,11 +345,13 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
 
                     <Separator className='separator' />
 
-                    {/* RIGHT SIDE: Expression tree */}
                     <Panel defaultSize={80} minSize={20} className='panel'>
                       <div className='panel-header'>Expression Tree</div>
                       <div className='errors-panel'>
-                        <ExpressionTree version={selectedExpression.version} root={selectedExpression.expression} />
+                        <ExpressionTree
+                          version={selectedExpression.version}
+                          root={selectedExpression.expression}
+                        />
                       </div>
                     </Panel>
                   </Group>
@@ -327,7 +361,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
           </>
         )}
 
-        {/* ADD MODEL FLOW */}
         {currentState.addingModel && (
           <Panel defaultSize={100} className='panel'>
             <Group orientation='vertical' className='panel-stack'>
@@ -347,7 +380,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
           </Panel>
         )}
 
-        {/* ADD EXPRESSION FLOW */}
         {currentState.addingExpression && (
           <Panel defaultSize={100} className='panel'>
             <Group orientation='horizontal' className='panels-container'>
@@ -393,3 +425,5 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     </div>
   );
 };
+
+export default AppLoaded;

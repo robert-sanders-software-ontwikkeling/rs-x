@@ -33,7 +33,7 @@ export abstract class AbstractExpression<
   private _parent: AbstractExpression<PT> | undefined;
   protected _value: T | undefined;
   private _isDisposed = false;
-  private _oldValue: unknown;
+  protected _oldValue: unknown;
   private _commitedSubscription: Subscription | undefined;
   private _owner: IDisposableOwner | undefined;
   private _services!: IExpressionServices;
