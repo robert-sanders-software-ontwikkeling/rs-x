@@ -9,53 +9,49 @@ export interface AccordionPanel {
 
 export interface AccordionProps {
   panels: AccordionPanel[];
-  openPanelId?: string | null;
-  onOpenChange?: (id: string | null) => void;
+  openPanelIndex?: number | null;
+  onOpenChange?: (index: number) => void;
 }
 
 export const Accordion: React.FC<AccordionProps> = ({
   panels,
-  openPanelId: controlledOpenPanelId,
+  openPanelIndex,
   onOpenChange,
 }) => {
 
-  const [internalOpenPanelId, setInternalOpenPanelId] = useState<string | null>(null);
+  const [internalOpenPanelId, setInternalOpenPanelId] = useState<number | null>( openPanelIndex ?? 0);
 
-  // Use controlled value if provided, otherwise internal state
-  const openPanelId =
-    controlledOpenPanelId !== undefined
-      ? controlledOpenPanelId
-      : internalOpenPanelId;
 
-  const setOpenPanelId = (id: string | null) => {
+  const setOpenPanelIndex = (index: number) => {
     if (onOpenChange) {
-      onOpenChange(id);
+      onOpenChange(index);
     }
-    if (controlledOpenPanelId === undefined) {
-      setInternalOpenPanelId(id);
-    }
-  };
+    setInternalOpenPanelId(index)
+  
+  }; 
 
-  const togglePanel = (id: string) => {
-    const nextId = openPanelId === id ? null : id;
-    setOpenPanelId(nextId);
+  const togglePanel = (index: number) => {
+    if( internalOpenPanelId === index) {
+      return;
+    }
+    setOpenPanelIndex(index);
   };
 
   return (
     <div className="accordion">
-      {panels.map((panel) => (
+      {panels.map((panel, index) => (
         <div
           key={panel.id}
-          className={`accordion-panel ${openPanelId === panel.id ? 'is-open' : ''}`}
+          className={`accordion-panel ${internalOpenPanelId === index? 'is-open' : ''}`}
         >
           <div
             className="panel-header"
-            onClick={() => togglePanel(panel.id)}
+            onClick={() => togglePanel(index)}
           >
             {panel.header}
           </div>
 
-          {openPanelId === panel.id && (
+          {internalOpenPanelId === index && (
             <div className="accordion-body">
               {panel.body}
             </div>

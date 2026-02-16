@@ -17,6 +17,7 @@ import { ModelIntellisenseService } from './services/model-intellisense.service'
 
 import './app.css';
 import { ModelEditor } from './components/model-editor/model-editor.component';
+import { ExpressionTree } from './components/expression-tree-view/expression-tree-view.component';
 
 
 const emptyModel = '(\n\t{\n\n\t}\n)';
@@ -61,20 +62,23 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const selectedModel =
     currentState.modelsWithExpressions[currentState.selectedModelIndex as number];
 
+  const selectedExpression = selectedModel?.expressions[selectedModel?.selectedExpressionIndex as number];
+
   const selectedExpressionIndex =
     selectedModel?.selectedExpressionIndex ?? null;
 
-  const isEditingSelectedExpression =
-    selectedModel != null &&
-    selectedExpressionIndex != null &&
-    selectedModel.editingExpressionIndex === selectedExpressionIndex;
 
-  const shouldShowRightDetailsPanel =
-    !currentState.addingModel &&
-    !currentState.addingExpression &&
-    selectedModel != null &&
-    selectedExpressionIndex != null &&
-    !isEditingSelectedExpression;
+  const isEditing = currentState.addingModel  || currentState.addingExpression;
+  
+  const shouldShowRightDetailsPanel = !isEditing && selectedExpressionIndex !== null;
+
+
+
+  const handleSelectModel = (modelIndex: number) => {
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev).selectModel(modelIndex).state;
+    });
+  };
 
   const handleAddModel = () => {
     setCurrentState((prev) => {
@@ -196,9 +200,12 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
           <>
             <Panel defaultSize={shouldShowRightDetailsPanel ? 55 : 100} minSize={25} className="panel">
               <ModelList
+
+                selectModelIndex={currentState.selectedModelIndex}
                 modelsWithExpressions={currentState.modelsWithExpressions}
-                handleAddModel={handleAddModel}
-                handleAddExpression={handleAddExpression}
+                onSelectModel={handleSelectModel}
+                onAddModel={handleAddModel}
+                onAddExpression={handleAddExpression}
                 onSelectExpression={onSelectExpression}
                 onEditExpression={onEditExpression}
                 onDeleteExpression={onDeleteExpression}
@@ -223,7 +230,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                   <Panel defaultSize={35} minSize={15} className="panel">
                     <div className="panel-header">Expression Tree</div>
                     <div className="errors-panel">
-                      <i>Coming soon…</i>
+                      <ExpressionTree  root={selectedExpression} />
                     </div>
                   </Panel>
                 </Group>

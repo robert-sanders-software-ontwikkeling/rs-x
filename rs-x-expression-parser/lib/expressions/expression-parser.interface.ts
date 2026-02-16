@@ -5,6 +5,8 @@ import { type IDisposable } from '@rs-x/core';
 import { type AbstractExpression } from './abstract-expression';
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 
+
+
 export interface IExpression<T = unknown, PT = unknown> extends IDisposable {
   readonly changed: Observable<IExpression>;
   readonly type: ExpressionType;

@@ -6,18 +6,22 @@ import { ExpressionList } from '../expression-list/expression-list.component';
 
 
 export interface IModelListProps {
+    selectModelIndex?: number;
     modelsWithExpressions: IModelWithExpressions[];
-    handleAddModel: () => void
-    handleAddExpression: (modelIndex: number) => void,
+    onAddModel: () => void;
+    onSelectModel: (modelIndex: number) => void,
+    onAddExpression: (modelIndex: number) => void,
     onSelectExpression: (modelIndex: number, expressionIndex: number) => void,
     onDeleteExpression: (modelIndex: number, expressionIndex: number) => void,
     onEditExpression: (modelIndex: number, expressionIndex: number) => void,
 }
 
 export const ModelList: React.FC<IModelListProps> = ({
+    selectModelIndex,
     modelsWithExpressions,
-    handleAddModel,
-    handleAddExpression,
+    onSelectModel,
+    onAddModel: handleAddModel,
+    onAddExpression: handleAddExpression,
     onSelectExpression,
     onDeleteExpression,
     onEditExpression
@@ -52,7 +56,7 @@ export const ModelList: React.FC<IModelListProps> = ({
                 </button>
             </div>
             <div className='editor-wrapper'>
-                <Accordion panels={panels} />
+                <Accordion panels={panels} openPanelIndex={selectModelIndex} onOpenChange={onSelectModel} />
 
             </div>
         </>
