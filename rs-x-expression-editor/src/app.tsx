@@ -19,7 +19,6 @@ import './app.css';
 import { ModelEditor } from './components/model-editor/model-editor.component';
 import { ExpressionTree } from './components/expression-tree-view/expression-tree-view.component';
 
-
 const emptyModel = '(\n\t{\n\n\t}\n)';
 
 export const App: React.FC = () => {
@@ -27,7 +26,7 @@ export const App: React.FC = () => {
 
   if (!deserializedState) {
     return (
-      <div className="fullscreen-loader">
+      <div className='fullscreen-loader'>
         <Spinner size={60} />
       </div>
     );
@@ -67,12 +66,9 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const selectedExpressionIndex =
     selectedModel?.selectedExpressionIndex ?? null;
 
+  const isEditing = currentState.addingModel || currentState.addingExpression;
 
-  const isEditing = currentState.addingModel  || currentState.addingExpression;
-  
   const shouldShowRightDetailsPanel = !isEditing && selectedExpressionIndex !== null;
-
-
 
   const handleSelectModel = (modelIndex: number) => {
     setCurrentState((prev) => {
@@ -93,7 +89,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
         .selectModel(modelIndex)
         .state;
     });
-
 
     ModelIntellisenseService.getInstance().model = currentState.modelsWithExpressions[modelIndex]?.model;
   };
@@ -189,18 +184,17 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   };
 
   const onModelChange = (model: object) => {
-
+    // TODO
   };
 
   return (
-    <div className="app">
-      <Group orientation="horizontal" className="panels-container">
+    <div className='app'>
+      <Group orientation='horizontal' className='panels-container'>
         {/* LEFT: model list (only when not adding model/expression) */}
         {!currentState.addingModel && !currentState.addingExpression && (
           <>
-            <Panel defaultSize={shouldShowRightDetailsPanel ? 55 : 100} minSize={25} className="panel">
+            <Panel defaultSize={shouldShowRightDetailsPanel ? 55 : 100} minSize={25} className='panel'>
               <ModelList
-
                 selectModelIndex={currentState.selectedModelIndex}
                 modelsWithExpressions={currentState.modelsWithExpressions}
                 onSelectModel={handleSelectModel}
@@ -212,25 +206,29 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
               />
             </Panel>
 
-            {shouldShowRightDetailsPanel && <Separator className="separator" />}
+            {shouldShowRightDetailsPanel && <Separator className='separator' />}
 
             {/* RIGHT: details panel (ONLY when an expression is selected AND not editing) */}
             {shouldShowRightDetailsPanel && (
-              <Panel defaultSize={45} minSize={25} className="panel">
-                <Group orientation="vertical" className="panel-stack">
-                  <Panel defaultSize={65} minSize={20} className="panel">
-                    <div className="panel-header">Model</div>
-                    <div className="editor-wrapper">
+              <Panel defaultSize={45} minSize={25} className='panel'>
+                {/* ✅ CHANGED: vertical -> horizontal */}
+                <Group orientation='horizontal' className='panels-container'>
+                  {/* Model editor on the left */}
+                  <Panel defaultSize={60} minSize={30} className='panel'>
+                    <div className='panel-header'>Model</div>
+                    <div className='editor-wrapper'>
                       <ModelEditor model={selectedModel.model} onCommit={onModelChange} />
                     </div>
                   </Panel>
 
-                  <Separator className="separator-horizontal" />
+                  {/* ✅ CHANGED: horizontal separator */}
+                  <Separator className='separator' />
 
-                  <Panel defaultSize={35} minSize={15} className="panel">
-                    <div className="panel-header">Expression Tree</div>
-                    <div className="errors-panel">
-                      <ExpressionTree  root={selectedExpression} />
+                  {/* Expression tree on the right */}
+                  <Panel defaultSize={40} minSize={20} className='panel'>
+                    <div className='panel-header'>Expression Tree</div>
+                    <div className='errors-panel'>
+                      <ExpressionTree root={selectedExpression} />
                     </div>
                   </Panel>
                 </Group>
@@ -241,17 +239,17 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
 
         {/* ADD MODEL FLOW */}
         {currentState.addingModel && (
-          <Panel defaultSize={100} className="panel">
-            <Group orientation="vertical" className="panel-stack">
-              <Panel defaultSize={70} minSize={10} className="panel">
-                <TSEditor header="Model Editor" value={emptyModel} save={saveModel} cancel={handleCancel} />
+          <Panel defaultSize={100} className='panel'>
+            <Group orientation='vertical' className='panel-stack'>
+              <Panel defaultSize={70} minSize={10} className='panel'>
+                <TSEditor header='Model Editor' value={emptyModel} save={saveModel} cancel={handleCancel} />
               </Panel>
 
-              <Separator className="separator-horizontal" />
+              <Separator className='separator-horizontal' />
 
-              <Panel defaultSize={30} minSize={10} className="panel">
-                <div className="panel-header">Errors</div>
-                <div className="errors-panel">
+              <Panel defaultSize={30} minSize={10} className='panel'>
+                <div className='panel-header'>Errors</div>
+                <div className='errors-panel'>
                   <p>{currentState.error}</p>
                 </div>
               </Panel>
@@ -261,22 +259,22 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
 
         {/* ADD EXPRESSION FLOW */}
         {currentState.addingExpression && (
-          <Panel defaultSize={100} className="panel">
-            <Group orientation="horizontal" className="panels-container">
-              <Panel defaultSize={30} minSize={15} className="panel">
-                <div className="panel-header">Model</div>
-                <div className="editor-wrapper">
+          <Panel defaultSize={100} className='panel'>
+            <Group orientation='horizontal' className='panels-container'>
+              <Panel defaultSize={30} minSize={15} className='panel'>
+                <div className='panel-header'>Model</div>
+                <div className='editor-wrapper'>
                   <ObjectViewer modelString={getSelectedModelString()} />
                 </div>
               </Panel>
 
-              <Separator className="separator" />
+              <Separator className='separator' />
 
-              <Panel defaultSize={70} minSize={30} className="panel">
-                <Group orientation="vertical" className="panel-stack">
-                  <Panel defaultSize={70} minSize={10} className="panel">
+              <Panel defaultSize={70} minSize={30} className='panel'>
+                <Group orientation='vertical' className='panel-stack'>
+                  <Panel defaultSize={70} minSize={10} className='panel'>
                     <TSEditor
-                      header="Expression Editor"
+                      header='Expression Editor'
                       options={{
                         suggestOnTriggerCharacters: true,
                         quickSuggestions: true,
@@ -288,11 +286,11 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                     />
                   </Panel>
 
-                  <Separator className="separator-horizontal" />
+                  <Separator className='separator-horizontal' />
 
-                  <Panel defaultSize={30} minSize={10} className="panel">
-                    <div className="panel-header">Errors</div>
-                    <div className="errors-panel">
+                  <Panel defaultSize={30} minSize={10} className='panel'>
+                    <div className='panel-header'>Errors</div>
+                    <div className='errors-panel'>
                       <p>{currentState.error}</p>
                     </div>
                   </Panel>
