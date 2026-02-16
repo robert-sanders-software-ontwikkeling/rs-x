@@ -2,301 +2,342 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { Subscription } from 'rxjs';
 
 import {
-    type IExpressionChangeHistory,
-    ExpressionChangeTracker,
+  type IExpressionChangeHistory,
+  ExpressionChangeTracker,
 } from '@rs-x/expression-parser';
 
 import type { IExpressionInfo } from '../../models/model-with-expressions.interface';
 import './expression-change-history-view.component.css';
 
 export interface IExpressionChangeHistoryViewProps {
-    modelIndex: number;
-    expressionIndex: number;
-    expressionInfo: IExpressionInfo | undefined;
-    change: (modelIndex: number, expressionIndex: number, changes: IExpressionChangeHistory[][]) => void;
-    maxEntries?: number;
+  modelIndex: number;
+  expressionIndex: number;
+  expressionInfo: IExpressionInfo | undefined;
+
+  change: (modelIndex: number, expressionIndex: number, changes: IExpressionChangeHistory[][]) => void;
+
+  /** notify when user selects a batch, so tree can highlight it */
+  onSelectBatch?: (changes: readonly IExpressionChangeHistory[]) => void;
 }
 
 type HistoryBatch = {
-    id: string;
-    items: readonly IExpressionChangeHistory[];
+  id: string;
+  items: readonly IExpressionChangeHistory[];
 };
 
 function createBatchId(prefix: string): string {
-    return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
 
 function defer(fn: () => void): void {
-    if (typeof queueMicrotask === 'function') {
-        queueMicrotask(() => {
-            fn();
-        });
-        return;
-    }
-
-    Promise.resolve().then(() => {
-        fn();
+  if (typeof queueMicrotask === 'function') {
+    queueMicrotask(() => {
+      fn();
     });
+    return;
+  }
+
+  Promise.resolve().then(() => {
+    fn();
+  });
 }
 
-function safeInline(value: unknown): string {
-    if (value === undefined) {
-        return 'undefined';
+export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewProps> = (props) => {
+  const {
+    modelIndex,
+    expressionIndex,
+    expressionInfo,
+    change,
+    onSelectBatch,
+  } = props;
+
+  const [batches, setBatches] = useState<readonly HistoryBatch[]>([]);
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+
+  const trackerRef = useRef<ExpressionChangeTracker | null>(null);
+  const subscriptionRef = useRef<Subscription | null>(null);
+
+  // ✅ Store callbacks in refs so effect deps don't change every render
+  const changeRef = useRef(change);
+  const onSelectBatchRef = useRef(onSelectBatch);
+
+  useEffect(() => {
+    changeRef.current = change;
+    onSelectBatchRef.current = onSelectBatch;
+  }, [change, onSelectBatch]);
+
+  const expression = expressionInfo?.expression;
+  const version = expressionInfo?.version ?? 0;
+  const persistedHistory = expressionInfo?.changeHistory;
+
+  // ✅ Prevent repeated auto-select for the same "snapshot"
+  const lastAutoSelectKeyRef = useRef<string>('');
+
+  useEffect(() => {
+    // cleanup previous tracker/sub
+    if (subscriptionRef.current) {
+      subscriptionRef.current.unsubscribe();
+      subscriptionRef.current = null;
     }
 
-    if (value === null) {
-        return 'null';
+    if (trackerRef.current) {
+      trackerRef.current.dispose();
+      trackerRef.current = null;
     }
 
-    if (typeof value === 'string') {
-        const v = value.length > 60 ? `${value.slice(0, 60)}…` : value;
-        return `'${v}'`;
+    // reset UI
+    setBatches(() => {
+      return [];
+    });
+    setSelectedBatchId(() => {
+      return null;
+    });
+
+    if (!expressionInfo || !expression) {
+      return;
     }
 
-    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
-        return String(value);
-    }
-
-    if (typeof value === 'function') {
-        return '[Function]';
-    }
-
-    if (typeof value === 'symbol') {
-        return String(value);
-    }
-
-    if (typeof value === 'object') {
-        if (Array.isArray(value)) {
-            return `[Array(${value.length})]`;
-        }
-        return '{…}';
-    }
-
-    return String(value);
-}
-
-export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewProps> = ( {modelIndex, expressionIndex, expressionInfo, change }) => {
-  
-
-    const [batches, setBatches] = useState<readonly HistoryBatch[]>([]);
-    const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
-
-    const trackerRef = useRef<ExpressionChangeTracker | null>(null);
-    const subscriptionRef = useRef<Subscription | null>(null);
-
-    const expression = expressionInfo?.expression;
-    const version = expressionInfo?.version ?? 0;
-
-    useEffect(() => {
-        if (subscriptionRef.current) {
-            subscriptionRef.current.unsubscribe();
-            subscriptionRef.current = null;
-        }
-
-        if (trackerRef.current) {
-            trackerRef.current.dispose();
-            trackerRef.current = null;
-        }
-
-        if (!expressionInfo || !expression) {
-            setBatches(() => {
-                return [];
-            });
-            setSelectedBatchId(() => {
-                return null;
-            });
-            return;
-        }
-
-        const hydrated: HistoryBatch[] = (expressionInfo.changeHistory ?? [])
-            .slice()
-            .reverse()
-            .map((items, idx) => {
-                return {
-                    id: createBatchId(`h${idx}`),
-                    items,
-                };
-            });
-
-        setBatches(() => {
-            return hydrated;
-        });
-
-        setSelectedBatchId(() => {
-            return hydrated[0]?.id ?? null;
-        });
-
-        const tracker = new ExpressionChangeTracker(expression);
-        trackerRef.current = tracker;
-
-        const sub = tracker.changed.subscribe((stack) => {
-            const batch: HistoryBatch = { id: createBatchId('live'), items: stack };
-
-            setBatches((prev) => {
-                const next = [batch, ...prev];
-
-                const nextHistory: IExpressionChangeHistory[][] = next.map((b) => {
-                    return [...b.items];
-                });
-
-                defer(() => {
-                    change(modelIndex, expressionIndex, nextHistory);
-                });
-
-                return next;
-            });
-
-            setSelectedBatchId((prevSelected) => {
-                if (prevSelected === null) {
-                    return batch.id;
-                }
-                return prevSelected;
-            });
-        });
-
-        subscriptionRef.current = sub;
-
-        return () => {
-            if (subscriptionRef.current) {
-                subscriptionRef.current.unsubscribe();
-                subscriptionRef.current = null;
-            }
-
-            if (trackerRef.current) {
-                trackerRef.current.dispose();
-                trackerRef.current = null;
-            }
+    // hydrate from persisted history (newest first)
+    const hydrated: HistoryBatch[] = (expressionInfo.changeHistory ?? [])
+      .slice()
+      .reverse()
+      .map((items, idx) => {
+        return {
+          id: createBatchId(`h${idx}`),
+          items,
         };
-    }, [version,  change, expressionInfo]);
+      });
 
-    const selectedBatch = useMemo(() => {
-        if (!selectedBatchId) {
-            return null;
+    setBatches(() => {
+      return hydrated;
+    });
+
+    const first = hydrated[0]?.id ?? null;
+    setSelectedBatchId(() => {
+      return first;
+    });
+
+    // ✅ Auto-select only once per snapshot key
+    const snapshotKey = `${modelIndex}:${expressionIndex}:${version}:${(expressionInfo.changeHistory ?? []).length}`;
+    if (first && hydrated[0]?.items?.length && lastAutoSelectKeyRef.current !== snapshotKey) {
+      lastAutoSelectKeyRef.current = snapshotKey;
+
+      defer(() => {
+        onSelectBatchRef.current?.(hydrated[0].items);
+      });
+    }
+
+    // live tracking
+    const tracker = new ExpressionChangeTracker(expression);
+    trackerRef.current = tracker;
+
+    const sub = tracker.changed.subscribe((stack) => {
+      const batch: HistoryBatch = { id: createBatchId('live'), items: stack };
+
+      setBatches((prev) => {
+        const next = [batch, ...prev];
+
+        const nextHistory: IExpressionChangeHistory[][] = next.map((b) => {
+          return [...b.items];
+        });
+
+        defer(() => {
+          changeRef.current(modelIndex, expressionIndex, nextHistory);
+        });
+
+        return next;
+      });
+
+      setSelectedBatchId((prevSelected) => {
+        if (prevSelected === null) {
+          return batch.id;
         }
+        return prevSelected;
+      });
 
-        const found = batches.find((b) => {
-            return b.id === selectedBatchId;
-        });
+      defer(() => {
+        onSelectBatchRef.current?.(batch.items);
+      });
+    });
 
-        return found ?? null;
-    }, [batches, selectedBatchId]);
+    subscriptionRef.current = sub;
 
-    const onSelectBatch = (id: string) => {
-        setSelectedBatchId(() => {
-            return id;
-        });
+    return () => {
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
+
+      if (trackerRef.current) {
+        trackerRef.current.dispose();
+        trackerRef.current = null;
+      }
     };
+  }, [
+    expression,
+    version,
+    persistedHistory,
+    modelIndex,
+    expressionIndex,
+  ]);
 
-    if (!expressionInfo) {
-        return (
-            <div className='changeHistoryRoot'>
-                <div className='changeHistoryEmpty'>No expression selected</div>
-            </div>
-        );
+  const selectedBatch = useMemo(() => {
+    if (!selectedBatchId) {
+      return null;
     }
 
-    if (batches.length === 0) {
-        return (
-            <div className='changeHistoryRoot'>
-                <div className='changeHistoryEmpty'>No changes yet</div>
-            </div>
-        );
-    }
+    const found = batches.find((b) => {
+      return b.id === selectedBatchId;
+    });
 
+    return found ?? null;
+  }, [batches, selectedBatchId]);
+
+  const onSelect = (id: string) => {
+    setSelectedBatchId(() => {
+      return id;
+    });
+
+    const found = batches.find((b) => {
+      return b.id === id;
+    });
+
+    if (found) {
+      defer(() => {
+        onSelectBatchRef.current?.(found.items);
+      });
+    }
+  };
+
+  if (!expressionInfo) {
     return (
-        <div className='changeHistoryRoot'>
-            <div className='changeHistoryLayout'>
-                <div className='changeHistoryList'>
-                    <div className='changeHistoryListHeader'>
-                        <div className='changeHistoryListTitle'>Change sets</div>
-                        <div className='changeHistoryListMeta'>{batches.length}</div>
-                    </div>
-
-                    <div className='changeHistoryListScroll'>
-                        {batches.map((b, idx) => {
-                            const isActive = b.id === selectedBatchId;
-                            const title = `Change #${batches.length - idx}`;
-
-                            return (
-                                <button
-                                    key={b.id}
-                                    type='button'
-                                    className={`changeHistoryItem ${isActive ? 'isActive' : ''}`}
-                                    onClick={() => {
-                                        onSelectBatch(b.id);
-                                    }}
-                                    title={title}
-                                >
-                                    <div className='changeHistoryItemTop'>
-                                        <div className='changeHistoryItemTitle'>{title}</div>
-                                        <div className='changeHistoryItemBadge'>{b.items.length}</div>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                <div className='changeHistoryDetail'>
-                    {selectedBatch ? (
-                        <div className='changeHistoryDetailInner'>
-                            <div className='changeHistoryDetailHeader'>
-                                <div className='changeHistoryDetailTitle'>
-                                    Change path · {selectedBatch.items.length} step{selectedBatch.items.length === 1 ? '' : 's'}
-                                </div>
-
-                                <div className='changeHistoryDetailSub'>
-                                    Expression: <span className='changeHistoryMono'>{expressionInfo.name}</span>
-                                </div>
-                            </div>
-
-                            <div className='changeHistoryChanges'>
-                                <div className='changePath'>
-                                    {selectedBatch.items.map((c, i) => {
-                                        const exprStr = c.expression.expressionString;
-                                        const oldInline = safeInline(c.oldValue);
-                                        const newInline = safeInline(c.value);
-                                        const isTrigger = i === 0;
-
-                                        return (
-                                            <div key={`${selectedBatch.id}_${i}`} className='changeStep'>
-                                                <div className='changeStepRail'>
-                                                    <div className={`changeStepDot ${isTrigger ? 'isTrigger' : ''}`} />
-                                                    {i < selectedBatch.items.length - 1 && <div className='changeStepLine' />}
-                                                </div>
-
-                                                <div className='changeStepCard'>
-                                                    <div className='changeStepHeader'>
-                                                        <div className='changeStepHeaderLeft'>
-                                                            <div className='changeStepExpr' title={exprStr}>
-                                                                {exprStr}
-                                                            </div>
-
-                                                            {isTrigger ? (
-                                                                <div className='changeStepTag'>trigger</div>
-                                                            ) : (
-                                                                <div className='changeStepTag derived'>derived</div>
-                                                            )}
-                                                        </div>
-
-                                                        <div className='changeStepHeaderRight' title={`${oldInline} -> ${newInline}`}>
-                                                            <span className='changeStepOld'>{oldInline}</span>
-                                                            <span className='changeStepArrow'>→</span>
-                                                            <span className='changeStepNew'>{newInline}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className='changeHistoryEmpty'>Select a change set</div>
-                    )}
-                </div>
-            </div>
-        </div>
+      <div className='changeHistoryRoot'>
+        <div className='changeHistoryEmpty'>No expression selected</div>
+      </div>
     );
+  }
+
+  if (batches.length === 0) {
+    return (
+      <div className='changeHistoryRoot'>
+        <div className='changeHistoryEmpty'>No changes yet</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className='changeHistoryRoot'>
+      <div className='changeHistoryList'>
+        <div className='changeHistoryListHeader'>
+          <div className='changeHistoryListTitle'>Change sets</div>
+          <div className='changeHistoryListMeta'>{batches.length}</div>
+        </div>
+
+        <div className='changeHistoryListScroll'>
+          {batches.map((b) => {
+            const isActive = b.id === selectedBatchId;
+            const firstExpr = b.items[0]?.expression?.expressionString ?? '(unknown)';
+
+            return (
+              <button
+                key={b.id}
+                type='button'
+                className={`changeHistoryItem ${isActive ? 'isActive' : ''}`}
+                onClick={() => {
+                  onSelect(b.id);
+                }}
+                title={firstExpr}
+              >
+                <div className='changeHistoryItemTop'>
+                  <div className='changeHistoryItemTitle'>{firstExpr}</div>
+                  <div className='changeHistoryItemBadge'>{b.items.length}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className='changeHistoryDetail'>
+        <div className='changeHistoryDetailHeader'>
+          <div className='changeHistoryDetailTitle'>
+            {selectedBatch
+              ? `${selectedBatch.items.length} step${selectedBatch.items.length === 1 ? '' : 's'}`
+              : 'Select a change set'}
+          </div>
+        </div>
+
+        <div className='changeHistoryChanges'>
+          {selectedBatch ? (
+            <div className='changePath'>
+              {selectedBatch.items.map((c, i) => {
+                const exprStr = c.expression.expressionString;
+
+                return (
+                  <div key={`${selectedBatch.id}_${i}`} className='changeStep'>
+                    <div className='changeStepRail'>
+                      <div className={`changeStepDot ${i === 0 ? 'isTrigger' : ''}`} />
+                      {i < selectedBatch.items.length - 1 ? <div className='changeStepLine' /> : null}
+                    </div>
+
+                    <div className='changeStepCard'>
+                      <div className='changeStepHeader'>
+                        <div className='changeStepHeaderLeft'>
+                          <div className='changeStepExpr' title={exprStr}>
+                            {exprStr}
+                          </div>
+                          <div className={`changeStepTag ${i === 0 ? '' : 'derived'}`}>
+                            {i === 0 ? 'trigger' : 'derived'}
+                          </div>
+                        </div>
+
+                        <div className='changeStepHeaderRight'>
+                          <span className='changeStepOld'>{shortValue(c.oldValue)}</span>
+                          <span className='changeStepArrow'>→</span>
+                          <span className='changeStepNew'>{shortValue(c.value)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className='changeHistoryEmpty'>Select a change set</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
+
+function shortValue(value: unknown): string {
+  if (value === undefined) {
+    return 'undefined';
+  }
+  if (value === null) {
+    return 'null';
+  }
+
+  const t = typeof value;
+
+  if (t === 'string') {
+    const s = value as string;
+    const v = s.length > 80 ? `${s.slice(0, 80)}…` : s;
+    return `'${v}'`;
+  }
+
+  if (t === 'number' || t === 'boolean' || t === 'bigint') {
+    return String(value);
+  }
+
+  try {
+    const json = JSON.stringify(value);
+    if (!json) {
+      return String(value);
+    }
+    return json.length > 80 ? `${json.slice(0, 80)}…` : json;
+  } catch {
+    return String(value);
+  }
+}

@@ -18,6 +18,11 @@ export interface IExpressionTreeProps {
   valueMaxDepth?: number;
   valueMaxChars?: number;
 
+  /** NEW: expressions to highlight (bubble up) */
+  highlightExpressions?: readonly IExpression[];
+  /** NEW: increments to restart animation even if same expressions are selected */
+  highlightVersion?: number;
+
   className?: string;
   style?: React.CSSProperties;
 }
@@ -116,7 +121,9 @@ function defaultFormatValue(value: unknown, maxDepth: number, maxChars: number):
     }
 
     if (Array.isArray(v)) {
-      return v.map((x) => toJson(x, depth + 1));
+      return v.map((x) => {
+        return toJson(x, depth + 1);
+      });
     }
 
     if (t === 'object') {
@@ -127,7 +134,9 @@ function defaultFormatValue(value: unknown, maxDepth: number, maxChars: number):
       seen.add(obj);
 
       const out: Record<string, unknown> = {};
-      const keys = Object.keys(obj).sort((a, b) => a.localeCompare(b));
+      const keys = Object.keys(obj).sort((a, b) => {
+        return a.localeCompare(b);
+      });
       for (const k of keys) {
         out[k] = toJson(obj[k], depth + 1);
       }
@@ -157,7 +166,9 @@ function defaultFormatValue(value: unknown, maxDepth: number, maxChars: number):
 function buildTNodeTree(rootExpr: IExpression): { root: TNode; nodes: TNode[] } {
   let seq = 0;
   const nodes: TNode[] = [];
-  const mkId = () => `n${++seq}`;
+  const mkId = () => {
+    return `n${++seq}`;
+  };
 
   function build(expr: IExpression, depth: number, parent?: TNode, number = 1): TNode {
     const node: TNode = {
@@ -180,7 +191,9 @@ function buildTNodeTree(rootExpr: IExpression): { root: TNode; nodes: TNode[] } 
     nodes.push(node);
 
     const kids = expr.childExpressions ?? [];
-    node.children = kids.map((c, i) => build(c, depth + 1, node, i + 1));
+    node.children = kids.map((c, i) => {
+      return build(c, depth + 1, node, i + 1);
+    });
     return node;
   }
 
@@ -386,13 +399,15 @@ function computeLayout(rootExpr: IExpression): LayoutResult {
   const distance = 1;
   const stats = tidyLayout(root, distance);
 
-  const layoutNodes: LayoutNode[] = nodes.map((n) => ({
-    id: n.id,
-    expr: n.expr,
-    depth: n.depth,
-    x: n.x,
-    y: n.y,
-  }));
+  const layoutNodes: LayoutNode[] = nodes.map((n) => {
+    return {
+      id: n.id,
+      expr: n.expr,
+      depth: n.depth,
+      x: n.x,
+      y: n.y,
+    };
+  });
 
   const edges: LayoutEdge[] = [];
   for (const n of nodes) {
@@ -436,8 +451,71 @@ function useResizeObserverSize<T extends HTMLElement>(): [React.RefObject<T | nu
   return [ref, size];
 }
 
+function buildBubbleUpStages(root: IExpression, seeds: readonly IExpression[]): readonly IExpression[][] {
+  if (!seeds.length) {
+    return [];
+  }
+
+  const byExpr = new Map<IExpression, IExpression | null>();
+
+  const stack: IExpression[] = [root];
+  byExpr.set(root, null);
+
+  while (stack.length) {
+    const cur = stack.pop()!;
+    const kids = cur.childExpressions ?? [];
+    for (const k of kids) {
+      if (!byExpr.has(k)) {
+        byExpr.set(k, cur);
+        stack.push(k);
+      }
+    }
+  }
+
+  const stageMap = new Map<IExpression, number>();
+  const queue: Array<{ expr: IExpression; stage: number }> = [];
+
+  for (const s of seeds) {
+    if (byExpr.has(s)) {
+      queue.push({ expr: s, stage: 0 });
+    }
+  }
+
+  let maxStage = 0;
+
+  while (queue.length) {
+    const { expr, stage } = queue.shift()!;
+    const prev = stageMap.get(expr);
+    if (prev !== undefined && prev >= stage) {
+      continue;
+    }
+
+    stageMap.set(expr, stage);
+    if (stage > maxStage) {
+      maxStage = stage;
+    }
+
+    const parent = byExpr.get(expr);
+    if (parent) {
+      queue.push({ expr: parent, stage: stage + 1 });
+    }
+  }
+
+  const stages: IExpression[][] = [];
+  for (let i = 0; i <= maxStage; i++) {
+    stages.push([]);
+  }
+
+  for (const [expr, stage] of stageMap.entries()) {
+    stages[stage].push(expr);
+  }
+
+  return stages;
+}
+
 export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
   const {
+    version,
     root,
     nodeWidth = DEFAULTS.nodeWidth,
     nodeHeight = DEFAULTS.nodeHeight,
@@ -447,6 +525,8 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
     valueMaxChars = DEFAULTS.valueMaxChars,
     formatExpression = defaultFormatExpression,
     formatValue,
+    highlightExpressions = [],
+    highlightVersion = 0,
     className,
     style,
   } = props;
@@ -455,7 +535,7 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
 
   const layout = useMemo(() => {
     return computeLayout(root);
-  }, [root]);
+  }, [root, version]);
 
   const unitX = nodeWidth + horizontalGap;
   const unitY = nodeHeight + verticalGap;
@@ -497,6 +577,75 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
     return map;
   }, [layout.nodes, originX, originY, unitX, unitY, horizontalGap, verticalGap, nodeWidth, nodeHeight]);
 
+  const highlightSet = useMemo(() => {
+    return new Set<IExpression>(highlightExpressions);
+  }, [highlightExpressions, highlightVersion]);
+
+  const bubbleStages = useMemo(() => {
+    return buildBubbleUpStages(root, highlightExpressions);
+  }, [root, highlightExpressions, highlightVersion]);
+
+  const [activeStageIndex, setActiveStageIndex] = useState<number>(() => {
+    return -1;
+  });
+
+  const runIdRef = useRef<number>(0);
+
+  useEffect(() => {
+    runIdRef.current += 1;
+    const runId = runIdRef.current;
+
+    if (!bubbleStages.length) {
+      setActiveStageIndex(() => {
+        return -1;
+      });
+      return;
+    }
+
+    setActiveStageIndex(() => {
+      return 0;
+    });
+
+    const timers: number[] = [];
+    const stepMs = 260;
+
+    for (let i = 1; i < bubbleStages.length; i++) {
+      const t = window.setTimeout(() => {
+        if (runIdRef.current !== runId) {
+          return;
+        }
+        setActiveStageIndex(() => {
+          return i;
+        });
+      }, i * stepMs);
+      timers.push(t);
+    }
+
+    const end = window.setTimeout(() => {
+      if (runIdRef.current !== runId) {
+        return;
+      }
+      setActiveStageIndex(() => {
+        return -1;
+      });
+    }, (bubbleStages.length + 2) * stepMs);
+    timers.push(end);
+
+    return () => {
+      for (const t of timers) {
+        window.clearTimeout(t);
+      }
+    };
+  }, [bubbleStages, highlightVersion]);
+
+  const stageSet = useMemo(() => {
+    if (activeStageIndex < 0) {
+      return new Set<IExpression>();
+    }
+    const stage = bubbleStages[activeStageIndex] ?? [];
+    return new Set<IExpression>(stage);
+  }, [bubbleStages, activeStageIndex]);
+
   return (
     <div ref={hostRef} className={`exprTreeRoot ${className ?? ''}`} style={style}>
       <div className='exprTreeCanvas' style={{ width: canvasW, height: canvasH }}>
@@ -530,10 +679,23 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
           const typeText = String(n.expr.type);
           const valueText = valueFormatter(n.expr.value);
 
+          const isChanged = highlightSet.has(n.expr);
+          const isAnimatingNow = stageSet.has(n.expr);
+
+          const cls = [
+            'exprNode',
+            isChanged ? 'isChanged' : '',
+            isAnimatingNow ? 'isStageActive' : '',
+          ]
+            .filter((x) => {
+              return x.length > 0;
+            })
+            .join(' ');
+
           return (
             <div
               key={n.id}
-              className='exprNode'
+              className={cls}
               style={{
                 width: nodeWidth,
                 height: nodeHeight,

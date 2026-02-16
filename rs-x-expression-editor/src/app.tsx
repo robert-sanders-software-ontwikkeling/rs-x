@@ -2,7 +2,7 @@ import type { OnMount } from '@monaco-editor/react';
 import { InjectionContainer } from '@rs-x/core';
 import React, { useEffect, useState } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
-import { IExpressionChangeHistory, IExpressionManager, RsXExpressionParserInjectionTokens } from '../../rs-x-expression-parser/lib';
+import { IExpression, IExpressionChangeHistory, IExpressionManager, RsXExpressionParserInjectionTokens } from '../../rs-x-expression-parser/lib';
 
 import { FaTrash } from 'react-icons/fa';
 
@@ -44,6 +44,8 @@ type AppLoadedProps = {
 
 const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const [currentState, setCurrentState] = useState<IExpressionEditorState>(initialState);
+  const [treeHighlight, setTreeHighlight] = useState<readonly IExpression[]>([]);
+  const [treeHighlightVersion, setTreeHighlightVersion] = useState<number>(0);
 
   const [isRightPanelOpen, setIsRightPanelOpen] = useState<boolean>(() => {
     const selectedModel = initialState.modelsWithExpressions[initialState.selectedModelIndex as number];
@@ -254,6 +256,15 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     });
   };
 
+  const onSelectHistoryBatch = (items: readonly IExpressionChangeHistory[]) => {
+    setTreeHighlight(() => {
+      return items.map(item => item.expression)
+    });
+    setTreeHighlightVersion((v) => {
+      return v + 1;
+    });
+  };
+
   const selectedHistoryCount = selectedExpression?.changeHistory?.length ?? 0;
   const canClearSelectedHistory = selectedExpressionIndex !== null && selectedHistoryCount > 0;
 
@@ -336,6 +347,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                                 expressionIndex={selectedModel?.selectedExpressionIndex as number}
                                 expressionInfo={selectedExpression}
                                 change={onHistoryChanged}
+                                onSelectBatch={onSelectHistoryBatch}
                               />
                             </div>
                           </div>
@@ -351,6 +363,8 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                         <ExpressionTree
                           version={selectedExpression.version}
                           root={selectedExpression.expression}
+                          highlightExpressions={treeHighlight as IExpression[]}
+                          highlightVersion={treeHighlightVersion}
                         />
                       </div>
                     </Panel>
