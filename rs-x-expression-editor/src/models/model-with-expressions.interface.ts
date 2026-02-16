@@ -1,4 +1,13 @@
-import { IExpression } from '@rs-x/expression-parser';
+import type { IExpression, IExpressionChangeHistory } from '@rs-x/expression-parser';
+
+
+
+export interface IExpressionInfo {
+    name: string
+    version: number;
+    expression: IExpression;
+    changeHistory: IExpressionChangeHistory[][];
+}
 
 export interface IModelWithExpressions {
     name: string;
@@ -6,5 +15,5 @@ export interface IModelWithExpressions {
     modelString: string;
     selectedExpressionIndex: number | null;
     editingExpressionIndex: number | null;
-    expressions: IExpression[];
+    expressions: IExpressionInfo[];
 }

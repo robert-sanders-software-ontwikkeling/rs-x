@@ -2,7 +2,7 @@ import type { OnMount } from '@monaco-editor/react';
 import { InjectionContainer } from '@rs-x/core';
 import React, { useEffect, useState } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
-import { IExpressionManager, RsXExpressionParserInjectionTokens } from '../../rs-x-expression-parser/lib';
+import { IExpressionChangeHistory, IExpressionManager, RsXExpressionParserInjectionTokens } from '../../rs-x-expression-parser/lib';
 
 import { ModelList } from './components/model-list/model-list.component';
 import { Spinner } from './components/spinner/spinner.component';
@@ -43,6 +43,13 @@ type AppLoadedProps = {
 const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const [currentState, setCurrentState] = useState<IExpressionEditorState>(initialState);
 
+  // ✅ Right panel visibility toggle (details)
+  const [isRightPanelOpen, setIsRightPanelOpen] = useState<boolean>(() => {
+    const selectedModel = initialState.modelsWithExpressions[initialState.selectedModelIndex as number];
+    const selectedExpressionIndex = selectedModel?.selectedExpressionIndex ?? null;
+    return selectedExpressionIndex !== null;
+  });
+
   const expressionManager = InjectionContainer.get<IExpressionManager>(
     RsXExpressionParserInjectionTokens.IExpressionManager
   );
@@ -62,14 +69,36 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const selectedModel =
     currentState.modelsWithExpressions[currentState.selectedModelIndex as number];
 
-  const selectedExpression = selectedModel?.expressions[selectedModel?.selectedExpressionIndex as number];
+  const selectedExpression =
+    selectedModel?.expressions[selectedModel?.selectedExpressionIndex as number];
 
   const selectedExpressionIndex =
     selectedModel?.selectedExpressionIndex ?? null;
 
-  const isEditing = currentState.addingModel || currentState.addingExpression;
+  const isEditing =
+    currentState.addingModel || currentState.addingExpression;
 
-  const shouldShowRightDetailsPanel = !isEditing && selectedExpressionIndex !== null;
+  // ✅ When selecting an expression, auto-open right panel (unless editing)
+  useEffect(() => {
+    if (isEditing) {
+      return;
+    }
+    if (selectedExpressionIndex !== null) {
+      setIsRightPanelOpen(() => {
+        return true;
+      });
+    }
+  }, [selectedExpressionIndex, isEditing]);
+
+  // ✅ Show right panel only when selected expression AND open AND not editing
+  const shouldShowRightDetailsPanel =
+    !isEditing && selectedExpressionIndex !== null && isRightPanelOpen;
+
+  // ✅ Hide left list ONLY when right panel is visible (selected + open) and not editing
+  const shouldShowLeftListPanel =
+    currentState.addingModel ||
+    currentState.addingExpression ||
+    !shouldShowRightDetailsPanel;
 
   const handleSelectModel = (modelIndex: number) => {
     setCurrentState((prev) => {
@@ -91,7 +120,8 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
         .state;
     });
 
-    ModelIntellisenseService.getInstance().model = currentState.modelsWithExpressions[modelIndex]?.model;
+    ModelIntellisenseService.getInstance().model =
+      currentState.modelsWithExpressions[modelIndex]?.model;
   };
 
   const getSelectedModelString = (): string | undefined => {
@@ -149,7 +179,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
 
       setCurrentState((prev) => {
         return new ExpressionEditorStateBuilder(prev)
-          .addExpression(modelObj, name, expression)
+          .addExpression(currentState.selectedModelIndex as number, name, expression)
           .setAddingExpression(false)
           .state;
       });
@@ -170,6 +200,17 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     setCurrentState((prev) => {
       return new ExpressionEditorStateBuilder(prev).selectExpression(modelIndex, index).state;
     });
+
+    setIsRightPanelOpen(() => {
+      return true;
+    });
+  };
+
+  const onViewExpression = (modelIndex: number, index: number) => {
+    onSelectExpression(modelIndex, index);
+    setIsRightPanelOpen(() => {
+      return true;
+    });
   };
 
   const onDeleteExpression = (modelIndex: number, index: number) => {
@@ -184,66 +225,104 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     });
   };
 
-  const onModelChange = (model: object) => {
-    // TODO
+  const onModelChange = (modelIndex: number, model: object,) => {
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev).setModel(modelIndex, model).state;
+    });
   };
+
+  const onCloseRightPanel = () => {
+    setIsRightPanelOpen(() => {
+      return false;
+    });
+  };
+
+  const onHistoryChanged = (modelIndex: number, expressionIndex: number, history: IExpressionChangeHistory[][]) => {
+
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev).setExpressionHistory(modelIndex, expressionIndex, history).state;
+    });
+  }
 
   return (
     <div className='app'>
       <Group orientation='horizontal' className='panels-container'>
-        {/* VIEW MODE: model list + right details */}
+        {/* VIEW MODE */}
         {!currentState.addingModel && !currentState.addingExpression && (
           <>
-            <Panel defaultSize={shouldShowRightDetailsPanel ? 55 : 100} minSize={25} className='panel'>
-              <ModelList
-                selectModelIndex={currentState.selectedModelIndex}
-                modelsWithExpressions={currentState.modelsWithExpressions}
-                onSelectModel={handleSelectModel}
-                onAddModel={handleAddModel}
-                onAddExpression={handleAddExpression}
-                onSelectExpression={onSelectExpression}
-                onEditExpression={onEditExpression}
-                onDeleteExpression={onDeleteExpression}
-              />
-            </Panel>
-
-            {shouldShowRightDetailsPanel && <Separator className='separator' />}
-
-            {shouldShowRightDetailsPanel && (
-              <Panel defaultSize={45} minSize={25} className='panel'>
-                <Group orientation='horizontal' className='panels-container'>
-                  {/* LEFT SIDE: Model (top) + Change History (bottom) */}
-                  <Panel defaultSize={60} minSize={30} className='panel'>
-                    <Group orientation='vertical' className='panel-stack'>
-                      <Panel defaultSize={60} minSize={20} className='panel'>
-                        <div className='panel-header'>Model</div>
-                        <div className='editor-wrapper'>
-                          <ModelEditor model={selectedModel.model} onCommit={onModelChange} />
-                        </div>
-                      </Panel>
-
-                      <Separator className='separator-horizontal' />
-
-                      <Panel defaultSize={40} minSize={15} className='panel'>
-                        <div className='panel-header'>Change History</div>
-                        <div className='errors-panel'>
-                          <ExpressionChangeHistoryView expression={selectedExpression} maxEntries={50} />
-                        </div>
-                      </Panel>
-                    </Group>
-                  </Panel>
-
-                  <Separator className='separator' />
-
-                  {/* RIGHT SIDE: Expression tree */}
-                  <Panel defaultSize={40} minSize={20} className='panel'>
-                    <div className='panel-header'>Expression Tree</div>
-                    <div className='errors-panel'>
-                      <ExpressionTree root={selectedExpression} />
-                    </div>
-                  </Panel>
-                </Group>
+            {/* LEFT LIST: always visible when right panel is hidden */}
+            {shouldShowLeftListPanel && (
+              <Panel defaultSize={100} minSize={25} className='panel'>
+                <ModelList
+                  selectModelIndex={currentState.selectedModelIndex}
+                  modelsWithExpressions={currentState.modelsWithExpressions}
+                  onSelectModel={handleSelectModel}
+                  onAddModel={handleAddModel}
+                  onAddExpression={handleAddExpression}
+                  onSelectExpression={onSelectExpression}
+                  onEditExpression={onEditExpression}
+                  onDeleteExpression={onDeleteExpression}
+                  onViewExpression={onViewExpression}
+                />
               </Panel>
+            )}
+
+            {/* RIGHT DETAILS: only render when open */}
+            {shouldShowRightDetailsPanel && (
+              <>
+                <Separator className='separator' />
+                <Panel defaultSize={100} minSize={25} className='panel'>
+                  <div className='panel-header panel-header-row'>
+                    <span>Details</span>
+                    <button
+                      type='button'
+                      className='panel-header-button'
+                      onClick={() => {
+                        onCloseRightPanel();
+                      }}
+                      title='Close details'
+                    >
+                      Close
+                    </button>
+                  </div>
+
+                  <Group orientation='horizontal' className='panels-container'>
+                    {/* LEFT SIDE: Model (top) + Change History (bottom) */}
+                    <Panel defaultSize={20} minSize={10} className='panel'>
+                      <Group orientation='vertical' className='panel-stack'>
+                        <Panel defaultSize={70} minSize={20} className='panel'>
+                          <div className='panel-header'>Model</div>
+                          <div className='editor-wrapper'>
+                            <ModelEditor modelIndex={currentState.selectedModelIndex as number} model={selectedModel.model} onCommit={onModelChange} />
+                          </div>
+                        </Panel>
+
+                        <Separator className='separator-horizontal' />
+
+                        <Panel defaultSize={30} minSize={15} className='panel'>
+                          <div className='panel-header'>Change History</div>
+                          <div className='errors-panel'>
+                            <ExpressionChangeHistoryView 
+                              modelIndex={currentState.selectedModelIndex as number} 
+                              expressionIndex={selectedModel?.selectedExpressionIndex as number}
+                              expressionInfo={selectedExpression} change={onHistoryChanged } />
+                          </div>
+                        </Panel>
+                      </Group>
+                    </Panel>
+
+                    <Separator className='separator' />
+
+                    {/* RIGHT SIDE: Expression tree */}
+                    <Panel defaultSize={80} minSize={20} className='panel'>
+                      <div className='panel-header'>Expression Tree</div>
+                      <div className='errors-panel'>
+                        <ExpressionTree version={selectedExpression.version} root={selectedExpression.expression} />
+                      </div>
+                    </Panel>
+                  </Group>
+                </Panel>
+              </>
             )}
           </>
         )}

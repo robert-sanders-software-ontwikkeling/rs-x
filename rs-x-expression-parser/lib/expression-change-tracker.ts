@@ -9,8 +9,7 @@ export interface IExpressionChangeHistory {
 }
 
 export class ExpressionChangeTracker implements IDisposable {
-    private readonly _currentTrackStack: IExpressionChangeHistory[] = [];
-    private readonly _history: IExpressionChangeHistory[][] = [];
+    private readonly _changes: IExpressionChangeHistory[] = [];
     private readonly _changed = new Subject<IExpressionChangeHistory[]>;
     private _isDisposed = false;
 
@@ -21,9 +20,7 @@ export class ExpressionChangeTracker implements IDisposable {
 
         this._expression.changeHook = this.onChanged
     }
-    public get history(): readonly IExpressionChangeHistory[][] {
-        return this._history;
-    }
+   
 
     public get changed(): Observable<IExpressionChangeHistory[]> {
         return this._changed;
@@ -33,29 +30,21 @@ export class ExpressionChangeTracker implements IDisposable {
         if (this._isDisposed) {
             return;
         }
-        this.clear();
+        this._changes.length = 0;
         this._expression.changeHook = undefined;
         this._isDisposed = true;
     }
 
-
-    public clear(): void {
-        this._history.length = 0;
-        this._currentTrackStack.length = 0;
-    }
-
     private onChanged = (expression: IExpression, oldValue: unknown): void  => {
-        this._currentTrackStack.push({
+        this._changes.push({
             expression,
             value: expression.value,
             oldValue
         });
 
         if (expression === this._expression) {
-            const currentTrackStack = [...this._currentTrackStack];
-            this._history.push(currentTrackStack);
-            this._currentTrackStack.length = 0;
-            this._changed.next(currentTrackStack);
+            this._changed.next( [...this._changes]);
+            this._changes.length = 0;
         }
     }
 }

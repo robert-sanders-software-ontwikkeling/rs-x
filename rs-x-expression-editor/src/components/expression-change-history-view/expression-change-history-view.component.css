@@ -1,134 +1,329 @@
 .changeHistoryRoot {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.changeHistoryLayout {
-  display: flex;
   height: 100%;
   width: 100%;
   min-height: 0;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #f0f0f0;
+  font-family: 'Fira Code', monospace;
+}
+
+.changeHistoryEmpty {
+  margin: auto;
+  opacity: 0.7;
+  font-style: italic;
+  padding: 12px;
+}
+
+.changeHistoryLayout {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.changeHistoryList,
+.changeHistoryDetail {
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: #2b2b3b;
+  border: 1px solid #444;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
 }
 
 .changeHistoryList {
-  width: 260px;
-  min-width: 200px;
-  max-width: 360px;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-  overflow: auto;
-  padding: 10px;
-  box-sizing: border-box;
-}
-
-.changeHistoryItem {
-  width: 100%;
-  text-align: left;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 10px;
-  padding: 10px;
-  margin-bottom: 10px;
-  cursor: pointer;
-  color: inherit;
-}
-
-.changeHistoryItem.isActive {
-  border-color: rgba(120, 180, 255, 0.45);
-  background: rgba(120, 180, 255, 0.10);
-}
-
-.changeHistoryItemTitle {
-  font-weight: 700;
-  font-size: 12px;
-}
-
-.changeHistoryItemSub {
-  margin-top: 6px;
-  font-size: 11px;
-  opacity: 0.75;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .changeHistoryDetail {
   flex: 1;
-  min-width: 0;
-  min-height: 0;
-  overflow: auto;
-  padding: 10px;
-  box-sizing: border-box;
 }
 
-.changeHistoryDetailInner {
+.changeHistoryListHeader,
+.changeHistoryDetailHeader {
+  flex: 0 0 auto;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   gap: 10px;
+  padding: 10px 12px;
+  background-color: #323248;
+  border-bottom: 1px solid #444;
 }
 
 .changeHistoryDetailHeader {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.changeHistoryListTitle,
+.changeHistoryDetailTitle {
+  font-weight: 900;
+  font-size: 0.95rem;
+}
+
+.changeHistoryDetailSub {
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.changeHistoryMono {
+  color: #cfe1ff;
+  font-weight: 700;
+}
+
+.changeHistoryListMeta {
+  font-size: 0.85rem;
+  opacity: 0.9;
+  padding: 2px 10px;
+  border: 1px solid #555a80;
+  background-color: #2f2f44;
+  border-radius: 999px;
+}
+
+.changeHistoryListScroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.changeHistoryItem {
+  text-align: left;
+  border: 1px solid #3b3f5a;
+  background-color: #2f2f44;
+  color: #f0f0f0;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.changeHistoryItem:hover {
+  background-color: #35385a;
+}
+
+.changeHistoryItem.isActive {
+  border-color: #5c7cfa;
+  background-color: #2f3458;
+  box-shadow: 0 0 0 1px rgba(92, 124, 250, 0.25);
+}
+
+.changeHistoryItemTop {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.changeHistoryDetailTitle {
-  font-weight: 700;
-  font-size: 12px;
+.changeHistoryItemTitle {
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.changeHistoryItemBadge {
+  font-size: 0.8rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid #555a80;
+  background-color: rgba(30, 30, 47, 0.8);
   opacity: 0.9;
 }
 
+.changeHistoryDetailInner {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .changeHistoryChanges {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px 12px;
+}
+
+/* Timeline */
+.changePath {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.changeHistoryChange {
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  overflow: hidden;
+.changeStep {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 12px;
+  min-width: 0;
 }
 
-.changeHistoryChangeExpr {
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  font-weight: 700;
-  font-size: 12px;
+.changeStepRail {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.changeStepDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background-color: #6b7280;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  margin-top: 12px;
+}
+
+.changeStepDot.isTrigger {
+  background-color: #5c7cfa;
+  box-shadow: 0 0 0 3px rgba(92, 124, 250, 0.18);
+}
+
+.changeStepLine {
+  position: absolute;
+  top: 28px;
+  bottom: -14px;
+  width: 2px;
+  background: linear-gradient(to bottom, rgba(92, 124, 250, 0.55), rgba(107, 114, 128, 0.15));
+}
+
+/* Step card */
+.changeStepCard {
+  border: 1px solid #3b3f5a;
+  background-color: #2f2f44;
+  border-radius: 12px;
+
+  /* ✅ IMPORTANT: allow text to render fully */
+  overflow: visible;
+  min-width: 0;
+}
+
+/* Header only */
+.changeStepHeader {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  /* ✅ give extra room on the right so last char never clips */
+  padding: 12px 18px 12px 12px;
+
+  min-width: 0;
+
+  /* ✅ avoid clipping by parent rounding */
+  overflow: visible;
+}
+
+.changeStepHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.changeStepExpr {
+  font-weight: 900;
+  color: #9cdcfe;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.changeHistoryChangeGrid {
-  display: grid;
-  grid-template-columns: 34px 1fr;
-  gap: 8px 10px;
-  padding: 10px 12px;
-  align-items: start;
+.changeStepTag {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: rgba(92, 124, 250, 0.15);
+  border: 1px solid rgba(92, 124, 250, 0.25);
+  color: #cfe1ff;
+  flex: 0 0 auto;
 }
 
-.changeHistoryLabel {
-  font-size: 11px;
-  opacity: 0.7;
-  padding-top: 2px;
+.changeStepTag.derived {
+  background-color: rgba(107, 114, 128, 0.12);
+  border: 1px solid rgba(107, 114, 128, 0.25);
+  color: rgba(240, 240, 240, 0.85);
 }
 
-.changeHistoryPre {
-  margin: 0;
-  font-size: 11px;
-  line-height: 1.45;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  opacity: 0.95;
+.changeStepHeaderRight {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  /* ✅ IMPORTANT: do not shrink, do not clip */
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: visible;
+
+  /* ✅ small right padding inside the group */
+  padding-right: 6px;
 }
 
-.changeHistoryEmpty {
-  padding: 12px;
-  font-size: 12px;
-  opacity: 0.7;
+.changeStepOld,
+.changeStepNew,
+.changeStepArrow {
+  flex: 0 0 auto;
+  flex-shrink: 0;
+}
+
+.changeStepOld {
+  color: #ffb3b3;
+}
+
+.changeStepNew {
+  color: #a8f0c6;
+}
+
+.changeStepArrow {
+  opacity: 0.85;
+}
+
+.changeHistoryDetailHeaderRow {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.changeHistoryClearBtn {
+  border: 1px solid #555a80;
+  background-color: #2f2f44;
+  color: #f0f0f0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.changeHistoryClearBtn:hover {
+  background-color: #35385a;
+  border-color: #5c7cfa;
+}
+
+.changeHistoryClearBtn:active {
+  background-color: #2b2f52;
+  border-color: #4b66d6;
 }

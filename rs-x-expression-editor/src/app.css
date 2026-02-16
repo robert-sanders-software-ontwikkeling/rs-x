@@ -1,4 +1,7 @@
-html, body, #root, .app {
+html,
+body,
+#root,
+.app {
   height: 100%;
   margin: 0;
   padding: 0;
@@ -33,6 +36,7 @@ html, body, #root, .app {
   /* 🔥 fix voor vertical Group resize */
   flex: 1;
   min-height: 0;
+  min-width: 0;
 }
 
 .panel {
@@ -42,7 +46,7 @@ html, body, #root, .app {
   background-color: #2b2b3b;
   border-radius: 4px;
   margin: 2px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 
   /* 🔥 fix voor resizing */
   min-height: 0;
@@ -59,6 +63,64 @@ html, body, #root, .app {
   justify-content: space-between;
   align-items: center;
   color: #f0f0f0;
+}
+
+/* ✅ Added: header row + buttons used by Details panel */
+.panel-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.panel-header-button {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: inherit;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.panel-header-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.panel-header-button:active {
+  transform: translateY(1px);
+}
+
+/* ✅ Added: "View details" empty state */
+.panel-empty-center {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+
+  /* 🔥 fix for nested flex/scroll */
+  min-height: 0;
+  min-width: 0;
+}
+
+.panel-primary-button {
+  background: rgba(120, 180, 255, 0.2);
+  border: 1px solid rgba(120, 180, 255, 0.35);
+  color: inherit;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.panel-primary-button:hover {
+  background: rgba(120, 180, 255, 0.28);
+}
+
+.panel-primary-button:active {
+  transform: translateY(1px);
 }
 
 /* Top bar for cancel/save buttons */
@@ -132,7 +194,7 @@ html, body, #root, .app {
 }
 
 .save-btn:disabled:hover {
-  background-color: #c8e6c9; /* hover geen effect */
+  background-color: #2b3a34; /* hover geen effect */
 }
 
 .editor-wrapper,
@@ -150,6 +212,7 @@ html, body, #root, .app {
   width: 4px;
   cursor: col-resize;
   background-color: #444;
+  flex-shrink: 0; /* 🔥 fix */
 }
 
 .separator-horizontal {

@@ -5,8 +5,9 @@ type Path = Array<string | number>;
 type AnyRecord = Record<string, any>;
 
 export interface ModelEditorProps<T extends AnyRecord> {
+  modelIndex: number;
   model: T;
-  onCommit: (next: T) => void;
+  onCommit: (modelIndex: number, model: T) => void;
   title?: string;
 
   // Controls indentation per nesting level (px)
@@ -153,6 +154,7 @@ const ModelNode: React.FC<{
 /* ---------------- Main Editor ---------------- */
 
 export function ModelEditor<T extends AnyRecord>({
+  modelIndex,
   model,
   onCommit,
   title = 'Model',
@@ -172,7 +174,7 @@ export function ModelEditor<T extends AnyRecord>({
   };
 
   const handleCommit = () => {
-    onCommit(deepClone(draft));
+    onCommit(modelIndex, deepClone(draft));
   };
 
   const handleUndo = () => {

@@ -4,6 +4,7 @@ import { IExpression } from '@rs-x/expression-parser';
 import './expression-tree-view.component.css';
 
 export interface IExpressionTreeProps {
+  version: number;
   root: IExpression;
 
   nodeWidth?: number;
