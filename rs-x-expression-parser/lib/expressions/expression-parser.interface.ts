@@ -7,6 +7,8 @@ import type { IExpressionBindConfiguration } from './expression-bind-configurati
 
 
 
+export type ChangeHook = (expression: IExpression, oldValue: unknown) => void;
+
 export interface IExpression<T = unknown, PT = unknown> extends IDisposable {
   readonly changed: Observable<IExpression>;
   readonly type: ExpressionType;
@@ -15,6 +17,7 @@ export interface IExpression<T = unknown, PT = unknown> extends IDisposable {
   readonly childExpressions: readonly IExpression[];
   readonly value: T | undefined;
   readonly isRoot: boolean;
+  changeHook?: ChangeHook
   toString(): string;
   clone(): this;
   bind(settings: IExpressionBindConfiguration): IExpression;

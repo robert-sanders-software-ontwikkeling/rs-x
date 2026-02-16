@@ -17,9 +17,12 @@ import type { IExpressionServices } from '../expression-services/expression-serv
 
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 import {
+  ChangeHook,
   type ExpressionType,
   type IExpression,
 } from './expression-parser.interface';
+
+
 
 export abstract class AbstractExpression<
   T = unknown,
@@ -36,6 +39,8 @@ export abstract class AbstractExpression<
   private _services!: IExpressionServices;
   private _leafIndexWatchRule?: IIndexWatchRule | undefined;
 
+  public _changeHook?:ChangeHook;
+
   protected constructor(
     public readonly type: ExpressionType,
     public readonly expressionString: string,
@@ -47,6 +52,16 @@ export abstract class AbstractExpression<
     this.addChildExpressions(
       childExpressions.filter((childExpression) => childExpression),
     );
+  }
+
+
+  public get changeHook(): ChangeHook| undefined {
+    return this._changeHook;
+  }
+
+  public set changeHook(value: ChangeHook | undefined) {
+    this._changeHook = value;
+    this._childExpressions.forEach(childExpression => childExpression.changeHook = value)
   }
 
   public abstract clone(): this;
@@ -199,6 +214,10 @@ export abstract class AbstractExpression<
       return false;
     }
     this._value = value;
+
+    if(this.changeHook) {
+      this.changeHook(this, this._oldValue);
+    }
 
     if (this.parent) {
       return this.parent.reevaluated(this, root, pendingCommits);

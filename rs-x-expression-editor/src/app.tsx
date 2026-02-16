@@ -1,6 +1,6 @@
 import type { OnMount } from '@monaco-editor/react';
 import { InjectionContainer } from '@rs-x/core';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import { IExpressionManager, RsXExpressionParserInjectionTokens } from '../../rs-x-expression-parser/lib';
 
@@ -18,6 +18,7 @@ import { ModelIntellisenseService } from './services/model-intellisense.service'
 import './app.css';
 import { ModelEditor } from './components/model-editor/model-editor.component';
 import { ExpressionTree } from './components/expression-tree-view/expression-tree-view.component';
+import { ExpressionChangeHistoryView } from './components/expression-change-history-view/expression-change-history-view.component';
 
 const emptyModel = '(\n\t{\n\n\t}\n)';
 
@@ -190,7 +191,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   return (
     <div className='app'>
       <Group orientation='horizontal' className='panels-container'>
-        {/* LEFT: model list (only when not adding model/expression) */}
+        {/* VIEW MODE: model list + right details */}
         {!currentState.addingModel && !currentState.addingExpression && (
           <>
             <Panel defaultSize={shouldShowRightDetailsPanel ? 55 : 100} minSize={25} className='panel'>
@@ -208,23 +209,33 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
 
             {shouldShowRightDetailsPanel && <Separator className='separator' />}
 
-            {/* RIGHT: details panel (ONLY when an expression is selected AND not editing) */}
             {shouldShowRightDetailsPanel && (
               <Panel defaultSize={45} minSize={25} className='panel'>
-                {/* ✅ CHANGED: vertical -> horizontal */}
                 <Group orientation='horizontal' className='panels-container'>
-                  {/* Model editor on the left */}
+                  {/* LEFT SIDE: Model (top) + Change History (bottom) */}
                   <Panel defaultSize={60} minSize={30} className='panel'>
-                    <div className='panel-header'>Model</div>
-                    <div className='editor-wrapper'>
-                      <ModelEditor model={selectedModel.model} onCommit={onModelChange} />
-                    </div>
+                    <Group orientation='vertical' className='panel-stack'>
+                      <Panel defaultSize={60} minSize={20} className='panel'>
+                        <div className='panel-header'>Model</div>
+                        <div className='editor-wrapper'>
+                          <ModelEditor model={selectedModel.model} onCommit={onModelChange} />
+                        </div>
+                      </Panel>
+
+                      <Separator className='separator-horizontal' />
+
+                      <Panel defaultSize={40} minSize={15} className='panel'>
+                        <div className='panel-header'>Change History</div>
+                        <div className='errors-panel'>
+                          <ExpressionChangeHistoryView expression={selectedExpression} maxEntries={50} />
+                        </div>
+                      </Panel>
+                    </Group>
                   </Panel>
 
-                  {/* ✅ CHANGED: horizontal separator */}
                   <Separator className='separator' />
 
-                  {/* Expression tree on the right */}
+                  {/* RIGHT SIDE: Expression tree */}
                   <Panel defaultSize={40} minSize={20} className='panel'>
                     <div className='panel-header'>Expression Tree</div>
                     <div className='errors-panel'>

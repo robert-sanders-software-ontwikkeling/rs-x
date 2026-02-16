@@ -1,0 +1,134 @@
+.changeHistoryRoot {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.changeHistoryLayout {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
+.changeHistoryList {
+  width: 260px;
+  min-width: 200px;
+  max-width: 360px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: auto;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.changeHistoryItem {
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  color: inherit;
+}
+
+.changeHistoryItem.isActive {
+  border-color: rgba(120, 180, 255, 0.45);
+  background: rgba(120, 180, 255, 0.10);
+}
+
+.changeHistoryItemTitle {
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.changeHistoryItemSub {
+  margin-top: 6px;
+  font-size: 11px;
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.changeHistoryDetail {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.changeHistoryDetailInner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.changeHistoryDetailHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.changeHistoryDetailTitle {
+  font-weight: 700;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.changeHistoryChanges {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.changeHistoryChange {
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+
+.changeHistoryChangeExpr {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-weight: 700;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.changeHistoryChangeGrid {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 8px 10px;
+  padding: 10px 12px;
+  align-items: start;
+}
+
+.changeHistoryLabel {
+  font-size: 11px;
+  opacity: 0.7;
+  padding-top: 2px;
+}
+
+.changeHistoryPre {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  opacity: 0.95;
+}
+
+.changeHistoryEmpty {
+  padding: 12px;
+  font-size: 12px;
+  opacity: 0.7;
+}
