@@ -44,7 +44,7 @@ type AppLoadedProps = {
 
 const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const [currentState, setCurrentState] = useState<IExpressionEditorState>(initialState);
-  const [treeHighlight, setTreeHighlight] = useState<readonly IExpression[]>([]);
+  const [treeHighlight, setTreeHighlight] = useState<readonly IExpressionChangeHistory[]>([]);
   const [treeHighlightVersion, setTreeHighlightVersion] = useState<number>(0);
 
   const [isRightPanelOpen, setIsRightPanelOpen] = useState<boolean>(() => {
@@ -258,8 +258,8 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
 
   const onSelectHistoryBatch = (items: readonly IExpressionChangeHistory[]) => {
     setTreeHighlight(() => {
-      return items.map(item => item.expression)
-    });
+      return [...items]
+    });;
     setTreeHighlightVersion((v) => {
       return v + 1;
     });
@@ -363,7 +363,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                         <ExpressionTree
                           version={selectedExpression.version}
                           root={selectedExpression.expression}
-                          highlightExpressions={treeHighlight as IExpression[]}
+                          highlightChanges={treeHighlight as IExpressionChangeHistory[]}
                           highlightVersion={treeHighlightVersion}
                         />
                       </div>
