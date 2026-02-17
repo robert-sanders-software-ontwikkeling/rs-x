@@ -6,6 +6,7 @@ export interface IExpressionInfo {
     name: string
     version: number;
     expression: IExpression;
+    selecteChangeHistoryIndex: number;
     changeHistory: IExpressionChangeHistory[][];
 }
 

@@ -1,10 +1,15 @@
-import { IExpression, IExpressionChangeHistory } from '@rs-x/expression-parser';
+import { IExpression, IExpressionChangeHistory, RsXExpressionParserInjectionTokens } from '@rs-x/expression-parser';
 import { IExpressionEditorState } from '../models/expression-editor-state.interface';
 import { IExpressionInfo } from '../models/model-with-expressions.interface';
-import { Type } from '../../../rs-x-core/lib';
+import { InjectionContainer, Type } from '../../../rs-x-core/lib';
+import { IExpressionChangePlayback } from '../../../rs-x-expression-parser/lib/expression-change-playback/expression-change-playback.interface';
 
 export class ExpressionEditorStateBuilder {
-    constructor(private _state: IExpressionEditorState) { }
+
+    private readonly _expressionChangePlayback: IExpressionChangePlayback;
+    constructor(private _state: IExpressionEditorState) {
+        this._expressionChangePlayback = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionChangePlayback)
+    }
 
     public get state(): IExpressionEditorState {
         return this._state
@@ -175,7 +180,6 @@ export class ExpressionEditorStateBuilder {
             },
             false
         )
-
     }
 
     public setModel(modelIndex: number, model: object): this {
@@ -270,6 +274,53 @@ export class ExpressionEditorStateBuilder {
     }
 
 
+    public setSelectedChangeHistoryIndex(
+        modelIndex: number,
+        expressionIndex: number,
+        selectedChangeHistoryIndex: number
+    ): this {
+        const expressionInfo =
+            this._state.modelsWithExpressions[modelIndex]?.expressions[expressionIndex];
+
+        if (
+            !expressionInfo ||
+            selectedChangeHistoryIndex < 0 ||
+            selectedChangeHistoryIndex >= expressionInfo.changeHistory.length ||
+            selectedChangeHistoryIndex === expressionInfo.selecteChangeHistoryIndex
+        ) {
+            return this;
+        }
+
+        if (selectedChangeHistoryIndex > expressionInfo.selecteChangeHistoryIndex) {
+            this._expressionChangePlayback.playForward(selectedChangeHistoryIndex, expressionInfo.changeHistory);
+        } else {
+            this._expressionChangePlayback.playBackward(selectedChangeHistoryIndex, expressionInfo.changeHistory);
+        }
+
+        const changedExpressionInfo = {
+            ...expressionInfo,
+            selecteChangeHistoryIndex: selectedChangeHistoryIndex,
+        };
+
+        const modelWithExpressions = this._state.modelsWithExpressions[modelIndex];
+
+        const expressions = [...modelWithExpressions.expressions];
+        expressions[expressionIndex] = changedExpressionInfo;
+
+        const modelsWithExpressions = [...this._state.modelsWithExpressions];
+        modelsWithExpressions[modelIndex] = {
+            ...modelWithExpressions,
+            expressions,
+        };
+
+        this._state = {
+            ...this._state,
+            modelsWithExpressions,
+        };
+
+        return this;
+    }
+
     public setExpressionHistory(
         modelIndex: number,
         expressionIndex: number,
@@ -332,6 +383,7 @@ export class ExpressionEditorStateBuilder {
             version: 0,
             expression,
             name,
+            selecteChangeHistoryIndex: -1,
             changeHistory: [],
         };
 

@@ -17,7 +17,8 @@ export interface ISerializedExpressionChangeHistory {
 
 export interface ISerializedExpressionInfo {
     name: string;
-    expression: string; // root expressionString
+    expression: string;
+    selecteChangeHistoryIndex: number;
     changeHistory: ISerializedExpressionChangeHistory[][];
 }
 
@@ -71,6 +72,7 @@ export class ExpressionEdtitorStateSerializer {
                         return {
                             name: expressionInfo.name,
                             expression: expressionInfo.expression.expressionString,
+                            selecteChangeHistoryIndex: expressionInfo.selecteChangeHistoryIndex,
                             changeHistory: this.serializeHistory(expressionInfo.changeHistory ?? []),
                         };
                     }),
@@ -106,14 +108,15 @@ export class ExpressionEdtitorStateSerializer {
                     modelString: modelWithExpressions.modelString,
                     selectedExpressionIndex: modelWithExpressions.selectedExpressionIndex,
                     editingExpressionIndex: modelWithExpressions.editingExpressionIndex,
-                    expressions: modelWithExpressions.expressions.map((exprInfo) => {
-                        const rootExpression = this._expressionFactory.create(model, exprInfo.expression);
+                    expressions: modelWithExpressions.expressions.map((expressionInfo) => {
+                        const rootExpression = this._expressionFactory.create(model, expressionInfo.expression);
 
                         return {
-                            name: exprInfo.name,
+                            name: expressionInfo.name,
                             version: 0,
                             expression: rootExpression,
-                            changeHistory: this.deserializeHistory(rootExpression, exprInfo.changeHistory ?? []),
+                            selecteChangeHistoryIndex: expressionInfo.selecteChangeHistoryIndex,
+                            changeHistory: this.deserializeHistory(rootExpression, expressionInfo.changeHistory ?? []),
                         };
                     }),
                 };

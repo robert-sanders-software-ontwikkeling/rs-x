@@ -12,6 +12,7 @@ export class ExpressionChangeTracker implements IDisposable {
     private readonly _changes: IExpressionChangeHistory[] = [];
     private readonly _changed = new Subject<IExpressionChangeHistory[]>;
     private _isDisposed = false;
+    private _paused = false;
 
     constructor(private readonly _expression: IExpression) {
         if (this._expression.changeHook) {
@@ -20,10 +21,17 @@ export class ExpressionChangeTracker implements IDisposable {
 
         this._expression.changeHook = this.onChanged
     }
-   
 
     public get changed(): Observable<IExpressionChangeHistory[]> {
         return this._changed;
+    }
+
+    public pause(): void {
+        this._paused = true;
+    }
+
+    public continue(): void {
+        this._paused = false;
     }
 
     public dispose(): void {
@@ -35,7 +43,10 @@ export class ExpressionChangeTracker implements IDisposable {
         this._isDisposed = true;
     }
 
-    private onChanged = (expression: IExpression, oldValue: unknown): void  => {
+    private onChanged = (expression: IExpression, oldValue: unknown): void => {
+        if (this._paused) {
+            return;
+        }
         this._changes.push({
             expression,
             value: expression.value,
@@ -43,7 +54,7 @@ export class ExpressionChangeTracker implements IDisposable {
         });
 
         if (expression === this._expression) {
-            this._changed.next( [...this._changes]);
+            this._changed.next([...this._changes]);
             this._changes.length = 0;
         }
     }

@@ -256,7 +256,10 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     });
   };
 
-  const onSelectHistoryBatch = (items: readonly IExpressionChangeHistory[]) => {
+  const onSelectHistoryBatch = (modelIndex: number, expressionIndex: number, selectedChangeSetIndex:number, items: readonly IExpressionChangeHistory[]) => {
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev).setSelectedChangeHistoryIndex(modelIndex, expressionIndex, selectedChangeSetIndex).state;
+    });
     setTreeHighlight(() => {
       return [...items]
     });;
@@ -264,6 +267,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
       return v + 1;
     });
   };
+
 
   const selectedHistoryCount = selectedExpression?.changeHistory?.length ?? 0;
   const canClearSelectedHistory = selectedExpressionIndex !== null && selectedHistoryCount > 0;
@@ -343,11 +347,13 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                           <div className='panel-content'>
                             <div className='scroll-host'>
                               <ExpressionChangeHistoryView
+                              
                                 modelIndex={currentState.selectedModelIndex as number}
                                 expressionIndex={selectedModel?.selectedExpressionIndex as number}
                                 expressionInfo={selectedExpression}
-                                change={onHistoryChanged}
-                                onSelectBatch={onSelectHistoryBatch}
+                                selectedChangeSetIndex={selectedExpression.selecteChangeHistoryIndex}
+                                onHistoryChange={onHistoryChanged}
+                                onSelectionChanged={onSelectHistoryBatch}
                               />
                             </div>
                           </div>
