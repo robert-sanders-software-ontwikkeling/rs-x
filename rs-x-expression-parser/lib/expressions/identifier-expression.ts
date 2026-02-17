@@ -112,6 +112,10 @@ export class IdentifierExpression extends AbstractExpression {
     };
   }
 
+  public setValue(value: unknown): void {
+    this.indexValueAccessor.setValue(this._context,  this._indexValue ?? this.expressionString, value);
+  }
+
   public override clone(): this {
     return new (this.constructor as new (
       expressionString: string,

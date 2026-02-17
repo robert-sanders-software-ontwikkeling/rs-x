@@ -2,8 +2,8 @@ import { Observable, Subject } from 'rxjs';
 import { IExpression } from './expressions/expression-parser.interface';
 import { IDisposable } from '@rs-x/core';
 
-export interface IExpressionChangeHistory {
-    expression: IExpression;
+export interface IExpressionChangeHistory<T = IExpression> {
+    expression: T;
     value: unknown;
     oldValue: unknown;
 }

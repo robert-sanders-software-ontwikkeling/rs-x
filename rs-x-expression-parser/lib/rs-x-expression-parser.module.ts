@@ -38,6 +38,8 @@ import { ExpressionChangeTransactionManager } from './expresion-change-transacti
 import type { IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
 import { JsEspreeExpressionParser } from './js-espree-expression-parser';
 import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
+import { IExpressionChangePlayback } from './expression-change-playback/expression-change-playback.interface';
+import { ExpressionChangePlayback } from './expression-change-playback/expression-change-playback';
 
 InjectionContainer.load(RsXStateManagerModule);
 
@@ -93,6 +95,13 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
     )
     .to(ExpressionServices)
     .inSingletonScope();
+  options
+    .bind<IExpressionChangePlayback>(
+      RsXExpressionParserInjectionTokens.IExpressionChangePlayback,
+    )
+    .to(ExpressionChangePlayback)
+    .inSingletonScope();
+
 
   registerMultiInjectServices(
     options,

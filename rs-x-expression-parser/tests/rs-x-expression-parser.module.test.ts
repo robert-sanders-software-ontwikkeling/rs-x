@@ -40,6 +40,7 @@ import {
   unloadRsXExpressionParserModule,
 } from '../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../lib/rs-x-expression-parser-injection-tokes';
+import { ExpressionChangePlayback } from '../lib/expression-change-playback/expression-change-playback';
 
 describe('RsXExpressionParserModule tests', () => {
   beforeAll(async () => {
@@ -303,7 +304,7 @@ describe('RsXExpressionParserModule tests', () => {
     expect(actual).toBeInstanceOf(ExpressionServices);
   });
 
-  it('ExpressionServices instance is a singleton', () => {
+  it('IExpressionServices instance is a singleton', () => {
     const a1 = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
@@ -312,6 +313,25 @@ describe('RsXExpressionParserModule tests', () => {
     );
     expect(a1).toBe(a2);
   });
+
+
+  it('can get instance of IExpressionChangePlayback', () => {
+    const actual = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionChangePlayback,
+    );
+    expect(actual).toBeInstanceOf(ExpressionChangePlayback);
+  });
+
+  it('IExpressionChangePlayback instance is a singleton', () => {
+    const a1 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionChangePlayback,
+    );
+    const a2 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionChangePlayback,
+    );
+    expect(a1).toBe(a2);
+  });
+
 
   it('can get an instance of IObjectObserverProxyPairFactoryList', () => {
     const actual = InjectionContainer.getAll(
