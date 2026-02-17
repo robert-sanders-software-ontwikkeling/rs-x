@@ -3,6 +3,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { IExpression, IExpressionChangeHistory } from '@rs-x/expression-parser';
 import './expression-tree-view.component.css';
 
+const animationSpeed = 200;
+
 export interface IExpressionTreeProps {
   version: number;
   root: IExpression;
@@ -11,8 +13,6 @@ export interface IExpressionTreeProps {
   nodeHeight?: number;
   horizontalGap?: number;
   verticalGap?: number;
-
-  formatExpression?: (expr: IExpression) => string;
 
   formatValue?: (value: unknown) => string;
   valueMaxDepth?: number;
@@ -75,13 +75,7 @@ const DEFAULTS = {
   valueMaxChars: 4000,
 } as const;
 
-function defaultFormatExpression(expr: IExpression): string {
-  const expressionString = (expr as unknown as { expressionString?: string }).expressionString;
-  if (expressionString && expressionString.trim().length > 0) {
-    return expressionString;
-  }
-  return String(expr.type);
-}
+
 
 function defaultFormatValue(value: unknown, maxDepth: number, maxChars: number): string {
   const seen = new WeakSet<object>();
@@ -440,13 +434,11 @@ function edgeKey(from: NodeId, to: NodeId): string {
   return `${from}->${to}`;
 }
 
-function getExpressionString(expr: IExpression): string {
-  return (expr as unknown as { expressionString?: string }).expressionString ?? '';
-}
+
 
 function getExprKey(expr: IExpression): string {
   // stronger than expressionString alone
-  const s = getExpressionString(expr);
+  const s = expr.expressionString;
   return `${s}::${String(expr.type)}`;
 }
 
@@ -510,7 +502,6 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
     verticalGap = DEFAULTS.verticalGap,
     valueMaxDepth = DEFAULTS.valueMaxDepth,
     valueMaxChars = DEFAULTS.valueMaxChars,
-    formatExpression = defaultFormatExpression,
     formatValue,
     className,
     style,
@@ -736,7 +727,7 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
       );
     }
 
-    t += 450;
+    t += animationSpeed;
     timersRef.current.push(
       window.setTimeout(() => {
         setActiveEdgeKey(() => null);
@@ -789,7 +780,7 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
             return null;
           }
 
-          const expressionText = getExpressionString(n.expr) || formatExpression(n.expr);
+          const expressionText = n.expr.expressionString;
           const typeText = String(n.expr.type);
           const valueText = valueFormatter(n.expr.value);
 

@@ -1,3 +1,5 @@
+/* expression-change-history-view.component.css */
+
 .changeHistoryRoot {
   display: flex;
   flex-direction: column;
@@ -13,101 +15,127 @@
   padding: 12px;
 }
 
-/* list */
-.changeHistoryList {
+/* -----------------------------
+   Flat list (no "Change sets")
+----------------------------- */
+
+.changeHistoryFlatList {
   border: 1px solid #444;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   background-color: #2b2b3b;
 }
 
-.changeHistoryListHeader {
-  padding: 10px 12px;
-  background-color: #323248;
-  border-bottom: 1px solid #444;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.changeHistoryListTitle {
-  font-weight: 900;
-}
-
-.changeHistoryListMeta {
-  font-size: 0.85rem;
-  opacity: 0.9;
-  padding: 2px 10px;
-  border: 1px solid #555a80;
-  background-color: #2f2f44;
-  border-radius: 999px;
-}
-
-.changeHistoryListScroll {
-  max-height: 160px;
+.changeHistoryFlatScroll {
+  max-height: 150px;
   overflow: auto;
   padding: 8px;
 
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
-.changeHistoryItem {
+.changeHistoryFlatItem {
+  width: 100%;
   text-align: left;
+
   border: 1px solid #3b3f5a;
   background-color: #2f2f44;
   color: #f0f0f0;
-  border-radius: 8px;
-  padding: 10px;
+
+  border-radius: 12px;
+  padding: 10px 12px;
+
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  min-width: 0;
 }
 
-.changeHistoryItem:hover {
+.changeHistoryFlatItem:hover {
   background-color: #35385a;
 }
 
-.changeHistoryItem.isActive {
+.changeHistoryFlatItem.isActive {
   border-color: #5c7cfa;
   background-color: #2f3458;
   box-shadow: 0 0 0 1px rgba(92, 124, 250, 0.25);
 }
 
-.changeHistoryItemTop {
+.changeHistoryFlatLeft {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
+  min-width: 0;
 }
 
-.changeHistoryItemTitle {
+.changeHistoryFlatExpr {
   font-weight: 900;
   color: #9cdcfe;
+
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.changeHistoryItemBadge {
+.changeHistoryFlatMeta {
   font-size: 0.8rem;
-  padding: 3px 10px;
+  padding: 2px 9px;
   border-radius: 999px;
   border: 1px solid #555a80;
   background-color: rgba(30, 30, 47, 0.8);
   flex: 0 0 auto;
+  opacity: 0.95;
 }
 
-/* detail */
-.changeHistoryDetail {
+.changeHistoryFlatRight {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.changeHistoryFlatOld {
+  color: #ffb3b3;
+}
+
+.changeHistoryFlatNew {
+  color: #a8f0c6;
+}
+
+.changeHistoryFlatArrow {
+  opacity: 0.85;
+}
+
+/* divider between list and timeline */
+.changeHistoryDivider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 2px 2px;
+}
+
+/* -----------------------------
+   Timeline container
+----------------------------- */
+
+.changeHistoryTimeline {
   border: 1px solid #444;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   background-color: #2b2b3b;
+
+  min-height: 0;
+  min-width: 0;
 }
 
-.changeHistoryDetailHeader {
+.changeHistoryTimelineHeader {
   padding: 10px 12px;
   background-color: #323248;
   border-bottom: 1px solid #444;
@@ -117,15 +145,19 @@
   justify-content: space-between;
 }
 
-.changeHistoryDetailTitle {
+.changeHistoryTimelineTitle {
   font-weight: 900;
 }
 
-.changeHistoryChanges {
+.changeHistoryTimelineBody {
   padding: 10px 12px;
+  min-height: 0;
 }
 
-/* timeline */
+/* -----------------------------
+   Timeline steps
+----------------------------- */
+
 .changePath {
   display: flex;
   flex-direction: column;

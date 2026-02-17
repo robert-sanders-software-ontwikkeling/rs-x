@@ -326,37 +326,62 @@ export class ExpressionEditorStateBuilder {
         expressionIndex: number,
         history: IExpressionChangeHistory[][]
     ): this {
-
-        if (
-            modelIndex < 0 ||
-            modelIndex >= this._state.modelsWithExpressions.length
-        ) {
+        if (modelIndex < 0 || modelIndex >= this._state.modelsWithExpressions.length) {
             return this;
         }
 
         const model = this._state.modelsWithExpressions[modelIndex];
-
-        if (
-            expressionIndex < 0 ||
-            expressionIndex >= model.expressions.length
-        ) {
+        if (!model) {
             return this;
         }
 
-        const clonedHistory = history.map((batch) => {
+        if (expressionIndex < 0 || expressionIndex >= model.expressions.length) {
+            return this;
+        }
+
+        const clonedHistory: IExpressionChangeHistory[][] = history.map((batch) => {
             return [...batch];
         });
 
         const modelsWithExpressions = [...this._state.modelsWithExpressions];
-
         const expressions = [...model.expressions];
 
-        const expressionInfo: IExpressionInfo = {
-            ...expressions[expressionIndex],
+        const previousExpressionInfo = expressions[expressionIndex];
+        if (!previousExpressionInfo) {
+            return this;
+        }
+
+        // ✅ Validate / clamp selected index against new history
+        // Rules:
+        // - If history is empty => -1
+        // - Else clamp into [0 .. history.length - 1]
+        const historyLength = clonedHistory.length;
+
+        let selectedChangeHistoryIndex = previousExpressionInfo.selecteChangeHistoryIndex;
+
+        if (historyLength === 0) {
+            selectedChangeHistoryIndex = -1;
+        } else {
+            if (!Number.isFinite(selectedChangeHistoryIndex)) {
+                selectedChangeHistoryIndex = historyLength - 1;
+            }
+
+            if (selectedChangeHistoryIndex < 0) {
+                selectedChangeHistoryIndex = 0;
+            }
+
+            if (selectedChangeHistoryIndex >= historyLength) {
+                selectedChangeHistoryIndex = historyLength - 1;
+            }
+        }
+
+        const updatedExpressionInfo: IExpressionInfo = {
+            ...previousExpressionInfo,
             changeHistory: clonedHistory,
+            selecteChangeHistoryIndex: selectedChangeHistoryIndex,
         };
 
-        expressions[expressionIndex] = expressionInfo;
+        expressions[expressionIndex] = updatedExpressionInfo;
 
         modelsWithExpressions[modelIndex] = {
             ...model,

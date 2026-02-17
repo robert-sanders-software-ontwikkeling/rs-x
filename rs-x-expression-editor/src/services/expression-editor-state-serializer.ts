@@ -108,15 +108,15 @@ export class ExpressionEdtitorStateSerializer {
                     modelString: modelWithExpressions.modelString,
                     selectedExpressionIndex: modelWithExpressions.selectedExpressionIndex,
                     editingExpressionIndex: modelWithExpressions.editingExpressionIndex,
-                    expressions: modelWithExpressions.expressions.map((expressionInfo) => {
-                        const rootExpression = this._expressionFactory.create(model, expressionInfo.expression);
+                    expressions: modelWithExpressions.expressions.map((exprInfo) => {
+                        const rootExpression = this._expressionFactory.create(model, exprInfo.expression);
 
                         return {
-                            name: expressionInfo.name,
+                            name: exprInfo.name,
                             version: 0,
                             expression: rootExpression,
-                            selecteChangeHistoryIndex: expressionInfo.selecteChangeHistoryIndex,
-                            changeHistory: this.deserializeHistory(rootExpression, expressionInfo.changeHistory ?? []),
+                            selecteChangeHistoryIndex: exprInfo.selecteChangeHistoryIndex,
+                            changeHistory: this.deserializeHistory(rootExpression, exprInfo.changeHistory ?? []),
                         };
                     }),
                 };

@@ -2,10 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { Subscription } from 'rxjs';
 
-import {
-  type IExpressionChangeHistory,
-  ExpressionChangeTracker,
-} from '@rs-x/expression-parser';
+import { type IExpressionChangeHistory, ExpressionChangeTracker } from '@rs-x/expression-parser';
 
 import type { IExpressionInfo } from '../../models/model-with-expressions.interface';
 import './expression-change-history-view.component.css';
@@ -40,13 +37,12 @@ export interface IExpressionChangeHistoryViewProps {
 }
 
 type HistoryBatch = {
+  /** stable id (based on persistedIndex) */
   id: string;
+  /** persisted index (0 oldest -> newest) */
+  persistedIndex: number;
   items: readonly IExpressionChangeHistory[];
 };
-
-function createBatchId(prefix: string): string {
-  return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-}
 
 function defer(fn: () => void): void {
   if (typeof queueMicrotask === 'function') {
@@ -74,24 +70,51 @@ function clampIndex(index: number, length: number): number {
   return index;
 }
 
-/**
- * persistedIndex: 0..n-1 (oldest -> newest)
- * uiIndex:        0..n-1 (newest -> oldest)
- */
-function persistedIndexToUiIndex(persistedIndex: number, length: number): number {
-  if (length <= 0) {
-    return 0;
+function shortValue(value: unknown): string {
+  if (value === undefined) {
+    return 'undefined';
   }
-  const clampedPersistedIndex = clampIndex(persistedIndex, length);
-  return (length - 1) - clampedPersistedIndex;
+  if (value === null) {
+    return 'null';
+  }
+
+  const valueType = typeof value;
+
+  if (valueType === 'string') {
+    const stringValue = value as string;
+    const clipped = stringValue.length > 80 ? `${stringValue.slice(0, 80)}…` : stringValue;
+    return `'${clipped}'`;
+  }
+
+  if (valueType === 'number' || valueType === 'boolean' || valueType === 'bigint') {
+    return String(value);
+  }
+
+  try {
+    const json = JSON.stringify(value);
+    if (!json) {
+      return String(value);
+    }
+    return json.length > 80 ? `${json.slice(0, 80)}…` : json;
+  } catch {
+    return String(value);
+  }
 }
 
-function uiIndexToPersistedIndex(uiIndex: number, length: number): number {
-  if (length <= 0) {
-    return 0;
+function buildBatches(persistedHistory: IExpressionChangeHistory[][]): HistoryBatch[] {
+  const batches: HistoryBatch[] = [];
+
+  // UI order: newest -> oldest, but persistedIndex remains 0..n-1 oldest -> newest.
+  for (let persistedIndex = persistedHistory.length - 1; persistedIndex >= 0; persistedIndex--) {
+    const items = persistedHistory[persistedIndex] ?? [];
+    batches.push({
+      id: `h_${persistedIndex}`,
+      persistedIndex,
+      items,
+    });
   }
-  const clampedUiIndex = clampIndex(uiIndex, length);
-  return (length - 1) - clampedUiIndex;
+
+  return batches;
 }
 
 export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewProps> = (props) => {
@@ -110,7 +133,6 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
   const trackerRef = useRef<ExpressionChangeTracker | null>(null);
   const subscriptionRef = useRef<Subscription | null>(null);
 
-  // Stable refs for callbacks used in rx subscription
   const onHistoryChangeRef = useRef(onHistoryChange);
   const onSelectionChangedRef = useRef(onSelectionChanged);
 
@@ -122,14 +144,47 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
   const expression = expressionInfo?.expression;
   const version = expressionInfo?.version ?? 0;
 
-  // Avoid spamming selection events when we are only syncing from props
-  const lastSyncedSelectionKeyRef = useRef<string>('');
-
   /**
-   * HYDRATE + live tracking
+   * Hydrate batches when persisted history changes (or expression changes).
+   * IMPORTANT: keep selection by mapping selectedChangeSetIndex -> stable id.
    */
   useEffect(() => {
-    // cleanup previous tracker/sub
+    const persistedHistory = expressionInfo?.changeHistory ?? [];
+    const length = persistedHistory.length;
+
+    if (!expressionInfo || length === 0) {
+      setBatches(() => {
+        return [];
+      });
+      setSelectedBatchId(() => {
+        return null;
+      });
+      return;
+    }
+
+    const nextBatches = buildBatches(persistedHistory);
+
+    setBatches(() => {
+      return nextBatches;
+    });
+
+    const clampedSelectedChangeSetIndex = clampIndex(selectedChangeSetIndex, length);
+    const wantedId = `h_${clampedSelectedChangeSetIndex}`;
+
+    setSelectedBatchId((previousSelectedBatchId) => {
+      if (previousSelectedBatchId === wantedId) {
+        return previousSelectedBatchId;
+      }
+      return wantedId;
+    });
+  }, [expressionInfo, selectedChangeSetIndex, version]);
+
+  /**
+   * Live tracking (ExpressionChangeTracker)
+   * IMPORTANT: do NOT always auto-select newest.
+   * Only auto-select newest if user was already at newest.
+   */
+  useEffect(() => {
     if (subscriptionRef.current) {
       subscriptionRef.current.unsubscribe();
       subscriptionRef.current = null;
@@ -139,81 +194,56 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
       trackerRef.current = null;
     }
 
-    // reset
-    setBatches(() => {
-      return [];
-    });
-    setSelectedBatchId(() => {
-      return null;
-    });
-
     if (!expressionInfo || !expression) {
       return;
     }
 
-    const persistedHistory = expressionInfo.changeHistory ?? [];
-    const length = persistedHistory.length;
-
-    // hydrate UI list: newest -> oldest
-    const hydrated: HistoryBatch[] = persistedHistory
-      .slice()
-      .reverse()
-      .map((items, idx) => {
-        return { id: createBatchId(`h${idx}`), items };
-      });
-
-    setBatches(() => {
-      return hydrated;
-    });
-
-    // apply selection from props (sync)
-    if (length > 0) {
-      const uiIndex = persistedIndexToUiIndex(selectedChangeSetIndex, length);
-      const selected = hydrated[uiIndex] ?? null;
-
-      setSelectedBatchId(() => {
-        return selected?.id ?? null;
-      });
-
-      // NOTE: Do NOT call onSelectionChanged here (prop sync)
-      // Parent is source of truth for selection; calling back can create loops.
-    }
-
-    // live tracking
     const tracker = new ExpressionChangeTracker(expression);
     trackerRef.current = tracker;
 
     const sub = tracker.changed.subscribe((stack) => {
-      const newBatch: HistoryBatch = { id: createBatchId('live'), items: stack };
+      const persistedHistoryBeforeAppend = expressionInfo.changeHistory ?? [];
+      const lengthBeforeAppend = persistedHistoryBeforeAppend.length;
 
-      setBatches((prev) => {
-        const nextBatches = [newBatch, ...prev];
+      const clampedSelectedIndexBeforeAppend =
+        lengthBeforeAppend > 0 ? clampIndex(selectedChangeSetIndex, lengthBeforeAppend) : -1;
 
-        // UI order -> persisted order (oldest -> newest)
-        const nextHistory: IExpressionChangeHistory[][] = nextBatches
-          .slice()
-          .reverse()
-          .map((batch) => {
-            return [...batch.items];
-          });
+      const wasAtNewestBeforeAppend =
+        lengthBeforeAppend > 0 && clampedSelectedIndexBeforeAppend === lengthBeforeAppend - 1;
 
-        // Defer parent updates from rx subscription
-        defer(() => {
-          onHistoryChangeRef.current(modelIndex, expressionIndex, nextHistory);
+      // Build next persisted history: append new stack at end (oldest -> newest)
+      const nextHistory: IExpressionChangeHistory[][] = [
+        ...persistedHistoryBeforeAppend.map((batch) => {
+          return [...batch];
+        }),
+        [...stack],
+      ];
 
-          // auto-select newest after live change
-          const newestPersistedIndex = Math.max(0, nextHistory.length - 1);
+      // Update UI batches immediately from next history (newest -> oldest)
+      const nextBatches = buildBatches(nextHistory);
 
-          // prevent immediate prop-sync loop spam by letting parent drive next render
-          onSelectionChangedRef.current(modelIndex, expressionIndex, newestPersistedIndex, newBatch.items);
-        });
-
+      setBatches(() => {
         return nextBatches;
       });
 
-      setSelectedBatchId(() => {
-        return newBatch.id;
+      // Persist up to parent
+      defer(() => {
+        onHistoryChangeRef.current(modelIndex, expressionIndex, nextHistory);
       });
+
+      // Keep selection unless user was at newest (then follow newest)
+      if (wasAtNewestBeforeAppend) {
+        const newestPersistedIndex = nextHistory.length - 1;
+        const newestId = `h_${newestPersistedIndex}`;
+
+        setSelectedBatchId(() => {
+          return newestId;
+        });
+
+        defer(() => {
+          onSelectionChangedRef.current(modelIndex, expressionIndex, newestPersistedIndex, stack);
+        });
+      }
     });
 
     subscriptionRef.current = sub;
@@ -228,101 +258,35 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
         trackerRef.current = null;
       }
     };
-  }, [
-    expression,
-    version,
-    modelIndex,
-    expressionIndex,
-    expressionInfo,
-    selectedChangeSetIndex,
-  ]);
-
-  /**
-   * Prop-driven selection sync -> only set local selectedBatchId + highlight once,
-   * but NEVER call parent selection event here.
-   */
-  useEffect(() => {
-    if (!expressionInfo) {
-      return;
-    }
-
-    const persistedHistory = expressionInfo.changeHistory ?? [];
-    const length = persistedHistory.length;
-
-    if (length <= 0) {
-      setSelectedBatchId(() => {
-        return null;
-      });
-      return;
-    }
-
-    const uiIndex = persistedIndexToUiIndex(selectedChangeSetIndex, length);
-    const next = batches[uiIndex] ?? null;
-
-    if (!next) {
-      return;
-    }
-
-    const syncKey = `${modelIndex}:${expressionIndex}:${version}:${selectedChangeSetIndex}:${length}`;
-    if (lastSyncedSelectionKeyRef.current === syncKey) {
-      return;
-    }
-    lastSyncedSelectionKeyRef.current = syncKey;
-
-    setSelectedBatchId((prev) => {
-      if (prev === next.id) {
-        return prev;
-      }
-      return next.id;
-    });
-  }, [
-    batches,
-    expressionInfo,
-    modelIndex,
-    expressionIndex,
-    selectedChangeSetIndex,
-    version,
-  ]);
+  }, [expression, expressionInfo, modelIndex, expressionIndex, selectedChangeSetIndex, version]);
 
   const selectedBatch = useMemo(() => {
     if (!selectedBatchId) {
       return null;
     }
-    const found = batches.find((b) => {
-      return b.id === selectedBatchId;
+
+    const found = batches.find((batch) => {
+      return batch.id === selectedBatchId;
     });
+
     return found ?? null;
   }, [batches, selectedBatchId]);
 
-  /**
-   * User selection -> call parent immediately (safe)
-   */
   const onUserSelectBatchById = (id: string) => {
     setSelectedBatchId(() => {
       return id;
     });
 
-    if (!expressionInfo) {
-      return;
-    }
-
-    const uiIndex = batches.findIndex((b) => {
-      return b.id === id;
+    const found = batches.find((batch) => {
+      return batch.id === id;
     });
 
-    if (uiIndex < 0) {
+    if (!found) {
       return;
     }
 
-    const length = (expressionInfo.changeHistory ?? []).length;
-    const persistedIndex = uiIndexToPersistedIndex(uiIndex, length);
-
-    const batch = batches[uiIndex];
-    if (!batch) {
-      return;
-    }
-
-    onSelectionChanged(modelIndex, expressionIndex, persistedIndex, batch.items);
+    trackerRef.current?.skip(1);
+    onSelectionChanged(modelIndex, expressionIndex, found.persistedIndex, found.items);
   };
 
   if (!expressionInfo) {
@@ -341,32 +305,43 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
     );
   }
 
+  const selectedStepsCount = selectedBatch?.items.length ?? 0;
+
   return (
     <div className='changeHistoryRoot'>
-      <div className='changeHistoryList'>
-        <div className='changeHistoryListHeader'>
-          <div className='changeHistoryListTitle'>Change sets</div>
-          <div className='changeHistoryListMeta'>{batches.length}</div>
-        </div>
-
-        <div className='changeHistoryListScroll'>
+      {/* Flat list */}
+      <div className='changeHistoryFlatList'>
+        <div className='changeHistoryFlatScroll'>
           {batches.map((batch) => {
             const isActive = batch.id === selectedBatchId;
-            const firstExpr = batch.items[0]?.expression?.expressionString ?? '(unknown)';
+
+            const firstChange = batch.items[0];
+            const expressionString = firstChange?.expression?.expressionString ?? '(unknown)';
+
+            const headerOldValue = firstChange ? shortValue(firstChange.oldValue) : '';
+            const headerNewValue = firstChange ? shortValue(firstChange.value) : '';
+
+            const stepsCount = batch.items.length;
 
             return (
               <button
                 key={batch.id}
                 type='button'
-                className={`changeHistoryItem ${isActive ? 'isActive' : ''}`}
+                className={`changeHistoryFlatItem ${isActive ? 'isActive' : ''}`}
                 onClick={() => {
                   onUserSelectBatchById(batch.id);
                 }}
-                title={firstExpr}
+                title={expressionString}
               >
-                <div className='changeHistoryItemTop'>
-                  <div className='changeHistoryItemTitle'>{firstExpr}</div>
-                  <div className='changeHistoryItemBadge'>{batch.items.length}</div>
+                <div className='changeHistoryFlatLeft'>
+                  <div className='changeHistoryFlatExpr'>{expressionString}</div>
+                  {stepsCount > 1 ? <div className='changeHistoryFlatMeta'>{stepsCount}</div> : null}
+                </div>
+
+                <div className='changeHistoryFlatRight'>
+                  <span className='changeHistoryFlatOld'>{headerOldValue}</span>
+                  <span className='changeHistoryFlatArrow'>→</span>
+                  <span className='changeHistoryFlatNew'>{headerNewValue}</span>
                 </div>
               </button>
             );
@@ -374,20 +349,21 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
         </div>
       </div>
 
-      <div className='changeHistoryDetail'>
-        <div className='changeHistoryDetailHeader'>
-          <div className='changeHistoryDetailTitle'>
-            {selectedBatch
-              ? `${selectedBatch.items.length} step${selectedBatch.items.length === 1 ? '' : 's'}`
-              : 'Select a change set'}
+      <div className='changeHistoryDivider' />
+
+      {/* Timeline */}
+      <div className='changeHistoryTimeline'>
+        <div className='changeHistoryTimelineHeader'>
+          <div className='changeHistoryTimelineTitle'>
+            {selectedBatch ? `${selectedStepsCount} step${selectedStepsCount === 1 ? '' : 's'}` : 'Select a change'}
           </div>
         </div>
 
-        <div className='changeHistoryChanges'>
+        <div className='changeHistoryTimelineBody'>
           {selectedBatch ? (
             <div className='changePath'>
               {selectedBatch.items.map((changeItem, index) => {
-                const exprStr = changeItem.expression.expressionString;
+                const expressionString = changeItem.expression.expressionString;
 
                 return (
                   <div key={`${selectedBatch.id}_${index}`} className='changeStep'>
@@ -399,8 +375,8 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
                     <div className='changeStepCard'>
                       <div className='changeStepHeader'>
                         <div className='changeStepHeaderLeft'>
-                          <div className='changeStepExpr' title={exprStr}>
-                            {exprStr}
+                          <div className='changeStepExpr' title={expressionString}>
+                            {expressionString}
                           </div>
                           <div className={`changeStepTag ${index === 0 ? '' : 'derived'}`}>
                             {index === 0 ? 'trigger' : 'derived'}
@@ -419,41 +395,10 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
               })}
             </div>
           ) : (
-            <div className='changeHistoryEmpty'>Select a change set</div>
+            <div className='changeHistoryEmpty'>Select a change</div>
           )}
         </div>
       </div>
     </div>
   );
 };
-
-function shortValue(value: unknown): string {
-  if (value === undefined) {
-    return 'undefined';
-  }
-  if (value === null) {
-    return 'null';
-  }
-
-  const type = typeof value;
-
-  if (type === 'string') {
-    const s = value as string;
-    const v = s.length > 80 ? `${s.slice(0, 80)}…` : s;
-    return `'${v}'`;
-  }
-
-  if (type === 'number' || type === 'boolean' || type === 'bigint') {
-    return String(value);
-  }
-
-  try {
-    const json = JSON.stringify(value);
-    if (!json) {
-      return String(value);
-    }
-    return json.length > 80 ? `${json.slice(0, 80)}…` : json;
-  } catch {
-    return String(value);
-  }
-}
