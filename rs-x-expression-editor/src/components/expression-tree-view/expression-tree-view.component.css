@@ -2,17 +2,63 @@
   position: relative;
   width: 100%;
   height: 100%;
-  overflow: auto;
   background: #0f1220;
   color: #e8e8f0;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
     'Courier New', monospace;
 }
 
+/* NEW: scroll container */
+.exprTreeViewport {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+/* NEW: toolbar */
+.exprTreeToolbar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 20;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.exprTreeZoomLabel {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(6px);
+}
+
+.exprTreeZoomSelect {
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(15, 18, 32, 0.85);
+  color: rgba(232, 232, 240, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.exprTreeSpacer {
+  position: relative;
+}
+
+.exprTreeZoomLayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+
+/* IMPORTANT: no min-width/min-height here, it breaks scaling */
 .exprTreeCanvas {
   position: relative;
-  min-width: 100%;
-  min-height: 100%;
 }
 
 .exprTreeLines {

@@ -167,7 +167,6 @@ class ValueFormatter {
 
 /* ===========================
    OO: Tree layout engine
-   (Reingold–Tilford tidy tree)
 =========================== */
 
 class TreeLayoutEngine {
@@ -434,11 +433,7 @@ class TreeLayoutEngine {
 }
 
 /* ===========================
-   OO: Expression index / graph helpers
-   - resolveNodeId
-   - parent map
-   - keying
-   - LCA path
+   OO: Expression index
 =========================== */
 
 class ExpressionIndex {
@@ -540,7 +535,7 @@ class ExpressionIndex {
 }
 
 /* ===========================
-   OO: Highlight animation planner
+   OO: Highlight animator
 =========================== */
 
 class HighlightAnimator {
@@ -691,7 +686,7 @@ class HighlightAnimator {
 }
 
 /* ===========================
-   OO: ResizeObserver controller + hook
+   OO: ResizeObserver + hook
 =========================== */
 
 class ResizeObserverController<T extends HTMLElement> {
@@ -754,7 +749,7 @@ function useResizeObserverSize<T extends HTMLElement>(): [
 }
 
 /* ===========================
-   React component
+   React component (zoom + centered)
 =========================== */
 
 export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
@@ -793,6 +788,16 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
     return new HighlightAnimator();
   }, []);
 
+  const zoomPresets = useMemo(() => {
+    return [50, 75, 100, 125, 150, 200, 300] as const;
+  }, []);
+
+  const [zoomPercent, setZoomPercent] = useState<number>(100);
+
+  const zoomScale = useMemo(() => {
+    return zoomPercent / 100;
+  }, [zoomPercent]);
+
   const unitX = nodeWidth + horizontalGap;
   const unitY = nodeHeight + verticalGap;
 
@@ -802,11 +807,19 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
   const panelW = hostSize.width || 0;
   const panelH = hostSize.height || 0;
 
-  const canvasW = Math.max(treeW, panelW);
-  const canvasH = Math.max(treeH, panelH);
+  // ✅ CENTERING FIX:
+  // compute padding in UN-SCALED space so after scaling the tree remains centered.
+  const availableUnscaledW = zoomScale > 0 ? panelW / zoomScale : panelW;
+  const availableUnscaledH = zoomScale > 0 ? panelH / zoomScale : panelH;
 
-  const originX = Math.max(0, (canvasW - treeW) / 2);
-  const originY = Math.max(0, (canvasH - treeH) / 2);
+  const originX = Math.max(0, (availableUnscaledW - treeW) / 2);
+  const originY = Math.max(0, (availableUnscaledH - treeH) / 2);
+
+  const paddedW = treeW + originX * 2;
+  const paddedH = treeH + originY * 2;
+
+  const scaledW = Math.ceil(paddedW * zoomScale);
+  const scaledH = Math.ceil(paddedH * zoomScale);
 
   const valueFormatterFn = useMemo(() => {
     if (formatValue) {
@@ -900,82 +913,126 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
 
   return (
     <div ref={hostRef} className={`exprTreeRoot ${className ?? ''}`} style={style}>
-      <div className='exprTreeCanvas' style={{ width: canvasW, height: canvasH }}>
-        <svg className='exprTreeLines' width={canvasW} height={canvasH} viewBox={`0 0 ${canvasW} ${canvasH}`}>
-          {layout.edges.map((e) => {
-            const p = nodePos.get(e.from);
-            const c = nodePos.get(e.to);
+      <div className='exprTreeToolbar'>
+        <label className='exprTreeZoomLabel'>
+          Zoom
+          <select
+            className='exprTreeZoomSelect'
+            value={zoomPercent}
+            onChange={(e) => {
+              setZoomPercent(() => Number(e.target.value));
+            }}
+          >
+            {zoomPresets.map((z) => {
+              return (
+                <option key={z} value={z}>
+                  {z}%
+                </option>
+              );
+            })}
+          </select>
+        </label>
+      </div>
 
-            if (!p || !c) {
-              return null;
-            }
+      <div className='exprTreeViewport'>
+        <div className='exprTreeSpacer' style={{ width: scaledW, height: scaledH }}>
+          <div
+            className='exprTreeZoomLayer'
+            style={{
+              width: paddedW,
+              height: paddedH,
+              transform: `scale(${zoomScale})`,
+              transformOrigin: 'top left',
+            }}
+          >
+            <div className='exprTreeCanvas' style={{ width: paddedW, height: paddedH }}>
+              <svg
+                className='exprTreeLines'
+                width={paddedW}
+                height={paddedH}
+                viewBox={`0 0 ${paddedW} ${paddedH}`}
+              >
+                {layout.edges.map((e) => {
+                  const p = nodePos.get(e.from);
+                  const c = nodePos.get(e.to);
 
-            const x1 = p.cx;
-            const y1 = p.bottomY;
-            const x2 = c.cx;
-            const y2 = c.topY;
-            const midY = (y1 + y2) / 2;
+                  if (!p || !c) {
+                    return null;
+                  }
 
-            const d = `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
+                  const x1 = p.cx;
+                  const y1 = p.bottomY;
+                  const x2 = c.cx;
+                  const y2 = c.topY;
+                  const midY = (y1 + y2) / 2;
 
-            const k = index.edgeKey(e.from, e.to);
-            const isSelected = selectedEdgeKeys.has(k);
-            const isActive = activeEdgeKey === k;
+                  const d = `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
 
-            return (
-              <path
-                key={k}
-                d={d}
-                className={`exprTreePath ${isSelected ? 'isSelected' : ''} ${isActive ? 'isActive' : ''}`}
-              />
-            );
-          })}
-        </svg>
+                  const k = index.edgeKey(e.from, e.to);
+                  const isSelected = selectedEdgeKeys.has(k);
+                  const isActive = activeEdgeKey === k;
 
-        {layout.nodes.map((n) => {
-          const pos = nodePos.get(n.id);
-          if (!pos) {
-            return null;
-          }
+                  return (
+                    <path
+                      key={k}
+                      d={d}
+                      className={`exprTreePath ${isSelected ? 'isSelected' : ''} ${isActive ? 'isActive' : ''}`}
+                    />
+                  );
+                })}
+              </svg>
 
-          const expressionText = n.expr.expressionString;
-          const typeText = String(n.expr.type);
-          const valueText = valueFormatterFn(n.expr.value);
+              {layout.nodes.map((n) => {
+                const pos = nodePos.get(n.id);
+                if (!pos) {
+                  return null;
+                }
 
-          const isSelected = selectedNodeIds.has(n.id);
-          const isActive = activeNodeId === n.id;
+                const expressionText = n.expr.expressionString;
+                const typeText = String(n.expr.type);
+                const valueText = valueFormatterFn(n.expr.value);
 
-          return (
-            <div
-              key={n.id}
-              className={`exprNode ${isSelected ? 'isSelected' : ''} ${isActive ? 'isActive' : ''}`}
-              style={{
-                width: nodeWidth,
-                height: nodeHeight,
-                left: pos.left,
-                top: pos.top,
-              }}
-            >
-              <div className='exprNodeHeader'>
-                <div className='exprNodeDot' />
-                <div className='exprNodeHeaderText'>
-                  <div className='exprNodeTitleRow'>
-                    <div className='exprNodeTitle' title={expressionText}>
-                      {expressionText}
+                const isSelected = selectedNodeIds.has(n.id);
+                const isActive = activeNodeId === n.id;
+
+                return (
+                  <div
+                    key={n.id}
+                    className={`exprNode ${isSelected ? 'isSelected' : ''} ${isActive ? 'isActive' : ''}`}
+                    style={{
+                      width: nodeWidth,
+                      height: nodeHeight,
+                      left: pos.left,
+                      top: pos.top,
+                    }}
+                  >
+                    <div className='exprNodeHeader'>
+                      <div className='exprNodeDot' />
+                      <div className='exprNodeHeaderText'>
+                        <div className='exprNodeTitleRow'>
+                          <div className='exprNodeTitle' title={expressionText}>
+                            {expressionText}
+                          </div>
+                          <div className='exprNodeType' title={typeText}>
+                            {typeText}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className='exprNodeType' title={typeText}>
-                      {typeText}
+
+                    <div className='exprNodeBody'>
+                      {valueText ? (
+                        <pre className='exprNodePre'>{valueText}</pre>
+                      ) : (
+                        <div className='exprNodeMuted'>no value</div>
+                      )}
                     </div>
                   </div>
-                </div>
-              </div>
-
-              <div className='exprNodeBody'>
-                {valueText ? <pre className='exprNodePre'>{valueText}</pre> : <div className='exprNodeMuted'>no value</div>}
-              </div>
+                );
+              })}
             </div>
-          );
-        })}
+          </div>
+        </div>
       </div>
     </div>
   );
