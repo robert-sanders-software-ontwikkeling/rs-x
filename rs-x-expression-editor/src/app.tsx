@@ -8,7 +8,8 @@ import {
   RsXExpressionParserInjectionTokens,
 } from '../../rs-x-expression-parser/lib';
 
-import { FaTrash } from 'react-icons/fa';
+import { FaTrash, FaTimes } from 'react-icons/fa';
+
 
 import { ModelList } from './components/model-list/model-list.component';
 import { Spinner } from './components/spinner/spinner.component';
@@ -294,6 +295,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
 
   const selectedHistoryCount = selectedExpression?.changeHistory?.length ?? 0;
   const canClearSelectedHistory = selectedExpressionIndex !== null && selectedHistoryCount > 0;
+  const selectedExpressionString = selectedExpression?.expression?.expressionString;
 
   return (
     <div className='app'>
@@ -374,7 +376,13 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
 
                     <Panel defaultSize={80} minSize={20} className='panel'>
                       <div className='panel-header panel-header-row'>
-                        <span>Expression Tree</span>
+                        <div className='exprTreeHeaderTitle'>
+                          <span>Expression Tree</span>
+
+                          <span className='exprTreeHeaderExpr' title={selectedExpressionString}>
+                            {selectedExpressionString}
+                          </span>
+                        </div>
 
                         <div className='exprTreeHeaderControls'>
                           <label className='exprTreeHeaderZoom'>
@@ -394,16 +402,15 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                               })}
                             </select>
                           </label>
-
                           <button
                             type='button'
-                            className='btn'
+                            className='panel-header-icon-button'
                             onClick={() => {
                               onCloseRightPanel();
                             }}
-                            title='Close details'
+                            title='Close'
                           >
-                            Close
+                            <FaTimes />
                           </button>
                         </div>
                       </div>

@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { IExpression, IExpressionChangeHistory } from '@rs-x/expression-parser';
 import './expression-tree-view.component.css';
+import { useExpressionChangedRerender } from './hooks/use-expression-changed-rerender';
+import { useHighlightAnimation } from './hooks/use-highlight-animation';
 
 const animationSpeed = 350;
 
@@ -86,7 +88,7 @@ class ValueFormatter {
   public constructor(
     private readonly _maxDepth: number,
     private readonly _maxChars: number
-  ) {}
+  ) { }
 
   public format(value: unknown): string {
     const seen = new WeakSet<object>();
@@ -858,66 +860,21 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
     nodeHeight,
   ]);
 
-  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<NodeId>>(() => new Set<NodeId>());
-  const [selectedEdgeKeys, setSelectedEdgeKeys] = useState<Set<string>>(() => new Set<string>());
-  const [activeNodeId, setActiveNodeId] = useState<NodeId | null>(null);
-  const [activeEdgeKey, setActiveEdgeKey] = useState<string | null>(null);
-
-  const timersRef = useRef<number[]>([]);
-
-  const clearTimers = (): void => {
-    for (const t of timersRef.current) {
-      window.clearTimeout(t);
-    }
-    timersRef.current = [];
-  };
 
   const highlightKey = useMemo(() => {
     return index.buildHighlightKey(highlightChanges);
   }, [index, highlightChanges]);
 
-  useEffect(() => {
-    clearTimers();
+  useExpressionChangedRerender(root);
 
-    if (!highlightChanges || highlightChanges.length === 0) {
-      setSelectedNodeIds(() => new Set<NodeId>());
-      setSelectedEdgeKeys(() => new Set<string>());
-      setActiveNodeId(() => null);
-      setActiveEdgeKey(() => null);
-      return;
-    }
-
-    const selection = animator.computeSelection({
+  const { selectedNodeIds, selectedEdgeKeys, activeNodeId, activeEdgeKey } =
+    useHighlightAnimation({
       highlightChanges,
+      highlightVersion,
+      highlightKey,
       index,
+      animator,
     });
-
-    if (selection.nodePathSequence.length === 0) {
-      setSelectedNodeIds(() => new Set<NodeId>());
-      setSelectedEdgeKeys(() => new Set<string>());
-      setActiveNodeId(() => null);
-      setActiveEdgeKey(() => null);
-      return;
-    }
-
-    setSelectedNodeIds(() => selection.selectedNodeIds);
-    setSelectedEdgeKeys(() => selection.selectedEdgeKeys);
-
-    animator.scheduleAnimation({
-      nodePathSequence: selection.nodePathSequence,
-      selectedEdges: selection.selectedEdgeKeys,
-      edgeKey: (a, b) => index.edgeKey(a, b),
-      setActiveNodeId,
-      setActiveEdgeKey,
-      timersRef,
-      clearTimers,
-    });
-
-    return () => {
-      clearTimers();
-    };
-  }, [highlightVersion, highlightKey, index, animator]);
-
   return (
     <div ref={hostRef} className={`exprTreeRoot ${className ?? ''}`} style={style}>
       {/* ✅ REMOVED: internal zoom toolbar (now owned by App header) */}

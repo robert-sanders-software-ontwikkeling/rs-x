@@ -211,3 +211,49 @@ html, body, #root, .app {
 .exprTreeHeaderZoom select:focus {
   border-color: #888;
 }
+
+.exprTreeHeaderTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0; /* allow ellipsis */
+}
+
+.exprTreeHeaderExpr {
+  font-weight: 500;
+  opacity: 0.85;
+  font-size: 0.9em;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  max-width: 520px; /* tweak if you want */
+}
+
+.exprTreeHeaderControls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.exprTreeHeaderZoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9em;
+  opacity: 0.9;
+}
+
+.exprTreeHeaderZoom select {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background-color: #3a3a5a;
+  color: #f0f0f0;
+  border: 1px solid #666;
+  outline: none;
+}
+
+.exprTreeHeaderZoom select:focus {
+  border-color: #888;
+}
