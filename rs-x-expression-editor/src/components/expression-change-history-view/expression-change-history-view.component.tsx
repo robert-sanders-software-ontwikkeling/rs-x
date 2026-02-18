@@ -1,7 +1,7 @@
 // expression-change-history-view.component.tsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
-import { type IExpressionChangeHistory } from '@rs-x/expression-parser';
+import { ExpressionType, IExpression, type IExpressionChangeHistory } from '@rs-x/expression-parser';
 import type { IExpressionInfo } from '../../models/model-with-expressions.interface';
 import './expression-change-history-view.component.css';
 import { useExpressionChangeHistoryTracker } from './hooks/use-expression-change-history-tracker';
@@ -56,7 +56,6 @@ function clampIndex(index: number, length: number): number {
 }
 
 function shortValue(value: unknown): string {
-  // ✅ better "unset" marker than "_" (and we style it)
   if (value === undefined) {
     return '∅';
   }
@@ -88,7 +87,6 @@ function shortValue(value: unknown): string {
 }
 
 function exprKey(change: IExpressionChangeHistory): string {
-  // match ExpressionIndex style: expressionString + type
   return `${change.expression.expressionString}::${String(change.expression.type)}`;
 }
 
@@ -102,11 +100,9 @@ function pickHeaderChange(args: {
     return null;
   }
 
-  // Prefer: the change item for the selected/root expression (e.g. "a + b")
   if (rootExpression) {
     const rootKey = `${rootExpression.expressionString}::${String(rootExpression.type)}`;
 
-    // scan from end (often the derived/root change is later in the batch)
     for (let i = batchItems.length - 1; i >= 0; i--) {
       const item = batchItems[i];
       if (exprKey(item) === rootKey) {
@@ -115,11 +111,14 @@ function pickHeaderChange(args: {
     }
   }
 
-  // Fallback: last item in the batch (usually the final derived expression)
   return batchItems[batchItems.length - 1] ?? null;
 }
 
-function ValueDiff(props: { oldValue: unknown; newValue: unknown; size?: 'header' | 'row' }): React.ReactElement {
+function ValueDiff(props: {
+  oldValue: unknown;
+  newValue: unknown;
+  size?: 'header' | 'row';
+}): React.ReactElement {
   const { oldValue, newValue, size = 'row' } = props;
 
   const oldText = shortValue(oldValue);
@@ -135,6 +134,74 @@ function ValueDiff(props: { oldValue: unknown; newValue: unknown; size?: 'header
       <span className={`valueDiffNew ${newIsUnset ? 'isUnset' : ''}`}>{newText}</span>
     </div>
   );
+}
+
+/**
+ * Walk parent chain. This assumes your IExpression has `parent?: IExpression`.
+ * If the property name differs (e.g. `parentExpression`), change it here.
+ */
+function hasParentType(expression: unknown, typeToFind: string): boolean {
+  let current: any = expression;
+
+  // start at the parent of the current node
+  current = current?.parent;
+
+  while (current) {
+    if (String(current.type) === typeToFind) {
+      return true;
+    }
+    current = current.parent;
+  }
+
+  return false;
+}
+
+function getExpressionText(expression: IExpression): {expressionString: string,  type: string } {
+    let targetExpression: IExpression = expression;
+    let type: string = 'derived'
+    if(expression.type === ExpressionType.Identifier) {
+        type = 'trigger';
+        if(expression.parent?.type === ExpressionType.Member) {
+            targetExpression = expression.parent;
+        }
+    } 
+
+    return {expressionString:targetExpression.expressionString, type }
+}
+
+
+
+/**
+ * Rule from you:
+ * - If an Identifier has a parent MemberExpression, we do NOT show the MemberExpression step.
+ *
+ * Implementation:
+ * - If the batch contains at least one Identifier with parent MemberExpression,
+ *   we drop all MemberExpression steps from the list.
+ *
+ * Why drop *all* member steps?
+ * - In a typical chain, member steps are just ancestors / noise compared to the identifier(s).
+ * - If you want to drop only the specific parent member nodes, you need identity linking
+ *   between items (same node reference). If your items reference the same expression instances,
+ *   I can make it exact; but this version matches your requirement well and stays simple.
+ */
+function getDisplayStepItems(items: readonly IExpressionChangeHistory[]): readonly IExpressionChangeHistory[] {
+  if (items.length <= 1) {
+    return items;
+  }
+
+  const hasIdentifierUnderMember = items.some((x) => {
+    if (x.expression.type !== ExpressionType.Identifier) {
+      return false;
+    }
+    return  x.expression.parent?.type === ExpressionType.Member
+  });
+
+  if (!hasIdentifierUnderMember) {
+    return items;
+  }
+
+  return items.filter((x) => x.expression.type !== ExpressionType.Member);
 }
 
 export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewProps> = (props) => {
@@ -161,7 +228,6 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
   const persistedHistory: IExpressionChangeHistory[][] = expressionInfo?.changeHistory ?? [];
   const historyLength = persistedHistory.length;
 
-  // UI list: newest -> oldest, but each has persistedIndex
   const batches = useMemo((): HistoryBatch[] => {
     const out: HistoryBatch[] = [];
     for (let persistedIndex = persistedHistory.length - 1; persistedIndex >= 0; persistedIndex--) {
@@ -176,7 +242,7 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
   const clampedSelectedPersistedIndex =
     historyLength <= 0 || selectedChangeSetIndex < 0 ? -1 : clampIndex(selectedChangeSetIndex, historyLength);
 
-  // ✅ Auto-collapse non-selected and expand selected (not user-togglable)
+  // Auto-collapse non-selected and expand selected
   const [expandedPersistedIndex, setExpandedPersistedIndex] = useState<number>(() => clampedSelectedPersistedIndex);
 
   useEffect(() => {
@@ -207,7 +273,6 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
   });
 
   const onUserSelectPersistedIndex = (persistedIndex: number, items: readonly IExpressionChangeHistory[]) => {
-    // select + (auto) expand
     onSelectionChanged(modelIndex, expressionIndex, persistedIndex, items);
   };
 
@@ -240,15 +305,15 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
               rootExpression: expressionInfo.expression,
             });
 
-            // Label: tN (newest at top)
-            const tLabel = `t${historyLength - 1 - batch.persistedIndex}`;
-
+            const tLabel = `t${batch.persistedIndex}`;
             const headerExpr =
               headerChange?.expression?.expressionString ??
               expressionInfo.expression?.expressionString ??
               '(unknown)';
 
             const stepsCount = batch.items.length;
+
+            const displayStepItems = getDisplayStepItems(batch.items);
 
             return (
               <div
@@ -259,7 +324,6 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
                   type='button'
                   className='changeSetHeader'
                   onClick={() => {
-                    // ✅ no manual collapse/expand; selection controls expansion
                     onUserSelectPersistedIndex(batch.persistedIndex, batch.items);
                   }}
                   title={headerExpr}
@@ -290,25 +354,30 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
                 {isExpanded ? (
                   <div className='changeSetBody'>
                     <div className='changePath'>
-                      {batch.items.map((changeItem, index) => {
-                        const exprStr = changeItem.expression.expressionString;
+                      {displayStepItems.map((changeItem, index) => {
+
+                        
+                
+                        const {expressionString, type} = getExpressionText(changeItem.expression);
+
+                        // Trigger visual: only first displayed item gets the trigger dot
+                        const isTrigger = type !== 'derived';
 
                         return (
-                          <div key={`${batch.persistedIndex}_${index}`} className='changeStep'>
+                          <div key={`${batch.persistedIndex}_${index}_${exprKey(changeItem)}`} className='changeStep'>
                             <div className='changeStepRail'>
-                              <div className={`changeStepDot ${index === 0 ? 'isTrigger' : ''}`} />
-                              {index < batch.items.length - 1 ? <div className='changeStepLine' /> : null}
+                              <div className={`changeStepDot ${isTrigger ? 'isTrigger' : ''}`} />
+                              {index < displayStepItems.length - 1 ? <div className='changeStepLine' /> : null}
                             </div>
 
                             <div className='changeStepCard'>
                               <div className='changeStepHeader'>
                                 <div className='changeStepHeaderLeft'>
-                                  <div className='changeStepExpr' title={exprStr}>
-                                    {exprStr}
+                                  <div className='changeStepExpr' title={expressionString}>
+                                    {expressionString}
                                   </div>
-                                  <div className={`changeStepTag ${index === 0 ? '' : 'derived'}`}>
-                                    {index === 0 ? 'trigger' : 'derived'}
-                                  </div>
+
+                                  <div className='changeStepTag'>{type}</div>
                                 </div>
 
                                 <div className='changeStepHeaderRight'>

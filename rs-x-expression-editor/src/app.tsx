@@ -293,14 +293,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     });
   };
 
-  const onHighlightOnly = (
-    modelIndex: number,
-    expressionIndex: number,
-    items: readonly IExpressionChangeHistory[]
-  ) => {
-    setTreeHighlight(() => [...items]);
-    setTreeHighlightVersion((v) => v + 1);
-  };
 
   const selectedHistoryCount = selectedExpression?.changeHistory?.length ?? 0;
   const canClearSelectedHistory = selectedExpressionIndex !== null && selectedHistoryCount > 0;
@@ -373,8 +365,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                                 expressionInfo={selectedExpression}
                                 selectedChangeSetIndex={selectedExpression.selecteChangeHistoryIndex}
                                 onHistoryChange={onHistoryChanged}
-                                onSelectionChanged={onSelectHistoryBatch}
-                                onHighlightChanged={onHighlightOnly}        
+                                onSelectionChanged={onSelectHistoryBatch}       
                               />
                             </div>
                           </div>
