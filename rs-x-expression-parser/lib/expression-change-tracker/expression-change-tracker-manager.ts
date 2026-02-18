@@ -1,5 +1,5 @@
 import { IDisposableOwner, Injectable, SingletonFactory } from '@rs-x/core';
-import { Observable, Subject } from 'rxjs';
+import { Observable, ReplaySubject, Subject } from 'rxjs';
 import { IExpression } from '../expressions/expression-parser.interface';
 import { IExpressionChangeTracker, IExpressionChangeTrackerManager } from './expression-change-tracker-manager.interface';
 import { IExpressionChangeHistory } from './expression-change-history.interface';
@@ -8,7 +8,7 @@ import { IExpressionChangeHistory } from './expression-change-history.interface'
 
 class ExpressionChangeTracker implements IExpressionChangeTracker {
     private readonly _changes: IExpressionChangeHistory[] = [];
-    private readonly _changed = new Subject<IExpressionChangeHistory[]>;
+    private readonly _changed = new ReplaySubject<IExpressionChangeHistory[]>(1)
     private _isDisposed = false;
     private _paused = false;
 

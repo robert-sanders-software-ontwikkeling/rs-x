@@ -1,3 +1,4 @@
+// expression-tree-view.component.tsx
 import React, { useMemo } from 'react';
 
 import type { IExpression, IExpressionChangeHistory } from '@rs-x/expression-parser';
@@ -79,15 +80,16 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
     return index.buildHighlightKey(highlightChanges);
   }, [index, highlightChanges]);
 
+  // Re-render when expression values recompute (including async replay)
   useExpressionChangedRerender(root);
 
-  const { selectedNodeIds, selectedEdgeKeys, activeNodeId, activeEdgeKey } =
-    useHighlightAnimation({
-      highlightChanges,
-      highlightVersion,
-      highlightKey,
-      index,
-    });
+  // ✅ UPDATED: parallel animation => active sets, not single id/key
+  const { selectedNodeIds, selectedEdgeKeys, activeNodeIds, activeEdgeKeys } = useHighlightAnimation({
+    highlightChanges,
+    highlightVersion,
+    highlightKey,
+    index,
+  });
 
   const valueFormatterFn = useMemo(() => {
     if (formatValue) {
@@ -100,24 +102,23 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
     };
   }, [formatValue, valueMaxDepth, valueMaxChars]);
 
-  const { zoomScale, paddedW, paddedH, scaledW, scaledH, nodePos } =
-    useExpressionTreeViewport({
-      layout,
-      nodeWidth,
-      nodeHeight,
-      horizontalGap,
-      verticalGap,
-      panelW: hostSize.width || 0,
-      panelH: hostSize.height || 0,
-      zoomPercent,
-    });
+  const { zoomScale, paddedW, paddedH, scaledW, scaledH, nodePos } = useExpressionTreeViewport({
+    layout,
+    nodeWidth,
+    nodeHeight,
+    horizontalGap,
+    verticalGap,
+    panelW: hostSize.width || 0,
+    panelH: hostSize.height || 0,
+    zoomPercent,
+  });
 
   const edgePaths = useExpressionTreeEdgePaths({
     edges: layout.edges,
     nodePos,
     edgeKey: (a, b) => index.edgeKey(a, b),
     selectedEdgeKeys,
-    activeEdgeKey,
+    activeEdgeKeys,
   });
 
   const nodeViewModels = useExpressionTreeNodeVms({
@@ -126,7 +127,7 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
     nodeWidth,
     nodeHeight,
     selectedNodeIds,
-    activeNodeId,
+    activeNodeIds,
     formatValue: valueFormatterFn,
   });
 

@@ -3,19 +3,24 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ExpressionIndex } from '../expression-index';
 import { NodeId } from '../layout/node.interface';
 
-
 const animationSpeed = 350;
 
+type Selection = {
+  selectedNodeIds: Set<NodeId>;
+  selectedEdgeKeys: Set<string>;
+  nodePathSequence: NodeId[];
+};
+
+type Wave = {
+  nodes: NodeId[];
+  edges: string[];
+};
 
 class HighlightAnimator {
   public computeSelection(args: {
     highlightChanges: readonly IExpressionChangeHistory[];
     index: ExpressionIndex;
-  }): {
-    selectedNodeIds: Set<NodeId>;
-    selectedEdgeKeys: Set<string>;
-    nodePathSequence: NodeId[];
-  } {
+  }): Selection {
     const { highlightChanges, index } = args;
 
     const stepIds: NodeId[] = [];
@@ -84,62 +89,123 @@ class HighlightAnimator {
     };
   }
 
+  private _depthOf(id: NodeId, index: ExpressionIndex): number {
+    let d = 0;
+    let cur: NodeId | null = id;
+
+    while (cur) {
+      cur = index.parentById.get(cur) ?? null;
+      if (cur) {
+        d++;
+      }
+    }
+
+    return d;
+  }
+
+  private _buildWaves(args: { nodePathSequence: NodeId[]; selectedEdges: Set<string>; index: ExpressionIndex }): Wave[] {
+    const { nodePathSequence, selectedEdges, index } = args;
+
+    // Unique nodes from the path
+    const unique = Array.from(new Set<NodeId>(nodePathSequence));
+
+    // Group nodes by depth (deepest first) => parallel waves
+    const byDepth = new Map<number, NodeId[]>();
+    let maxDepth = 0;
+
+    for (const id of unique) {
+      const depth = this._depthOf(id, index);
+      maxDepth = Math.max(maxDepth, depth);
+
+      const bucket = byDepth.get(depth) ?? [];
+      bucket.push(id);
+      byDepth.set(depth, bucket);
+    }
+
+    const waves: Wave[] = [];
+
+    for (let depth = maxDepth; depth >= 0; depth--) {
+      const nodes = byDepth.get(depth) ?? [];
+      if (nodes.length === 0) {
+        continue;
+      }
+
+      // Edges: node -> parent (if that edge is in selectedEdges)
+      const edges: string[] = [];
+      for (const nodeId of nodes) {
+        const parent = index.parentById.get(nodeId) ?? null;
+        if (!parent) {
+          continue;
+        }
+
+        const k = index.edgeKey(parent, nodeId);
+        if (selectedEdges.has(k)) {
+          edges.push(k);
+        }
+      }
+
+      waves.push({ nodes, edges });
+    }
+
+    return waves;
+  }
+
   public scheduleAnimation(args: {
     nodePathSequence: NodeId[];
     selectedEdges: Set<string>;
-    edgeKey: (a: NodeId, b: NodeId) => string;
-    setActiveNodeId: React.Dispatch<React.SetStateAction<NodeId | null>>;
-    setActiveEdgeKey: React.Dispatch<React.SetStateAction<string | null>>;
+    index: ExpressionIndex;
+
+    setActiveNodeIds: React.Dispatch<React.SetStateAction<Set<NodeId>>>;
+    setActiveEdgeKeys: React.Dispatch<React.SetStateAction<Set<string>>>;
+
     timersRef: React.MutableRefObject<number[]>;
     clearTimers: () => void;
   }): void {
-    const {
-      nodePathSequence,
-      selectedEdges,
-      edgeKey,
-      setActiveNodeId,
-      setActiveEdgeKey,
-      timersRef,
-      clearTimers,
-    } = args;
+    const { nodePathSequence, selectedEdges, index, setActiveNodeIds, setActiveEdgeKeys, timersRef, clearTimers } = args;
 
     clearTimers();
 
     if (nodePathSequence.length === 0) {
-      setActiveEdgeKey(() => null);
-      setActiveNodeId(() => null);
+      setActiveEdgeKeys(() => new Set<string>());
+      setActiveNodeIds(() => new Set<NodeId>());
+      return;
+    }
+
+    const waves = this._buildWaves({ nodePathSequence, selectedEdges, index });
+
+    if (waves.length === 0) {
+      setActiveEdgeKeys(() => new Set<string>());
+      setActiveNodeIds(() => new Set<NodeId>());
       return;
     }
 
     const nodeMs = 520;
     const edgeMs = 260;
 
-    setActiveNodeId(() => nodePathSequence[0] ?? null);
-    setActiveEdgeKey(() => null);
+    // Start with first wave nodes active (parallel)
+    setActiveNodeIds(() => new Set<NodeId>(waves[0].nodes));
+    setActiveEdgeKeys(() => new Set<string>());
 
     let t = 0;
 
-    for (let i = 0; i < nodePathSequence.length - 1; i++) {
-      const a = nodePathSequence[i];
-      const b = nodePathSequence[i + 1];
+    for (let i = 0; i < waves.length; i++) {
+      const wave = waves[i];
 
-      const k1 = edgeKey(a, b);
-      const k2 = edgeKey(b, a);
-      const activeK = selectedEdges.has(k1) ? k1 : selectedEdges.has(k2) ? k2 : null;
-
+      // briefly highlight edges into this wave
       t += edgeMs;
       timersRef.current.push(
         window.setTimeout(() => {
-          setActiveEdgeKey(() => activeK);
-          setActiveNodeId(() => a);
+          setActiveEdgeKeys(() => new Set<string>(wave.edges));
+          setActiveNodeIds(() => new Set<NodeId>(wave.nodes));
         }, t)
       );
 
+      // then highlight nodes (keep edges off)
       t += nodeMs;
       timersRef.current.push(
         window.setTimeout(() => {
-          setActiveEdgeKey(() => null);
-          setActiveNodeId(() => b);
+          setActiveEdgeKeys(() => new Set<string>());
+          setActiveNodeIds(() => new Set<NodeId>(wave.nodes));
         }, t)
       );
     }
@@ -147,13 +213,12 @@ class HighlightAnimator {
     t += animationSpeed;
     timersRef.current.push(
       window.setTimeout(() => {
-        setActiveEdgeKey(() => null);
-        setActiveNodeId(() => null);
+        setActiveEdgeKeys(() => new Set<string>());
+        setActiveNodeIds(() => new Set<NodeId>());
       }, t)
     );
   }
 }
-
 
 export function useHighlightAnimation(args: {
   highlightChanges: readonly IExpressionChangeHistory[];
@@ -163,20 +228,20 @@ export function useHighlightAnimation(args: {
 }): {
   selectedNodeIds: Set<NodeId>;
   selectedEdgeKeys: Set<string>;
-  activeNodeId: NodeId | null;
-  activeEdgeKey: string | null;
+  activeNodeIds: Set<NodeId>;
+  activeEdgeKeys: Set<string>;
 } {
   const { highlightChanges, highlightVersion, highlightKey, index } = args;
 
-  // ✅ internal animator instance (stable)
   const animator = useMemo(() => {
     return new HighlightAnimator();
   }, []);
 
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<NodeId>>(() => new Set<NodeId>());
   const [selectedEdgeKeys, setSelectedEdgeKeys] = useState<Set<string>>(() => new Set<string>());
-  const [activeNodeId, setActiveNodeId] = useState<NodeId | null>(null);
-  const [activeEdgeKey, setActiveEdgeKey] = useState<string | null>(null);
+
+  const [activeNodeIds, setActiveNodeIds] = useState<Set<NodeId>>(() => new Set<NodeId>());
+  const [activeEdgeKeys, setActiveEdgeKeys] = useState<Set<string>>(() => new Set<string>());
 
   const timersRef = useRef<number[]>([]);
 
@@ -190,8 +255,8 @@ export function useHighlightAnimation(args: {
   const resetState = (): void => {
     setSelectedNodeIds(() => new Set<NodeId>());
     setSelectedEdgeKeys(() => new Set<string>());
-    setActiveNodeId(() => null);
-    setActiveEdgeKey(() => null);
+    setActiveNodeIds(() => new Set<NodeId>());
+    setActiveEdgeKeys(() => new Set<string>());
   };
 
   useEffect(() => {
@@ -202,10 +267,7 @@ export function useHighlightAnimation(args: {
       return;
     }
 
-    const selection = animator.computeSelection({
-      highlightChanges,
-      index,
-    });
+    const selection = animator.computeSelection({ highlightChanges, index });
 
     if (selection.nodePathSequence.length === 0) {
       resetState();
@@ -218,9 +280,9 @@ export function useHighlightAnimation(args: {
     animator.scheduleAnimation({
       nodePathSequence: selection.nodePathSequence,
       selectedEdges: selection.selectedEdgeKeys,
-      edgeKey: (a, b) => index.edgeKey(a, b),
-      setActiveNodeId,
-      setActiveEdgeKey,
+      index,
+      setActiveNodeIds,
+      setActiveEdgeKeys,
       timersRef,
       clearTimers,
     });
@@ -233,7 +295,7 @@ export function useHighlightAnimation(args: {
   return {
     selectedNodeIds,
     selectedEdgeKeys,
-    activeNodeId,
-    activeEdgeKey,
+    activeNodeIds,
+    activeEdgeKeys,
   };
 }

@@ -38,8 +38,7 @@ export abstract class AbstractExpression<
   private _owner: IDisposableOwner | undefined;
   private _services!: IExpressionServices;
   private _leafIndexWatchRule?: IIndexWatchRule | undefined;
-
-  public _changeHook?:ChangeHook;
+  private _changeHook?: ChangeHook;
 
   protected constructor(
     public readonly type: ExpressionType,
@@ -54,14 +53,17 @@ export abstract class AbstractExpression<
     );
   }
 
-
-  public get changeHook(): ChangeHook| undefined {
+  public get changeHook(): ChangeHook | undefined {
     return this._changeHook;
   }
 
   public set changeHook(value: ChangeHook | undefined) {
     this._changeHook = value;
-    this._childExpressions.forEach(childExpression => childExpression.changeHook = value)
+    this._childExpressions.forEach(childExpression => childExpression.changeHook = value);
+
+    if (this._changeHook && this.value !== undefined) {
+      this._changeHook(this, undefined);
+    }
   }
 
   public abstract clone(): this;
@@ -215,7 +217,7 @@ export abstract class AbstractExpression<
     }
     this._value = value;
 
-    if(this.changeHook) {
+    if (this.changeHook) {
       this.changeHook(this, this._oldValue);
     }
 

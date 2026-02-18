@@ -1,10 +1,11 @@
-/* expression-change-history-view.component.css */
+/* =========================================================
+   Root
+========================================================= */
 
 .changeHistoryRoot {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-
+  gap: 12px;
   min-height: 0;
   min-width: 0;
 }
@@ -15,150 +16,167 @@
   padding: 12px;
 }
 
-/* -----------------------------
-   Flat list (no "Change sets")
------------------------------ */
+/* =========================================================
+   Accordion Container
+========================================================= */
 
-.changeHistoryFlatList {
+.changeHistoryAccordion {
   border: 1px solid #444;
-  border-radius: 12px;
-  overflow: hidden;
+  border-radius: 16px;
   background-color: #2b2b3b;
-}
-
-.changeHistoryFlatScroll {
-  max-height: 150px;
-  overflow: auto;
-  padding: 8px;
-
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.changeHistoryFlatItem {
-  width: 100%;
-  text-align: left;
-
-  border: 1px solid #3b3f5a;
-  background-color: #2f2f44;
-  color: #f0f0f0;
-
-  border-radius: 12px;
-  padding: 10px 12px;
-
-  cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-
+  overflow: hidden;
+  min-height: 0;
   min-width: 0;
 }
 
-.changeHistoryFlatItem:hover {
+.changeHistoryAccordionScroll {
+  max-height: 100%;
+  overflow: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* =========================================================
+   Change Set Card (t0, t1, t2...)
+========================================================= */
+
+.changeSet {
+  border: 1px solid #3b3f5a;
+  border-radius: 16px;
+  background-color: #2f2f44;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  overflow: hidden;
+}
+
+.changeSet.isActive {
+  border-color: #5c7cfa;
+  box-shadow: 0 0 0 2px rgba(92, 124, 250, 0.15);
+}
+
+/* =========================================================
+   Header
+========================================================= */
+
+.changeSetHeader {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: inherit;
+  padding: 14px 16px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  transition: background-color 150ms ease;
+}
+
+.changeSetHeader:hover {
   background-color: #35385a;
 }
 
-.changeHistoryFlatItem.isActive {
-  border-color: #5c7cfa;
-  background-color: #2f3458;
-  box-shadow: 0 0 0 1px rgba(92, 124, 250, 0.25);
-}
-
-.changeHistoryFlatLeft {
+.changeSetHeaderLeft {
   display: flex;
   align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.changeSetBadge {
+  font-weight: 800;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background-color: rgba(92, 124, 250, 0.18);
+  border: 1px solid rgba(92, 124, 250, 0.35);
+  color: #cfe1ff;
+  flex: 0 0 auto;
+}
+
+.changeSetHeaderMeta {
+  display: flex;
+  align-items: baseline;
   gap: 10px;
   min-width: 0;
 }
 
-.changeHistoryFlatExpr {
-  font-weight: 900;
+.changeSetExpr {
+  font-weight: 800;
+  font-size: 14px;
   color: #9cdcfe;
-
-  min-width: 0;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
+.changeSetSteps {
+  font-size: 13px;
+  opacity: 0.75;
+}
 
-.changeHistoryFlatRight {
-  display: inline-flex;
+/* =========================================================
+   Header Right (old → new)
+========================================================= */
+
+.changeSetHeaderRight {
+  display: flex;
   align-items: center;
-  gap: 8px;
-  flex: 0 0 auto;
+  gap: 10px;
   white-space: nowrap;
+  flex: 0 0 auto;
 }
 
-.changeHistoryFlatOld {
+.changeSetOld {
   color: #ffb3b3;
 }
 
-.changeHistoryFlatNew {
+.changeSetNew {
   color: #a8f0c6;
 }
 
-.changeHistoryFlatArrow {
-  opacity: 0.85;
+.changeSetArrow {
+  opacity: 0.8;
 }
 
-/* divider between list and timeline */
-.changeHistoryDivider {
-  height: 1px;
-  background: rgba(255, 255, 255, 0.08);
-  margin: 2px 2px;
+/* Chevron */
+
+.changeSetChevron {
+  margin-left: 6px;
+  transition: transform 180ms ease;
+  opacity: 0.75;
 }
 
-/* -----------------------------
-   Timeline container
------------------------------ */
-
-.changeHistoryTimeline {
-  border: 1px solid #444;
-  border-radius: 12px;
-  overflow: hidden;
-  background-color: #2b2b3b;
-
-  min-height: 0;
-  min-width: 0;
+.changeSetChevron.isOpen {
+  transform: rotate(90deg);
 }
 
-.changeHistoryTimelineHeader {
-  padding: 10px 12px;
-  background-color: #323248;
-  border-bottom: 1px solid #444;
+/* =========================================================
+   Expanded Body
+========================================================= */
 
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.changeSetBody {
+  padding: 14px 18px 18px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.changeHistoryTimelineTitle {
-  font-weight: 900;
-}
-
-.changeHistoryTimelineBody {
-  padding: 10px 12px;
-  min-height: 0;
-}
-
-/* -----------------------------
-   Timeline steps
------------------------------ */
+/* =========================================================
+   Timeline (inside expanded card only)
+========================================================= */
 
 .changePath {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .changeStep {
   display: grid;
-  grid-template-columns: 24px 1fr;
-  gap: 12px;
+  grid-template-columns: 28px 1fr;
+  gap: 14px;
   min-width: 0;
 }
 
@@ -175,7 +193,7 @@
   border-radius: 999px;
   background-color: #6b7280;
   border: 2px solid rgba(255, 255, 255, 0.15);
-  margin-top: 12px;
+  margin-top: 14px;
 }
 
 .changeStepDot.isTrigger {
@@ -185,16 +203,24 @@
 
 .changeStepLine {
   position: absolute;
-  top: 28px;
-  bottom: -14px;
+  top: 30px;
+  bottom: -18px;
   width: 2px;
-  background: linear-gradient(to bottom, rgba(92, 124, 250, 0.55), rgba(107, 114, 128, 0.15));
+  background: linear-gradient(
+    to bottom,
+    rgba(92, 124, 250, 0.55),
+    rgba(107, 114, 128, 0.15)
+  );
 }
+
+/* =========================================================
+   Step Card
+========================================================= */
 
 .changeStepCard {
   border: 1px solid #3b3f5a;
   background-color: #2f2f44;
-  border-radius: 12px;
+  border-radius: 14px;
   min-width: 0;
 }
 
@@ -202,9 +228,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-
-  padding: 12px;
+  gap: 12px;
+  padding: 12px 14px;
   min-width: 0;
 }
 
@@ -216,7 +241,7 @@
 }
 
 .changeStepExpr {
-  font-weight: 900;
+  font-weight: 800;
   color: #9cdcfe;
   min-width: 0;
   white-space: nowrap;
@@ -225,8 +250,8 @@
 }
 
 .changeStepTag {
-  font-size: 0.75rem;
-  padding: 2px 8px;
+  font-size: 0.72rem;
+  padding: 3px 8px;
   border-radius: 999px;
   background-color: rgba(92, 124, 250, 0.15);
   border: 1px solid rgba(92, 124, 250, 0.25);
@@ -244,7 +269,6 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  flex: 0 0 auto;
   white-space: nowrap;
 }
 
