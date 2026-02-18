@@ -496,7 +496,7 @@ export class ExpressionEditorStateBuilder {
 
         try {
             if (index > currentCursorIndex) {
-                this._expressionChangePlayback.playForward(index, expressionInfo.changeHistory);
+                this._expressionChangePlayback.play(index, expressionInfo.changeHistory);
                 return;
             }
 

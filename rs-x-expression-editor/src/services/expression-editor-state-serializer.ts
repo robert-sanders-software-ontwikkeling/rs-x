@@ -118,7 +118,7 @@ export class ExpressionEdtitorStateSerializer {
                         const rootExpression = this._expressionFactory.create(model, exprInfo.expression);
                         const changeHistory =  this.deserializeHistory(rootExpression, exprInfo.changeHistory ?? []);
                         if(index === modelWithExpressions.selectedExpressionIndex && exprInfo.selecteChangeHistoryIndex >= 0) {
-                            this._expressionChangePlayback.playForward(exprInfo.selecteChangeHistoryIndex,changeHistory);
+                            this._expressionChangePlayback.play(exprInfo.selecteChangeHistoryIndex,changeHistory);
                         }
                         return {
                             name: exprInfo.name,
