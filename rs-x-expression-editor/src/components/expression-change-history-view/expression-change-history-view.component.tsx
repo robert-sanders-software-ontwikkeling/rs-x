@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+// expression-change-history-view.component.tsx
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { type IExpressionChangeHistory } from '@rs-x/expression-parser';
 import type { IExpressionInfo } from '../../models/model-with-expressions.interface';
@@ -55,8 +56,9 @@ function clampIndex(index: number, length: number): number {
 }
 
 function shortValue(value: unknown): string {
+  // ✅ better "unset" marker than "_" (and we style it)
   if (value === undefined) {
-    return '_';
+    return '∅';
   }
   if (value === null) {
     return 'null';
@@ -86,6 +88,7 @@ function shortValue(value: unknown): string {
 }
 
 function exprKey(change: IExpressionChangeHistory): string {
+  // match ExpressionIndex style: expressionString + type
   return `${change.expression.expressionString}::${String(change.expression.type)}`;
 }
 
@@ -99,9 +102,11 @@ function pickHeaderChange(args: {
     return null;
   }
 
+  // Prefer: the change item for the selected/root expression (e.g. "a + b")
   if (rootExpression) {
     const rootKey = `${rootExpression.expressionString}::${String(rootExpression.type)}`;
 
+    // scan from end (often the derived/root change is later in the batch)
     for (let i = batchItems.length - 1; i >= 0; i--) {
       const item = batchItems[i];
       if (exprKey(item) === rootKey) {
@@ -110,7 +115,26 @@ function pickHeaderChange(args: {
     }
   }
 
+  // Fallback: last item in the batch (usually the final derived expression)
   return batchItems[batchItems.length - 1] ?? null;
+}
+
+function ValueDiff(props: { oldValue: unknown; newValue: unknown; size?: 'header' | 'row' }): React.ReactElement {
+  const { oldValue, newValue, size = 'row' } = props;
+
+  const oldText = shortValue(oldValue);
+  const newText = shortValue(newValue);
+
+  const oldIsUnset = oldText === '∅';
+  const newIsUnset = newText === '∅';
+
+  return (
+    <div className={`valueDiff ${size === 'header' ? 'isHeader' : 'isRow'}`}>
+      <span className={`valueDiffOld ${oldIsUnset ? 'isUnset' : ''}`}>{oldText}</span>
+      <span className='valueDiffArrow'>→</span>
+      <span className={`valueDiffNew ${newIsUnset ? 'isUnset' : ''}`}>{newText}</span>
+    </div>
+  );
 }
 
 export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewProps> = (props) => {
@@ -150,20 +174,14 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
   }, [persistedHistory, historyLength, version]);
 
   const clampedSelectedPersistedIndex =
-    historyLength <= 0 || selectedChangeSetIndex < 0
-      ? -1
-      : clampIndex(selectedChangeSetIndex, historyLength);
+    historyLength <= 0 || selectedChangeSetIndex < 0 ? -1 : clampIndex(selectedChangeSetIndex, historyLength);
 
-  // Auto-expand rule:
-  // - if user selected something -> expand that
-  // - otherwise expand the newest (top item in UI)
-  const defaultExpandedPersistedIndex =
-    historyLength > 0 ? historyLength - 1 : -1;
+  // ✅ Auto-collapse non-selected and expand selected (not user-togglable)
+  const [expandedPersistedIndex, setExpandedPersistedIndex] = useState<number>(() => clampedSelectedPersistedIndex);
 
-  const expandedPersistedIndex =
-    clampedSelectedPersistedIndex >= 0
-      ? clampedSelectedPersistedIndex
-      : defaultExpandedPersistedIndex;
+  useEffect(() => {
+    setExpandedPersistedIndex(() => clampedSelectedPersistedIndex);
+  }, [clampedSelectedPersistedIndex]);
 
   useReemitSelectionOnHistoryChange({
     expressionInfo,
@@ -189,8 +207,8 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
   });
 
   const onUserSelectPersistedIndex = (persistedIndex: number, items: readonly IExpressionChangeHistory[]) => {
-    // ✅ no toggle behavior: selecting same item keeps it expanded
-    onSelectionChangedRef.current(modelIndex, expressionIndex, persistedIndex, items);
+    // select + (auto) expand
+    onSelectionChanged(modelIndex, expressionIndex, persistedIndex, items);
   };
 
   if (!expressionInfo) {
@@ -213,12 +231,9 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
     <div className='changeHistoryRoot'>
       <div className='changeHistoryAccordion'>
         <div className='changeHistoryAccordionScroll'>
-          {batches.map((batch, uiIndex) => {
+          {batches.map((batch) => {
             const isActive = batch.persistedIndex === clampedSelectedPersistedIndex;
             const isExpanded = batch.persistedIndex === expandedPersistedIndex;
-
-            // “first change set” = newest = top item in UI
-            const isFirstChangeSet = uiIndex === 0;
 
             const headerChange = pickHeaderChange({
               batchItems: batch.items,
@@ -233,9 +248,6 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
               expressionInfo.expression?.expressionString ??
               '(unknown)';
 
-            const headerOld = headerChange ? shortValue(headerChange.oldValue) : '_';
-            const headerNew = headerChange ? shortValue(headerChange.value) : '_';
-
             const stepsCount = batch.items.length;
 
             return (
@@ -247,32 +259,31 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
                   type='button'
                   className='changeSetHeader'
                   onClick={() => {
-                    // ✅ no collapse toggle:
-                    // selecting same again is fine (keeps expanded)
+                    // ✅ no manual collapse/expand; selection controls expansion
                     onUserSelectPersistedIndex(batch.persistedIndex, batch.items);
                   }}
                   title={headerExpr}
                 >
                   <div className='changeSetHeaderLeft'>
                     <span className='changeSetBadge'>{tLabel}</span>
+
                     <div className='changeSetHeaderMeta'>
-                      <div className='changeSetExpr'>{headerExpr}</div>
-                      <div className='changeSetSteps'>{stepsCount} step{stepsCount === 1 ? '' : 's'}</div>
+                      <div className='changeSetExpr' title={headerExpr}>
+                        {headerExpr}
+                      </div>
+                      <div className='changeSetSteps'>
+                        {stepsCount} step{stepsCount === 1 ? '' : 's'}
+                      </div>
                     </div>
                   </div>
 
                   <div className='changeSetHeaderRight'>
-                    <span className='changeSetOld'>{headerOld}</span>
-                    <span className='changeSetArrow'>→</span>
-                    <span className='changeSetNew'>{headerNew}</span>
-
-                    {/* Chevron is just an indicator, not a toggle */}
-                    <span
-                      className={`changeSetChevron ${isExpanded ? 'isOpen' : ''} ${isFirstChangeSet ? 'isPinned' : ''}`}
-                      title={isFirstChangeSet ? 'Newest change set (always auto-expanded)' : undefined}
-                    >
-                      ▾
-                    </span>
+                    <ValueDiff
+                      size='header'
+                      oldValue={headerChange ? headerChange.oldValue : undefined}
+                      newValue={headerChange ? headerChange.value : undefined}
+                    />
+                    <span className={`changeSetChevron ${isExpanded ? 'isOpen' : ''}`}>▾</span>
                   </div>
                 </button>
 
@@ -301,9 +312,7 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
                                 </div>
 
                                 <div className='changeStepHeaderRight'>
-                                  <span className='changeStepOld'>{shortValue(changeItem.oldValue)}</span>
-                                  <span className='changeStepArrow'>→</span>
-                                  <span className='changeStepNew'>{shortValue(changeItem.value)}</span>
+                                  <ValueDiff size='row' oldValue={changeItem.oldValue} newValue={changeItem.value} />
                                 </div>
                               </div>
                             </div>
