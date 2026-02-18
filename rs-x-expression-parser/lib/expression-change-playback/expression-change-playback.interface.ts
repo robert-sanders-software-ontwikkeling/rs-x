@@ -1,4 +1,4 @@
-import { IExpressionChangeHistory } from '../expression-change-tracker';
+import { IExpressionChangeHistory } from '../expression-change-tracker/expression-change-history.interface';
 
 export interface IExpressionChangePlayback {
     playForward(t: number, history: IExpressionChangeHistory[][]): void;

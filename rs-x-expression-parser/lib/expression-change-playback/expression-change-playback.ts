@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@rs-x/core';
 import { IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
-import { IExpressionChangeHistory } from '../expression-change-tracker';
 import { IdentifierExpression } from '../expressions/identifier-expression';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
 import { IExpressionChangePlayback } from './expression-change-playback.interface';
+import { IExpressionChangeHistory } from '../expression-change-tracker';
 
 @Injectable()
 export class ExpressionChangePlayback implements IExpressionChangePlayback {

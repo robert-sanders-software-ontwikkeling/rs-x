@@ -1,8 +1,8 @@
 import { emptyFunction, InjectionContainer, WaitForEvent } from '../../rs-x-core/lib';
 import { IExpression, IExpressionFactory, RsXExpressionParserInjectionTokens, RsXExpressionParserModule, unloadRsXExpressionParserModule } from '../lib';
 import { IExpressionChangePlayback } from '../lib/expression-change-playback';
-import { ExpressionChangeTracker, IExpressionChangeHistory } from '../lib/expression-change-tracker';
-
+import { IExpressionChangeHistory } from '../lib/expression-change-tracker/expression-change-history.interface';
+import { IExpressionChangeTracker, IExpressionChangeTrackerManager } from '../lib/expression-change-tracker/expression-change-tracker-manager.interface';
 
 interface IModel {
     a: number,
@@ -11,7 +11,8 @@ interface IModel {
 
 describe('ExpressionChangePlayback tests', () => {
     let expressionChangePlayback: IExpressionChangePlayback;
-    let expressionChangeTracker: ExpressionChangeTracker;
+    let expressionChangeTracker: IExpressionChangeTracker;
+    let expressionChangeTrackerManager: IExpressionChangeTrackerManager;
     let expression: IExpression;
     let model: IModel;
     let expressionFactory: IExpressionFactory;
@@ -28,6 +29,7 @@ describe('ExpressionChangePlayback tests', () => {
         await InjectionContainer.load(RsXExpressionParserModule);
         expressionFactory = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionFactory);
         expressionChangePlayback = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionChangePlayback);
+        expressionChangeTrackerManager = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionChangeTrackerManager);
     });
 
     afterAll(async () => {
@@ -44,16 +46,18 @@ describe('ExpressionChangePlayback tests', () => {
         };
 
         expression = expressionFactory.create(model, 'a + b.c');
+
+
         await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-
-        expressionChangeTracker = new ExpressionChangeTracker(expression);
+        expressionChangeTracker = expressionChangeTrackerManager.create(expression).instance;
     });
 
     afterEach(() => {
-        if (expression) {
-            expression.dispose();
-        }
+       
+        expression.dispose();
+        expressionChangeTracker.dispose();
+        
     });
 
 

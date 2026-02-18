@@ -1,11 +1,12 @@
 import {
-    type IExpression,
     type IExpressionChangeHistory,
+    type IExpression,
     type IExpressionFactory,
     RsXExpressionParserInjectionTokens,
 } from '@rs-x/expression-parser';
 import { InjectionContainer, type IObjectStorage, RsXCoreInjectionTokens } from '@rs-x/core';
 import type { IExpressionEditorState } from '../models/expression-editor-state.interface';
+import { IExpressionChangePlayback } from '../../../rs-x-expression-parser/lib/expression-change-playback/expression-change-playback.interface';
 
 const stateId = '1513bdf8-c3fc-4f74-ad4f-e670724fc625';
 
@@ -41,6 +42,10 @@ interface ISerializedExpressionEditorState {
 export class ExpressionEdtitorStateSerializer {
     private readonly _objectStorage: IObjectStorage =
         InjectionContainer.get(RsXCoreInjectionTokens.IObjectStorage);
+
+    private readonly _expressionChangePlayback: IExpressionChangePlayback =
+        InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionChangePlayback);
+
 
     private readonly _expressionFactory: IExpressionFactory =
         InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionFactory);
@@ -101,6 +106,7 @@ export class ExpressionEdtitorStateSerializer {
             modelsWithExpressions: deserializeState.modelsWithExpressions.map((modelWithExpressions) => {
                 const model = new Function(`return ${modelWithExpressions.modelString}`)();
 
+
                 return {
     
                     name: modelWithExpressions.name,
@@ -108,15 +114,18 @@ export class ExpressionEdtitorStateSerializer {
                     modelString: modelWithExpressions.modelString,
                     selectedExpressionIndex: modelWithExpressions.selectedExpressionIndex,
                     editingExpressionIndex: modelWithExpressions.editingExpressionIndex,
-                    expressions: modelWithExpressions.expressions.map((exprInfo) => {
+                    expressions: modelWithExpressions.expressions.map((exprInfo, index) => {
                         const rootExpression = this._expressionFactory.create(model, exprInfo.expression);
-
+                        const changeHistory =  this.deserializeHistory(rootExpression, exprInfo.changeHistory ?? []);
+                        if(index === modelWithExpressions.selectedExpressionIndex && exprInfo.selecteChangeHistoryIndex >= 0) {
+                            this._expressionChangePlayback.playForward(exprInfo.selecteChangeHistoryIndex,changeHistory);
+                        }
                         return {
                             name: exprInfo.name,
                             version: 0,
                             expression: rootExpression,
                             selecteChangeHistoryIndex: exprInfo.selecteChangeHistoryIndex,
-                            changeHistory: this.deserializeHistory(rootExpression, exprInfo.changeHistory ?? []),
+                            changeHistory,
                         };
                     }),
                 };

@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { IExpression, IExpressionChangeHistory } from '@rs-x/expression-parser';
 import './expression-tree-view.component.css';
 
-const animationSpeed = 200;
+const animationSpeed = 350;
 
 export interface IExpressionTreeProps {
   version: number;

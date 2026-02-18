@@ -1,6 +1,7 @@
 export * from './expresion-change-transaction-manager.interface';
 export * from './expresion-change-transaction-manager';
 export * from './expression-cache';
+export * from './expression-change-playback';
 export * from './expression-change-tracker';
 export * from './expression-factory';
 export * from './expression-observer';

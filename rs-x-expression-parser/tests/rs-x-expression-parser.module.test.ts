@@ -41,6 +41,7 @@ import {
 } from '../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../lib/rs-x-expression-parser-injection-tokes';
 import { ExpressionChangePlayback } from '../lib/expression-change-playback/expression-change-playback';
+import { ExpressionChangeTrackerManager } from '../lib/expression-change-tracker/expression-change-tracker-manager';
 
 describe('RsXExpressionParserModule tests', () => {
   beforeAll(async () => {
@@ -328,6 +329,23 @@ describe('RsXExpressionParserModule tests', () => {
     );
     const a2 = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionChangePlayback,
+    );
+    expect(a1).toBe(a2);
+  });
+
+   it('can get instance of IExpressionChangeTrackerManager', () => {
+    const actual = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionChangeTrackerManager,
+    );
+    expect(actual).toBeInstanceOf(ExpressionChangeTrackerManager);
+  });
+
+  it('IExpressionChangeTrackerManager instance is a singleton', () => {
+    const a1 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionChangeTrackerManager,
+    );
+    const a2 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionChangeTrackerManager,
     );
     expect(a1).toBe(a2);
   });

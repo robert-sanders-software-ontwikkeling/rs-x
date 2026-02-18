@@ -1,14 +1,18 @@
-import { IExpression, IExpressionChangeHistory, RsXExpressionParserInjectionTokens } from '@rs-x/expression-parser';
+import { IExpression, RsXExpressionParserInjectionTokens } from '@rs-x/expression-parser';
 import { IExpressionEditorState } from '../models/expression-editor-state.interface';
 import { IExpressionInfo } from '../models/model-with-expressions.interface';
 import { InjectionContainer, Type } from '../../../rs-x-core/lib';
 import { IExpressionChangePlayback } from '../../../rs-x-expression-parser/lib/expression-change-playback/expression-change-playback.interface';
+import { IExpressionChangeHistory, IExpressionChangeTrackerManager } from '../../../rs-x-expression-parser/lib/expression-change-tracker';
+import { catchError, EMPTY, finalize, skip, take, throwError, timeout } from 'rxjs';
 
 export class ExpressionEditorStateBuilder {
 
     private readonly _expressionChangePlayback: IExpressionChangePlayback;
+    private readonly _expressionChangeTrackerManager: IExpressionChangeTrackerManager
     constructor(private _state: IExpressionEditorState) {
-        this._expressionChangePlayback = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionChangePlayback)
+        this._expressionChangePlayback = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionChangePlayback);
+        this._expressionChangeTrackerManager = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionChangeTrackerManager);
     }
 
     public get state(): IExpressionEditorState {
@@ -165,22 +169,6 @@ export class ExpressionEditorStateBuilder {
         return this;
     }
 
-    private updateModel(target: object, source: object): void {
-
-        Type.walkObjectTopToBottom(
-            target,
-            (parent, key, value) => {
-
-                if (Type.isPlainObject(value)) {
-
-                    this.updateModel(value as object, source[key])
-                } else {
-                    parent[key] = source[key];
-                }
-            },
-            false
-        )
-    }
 
     public setModel(modelIndex: number, model: object): this {
         const currentModel = this._state.modelsWithExpressions[modelIndex];
@@ -279,43 +267,71 @@ export class ExpressionEditorStateBuilder {
         expressionIndex: number,
         selectedChangeHistoryIndex: number
     ): this {
-        const expressionInfo =
-            this._state.modelsWithExpressions[modelIndex]?.expressions[expressionIndex];
-
-        if (
-            !expressionInfo ||
-            selectedChangeHistoryIndex < 0 ||
-            selectedChangeHistoryIndex >= expressionInfo.changeHistory.length ||
-            selectedChangeHistoryIndex === expressionInfo.selecteChangeHistoryIndex
-        ) {
+        const modelWithExpressions = this._state.modelsWithExpressions[modelIndex];
+        if (!modelWithExpressions) {
             return this;
         }
 
-        if (selectedChangeHistoryIndex > expressionInfo.selecteChangeHistoryIndex) {
-            this._expressionChangePlayback.playForward(selectedChangeHistoryIndex, expressionInfo.changeHistory);
-        } else {
-            this._expressionChangePlayback.playBackward(selectedChangeHistoryIndex, expressionInfo.changeHistory);
+        const expressionInfo = modelWithExpressions.expressions[expressionIndex];
+        if (!expressionInfo) {
+            return this;
         }
+
+        const changeHistory = expressionInfo.changeHistory ?? [];
+        const changeHistoryLength = changeHistory.length;
+
+        if (changeHistoryLength === 0) {
+            return this;
+        }
+
+        const clampedSelectedChangeHistoryIndex = Math.max(
+            0,
+            Math.min(selectedChangeHistoryIndex, changeHistoryLength - 1)
+        );
+
+        // Current cursor:
+        // - if current selection is invalid (e.g. -1), treat as "newest"
+        const currentSelectedChangeHistoryIndexRaw = expressionInfo.selecteChangeHistoryIndex;
+        const currentCursorIndex =
+            currentSelectedChangeHistoryIndexRaw >= 0 &&
+                currentSelectedChangeHistoryIndexRaw < changeHistoryLength
+                ? currentSelectedChangeHistoryIndexRaw
+                : changeHistoryLength - 1;
+
+        if (clampedSelectedChangeHistoryIndex === currentCursorIndex) {
+            // Selection already at that point-in-time
+            return this;
+        }
+
+
+        this.replayChangeHistory(expressionInfo, clampedSelectedChangeHistoryIndex, currentCursorIndex);
+
 
         const changedExpressionInfo = {
             ...expressionInfo,
-            selecteChangeHistoryIndex: selectedChangeHistoryIndex,
+            selecteChangeHistoryIndex: clampedSelectedChangeHistoryIndex,
         };
 
-        const modelWithExpressions = this._state.modelsWithExpressions[modelIndex];
+        const updatedExpressions = modelWithExpressions.expressions.map((existingExpressionInfo, index) => {
+            if (index !== expressionIndex) {
+                return existingExpressionInfo;
+            }
+            return changedExpressionInfo;
+        });
 
-        const expressions = [...modelWithExpressions.expressions];
-        expressions[expressionIndex] = changedExpressionInfo;
-
-        const modelsWithExpressions = [...this._state.modelsWithExpressions];
-        modelsWithExpressions[modelIndex] = {
-            ...modelWithExpressions,
-            expressions,
-        };
+        const updatedModelsWithExpressions = this._state.modelsWithExpressions.map((existingModel, index) => {
+            if (index !== modelIndex) {
+                return existingModel;
+            }
+            return {
+                ...modelWithExpressions,
+                expressions: updatedExpressions,
+            };
+        });
 
         this._state = {
             ...this._state,
-            modelsWithExpressions,
+            modelsWithExpressions: updatedModelsWithExpressions,
         };
 
         return this;
@@ -397,7 +413,6 @@ export class ExpressionEditorStateBuilder {
     }
 
     public addExpression(modelIndex: number, name: string, expression: IExpression): this {
-
         if (!this._state.modelsWithExpressions[modelIndex]) {
             return this;
         }
@@ -423,5 +438,72 @@ export class ExpressionEditorStateBuilder {
         };
 
         return this;
+    }
+
+    private updateModel(target: object, source: object): void {
+
+        Type.walkObjectTopToBottom(
+            target,
+            (parent, key, value) => {
+
+                if (Type.isPlainObject(value)) {
+
+                    this.updateModel(value as object, source[key])
+                } else {
+                    parent[key] = source[key];
+                }
+            },
+            false
+        )
+    }
+
+    private replayChangeHistory(
+        expressionInfo: IExpressionInfo,
+        index: number,
+        currentCursorIndex: number
+    ): void {
+        const tracker = this._expressionChangeTrackerManager
+            .create(expressionInfo.expression).instance;
+
+        tracker.pause();
+
+        const resume = (): void => {
+            tracker.continue();
+        };
+
+        expressionInfo.expression.changed
+            .pipe(
+                skip(1),  // the current value is always emiited when subscribing so skip it
+                take(1),
+                timeout({ first: 10000 }),
+                catchError((e) => {
+                    console.warn(
+                        'replayChangeHistory did not emit `changed` within 10s',
+                        e
+                    );
+
+                    return throwError(() => e);
+                }),
+                finalize(() => {
+                    tracker.continue();
+                })
+            )
+            .subscribe({
+                error: (e) => {
+                    console.error('Replay pipeline failed', e);
+                }
+            });
+
+        try {
+            if (index > currentCursorIndex) {
+                this._expressionChangePlayback.playForward(index, expressionInfo.changeHistory);
+                return;
+            }
+
+            this._expressionChangePlayback.playBackward(index, expressionInfo.changeHistory);
+        } catch (e) {
+            resume();
+            throw e;
+        }
     }
 }
