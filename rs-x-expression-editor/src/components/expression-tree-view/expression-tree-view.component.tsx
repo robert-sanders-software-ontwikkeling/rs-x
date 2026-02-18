@@ -4,11 +4,13 @@ import type { IExpression, IExpressionChangeHistory } from '@rs-x/expression-par
 import { ExpressionIndex } from './expression-index';
 import './expression-tree-view.component.css';
 import { useExpressionChangedRerender } from './hooks/use-expression-changed-rerender';
+import { useExpressionTreeEdgePaths } from './hooks/use-expression-tree-edge-paths';
+import { useExpressionTreeNodeVms } from './hooks/use-expression-tree-node-vms';
+import { useExpressionTreeViewport } from './hooks/use-expression-tree-viewport';
 import { useHighlightAnimation } from './hooks/use-highlight-animation';
 import { useResizeObserverSize } from './hooks/use-resize-observer-size';
 import { TreeLayoutEngine } from './layout/tree-layout-engine';
 import { ValueFormatter } from './value-formatter';
-import { useExpressionTreeViewport } from './hooks/use-expression-tree-viewport';
 
 export interface IExpressionTreeProps {
   version: number;
@@ -111,6 +113,24 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
       zoomPercent,
     });
 
+  const edgePaths = useExpressionTreeEdgePaths({
+    edges: layout.edges,
+    nodePos,
+    edgeKey: (a, b) => index.edgeKey(a, b),
+    selectedEdgeKeys,
+    activeEdgeKey,
+  });
+
+  const nodeVms = useExpressionTreeNodeVms({
+    nodes: layout.nodes,
+    nodePos,
+    nodeWidth,
+    nodeHeight,
+    selectedNodeIds,
+    activeNodeId,
+    formatValue: valueFormatterFn,
+  });
+
   return (
     <div ref={hostRef} className={`exprTreeRoot ${className ?? ''}`} style={style}>
       <div className='exprTreeViewport'>
@@ -131,77 +151,31 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
                 height={paddedH}
                 viewBox={`0 0 ${paddedW} ${paddedH}`}
               >
-                {layout.edges.map((e) => {
-                  const p = nodePos.get(e.from);
-                  const c = nodePos.get(e.to);
-
-                  if (!p || !c) {
-                    return null;
-                  }
-
-                  const x1 = p.cx;
-                  const y1 = p.bottomY;
-                  const x2 = c.cx;
-                  const y2 = c.topY;
-                  const midY = (y1 + y2) / 2;
-
-                  const d = `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
-
-                  const k = index.edgeKey(e.from, e.to);
-                  const isSelected = selectedEdgeKeys.has(k);
-                  const isActive = activeEdgeKey === k;
-
-                  return (
-                    <path
-                      key={k}
-                      d={d}
-                      className={`exprTreePath ${isSelected ? 'isSelected' : ''} ${isActive ? 'isActive' : ''}`}
-                    />
-                  );
+                {edgePaths.map((p) => {
+                  return <path key={p.key} d={p.d} className={p.className} />;
                 })}
               </svg>
 
-              {layout.nodes.map((n) => {
-                const pos = nodePos.get(n.id);
-                if (!pos) {
-                  return null;
-                }
-
-                const expressionText = n.expr.expressionString;
-                const typeText = String(n.expr.type);
-                const valueText = valueFormatterFn(n.expr.value);
-
-                const isSelected = selectedNodeIds.has(n.id);
-                const isActive = activeNodeId === n.id;
-
+              {nodeVms.map((vm) => {
                 return (
-                  <div
-                    key={n.id}
-                    className={`exprNode ${isSelected ? 'isSelected' : ''} ${isActive ? 'isActive' : ''}`}
-                    style={{
-                      width: nodeWidth,
-                      height: nodeHeight,
-                      left: pos.left,
-                      top: pos.top,
-                    }}
-                  >
+                  <div key={vm.id} className={vm.className} style={vm.style}>
                     <div className='exprNodeHeader'>
                       <div className='exprNodeDot' />
                       <div className='exprNodeHeaderText'>
                         <div className='exprNodeTitleRow'>
-                          <div className='exprNodeTitle' title={expressionText}>
-                            {expressionText}
+                          <div className='exprNodeTitle' title={vm.expressionText}>
+                            {vm.expressionText}
                           </div>
-                          <div className='exprNodeType' title={typeText}>
-                            {typeText}
+                          <div className='exprNodeType' title={vm.typeText}>
+                            {vm.typeText}
                           </div>
                         </div>
                       </div>
                     </div>
 
                     <div className='exprNodeBody'>
-                      {valueText ? (
-                        <pre className='exprNodePre'>{valueText}</pre>
+                      {vm.valueText ? (
+                        <pre className='exprNodePre'>{vm.valueText}</pre>
                       ) : (
                         <div className='exprNodeMuted'>no value</div>
                       )}
