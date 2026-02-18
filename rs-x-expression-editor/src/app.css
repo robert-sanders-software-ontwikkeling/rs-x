@@ -182,3 +182,32 @@ html, body, #root, .app {
   color: #6a7a72;
   cursor: not-allowed;
 }
+
+/* app.css (ADD these at the end; keep your existing CSS unchanged) */
+
+.exprTreeHeaderControls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.exprTreeHeaderZoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9em;
+  opacity: 0.9;
+}
+
+.exprTreeHeaderZoom select {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background-color: #3a3a5a;
+  color: #f0f0f0;
+  border: 1px solid #666;
+  outline: none;
+}
+
+.exprTreeHeaderZoom select:focus {
+  border-color: #888;
+}

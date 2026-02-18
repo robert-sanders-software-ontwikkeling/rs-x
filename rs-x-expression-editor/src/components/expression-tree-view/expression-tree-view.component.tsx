@@ -23,6 +23,9 @@ export interface IExpressionTreeProps {
 
   highlightChanges?: readonly IExpressionChangeHistory[];
   highlightVersion?: number;
+
+  // ✅ NEW: controlled zoom from parent (App header dropdown)
+  zoomPercent?: number;
 }
 
 type NodeId = string;
@@ -767,6 +770,7 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
     style,
     highlightChanges = [],
     highlightVersion = 0,
+    zoomPercent = 100, // ✅ controlled from parent
   } = props;
 
   const [hostRef, hostSize] = useResizeObserverSize<HTMLDivElement>();
@@ -788,12 +792,6 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
     return new HighlightAnimator();
   }, []);
 
-  const zoomPresets = useMemo(() => {
-    return [50, 75, 100, 125, 150, 200, 300] as const;
-  }, []);
-
-  const [zoomPercent, setZoomPercent] = useState<number>(100);
-
   const zoomScale = useMemo(() => {
     return zoomPercent / 100;
   }, [zoomPercent]);
@@ -808,7 +806,6 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
   const panelH = hostSize.height || 0;
 
   // ✅ CENTERING FIX:
-  // compute padding in UN-SCALED space so after scaling the tree remains centered.
   const availableUnscaledW = zoomScale > 0 ? panelW / zoomScale : panelW;
   const availableUnscaledH = zoomScale > 0 ? panelH / zoomScale : panelH;
 
@@ -849,7 +846,17 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
     }
 
     return map;
-  }, [layout.nodes, originX, originY, unitX, unitY, horizontalGap, verticalGap, nodeWidth, nodeHeight]);
+  }, [
+    layout.nodes,
+    originX,
+    originY,
+    unitX,
+    unitY,
+    horizontalGap,
+    verticalGap,
+    nodeWidth,
+    nodeHeight,
+  ]);
 
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<NodeId>>(() => new Set<NodeId>());
   const [selectedEdgeKeys, setSelectedEdgeKeys] = useState<Set<string>>(() => new Set<string>());
@@ -913,26 +920,7 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
 
   return (
     <div ref={hostRef} className={`exprTreeRoot ${className ?? ''}`} style={style}>
-      <div className='exprTreeToolbar'>
-        <label className='exprTreeZoomLabel'>
-          Zoom
-          <select
-            className='exprTreeZoomSelect'
-            value={zoomPercent}
-            onChange={(e) => {
-              setZoomPercent(() => Number(e.target.value));
-            }}
-          >
-            {zoomPresets.map((z) => {
-              return (
-                <option key={z} value={z}>
-                  {z}%
-                </option>
-              );
-            })}
-          </select>
-        </label>
-      </div>
+      {/* ✅ REMOVED: internal zoom toolbar (now owned by App header) */}
 
       <div className='exprTreeViewport'>
         <div className='exprTreeSpacer' style={{ width: scaledW, height: scaledH }}>

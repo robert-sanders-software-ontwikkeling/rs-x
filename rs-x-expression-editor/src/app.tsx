@@ -1,8 +1,12 @@
 import type { OnMount } from '@monaco-editor/react';
 import { InjectionContainer } from '@rs-x/core';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
-import { IExpressionChangeHistory, IExpressionManager, RsXExpressionParserInjectionTokens } from '../../rs-x-expression-parser/lib';
+import {
+  IExpressionChangeHistory,
+  IExpressionManager,
+  RsXExpressionParserInjectionTokens,
+} from '../../rs-x-expression-parser/lib';
 
 import { FaTrash } from 'react-icons/fa';
 
@@ -19,8 +23,9 @@ import { ModelIntellisenseService } from './services/model-intellisense.service'
 
 import './app.css';
 import { ExpressionChangeHistoryView } from './components/expression-change-history-view/expression-change-history-view.component';
-import { ExpressionTree } from './components/expression-tree-view/expression-tree-view.component';
+
 import { ModelEditor } from './components/model-editor/model-editor.component';
+import { ExpressionTree } from './components/expression-tree-view/expression-tree-view.component';
 
 const emptyModel = '(\n\t{\n\n\t}\n)';
 
@@ -46,6 +51,12 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const [currentState, setCurrentState] = useState<IExpressionEditorState>(initialState);
   const [treeHighlight, setTreeHighlight] = useState<readonly IExpressionChangeHistory[]>([]);
   const [treeHighlightVersion, setTreeHighlightVersion] = useState<number>(0);
+
+  // ✅ Zoom owned by App; passed down to ExpressionTree
+  const zoomPresets = useMemo(() => {
+    return [50, 75, 100, 125, 150, 200, 300] as const;
+  }, []);
+  const [treeZoomPercent, setTreeZoomPercent] = useState<number>(100);
 
   const [isRightPanelOpen, setIsRightPanelOpen] = useState<boolean>(() => {
     const selectedModel = initialState.modelsWithExpressions[initialState.selectedModelIndex as number];
@@ -237,7 +248,11 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     });
   };
 
-  const onHistoryChanged = (modelIndex: number, expressionIndex: number, history: IExpressionChangeHistory[][]) => {
+  const onHistoryChanged = (
+    modelIndex: number,
+    expressionIndex: number,
+    history: IExpressionChangeHistory[][]
+  ) => {
     setCurrentState((prev) => {
       return new ExpressionEditorStateBuilder(prev).setExpressionHistory(modelIndex, expressionIndex, history).state;
     });
@@ -256,18 +271,26 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     });
   };
 
-  const onSelectHistoryBatch = (modelIndex: number, expressionIndex: number, selectedChangeSetIndex:number, items: readonly IExpressionChangeHistory[]) => {
+  const onSelectHistoryBatch = (
+    modelIndex: number,
+    expressionIndex: number,
+    selectedChangeSetIndex: number,
+    items: readonly IExpressionChangeHistory[]
+  ) => {
     setCurrentState((prev) => {
-      return new ExpressionEditorStateBuilder(prev).setSelectedChangeHistoryIndex(modelIndex, expressionIndex, selectedChangeSetIndex).state;
+      return new ExpressionEditorStateBuilder(prev)
+        .setSelectedChangeHistoryIndex(modelIndex, expressionIndex, selectedChangeSetIndex)
+        .state;
     });
+
     setTreeHighlight(() => {
-      return [...items]
-    });;
+      return [...items];
+    });
+
     setTreeHighlightVersion((v) => {
       return v + 1;
     });
   };
-
 
   const selectedHistoryCount = selectedExpression?.changeHistory?.length ?? 0;
   const canClearSelectedHistory = selectedExpressionIndex !== null && selectedHistoryCount > 0;
@@ -297,19 +320,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
               <>
                 <Separator className='separator' />
                 <Panel defaultSize={100} minSize={25} className='panel'>
-                  <div className='panel-header panel-header-row'>
-                    <span>Details</span>
-                    <button
-                      type='button'
-                      className='btn'
-                      onClick={() => {
-                        onCloseRightPanel();
-                      }}
-                      title='Close details'
-                    >
-                      Close
-                    </button>
-                  </div>
+                  {/* ❌ REMOVED: Details header */}
 
                   <Group orientation='horizontal' className='panels-container'>
                     <Panel defaultSize={20} minSize={10} className='panel'>
@@ -343,11 +354,9 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                             </button>
                           </div>
 
-                          {/* ✅ CRITICAL: real sized box + absolute scroll host */}
                           <div className='panel-content'>
                             <div className='scroll-host'>
                               <ExpressionChangeHistoryView
-                              
                                 modelIndex={currentState.selectedModelIndex as number}
                                 expressionIndex={selectedModel?.selectedExpressionIndex as number}
                                 expressionInfo={selectedExpression}
@@ -364,13 +373,48 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                     <Separator className='separator' />
 
                     <Panel defaultSize={80} minSize={20} className='panel'>
-                      <div className='panel-header'>Expression Tree</div>
+                      <div className='panel-header panel-header-row'>
+                        <span>Expression Tree</span>
+
+                        <div className='exprTreeHeaderControls'>
+                          <label className='exprTreeHeaderZoom'>
+                            <span>Zoom</span>
+                            <select
+                              value={treeZoomPercent}
+                              onChange={(e) => {
+                                setTreeZoomPercent(() => Number(e.target.value));
+                              }}
+                            >
+                              {zoomPresets.map((z) => {
+                                return (
+                                  <option key={z} value={z}>
+                                    {z}%
+                                  </option>
+                                );
+                              })}
+                            </select>
+                          </label>
+
+                          <button
+                            type='button'
+                            className='btn'
+                            onClick={() => {
+                              onCloseRightPanel();
+                            }}
+                            title='Close details'
+                          >
+                            Close
+                          </button>
+                        </div>
+                      </div>
+
                       <div className='errors-panel'>
                         <ExpressionTree
                           version={selectedExpression.version}
                           root={selectedExpression.expression}
                           highlightChanges={treeHighlight as IExpressionChangeHistory[]}
                           highlightVersion={treeHighlightVersion}
+                          zoomPercent={treeZoomPercent}
                         />
                       </div>
                     </Panel>
