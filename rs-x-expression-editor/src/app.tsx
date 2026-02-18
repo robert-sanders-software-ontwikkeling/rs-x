@@ -2,7 +2,7 @@ import type { OnMount } from '@monaco-editor/react';
 import { InjectionContainer } from '@rs-x/core';
 import React, { useEffect, useState } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
-import { IExpression, IExpressionChangeHistory, IExpressionManager, RsXExpressionParserInjectionTokens } from '../../rs-x-expression-parser/lib';
+import { IExpressionChangeHistory, IExpressionManager, RsXExpressionParserInjectionTokens } from '../../rs-x-expression-parser/lib';
 
 import { FaTrash } from 'react-icons/fa';
 
@@ -18,9 +18,9 @@ import { ExpressionEdtitorStateSerializer } from './services/expression-editor-s
 import { ModelIntellisenseService } from './services/model-intellisense.service';
 
 import './app.css';
-import { ModelEditor } from './components/model-editor/model-editor.component';
-import { ExpressionTree } from './components/expression-tree-view/expression-tree-view.component';
 import { ExpressionChangeHistoryView } from './components/expression-change-history-view/expression-change-history-view.component';
+import { ExpressionTree } from './components/expression-tree-view/expression-tree-view.component';
+import { ModelEditor } from './components/model-editor/model-editor.component';
 
 const emptyModel = '(\n\t{\n\n\t}\n)';
 

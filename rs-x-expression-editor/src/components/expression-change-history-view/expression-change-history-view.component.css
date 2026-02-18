@@ -84,15 +84,6 @@
   white-space: nowrap;
 }
 
-.changeHistoryFlatMeta {
-  font-size: 0.8rem;
-  padding: 2px 9px;
-  border-radius: 999px;
-  border: 1px solid #555a80;
-  background-color: rgba(30, 30, 47, 0.8);
-  flex: 0 0 auto;
-  opacity: 0.95;
-}
 
 .changeHistoryFlatRight {
   display: inline-flex;
