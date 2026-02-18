@@ -142,16 +142,22 @@
   opacity: 0.8;
 }
 
-/* Chevron */
+/* Chevron (indicator only; NOT a toggle) */
 
 .changeSetChevron {
   margin-left: 6px;
-  transition: transform 180ms ease;
+  transition: transform 180ms ease, opacity 180ms ease;
   opacity: 0.75;
 }
 
 .changeSetChevron.isOpen {
   transform: rotate(90deg);
+  opacity: 0.9;
+}
+
+/* optional: show pinned (newest) visually */
+.changeSetChevron.isPinned {
+  opacity: 0.95;
 }
 
 /* =========================================================

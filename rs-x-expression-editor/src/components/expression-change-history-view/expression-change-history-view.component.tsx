@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 
 import { type IExpressionChangeHistory } from '@rs-x/expression-parser';
 import type { IExpressionInfo } from '../../models/model-with-expressions.interface';
@@ -86,7 +86,6 @@ function shortValue(value: unknown): string {
 }
 
 function exprKey(change: IExpressionChangeHistory): string {
-  // match ExpressionIndex style: expressionString + type
   return `${change.expression.expressionString}::${String(change.expression.type)}`;
 }
 
@@ -100,11 +99,9 @@ function pickHeaderChange(args: {
     return null;
   }
 
-  // Prefer: the change item for the selected/root expression (e.g. "a + b")
   if (rootExpression) {
     const rootKey = `${rootExpression.expressionString}::${String(rootExpression.type)}`;
 
-    // scan from end (often the derived/root change is later in the batch)
     for (let i = batchItems.length - 1; i >= 0; i--) {
       const item = batchItems[i];
       if (exprKey(item) === rootKey) {
@@ -113,7 +110,6 @@ function pickHeaderChange(args: {
     }
   }
 
-  // Fallback: last item in the batch (usually the final derived expression)
   return batchItems[batchItems.length - 1] ?? null;
 }
 
@@ -154,14 +150,20 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
   }, [persistedHistory, historyLength, version]);
 
   const clampedSelectedPersistedIndex =
-    historyLength <= 0 || selectedChangeSetIndex < 0 ? -1 : clampIndex(selectedChangeSetIndex, historyLength);
+    historyLength <= 0 || selectedChangeSetIndex < 0
+      ? -1
+      : clampIndex(selectedChangeSetIndex, historyLength);
 
-  // ✅ only used to keep accordion expanded in sync with selectedChangeSetIndex
-  const [expandedPersistedIndex, setExpandedPersistedIndex] = useState<number>(() => clampedSelectedPersistedIndex);
+  // Auto-expand rule:
+  // - if user selected something -> expand that
+  // - otherwise expand the newest (top item in UI)
+  const defaultExpandedPersistedIndex =
+    historyLength > 0 ? historyLength - 1 : -1;
 
-  useEffect(() => {
-    setExpandedPersistedIndex(() => clampedSelectedPersistedIndex);
-  }, [clampedSelectedPersistedIndex]);
+  const expandedPersistedIndex =
+    clampedSelectedPersistedIndex >= 0
+      ? clampedSelectedPersistedIndex
+      : defaultExpandedPersistedIndex;
 
   useReemitSelectionOnHistoryChange({
     expressionInfo,
@@ -187,7 +189,8 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
   });
 
   const onUserSelectPersistedIndex = (persistedIndex: number, items: readonly IExpressionChangeHistory[]) => {
-    onSelectionChanged(modelIndex, expressionIndex, persistedIndex, items);
+    // ✅ no toggle behavior: selecting same item keeps it expanded
+    onSelectionChangedRef.current(modelIndex, expressionIndex, persistedIndex, items);
   };
 
   if (!expressionInfo) {
@@ -208,12 +211,14 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
 
   return (
     <div className='changeHistoryRoot'>
-      {/* Accordion list (newest -> oldest) */}
       <div className='changeHistoryAccordion'>
         <div className='changeHistoryAccordionScroll'>
-          {batches.map((batch) => {
+          {batches.map((batch, uiIndex) => {
             const isActive = batch.persistedIndex === clampedSelectedPersistedIndex;
             const isExpanded = batch.persistedIndex === expandedPersistedIndex;
+
+            // “first change set” = newest = top item in UI
+            const isFirstChangeSet = uiIndex === 0;
 
             const headerChange = pickHeaderChange({
               batchItems: batch.items,
@@ -242,8 +247,8 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
                   type='button'
                   className='changeSetHeader'
                   onClick={() => {
-                    // select + expand
-                    setExpandedPersistedIndex(() => (isExpanded ? -1 : batch.persistedIndex));
+                    // ✅ no collapse toggle:
+                    // selecting same again is fine (keeps expanded)
                     onUserSelectPersistedIndex(batch.persistedIndex, batch.items);
                   }}
                   title={headerExpr}
@@ -260,7 +265,14 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
                     <span className='changeSetOld'>{headerOld}</span>
                     <span className='changeSetArrow'>→</span>
                     <span className='changeSetNew'>{headerNew}</span>
-                    <span className={`changeSetChevron ${isExpanded ? 'isOpen' : ''}`}>▾</span>
+
+                    {/* Chevron is just an indicator, not a toggle */}
+                    <span
+                      className={`changeSetChevron ${isExpanded ? 'isOpen' : ''} ${isFirstChangeSet ? 'isPinned' : ''}`}
+                      title={isFirstChangeSet ? 'Newest change set (always auto-expanded)' : undefined}
+                    >
+                      ▾
+                    </span>
                   </div>
                 </button>
 
