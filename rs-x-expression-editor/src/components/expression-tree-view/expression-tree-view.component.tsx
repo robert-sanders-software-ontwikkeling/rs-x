@@ -30,7 +30,6 @@ export interface IExpressionTreeProps {
 
   highlightChanges?: readonly IExpressionChangeHistory[];
   highlightVersion?: number;
-
   zoomPercent?: number;
 }
 
@@ -95,9 +94,9 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
       return formatValue;
     }
 
-    const vf = new ValueFormatter(valueMaxDepth, valueMaxChars);
+    const valueFormatter = new ValueFormatter(valueMaxDepth, valueMaxChars);
     return (v: unknown) => {
-      return vf.format(v);
+      return valueFormatter.format(v);
     };
   }, [formatValue, valueMaxDepth, valueMaxChars]);
 
@@ -121,7 +120,7 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
     activeEdgeKey,
   });
 
-  const nodeVms = useExpressionTreeNodeVms({
+  const nodeViewModels = useExpressionTreeNodeVms({
     nodes: layout.nodes,
     nodePos,
     nodeWidth,
@@ -156,7 +155,7 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
                 })}
               </svg>
 
-              {nodeVms.map((vm) => {
+              {nodeViewModels.map((vm) => {
                 return (
                   <div key={vm.id} className={vm.className} style={vm.style}>
                     <div className='exprNodeHeader'>
