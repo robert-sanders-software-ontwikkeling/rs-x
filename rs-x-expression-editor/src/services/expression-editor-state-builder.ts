@@ -495,12 +495,7 @@ export class ExpressionEditorStateBuilder {
             });
 
         try {
-            if (index > currentCursorIndex) {
-                this._expressionChangePlayback.play(index, expressionInfo.changeHistory);
-                return;
-            }
-
-            this._expressionChangePlayback.playBackward(index, expressionInfo.changeHistory);
+           this._expressionChangePlayback.play(index, expressionInfo.changeHistory);
         } catch (e) {
             resume();
             throw e;
