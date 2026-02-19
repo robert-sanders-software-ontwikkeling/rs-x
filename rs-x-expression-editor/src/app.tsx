@@ -53,17 +53,12 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const [treeHighlight, setTreeHighlight] = useState<readonly IExpressionChangeHistory[]>([]);
   const [treeHighlightVersion, setTreeHighlightVersion] = useState<number>(0);
 
-  // ✅ Zoom owned by App; passed down to ExpressionTree
   const zoomPresets = useMemo(() => {
-    return [50, 75, 100, 125, 150, 200, 300] as const;
+    return [50, 75, 100, 125, 150, 200, 250, 300] as const;
   }, []);
 
 
-  const [isRightPanelOpen, setIsRightPanelOpen] = useState<boolean>(() => {
-    const selectedModel = initialState.modelsWithExpressions[initialState.selectedModelIndex as number];
-    const selectedExpressionIndex = selectedModel?.selectedExpressionIndex ?? null;
-    return selectedExpressionIndex !== null;
-  });
+
 
   const expressionManager = InjectionContainer.get<IExpressionManager>(
     RsXExpressionParserInjectionTokens.IExpressionManager
@@ -93,19 +88,9 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const isEditing =
     currentState.addingModel || currentState.addingExpression;
 
-  useEffect(() => {
-    if (isEditing) {
-      return;
-    }
-    if (selectedExpressionIndex !== null) {
-      setIsRightPanelOpen(() => {
-        return true;
-      });
-    }
-  }, [selectedExpressionIndex, isEditing]);
 
   const shouldShowRightDetailsPanel =
-    !isEditing && selectedExpressionIndex !== null && isRightPanelOpen;
+    !isEditing && selectedExpressionIndex !== null && currentState.showExpressionTreeView;
 
   const shouldShowLeftListPanel =
     currentState.addingModel ||
@@ -135,6 +120,13 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     ModelIntellisenseService.getInstance().model =
       currentState.modelsWithExpressions[modelIndex]?.model;
   };
+
+  const setShowExpressionTreeView = (show) => {
+    setCurrentState((prev) => {
+        return new ExpressionEditorStateBuilder(prev).setShowExpressionTreeViewt(show).state;
+      });
+  };
+  
 
   const getSelectedModelString = (): string | undefined => {
     return selectedModel?.modelString;
@@ -213,16 +205,13 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
       return new ExpressionEditorStateBuilder(prev).selectExpression(modelIndex, index).state;
     });
 
-    setIsRightPanelOpen(() => {
-      return true;
-    });
+     setShowExpressionTreeView(true);
+
   };
 
   const onViewExpression = (modelIndex: number, index: number) => {
     onSelectExpression(modelIndex, index);
-    setIsRightPanelOpen(() => {
-      return true;
-    });
+    setShowExpressionTreeView(true);
   };
 
   const onDeleteExpression = (modelIndex: number, index: number) => {
@@ -244,9 +233,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   };
 
   const onCloseRightPanel = () => {
-    setIsRightPanelOpen(() => {
-      return false;
-    });
+    setShowExpressionTreeView(false);
   };
 
   const onHistoryChanged = (
@@ -294,9 +281,9 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     });
   };
 
-  
+
   const setTreeZoomPercent = (treeZoomPercent: number) => {
-     setCurrentState((prev) => {
+    setCurrentState((prev) => {
       return new ExpressionEditorStateBuilder(prev)
         .setTreeZoomPercent(treeZoomPercent)
         .state;
@@ -373,7 +360,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                                 expressionInfo={selectedExpression}
                                 selectedChangeSetIndex={selectedExpression.selecteChangeHistoryIndex}
                                 onHistoryChange={onHistoryChanged}
-                                onSelectionChanged={onSelectHistoryBatch}       
+                                onSelectionChanged={onSelectHistoryBatch}
                               />
                             </div>
                           </div>

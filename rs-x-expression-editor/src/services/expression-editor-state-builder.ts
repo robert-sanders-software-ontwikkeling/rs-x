@@ -40,6 +40,16 @@ export class ExpressionEditorStateBuilder {
         return this;
     }
 
+    public setShowExpressionTreeViewt(showExpressionTreeView: boolean): this {
+         this._state = {
+            ...this._state,
+            showExpressionTreeView
+        }
+
+        return this;
+    }
+
+
     public deleteModel(modelIndex: number): this {
         const models = this._state.modelsWithExpressions;
 

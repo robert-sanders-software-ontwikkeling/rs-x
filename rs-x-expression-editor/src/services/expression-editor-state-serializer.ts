@@ -35,6 +35,7 @@ interface ISerializedModelWithExpressions {
 interface ISerializedExpressionEditorState {
     error?: string;
     treeZoomPercent?: number;
+    showExpressionTreeView?: boolean;
     addingModel?: boolean;
     addingExpression?: boolean;
     selectedModelIndex?: number;
@@ -71,6 +72,7 @@ export class ExpressionEdtitorStateSerializer {
         const serializedState: ISerializedExpressionEditorState = {
             error: state.error,
             treeZoomPercent:  state.treeZoomPercent,
+            showExpressionTreeView: state.showExpressionTreeView,
             addingExpression: state.addingExpression,
             addingModel: state.addingModel,
             selectedModelIndex: state.selectedModelIndex,
@@ -102,6 +104,7 @@ export class ExpressionEdtitorStateSerializer {
         if (!deserializeState) {
             return { 
 
+                showExpressionTreeView: false,
                 treeZoomPercent: 100,
                 modelsWithExpressions: [] };
         }
@@ -109,6 +112,7 @@ export class ExpressionEdtitorStateSerializer {
         return {
             error: deserializeState.error,
             treeZoomPercent: deserializeState.treeZoomPercent ?? 100,
+            showExpressionTreeView: deserializeState.showExpressionTreeView ?? false,
             addingModel: deserializeState.addingModel,
             addingExpression: deserializeState.addingExpression,
             selectedModelIndex: deserializeState.selectedModelIndex,

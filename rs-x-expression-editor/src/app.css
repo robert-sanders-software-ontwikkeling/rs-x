@@ -142,7 +142,7 @@ html, body, #root, .app {
   min-height: 0;
   min-width: 0;
 
-  overflow: auto;      /* ✅ scrollbar here */
+  overflow: auto;     
   overflow-x: hidden;
 
   padding: 6px;
