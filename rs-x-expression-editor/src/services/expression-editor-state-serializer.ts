@@ -6,7 +6,8 @@ import {
 } from '@rs-x/expression-parser';
 import { InjectionContainer, type IObjectStorage, RsXCoreInjectionTokens } from '@rs-x/core';
 import type { IExpressionEditorState } from '../models/expression-editor-state.interface';
-import { IExpressionChangePlayback } from '../../../rs-x-expression-parser/lib/expression-change-playback/expression-change-playback.interface';
+import type { IExpressionChangePlayback } from '@rs-x/expression-parser';
+import { take } from 'rxjs/operators';
 
 const stateId = '1513bdf8-c3fc-4f74-ad4f-e670724fc625';
 
@@ -39,13 +40,17 @@ interface ISerializedExpressionEditorState {
     modelsWithExpressions: ISerializedModelWithExpressions[];
 }
 
+function isValidSelectionIndex(args: { index: number; historyLength: number }): boolean {
+    const { index, historyLength } = args;
+    return Number.isFinite(index) && index >= 0 && index < historyLength;
+}
+
 export class ExpressionEdtitorStateSerializer {
     private readonly _objectStorage: IObjectStorage =
         InjectionContainer.get(RsXCoreInjectionTokens.IObjectStorage);
 
     private readonly _expressionChangePlayback: IExpressionChangePlayback =
         InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionChangePlayback);
-
 
     private readonly _expressionFactory: IExpressionFactory =
         InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionFactory);
@@ -85,7 +90,7 @@ export class ExpressionEdtitorStateSerializer {
             }),
         };
 
-        return this._objectStorage.set(stateId, serializedState);
+        await this._objectStorage.set(stateId, serializedState);
     }
 
     public async deserialize(): Promise<IExpressionEditorState> {
@@ -93,9 +98,7 @@ export class ExpressionEdtitorStateSerializer {
             await this._objectStorage.get<ISerializedExpressionEditorState>(stateId);
 
         if (!deserializeState) {
-            return {
-                modelsWithExpressions: [],
-            };
+            return { modelsWithExpressions: [] };
         }
 
         return {
@@ -104,22 +107,53 @@ export class ExpressionEdtitorStateSerializer {
             addingExpression: deserializeState.addingExpression,
             selectedModelIndex: deserializeState.selectedModelIndex,
             modelsWithExpressions: deserializeState.modelsWithExpressions.map((modelWithExpressions) => {
+                // NOTE: executing user-provided modelString is dangerous; assuming you control input.
                 const model = new Function(`return ${modelWithExpressions.modelString}`)();
 
+                const selectedExpressionIndex = modelWithExpressions.selectedExpressionIndex;
 
                 return {
-    
                     name: modelWithExpressions.name,
                     model,
                     modelString: modelWithExpressions.modelString,
-                    selectedExpressionIndex: modelWithExpressions.selectedExpressionIndex,
+                    selectedExpressionIndex,
                     editingExpressionIndex: modelWithExpressions.editingExpressionIndex,
                     expressions: modelWithExpressions.expressions.map((exprInfo, index) => {
                         const rootExpression = this._expressionFactory.create(model, exprInfo.expression);
-                        const changeHistory =  this.deserializeHistory(rootExpression, exprInfo.changeHistory ?? []);
-                        if(index === modelWithExpressions.selectedExpressionIndex && exprInfo.selecteChangeHistoryIndex >= 0) {
-                            this._expressionChangePlayback.play(exprInfo.selecteChangeHistoryIndex,changeHistory);
+
+                        const changeHistory = this.deserializeHistory(
+                            rootExpression,
+                            exprInfo.changeHistory ?? []
+                        );
+
+                        // ✅ Bullet-proof: only auto-play for the currently selected expression,
+                        // and only if selection index is valid and history is non-empty.
+                        const shouldAutoPlay =
+                            selectedExpressionIndex !== null &&
+                            index === selectedExpressionIndex &&
+                            isValidSelectionIndex({
+                                index: exprInfo.selecteChangeHistoryIndex,
+                                historyLength: changeHistory.length,
+                            });
+
+                        if (shouldAutoPlay) {
+                            // Wait until expression is initialized (first changed emit).
+                            // take(1) auto-unsubscribes, so no leaks / no duplicate plays.
+                            rootExpression.changed
+                                .pipe(take(1))
+                                .subscribe(() => {
+                                    try {
+                                        this._expressionChangePlayback.play(
+                                            exprInfo.selecteChangeHistoryIndex,
+                                            changeHistory
+                                        );
+                                    } catch {
+                                        // swallow: we don't want deserialize to crash the whole app
+                                        // optionally log
+                                    }
+                                });
                         }
+
                         return {
                             name: exprInfo.name,
                             version: 0,

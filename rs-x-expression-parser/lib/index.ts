@@ -4,6 +4,7 @@ export * from './expression-cache';
 export * from './expression-change-playback';
 export * from './expression-change-tracker';
 export * from './expression-factory';
+export * from './expression-id';
 export * from './expression-observer';
 export * from './expression-services';
 export * from './expressions';

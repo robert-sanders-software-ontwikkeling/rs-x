@@ -1,4 +1,4 @@
-import { IExpression, RsXExpressionParserInjectionTokens } from '@rs-x/expression-parser';
+import { IExpression, IExpressionChangeTransactionManager, RsXExpressionParserInjectionTokens } from '@rs-x/expression-parser';
 import { IExpressionEditorState } from '../models/expression-editor-state.interface';
 import { IExpressionInfo } from '../models/model-with-expressions.interface';
 import { InjectionContainer, Type } from '../../../rs-x-core/lib';
@@ -10,9 +10,11 @@ export class ExpressionEditorStateBuilder {
 
     private readonly _expressionChangePlayback: IExpressionChangePlayback;
     private readonly _expressionChangeTrackerManager: IExpressionChangeTrackerManager
+    private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager
     constructor(private _state: IExpressionEditorState) {
         this._expressionChangePlayback = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionChangePlayback);
         this._expressionChangeTrackerManager = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionChangeTrackerManager);
+        this._expressionChangeTransactionManager = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
     }
 
     public get state(): IExpressionEditorState {
@@ -177,7 +179,12 @@ export class ExpressionEditorStateBuilder {
             return this;
         }
 
-        this.updateModel(currentModel.model, model);
+        this._expressionChangeTransactionManager.suspend();
+        try {
+             this.updateModel(currentModel.model, model);
+        } finally {
+            this._expressionChangeTransactionManager.continue();
+        }
 
         const modelsWithExpressions = [...this._state.modelsWithExpressions];
 
@@ -367,10 +374,6 @@ export class ExpressionEditorStateBuilder {
             return this;
         }
 
-        // ✅ Validate / clamp selected index against new history
-        // Rules:
-        // - If history is empty => -1
-        // - Else clamp into [0 .. history.length - 1]
         const historyLength = clonedHistory.length;
 
         let selectedChangeHistoryIndex = previousExpressionInfo.selecteChangeHistoryIndex;
@@ -441,7 +444,6 @@ export class ExpressionEditorStateBuilder {
     }
 
     private updateModel(target: object, source: object): void {
-
         Type.walkObjectTopToBottom(
             target,
             (parent, key, value) => {
@@ -454,7 +456,7 @@ export class ExpressionEditorStateBuilder {
                 }
             },
             false
-        )
+        );
     }
 
     private replayChangeHistory(
@@ -495,7 +497,8 @@ export class ExpressionEditorStateBuilder {
             });
 
         try {
-           this._expressionChangePlayback.play(index, expressionInfo.changeHistory);
+
+            this._expressionChangePlayback.play(index, expressionInfo.changeHistory);
         } catch (e) {
             resume();
             throw e;

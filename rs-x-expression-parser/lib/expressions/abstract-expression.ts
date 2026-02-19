@@ -24,16 +24,19 @@ import {
 
 
 
+
 export abstract class AbstractExpression<
   T = unknown,
   PT = unknown,
 > implements IExpression<T> {
+
   protected readonly _childExpressions: AbstractExpression[] = [];
+  protected _value: T | undefined;
+  protected _oldValue: unknown;
   private readonly _changed = new ReplaySubject<IExpression>(1);
   private _parent: AbstractExpression<PT> | undefined;
-  protected _value: T | undefined;
+  private _id!: string;
   private _isDisposed = false;
-  protected _oldValue: unknown;
   private _commitedSubscription: Subscription | undefined;
   private _owner: IDisposableOwner | undefined;
   private _services!: IExpressionServices;
@@ -51,6 +54,13 @@ export abstract class AbstractExpression<
     this.addChildExpressions(
       childExpressions.filter((childExpression) => childExpression),
     );
+  }
+
+  public get id(): string {
+    if (!this._id) {
+      this._id = this._services?.expressionIdProvider?.getId?.(this);
+    }
+    return this._id;
   }
 
   public get changeHook(): ChangeHook | undefined {
@@ -242,4 +252,5 @@ export abstract class AbstractExpression<
     this._childExpressions.push(...expressions);
     expressions.forEach((expression) => (expression._parent = this));
   }
+
 }

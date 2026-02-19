@@ -1,8 +1,11 @@
-import { IExpression, IExpressionChangeHistory, IExpressionChangeTracker } from '@rs-x/expression-parser';
+import {
+  type IExpression,
+  type IExpressionChangeHistory,
+  type IExpressionChangeTracker,
+} from '@rs-x/expression-parser';
 import { useEffect, useRef } from 'react';
-
 import { Subscription } from 'rxjs';
-import { IExpressionInfo } from '../../../models/model-with-expressions.interface';
+import type { IExpressionInfo } from '../../../models/model-with-expressions.interface';
 import { ExpressionChangeTrackerFactory } from '../../../services/expression-change-tracker.factory';
 
 function defer(fn: () => void): void {
@@ -23,7 +26,6 @@ function expressionItemKey(item: IExpressionChangeHistory): string {
 }
 
 function stackKey(stack: readonly IExpressionChangeHistory[]): string {
-  // Order matters
   return stack.map((x) => expressionItemKey(x)).join('|');
 }
 
@@ -42,14 +44,22 @@ function lastPersistedStackKey(info: IExpressionInfo | null | undefined): string
 export function useExpressionChangeHistoryTracker(args: {
   expressionInfo: IExpressionInfo | null | undefined;
   expression: IExpression | null | undefined;
+
+  /**
+   * Kept for API compatibility / other logic, but MUST NOT drive tracker lifecycle.
+   * Tracker should only be recreated when `expression` instance changes.
+   */
   version: number | string;
+
   modelIndex: number;
   expressionIndex: number;
+
   onHistoryChange: (
     modelIndex: number,
     expressionIndex: number,
     nextHistory: IExpressionChangeHistory[][]
   ) => void;
+
   onSelectionChanged: (
     modelIndex: number,
     expressionIndex: number,
@@ -60,7 +70,7 @@ export function useExpressionChangeHistoryTracker(args: {
   const {
     expressionInfo,
     expression,
-    version,
+    version, // eslint-disable-line @typescript-eslint/no-unused-vars
     modelIndex,
     expressionIndex,
     onHistoryChange,
@@ -70,17 +80,20 @@ export function useExpressionChangeHistoryTracker(args: {
   const subscriptionRef = useRef<Subscription | null>(null);
   const trackerRef = useRef<IExpressionChangeTracker | null>(null);
 
+  // ✅ which expression instance is currently tracked
+  const trackedExpressionRef = useRef<IExpression | null>(null);
+
+  // latest refs to avoid resubscribing on changing props
   const expressionInfoRef = useLatestRef(expressionInfo);
   const onHistoryChangeRef = useLatestRef(onHistoryChange);
   const onSelectionChangedRef = useLatestRef(onSelectionChanged);
   const modelIndexRef = useLatestRef(modelIndex);
   const expressionIndexRef = useLatestRef(expressionIndex);
 
-  // remembers what we already appended to prevent duplicates
+  // prevent duplicates
   const lastEmittedStackKeyRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    // cleanup previous subscription/tracker
+  const disposeCurrent = (): void => {
     if (subscriptionRef.current) {
       subscriptionRef.current.unsubscribe();
       subscriptionRef.current = null;
@@ -89,21 +102,34 @@ export function useExpressionChangeHistoryTracker(args: {
       trackerRef.current.dispose();
       trackerRef.current = null;
     }
-
+    trackedExpressionRef.current = null;
     lastEmittedStackKeyRef.current = null;
+  };
 
+  useEffect(() => {
+    // expression removed => teardown
     if (!expression) {
+      disposeCurrent();
       return;
     }
 
+    // already tracking this instance => do nothing (no dispose)
+    if (trackedExpressionRef.current === expression && trackerRef.current && subscriptionRef.current) {
+      return;
+    }
+
+    // new expression instance => switch tracker
+    disposeCurrent();
+
     const tracker = ExpressionChangeTrackerFactory.create(expression);
     trackerRef.current = tracker;
+    trackedExpressionRef.current = expression;
 
-    // When we (re)subscribe, `changed` emits current value immediately.
-    // We consider it a "replay" if it matches the last persisted stack.
+    // When subscribing, tracker emits current state immediately:
+    // treat it as replay if it equals the last persisted stack
     const persistedLastKeyAtSubscribe = lastPersistedStackKey(expressionInfoRef.current);
 
-    const sub = tracker.changed.subscribe((stack) => {
+    subscriptionRef.current = tracker.changed.subscribe((stack) => {
       const info = expressionInfoRef.current;
       if (!info) {
         return;
@@ -112,10 +138,9 @@ export function useExpressionChangeHistoryTracker(args: {
       const nextKey = stackKey(stack);
       const persistedLastKeyNow = lastPersistedStackKey(info);
 
-      // 1) Drop immediate replay that equals last persisted stack
-      // 2) Drop duplicates if the tracker emits the same stack multiple times
       const alreadyEmitted = lastEmittedStackKeyRef.current === nextKey;
-      const equalsPersistedLast = persistedLastKeyNow === nextKey || persistedLastKeyAtSubscribe === nextKey;
+      const equalsPersistedLast =
+        persistedLastKeyNow === nextKey || persistedLastKeyAtSubscribe === nextKey;
 
       if (alreadyEmitted || equalsPersistedLast) {
         lastEmittedStackKeyRef.current = nextKey;
@@ -142,22 +167,11 @@ export function useExpressionChangeHistoryTracker(args: {
       });
     });
 
-    subscriptionRef.current = sub;
-
     return () => {
-      if (subscriptionRef.current) {
-        subscriptionRef.current.unsubscribe();
-        subscriptionRef.current = null;
-      }
-      if (trackerRef.current) {
-        trackerRef.current.dispose();
-        trackerRef.current = null;
-      }
+      // unmount / expression changes => teardown
+      disposeCurrent();
     };
-  }, [expression, version]);
+  }, [expression]); // ✅ ONLY expression drives lifecycle
 
-  return {
-    trackerRef,
-    subscriptionRef,
-  };
+  return { trackerRef, subscriptionRef };
 }

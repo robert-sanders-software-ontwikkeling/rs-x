@@ -42,6 +42,8 @@ import { MapKeyOwnerResolver } from './identifier-owner-resolver/map-key-owner-r
 import { PropertyOwnerResolver } from './identifier-owner-resolver/property-owner-resolver';
 import { JsEspreeExpressionParser } from './js-espree-expression-parser';
 import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
+import { IExpressionIdProvider } from './expression-id/expression-id-provider.interface';
+import { ExpressionIdProvider } from './expression-id/expression-id-provider';
 
 InjectionContainer.load(RsXStateManagerModule);
 
@@ -103,14 +105,19 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
     )
     .to(ExpressionChangePlayback)
     .inSingletonScope();
-
-    options
+  options
     .bind<IExpressionChangeTrackerManager>(
       RsXExpressionParserInjectionTokens.IExpressionChangeTrackerManager,
     )
     .to(ExpressionChangeTrackerManager)
     .inSingletonScope();
 
+  options
+    .bind<IExpressionIdProvider>(
+      RsXExpressionParserInjectionTokens.IExpressionIdProvider,
+    )
+    .to(ExpressionIdProvider)
+    .inSingletonScope();
 
   registerMultiInjectServices(
     options,

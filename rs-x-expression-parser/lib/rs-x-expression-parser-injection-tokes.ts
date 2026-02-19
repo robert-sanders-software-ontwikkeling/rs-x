@@ -19,5 +19,6 @@ export const RsXExpressionParserInjectionTokens = {
   IExpressionServices: Symbol('IExpressionServices'),
   ExpressiomMetadata: Symbol('ExpressiomMetadata'),
   IExpressionChangePlayback: Symbol('IExpressionChangePlayback'),
-  IExpressionChangeTrackerManager: Symbol('IExpressionChangeTrackerManager')
+  IExpressionChangeTrackerManager: Symbol('IExpressionChangeTrackerManager'),
+  IExpressionIdProvider: Symbol('IExpressionIdProvider')
 };

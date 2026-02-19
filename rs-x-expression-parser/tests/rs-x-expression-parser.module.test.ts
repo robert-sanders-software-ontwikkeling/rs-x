@@ -42,6 +42,7 @@ import {
 import { RsXExpressionParserInjectionTokens } from '../lib/rs-x-expression-parser-injection-tokes';
 import { ExpressionChangePlayback } from '../lib/expression-change-playback/expression-change-playback';
 import { ExpressionChangeTrackerManager } from '../lib/expression-change-tracker/expression-change-tracker-manager';
+import { ExpressionIdProvider } from '../lib/expression-id/expression-id-provider';
 
 describe('RsXExpressionParserModule tests', () => {
   beforeAll(async () => {
@@ -333,7 +334,7 @@ describe('RsXExpressionParserModule tests', () => {
     expect(a1).toBe(a2);
   });
 
-   it('can get instance of IExpressionChangeTrackerManager', () => {
+  it('can get instance of IExpressionChangeTrackerManager', () => {
     const actual = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionChangeTrackerManager,
     );
@@ -346,6 +347,24 @@ describe('RsXExpressionParserModule tests', () => {
     );
     const a2 = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionChangeTrackerManager,
+    );
+    expect(a1).toBe(a2);
+  });
+
+
+  it('can get instance of IExpressionIdProvider', () => {
+    const actual = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionIdProvider,
+    );
+    expect(actual).toBeInstanceOf(ExpressionIdProvider);
+  });
+
+  it('IExpressionIdProvider instance is a singleton', () => {
+    const a1 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionIdProvider,
+    );
+    const a2 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionIdProvider,
     );
     expect(a1).toBe(a2);
   });

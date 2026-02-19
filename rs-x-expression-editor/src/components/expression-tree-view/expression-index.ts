@@ -30,7 +30,12 @@ export class ExpressionIndex {
     }
 
     public exprKey(expr: IExpression): string {
-        return `${expr.expressionString}::${String(expr.type)}`;
+        console.log(`${expr.expressionString}: ${expr.id}`);
+        if (!expr.id) {
+            throw new Error('ExpressionIndex: expr.id is not available (expression not initialized)');
+        }
+
+        return expr.id;
     }
 
     public resolveNodeId(expr: IExpression): NodeId | null {
