@@ -1,77 +1,108 @@
-import { Editor, OnMount } from '@monaco-editor/react';
+import { Editor, type OnMount } from '@monaco-editor/react';
 import type * as monaco from 'monaco-editor';
 import React, { useState } from 'react';
 import { FaCheck, FaTimes } from 'react-icons/fa';
 
+import './ts-editor.component.css';
+
 export interface TSEditorProps {
-    onMount?: OnMount;
-    valueChange?: (value: string | undefined) => void;
-    save: (name: string, value: string) => void
-    cancel: () => void,
-    header: string;
-    name?: string,
-    value?: string;
-    options?: monaco.editor.IStandaloneEditorConstructionOptions
+  onMount?: OnMount;
+  valueChange?: (value: string | undefined) => void;
+  save: (name: string, value: string) => void;
+  cancel: () => void;
+  header: string;
+  name?: string;
+  value?: string;
+  options?: monaco.editor.IStandaloneEditorConstructionOptions;
 }
 
-export const TSEditor: React.FC<TSEditorProps> = ({ header, name, value, onMount, valueChange, save, cancel, options }) => {
-    const [currentName, setCurrentName] = useState(name ?? '');
-    const [currenValue, setCurrentValue] = useState<string | undefined>(value ?? '');
-    const isSaveDisabled = !currentName?.trim() || !currenValue?.trim();
+export const TSEditor: React.FC<TSEditorProps> = ({
+  header,
+  name,
+  value,
+  onMount,
+  valueChange,
+  save,
+  cancel,
+  options,
+}) => {
+  const [currentName, setCurrentName] = useState(name ?? '');
+  const [currentValue, setCurrentValue] = useState<string>(value ?? '');
 
-    const onSave = () => {
-        if (currentName && currenValue) {
-            try {
-                save(currentName, currenValue);
-            } catch (e) {
-                console.log(e);
-            }
-        }
-    };
+  // ✅ Name is optional now; only editor content disables Save
+  const isSaveDisabled = !currentValue.trim();
 
-    const onValueChange = (value: string | undefined) => {
-        setCurrentValue(value);
-        valueChange?.(value)
-    };
+  const onSave = () => {
+    if (!currentValue.trim()) {
+      return;
+    }
 
-    const onCancel = () => {
-        cancel();
-    };
+    // ✅ If name is empty, use the first line of the editor as default name
+    const fallbackName = currentValue.split('\n')[0]?.trim() ?? '';
+    const finalName = currentName.trim() || fallbackName;
 
-    return (
-        <>
-            <div className='top-bar'>
-                <div className="input-group">
-                    <label htmlFor="name">Name:</label>
-                    <input
-                        id="name"
-                        type="text"
-                        value={name}
-                        onChange={(e) => setCurrentName(e.target.value)}
-                        required
-                        placeholder="Enter name"
-                    />
-                </div>
-                <button className='btn save-btn' disabled={isSaveDisabled} onClick={onSave}>
-                    <FaCheck /> Save
-                </button>
-                <button className='btn cancel-btn' onClick={onCancel}>
-                    <FaTimes /> Cancel
-                </button>
-            </div>
-            <div className='panel-header'>{header}</div>
+    save(finalName, currentValue);
+  };
 
-            <div className='editor-wrapper'>
-                <Editor
-                    theme='vs-dark'
-                    height='100%'
-                    defaultLanguage='typescript'
-                    value={value}
-                    options={options}
-                    onChange={onValueChange}
-                    onMount={onMount}
-                />
-            </div>
-        </>
-    );
-}
+  const onValueChange = (next: string | undefined) => {
+    const nextValue = next ?? '';
+    setCurrentValue(nextValue);
+    valueChange?.(next);
+  };
+
+  return (
+    <>
+      <div className='tsEditorHeader panel-header'>
+        <div className='tsEditorHeaderLeft'>
+          <div className='tsEditorTitle'>{header}</div>
+
+          <div className='tsEditorInputGroup'>
+            <label className='tsEditorLabel' htmlFor='tsEditorName'>
+              Name
+            </label>
+            <input
+              id='tsEditorName'
+              className='tsEditorInput'
+              type='text'
+              value={currentName}
+              onChange={(e) => { setCurrentName(e.target.value); }}
+              // ✅ Placeholder mirrors Monaco value (only meaningful when input is empty)
+              placeholder={currentValue.trim() || 'Enter name'}
+            />
+          </div>
+        </div>
+
+        <div className='tsEditorHeaderRight'>
+          <button
+            type='button'
+            className='tsEditorBtn tsEditorBtnSave me-commit'
+            disabled={isSaveDisabled}
+            onClick={() => { onSave(); }}
+          >
+            <FaCheck /> Save
+          </button>
+
+          <button
+            type='button'
+            className='tsEditorBtn tsEditorBtnCancel me-cancel'
+            onClick={() => { cancel(); }}
+          >
+            <FaTimes /> Cancel
+          </button>
+        </div>
+      </div>
+
+      <div className='editor-wrapper'>
+        <Editor
+          theme='vs-dark'
+          height='100%'
+          defaultLanguage='typescript'
+          value={currentValue}
+          options={options}
+          onChange={onValueChange}
+          onMount={onMount}
+        />
+      </div>
+    </>
+  );
+};
