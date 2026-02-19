@@ -57,7 +57,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const zoomPresets = useMemo(() => {
     return [50, 75, 100, 125, 150, 200, 300] as const;
   }, []);
-  const [treeZoomPercent, setTreeZoomPercent] = useState<number>(100);
+
 
   const [isRightPanelOpen, setIsRightPanelOpen] = useState<boolean>(() => {
     const selectedModel = initialState.modelsWithExpressions[initialState.selectedModelIndex as number];
@@ -272,6 +272,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     });
   };
 
+
   const onSelectHistoryBatch = (
     modelIndex: number,
     expressionIndex: number,
@@ -290,6 +291,15 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
 
     setTreeHighlightVersion((v) => {
       return v + 1;
+    });
+  };
+
+  
+  const setTreeZoomPercent = (treeZoomPercent: number) => {
+     setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev)
+        .setTreeZoomPercent(treeZoomPercent)
+        .state;
     });
   };
 
@@ -323,8 +333,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
               <>
                 <Separator className='separator' />
                 <Panel defaultSize={100} minSize={25} className='panel'>
-                  {/* ❌ REMOVED: Details header */}
-
                   <Group orientation='horizontal' className='panels-container'>
                     <Panel defaultSize={20} minSize={10} className='panel'>
                       <Group orientation='vertical' className='panel-stack'>
@@ -389,9 +397,9 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                           <label className='exprTreeHeaderZoom'>
                             <span>Zoom</span>
                             <select
-                              value={treeZoomPercent}
+                              value={currentState.treeZoomPercent}
                               onChange={(e) => {
-                                setTreeZoomPercent(() => Number(e.target.value));
+                                setTreeZoomPercent(Number(e.target.value));
                               }}
                             >
                               {zoomPresets.map((z) => {
@@ -422,7 +430,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                           root={selectedExpression.expression}
                           highlightChanges={treeHighlight as IExpressionChangeHistory[]}
                           highlightVersion={treeHighlightVersion}
-                          zoomPercent={treeZoomPercent}
+                          zoomPercent={currentState.treeZoomPercent}
                         />
                       </div>
                     </Panel>

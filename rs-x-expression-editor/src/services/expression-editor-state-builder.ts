@@ -1,10 +1,10 @@
 import { IExpression, IExpressionChangeTransactionManager, RsXExpressionParserInjectionTokens } from '@rs-x/expression-parser';
-import { IExpressionEditorState } from '../models/expression-editor-state.interface';
-import { IExpressionInfo } from '../models/model-with-expressions.interface';
+import { catchError, finalize, skip, take, throwError, timeout } from 'rxjs';
 import { InjectionContainer, Type } from '../../../rs-x-core/lib';
 import { IExpressionChangePlayback } from '../../../rs-x-expression-parser/lib/expression-change-playback/expression-change-playback.interface';
 import { IExpressionChangeHistory, IExpressionChangeTrackerManager } from '../../../rs-x-expression-parser/lib/expression-change-tracker';
-import { catchError, EMPTY, finalize, skip, take, throwError, timeout } from 'rxjs';
+import { IExpressionEditorState } from '../models/expression-editor-state.interface';
+import { IExpressionInfo } from '../models/model-with-expressions.interface';
 
 export class ExpressionEditorStateBuilder {
 
@@ -25,6 +25,16 @@ export class ExpressionEditorStateBuilder {
         this._state = {
             ...this._state,
             error
+        }
+
+        return this;
+    }
+
+    public setTreeZoomPercent(treeZoomPercent: number): this {
+
+         this._state = {
+            ...this._state,
+            treeZoomPercent
         }
 
         return this;

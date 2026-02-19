@@ -34,6 +34,7 @@ interface ISerializedModelWithExpressions {
 
 interface ISerializedExpressionEditorState {
     error?: string;
+    treeZoomPercent?: number;
     addingModel?: boolean;
     addingExpression?: boolean;
     selectedModelIndex?: number;
@@ -69,6 +70,7 @@ export class ExpressionEdtitorStateSerializer {
     public async serialize(state: IExpressionEditorState): Promise<void> {
         const serializedState: ISerializedExpressionEditorState = {
             error: state.error,
+            treeZoomPercent:  state.treeZoomPercent,
             addingExpression: state.addingExpression,
             addingModel: state.addingModel,
             selectedModelIndex: state.selectedModelIndex,
@@ -98,11 +100,15 @@ export class ExpressionEdtitorStateSerializer {
             await this._objectStorage.get<ISerializedExpressionEditorState>(stateId);
 
         if (!deserializeState) {
-            return { modelsWithExpressions: [] };
+            return { 
+
+                treeZoomPercent: 100,
+                modelsWithExpressions: [] };
         }
 
         return {
             error: deserializeState.error,
+            treeZoomPercent: deserializeState.treeZoomPercent ?? 100,
             addingModel: deserializeState.addingModel,
             addingExpression: deserializeState.addingExpression,
             selectedModelIndex: deserializeState.selectedModelIndex,

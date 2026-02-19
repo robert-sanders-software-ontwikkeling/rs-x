@@ -6,5 +6,6 @@ export interface IExpressionEditorState  {
     addingModel?: boolean;
     addingExpression?: boolean;
     selectedModelIndex?: number;
+    treeZoomPercent: number;
     modelsWithExpressions:IModelWithExpressions[]
 }
