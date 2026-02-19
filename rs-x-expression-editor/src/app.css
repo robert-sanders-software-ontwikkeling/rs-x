@@ -1,4 +1,12 @@
-/* app.css */
+/* =========================================================
+   GLOBAL FIX (prevents header overflow/clipping)
+========================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
 /* =========================================================
    Base
@@ -31,8 +39,6 @@ body,
   height: 100%;
   width: 100%;
   display: flex;
-
-  /* nested panels fix */
   min-height: 0;
   min-width: 0;
 }
@@ -42,7 +48,6 @@ body,
   flex-direction: column;
   height: 100%;
   width: 100%;
-
   flex: 1;
   min-height: 0;
   min-width: 0;
@@ -51,22 +56,24 @@ body,
 .panel {
   display: flex;
   flex-direction: column;
+
+  /* important: panel can clip children if they overflow */
   overflow: hidden;
+
   background-color: #2b2b3b;
   border-radius: 10px;
   margin: 2px;
   box-shadow: 0 1px 10px rgba(0, 0, 0, 0.35);
-
   min-height: 0;
   min-width: 0;
 }
 
 /* =========================================================
-   Header (fixed layout for editor header + nicer buttons)
+   Panel Header
 ========================================================= */
 
 .panel-header {
-  padding: 10px 12px;
+  padding: 10px 14px;
   font-weight: 700;
   background-color: #323248;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -77,76 +84,23 @@ body,
   gap: 12px;
 
   color: #f0f0f0;
+
+  /* ✅ KEY: allow shrinking inside flex layouts */
+  min-width: 0;
+
+  /* ✅ KEY: ensure padding doesn't make it overflow */
+  width: 100%;
 }
 
-/* Use this header when there are controls (buttons/input/etc) */
+/* Header with controls (keep single line) */
 .panel-header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 10px;
+  flex-wrap: nowrap;
   width: 100%;
   min-width: 0;
-
-  /* ✅ allow inputs to stay on same line where possible,
-     and wrap cleanly on small widths */
-  flex-wrap: wrap;
-}
-
-/* Make titles not push controls out of view */
-.panel-header-row > span,
-.panel-header-row > div:first-child {
-  min-width: 0;
-}
-
-/* General header control group (left/right) */
-.panel-header-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 0 0 auto;
-}
-
-/* Style inputs in headers (your Name: field) */
-.panel-header input[type='text'],
-.panel-header input[type='search'],
-.panel-header input[type='email'],
-.panel-header input[type='number'],
-.panel-header select {
-  height: 30px;
-  padding: 0 10px;
-  border-radius: 8px;
-
-  background-color: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #f0f0f0;
-
-  outline: none;
-  min-width: 180px;
-  max-width: 340px;
-}
-
-.panel-header input::placeholder {
-  color: rgba(240, 240, 240, 0.55);
-}
-
-.panel-header input:focus,
-.panel-header select:focus {
-  border-color: rgba(92, 124, 250, 0.55);
-  box-shadow: 0 0 0 3px rgba(92, 124, 250, 0.14);
-}
-
-/* A compact header label like "Name:" */
-.panel-header .header-label {
-  opacity: 0.85;
-  font-weight: 700;
-  font-size: 0.95em;
-  white-space: nowrap;
 }
 
 /* =========================================================
-   Buttons (nicer, consistent, same height)
+   Buttons
 ========================================================= */
 
 .btn {
@@ -160,17 +114,15 @@ body,
 
   font-size: 0.92em;
   font-weight: 700;
-  letter-spacing: 0.2px;
 
-  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
 
   background-color: rgba(255, 255, 255, 0.06);
   color: #f0f0f0;
 
   cursor: pointer;
-  transition: background-color 160ms ease, border-color 160ms ease, transform 80ms ease;
-  user-select: none;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 80ms ease;
 }
 
 .btn:hover {
@@ -183,83 +135,32 @@ body,
 }
 
 .btn:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* Primary (blue) */
-.btnPrimary {
-  background-color: rgba(92, 124, 250, 0.18);
-  border-color: rgba(92, 124, 250, 0.35);
-  color: #cfe1ff;
-}
-
-.btnPrimary:hover {
-  background-color: rgba(92, 124, 250, 0.26);
-  border-color: rgba(92, 124, 250, 0.55);
-}
-
-/* Danger */
-.btnDanger {
-  background-color: rgba(239, 68, 68, 0.12);
-  border-color: rgba(239, 68, 68, 0.28);
-  color: #ffb3b3;
-}
-
-.btnDanger:hover {
-  background-color: rgba(239, 68, 68, 0.18);
-  border-color: rgba(239, 68, 68, 0.45);
-}
-
-/* ✅ Save must match .me-commit (green) */
-.btnSave,
+/* Save = same as me-commit */
 .me-commit {
   background: #3f7f54;
+  border-color: rgba(63, 127, 84, 0.7);
   color: #fff;
-  border-color: rgba(63, 127, 84, 0.65);
 }
 
-.btnSave:hover,
 .me-commit:hover {
   background: #46945f;
-  border-color: rgba(63, 127, 84, 0.9);
 }
 
-.btnSave:active,
 .me-commit:active {
   background: #3a744d;
 }
 
-/* Secondary/cancel */
-.btnCancel,
+/* Cancel */
 .me-cancel {
   background-color: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.14);
-  color: rgba(240, 240, 240, 0.92);
 }
 
-.btnCancel:hover,
-.me-cancel:hover {
-  background-color: rgba(255, 255, 255, 0.10);
-  border-color: rgba(255, 255, 255, 0.22);
-}
-
-/* Add button (keep your previous intent, but nicer) */
-.add-btn {
-  background-color: rgba(92, 124, 250, 0.18);
-  border-color: rgba(92, 124, 250, 0.35);
-  color: #cfe1ff;
-}
-
-.add-btn:hover {
-  background-color: rgba(92, 124, 250, 0.26);
-  border-color: rgba(92, 124, 250, 0.55);
-}
-
-/* =========================================================
-   Icon buttons in header
-========================================================= */
-
+/* Icon header buttons */
 .panel-header-icon-button {
   display: inline-flex;
   align-items: center;
@@ -268,19 +169,21 @@ body,
   width: 34px;
   height: 30px;
 
-  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
 
   background-color: rgba(255, 255, 255, 0.06);
   color: #f0f0f0;
 
   cursor: pointer;
-  transition: background-color 160ms ease, border-color 160ms ease, transform 80ms ease;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 80ms ease;
+
+  /* ✅ KEY: never shrink */
+  flex: 0 0 auto;
 }
 
 .panel-header-icon-button:hover {
   background-color: rgba(255, 255, 255, 0.10);
-  border-color: rgba(255, 255, 255, 0.22);
 }
 
 .panel-header-icon-button:active {
@@ -293,7 +196,72 @@ body,
 }
 
 /* =========================================================
-   Content wrappers / Scroll
+   Expression Tree header helpers (your screenshot header)
+========================================================= */
+
+.exprTreeHeaderTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  /* ✅ KEY: title side can shrink */
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.exprTreeHeaderExpr {
+  font-weight: 600;
+  font-size: 0.9em;
+  opacity: 0.85;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  min-width: 0;
+  max-width: 420px;
+}
+
+.exprTreeHeaderControls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  /* ✅ KEY: keep it visible */
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.exprTreeHeaderZoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9em;
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+.exprTreeHeaderZoom select {
+  height: 30px;
+  width: 110px; /* ✅ prevents stealing space from close */
+  min-width: 110px;
+  max-width: 110px;
+
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.06);
+  color: #f0f0f0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  outline: none;
+}
+
+.exprTreeHeaderZoom select:focus {
+  border-color: rgba(92, 124, 250, 0.55);
+  box-shadow: 0 0 0 3px rgba(92, 124, 250, 0.14);
+}
+
+/* =========================================================
+   Content / Scroll
 ========================================================= */
 
 .editor-wrapper,
@@ -301,7 +269,6 @@ body,
   flex: 1;
   overflow: auto;
   padding: 6px;
-
   min-height: 0;
   min-width: 0;
 }
@@ -319,79 +286,18 @@ body,
   flex-shrink: 0;
 }
 
-/* a real sized box for absolute children */
 .panel-content {
   flex: 1;
-  min-height: 0;
-  min-width: 0;
-
   position: relative;
   overflow: hidden;
+  min-height: 0;
+  min-width: 0;
 }
 
-/* forced scroll host that always has height */
 .scroll-host {
   position: absolute;
   inset: 0;
-
-  min-height: 0;
-  min-width: 0;
-
   overflow: auto;
   overflow-x: hidden;
-
   padding: 8px;
-}
-
-/* =========================================================
-   Expression Tree header helpers
-========================================================= */
-
-.exprTreeHeaderTitle {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0; /* allow ellipsis */
-}
-
-.exprTreeHeaderExpr {
-  font-weight: 600;
-  opacity: 0.85;
-  font-size: 0.9em;
-
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-
-  max-width: 520px;
-}
-
-.exprTreeHeaderControls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 0 0 auto;
-}
-
-.exprTreeHeaderZoom {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9em;
-  opacity: 0.9;
-}
-
-.exprTreeHeaderZoom select {
-  height: 30px;
-  padding: 0 10px;
-  border-radius: 10px;
-  background-color: rgba(255, 255, 255, 0.06);
-  color: #f0f0f0;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  outline: none;
-}
-
-.exprTreeHeaderZoom select:focus {
-  border-color: rgba(92, 124, 250, 0.55);
-  box-shadow: 0 0 0 3px rgba(92, 124, 250, 0.14);
 }
