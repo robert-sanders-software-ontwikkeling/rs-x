@@ -1,5 +1,5 @@
 export interface ISerializedExpressionChangeHistory {
-    expression: string; 
+    expressionId: string;
     value: unknown;
     oldValue: unknown;
 }
