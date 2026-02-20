@@ -35,7 +35,7 @@ export const ModelList: React.FC<IModelListProps> = ({
       <>
         <span>{modelWithExpressions.name}</span>
         <button
-          className='btn add-btn'
+          className='btn btn--addExpression'
           onClick={(e) => {
             e.stopPropagation();
             handleAddExpression(modelIndex);
@@ -62,12 +62,7 @@ export const ModelList: React.FC<IModelListProps> = ({
     <>
       <div className='panel-header'>
         Models
-        <button
-          className='btn add-btn'
-          onClick={() => {
-            handleAddModel();
-          }}
-        >
+        <button className='btn btn--addModel' onClick={handleAddModel}>
           <FaPlus /> Add Model
         </button>
       </div>

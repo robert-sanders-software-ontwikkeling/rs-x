@@ -1,7 +1,7 @@
 import React from 'react';
 import { FaEdit, FaEye, FaTrash } from 'react-icons/fa';
-import { IExpressionInfo } from '../../models/model-with-expressions.interface';
 import './expression-list.component.css';
+import { IExpressionInfo } from '../../models/expressionI-info.interface';
 
 export interface IExpressionListProps {
   modelIndex: number;
