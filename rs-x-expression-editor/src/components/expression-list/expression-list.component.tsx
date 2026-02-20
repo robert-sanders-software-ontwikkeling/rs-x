@@ -2,7 +2,7 @@ import React from 'react';
 import { FaEdit, FaEye, FaTrash } from 'react-icons/fa';
 
 import './expression-list.component.css';
-import type { IExpressionInfo } from '../../models/expressionI-info.interface';
+import { IExpressionInfo } from '../../models/expressionI-info.interface';
 
 export interface IExpressionListProps {
   modelIndex: number;
@@ -36,7 +36,7 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
         return (
           <div
             key={`${expressionIndex}-${expressionInfo.expression.expressionString}`}
-            className={`expression-row ${isSelected ? 'is-selected' : ''}`}
+            className={`expression-item ${isSelected ? 'is-selected' : ''}`}
             onClick={() => {
               onSelect(modelIndex, expressionIndex);
             }}
@@ -58,7 +58,7 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
             >
               <button
                 type='button'
-                className='expression-action'
+                className='icon-btn view-btn'
                 title='View details'
                 onClick={() => {
                   onView(modelIndex, expressionIndex);
@@ -69,7 +69,7 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
 
               <button
                 type='button'
-                className='expression-action'
+                className='icon-btn edit-btn'
                 title='Edit'
                 onClick={() => {
                   onEdit(modelIndex, expressionIndex);
@@ -80,7 +80,7 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
 
               <button
                 type='button'
-                className='expression-action expression-action--danger'
+                className='icon-btn delete-btn'
                 title='Delete'
                 onClick={() => {
                   onDelete(modelIndex, expressionIndex);
