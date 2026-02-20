@@ -1,5 +1,3 @@
-/* expression-change-history-view.component.css */
-
 /* =========================================================
    Root
 ========================================================= */
@@ -14,7 +12,8 @@
 .changeHistoryEmpty {
   opacity: 0.7;
   font-style: italic;
-  padding: 12px;
+  padding: var(--sp-5);
+  color: var(--muted);
 }
 
 /* =========================================================
@@ -22,21 +21,22 @@
 ========================================================= */
 
 .changeHistoryAccordion {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  background-color: #26283a;
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-lg);
+  background-color: var(--panel);
   overflow: hidden;
   min-height: 0;
   min-width: 0;
+  box-shadow: var(--shadow-panel);
 }
 
 .changeHistoryAccordionScroll {
   max-height: 100%;
   overflow: auto;
-  padding: 10px;
+  padding: var(--sp-4);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--sp-3);
 }
 
 /* =========================================================
@@ -44,15 +44,24 @@
 ========================================================= */
 
 .changeSet {
-  background-color: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
+  background-color: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-md);
   overflow: hidden;
+  transition: background-color var(--t-med) var(--ease), border-color var(--t-med) var(--ease),
+    box-shadow var(--t-med) var(--ease);
 }
 
 .changeSet.isActive {
-  border-color: rgba(92, 124, 250, 0.35);
-  background-color: rgba(92, 124, 250, 0.06);
+  border-color: rgba(var(--c-accent), 0.55);
+  background-color: color-mix(in srgb, var(--surface-1) 70%, rgba(var(--c-accent), 0.10) 30%);
+  box-shadow: 0 0 0 1px rgba(var(--c-accent), 0.16);
+}
+
+@supports not (background-color: color-mix(in srgb, black 50%, white 50%)) {
+  .changeSet.isActive {
+    background-color: var(--surface-2);
+  }
 }
 
 /* =========================================================
@@ -65,20 +74,27 @@
   color: inherit;
   cursor: pointer;
 
-  background-color: rgba(255, 255, 255, 0.04);
+  background-color: var(--panel-header);
 
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: var(--sp-6);
 
-  padding: 12px 14px;
+  padding: var(--sp-5) var(--sp-6);
   position: relative;
   text-align: left;
+
+  transition: background-color var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease);
 }
 
 .changeSetHeader:hover {
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: var(--surface-2);
+}
+
+.changeSetHeader:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 /* left accent for active selection */
@@ -86,17 +102,17 @@
   content: '';
   position: absolute;
   left: 0;
-  top: 8px;
-  bottom: 8px;
+  top: var(--sp-3);
+  bottom: var(--sp-3);
   width: 3px;
   border-radius: 999px;
-  background-color: rgba(92, 124, 250, 0.9);
+  background-color: rgba(var(--c-accent), 0.92);
 }
 
 .changeSetHeaderLeft {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--sp-4);
   min-width: 0;
   flex: 1 1 auto;
 }
@@ -106,23 +122,28 @@
   font-size: 14px;
   padding: 3px 8px;
   border-radius: 999px;
-  background-color: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: rgba(240, 240, 240, 0.9);
+
+  background-color: var(--surface-1);
+  border: 1px solid var(--border-1);
+  color: var(--fg);
+
   flex: 0 0 auto;
 }
 
 .changeSetHeaderMeta {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: var(--sp-4);
   min-width: 0;
 }
 
+/* Expression label color: theme-aligned, subtle accent */
 .changeSetExpr {
   font-weight: 800;
   font-size: 13px;
-  color: #9cdcfe;
+
+  color: color-mix(in srgb, var(--fg) 72%, rgb(var(--c-info)) 28%);
+
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -130,9 +151,16 @@
   max-width: 100%;
 }
 
+@supports not (color: color-mix(in srgb, black 50%, white 50%)) {
+  .changeSetExpr {
+    color: var(--fg);
+    opacity: 0.9;
+  }
+}
+
 .changeSetSteps {
   font-size: 12px;
-  opacity: 0.75;
+  color: var(--muted-2);
   flex: 0 0 auto;
 }
 
@@ -140,7 +168,7 @@
 .changeSetHeaderRight {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--sp-4);
   flex: 0 0 260px;
   justify-content: flex-end;
 }
@@ -150,8 +178,8 @@
   display: inline-flex;
   justify-content: center;
   width: 20px;
-  opacity: 0.65;
-  transition: transform 180ms ease;
+  color: var(--muted-2);
+  transition: transform var(--t-med) var(--ease);
 }
 
 .changeSetChevron.isOpen {
@@ -163,9 +191,15 @@
 ========================================================= */
 
 .changeSetBody {
-  padding: 6px 14px 8px 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background-color: rgba(0, 0, 0, 0.12);
+  padding: var(--sp-3) var(--sp-6) var(--sp-4) var(--sp-6);
+  border-top: 1px solid var(--sep);
+  background-color: color-mix(in srgb, var(--panel) 86%, var(--bg) 14%);
+}
+
+@supports not (background-color: color-mix(in srgb, black 50%, white 50%)) {
+  .changeSetBody {
+    background-color: var(--panel);
+  }
 }
 
 /* =========================================================
@@ -175,7 +209,7 @@
 .valueDiff {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-3);
 
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -198,21 +232,31 @@
 
 .valueDiffArrow {
   text-align: center;
-  opacity: 0.75;
+  color: var(--muted-2);
 }
 
+/* Use your semantic tokens */
 .valueDiffOld {
-  color: rgba(255, 179, 179, 0.95);
+  color: color-mix(in srgb, var(--fg) 55%, rgb(var(--c-danger)) 45%);
 }
 
 .valueDiffNew {
-  color: rgba(168, 240, 198, 0.95);
+  color: color-mix(in srgb, var(--fg) 55%, rgb(var(--c-success)) 45%);
+}
+
+@supports not (color: color-mix(in srgb, black 50%, white 50%)) {
+  .valueDiffOld,
+  .valueDiffNew {
+    color: var(--fg);
+    opacity: 0.9;
+  }
 }
 
 .valueDiffOld.isUnset,
 .valueDiffNew.isUnset {
   opacity: 0.55;
   font-style: italic;
+  color: var(--muted-2);
 }
 
 /* =========================================================
@@ -229,11 +273,11 @@
 .changeStep {
   display: grid;
   grid-template-columns: 26px 1fr;
-  gap: 10px;
+  gap: var(--sp-4);
   min-width: 0;
 
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: var(--sp-4) 0;
+  border-bottom: 1px solid var(--border-1);
 }
 
 .changeStep:last-child {
@@ -251,14 +295,17 @@
   width: 10px;
   height: 10px;
   border-radius: 999px;
-  background-color: rgba(255, 255, 255, 0.18);
-  border: 2px solid rgba(255, 255, 255, 0.10);
+
+  background-color: var(--surface-2);
+  border: 2px solid var(--border-2);
+
   margin-top: 6px;
 }
 
 .changeStepDot.isTrigger {
-  background-color: rgba(92, 124, 250, 0.95);
-  box-shadow: 0 0 0 3px rgba(92, 124, 250, 0.12);
+  background-color: rgba(var(--c-accent), 0.95);
+  box-shadow: 0 0 0 3px rgba(var(--c-accent), 0.12);
+  border-color: rgba(var(--c-accent), 0.40);
 }
 
 .changeStepLine {
@@ -266,7 +313,7 @@
   top: 18px;
   bottom: -8px;
   width: 2px;
-  background-color: rgba(255, 255, 255, 0.10);
+  background-color: var(--sep);
 }
 
 /* =========================================================
@@ -284,34 +331,45 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--sp-4);
   min-width: 0;
 }
 
 .changeStepHeaderLeft {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-3);
   min-width: 0;
 }
 
 .changeStepExpr {
   font-weight: 800;
   font-size: 13px;
-  color: #9cdcfe;
+
+  color: color-mix(in srgb, var(--fg) 72%, rgb(var(--c-info)) 28%);
+
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+@supports not (color: color-mix(in srgb, black 50%, white 50%)) {
+  .changeStepExpr {
+    color: var(--fg);
+    opacity: 0.9;
+  }
+}
+
 .changeStepTag {
   font-size: 11px;
   padding: 2px 7px;
   border-radius: 999px;
-  background-color: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: rgba(240, 240, 240, 0.85);
+
+  background-color: var(--surface-1);
+  border: 1px solid var(--border-1);
+  color: var(--muted);
+
   flex: 0 0 auto;
 }
 

@@ -1,52 +1,77 @@
-/* Container */
+/* =========================================================
+   Container
+========================================================= */
+
 .expression-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 6px;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
   overflow-y: auto;
 }
 
-/* Empty state */
+/* =========================================================
+   Empty state
+========================================================= */
+
 .expression-empty {
   opacity: 0.6;
-  padding: 6px;
+  padding: var(--sp-3);
   font-style: italic;
+  color: var(--muted);
 }
 
-/* Row */
+/* =========================================================
+   Row
+========================================================= */
+
 .expression-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
 
-  background-color: #2f2f44;
-  border: 1px solid #444;
-  border-radius: 4px;
+  background-color: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-xs);
 
-  padding: 6px 10px;
+  padding: var(--sp-3) var(--sp-5);
   cursor: pointer;
 
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: background-color var(--t-med) var(--ease),
+    border-color var(--t-med) var(--ease),
+    box-shadow var(--t-med) var(--ease);
 }
 
 .expression-item:hover {
-  background-color: #3a3a5a;
-  border-color: #555;
+  background-color: var(--surface-2);
+  border-color: var(--border-2);
 }
 
-/* Selected row */
+/* =========================================================
+   Selected row
+========================================================= */
+
 .expression-item.is-selected {
-  border-color: #5c7cfa;
-  background-color: #35385a;
-  box-shadow: 0 0 0 1px rgba(92, 124, 250, 0.35);
+  border-color: rgba(var(--c-accent), 0.55);
+  background-color: color-mix(in srgb, var(--surface-1) 70%, rgba(var(--c-accent), 0.14) 30%);
+  box-shadow: 0 0 0 1px rgba(var(--c-accent), 0.35);
 }
 
-/* Expression text */
+@supports not (background-color: color-mix(in srgb, black 50%, white 50%)) {
+  .expression-item.is-selected {
+    background-color: var(--surface-2);
+  }
+}
+
+/* =========================================================
+   Expression text
+========================================================= */
+
 .expression-code {
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono);
   font-size: 0.9rem;
-  color: #9cdcfe;
+
+  color: color-mix(in srgb, var(--fg) 70%, rgb(var(--c-info)) 30%);
 
   overflow: hidden;
   text-overflow: ellipsis;
@@ -54,18 +79,29 @@
   max-width: 70%;
 }
 
+@supports not (color: color-mix(in srgb, black 50%, white 50%)) {
+  .expression-code {
+    color: var(--fg);
+    opacity: 0.9;
+  }
+}
+
 /* Selected expression text */
 .expression-item.is-selected .expression-code {
-  color: #cfe1ff;
+  color: var(--fg);
+  font-weight: 600;
 }
 
-/* Right-side buttons */
+/* =========================================================
+   Right-side buttons
+========================================================= */
+
 .expression-actions {
   display: flex;
-  gap: 6px;
+  gap: var(--sp-3);
 }
 
-/* Icon buttons (inherits your .btn styling) */
+/* Small icon buttons (compatible with your .btn system) */
 .icon-btn {
   padding: 4px 8px;
   display: flex;
@@ -73,35 +109,47 @@
   justify-content: center;
 }
 
-/* ✅ View button (subtle neutral/blue) */
+/* =========================================================
+   View button (subtle info tone)
+========================================================= */
+
 .view-btn {
-  background-color: #3b4a60;
-  border-color: #4a5a74;
-  color: #f0f0f0;
+  background-color: rgba(var(--c-info), 0.12);
+  border-color: rgba(var(--c-info), 0.35);
+  color: var(--fg);
 }
 
 .view-btn:hover {
-  background-color: #4a5f7a;
+  background-color: rgba(var(--c-info), 0.18);
+  border-color: rgba(var(--c-info), 0.55);
 }
 
-/* Edit button (subtle blue) */
+/* =========================================================
+   Edit button (accent tone)
+========================================================= */
+
 .edit-btn {
-  background-color: #44486a;
-  border-color: #555a80;
-  color: #f0f0f0;
+  background-color: rgba(var(--c-accent), 0.14);
+  border-color: rgba(var(--c-accent), 0.40);
+  color: var(--fg);
 }
 
 .edit-btn:hover {
-  background-color: #565c88;
+  background-color: rgba(var(--c-accent), 0.22);
+  border-color: rgba(var(--c-accent), 0.60);
 }
 
-/* Delete button (subtle red, not too bright) */
+/* =========================================================
+   Delete button (danger tone)
+========================================================= */
+
 .delete-btn {
-  background-color: #5a2f3a;
-  border-color: #6b3a46;
-  color: #f0f0f0;
+  background-color: rgba(var(--c-danger), 0.14);
+  border-color: rgba(var(--c-danger), 0.40);
+  color: var(--fg);
 }
 
 .delete-btn:hover {
-  background-color: #7a3f4f;
+  background-color: rgba(var(--c-danger), 0.22);
+  border-color: rgba(var(--c-danger), 0.60);
 }

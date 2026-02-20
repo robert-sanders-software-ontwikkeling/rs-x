@@ -1,67 +1,99 @@
-/* Container */
+/* =========================================================
+   Container
+========================================================= */
+
 .js-object-view {
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono);
   font-size: 13px;
   line-height: 1.45;
-  background-color: #1e1e2f;
-  color: #d4d4d4;
-  padding: 12px;
-  margin: 0;
-  border-radius: 4px;
 
-  white-space: pre;     /* preserve formatting */
-  tab-size: 2;          /* 🔥 fix huge indentation */
+  background-color: var(--surface-1);
+  color: var(--fg);
+
+  padding: var(--sp-6);
+  margin: 0;
+  border-radius: var(--r-xs);
+  border: 1px solid var(--border-1);
+
+  white-space: pre;
+  tab-size: 2;
   overflow: auto;
 }
 
-/* Scrollbar (optional but nice) */
+/* Slight depth separation from parent panel */
+@supports (background: color-mix(in srgb, black 50%, white 50%)) {
+  .js-object-view {
+    background-color: color-mix(in srgb, var(--panel) 88%, var(--bg) 12%);
+  }
+}
+
+/* =========================================================
+   Scrollbar (theme-aware)
+========================================================= */
+
 .js-object-view::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 .js-object-view::-webkit-scrollbar-thumb {
-  background-color: #444;
-  border-radius: 4px;
+  background-color: var(--border-2);
+  border-radius: var(--r-xs);
 }
 
 .js-object-view::-webkit-scrollbar-thumb:hover {
-  background-color: #555;
+  background-color: var(--border-3);
 }
 
-/* Syntax Highlighting */
+/* Firefox */
+.js-object-view {
+  scrollbar-color: var(--border-2) transparent;
+  scrollbar-width: thin;
+}
+
+/* =========================================================
+   Syntax Highlighting (tokenized + theme aware)
+========================================================= */
 
 /* Keys */
 .js-object-view .token-key {
-  color: #9cdcfe; /* light blue */
+  color: color-mix(in srgb, var(--fg) 70%, rgb(var(--c-info)) 30%);
+}
+
+@supports not (color: color-mix(in srgb, black 50%, white 50%)) {
+  .js-object-view .token-key {
+    color: var(--fg);
+    opacity: 0.9;
+  }
 }
 
 /* Strings */
 .js-object-view .token-string {
-  color: #ce9178; /* soft orange */
+  color: color-mix(in srgb, var(--fg) 65%, rgb(var(--c-warn)) 35%);
 }
 
 /* Numbers */
 .js-object-view .token-number {
-  color: #b5cea8; /* soft green */
+  color: color-mix(in srgb, var(--fg) 65%, rgb(var(--c-success)) 35%);
 }
 
 /* Booleans */
 .js-object-view .token-boolean {
-  color: #569cd6; /* blue */
+  color: color-mix(in srgb, var(--fg) 65%, rgb(var(--c-info)) 35%);
 }
 
 /* Null */
 .js-object-view .token-null {
-  color: #c586c0; /* purple */
+  color: color-mix(in srgb, var(--fg) 60%, rgb(var(--c-danger)) 40%);
 }
 
-/* Keywords like new */
+/* Keywords like "new" */
 .js-object-view .token-keyword {
-  color: #c586c0;
+  color: color-mix(in srgb, var(--fg) 60%, rgb(var(--c-accent)) 40%);
+  font-weight: 600;
 }
 
 /* Braces & punctuation */
 .js-object-view .token-punctuation {
-  color: #d4d4d4;
+  color: var(--muted);
 }

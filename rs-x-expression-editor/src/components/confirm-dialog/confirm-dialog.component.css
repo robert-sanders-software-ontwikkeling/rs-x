@@ -1,145 +1,205 @@
+/* =========================================================
+   Confirm Dialog (theme-aligned)
+========================================================= */
+
 .confirmDialogOverlay {
-    position: fixed;
-    inset: 0;
-    z-index: 10000;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-    padding: 18px;
+  padding: var(--sp-7);
 
+  /* Theme-aware overlay (works in light + dark) */
+  background: color-mix(in srgb, var(--bg) 55%, transparent 45%);
+  backdrop-filter: blur(4px);
+}
+
+/* Fallback if color-mix is not supported */
+@supports not (background: color-mix(in srgb, black 50%, transparent 50%)) {
+  .confirmDialogOverlay {
     background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(4px);
+  }
 }
 
 .confirmDialog {
-    width: min(520px, 100%);
-    border-radius: 16px;
+  width: min(520px, 100%);
+  border-radius: var(--r-xl);
 
-    background: #2b2b3b;
-    border: 1px solid rgba(255, 255, 255, 0.10);
+  background: var(--panel);
+  border: 1px solid var(--border-1);
 
-    box-shadow: 0 16px 60px rgba(0, 0, 0, 0.55);
-    overflow: hidden;
+  /* Elevation that adapts better to light theme */
+  box-shadow: var(--shadow-panel),
+    0 18px 64px color-mix(in srgb, var(--bg) 70%, transparent 30%);
+
+  overflow: hidden;
 }
 
+/* Header */
 .confirmDialogHeader {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
 
-    padding: 12px 14px;
+  padding: var(--sp-4) var(--sp-6);
 
-    background: #323248;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--panel-header);
+  border-bottom: 1px solid var(--border-1);
 }
 
 .confirmDialogTitle {
-    font-weight: 800;
-    font-size: 14px;
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--fg);
 }
 
+/* Close icon button (align with your header icon buttons) */
 .confirmDialogIconBtn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  width: var(--icon-btn-w);
+  height: var(--control-h);
+  border-radius: var(--r-md);
 
-    width: 34px;
-    height: 30px;
+  border: 1px solid var(--border-2);
+  background: var(--surface-1);
+  color: var(--fg);
 
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-
-    background: rgba(255, 255, 255, 0.06);
-    color: #f0f0f0;
-
-    cursor: pointer;
-    transition: background-color 150ms ease, border-color 150ms ease, transform 80ms ease;
+  cursor: pointer;
+  transition: background-color var(--t-med) var(--ease), border-color var(--t-med) var(--ease),
+    transform var(--t-fast) var(--ease), box-shadow var(--t-med) var(--ease);
 }
 
 .confirmDialogIconBtn:hover {
-    background: rgba(255, 255, 255, 0.10);
-    border-color: rgba(255, 255, 255, 0.22);
+  background: var(--surface-2);
+  border-color: var(--border-3);
 }
 
 .confirmDialogIconBtn:active {
-    transform: translateY(1px);
+  transform: translateY(1px);
 }
 
+.confirmDialogIconBtn:focus-visible {
+  outline: none;
+  border-color: rgba(var(--c-accent), 0.55);
+  box-shadow: var(--shadow-focus);
+}
+
+/* Body */
 .confirmDialogBody {
-    padding: 14px;
+  padding: var(--sp-6);
 }
 
 .confirmDialogMessage {
+  color: color-mix(in srgb, var(--fg) 92%, transparent 8%);
+  opacity: 1;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+/* Fallback if color-mix isn't supported */
+@supports not (color: color-mix(in srgb, black 50%, white 50%)) {
+  .confirmDialogMessage {
     opacity: 0.92;
-    line-height: 1.45;
-    white-space: pre-wrap;
+    color: var(--fg);
+  }
 }
 
+/* Footer */
 .confirmDialogFooter {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-4);
 
-    padding: 12px 14px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: var(--sp-4) var(--sp-6);
+  border-top: 1px solid var(--border-1);
+
+  background: color-mix(in srgb, var(--panel) 92%, var(--bg) 8%);
 }
 
+@supports not (background: color-mix(in srgb, black 50%, white 50%)) {
+  .confirmDialogFooter {
+    background: var(--panel);
+  }
+}
+
+/* Buttons */
 .confirmDialogBtn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
 
-    height: 32px;
-    padding: 0 12px;
+  height: var(--control-h);
+  padding: 0 var(--sp-5);
 
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-2);
 
-    background: rgba(255, 255, 255, 0.06);
-    color: #f0f0f0;
+  background: var(--surface-1);
+  color: var(--fg);
 
-    font-weight: 800;
-    font-size: 0.92em;
+  font-weight: 800;
+  font-size: 0.92em;
 
-    cursor: pointer;
-    transition: background-color 150ms ease, border-color 150ms ease, transform 80ms ease;
+  cursor: pointer;
+  transition: background-color var(--t-med) var(--ease), border-color var(--t-med) var(--ease),
+    transform var(--t-fast) var(--ease), box-shadow var(--t-med) var(--ease);
 }
 
 .confirmDialogBtn:hover {
-    background: rgba(255, 255, 255, 0.10);
-    border-color: rgba(255, 255, 255, 0.22);
+  background: var(--surface-2);
+  border-color: var(--border-3);
 }
 
 .confirmDialogBtn:active {
-    transform: translateY(1px);
+  transform: translateY(1px);
+}
+
+.confirmDialogBtn:focus-visible {
+  outline: none;
+  border-color: rgba(var(--c-accent), 0.55);
+  box-shadow: var(--shadow-focus);
 }
 
 .confirmDialogBtnCancel {
-    background: rgba(255, 255, 255, 0.05);
+  background: var(--surface-1);
 }
 
+/* Primary action */
 .confirmDialogBtnPrimary {
-    background: rgba(92, 124, 250, 0.20);
-    border-color: rgba(92, 124, 250, 0.40);
-    color: #cfe1ff;
+  background: rgba(var(--c-accent), 0.16);
+  border-color: rgba(var(--c-accent), 0.42);
+  color: var(--fg);
 }
 
 .confirmDialogBtnPrimary:hover {
-    background: rgba(92, 124, 250, 0.28);
-    border-color: rgba(92, 124, 250, 0.58);
+  background: rgba(var(--c-accent), 0.24);
+  border-color: rgba(var(--c-accent), 0.62);
 }
 
+/* Danger action */
 .confirmDialogBtnDanger {
-    background: rgba(239, 68, 68, 0.16);
-    border-color: rgba(239, 68, 68, 0.38);
-    color: #ffb3b3;
+  background: rgba(var(--c-danger), 0.14);
+  border-color: rgba(var(--c-danger), 0.38);
+  color: var(--fg);
 }
 
 .confirmDialogBtnDanger:hover {
-    background: rgba(239, 68, 68, 0.22);
-    border-color: rgba(239, 68, 68, 0.55);
+  background: rgba(var(--c-danger), 0.20);
+  border-color: rgba(var(--c-danger), 0.55);
+}
+
+/* Optional: if you want colored text for primary/danger when supported */
+@supports (color: color-mix(in srgb, white 50%, black 50%)) {
+  .confirmDialogBtnPrimary {
+    color: color-mix(in srgb, var(--fg) 62%, rgb(var(--c-accent)) 38%);
+  }
+
+  .confirmDialogBtnDanger {
+    color: color-mix(in srgb, var(--fg) 58%, rgb(var(--c-danger)) 42%);
+  }
 }

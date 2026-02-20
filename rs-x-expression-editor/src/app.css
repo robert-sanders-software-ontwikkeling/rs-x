@@ -1,5 +1,5 @@
 /* =========================================================
-   GLOBAL FIX (prevents header overflow/clipping)
+   0) Reset
 ========================================================= */
 
 *,
@@ -9,7 +9,123 @@
 }
 
 /* =========================================================
-   Base
+   1) Theme tokens
+   - Default tokens staan op :root
+   - Theme overrides via .app[data-theme="..."]
+========================================================= */
+
+:root {
+  /* Typography */
+  --font-mono: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
+
+  /* Radius */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+
+  /* Spacing */
+  --sp-1: 4px;
+  --sp-2: 6px;
+  --sp-3: 8px;
+  --sp-4: 10px;
+  --sp-5: 12px;
+  --sp-6: 14px;
+  --sp-7: 18px;
+
+  /* Sizing */
+  --control-h: 32px;
+  --icon-btn-w: 34px;
+
+  /* Motion */
+  --t-fast: 80ms;
+  --t-med: 150ms;
+  --ease: ease;
+
+  /* Shadows */
+  --shadow-panel: 0 1px 10px rgba(0, 0, 0, 0.35);
+  --shadow-focus: 0 0 0 3px rgba(92, 124, 250, 0.14);
+
+  /* Brand */
+  --c-accent: 92 124 250; /* rgb as triplet */
+  --c-success: 63 127 84;
+  --c-danger: 239 68 68;
+  --c-info: 120 180 255;
+  --c-warn: 255 210 120;
+
+  /* Base surfaces (dark defaults) */
+  --bg: #1e1e2f;
+  --fg: #f0f0f0;
+
+  --panel: #2b2b3b;
+  --panel-header: #323248;
+
+  --surface-1: rgba(255, 255, 255, 0.06);
+  --surface-2: rgba(255, 255, 255, 0.10);
+
+  --border-1: rgba(255, 255, 255, 0.08);
+  --border-2: rgba(255, 255, 255, 0.14);
+  --border-3: rgba(255, 255, 255, 0.22);
+
+  --muted: rgba(240, 240, 240, 0.75);
+  --muted-2: rgba(240, 240, 240, 0.55);
+
+  /* Inputs */
+  --input-bg: rgba(255, 255, 255, 0.06);
+  --input-border: rgba(255, 255, 255, 0.14);
+
+  /* Separators */
+  --sep: rgba(255, 255, 255, 0.08);
+}
+
+/* Dark (explicit) */
+.app[data-theme='dark'] {
+  --bg: #1e1e2f;
+  --fg: #f0f0f0;
+
+  --panel: #2b2b3b;
+  --panel-header: #323248;
+
+  --surface-1: rgba(255, 255, 255, 0.06);
+  --surface-2: rgba(255, 255, 255, 0.10);
+
+  --border-1: rgba(255, 255, 255, 0.08);
+  --border-2: rgba(255, 255, 255, 0.14);
+  --border-3: rgba(255, 255, 255, 0.22);
+
+  --muted: rgba(240, 240, 240, 0.75);
+  --muted-2: rgba(240, 240, 240, 0.55);
+
+  --sep: rgba(255, 255, 255, 0.08);
+}
+
+/* Light theme */
+.app[data-theme='light'] {
+  --bg: #f4f6fb;
+  --fg: #111827;
+
+  --panel: #ffffff;
+  --panel-header: #f0f3fa;
+
+  --surface-1: rgba(17, 24, 39, 0.04);
+  --surface-2: rgba(17, 24, 39, 0.07);
+
+  --border-1: rgba(17, 24, 39, 0.10);
+  --border-2: rgba(17, 24, 39, 0.16);
+  --border-3: rgba(17, 24, 39, 0.22);
+
+  --muted: rgba(17, 24, 39, 0.72);
+  --muted-2: rgba(17, 24, 39, 0.55);
+
+  --sep: rgba(17, 24, 39, 0.12);
+
+  --shadow-panel: 0 2px 14px rgba(17, 24, 39, 0.10);
+}
+
+/* =========================================================
+   2) Base
 ========================================================= */
 
 html,
@@ -19,13 +135,13 @@ body,
   height: 100%;
   margin: 0;
   padding: 0;
-  font-family: 'Fira Code', monospace;
-  background-color: #1e1e2f;
-  color: #f0f0f0;
+  font-family: var(--font-mono);
+  background-color: var(--bg);
+  color: var(--fg);
 }
 
 /* =========================================================
-   Layout / Panels
+   3) Layout / Panels
 ========================================================= */
 
 .fullscreen-loader {
@@ -56,43 +172,39 @@ body,
 .panel {
   display: flex;
   flex-direction: column;
-
-  /* important: panel can clip children if they overflow */
   overflow: hidden;
 
-  background-color: #2b2b3b;
-  border-radius: 10px;
+  background-color: var(--panel);
+  border-radius: var(--r-md);
   margin: 2px;
-  box-shadow: 0 1px 10px rgba(0, 0, 0, 0.35);
+
+  box-shadow: var(--shadow-panel);
+  border: 1px solid var(--border-1);
+
   min-height: 0;
   min-width: 0;
 }
 
 /* =========================================================
-   Panel Header
+   4) Panel Header
 ========================================================= */
 
 .panel-header {
-  padding: 10px 14px;
+  padding: var(--sp-4) var(--sp-6);
   font-weight: 700;
-  background-color: #323248;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+  background-color: var(--panel-header);
+  border-bottom: 1px solid var(--border-1);
 
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--sp-4);
 
-  color: #f0f0f0;
-
-  /* ✅ KEY: allow shrinking inside flex layouts */
   min-width: 0;
-
-  /* ✅ KEY: ensure padding doesn't make it overflow */
   width: 100%;
 }
 
-/* Header with controls (keep single line) */
 .panel-header-row {
   flex-wrap: nowrap;
   width: 100%;
@@ -100,34 +212,36 @@ body,
 }
 
 /* =========================================================
-   Buttons
+   5) UI Primitives
 ========================================================= */
 
+/* Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--sp-3);
 
-  height: 30px;
-  padding: 0 12px;
+  height: var(--control-h);
+  padding: 0 var(--sp-5);
 
   font-size: 0.92em;
   font-weight: 700;
 
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-2);
 
-  background-color: rgba(255, 255, 255, 0.06);
-  color: #f0f0f0;
+  background-color: var(--surface-1);
+  color: var(--fg);
 
   cursor: pointer;
-  transition: background-color 150ms ease, border-color 150ms ease, transform 80ms ease;
+  transition: background-color var(--t-med) var(--ease), border-color var(--t-med) var(--ease),
+    transform var(--t-fast) var(--ease);
 }
 
 .btn:hover {
-  background-color: rgba(255, 255, 255, 0.10);
-  border-color: rgba(255, 255, 255, 0.22);
+  background-color: var(--surface-2);
+  border-color: var(--border-3);
 }
 
 .btn:active {
@@ -135,55 +249,67 @@ body,
 }
 
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
-/* Save = same as me-commit */
+/* Variants */
+.btn--success,
 .me-commit {
-  background: #3f7f54;
-  border-color: rgba(63, 127, 84, 0.7);
+  background: rgb(var(--c-success));
+  border-color: rgba(var(--c-success), 0.75);
   color: #fff;
 }
 
+.btn--success:hover,
 .me-commit:hover {
-  background: #46945f;
+  background: rgba(var(--c-success), 0.92);
+  border-color: rgba(var(--c-success), 0.95);
 }
 
+.btn--success:active,
 .me-commit:active {
-  background: #3a744d;
+  background: rgba(var(--c-success), 0.86);
 }
 
-/* Cancel */
+.btn--ghost,
 .me-cancel {
-  background-color: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.14);
+  background-color: var(--surface-1);
+  border-color: var(--border-2);
+  color: var(--fg);
 }
 
-/* Icon header buttons */
+.btn--ghost:hover,
+.me-cancel:hover {
+  background-color: var(--surface-2);
+  border-color: var(--border-3);
+}
+
+/* Icon buttons in headers */
 .panel-header-icon-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  width: 34px;
-  height: 30px;
+  width: var(--icon-btn-w);
+  height: var(--control-h);
 
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-2);
 
-  background-color: rgba(255, 255, 255, 0.06);
-  color: #f0f0f0;
+  background-color: var(--surface-1);
+  color: var(--fg);
 
   cursor: pointer;
-  transition: background-color 150ms ease, border-color 150ms ease, transform 80ms ease;
+  transition: background-color var(--t-med) var(--ease), border-color var(--t-med) var(--ease),
+    transform var(--t-fast) var(--ease);
 
-  /* ✅ KEY: never shrink */
   flex: 0 0 auto;
 }
 
 .panel-header-icon-button:hover {
-  background-color: rgba(255, 255, 255, 0.10);
+  background-color: var(--surface-2);
+  border-color: var(--border-3);
 }
 
 .panel-header-icon-button:active {
@@ -191,20 +317,52 @@ body,
 }
 
 .panel-header-icon-button:disabled {
-  opacity: 0.5;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
+/* Inputs/select (global look) */
+input[type='text'],
+input[type='search'],
+select,
+textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
+input[type='text'],
+input[type='search'],
+select {
+  height: var(--control-h);
+  padding: 0 var(--sp-4);
+  border-radius: var(--r-md);
+
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+
+  outline: none;
+}
+
+input::placeholder {
+  color: var(--muted-2);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(var(--c-accent), 0.55);
+  box-shadow: var(--shadow-focus);
+}
+
 /* =========================================================
-   Expression Tree header helpers (your screenshot header)
+   6) Expression Tree header helpers
 ========================================================= */
 
 .exprTreeHeaderTitle {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--sp-4);
 
-  /* ✅ KEY: title side can shrink */
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
@@ -213,7 +371,7 @@ body,
 .exprTreeHeaderExpr {
   font-weight: 600;
   font-size: 0.9em;
-  opacity: 0.85;
+  opacity: 0.9;
 
   white-space: nowrap;
   overflow: hidden;
@@ -226,9 +384,8 @@ body,
 .exprTreeHeaderControls {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--sp-4);
 
-  /* ✅ KEY: keep it visible */
   flex: 0 0 auto;
   min-width: 0;
 }
@@ -236,39 +393,27 @@ body,
 .exprTreeHeaderZoom {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-3);
   font-size: 0.9em;
   opacity: 0.9;
   white-space: nowrap;
 }
 
 .exprTreeHeaderZoom select {
-  height: 30px;
-  width: 110px; /* ✅ prevents stealing space from close */
+  width: 110px;
   min-width: 110px;
   max-width: 110px;
-
-  border-radius: 10px;
-  background-color: rgba(255, 255, 255, 0.06);
-  color: #f0f0f0;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  outline: none;
-}
-
-.exprTreeHeaderZoom select:focus {
-  border-color: rgba(92, 124, 250, 0.55);
-  box-shadow: 0 0 0 3px rgba(92, 124, 250, 0.14);
 }
 
 /* =========================================================
-   Content / Scroll
+   7) Content / Scroll
 ========================================================= */
 
 .editor-wrapper,
 .errors-panel {
   flex: 1;
   overflow: auto;
-  padding: 6px;
+  padding: var(--sp-2);
   min-height: 0;
   min-width: 0;
 }
@@ -276,13 +421,13 @@ body,
 .separator {
   width: 4px;
   cursor: col-resize;
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: var(--sep);
 }
 
 .separator-horizontal {
   height: 4px;
   cursor: row-resize;
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: var(--sep);
   flex-shrink: 0;
 }
 
@@ -299,5 +444,5 @@ body,
   inset: 0;
   overflow: auto;
   overflow-x: hidden;
-  padding: 8px;
+  padding: var(--sp-3);
 }
