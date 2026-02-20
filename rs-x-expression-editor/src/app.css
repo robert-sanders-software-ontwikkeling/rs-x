@@ -45,7 +45,8 @@
 
   /* Sizing */
   --control-h: 32px;
-  --control-h-lg: 38px; /* for primary CTAs only */
+  --control-h-lg: 38px;
+  /* for primary CTAs only */
   --icon-btn-w: 34px;
 
   /* Motion */
@@ -361,11 +362,9 @@ textarea {
   letter-spacing: 0.2px;
 
   border: 1px solid rgb(var(--c-accent) / 0.55);
-  background: linear-gradient(
-    180deg,
-    rgb(var(--c-accent) / 0.22),
-    rgb(var(--c-accent) / 0.14)
-  );
+  background: linear-gradient(180deg,
+      rgb(var(--c-accent) / 0.22),
+      rgb(var(--c-accent) / 0.14));
 
   color: var(--fg);
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
@@ -380,11 +379,9 @@ textarea {
 
 .btn--addModel:hover {
   border-color: rgb(var(--c-accent) / 0.78);
-  background: linear-gradient(
-    180deg,
-    rgb(var(--c-accent) / 0.28),
-    rgb(var(--c-accent) / 0.18)
-  );
+  background: linear-gradient(180deg,
+      rgb(var(--c-accent) / 0.28),
+      rgb(var(--c-accent) / 0.18));
 
   box-shadow:
     0 0 0 3px rgb(var(--c-accent) / 0.18),
@@ -430,17 +427,32 @@ textarea {
 }
 
 /* hidden by default */
-.model-row .btn--addExpression {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transform: translateX(6px);
+.btn--addExpression {
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+
+  /* lighter + less present */
+  background: transparent;
+  border: 1px solid rgb(255 255 255 / 0.10);
+  color: rgb(240 240 240 / 0.60);
+
+  font-size: 0.84em;
+  font-weight: 600;
+
+  transition:
+    opacity var(--t-med) var(--ease),
+    transform var(--t-med) var(--ease),
+    visibility 0s linear var(--t-med),
+    background-color var(--t-med) var(--ease),
+    border-color var(--t-med) var(--ease),
+    color var(--t-med) var(--ease);
 }
 
 .btn--addExpression:hover {
-  background: rgb(255 255 255 / 0.08);
-  border-color: rgb(255 255 255 / 0.18);
-  color: var(--fg);
+  background: rgb(255 255 255 / 0.04);
+  border-color: rgb(255 255 255 / 0.16);
+  color: rgb(240 240 240 / 0.86);
 }
 
 .model-row:hover .btn--addExpression,
@@ -498,19 +510,28 @@ textarea {
 
 /* Selected model: clear but not heavy */
 .model-row.is-selected {
-  background: rgb(var(--c-accent) / 0.08);
+  /* reduce the big “filled” feel */
+  background: rgb(var(--c-accent) / 0.045);
 }
 
 .model-row.is-selected::before {
   content: '';
   position: absolute;
   left: 0;
-  top: 6px;
-  bottom: 6px;
+  top: 8px;
+  bottom: 8px;
+
   width: 3px;
   border-radius: 999px;
+
   background: rgb(var(--c-accent));
-  box-shadow: 0 0 0 3px rgb(var(--c-accent) / 0.10);
+  /* remove glow to reduce heaviness */
+  box-shadow: none;
+}
+
+.model-row.is-selected .model-row-title {
+  color: rgb(240 240 240 / 0.96);
+  font-weight: 650;
 }
 
 /* Need position for ::before */
@@ -571,22 +592,24 @@ textarea {
 
 /* Selected expression: subtle (no heavy border) */
 .expression-item.is-selected,
-.expression-row.is-selected {
-  background: rgb(var(--c-accent) / 0.06);
-  border-color: transparent;
+.expression-item.is-selected {
+  background: rgb(255 255 255 / 0.025);
+  border-color: rgb(var(--c-accent) / 0.22);
 }
 
 .expression-item.is-selected::before,
-.expression-row.is-selected::before {
+.expression-item.is-selected::before {
   content: '';
   position: absolute;
   left: -10px;
-  top: 8px;
-  bottom: 8px;
-  width: 3px;
+  top: 9px;
+  bottom: 9px;
+
+  width: 2px; /* thinner than model */
   border-radius: 999px;
-  background: rgb(var(--c-accent));
-  box-shadow: 0 0 0 3px rgb(var(--c-accent) / 0.10);
+
+  background: rgb(var(--c-accent) / 0.90);
+  box-shadow: none;
 }
 
 .expression-code {

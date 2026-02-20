@@ -375,7 +375,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                           </label>
                           <button
                             type='button'
-                            className='panel-header-icon-button'
+                            className='icon-btn'
                             onClick={onCloseRightPanel}
                             title='Close'
                           >
