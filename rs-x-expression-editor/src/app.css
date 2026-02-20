@@ -37,6 +37,8 @@
 
   /* Sizing */
   --control-h: 32px;
+  --control-h-lg: 38px;
+  /* for primary CTAs only */
   --icon-btn-w: 34px;
 
   /* Motion */
@@ -48,8 +50,8 @@
   --shadow-panel: 0 1px 10px rgba(0, 0, 0, 0.35);
   --shadow-focus: 0 0 0 3px rgba(92, 124, 250, 0.14);
 
-  /* Brand */
-  --c-accent: 92 124 250; /* rgb as triplet */
+  /* Brand (rgb triplets) */
+  --c-accent: 92 124 250;
   --c-success: 63 127 84;
   --c-danger: 239 68 68;
   --c-info: 120 180 255;
@@ -236,7 +238,9 @@ body,
 
   cursor: pointer;
   transition: background-color var(--t-med) var(--ease),
-    border-color var(--t-med) var(--ease), transform var(--t-fast) var(--ease);
+    border-color var(--t-med) var(--ease),
+    opacity var(--t-med) var(--ease),
+    transform var(--t-fast) var(--ease);
 }
 
 .btn:hover {
@@ -302,7 +306,8 @@ body,
 
   cursor: pointer;
   transition: background-color var(--t-med) var(--ease),
-    border-color var(--t-med) var(--ease), transform var(--t-fast) var(--ease);
+    border-color var(--t-med) var(--ease),
+    transform var(--t-fast) var(--ease);
 
   flex: 0 0 auto;
 }
@@ -322,22 +327,14 @@ body,
 }
 
 /* =========================================================
-   5.1) Add actions hierarchy
+   5.1) Add actions hierarchy + list density fixes
    - Add Model: primary CTA
-   - Add Expression: lightweight row action
+   - Add Expression: lightweight row action, hidden until row hover
 ========================================================= */
-
-/* Consistent placement helper (NOT full width) */
-.add-action-container {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  padding: var(--sp-4) var(--sp-4);
-}
 
 /* Add Model (Primary CTA) */
 .btn--addModel {
-  height: 38px;
+  height: var(--control-h-lg);
   padding: 0 16px;
   border-radius: 999px;
 
@@ -346,14 +343,11 @@ body,
 
   border: 1px solid rgba(var(--c-accent), 0.55);
 
-  background: linear-gradient(
-    180deg,
-    rgba(var(--c-accent), 0.22),
-    rgba(var(--c-accent), 0.14)
-  );
+  background: linear-gradient(180deg,
+      rgba(var(--c-accent), 0.22),
+      rgba(var(--c-accent), 0.14));
 
   color: color-mix(in srgb, var(--fg) 80%, rgb(var(--c-accent)) 20%);
-
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
 
   transition: background-color var(--t-med) var(--ease),
@@ -364,11 +358,9 @@ body,
 }
 
 .btn--addModel:hover {
-  background: linear-gradient(
-    180deg,
-    rgba(var(--c-accent), 0.28),
-    rgba(var(--c-accent), 0.18)
-  );
+  background: linear-gradient(180deg,
+      rgba(var(--c-accent), 0.28),
+      rgba(var(--c-accent), 0.18));
 
   border-color: rgba(var(--c-accent), 0.78);
   box-shadow: 0 0 0 3px rgba(var(--c-accent), 0.18),
@@ -395,12 +387,12 @@ body,
 
 /* Add Expression (lightweight) */
 .btn--addExpression {
-  height: 30px;
-  padding: 0 12px;
+  height: 28px;
+  padding: 0 10px;
 
   border-radius: 10px;
 
-  font-size: 0.90em;
+  font-size: 0.88em;
   font-weight: 700;
   letter-spacing: 0.1px;
 
@@ -413,6 +405,7 @@ body,
   transition: background-color var(--t-med) var(--ease),
     border-color var(--t-med) var(--ease),
     color var(--t-med) var(--ease),
+    opacity var(--t-med) var(--ease),
     transform var(--t-fast) var(--ease);
 }
 
@@ -443,7 +436,7 @@ body,
 .btn--addExpression .icon {
   width: 14px;
   height: 14px;
-  opacity: 0.75;
+  opacity: 0.7;
 }
 
 .btn--addExpression:hover svg,
@@ -451,13 +444,119 @@ body,
   opacity: 0.95;
 }
 
-/* Optional: if you have a wrapper class for each row, make the add expression
-   look more "present" on row hover */
+/*
+  🔥 Density fix:
+  Hide "Add Expression" by default and show only when the row is hovered.
+  This removes the wall of buttons when you have many models.
+*/
+.model-row .btn--addExpression {
+  opacity: 0;
+  transform: translateX(6px);
+  pointer-events: none;
+}
+
 .model-row:hover .btn--addExpression,
-.expression-row:hover .btn--addExpression {
-  background: var(--surface-1);
-  border-color: var(--border-3);
+.model-row:focus-within .btn--addExpression {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+/* =========================================================
+   5.2) Model list / Expression list (lightweight rows)
+   Add these classes to your row containers if not present:
+   - model row wrapper: className="model-row"
+   - expression row wrapper: className="expression-row"
+========================================================= */
+
+.model-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 12px 14px;
+
+  background: transparent;
+  border-bottom: 1px solid var(--sep);
+
+  transition: background-color var(--t-med) var(--ease);
+}
+
+.model-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.model-row-title {
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+/* Expression rows: slightly indented and soft background */
+.expression-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 10px 12px;
+  margin: 8px 12px 8px 22px;
+
+  border-radius: var(--r-sm);
+
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+
+  transition: background-color var(--t-med) var(--ease),
+    border-color var(--t-med) var(--ease);
+}
+
+.expression-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Optional selected model row */
+.model-row.is-selected {
+  background: rgba(var(--c-accent), 0.10);
+}
+
+/* =========================================================
+   5.3) Expression action buttons (lighter icon-only feel)
+========================================================= */
+
+.expression-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.expression-actions button {
+  width: 28px;
+  height: 28px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+
   color: var(--fg);
+  opacity: 0.65;
+
+  transition: background-color var(--t-med) var(--ease),
+    border-color var(--t-med) var(--ease),
+    opacity var(--t-med) var(--ease),
+    transform var(--t-fast) var(--ease);
+}
+
+.expression-actions button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  opacity: 1;
+}
+
+.expression-actions button:active {
+  transform: translateY(1px);
 }
 
 /* =========================================================
