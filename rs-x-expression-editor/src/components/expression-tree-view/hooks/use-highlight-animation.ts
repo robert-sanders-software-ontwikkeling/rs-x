@@ -19,14 +19,14 @@ type Wave = {
 class HighlightAnimator {
   public computeSelection(args: {
     highlightChanges: readonly IExpressionChangeHistory[];
-    index: ExpressionIndex;
+    expressionIndex: ExpressionIndex;
   }): Selection {
-    const { highlightChanges, index } = args;
+    const { highlightChanges, expressionIndex } = args;
 
     const stepIds: NodeId[] = [];
 
     for (const h of highlightChanges) {
-      const id = index.resolveNodeId(h.expression);
+      const id = expressionIndex.resolveNodeId(h.expression);
       if (id) {
         stepIds.push(id);
       }
@@ -53,7 +53,7 @@ class HighlightAnimator {
       const a = stepIds[i];
       const b = stepIds[i + 1];
 
-      const segment = index.pathNodesBetween(a, b);
+      const segment = expressionIndex.pathNodesBetween(a, b);
       if (segment.length) {
         if (nodePathSequence.length === 0) {
           nodePathSequence.push(...segment);
@@ -71,13 +71,13 @@ class HighlightAnimator {
       const from = nodePathSequence[i + 1];
       const to = nodePathSequence[i];
 
-      const p = index.parentById.get(from) ?? null;
+      const p = expressionIndex.parentById.get(from) ?? null;
       if (p === to) {
-        selectedEdges.add(index.edgeKey(to, from));
+        selectedEdges.add(expressionIndex.edgeKey(to, from));
       } else {
-        const p2 = index.parentById.get(to) ?? null;
+        const p2 = expressionIndex.parentById.get(to) ?? null;
         if (p2 === from) {
-          selectedEdges.add(index.edgeKey(from, to));
+          selectedEdges.add(expressionIndex.edgeKey(from, to));
         }
       }
     }
@@ -89,7 +89,7 @@ class HighlightAnimator {
     };
   }
 
-  private _depthOf(id: NodeId, index: ExpressionIndex): number {
+  private depthOf(id: NodeId, index: ExpressionIndex): number {
     let d = 0;
     let cur: NodeId | null = id;
 
@@ -103,7 +103,7 @@ class HighlightAnimator {
     return d;
   }
 
-  private _buildWaves(args: { nodePathSequence: NodeId[]; selectedEdges: Set<string>; index: ExpressionIndex }): Wave[] {
+  private buildWaves(args: { nodePathSequence: NodeId[]; selectedEdges: Set<string>; index: ExpressionIndex }): Wave[] {
     const { nodePathSequence, selectedEdges, index } = args;
 
     // Unique nodes from the path
@@ -114,7 +114,7 @@ class HighlightAnimator {
     let maxDepth = 0;
 
     for (const id of unique) {
-      const depth = this._depthOf(id, index);
+      const depth = this.depthOf(id, index);
       maxDepth = Math.max(maxDepth, depth);
 
       const bucket = byDepth.get(depth) ?? [];
@@ -153,7 +153,7 @@ class HighlightAnimator {
   public scheduleAnimation(args: {
     nodePathSequence: NodeId[];
     selectedEdges: Set<string>;
-    index: ExpressionIndex;
+    expressionIndex: ExpressionIndex;
 
     setActiveNodeIds: React.Dispatch<React.SetStateAction<Set<NodeId>>>;
     setActiveEdgeKeys: React.Dispatch<React.SetStateAction<Set<string>>>;
@@ -161,7 +161,7 @@ class HighlightAnimator {
     timersRef: React.MutableRefObject<number[]>;
     clearTimers: () => void;
   }): void {
-    const { nodePathSequence, selectedEdges, index, setActiveNodeIds, setActiveEdgeKeys, timersRef, clearTimers } = args;
+    const { nodePathSequence, selectedEdges, expressionIndex: index, setActiveNodeIds, setActiveEdgeKeys, timersRef, clearTimers } = args;
 
     clearTimers();
 
@@ -171,7 +171,7 @@ class HighlightAnimator {
       return;
     }
 
-    const waves = this._buildWaves({ nodePathSequence, selectedEdges, index });
+    const waves = this.buildWaves({ nodePathSequence, selectedEdges, index });
 
     if (waves.length === 0) {
       setActiveEdgeKeys(() => new Set<string>());
@@ -224,14 +224,14 @@ export function useHighlightAnimation(args: {
   highlightChanges: readonly IExpressionChangeHistory[];
   highlightVersion: number;
   highlightKey: string;
-  index: ExpressionIndex;
+  expressionIndex: ExpressionIndex;
 }): {
   selectedNodeIds: Set<NodeId>;
   selectedEdgeKeys: Set<string>;
   activeNodeIds: Set<NodeId>;
   activeEdgeKeys: Set<string>;
 } {
-  const { highlightChanges, highlightVersion, highlightKey, index } = args;
+  const { highlightChanges, highlightVersion, highlightKey, expressionIndex } = args;
 
   const animator = useMemo(() => {
     return new HighlightAnimator();
@@ -267,7 +267,7 @@ export function useHighlightAnimation(args: {
       return;
     }
 
-    const selection = animator.computeSelection({ highlightChanges, index });
+    const selection = animator.computeSelection({ highlightChanges, expressionIndex: expressionIndex });
 
     if (selection.nodePathSequence.length === 0) {
       resetState();
@@ -280,7 +280,7 @@ export function useHighlightAnimation(args: {
     animator.scheduleAnimation({
       nodePathSequence: selection.nodePathSequence,
       selectedEdges: selection.selectedEdgeKeys,
-      index,
+      expressionIndex,
       setActiveNodeIds,
       setActiveEdgeKeys,
       timersRef,
@@ -290,7 +290,7 @@ export function useHighlightAnimation(args: {
     return () => {
       clearTimers();
     };
-  }, [highlightVersion, highlightKey, index, animator, highlightChanges]);
+  }, [highlightVersion, highlightKey, expressionIndex, animator, highlightChanges]);
 
   return {
     selectedNodeIds,

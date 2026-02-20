@@ -19,14 +19,17 @@ export interface ISerializedExpressionChangeHistory {
 
 export interface ISerializedExpressionInfo {
     name: string;
-    expression: string;
+    editorExpressionString: string;
+    isDeleting: boolean;
     selecteChangeHistoryIndex: number;
+    treeHighlight: ISerializedExpressionChangeHistory[];
     changeHistory: ISerializedExpressionChangeHistory[][];
 }
 
 interface ISerializedModelWithExpressions {
     name: string;
-    modelString: string;
+    editorModelString: string;
+    isDeleting: boolean;
     selectedExpressionIndex: number | null;
     editingExpressionIndex: number | null;
     expressions: ISerializedExpressionInfo[];
@@ -71,7 +74,7 @@ export class ExpressionEdtitorStateSerializer {
     public async serialize(state: IExpressionEditorState): Promise<void> {
         const serializedState: ISerializedExpressionEditorState = {
             error: state.error,
-            treeZoomPercent:  state.treeZoomPercent,
+            treeZoomPercent: state.treeZoomPercent,
             showExpressionTreeView: state.showExpressionTreeView,
             addingExpression: state.addingExpression,
             addingModel: state.addingModel,
@@ -79,14 +82,18 @@ export class ExpressionEdtitorStateSerializer {
             modelsWithExpressions: state.modelsWithExpressions.map((modelWithExpressions) => {
                 return {
                     name: modelWithExpressions.name,
-                    modelString: modelWithExpressions.modelString,
+                    editorModelString: modelWithExpressions.editorModelString,
+                    isDeleting: modelWithExpressions.isDeleting,
                     selectedExpressionIndex: modelWithExpressions.selectedExpressionIndex,
                     editingExpressionIndex: modelWithExpressions.editingExpressionIndex,
                     expressions: modelWithExpressions.expressions.map((expressionInfo) => {
                         return {
                             name: expressionInfo.name,
-                            expression: expressionInfo.expression.expressionString,
+                            editorExpressionString: expressionInfo.editorExpressionString,
+                            isDeleting: expressionInfo.isDeleting,
                             selecteChangeHistoryIndex: expressionInfo.selecteChangeHistoryIndex,
+
+                            treeHighlight: this.serializeHistorySet(expressionInfo.treeHighlight),
                             changeHistory: this.serializeHistory(expressionInfo.changeHistory ?? []),
                         };
                     }),
@@ -102,11 +109,12 @@ export class ExpressionEdtitorStateSerializer {
             await this._objectStorage.get<ISerializedExpressionEditorState>(stateId);
 
         if (!deserializeState) {
-            return { 
+            return {
 
                 showExpressionTreeView: false,
                 treeZoomPercent: 100,
-                modelsWithExpressions: [] };
+                modelsWithExpressions: []
+            };
         }
 
         return {
@@ -118,23 +126,26 @@ export class ExpressionEdtitorStateSerializer {
             selectedModelIndex: deserializeState.selectedModelIndex,
             modelsWithExpressions: deserializeState.modelsWithExpressions.map((modelWithExpressions) => {
                 // NOTE: executing user-provided modelString is dangerous; assuming you control input.
-                const model = new Function(`return ${modelWithExpressions.modelString}`)();
+                const model = new Function(`return ${modelWithExpressions.editorModelString}`)();
 
                 const selectedExpressionIndex = modelWithExpressions.selectedExpressionIndex;
 
                 return {
                     name: modelWithExpressions.name,
                     model,
-                    modelString: modelWithExpressions.modelString,
+                    editorModelString: modelWithExpressions.editorModelString,
+                    isDeleting: modelWithExpressions.isDeleting,
                     selectedExpressionIndex,
                     editingExpressionIndex: modelWithExpressions.editingExpressionIndex,
                     expressions: modelWithExpressions.expressions.map((exprInfo, index) => {
-                        const rootExpression = this._expressionFactory.create(model, exprInfo.expression);
+                        const rootExpression = this._expressionFactory.create(model, exprInfo.editorExpressionString);
 
+                        const expressionIndex = this.buildExpressionIndex(rootExpression);
                         const changeHistory = this.deserializeHistory(
-                            rootExpression,
+                            expressionIndex,
                             exprInfo.changeHistory ?? []
                         );
+                        const treeHighlight = this.deserializeHistorySet(expressionIndex, exprInfo.treeHighlight ?? [])
 
                         // ✅ Bullet-proof: only auto-play for the currently selected expression,
                         // and only if selection index is valid and history is non-empty.
@@ -166,8 +177,12 @@ export class ExpressionEdtitorStateSerializer {
 
                         return {
                             name: exprInfo.name,
+                            editorExpressionString: exprInfo.editorExpressionString,
                             version: 0,
+                            isDeleting: exprInfo.isDeleting,
                             expression: rootExpression,
+                            treeHighlight,
+                            treeHighlightVersion: 0,
                             selecteChangeHistoryIndex: exprInfo.selecteChangeHistoryIndex,
                             changeHistory,
                         };
@@ -177,41 +192,51 @@ export class ExpressionEdtitorStateSerializer {
         };
     }
 
+    private serializeHistorySet = (
+        historySet: IExpressionChangeHistory[]
+    ): ISerializedExpressionChangeHistory[] => {
+        return historySet.map((h) => {
+            return {
+                expression: h.expression.expressionString,
+                value: this.cloneValue(h.value),
+                oldValue: this.cloneValue(h.oldValue),
+            };
+        });
+    }
+
     private serializeHistory(
         history: IExpressionChangeHistory[][]
     ): ISerializedExpressionChangeHistory[][] {
-        return history.map((batch) => {
-            return batch.map((h) => {
-                return {
-                    expression: h.expression.expressionString,
-                    value: this.cloneValue(h.value),
-                    oldValue: this.cloneValue(h.oldValue),
-                };
-            });
+        return history.map(this.serializeHistorySet);
+    }
+
+    private deserializeHistorySet = (
+        index: Map<string, IExpression>,
+        history: ISerializedExpressionChangeHistory[]
+    ): IExpressionChangeHistory[] => {
+        return history.map((h) => {
+            const expr = index.get(h.expression);
+
+            if (!expr) {
+                throw new Error(`Could not find expression node for history entry: '${h.expression}'`);
+            }
+
+            return {
+                expression: expr,
+                value: h.value,
+                oldValue: h.oldValue,
+            };
         });
     }
 
     private deserializeHistory(
-        rootExpression: IExpression,
+        index: Map<string, IExpression>,
+
         history: ISerializedExpressionChangeHistory[][]
     ): IExpressionChangeHistory[][] {
-        const index = this.buildExpressionIndex(rootExpression);
 
-        return history.map((batch) => {
-            return batch.map((h) => {
-                const expr = index.get(h.expression);
 
-                if (!expr) {
-                    throw new Error(`Could not find expression node for history entry: '${h.expression}'`);
-                }
-
-                return {
-                    expression: expr,
-                    value: h.value,
-                    oldValue: h.oldValue,
-                };
-            });
-        });
+        return history.map((batch) => this.deserializeHistorySet(index, batch));
     }
 
     private buildExpressionIndex(root: IExpression): Map<string, IExpression> {

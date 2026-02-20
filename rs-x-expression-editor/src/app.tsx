@@ -1,14 +1,11 @@
 import type { OnMount } from '@monaco-editor/react';
-import { InjectionContainer } from '@rs-x/core';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import {
-  IExpressionChangeHistory,
-  IExpressionManager,
-  RsXExpressionParserInjectionTokens,
+  IExpressionChangeHistory
 } from '../../rs-x-expression-parser/lib';
 
-import { FaTrash, FaTimes } from 'react-icons/fa';
+import { FaTimes, FaTrash } from 'react-icons/fa';
 
 
 import { ModelList } from './components/model-list/model-list.component';
@@ -19,16 +16,18 @@ import { ObjectViewer } from './components/object-viewer/object-viewer.component
 import { useExpressionEditorState } from './hooks/use-expression-editor-state';
 import type { IExpressionEditorState } from './models/expression-editor-state.interface';
 import { ExpressionEditorStateBuilder } from './services/expression-editor-state-builder';
-import { ExpressionEdtitorStateSerializer } from './services/expression-editor-state-serializer';
 import { ModelIntellisenseService } from './services/model-intellisense.service';
 
 import './app.css';
 import { ExpressionChangeHistoryView } from './components/expression-change-history-view/expression-change-history-view.component';
 
-import { ModelEditor } from './components/model-editor/model-editor.component';
+import { ConfirmDialog } from './components/confirm-dialog/confirm-dialog.component';
 import { ExpressionTree } from './components/expression-tree-view/expression-tree-view.component';
+import { ModelEditor } from './components/model-editor/model-editor.component';
+import { usePersistExpressionEditorState } from './hooks/use-persist-expression-editor-state';
 
 const emptyModel = '(\n\t{\n\n\t}\n)';
+const zoomPresets = [50, 75, 100, 125, 150, 200, 250, 300];
 
 export const App: React.FC = () => {
   const deserializedState = useExpressionEditorState();
@@ -50,31 +49,9 @@ type AppLoadedProps = {
 
 const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const [currentState, setCurrentState] = useState<IExpressionEditorState>(initialState);
-  const [treeHighlight, setTreeHighlight] = useState<readonly IExpressionChangeHistory[]>([]);
-  const [treeHighlightVersion, setTreeHighlightVersion] = useState<number>(0);
 
-  const zoomPresets = useMemo(() => {
-    return [50, 75, 100, 125, 150, 200, 250, 300] as const;
-  }, []);
+  usePersistExpressionEditorState(currentState, 200);
 
-
-
-
-  const expressionManager = InjectionContainer.get<IExpressionManager>(
-    RsXExpressionParserInjectionTokens.IExpressionManager
-  );
-
-  useEffect(() => {
-    const id = setTimeout(() => {
-      ExpressionEdtitorStateSerializer.getInstance()
-        .serialize(currentState)
-        .catch(console.error);
-    }, 200);
-
-    return () => {
-      clearTimeout(id);
-    };
-  }, [currentState]);
 
   const selectedModel =
     currentState.modelsWithExpressions[currentState.selectedModelIndex as number];
@@ -85,17 +62,20 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const selectedExpressionIndex =
     selectedModel?.selectedExpressionIndex ?? null;
 
+  const editingExpressionIndex = selectedModel?.editingExpressionIndex ?? -1;
+
+  const editingExpression = editingExpressionIndex >= 0;
+
   const isEditing =
-    currentState.addingModel || currentState.addingExpression;
+    currentState.addingModel ||
+    currentState.addingExpression ||
+    editingExpression;
 
 
   const shouldShowRightDetailsPanel =
     !isEditing && selectedExpressionIndex !== null && currentState.showExpressionTreeView;
 
-  const shouldShowLeftListPanel =
-    currentState.addingModel ||
-    currentState.addingExpression ||
-    !shouldShowRightDetailsPanel;
+  const shouldShowLeftListPanel = !isEditing && !shouldShowRightDetailsPanel;
 
   const handleSelectModel = (modelIndex: number) => {
     setCurrentState((prev) => {
@@ -123,13 +103,13 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
 
   const setShowExpressionTreeView = (show) => {
     setCurrentState((prev) => {
-        return new ExpressionEditorStateBuilder(prev).setShowExpressionTreeViewt(show).state;
-      });
+      return new ExpressionEditorStateBuilder(prev).setShowExpressionTreeView(show).state;
+    });
   };
-  
+
 
   const getSelectedModelString = (): string | undefined => {
-    return selectedModel?.modelString;
+    return selectedModel?.editorModelString;
   };
 
   const handleCancel = () => {
@@ -141,6 +121,8 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
       }
       if (prev.addingModel) {
         return b.setAddingModel(false).state;
+      } else if (editingExpressionIndex >= 0) {
+        return b.setEditingExpressionIndex(currentState.selectedModelIndex as number, editingExpressionIndex).state
       }
 
       return prev;
@@ -148,51 +130,38 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   };
 
   const saveModel = (name: string, modelString: string) => {
-    try {
-      const model = new Function(`return ${modelString}`)();
-      setCurrentState((prev) => {
-        return new ExpressionEditorStateBuilder(prev)
-          .addModel(name, modelString, model)
-          .setAddingModel(false)
-          .state;
-      });
-    } catch (e) {
-      setCurrentState((prev) => {
-        return new ExpressionEditorStateBuilder(prev)
-          .setError(e instanceof Error ? e.message : String(e))
-          .state;
-      });
-    }
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev)
+        .addModel(name, modelString)
+        .state;
+    });
   };
 
+  const addExpression = (modelIndex: number, name: string, expressionString: string) => {
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev)
+        .addExpression(modelIndex, name, expressionString)
+        .state;
+    });
+
+  }
+
+  const updateExpression = (modelIndex: number, expressionIndex, name: string, expressionString: string) => {
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev)
+        .updateExpression(modelIndex, expressionIndex, name, expressionString)
+        .state;
+    });
+  }
+
   const saveExpression = (name: string, expressionString: string) => {
-    const trimmed = expressionString?.trim();
-    if (!trimmed) {
-      return;
-    }
+    const trimmedExpressionString = expressionString.trim();
+    const selectedModelIndex = currentState.selectedModelIndex as number;
 
-    const modelObj = selectedModel?.model;
-    if (!modelObj) {
-      return;
-    }
-
-    try {
-      const { instance: expression } = expressionManager
-        .create(modelObj)
-        .instance.create({ expressionString: trimmed });
-
-      setCurrentState((prev) => {
-        return new ExpressionEditorStateBuilder(prev)
-          .addExpression(currentState.selectedModelIndex as number, name, expression)
-          .setAddingExpression(false)
-          .state;
-      });
-    } catch (e) {
-      setCurrentState((prev) => {
-        return new ExpressionEditorStateBuilder(prev)
-          .setError(e instanceof Error ? e.message : String(e))
-          .state;
-      });
+    if (editingExpressionIndex === -1) {
+      addExpression(selectedModelIndex, name, trimmedExpressionString);
+    } else {
+      updateExpression(selectedModelIndex, editingExpressionIndex, name, trimmedExpressionString);
     }
   };
 
@@ -205,24 +174,45 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
       return new ExpressionEditorStateBuilder(prev).selectExpression(modelIndex, index).state;
     });
 
-     setShowExpressionTreeView(true);
+    setShowExpressionTreeView(true);
+  };
+
+  const onDeleteExpression = (modelIndex: number, expressionIndex: number) => {
+    setsetExpressionIsDeleting(modelIndex, expressionIndex, true);
+  };
+
+  const onDeleteExpresionConfirm = () => {
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev)
+        .deleteExpression(currentState.selectedModelIndex as number, selectedExpressionIndex)
+        .state;
+    });
+  }
+
+  const setsetExpressionIsDeleting = (modelIndex: number, expressionIndex: number, isDeleting: boolean) => {
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev)
+        .setExpressionIsDeleting(modelIndex, expressionIndex, isDeleting)
+        .state;
+    });
 
   };
+
+  const onDeleteExpresionCancel = () => {
+    setsetExpressionIsDeleting(currentState.selectedModelIndex as number, selectedExpressionIndex as number, false);
+
+  }
 
   const onViewExpression = (modelIndex: number, index: number) => {
     onSelectExpression(modelIndex, index);
     setShowExpressionTreeView(true);
   };
 
-  const onDeleteExpression = (modelIndex: number, index: number) => {
-    setCurrentState((prev) => {
-      return new ExpressionEditorStateBuilder(prev).deleteExpression(modelIndex, index).state;
-    });
-  };
+
 
   const onEditExpression = (modelIndex: number, index: number) => {
     setCurrentState((prev) => {
-      return new ExpressionEditorStateBuilder(prev).editExpression(modelIndex, index).state;
+      return new ExpressionEditorStateBuilder(prev).setEditingExpressionIndex(modelIndex, index).state;
     });
   };
 
@@ -259,26 +249,32 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     });
   };
 
+  const setTreeHighlight = (
+    modelIndex: number,
+    expressionIndex: number,
+    treeHighlight: IExpressionChangeHistory[]) => {
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev).setTreeHighlight(modelIndex, expressionIndex, treeHighlight).state;
+    });
+  }
+
+  const onTreeHighlight = (treeHighlight: IExpressionChangeHistory[]) => {
+    setTreeHighlight(currentState.selectedModelIndex as number, selectedModel.selectedExpressionIndex as number, treeHighlight);
+  }
 
   const onSelectHistoryBatch = (
     modelIndex: number,
     expressionIndex: number,
     selectedChangeSetIndex: number,
-    items: readonly IExpressionChangeHistory[]
+    items: IExpressionChangeHistory[]
   ) => {
     setCurrentState((prev) => {
       return new ExpressionEditorStateBuilder(prev)
         .setSelectedChangeHistoryIndex(modelIndex, expressionIndex, selectedChangeSetIndex)
+        .setTreeHighlight(modelIndex, expressionIndex, items)
         .state;
     });
 
-    setTreeHighlight(() => {
-      return [...items];
-    });
-
-    setTreeHighlightVersion((v) => {
-      return v + 1;
-    });
   };
 
 
@@ -415,8 +411,8 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                         <ExpressionTree
                           version={selectedExpression.version}
                           root={selectedExpression.expression}
-                          highlightChanges={treeHighlight as IExpressionChangeHistory[]}
-                          highlightVersion={treeHighlightVersion}
+                          highlightChanges={selectedExpression.treeHighlight}
+                          highlightVersion={selectedExpression?.treeHighlightVersion}
                           zoomPercent={currentState.treeZoomPercent}
                         />
                       </div>
@@ -447,7 +443,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
           </Panel>
         )}
 
-        {currentState.addingExpression && (
+        {(currentState.addingExpression || editingExpression) && (
           <Panel defaultSize={100} className='panel'>
             <Group orientation='horizontal' className='panels-container'>
               <Panel defaultSize={30} minSize={15} className='panel'>
@@ -469,6 +465,8 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                         quickSuggestions: true,
                         wordBasedSuggestions: 'off',
                       }}
+                      name={selectedExpression?.name ?? ''}
+                      value={selectedExpression?.editorExpressionString ?? ''}
                       save={saveExpression}
                       cancel={handleCancel}
                       onMount={handleExpressionMount}
@@ -489,7 +487,19 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
           </Panel>
         )}
       </Group>
+
+
+      <ConfirmDialog
+        isOpen={!!selectedExpression?.isDeleting}
+        title='Delete expression'
+        message={`Are you sure you want to delete  expression '${selectedExpression?.name}'. This cannot be undone.`}
+        onCancel={onDeleteExpresionCancel}
+        onConfirm={onDeleteExpresionConfirm}
+      />
     </div>
+
+
+
   );
 };
 

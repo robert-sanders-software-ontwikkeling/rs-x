@@ -1,20 +1,23 @@
-import { IExpression, IExpressionChangeTransactionManager, RsXExpressionParserInjectionTokens } from '@rs-x/expression-parser';
+import { IExpressionChangeTransactionManager, IExpressionManager, RsXExpressionParserInjectionTokens } from '@rs-x/expression-parser';
 import { catchError, finalize, skip, take, throwError, timeout } from 'rxjs';
 import { InjectionContainer, Type } from '../../../rs-x-core/lib';
 import { IExpressionChangePlayback } from '../../../rs-x-expression-parser/lib/expression-change-playback/expression-change-playback.interface';
 import { IExpressionChangeHistory, IExpressionChangeTrackerManager } from '../../../rs-x-expression-parser/lib/expression-change-tracker';
 import { IExpressionEditorState } from '../models/expression-editor-state.interface';
-import { IExpressionInfo } from '../models/model-with-expressions.interface';
+import { IExpressionInfo, IModelWithExpressions } from '../models/model-with-expressions.interface';
 
 export class ExpressionEditorStateBuilder {
 
     private readonly _expressionChangePlayback: IExpressionChangePlayback;
     private readonly _expressionChangeTrackerManager: IExpressionChangeTrackerManager
-    private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager
+    private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager;
+    private readonly _expressionManager: IExpressionManager;
+
     constructor(private _state: IExpressionEditorState) {
         this._expressionChangePlayback = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionChangePlayback);
         this._expressionChangeTrackerManager = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionChangeTrackerManager);
         this._expressionChangeTransactionManager = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
+        this._expressionManager = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionManager);
     }
 
     public get state(): IExpressionEditorState {
@@ -32,7 +35,7 @@ export class ExpressionEditorStateBuilder {
 
     public setTreeZoomPercent(treeZoomPercent: number): this {
 
-         this._state = {
+        this._state = {
             ...this._state,
             treeZoomPercent
         }
@@ -40,8 +43,8 @@ export class ExpressionEditorStateBuilder {
         return this;
     }
 
-    public setShowExpressionTreeViewt(showExpressionTreeView: boolean): this {
-         this._state = {
+    public setShowExpressionTreeView(showExpressionTreeView: boolean): this {
+        this._state = {
             ...this._state,
             showExpressionTreeView
         }
@@ -49,6 +52,49 @@ export class ExpressionEditorStateBuilder {
         return this;
     }
 
+    public setTreeHighlight(
+        modelIndex: number,
+        expressionIndex: number,
+        treeHighlight:  IExpressionChangeHistory[]
+    ): this {
+        const modelWithExpressions = this._state.modelsWithExpressions[modelIndex];
+        if (!modelWithExpressions) {
+            return this;
+        }
+
+        if (expressionIndex < 0 || expressionIndex >= modelWithExpressions.expressions.length) {
+            return this;
+        }
+
+        const modelsWithExpressions = [...this._state.modelsWithExpressions];
+        const expressions = [...modelsWithExpressions[modelIndex].expressions];
+
+        const prevExpressionInfo = expressions[expressionIndex];
+        if (!prevExpressionInfo) {
+            return this;
+        }
+
+        const updatedExpressionInfo: IExpressionInfo = {
+            ...prevExpressionInfo,
+            treeHighlight,
+            treeHighlightVersion: (prevExpressionInfo.treeHighlightVersion ?? 0) + 1,
+        };
+
+      
+        expressions[expressionIndex] = updatedExpressionInfo;
+
+        modelsWithExpressions[modelIndex] = {
+            ...modelsWithExpressions[modelIndex],
+            expressions,
+        };
+
+        this._state = {
+            ...this._state,
+            modelsWithExpressions,
+        };
+
+        return this;
+    }
 
     public deleteModel(modelIndex: number): this {
         const models = this._state.modelsWithExpressions;
@@ -89,8 +135,49 @@ export class ExpressionEditorStateBuilder {
         return this;
     }
 
-    public deleteExpression(modelIndex: number, indexToDelete: number | null): this {
-        if (indexToDelete === null) {
+    public setExpressionIsDeleting(modelIndex: number, expressionIndex: number, isDeleting: boolean): this {
+        const modelWithExpressions = this._state.modelsWithExpressions[modelIndex];
+        if (!modelWithExpressions) {
+            return this;
+        }
+
+
+        if (
+            expressionIndex !== null &&
+            (expressionIndex < 0 || expressionIndex >= modelWithExpressions.expressions.length)
+        ) {
+            return this;
+        }
+
+
+        const modelsWithExpressions = [...this._state.modelsWithExpressions];
+
+        const expressions = [... modelsWithExpressions[modelIndex] .expressions];
+
+        expressions[expressionIndex] = {
+            ...expressions[expressionIndex],
+            isDeleting,
+        }
+
+        modelsWithExpressions[modelIndex] = {
+            ...modelsWithExpressions[modelIndex],
+            expressions,
+            selectedExpressionIndex: expressionIndex
+        };
+
+    
+
+        this._state = { 
+            ...this._state, 
+            selectedModelIndex: modelIndex,
+            modelsWithExpressions 
+        };
+
+        return this;
+    }
+
+    public deleteExpression(modelIndex: number, expressionIndex: number | null): this {
+        if (expressionIndex === null) {
             return this;
         }
 
@@ -99,23 +186,23 @@ export class ExpressionEditorStateBuilder {
             return this;
         }
 
-        if (!currentModel.expressions[indexToDelete]) {
+        if (!currentModel.expressions[expressionIndex]) {
             return this;
         }
 
         const newExpressions = currentModel.expressions.filter(
-            (_, i) => i !== indexToDelete
+            (_, i) => i !== expressionIndex
         );
 
         let newSelectedIndex = currentModel.selectedExpressionIndex;
         if (newExpressions.length === 0) {
             newSelectedIndex = null;
-        } else if (currentModel.selectedExpressionIndex === indexToDelete) {
+        } else if (currentModel.selectedExpressionIndex === expressionIndex) {
             newSelectedIndex =
-                indexToDelete > 0 ? indexToDelete - 1 : 0;
+                expressionIndex > 0 ? expressionIndex - 1 : 0;
         } else if (
             currentModel.selectedExpressionIndex !== null &&
-            indexToDelete < currentModel.selectedExpressionIndex
+            expressionIndex < currentModel.selectedExpressionIndex
         ) {
             newSelectedIndex = currentModel.selectedExpressionIndex - 1;
         }
@@ -136,15 +223,19 @@ export class ExpressionEditorStateBuilder {
         return this;
     }
 
+ 
+
+
+
     public selectExpression(modelIndex: number, expressionIndex: number | null): this {
-        const current = this._state.modelsWithExpressions[modelIndex];
-        if (!current || current.selectedExpressionIndex === expressionIndex) {
+        const modelWithExpressions = this._state.modelsWithExpressions[modelIndex];
+        if (!modelWithExpressions || modelWithExpressions.selectedExpressionIndex === expressionIndex) {
             return this;
         }
 
         if (
             expressionIndex !== null &&
-            (expressionIndex < 0 || expressionIndex >= current.expressions.length)
+            (expressionIndex < 0 || expressionIndex >= modelWithExpressions.expressions.length)
         ) {
             return this;
         }
@@ -159,35 +250,26 @@ export class ExpressionEditorStateBuilder {
         return this;
     }
 
-    public editExpression(modelIndex: number, editingExpressionIndex: number | null): this {
+    public setEditingExpressionIndex(modelIndex: number, editingExpressionIndex: number): this {
         const current = this._state.modelsWithExpressions[modelIndex];
 
         if (!current) {
             return this;
         }
 
-        if (
-            editingExpressionIndex !== null &&
-            (editingExpressionIndex < 0 || editingExpressionIndex >= current.expressions.length)
-        ) {
-            return this;
-        }
+        const clampedEditingExpressionIndex = editingExpressionIndex >= 0 && editingExpressionIndex < current.expressions.length
+            ? editingExpressionIndex
+            : -1;
 
-        if (
-            current.editingExpressionIndex === editingExpressionIndex &&
-            current.selectedExpressionIndex === editingExpressionIndex
-        ) {
-            return this;
-        }
 
         const modelsWithExpressions = [...this._state.modelsWithExpressions];
         modelsWithExpressions[modelIndex] = {
             ...current,
-            editingExpressionIndex,
-            selectedExpressionIndex: editingExpressionIndex,
+            editingExpressionIndex: clampedEditingExpressionIndex,
+            selectedExpressionIndex: clampedEditingExpressionIndex,
         };
 
-        this._state = { ...this._state, modelsWithExpressions };
+        this._state = { ...this._state, error: undefined, modelsWithExpressions };
         return this;
     }
 
@@ -201,7 +283,7 @@ export class ExpressionEditorStateBuilder {
 
         this._expressionChangeTransactionManager.suspend();
         try {
-             this.updateModel(currentModel.model, model);
+            this.updateModel(currentModel.model, model);
         } finally {
             this._expressionChangeTransactionManager.continue();
         }
@@ -248,6 +330,7 @@ export class ExpressionEditorStateBuilder {
     public setAddingModel(addingModel: boolean): this {
         this._state = {
             ...this._state,
+            error: undefined,
             addingModel
         }
         return this;
@@ -256,17 +339,26 @@ export class ExpressionEditorStateBuilder {
     public setAddingExpression(addingExpression: boolean): this {
         this._state = {
             ...this._state,
+            error: undefined,
             addingExpression
         };
 
         return this;
     }
 
-    public addModel(name: string, modelString: string, model: object): this {
-        const newModel = {
+
+    public addModel(name: string, editorModelString: string): this {
+        let model: object = this.tryToExecute(() => new Function(`return ${editorModelString}`)());
+
+        if (!model) {
+            return this;
+        }
+
+        const newModel: IModelWithExpressions = {
             name,
             model,
-            modelString,
+            editorModelString,
+            isDeleting:false,
             selectedExpressionIndex: null,
             editingExpressionIndex: null,
             expressions: []
@@ -281,6 +373,7 @@ export class ExpressionEditorStateBuilder {
 
         this._state = {
             ...this._state,
+            addingModel: false,
             modelsWithExpressions,
             selectedModelIndex: newIndex
         };
@@ -435,8 +528,75 @@ export class ExpressionEditorStateBuilder {
         return this;
     }
 
-    public addExpression(modelIndex: number, name: string, expression: IExpression): this {
+
+    public updateExpression(modelIndex: number, expressionIndex: number, name: string, expressionString: string): this {
+        const modelInfo = this._state.modelsWithExpressions[modelIndex];
+        if (!modelInfo) {
+            return this;
+        }
+
+        const expressionInfo = modelInfo.expressions[expressionIndex];
+        if (!expressionInfo) {
+            return this;
+        }
+
+
+        const expression = this.tryToExecute(() =>
+            this._expressionManager
+                .create(modelInfo.model)
+                .instance.create({ expressionString }).instance
+        );
+
+        if (!expression) {
+            return this;
+        }
+
+
+        expressionInfo.expression.dispose();
+
+        const modelsWithExpressions = [...this._state.modelsWithExpressions];
+
+        const expressions = [...modelInfo.expressions];
+        expressions[expressionIndex] = {
+            ...expressionInfo,
+            editorExpressionString: expressionString,
+            changeHistory: [],
+            version: expressionInfo.version + 1,
+            name,
+            treeHighlight: [],
+            treeHighlightVersion: expressionInfo.treeHighlightVersion +1,
+            expression: this._expressionManager
+                .create(modelInfo.model)
+                .instance.create({ expressionString }).instance
+        }
+
+        modelsWithExpressions[modelIndex] = {
+            ...modelsWithExpressions[modelIndex],
+            editingExpressionIndex: -1,
+            expressions
+        };
+
+        this._state = {
+            ...this._state,
+            modelsWithExpressions
+        }
+
+        return this;
+    }
+
+    public addExpression(modelIndex: number, name: string, expressionString: string): this {
         if (!this._state.modelsWithExpressions[modelIndex]) {
+            return this;
+        }
+
+        const model = this._state.modelsWithExpressions[modelIndex].model;
+
+        const expression = this.tryToExecute(() =>
+            this._expressionManager
+                .create(model)
+                .instance.create({ expressionString }).instance
+        );
+        if (!expression) {
             return this;
         }
 
@@ -445,7 +605,11 @@ export class ExpressionEditorStateBuilder {
         const newExpressionInfo: IExpressionInfo = {
             version: 0,
             expression,
+            editorExpressionString: expressionString,
+            isDeleting: false,
             name,
+            treeHighlight: [],
+            treeHighlightVersion: 0,
             selecteChangeHistoryIndex: -1,
             changeHistory: [],
         };
@@ -457,6 +621,7 @@ export class ExpressionEditorStateBuilder {
 
         this._state = {
             ...this._state,
+            addingExpression: false,
             modelsWithExpressions,
         };
 
@@ -523,5 +688,17 @@ export class ExpressionEditorStateBuilder {
             resume();
             throw e;
         }
+    }
+
+    private tryToExecute<T>(action: () => T): T | undefined {
+        try {
+            return action();
+        } catch (e) {
+            this._state = {
+                ...this._state,
+                error: (e instanceof Error ? e.message : e as string)
+            };
+        }
+        return undefined;
     }
 }

@@ -1,4 +1,5 @@
 import { Injectable, MultiInject } from '../dependency-injection';
+import { NoAccessorFoundExeception } from '../exceptions/no-accessor-found-exception';
 import { UnsupportedException } from '../exceptions/unsupported-exception';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
 
@@ -55,15 +56,7 @@ export class IndexValueAccessor implements IIndexValueAccessor {
     );
 
     if (!accessor) {
-      if (typeof context === 'object' && context !== null) {
-        throw new UnsupportedException(
-          `No accessor found for ${context.constructor.name}.${String(index)}`,
-        );
-      } else {
-        throw new UnsupportedException(
-          `No accessor found for non-object context: ${String(context)}.${String(index)}`,
-        );
-      }
+      throw new NoAccessorFoundExeception(context, index);
     }
 
     return accessor;

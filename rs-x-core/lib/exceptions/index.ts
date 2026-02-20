@@ -4,6 +4,7 @@ export * from './assertion';
 export * from './custome-error';
 export * from './invalid-cast-exception';
 export * from './invalid-operation-exception';
+export * from './no-accessor-found-exception';
 export * from './null-or-empty-exception';
 export * from './null-or-undefined-exception';
 export * from './parser-exception';

@@ -68,7 +68,7 @@ export const ModelList: React.FC<IModelListProps> = ({
             handleAddModel();
           }}
         >
-          <FaPlus /> Add
+          <FaPlus /> Add Model
         </button>
       </div>
       <div className='editor-wrapper'>

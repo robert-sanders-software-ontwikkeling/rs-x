@@ -29,7 +29,7 @@ export interface IExpressionTreeProps {
   className?: string;
   style?: React.CSSProperties;
 
-  highlightChanges?: readonly IExpressionChangeHistory[];
+  highlightChanges?:  IExpressionChangeHistory[];
   highlightVersion?: number;
   zoomPercent?: number;
 }
@@ -72,13 +72,13 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
     return layoutEngine.computeLayout(root);
   }, [layoutEngine, root, version]);
 
-  const index = useMemo(() => {
+  const expressionIndex = useMemo(() => {
     return new ExpressionIndex(layout);
   }, [layout]);
 
   const highlightKey = useMemo(() => {
-    return index.buildHighlightKey(highlightChanges);
-  }, [index, highlightChanges]);
+    return expressionIndex.buildHighlightKey(highlightChanges);
+  }, [expressionIndex, highlightChanges]);
 
   // Re-render when expression values recompute (including async replay)
   useExpressionChangedRerender(root);
@@ -88,7 +88,7 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
     highlightChanges,
     highlightVersion,
     highlightKey,
-    index,
+    expressionIndex: expressionIndex,
   });
 
   const valueFormatterFn = useMemo(() => {
@@ -116,7 +116,7 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
   const edgePaths = useExpressionTreeEdgePaths({
     edges: layout.edges,
     nodePos,
-    edgeKey: (a, b) => index.edgeKey(a, b),
+    edgeKey: (a, b) => expressionIndex.edgeKey(a, b),
     selectedEdgeKeys,
     activeEdgeKeys,
   });

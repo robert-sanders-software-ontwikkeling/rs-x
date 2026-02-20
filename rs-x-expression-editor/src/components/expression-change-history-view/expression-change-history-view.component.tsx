@@ -32,14 +32,14 @@ export interface IExpressionChangeHistoryViewProps {
         modelIndex: number,
         expressionIndex: number,
         selectedChangeSetIndex: number,
-        items: readonly IExpressionChangeHistory[]
+        items:  IExpressionChangeHistory[]
     ) => void;
 }
 
 type HistoryBatch = {
     /** persisted index (0 oldest -> newest) */
     persistedIndex: number;
-    items: readonly IExpressionChangeHistory[];
+    items:  IExpressionChangeHistory[];
 };
 
 function clampIndex(index: number, length: number): number {
@@ -256,7 +256,7 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
         onSelectionChanged,
     });
 
-    const onUserSelectPersistedIndex = (persistedIndex: number, items: readonly IExpressionChangeHistory[]) => {
+    const onUserSelectPersistedIndex = (persistedIndex: number, items:  IExpressionChangeHistory[]) => {
         onSelectionChanged(modelIndex, expressionIndex, persistedIndex, items);
     };
 
