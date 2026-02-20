@@ -15,7 +15,9 @@
   background-color: var(--panel);
   box-shadow: none;
 
-  transition: border-color var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease),
+  transition:
+    border-color var(--t-med) var(--ease),
+    box-shadow var(--t-med) var(--ease),
     transform var(--t-fast) var(--ease);
 }
 
@@ -25,8 +27,8 @@
 
 /* Open state: subtle ring like your focus */
 .accordionPanel.isOpen {
-  border-color: rgba(var(--c-accent), 0.55);
-  box-shadow: 0 0 0 1px rgba(var(--c-accent), 0.18);
+  border-color: rgb(var(--c-accent) / 0.55);
+  box-shadow: 0 0 0 1px rgb(var(--c-accent) / 0.18);
 }
 
 /* Header */
@@ -46,7 +48,10 @@
   cursor: pointer;
   user-select: none;
 
-  transition: background-color var(--t-med) var(--ease), border-color var(--t-med) var(--ease);
+  transition:
+    background-color var(--t-med) var(--ease),
+    border-color var(--t-med) var(--ease),
+    box-shadow var(--t-med) var(--ease);
 }
 
 /* Hover: slightly lift using surfaces */
@@ -57,7 +62,7 @@
 /* Focus (keyboard) */
 .accordionHeader:focus-visible {
   outline: none;
-  border-color: rgba(var(--c-accent), 0.55);
+  border-color: rgb(var(--c-accent) / 0.55);
   box-shadow: var(--shadow-focus);
 }
 
@@ -73,7 +78,11 @@
   }
 
   .accordionPanel.isOpen .accordionHeader {
-    background-color: color-mix(in srgb, var(--panel-header) 78%, rgba(var(--c-accent), 0.22) 22%);
+    background-color: color-mix(
+      in srgb,
+      var(--panel-header) 78%,
+      rgb(var(--c-accent) / 0.22) 22%
+    );
   }
 }
 

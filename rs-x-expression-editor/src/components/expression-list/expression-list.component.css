@@ -37,7 +37,8 @@
   padding: var(--sp-3) var(--sp-5);
   cursor: pointer;
 
-  transition: background-color var(--t-med) var(--ease),
+  transition:
+    background-color var(--t-med) var(--ease),
     border-color var(--t-med) var(--ease),
     box-shadow var(--t-med) var(--ease);
 }
@@ -52,9 +53,9 @@
 ========================================================= */
 
 .expression-item.is-selected {
-  border-color: rgba(var(--c-accent), 0.55);
-  background-color: color-mix(in srgb, var(--surface-1) 70%, rgba(var(--c-accent), 0.14) 30%);
-  box-shadow: 0 0 0 1px rgba(var(--c-accent), 0.35);
+  border-color: rgb(var(--c-accent) / 0.55);
+  background-color: color-mix(in srgb, var(--surface-1) 70%, rgb(var(--c-accent) / 0.14) 30%);
+  box-shadow: 0 0 0 1px rgb(var(--c-accent) / 0.35);
 }
 
 @supports not (background-color: color-mix(in srgb, black 50%, white 50%)) {
@@ -114,14 +115,14 @@
 ========================================================= */
 
 .view-btn {
-  background-color: rgba(var(--c-info), 0.12);
-  border-color: rgba(var(--c-info), 0.35);
+  background-color: rgb(var(--c-info) / 0.12);
+  border-color: rgb(var(--c-info) / 0.35);
   color: var(--fg);
 }
 
 .view-btn:hover {
-  background-color: rgba(var(--c-info), 0.18);
-  border-color: rgba(var(--c-info), 0.55);
+  background-color: rgb(var(--c-info) / 0.18);
+  border-color: rgb(var(--c-info) / 0.55);
 }
 
 /* =========================================================
@@ -129,14 +130,14 @@
 ========================================================= */
 
 .edit-btn {
-  background-color: rgba(var(--c-accent), 0.14);
-  border-color: rgba(var(--c-accent), 0.40);
+  background-color: rgb(var(--c-accent) / 0.14);
+  border-color: rgb(var(--c-accent) / 0.40);
   color: var(--fg);
 }
 
 .edit-btn:hover {
-  background-color: rgba(var(--c-accent), 0.22);
-  border-color: rgba(var(--c-accent), 0.60);
+  background-color: rgb(var(--c-accent) / 0.22);
+  border-color: rgb(var(--c-accent) / 0.60);
 }
 
 /* =========================================================
@@ -144,12 +145,12 @@
 ========================================================= */
 
 .delete-btn {
-  background-color: rgba(var(--c-danger), 0.14);
-  border-color: rgba(var(--c-danger), 0.40);
+  background-color: rgb(var(--c-danger) / 0.14);
+  border-color: rgb(var(--c-danger) / 0.40);
   color: var(--fg);
 }
 
 .delete-btn:hover {
-  background-color: rgba(var(--c-danger), 0.22);
-  border-color: rgba(var(--c-danger), 0.60);
+  background-color: rgb(var(--c-danger) / 0.22);
+  border-color: rgb(var(--c-danger) / 0.60);
 }

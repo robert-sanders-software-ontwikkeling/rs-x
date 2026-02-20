@@ -177,19 +177,14 @@ export function ModelEditor<T extends AnyRecord>({
     onCommit(modelIndex, deepClone(draft));
   };
 
-  const handleUndo = () => {
-    setDraft(deepClone(model));
-  };
+
 
   return (
     <div className="me-root">
       <ModelNode value={draft} path={[]} depth={0} indentSize={indentSize} onChange={handleChange} />
 
       <div className="me-actions">
-        <button className="btn me-undo" type="button" onClick={handleUndo}>
-          Undo
-        </button>
-        <button className="btn me-commit" type="button" onClick={handleCommit}>
+        <button className="btn btn--commit" type="button" onClick={handleCommit}>
           Commit
         </button>
       </div>

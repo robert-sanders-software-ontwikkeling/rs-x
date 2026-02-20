@@ -318,7 +318,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                             <span>Change History</span>
                             <button
                               type='button'
-                              className='panel-header-icon-button'
+                              className='icon-btn '
                               disabled={!canClearSelectedHistory}
                               onClick={onClearSelectedHistory}
                               title='Clear full history for this expression'

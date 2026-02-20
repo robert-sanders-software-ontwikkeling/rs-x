@@ -48,14 +48,16 @@
   border: 1px solid var(--border-1);
   border-radius: var(--r-md);
   overflow: hidden;
-  transition: background-color var(--t-med) var(--ease), border-color var(--t-med) var(--ease),
+  transition:
+    background-color var(--t-med) var(--ease),
+    border-color var(--t-med) var(--ease),
     box-shadow var(--t-med) var(--ease);
 }
 
 .changeSet.isActive {
-  border-color: rgba(var(--c-accent), 0.55);
-  background-color: color-mix(in srgb, var(--surface-1) 70%, rgba(var(--c-accent), 0.10) 30%);
-  box-shadow: 0 0 0 1px rgba(var(--c-accent), 0.16);
+  border-color: rgb(var(--c-accent) / 0.55);
+  background-color: color-mix(in srgb, var(--surface-1) 70%, rgb(var(--c-accent) / 0.10) 30%);
+  box-shadow: 0 0 0 1px rgb(var(--c-accent) / 0.16);
 }
 
 @supports not (background-color: color-mix(in srgb, black 50%, white 50%)) {
@@ -85,7 +87,9 @@
   position: relative;
   text-align: left;
 
-  transition: background-color var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease);
+  transition:
+    background-color var(--t-med) var(--ease),
+    box-shadow var(--t-med) var(--ease);
 }
 
 .changeSetHeader:hover {
@@ -106,7 +110,7 @@
   bottom: var(--sp-3);
   width: 3px;
   border-radius: 999px;
-  background-color: rgba(var(--c-accent), 0.92);
+  background-color: rgb(var(--c-accent) / 0.92);
 }
 
 .changeSetHeaderLeft {
@@ -303,9 +307,9 @@
 }
 
 .changeStepDot.isTrigger {
-  background-color: rgba(var(--c-accent), 0.95);
-  box-shadow: 0 0 0 3px rgba(var(--c-accent), 0.12);
-  border-color: rgba(var(--c-accent), 0.40);
+  background-color: rgb(var(--c-accent) / 0.95);
+  box-shadow: 0 0 0 3px rgb(var(--c-accent) / 0.12);
+  border-color: rgb(var(--c-accent) / 0.40);
 }
 
 .changeStepLine {

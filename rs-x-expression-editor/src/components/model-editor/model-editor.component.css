@@ -53,7 +53,8 @@
   border-radius: var(--r-md);
   background: var(--surface-1);
 
-  transition: background-color var(--t-med) var(--ease),
+  transition:
+    background-color var(--t-med) var(--ease),
     border-color var(--t-med) var(--ease);
 }
 
@@ -111,13 +112,14 @@
   color: var(--fg);
   min-width: 0;
 
-  transition: border-color var(--t-med) var(--ease),
+  transition:
+    border-color var(--t-med) var(--ease),
     box-shadow var(--t-med) var(--ease);
 }
 
 .me-input:focus {
   outline: none;
-  border-color: rgba(var(--c-accent), 0.55);
+  border-color: rgb(var(--c-accent) / 0.55);
   box-shadow: var(--shadow-focus);
 }
 
@@ -153,29 +155,6 @@
   border-top: 1px solid var(--sep);
 }
 
-/* =========================================================
-   Buttons (inherits global .btn but kept scoped support)
-========================================================= */
 
-.me-undo {
-  background: var(--surface-1);
-  border: 1px solid var(--border-2);
-  color: var(--fg);
-}
 
-.me-undo:hover {
-  background: var(--surface-2);
-  border-color: var(--border-3);
-}
 
-/* Commit uses semantic success token */
-.me-commit {
-  background: rgba(var(--c-success), 0.18);
-  border: 1px solid rgba(var(--c-success), 0.55);
-  color: var(--fg);
-}
-
-.me-commit:hover {
-  background: rgba(var(--c-success), 0.26);
-  border-color: rgba(var(--c-success), 0.75);
-}
