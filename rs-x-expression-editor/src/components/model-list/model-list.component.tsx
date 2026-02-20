@@ -1,7 +1,8 @@
 import React from 'react';
 import { FaPlus } from 'react-icons/fa';
-import { IModelWithExpressions } from '../../models/model-with-expressions.interface';
-import { Accordion, AccordionPanel } from '../accordion/accordion.component';
+
+import type { IModelWithExpressions } from '../../models/model-with-expressions.interface';
+import { Accordion, type AccordionPanel } from '../accordion/accordion.component';
 import { ExpressionList } from '../expression-list/expression-list.component';
 
 export interface IModelListProps {
@@ -13,8 +14,6 @@ export interface IModelListProps {
   onSelectExpression: (modelIndex: number, expressionIndex: number) => void;
   onDeleteExpression: (modelIndex: number, expressionIndex: number) => void;
   onEditExpression: (modelIndex: number, expressionIndex: number) => void;
-
-  // ✅ NEW: open right details panel for an expression (View button)
   onViewExpression: (modelIndex: number, expressionIndex: number) => void;
 }
 
@@ -32,9 +31,11 @@ export const ModelList: React.FC<IModelListProps> = ({
   const panels: AccordionPanel[] = modelsWithExpressions.map((modelWithExpressions, modelIndex) => ({
     id: modelWithExpressions.name,
     header: (
-      <>
-        <span>{modelWithExpressions.name}</span>
+      <div className={`model-row ${selectModelIndex === modelIndex ? 'is-selected' : ''}`}>
+        <span className='model-row-title'>{modelWithExpressions.name}</span>
+
         <button
+          type='button'
           className='btn btn--addExpression'
           onClick={(e) => {
             e.stopPropagation();
@@ -43,7 +44,7 @@ export const ModelList: React.FC<IModelListProps> = ({
         >
           <FaPlus /> Add Expression
         </button>
-      </>
+      </div>
     ),
     body: (
       <ExpressionList
@@ -61,13 +62,25 @@ export const ModelList: React.FC<IModelListProps> = ({
   return (
     <>
       <div className='panel-header'>
-        Models
-        <button className='btn btn--addModel' onClick={handleAddModel}>
+        <span>Models</span>
+
+        <button
+          type='button'
+          className='btn btn--addModel'
+          onClick={() => {
+            handleAddModel();
+          }}
+        >
           <FaPlus /> Add Model
         </button>
       </div>
+
       <div className='editor-wrapper'>
-        <Accordion panels={panels} openPanelIndex={selectModelIndex} onOpenChange={onSelectModel} />
+        <Accordion
+          panels={panels}
+          openPanelIndex={selectModelIndex}
+          onOpenChange={onSelectModel}
+        />
       </div>
     </>
   );

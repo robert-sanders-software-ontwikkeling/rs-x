@@ -1,7 +1,8 @@
 import React from 'react';
 import { FaEdit, FaEye, FaTrash } from 'react-icons/fa';
+
 import './expression-list.component.css';
-import { IExpressionInfo } from '../../models/expressionI-info.interface';
+import type { IExpressionInfo } from '../../models/expressionI-info.interface';
 
 export interface IExpressionListProps {
   modelIndex: number;
@@ -35,7 +36,7 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
         return (
           <div
             key={`${expressionIndex}-${expressionInfo.expression.expressionString}`}
-            className={`expression-item ${isSelected ? 'is-selected' : ''}`}
+            className={`expression-row ${isSelected ? 'is-selected' : ''}`}
             onClick={() => {
               onSelect(modelIndex, expressionIndex);
             }}
@@ -47,7 +48,7 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
               }
             }}
           >
-            <div className='expression-code'>{expressionInfo.expression. expressionString}</div>
+            <div className='expression-code'>{expressionInfo.expression.expressionString}</div>
 
             <div
               className='expression-actions'
@@ -56,7 +57,8 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
               }}
             >
               <button
-                className='btn icon-btn view-btn'
+                type='button'
+                className='expression-action'
                 title='View details'
                 onClick={() => {
                   onView(modelIndex, expressionIndex);
@@ -66,7 +68,8 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
               </button>
 
               <button
-                className='btn icon-btn edit-btn'
+                type='button'
+                className='expression-action'
                 title='Edit'
                 onClick={() => {
                   onEdit(modelIndex, expressionIndex);
@@ -76,7 +79,8 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
               </button>
 
               <button
-                className='btn icon-btn delete-btn'
+                type='button'
+                className='expression-action expression-action--danger'
                 title='Delete'
                 onClick={() => {
                   onDelete(modelIndex, expressionIndex);
