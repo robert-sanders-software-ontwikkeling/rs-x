@@ -4,7 +4,8 @@ import { InjectionContainer, Type } from '../../../rs-x-core/lib';
 import { IExpressionChangePlayback } from '../../../rs-x-expression-parser/lib/expression-change-playback/expression-change-playback.interface';
 import { IExpressionChangeHistory, IExpressionChangeTrackerManager } from '../../../rs-x-expression-parser/lib/expression-change-tracker';
 import { IExpressionEditorState } from '../models/expression-editor-state.interface';
-import { IExpressionInfo, IModelWithExpressions } from '../models/model-with-expressions.interface';
+import { IModelWithExpressions } from '../models/model-with-expressions.interface';
+import { IExpressionInfo } from '../models/expressionI-info.interface';
 
 export class ExpressionEditorStateBuilder {
 

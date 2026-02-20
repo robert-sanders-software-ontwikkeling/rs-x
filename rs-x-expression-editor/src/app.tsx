@@ -195,20 +195,16 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
         .setExpressionIsDeleting(modelIndex, expressionIndex, isDeleting)
         .state;
     });
-
   };
 
   const onDeleteExpresionCancel = () => {
     setsetExpressionIsDeleting(currentState.selectedModelIndex as number, selectedExpressionIndex as number, false);
-
   }
 
   const onViewExpression = (modelIndex: number, index: number) => {
     onSelectExpression(modelIndex, index);
     setShowExpressionTreeView(true);
   };
-
-
 
   const onEditExpression = (modelIndex: number, index: number) => {
     setCurrentState((prev) => {
@@ -249,19 +245,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     });
   };
 
-  const setTreeHighlight = (
-    modelIndex: number,
-    expressionIndex: number,
-    treeHighlight: IExpressionChangeHistory[]) => {
-    setCurrentState((prev) => {
-      return new ExpressionEditorStateBuilder(prev).setTreeHighlight(modelIndex, expressionIndex, treeHighlight).state;
-    });
-  }
-
-  const onTreeHighlight = (treeHighlight: IExpressionChangeHistory[]) => {
-    setTreeHighlight(currentState.selectedModelIndex as number, selectedModel.selectedExpressionIndex as number, treeHighlight);
-  }
-
   const onSelectHistoryBatch = (
     modelIndex: number,
     expressionIndex: number,
@@ -277,7 +260,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
 
   };
 
-
   const setTreeZoomPercent = (treeZoomPercent: number) => {
     setCurrentState((prev) => {
       return new ExpressionEditorStateBuilder(prev)
@@ -285,7 +267,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
         .state;
     });
   };
-
 
   const selectedHistoryCount = selectedExpression?.changeHistory?.length ?? 0;
   const canClearSelectedHistory = selectedExpressionIndex !== null && selectedHistoryCount > 0;
@@ -339,9 +320,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                               type='button'
                               className='panel-header-icon-button'
                               disabled={!canClearSelectedHistory}
-                              onClick={() => {
-                                onClearSelectedHistory();
-                              }}
+                              onClick={onClearSelectedHistory}
                               title='Clear full history for this expression'
                             >
                               <FaTrash />
@@ -397,9 +376,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                           <button
                             type='button'
                             className='panel-header-icon-button'
-                            onClick={() => {
-                              onCloseRightPanel();
-                            }}
+                            onClick={onCloseRightPanel}
                             title='Close'
                           >
                             <FaTimes />

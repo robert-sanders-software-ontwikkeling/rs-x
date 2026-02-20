@@ -8,42 +8,12 @@ import { InjectionContainer, type IObjectStorage, RsXCoreInjectionTokens } from 
 import type { IExpressionEditorState } from '../models/expression-editor-state.interface';
 import type { IExpressionChangePlayback } from '@rs-x/expression-parser';
 import { take } from 'rxjs/operators';
+import { ISerializedExpressionEditorState } from '../models/serialized-expression-editor-state.interface';
+import { ISerializedExpressionChangeHistory } from '../models/serialized-expression-change-history.interface';
+
 
 const stateId = '1513bdf8-c3fc-4f74-ad4f-e670724fc625';
 
-export interface ISerializedExpressionChangeHistory {
-    expression: string; // expressionString of the node inside the expression tree
-    value: unknown;
-    oldValue: unknown;
-}
-
-export interface ISerializedExpressionInfo {
-    name: string;
-    editorExpressionString: string;
-    isDeleting: boolean;
-    selecteChangeHistoryIndex: number;
-    treeHighlight: ISerializedExpressionChangeHistory[];
-    changeHistory: ISerializedExpressionChangeHistory[][];
-}
-
-interface ISerializedModelWithExpressions {
-    name: string;
-    editorModelString: string;
-    isDeleting: boolean;
-    selectedExpressionIndex: number | null;
-    editingExpressionIndex: number | null;
-    expressions: ISerializedExpressionInfo[];
-}
-
-interface ISerializedExpressionEditorState {
-    error?: string;
-    treeZoomPercent?: number;
-    showExpressionTreeView?: boolean;
-    addingModel?: boolean;
-    addingExpression?: boolean;
-    selectedModelIndex?: number;
-    modelsWithExpressions: ISerializedModelWithExpressions[];
-}
 
 function isValidSelectionIndex(args: { index: number; historyLength: number }): boolean {
     const { index, historyLength } = args;

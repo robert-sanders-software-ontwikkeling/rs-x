@@ -7,6 +7,7 @@ export class ValueFormatter {
     public format(value: unknown): string {
         const seen = new WeakSet<object>();
 
+
         const toJson = (v: unknown, depth: number): unknown => {
             if (depth > this._maxDepth) {
                 return '[MaxDepth]';
