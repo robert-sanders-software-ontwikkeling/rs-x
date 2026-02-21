@@ -88,6 +88,26 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const shouldShowLeftListPanel =
     !isEditing && !shouldShowRightDetailsPanel;
 
+  const selectedHistoryCount = selectedExpression?.changeHistory?.length ?? 0;
+  const canClearSelectedHistory = selectedExpressionIndex !== null && selectedHistoryCount > 0;
+  const selectedExpressionString = selectedExpression?.expression?.expressionString;
+
+  
+
+  const getError = (): string => {
+    const errors: string[] = [];
+
+    if(currentState.error) {
+      errors.push(currentState.error)
+    }
+
+    if(selectedExpression?.error) {
+       errors.push(selectedExpression?.error)
+    }
+
+    return errors.join('/n');
+
+  };
 
 
   const getModelEditorValue = (): string => {
@@ -379,10 +399,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
 
   }
 
-  const selectedHistoryCount = selectedExpression?.changeHistory?.length ?? 0;
-  const canClearSelectedHistory = selectedExpressionIndex !== null && selectedHistoryCount > 0;
-  const selectedExpressionString = selectedExpression?.expression?.expressionString;
-
   return (
     <div className='app'>
       <Group orientation='horizontal' className='panels-container'>
@@ -510,7 +526,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                 <Group orientation='vertical' className='panel-stack'>
                   <Panel defaultSize={70} minSize={10} className='panel'>
                     <TSEditor
-
                       header='Expression Editor'
                       options={{
                         suggestOnTriggerCharacters: true,
@@ -531,7 +546,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                   <Panel defaultSize={30} minSize={10} className='panel'>
                     <div className='panel-header'>Errors</div>
                     <div className='errors-panel'>
-                      <p>{currentState.error}</p>
+                      <p>{getError()}</p>
                     </div>
                   </Panel>
                 </Group>
