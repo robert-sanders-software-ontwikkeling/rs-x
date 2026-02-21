@@ -151,7 +151,6 @@ const ModelNode: React.FC<{
   return <div className="me-muted">{String(value)}</div>;
 };
 
-/* ---------------- Main Editor ---------------- */
 
 export function ModelEditor<T extends AnyRecord>({
   modelIndex,

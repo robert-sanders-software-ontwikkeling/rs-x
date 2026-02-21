@@ -369,6 +369,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                           <div className='panel-header'>Model</div>
                           <div className='editor-wrapper'>
                             <ModelEditor
+                              key={selectedModel?.version}
                               modelIndex={currentState.selectedModelIndex as number}
                               model={selectedModel!.model}
                               onCommit={onModelChange}

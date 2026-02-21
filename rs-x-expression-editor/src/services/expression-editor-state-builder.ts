@@ -6,6 +6,7 @@ import { IExpressionChangeHistory, IExpressionChangeTrackerManager } from '../..
 import { IExpressionEditorState } from '../models/expression-editor-state.interface';
 import { IModelWithExpressions } from '../models/model-with-expressions.interface';
 import { IExpressionInfo } from '../models/expressionI-info.interface';
+import { version } from 'node:os';
 
 export const NON_EDITITING_STATE = {
     error: undefined,
@@ -310,10 +311,10 @@ export class ExpressionEditorStateBuilder {
 
         const updatedModel = {
             ...currentModel,
+            version: (currentModel.version ?? 0) + 1,
             expressions: currentModel.expressions.map((exprInfo) => {
                 return {
                     ...exprInfo,
-                    version: (exprInfo.version ?? 0) + 1,
                     treeHighlightVersion: (exprInfo.treeHighlightVersion ?? 0) + 1
                 };
             })
@@ -378,6 +379,7 @@ export class ExpressionEditorStateBuilder {
         const newModel: IModelWithExpressions = {
             name,
             model,
+            version: 0,
             editorModelString,
             isDeleting: false,
             selectedExpressionIndex: -1,
@@ -465,6 +467,7 @@ export class ExpressionEditorStateBuilder {
             }
             return {
                 ...modelWithExpressions,
+                version: (modelWithExpressions.version ?? 0) + 1,
                 expressions: updatedExpressions,
             };
         });
