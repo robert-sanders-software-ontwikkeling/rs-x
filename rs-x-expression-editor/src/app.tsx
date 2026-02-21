@@ -25,6 +25,7 @@ import { ConfirmDialog } from './components/confirm-dialog/confirm-dialog.compon
 import { ExpressionTree } from './components/expression-tree-view/expression-tree-view.component';
 import { ModelEditor } from './components/model-editor/model-editor.component';
 import { usePersistExpressionEditorState } from './hooks/use-persist-expression-editor-state';
+import { ExpressionTreePanel } from './components/expression-tree-panel/expression-tree-panel';
 
 const emptyModel = '(\n\t{\n\n\t}\n)';
 
@@ -458,43 +459,13 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                     <Separator className='separator' />
 
                     <Panel defaultSize={80} minSize={20} className='panel'>
-                      <div className='panel-header panel-header-row'>
-                        <div className='exprTreeHeaderTitle'>
-                          <span>Expression Tree</span>
 
-                          <span className='exprTreeHeaderExpr' title={selectedExpressionString}>
-                            {selectedExpressionString}
-                          </span>
-                        </div>
-
-                        <div className='exprTreeHeaderControls'>
-                          <label className='exprTreeHeaderZoom'>
-                            <span>Zoom</span>
-                            <select
-                              value={currentState.treeZoomPercent}
-                              onChange={(e) => {
-                                setTreeZoomPercent(Number(e.target.value));
-                              }}
-                            >
-                              {zoomPresets.map((z) => {
-                                return (
-                                  <option key={z} value={z}>
-                                    {z}%
-                                  </option>
-                                );
-                              })}
-                            </select>
-                          </label>
-                          <button
-                            type='button'
-                            className='icon-btn'
-                            onClick={onCloseRightPanel}
-                            title='Close'
-                          >
-                            <FaTimes />
-                          </button>
-                        </div>
-                      </div>
+                      <ExpressionTreePanel
+                        selectedExpressionString={selectedExpressionString}
+                        treeZoomPercent={currentState.treeZoomPercent}
+                        onTreeZoomPercentChange={setTreeZoomPercent}
+                        onClose={onCloseRightPanel}
+                      />
 
                       <div className='errors-panel'>
                         <ExpressionTree
