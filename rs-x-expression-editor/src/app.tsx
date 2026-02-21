@@ -26,6 +26,7 @@ import { ExpressionTree } from './components/expression-tree-view/expression-tre
 import { ModelEditor } from './components/model-editor/model-editor.component';
 import { usePersistExpressionEditorState } from './hooks/use-persist-expression-editor-state';
 import { ExpressionTreePanel } from './components/expression-tree-panel/expression-tree-panel';
+import { ChangeHistoryPanel } from './components/change-history-panel/change-history-panel.component';
 
 const emptyModel = '(\n\t{\n\n\t}\n)';
 
@@ -427,31 +428,15 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                         <Separator className='separator-horizontal' />
 
                         <Panel defaultSize={30} minSize={15} className='panel'>
-                          <div className='panel-header panel-header-row'>
-                            <span>Change History</span>
-                            <button
-                              type='button'
-                              className='icon-btn '
-                              disabled={!canClearSelectedHistory}
-                              onClick={onClearSelectedHistory}
-                              title='Clear full history for this expression'
-                            >
-                              <FaTrash />
-                            </button>
-                          </div>
-
-                          <div className='panel-content'>
-                            <div className='scroll-host'>
-                              <ExpressionChangeHistoryView
-                                modelIndex={currentState.selectedModelIndex as number}
-                                expressionIndex={selectedModel?.selectedExpressionIndex as number}
-                                expressionInfo={selectedExpression}
-                                selectedChangeSetIndex={selectedExpression!.selecteChangeHistoryIndex}
-                                onHistoryChange={onHistoryChanged}
-                                onSelectionChanged={onSelectHistoryBatch}
-                              />
-                            </div>
-                          </div>
+                          <ChangeHistoryPanel
+                            canClearSelectedHistory= {canClearSelectedHistory}
+                            selectedModelIndex={currentState.selectedModelIndex}
+                            selectedExpressionIndex = {selectedExpressionIndex}
+                            selectedExpression={selectedExpression}
+                            onHistoryChanged={onHistoryChanged}
+                            onSelectionChanged={onSelectHistoryBatch}
+                            onClearSelectedHistory= {onClearSelectedHistory}
+                          />
                         </Panel>
                       </Group>
                     </Panel>
