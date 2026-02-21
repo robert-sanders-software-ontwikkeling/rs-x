@@ -222,6 +222,24 @@ textarea {
   width: 100%;
 }
 
+
+.panel-header__left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.panel-header__icon {
+  font-size: 16px;
+  color: var(--muted);
+  flex: 0 0 auto;
+  transition: color var(--t-med) var(--ease);
+}
+
+.panel-header:hover .panel-header__icon {
+  color: rgb(var(--c-accent) / 0.65);
+}
+
 .panel-header-row {
   flex-wrap: nowrap;
   width: 100%;
@@ -350,6 +368,7 @@ textarea {
 }
 
 /* Add Model (Primary CTA) */
+.btn--save,
 .btn--commit,
 .btn--addModel {
   height: var(--control-h-lg);
@@ -374,6 +393,7 @@ textarea {
     filter var(--t-med) var(--ease);
 }
 
+.btn--save:hover,
 .btn--commit:hover,
 .btn--addModel:hover {
   border-color: rgb(var(--c-accent) / 0.78);
@@ -386,11 +406,13 @@ textarea {
     0 14px 26px rgba(0, 0, 0, 0.26);
 }
 
+.btn--save:active,
 .btn-commit:active,
 .btn--addModel:active {
   transform: translateY(1px);
 }
 
+.btn--save:focus-visible,
 .btn-commit:focus-visible,
 .btn--addModel:focus-visible {
   outline: none;
@@ -400,6 +422,7 @@ textarea {
     var(--shadow-focus);
 }
 
+.btn--save svg,
 .btn--addModel svg,
 .btn--addExpression svg {
   width: 14px;
@@ -476,6 +499,7 @@ textarea {
 .model-row {
   display: flex;
   align-items: center;
+    justify-content: space-between;
 
   /* Title + button close together */
   justify-content: flex-start;
@@ -490,6 +514,33 @@ textarea {
   transition:
     background-color var(--t-med) var(--ease),
     color var(--t-med) var(--ease);
+}
+
+
+
+.model-row-left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.model-row-icon {
+  font-size: 14px;
+  color: var(--muted);
+  flex: 0 0 auto;
+  transition: color var(--t-med) var(--ease);
+}
+
+.model-row-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Subtiele highlight wanneer geselecteerd */
+.model-row.is-selected .model-row-icon {
+  color: rgb(var(--c-accent) / 0.75);
 }
 
 /* Make non-selected titles lighter (NOT bold) */
@@ -618,12 +669,34 @@ textarea {
 }
 
 /* =========================================================
-   9) Expression action buttons (icons visible)
+   9) action buttons 
 ========================================================= */
 
-.expression-actions {
+
+.icon-bar {
   display: flex;
   gap: 8px;
+  opacity: 0.2;
+  transition: opacity var(--t-med) var(--ease);
+}
+
+
+.expression-item.is-selected .icon-bar,
+.model-row.is-selected .icon-bar {
+ opacity: 0.7;
+}
+
+
+.expression-item:hover .icon-bar,
+.model-row:hover .icon-bar {
+ opacity: 1;
+}
+
+.icon-btn {
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Your TSX uses: className="btn icon-btn view-btn" etc.
@@ -754,4 +827,23 @@ textarea:focus {
   width: 110px;
   min-width: 110px;
   max-width: 110px;
+}
+
+.expression-left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.expression-icon {
+  font-size: 13px;
+  color: var(--muted);
+  flex: 0 0 auto;
+  transition: color var(--t-med) var(--ease);
+}
+
+.expression-item.is-selected .expression-icon {
+  color: rgb(var(--c-accent) / 0.75);
 }

@@ -3,7 +3,6 @@
 ========================================================= */
 
 .tsEditorHeader {
-  /* Panel header visuals come from .panel-header; we just tune layout */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -79,77 +78,6 @@
   flex: 0 0 auto;
 }
 
-/* Buttons (match app style + consistent sizing) */
-.tsEditorBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-4);
-
-  height: var(--control-h);
-  padding: 0 var(--sp-5);
-
-  font-size: 0.92em;
-  font-weight: 700;
-
-  border-radius: var(--r-md);
-  border: 1px solid var(--border-2);
-
-  background: var(--surface-1);
-  color: var(--fg);
-
-  cursor: pointer;
-  transition: background-color var(--t-med) var(--ease), border-color var(--t-med) var(--ease),
-    transform var(--t-fast) var(--ease), box-shadow var(--t-med) var(--ease);
-}
-
-.tsEditorBtn:hover {
-  background: var(--surface-2);
-  border-color: var(--border-3);
-}
-
-.tsEditorBtn:active {
-  transform: translateY(1px);
-}
-
-.tsEditorBtn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.tsEditorBtn:focus-visible {
-  outline: none;
-  border-color: rgba(var(--c-accent), 0.55);
-  box-shadow: var(--shadow-focus);
-}
-
-/* ✅ Save must match .me-commit (semantic success) */
-.tsEditorBtnSave,
-.me-commit {
-  background: rgba(var(--c-success), 0.18);
-  border-color: rgba(var(--c-success), 0.55);
-  color: var(--fg);
-}
-
-.tsEditorBtnSave:hover,
-.me-commit:hover {
-  background: rgba(var(--c-success), 0.26);
-  border-color: rgba(var(--c-success), 0.75);
-}
-
-/* Cancel must match ghost style */
-.tsEditorBtnCancel,
-.me-cancel {
-  background: var(--surface-1);
-  border-color: var(--border-2);
-  color: var(--fg);
-}
-
-.tsEditorBtnCancel:hover,
-.me-cancel:hover {
-  background: var(--surface-2);
-  border-color: var(--border-3);
-}
 
 /* Responsive: wrap cleanly */
 @media (max-width: 720px) {

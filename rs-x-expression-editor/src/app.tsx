@@ -52,30 +52,86 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
 
   usePersistExpressionEditorState(currentState, 200);
 
+  const selectedModelIndex = currentState.selectedModelIndex;
 
   const selectedModel =
-    currentState.modelsWithExpressions[currentState.selectedModelIndex as number];
+    typeof selectedModelIndex === 'number'
+      ? currentState.modelsWithExpressions[selectedModelIndex]
+      : undefined;
+
+  const selectedExpressionIndex = selectedModel?.selectedExpressionIndex ?? -1;
 
   const selectedExpression =
-    selectedModel?.expressions[selectedModel?.selectedExpressionIndex as number];
+    selectedModel &&
+      typeof selectedExpressionIndex === 'number'
+      ? selectedModel.expressions[selectedExpressionIndex]
+      : undefined;
 
-  const selectedExpressionIndex =
-    selectedModel?.selectedExpressionIndex ?? null;
+  const editingExpressionIndex = currentState.editingExpressionIndex;
 
-  const editingExpressionIndex = selectedModel?.editingExpressionIndex ?? -1;
+  const editingExpression =
+    !currentState.addingExpression && editingExpressionIndex >= 0;
 
-  const editingExpression = editingExpressionIndex >= 0;
+  const isAdding =
+    currentState.addingModel || currentState.addingExpression;
 
   const isEditing =
-    currentState.addingModel ||
-    currentState.addingExpression ||
-    editingExpression;
-
+    isAdding || editingExpression;
 
   const shouldShowRightDetailsPanel =
-    !isEditing && selectedExpressionIndex !== null && currentState.showExpressionTreeView;
+    !isEditing &&
+    selectedExpressionIndex !== null &&
+    currentState.showExpressionTreeView;
 
-  const shouldShowLeftListPanel = !isEditing && !shouldShowRightDetailsPanel;
+  const shouldShowLeftListPanel =
+    !isEditing && !shouldShowRightDetailsPanel;
+
+
+
+  const getModelEditorValue = (): string => {
+    if (currentState.addingModel) {
+      return emptyModel;
+    }
+
+
+    return selectedModel?.editorModelString ?? emptyModel;
+  }
+
+
+  const getModelEditorName = (): string => {
+
+    return selectedModel?.name ?? '';
+
+  };
+
+
+  const getExpressionEditorValue = (): string => {
+    if (currentState.addingExpression) {
+      return '';
+    }
+
+    if (editingExpressionIndex >= 0 && selectedModel) {
+      const index = selectedModel.selectedExpressionIndex;
+      if (index >= 0) {
+        return selectedModel.expressions[index]?.editorExpressionString ?? '';
+      }
+
+
+    }
+    return '';
+
+  };
+
+  const getExpressionEditorEditorName = (): string => {
+    if (currentState.addingExpression) {
+      return '';
+    }
+
+    const index = selectedModel?.selectedExpressionIndex ?? -1;
+    return selectedModel?.expressions[index]?.name ?? '';
+  };
+
+
 
   const handleSelectModel = (modelIndex: number) => {
     setCurrentState((prev) => {
@@ -83,17 +139,16 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     });
   };
 
-  const handleAddModel = () => {
+  const onAddModel = () => {
     setCurrentState((prev) => {
       return new ExpressionEditorStateBuilder(prev).setAddingModel(true).state;
     });
   };
 
-  const handleAddExpression = (modelIndex: number) => {
+  const onAddExpression = (modelIndex: number) => {
     setCurrentState((prev) => {
       return new ExpressionEditorStateBuilder(prev)
-        .setAddingExpression(true)
-        .selectModel(modelIndex)
+        .setAddingExpression(modelIndex, true)
         .state;
     });
 
@@ -117,7 +172,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
       const b = new ExpressionEditorStateBuilder(prev);
 
       if (prev.addingExpression) {
-        return b.setAddingExpression(false).state;
+        return b.setAddingExpression(currentState.selectedModelIndex as number, false).state;
       }
       if (prev.addingModel) {
         return b.setAddingModel(false).state;
@@ -268,6 +323,14 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     });
   };
 
+  const onDeleteModel = (modelIndex: number) => {
+
+  }
+
+  const onEditModel = (modelIndex: number) => {
+
+  }
+
   const selectedHistoryCount = selectedExpression?.changeHistory?.length ?? 0;
   const canClearSelectedHistory = selectedExpressionIndex !== null && selectedHistoryCount > 0;
   const selectedExpressionString = selectedExpression?.expression?.expressionString;
@@ -283,8 +346,10 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                   selectModelIndex={currentState.selectedModelIndex}
                   modelsWithExpressions={currentState.modelsWithExpressions}
                   onSelectModel={handleSelectModel}
-                  onAddModel={handleAddModel}
-                  onAddExpression={handleAddExpression}
+                  onAddModel={onAddModel}
+                  onDeleteModel={onDeleteModel}
+                  onEditModel={onEditModel}
+                  onAddExpression={onAddExpression}
                   onSelectExpression={onSelectExpression}
                   onEditExpression={onEditExpression}
                   onDeleteExpression={onDeleteExpression}
@@ -305,7 +370,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                           <div className='editor-wrapper'>
                             <ModelEditor
                               modelIndex={currentState.selectedModelIndex as number}
-                              model={selectedModel.model}
+                              model={selectedModel!.model}
                               onCommit={onModelChange}
                             />
                           </div>
@@ -333,7 +398,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                                 modelIndex={currentState.selectedModelIndex as number}
                                 expressionIndex={selectedModel?.selectedExpressionIndex as number}
                                 expressionInfo={selectedExpression}
-                                selectedChangeSetIndex={selectedExpression.selecteChangeHistoryIndex}
+                                selectedChangeSetIndex={selectedExpression!.selecteChangeHistoryIndex}
                                 onHistoryChange={onHistoryChanged}
                                 onSelectionChanged={onSelectHistoryBatch}
                               />
@@ -386,10 +451,11 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
 
                       <div className='errors-panel'>
                         <ExpressionTree
-                          version={selectedExpression.version}
-                          root={selectedExpression.expression}
-                          highlightChanges={selectedExpression.treeHighlight}
-                          highlightVersion={selectedExpression?.treeHighlightVersion}
+                          key={selectedExpression!.version}
+                          version={selectedExpression!.version}
+                          root={selectedExpression!.expression}
+                          highlightChanges={selectedExpression!.treeHighlight}
+                          highlightVersion={selectedExpression!.treeHighlightVersion}
                           zoomPercent={currentState.treeZoomPercent}
                         />
                       </div>
@@ -405,7 +471,12 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
           <Panel defaultSize={100} className='panel'>
             <Group orientation='vertical' className='panel-stack'>
               <Panel defaultSize={70} minSize={10} className='panel'>
-                <TSEditor header='Model Editor' value={emptyModel} save={saveModel} cancel={handleCancel} />
+                <TSEditor
+                  header='Model Editor'
+                  namePlaceholder='Model name'
+                  name={getModelEditorName()}
+                  value={getModelEditorValue()}
+                  save={saveModel} cancel={handleCancel} />
               </Panel>
 
               <Separator className='separator-horizontal' />
@@ -436,14 +507,16 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                 <Group orientation='vertical' className='panel-stack'>
                   <Panel defaultSize={70} minSize={10} className='panel'>
                     <TSEditor
+
                       header='Expression Editor'
                       options={{
                         suggestOnTriggerCharacters: true,
                         quickSuggestions: true,
                         wordBasedSuggestions: 'off',
                       }}
-                      name={selectedExpression?.name ?? ''}
-                      value={selectedExpression?.editorExpressionString ?? ''}
+                      namePlaceholder='Expression name'
+                      name={getExpressionEditorEditorName()}
+                      value={getExpressionEditorValue()}
                       save={saveExpression}
                       cancel={handleCancel}
                       onMount={handleExpressionMount}
@@ -474,9 +547,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
         onConfirm={onDeleteExpresionConfirm}
       />
     </div>
-
-
-
   );
 };
 

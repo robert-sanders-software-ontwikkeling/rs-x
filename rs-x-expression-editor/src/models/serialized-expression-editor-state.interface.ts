@@ -2,10 +2,12 @@ import { ISerializedModelWithExpressions } from './serialized-model-with-express
 
 export interface ISerializedExpressionEditorState {
     error?: string;
-    treeZoomPercent?: number;
-    showExpressionTreeView?: boolean;
-    addingModel?: boolean;
-    addingExpression?: boolean;
-    selectedModelIndex?: number;
+    treeZoomPercent: number;
+    showExpressionTreeView: boolean;
+    addingModel: boolean;
+    addingExpression: boolean;
+    selectedModelIndex: number;
+    editingExpressionIndex: number;
+    editingModelIndex: number;
     modelsWithExpressions: ISerializedModelWithExpressions[];
 }

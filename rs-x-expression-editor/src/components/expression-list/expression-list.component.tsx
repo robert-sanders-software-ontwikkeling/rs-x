@@ -1,8 +1,9 @@
 import React from 'react';
-import { FaEdit, FaEye, FaTrash } from 'react-icons/fa';
+import { FaEdit, FaEye, FaTrash, FaSuperscript } from 'react-icons/fa';
 
 import './expression-list.component.css';
 import { IExpressionInfo } from '../../models/expressionI-info.interface';
+import { CrudRowActions } from '../crud-row-actions/crud-row-actions.component';
 
 export interface IExpressionListProps {
   modelIndex: number;
@@ -29,13 +30,15 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
   }
 
   return (
+
+
     <div className='expression-list'>
       {expressions.map((expressionInfo, expressionIndex) => {
         const isSelected = selectedExpressionIndex === expressionIndex;
 
         return (
           <div
-            key={`${expressionIndex}-${expressionInfo.expression.expressionString}`}
+            key={`${expressionIndex}-${expressionInfo.version}`}
             className={`expression-item ${isSelected ? 'is-selected' : ''}`}
             onClick={() => {
               onSelect(modelIndex, expressionIndex);
@@ -48,47 +51,35 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
               }
             }}
           >
-            <div className='expression-code'>{expressionInfo.expression.expressionString}</div>
-
-            <div
-              className='expression-actions'
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              <button
-                type='button'
-                className='icon-btn view-btn'
-                title='View details'
-                onClick={() => {
-                  onView(modelIndex, expressionIndex);
-                }}
-              >
-                <FaEye />
-              </button>
-
-              <button
-                type='button'
-                className='icon-btn edit-btn'
-                title='Edit'
-                onClick={() => {
-                  onEdit(modelIndex, expressionIndex);
-                }}
-              >
-                <FaEdit />
-              </button>
-
-              <button
-                type='button'
-                className='icon-btn delete-btn'
-                title='Delete'
-                onClick={() => {
-                  onDelete(modelIndex, expressionIndex);
-                }}
-              >
-                <FaTrash />
-              </button>
+            {/* LEFT SIDE */}
+            <div className='expression-left'>
+              <FaSuperscript className='expression-icon' />
+              <div className='expression-code'>
+                {expressionInfo.expression.expressionString}
+              </div>
             </div>
+
+            {/* RIGHT SIDE */}
+            <CrudRowActions
+              prepend={
+                <button
+                  type='button'
+                  className='icon-btn view-btn'
+                  title='View details'
+                  onClick={() => {
+                    onView(modelIndex, expressionIndex);
+                  }}
+                >
+                  <FaEye />
+                </button>
+              }
+              onEdit={() => {
+                onEdit(modelIndex, expressionIndex);
+              }}
+              onDelete={() => {
+                onDelete(modelIndex, expressionIndex);
+              }}
+            />
           </div>
         );
       })}

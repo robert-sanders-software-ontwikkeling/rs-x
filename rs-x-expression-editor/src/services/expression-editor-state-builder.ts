@@ -7,6 +7,14 @@ import { IExpressionEditorState } from '../models/expression-editor-state.interf
 import { IModelWithExpressions } from '../models/model-with-expressions.interface';
 import { IExpressionInfo } from '../models/expressionI-info.interface';
 
+export const NON_EDITITING_STATE = {
+    error: undefined,
+    addingExpression: false,
+    addingModel: false,
+    selectedModelIndex: -1,
+    editingModelIndex: -1,
+}
+
 export class ExpressionEditorStateBuilder {
 
     private readonly _expressionChangePlayback: IExpressionChangePlayback;
@@ -56,7 +64,7 @@ export class ExpressionEditorStateBuilder {
     public setTreeHighlight(
         modelIndex: number,
         expressionIndex: number,
-        treeHighlight:  IExpressionChangeHistory[]
+        treeHighlight: IExpressionChangeHistory[]
     ): this {
         const modelWithExpressions = this._state.modelsWithExpressions[modelIndex];
         if (!modelWithExpressions) {
@@ -81,7 +89,7 @@ export class ExpressionEditorStateBuilder {
             treeHighlightVersion: (prevExpressionInfo.treeHighlightVersion ?? 0) + 1,
         };
 
-      
+
         expressions[expressionIndex] = updatedExpressionInfo;
 
         modelsWithExpressions[modelIndex] = {
@@ -114,7 +122,7 @@ export class ExpressionEditorStateBuilder {
         let newSelectedIndex = this._state.selectedModelIndex;
 
         if (newModels.length === 0) {
-            newSelectedIndex = undefined;
+            newSelectedIndex = -1;
         } else if (this._state.selectedModelIndex === modelIndex) {
             newSelectedIndex =
                 modelIndex < newModels.length
@@ -153,7 +161,7 @@ export class ExpressionEditorStateBuilder {
 
         const modelsWithExpressions = [...this._state.modelsWithExpressions];
 
-        const expressions = [... modelsWithExpressions[modelIndex] .expressions];
+        const expressions = [...modelsWithExpressions[modelIndex].expressions];
 
         expressions[expressionIndex] = {
             ...expressions[expressionIndex],
@@ -166,18 +174,18 @@ export class ExpressionEditorStateBuilder {
             selectedExpressionIndex: expressionIndex
         };
 
-    
 
-        this._state = { 
-            ...this._state, 
+
+        this._state = {
+            ...this._state,
             selectedModelIndex: modelIndex,
-            modelsWithExpressions 
+            modelsWithExpressions
         };
 
         return this;
     }
 
-    public deleteExpression(modelIndex: number, expressionIndex: number | null): this {
+    public deleteExpression(modelIndex: number, expressionIndex: number): this {
         if (expressionIndex === null) {
             return this;
         }
@@ -197,7 +205,7 @@ export class ExpressionEditorStateBuilder {
 
         let newSelectedIndex = currentModel.selectedExpressionIndex;
         if (newExpressions.length === 0) {
-            newSelectedIndex = null;
+            newSelectedIndex = -1;
         } else if (currentModel.selectedExpressionIndex === expressionIndex) {
             newSelectedIndex =
                 expressionIndex > 0 ? expressionIndex - 1 : 0;
@@ -224,11 +232,10 @@ export class ExpressionEditorStateBuilder {
         return this;
     }
 
- 
 
 
 
-    public selectExpression(modelIndex: number, expressionIndex: number | null): this {
+    public selectExpression(modelIndex: number, expressionIndex: number): this {
         const modelWithExpressions = this._state.modelsWithExpressions[modelIndex];
         if (!modelWithExpressions || modelWithExpressions.selectedExpressionIndex === expressionIndex) {
             return this;
@@ -247,7 +254,12 @@ export class ExpressionEditorStateBuilder {
             selectedExpressionIndex: expressionIndex,
         };
 
-        this._state = { ...this._state, modelsWithExpressions };
+        this._state = {
+            ...this._state,
+            ...NON_EDITITING_STATE,
+            selectedModelIndex: modelIndex,
+            modelsWithExpressions
+        };
         return this;
     }
 
@@ -266,11 +278,16 @@ export class ExpressionEditorStateBuilder {
         const modelsWithExpressions = [...this._state.modelsWithExpressions];
         modelsWithExpressions[modelIndex] = {
             ...current,
-            editingExpressionIndex: clampedEditingExpressionIndex,
             selectedExpressionIndex: clampedEditingExpressionIndex,
         };
 
-        this._state = { ...this._state, error: undefined, modelsWithExpressions };
+        this._state = {
+            ...this._state,
+            ...NON_EDITITING_STATE,
+            selectedModelIndex: modelIndex,
+            editingExpressionIndex: clampedEditingExpressionIndex,
+            modelsWithExpressions
+        };
         return this;
     }
 
@@ -296,7 +313,8 @@ export class ExpressionEditorStateBuilder {
             expressions: currentModel.expressions.map((exprInfo) => {
                 return {
                     ...exprInfo,
-                    version: exprInfo.version + 1
+                    version: (exprInfo.version ?? 0) + 1,
+                    treeHighlightVersion: (exprInfo.treeHighlightVersion ?? 0) + 1
                 };
             })
         };
@@ -322,7 +340,8 @@ export class ExpressionEditorStateBuilder {
 
         this._state = {
             ...this._state,
-            selectedModelIndex: modelIndex
+            ...NON_EDITITING_STATE,
+            selectedModelIndex: modelIndex,
         };
 
         return this;
@@ -331,17 +350,18 @@ export class ExpressionEditorStateBuilder {
     public setAddingModel(addingModel: boolean): this {
         this._state = {
             ...this._state,
-            error: undefined,
+            ...NON_EDITITING_STATE,
             addingModel
         }
         return this;
     }
 
-    public setAddingExpression(addingExpression: boolean): this {
+    public setAddingExpression(modelIndex: number, addingExpression: boolean): this {
         this._state = {
             ...this._state,
-            error: undefined,
-            addingExpression
+           ...NON_EDITITING_STATE,
+            selectedModelIndex: modelIndex,
+            addingExpression,
         };
 
         return this;
@@ -359,9 +379,8 @@ export class ExpressionEditorStateBuilder {
             name,
             model,
             editorModelString,
-            isDeleting:false,
-            selectedExpressionIndex: null,
-            editingExpressionIndex: null,
+            isDeleting: false,
+            selectedExpressionIndex: -1,
             expressions: []
         };
 
@@ -374,7 +393,7 @@ export class ExpressionEditorStateBuilder {
 
         this._state = {
             ...this._state,
-            addingModel: false,
+           ...NON_EDITITING_STATE,
             modelsWithExpressions,
             selectedModelIndex: newIndex
         };
@@ -565,20 +584,19 @@ export class ExpressionEditorStateBuilder {
             version: expressionInfo.version + 1,
             name,
             treeHighlight: [],
-            treeHighlightVersion: expressionInfo.treeHighlightVersion +1,
-            expression: this._expressionManager
-                .create(modelInfo.model)
-                .instance.create({ expressionString }).instance
+            treeHighlightVersion: expressionInfo.treeHighlightVersion + 1,
+            expression
         }
 
         modelsWithExpressions[modelIndex] = {
             ...modelsWithExpressions[modelIndex],
-            editingExpressionIndex: -1,
             expressions
         };
 
         this._state = {
             ...this._state,
+            ...NON_EDITITING_STATE,
+            selectedModelIndex: modelIndex,
             modelsWithExpressions
         }
 
@@ -617,12 +635,14 @@ export class ExpressionEditorStateBuilder {
 
         modelsWithExpressions[modelIndex] = {
             ...modelsWithExpressions[modelIndex],
+            selectedExpressionIndex: modelsWithExpressions[modelIndex].expressions.length,
             expressions: [...modelsWithExpressions[modelIndex].expressions, newExpressionInfo],
         };
 
         this._state = {
             ...this._state,
-            addingExpression: false,
+            ...NON_EDITITING_STATE,
+            selectedModelIndex: modelIndex,
             modelsWithExpressions,
         };
 

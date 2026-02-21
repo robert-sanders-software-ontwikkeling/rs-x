@@ -5,7 +5,6 @@ export interface IModelWithExpressions {
     model: object;
     isDeleting: boolean;
     editorModelString: string;
-    selectedExpressionIndex: number | null;
-    editingExpressionIndex: number | null;
+    selectedExpressionIndex: number;
     expressions: IExpressionInfo[];
 }

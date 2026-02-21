@@ -93,22 +93,7 @@
   font-weight: 600;
 }
 
-/* =========================================================
-   Right-side buttons
-========================================================= */
 
-.expression-actions {
-  display: flex;
-  gap: var(--sp-3);
-}
-
-/* Small icon buttons (compatible with your .btn system) */
-.icon-btn {
-  padding: 4px 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
 /* =========================================================
    View button (subtle info tone)

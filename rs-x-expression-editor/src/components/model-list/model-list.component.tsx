@@ -1,14 +1,17 @@
 import React from 'react';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaLayerGroup, FaDatabase } from 'react-icons/fa';
 
 import type { IModelWithExpressions } from '../../models/model-with-expressions.interface';
 import { Accordion, type AccordionPanel } from '../accordion/accordion.component';
 import { ExpressionList } from '../expression-list/expression-list.component';
+import { CrudRowActions } from '../crud-row-actions/crud-row-actions.component';
 
 export interface IModelListProps {
   selectModelIndex?: number;
   modelsWithExpressions: IModelWithExpressions[];
   onAddModel: () => void;
+  onEditModel: (modelIndex: number) => void;
+  onDeleteModel: (modelIndex: number) => void;
   onSelectModel: (modelIndex: number) => void;
   onAddExpression: (modelIndex: number) => void;
   onSelectExpression: (modelIndex: number, expressionIndex: number) => void;
@@ -21,8 +24,10 @@ export const ModelList: React.FC<IModelListProps> = ({
   selectModelIndex,
   modelsWithExpressions,
   onSelectModel,
-  onAddModel: handleAddModel,
-  onAddExpression: handleAddExpression,
+  onAddModel,
+  onEditModel,
+  onDeleteModel,
+  onAddExpression,
   onSelectExpression,
   onDeleteExpression,
   onEditExpression,
@@ -31,19 +36,39 @@ export const ModelList: React.FC<IModelListProps> = ({
   const panels: AccordionPanel[] = modelsWithExpressions.map((modelWithExpressions, modelIndex) => ({
     id: modelWithExpressions.name,
     header: (
-      <div className={`model-row ${selectModelIndex === modelIndex ? 'is-selected' : ''}`}>
-        <span className='model-row-title'>{modelWithExpressions.name}</span>
+      <div
+        className={`model-row ${selectModelIndex === modelIndex ? 'is-selected' : ''}`}
+      >
+        <div className='model-row-left'>
+          <FaDatabase className='model-row-icon' />
+          <span className='model-row-title'>
+            {modelWithExpressions.name}
+          </span>
+        </div>
 
-        <button
-          type='button'
-          className='btn btn--addExpression'
-          onClick={(e) => {
-            e.stopPropagation();
-            handleAddExpression(modelIndex);
+
+
+        <CrudRowActions
+          prepend={
+            <button
+              type='button'
+              className='icon-btn edit-btn'
+              title='Add Expression'
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddExpression(modelIndex);
+              }}
+            >
+              <FaPlus />
+            </button>
+          }
+          onEdit={() => {
+            onEditModel(modelIndex);
           }}
-        >
-          <FaPlus /> Add Expression
-        </button>
+          onDelete={() => {
+            onDeleteModel(modelIndex);
+          }}
+        />
       </div>
     ),
     body: (
@@ -62,16 +87,18 @@ export const ModelList: React.FC<IModelListProps> = ({
   return (
     <>
       <div className='panel-header'>
-        <span>Models</span>
+        <div className='panel-header__left'>
+          <FaLayerGroup className='panel-header__icon' />
+          <span>Models</span>
+        </div>
 
         <button
           type='button'
           className='btn btn--addModel'
-          onClick={() => {
-            handleAddModel();
-          }}
+          onClick={onAddModel}
         >
-          <FaPlus /> Add Model
+          <FaPlus />
+          Add Model
         </button>
       </div>
 

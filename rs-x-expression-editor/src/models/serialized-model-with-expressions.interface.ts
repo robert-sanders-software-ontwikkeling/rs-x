@@ -4,7 +4,6 @@ export interface ISerializedModelWithExpressions {
     name: string;
     editorModelString: string;
     isDeleting: boolean;
-    selectedExpressionIndex: number | null;
-    editingExpressionIndex: number | null;
+    selectedExpressionIndex: number;
     expressions: ISerializedExpressionInfo[];
 }

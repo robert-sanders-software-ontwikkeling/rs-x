@@ -12,6 +12,7 @@ export interface TSEditorProps {
   cancel: () => void;
   header: string;
   name?: string;
+  namePlaceholder;
   value?: string;
   options?: monaco.editor.IStandaloneEditorConstructionOptions;
 }
@@ -20,6 +21,7 @@ export const TSEditor: React.FC<TSEditorProps> = ({
   header,
   name,
   value,
+  namePlaceholder,
   onMount,
   valueChange,
   save,
@@ -30,7 +32,7 @@ export const TSEditor: React.FC<TSEditorProps> = ({
   const [currentValue, setCurrentValue] = useState<string>(value ?? '');
 
   // ✅ Name is optional now; only editor content disables Save
-  const isSaveDisabled = !currentValue.trim();
+  const isSaveDisabled = !currentValue.trim() || !currentName.trim(); 
 
   const onSave = () => {
     if (!currentValue.trim()) {
@@ -57,17 +59,13 @@ export const TSEditor: React.FC<TSEditorProps> = ({
           <div className='tsEditorTitle'>{header}</div>
 
           <div className='tsEditorInputGroup'>
-            <label className='tsEditorLabel' htmlFor='tsEditorName'>
-              Name
-            </label>
             <input
               id='tsEditorName'
               className='tsEditorInput'
               type='text'
               value={currentName}
               onChange={(e) => { setCurrentName(e.target.value); }}
-              // ✅ Placeholder mirrors Monaco value (only meaningful when input is empty)
-              placeholder={currentValue.trim() || 'Enter name'}
+              placeholder={namePlaceholder}
             />
           </div>
         </div>
@@ -75,7 +73,7 @@ export const TSEditor: React.FC<TSEditorProps> = ({
         <div className='tsEditorHeaderRight'>
           <button
             type='button'
-            className='tsEditorBtn tsEditorBtnSave me-commit'
+            className='btn btn--save'
             disabled={isSaveDisabled}
             onClick={() => { onSave(); }}
           >
@@ -84,7 +82,7 @@ export const TSEditor: React.FC<TSEditorProps> = ({
 
           <button
             type='button'
-            className='tsEditorBtn tsEditorBtnCancel me-cancel'
+            className='btn btn--cancel'
             onClick={() => { cancel(); }}
           >
             <FaTimes /> Cancel
