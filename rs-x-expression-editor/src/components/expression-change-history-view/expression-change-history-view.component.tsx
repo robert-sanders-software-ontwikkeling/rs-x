@@ -2,10 +2,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ExpressionType, IExpression, type IExpressionChangeHistory } from '@rs-x/expression-parser';
-import type { IExpressionInfo } from '../../models/model-with-expressions.interface';
+
 import './expression-change-history-view.component.css';
 import { useExpressionChangeHistoryTracker } from './hooks/use-expression-change-history-tracker';
 import { useReemitSelectionOnHistoryChange } from './hooks/use-reemit-selection-on-history-change';
+import { IExpressionInfo } from '../../models/expression-info.interface';
 
 export interface IExpressionChangeHistoryViewProps {
     modelIndex: number;
