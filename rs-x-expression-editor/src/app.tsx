@@ -27,7 +27,7 @@ import { ModelEditor } from './components/model-editor/model-editor.component';
 import { usePersistExpressionEditorState } from './hooks/use-persist-expression-editor-state';
 
 const emptyModel = '(\n\t{\n\n\t}\n)';
-const zoomPresets = [50, 75, 100, 125, 150, 200, 250, 300];
+
 
 export const App: React.FC = () => {
   const deserializedState = useExpressionEditorState();
@@ -184,12 +184,34 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     });
   };
 
-  const saveModel = (name: string, modelString: string) => {
+  const addModel = (name: string, modelString: string) => {
     setCurrentState((prev) => {
       return new ExpressionEditorStateBuilder(prev)
         .addModel(name, modelString)
         .state;
     });
+
+  };
+
+  const updateModel = (modelIndex: number, name: string, modelString: string) => {
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev)
+        .updateModel(modelIndex, name, modelString)
+        .state;
+    });
+  };
+
+
+  const saveModel = (name: string, modelString: string) => {
+    const trimmedModelString = modelString.trim();
+    const selectedModelIndex = currentState.selectedModelIndex as number;
+
+    if (selectedModelIndex === -1) {
+      addModel(name, trimmedModelString);
+
+    } else {
+      updateModel(selectedModelIndex, name, trimmedModelString);
+    }
   };
 
   const addExpression = (modelIndex: number, name: string, expressionString: string) => {
@@ -233,7 +255,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   };
 
   const onDeleteExpression = (modelIndex: number, expressionIndex: number) => {
-    setsetExpressionIsDeleting(modelIndex, expressionIndex, true);
+    setExpressionIsDeleting(modelIndex, expressionIndex, true);
   };
 
   const onDeleteExpresionConfirm = () => {
@@ -244,7 +266,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     });
   }
 
-  const setsetExpressionIsDeleting = (modelIndex: number, expressionIndex: number, isDeleting: boolean) => {
+  const setExpressionIsDeleting = (modelIndex: number, expressionIndex: number, isDeleting: boolean) => {
     setCurrentState((prev) => {
       return new ExpressionEditorStateBuilder(prev)
         .setExpressionIsDeleting(modelIndex, expressionIndex, isDeleting)
@@ -252,8 +274,35 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     });
   };
 
+  const onEditModel = (modelIndex: number) => {
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev).setEditingModelIndex(modelIndex).state;
+    });
+  };
+
+
+  const setModelIsDeleting = (modelIndex: number, isDeleting: boolean) => {
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev)
+        .setModelIsDeleting(modelIndex, isDeleting)
+        .state;
+    });
+  };
+
   const onDeleteExpresionCancel = () => {
-    setsetExpressionIsDeleting(currentState.selectedModelIndex as number, selectedExpressionIndex as number, false);
+    setExpressionIsDeleting(currentState.selectedModelIndex as number, selectedExpressionIndex as number, false);
+  }
+
+  const onDeleteModelCancel = () => {
+    setModelIsDeleting(currentState.selectedModelIndex as number, false);
+  }
+
+  const onDeleteModelConfirm = () => {
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev)
+        .deleteModel(currentState.selectedModelIndex as number)
+        .state;
+    });
   }
 
   const onViewExpression = (modelIndex: number, index: number) => {
@@ -324,10 +373,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   };
 
   const onDeleteModel = (modelIndex: number) => {
-
-  }
-
-  const onEditModel = (modelIndex: number) => {
+    setModelIsDeleting(currentState.selectedModelIndex, true)
 
   }
 
@@ -547,7 +593,16 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
         onCancel={onDeleteExpresionCancel}
         onConfirm={onDeleteExpresionConfirm}
       />
+
+      <ConfirmDialog
+        isOpen={!!selectedModel?.isDeleting}
+        title='Delete model'
+        message={`Are you sure you want to delete the model '${selectedModel?.name}'? This will delete the model and all its expressions. This action cannot be undone.`}
+        onCancel={onDeleteModelCancel}
+        onConfirm={onDeleteModelConfirm}
+      />
     </div>
+
   );
 };
 

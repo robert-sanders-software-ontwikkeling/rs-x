@@ -1,12 +1,12 @@
-import { IExpressionChangeTransactionManager, IExpressionManager, RsXExpressionParserInjectionTokens } from '@rs-x/expression-parser';
+import { IExpression, IExpressionChangeTransactionManager, IExpressionManager, RsXExpressionParserInjectionTokens } from '@rs-x/expression-parser';
 import { catchError, finalize, skip, take, throwError, timeout } from 'rxjs';
-import { InjectionContainer, Type } from '../../../rs-x-core/lib';
+import {InjectionContainer, Type } from '../../../rs-x-core/lib';
 import { IExpressionChangePlayback } from '../../../rs-x-expression-parser/lib/expression-change-playback/expression-change-playback.interface';
 import { IExpressionChangeHistory, IExpressionChangeTrackerManager } from '../../../rs-x-expression-parser/lib/expression-change-tracker';
 import { IExpressionEditorState } from '../models/expression-editor-state.interface';
 import { IModelWithExpressions } from '../models/model-with-expressions.interface';
-import { IExpressionInfo } from '../models/expressionI-info.interface';
-import { version } from 'node:os';
+import { IExpressionInfo } from '../models/expression-info.interface';
+import { error } from 'node:console';
 
 export const NON_EDITITING_STATE = {
     error: undefined,
@@ -106,44 +106,6 @@ export class ExpressionEditorStateBuilder {
         return this;
     }
 
-    public deleteModel(modelIndex: number): this {
-        const models = this._state.modelsWithExpressions;
-
-        if (
-            modelIndex < 0 ||
-            modelIndex >= models.length
-        ) {
-            return this;
-        }
-
-        const newModels = models.filter((_, index) => {
-            return index !== modelIndex;
-        });
-
-        let newSelectedIndex = this._state.selectedModelIndex;
-
-        if (newModels.length === 0) {
-            newSelectedIndex = -1;
-        } else if (this._state.selectedModelIndex === modelIndex) {
-            newSelectedIndex =
-                modelIndex < newModels.length
-                    ? modelIndex
-                    : newModels.length - 1;
-        } else if (
-            this._state.selectedModelIndex !== undefined &&
-            this._state.selectedModelIndex > modelIndex
-        ) {
-            newSelectedIndex = this._state.selectedModelIndex - 1;
-        }
-
-        this._state = {
-            ...this._state,
-            modelsWithExpressions: newModels,
-            selectedModelIndex: newSelectedIndex
-        };
-
-        return this;
-    }
 
     public setExpressionIsDeleting(modelIndex: number, expressionIndex: number, isDeleting: boolean): this {
         const modelWithExpressions = this._state.modelsWithExpressions[modelIndex];
@@ -233,9 +195,6 @@ export class ExpressionEditorStateBuilder {
         return this;
     }
 
-
-
-
     public selectExpression(modelIndex: number, expressionIndex: number): this {
         const modelWithExpressions = this._state.modelsWithExpressions[modelIndex];
         if (!modelWithExpressions || modelWithExpressions.selectedExpressionIndex === expressionIndex) {
@@ -302,7 +261,7 @@ export class ExpressionEditorStateBuilder {
 
         this._expressionChangeTransactionManager.suspend();
         try {
-            this.updateModel(currentModel.model, model);
+            this.updateModelValues(currentModel.model, model);
         } finally {
             this._expressionChangeTransactionManager.continue();
         }
@@ -357,10 +316,125 @@ export class ExpressionEditorStateBuilder {
         return this;
     }
 
+    public setEditingModelIndex(modelIndex: number): this {
+        const current = this._state.modelsWithExpressions[modelIndex];
+
+        if (!current) {
+            return this;
+        }
+
+        const clampedEditingModelIndex = modelIndex >= 0 && modelIndex < this._state.modelsWithExpressions.length
+            ? modelIndex
+            : -1;
+
+
+
+        this._state = {
+            ...this._state,
+            ...NON_EDITITING_STATE,
+            selectedModelIndex: modelIndex,
+            editingModelIndex: clampedEditingModelIndex,
+        };
+        return this;
+    }
+
+    public updateModel(modelIndex: number,name: string, modelString: string): this {
+        const modelInfo = this._state.modelsWithExpressions[modelIndex];
+        if (!modelInfo) {
+            return this;
+        }
+
+        const model = this.evaluateModel(modelString);
+        if (model === undefined) {
+            return this;
+        }
+
+        const validation = this.validateExpressions(modelIndex, model);
+        const modelsWithExpressions = [...this._state.modelsWithExpressions];
+        const expressions = [...modelInfo.expressions];
+
+        for (let i = 0; i < expressions.length; i++) {
+            const validated = validation.get(i) as { expression: IExpression; error: string };
+            if (!validated.error) {
+                expressions[i].expression.dispose();
+            }
+            expressions[i] = {
+                ...expressions[i],
+                expression: validated.expression,
+                error: validated.error,
+            };
+        }
+
+        modelsWithExpressions[modelIndex] = {
+            ...modelInfo,
+            name,
+            expressions,
+        };
+
+        this._state = {
+            ...this._state,
+            ...NON_EDITITING_STATE,
+            modelsWithExpressions,
+        };
+
+        return this;
+    }
+
+    public setModelIsDeleting(modelIndex: number, isDeleting: boolean): this {
+        const model = this._state.modelsWithExpressions[modelIndex];
+        if (!model) {
+            return this;
+        }
+
+        const modelsWithExpressions = [...this._state.modelsWithExpressions];
+
+        modelsWithExpressions[modelIndex] = {
+            ...model,
+            isDeleting,
+        };
+
+        this._state = {
+            ...this._state,
+            modelsWithExpressions,
+        };
+
+        return this;
+    }
+
+
+    public deleteModel(modelIndex: number): this {
+        const modelsWithExpressions = [...this._state.modelsWithExpressions];
+
+        const model = modelsWithExpressions[modelIndex];
+        if (!model) {
+            return this;
+        }
+
+        const newSelectedIndex = this.getNewIndexAfterDelete(
+            this._state.selectedModelIndex,
+            modelIndex,
+            modelsWithExpressions
+        );
+
+        model.expressions.forEach((expressionInfo) => {
+            expressionInfo.expression.dispose();
+        });
+
+        modelsWithExpressions.splice(modelIndex, 1);
+
+        this._state = {
+            ...this._state,
+            selectedModelIndex: newSelectedIndex,
+            modelsWithExpressions,
+        };
+
+        return this;
+    }
+
     public setAddingExpression(modelIndex: number, addingExpression: boolean): this {
         this._state = {
             ...this._state,
-           ...NON_EDITITING_STATE,
+            ...NON_EDITITING_STATE,
             selectedModelIndex: modelIndex,
             addingExpression,
         };
@@ -368,9 +442,8 @@ export class ExpressionEditorStateBuilder {
         return this;
     }
 
-
     public addModel(name: string, editorModelString: string): this {
-        let model: object = this.tryToExecute(() => new Function(`return ${editorModelString}`)());
+        const model: object = this.evaluateModel(editorModelString);
 
         if (!model) {
             return this;
@@ -395,7 +468,7 @@ export class ExpressionEditorStateBuilder {
 
         this._state = {
             ...this._state,
-           ...NON_EDITITING_STATE,
+            ...NON_EDITITING_STATE,
             modelsWithExpressions,
             selectedModelIndex: newIndex
         };
@@ -585,6 +658,7 @@ export class ExpressionEditorStateBuilder {
             editorExpressionString: expressionString,
             changeHistory: [],
             version: expressionInfo.version + 1,
+            error: '',
             name,
             treeHighlight: [],
             treeHighlightVersion: expressionInfo.treeHighlightVersion + 1,
@@ -629,6 +703,7 @@ export class ExpressionEditorStateBuilder {
             expression,
             editorExpressionString: expressionString,
             isDeleting: false,
+            error: '',
             name,
             treeHighlight: [],
             treeHighlightVersion: 0,
@@ -652,14 +727,14 @@ export class ExpressionEditorStateBuilder {
         return this;
     }
 
-    private updateModel(target: object, source: object): void {
+    private updateModelValues(target: object, source: object): void {
         Type.walkObjectTopToBottom(
             target,
             (parent, key, value) => {
 
                 if (Type.isPlainObject(value)) {
 
-                    this.updateModel(value as object, source[key])
+                    this.updateModelValues(value as object, source[key])
                 } else {
                     parent[key] = source[key];
                 }
@@ -725,4 +800,69 @@ export class ExpressionEditorStateBuilder {
         }
         return undefined;
     }
+
+    private getNewIndexAfterDelete<T>(
+        selectedIndex: number,
+        deletedIndex: number,
+        itemsBeforeDelete: T[]
+    ): number {
+        const nextLength = itemsBeforeDelete.length - 1;
+
+        // nothing left after delete
+        if (nextLength <= 0) {
+            return -1;
+        }
+
+        // If nothing was selected, pick a sensible default (keep -1)
+        if (selectedIndex < 0) {
+            return -1;
+        }
+
+        // If selected item was deleted:
+        // - if we deleted the last item, move selection to previous
+        // - otherwise keep same index (next item slides into this index)
+        if (selectedIndex === deletedIndex) {
+            const deletedWasLast = deletedIndex >= nextLength; // since nextLength = oldLength - 1
+            return deletedWasLast ? nextLength - 1 : deletedIndex;
+        }
+
+        // If delete happened before selection, selection shifts left by 1
+        if (deletedIndex < selectedIndex) {
+            return selectedIndex - 1;
+        }
+
+        // Delete after selection => selection unchanged
+        return selectedIndex;
+    }
+
+    private evaluateModel(editorModelString: string): object {
+        return this.tryToExecute(() => new Function(`return ${editorModelString}`)());
+    }
+
+    private validateExpressions(
+        modelIndex: number,
+        model: object
+    ): Map<number, { expression: IExpression; error: string }> {
+        const result = new Map<number, { expression: IExpression; error: string }>();
+        const expressions = this._state.modelsWithExpressions[modelIndex]?.expressions ?? [];
+
+        expressions.forEach((expressionInfo, index) => {
+            let expression = expressionInfo.expression;
+            let error = '';
+
+            try {
+                expression = this._expressionManager
+                    .create(model)
+                    .instance.create({ expressionString: expressionInfo.editorExpressionString })
+                    .instance;
+            } catch (e) {
+                error = e instanceof Error ? e.message : String(e);
+            }
+
+            result.set(index, { expression, error });
+        });
+
+        return result;
+    }
+
 }

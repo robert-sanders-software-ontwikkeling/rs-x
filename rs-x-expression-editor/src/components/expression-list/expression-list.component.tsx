@@ -1,9 +1,9 @@
 import React from 'react';
-import { FaEdit, FaEye, FaTrash, FaSuperscript } from 'react-icons/fa';
+import { FaEye, FaSuperscript } from 'react-icons/fa';
 
-import './expression-list.component.css';
-import { IExpressionInfo } from '../../models/expressionI-info.interface';
+import { IExpressionInfo } from '../../models/expression-info.interface';
 import { CrudRowActions } from '../crud-row-actions/crud-row-actions.component';
+import './expression-list.component.css';
 
 export interface IExpressionListProps {
   modelIndex: number;
@@ -29,17 +29,18 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
     return <i className='expression-empty'>No expressions yet</i>;
   }
 
+
   return (
-
-
     <div className='expression-list'>
       {expressions.map((expressionInfo, expressionIndex) => {
         const isSelected = selectedExpressionIndex === expressionIndex;
-
+        const className = `expression-item ${isSelected ? 'is-selected' : ''}  ${!!expressionInfo.error  ? 'has-error' : ''}`;
+      
         return (
           <div
             key={`${expressionIndex}-${expressionInfo.version}`}
-            className={`expression-item ${isSelected ? 'is-selected' : ''}`}
+            className={className} 
+            title={expressionInfo.error}
             onClick={() => {
               onSelect(modelIndex, expressionIndex);
             }}

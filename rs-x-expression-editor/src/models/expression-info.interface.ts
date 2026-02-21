@@ -6,6 +6,7 @@ export interface IExpressionInfo {
     isDeleting: boolean;
     editorExpressionString: string;
     expression: IExpression;
+    error: string;
     selecteChangeHistoryIndex: number;
     treeHighlightVersion: number
     treeHighlight:  IExpressionChangeHistory[];
