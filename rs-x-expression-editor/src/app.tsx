@@ -5,7 +5,6 @@ import {
   IExpressionChangeHistory
 } from '../../rs-x-expression-parser/lib';
 
-import { FaTimes, FaTrash } from 'react-icons/fa';
 
 
 import { ModelList } from './components/model-list/model-list.component';
@@ -19,14 +18,13 @@ import { ExpressionEditorStateBuilder } from './services/expression-editor-state
 import { ModelIntellisenseService } from './services/model-intellisense.service';
 
 import './app.css';
-import { ExpressionChangeHistoryView } from './components/expression-change-history-view/expression-change-history-view.component';
 
+import { ChangeHistoryPanel } from './components/change-history-panel/change-history-panel.component';
 import { ConfirmDialog } from './components/confirm-dialog/confirm-dialog.component';
+import { ExpressionTreePanel } from './components/expression-tree-panel/expression-tree-panel';
 import { ExpressionTree } from './components/expression-tree-view/expression-tree-view.component';
 import { ModelEditor } from './components/model-editor/model-editor.component';
 import { usePersistExpressionEditorState } from './hooks/use-persist-expression-editor-state';
-import { ExpressionTreePanel } from './components/expression-tree-panel/expression-tree-panel';
-import { ChangeHistoryPanel } from './components/change-history-panel/change-history-panel.component';
 
 const emptyModel = '(\n\t{\n\n\t}\n)';
 
@@ -92,8 +90,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const canClearSelectedHistory = selectedExpressionIndex !== null && selectedHistoryCount > 0;
   const selectedExpressionString = selectedExpression?.expression?.expressionString;
 
-  
-
   const getError = (): string => {
     const errors: string[] = [];
 
@@ -109,23 +105,17 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
 
   };
 
-
   const getModelEditorValue = (): string => {
     if (currentState.addingModel) {
       return emptyModel;
     }
 
-
     return selectedModel?.editorModelString ?? emptyModel;
   }
 
-
   const getModelEditorName = (): string => {
-
     return selectedModel?.name ?? '';
-
   };
-
 
   const getExpressionEditorValue = (): string => {
     if (currentState.addingExpression) {
@@ -152,8 +142,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     const index = selectedModel?.selectedExpressionIndex ?? -1;
     return selectedModel?.expressions[index]?.name ?? '';
   };
-
-
 
   const handleSelectModel = (modelIndex: number) => {
     setCurrentState((prev) => {
@@ -183,7 +171,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
       return new ExpressionEditorStateBuilder(prev).setShowExpressionTreeView(show).state;
     });
   };
-
 
   const getSelectedModelString = (): string | undefined => {
     return selectedModel?.editorModelString;
@@ -223,7 +210,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     });
   };
 
-
   const saveModel = (name: string, modelString: string) => {
     const trimmedModelString = modelString.trim();
     const selectedModelIndex = currentState.selectedModelIndex as number;
@@ -242,8 +228,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
         .addExpression(modelIndex, name, expressionString)
         .state;
     });
-
-  }
+  };
 
   const updateExpression = (modelIndex: number, expressionIndex, name: string, expressionString: string) => {
     setCurrentState((prev) => {
@@ -555,7 +540,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
           </Panel>
         )}
       </Group>
-
 
       <ConfirmDialog
         isOpen={!!selectedExpression?.isDeleting}
