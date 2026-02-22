@@ -1,14 +1,4 @@
 /* =========================================================
-   app.css (CORRECTED)
-   - Fix rgb/rgba token usage (use rgb(var(--token) / a))
-   - Remove invalid/duplicate rules + stray comment
-   - Make non-selected model headers less present
-   - Selected model clearer, hover not “bold-jumping”
-   - Keep Add Expression density behavior (hidden until hover/focus/selected)
-   - Keep your existing treeview styles untouched (this file only styles lists/buttons/layout)
-========================================================= */
-
-/* =========================================================
    0) Reset
 ========================================================= */
 
@@ -46,13 +36,18 @@
   /* Sizing */
   --control-h: 32px;
   --control-h-lg: 38px;
-  /* for primary CTAs only */
   --icon-btn-w: 34px;
 
   /* Motion */
   --t-fast: 80ms;
   --t-med: 150ms;
   --ease: ease;
+
+  /* View transition tuning */
+  --view-slide: 26px;
+  /* 18–30px recommended */
+  --view-fade-ms: 170ms;
+  --view-move-ms: 260ms;
 
   /* Shadows */
   --shadow-panel: 0 1px 10px rgba(0, 0, 0, 0.35);
@@ -222,7 +217,6 @@ textarea {
   width: 100%;
 }
 
-
 .panel-header__left {
   display: flex;
   align-items: center;
@@ -292,7 +286,6 @@ textarea {
    6) UI Primitives
 ========================================================= */
 
-/* Buttons (base) */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -303,7 +296,6 @@ textarea {
   padding: 0 var(--sp-5);
 
   font-size: 0.92em;
-
 
   border-radius: var(--r-xs);
   border: 1px solid var(--border-2);
@@ -338,7 +330,6 @@ textarea {
   box-shadow: var(--shadow-focus);
 }
 
-/* Variants */
 .btn--success {
   background: rgb(var(--c-success));
   border-color: rgb(var(--c-success) / 0.75);
@@ -374,7 +365,6 @@ textarea {
   height: var(--control-h-lg);
   padding: 0 16px;
 
-
   letter-spacing: 0.2px;
 
   border: 1px solid rgb(var(--c-accent) / 0.55);
@@ -407,13 +397,13 @@ textarea {
 }
 
 .btn--save:active,
-.btn-commit:active,
+.btn--commit:active,
 .btn--addModel:active {
   transform: translateY(1px);
 }
 
 .btn--save:focus-visible,
-.btn-commit:focus-visible,
+.btn--commit:focus-visible,
 .btn--addModel:focus-visible {
   outline: none;
   box-shadow:
@@ -430,38 +420,23 @@ textarea {
   display: block;
 }
 
-/* Add Expression (density-friendly) */
-.btn--addExpression {
-  height: 26px;
-  padding: 0 10px;
-  border-radius: 999px;
-
-  background: rgb(255 255 255 / 0.03);
-  border: 1px solid rgb(255 255 255 / 0.10);
-  color: var(--muted);
-
-  transition:
-    opacity var(--t-med) var(--ease),
-    transform var(--t-med) var(--ease),
-    visibility 0s linear var(--t-med),
-    background-color var(--t-med) var(--ease),
-    border-color var(--t-med) var(--ease),
-    color var(--t-med) var(--ease);
-}
-
-/* hidden by default */
+/* Add Expression (density-friendly, hidden until hover/focus/selected) */
 .btn--addExpression {
   height: 24px;
   padding: 0 9px;
   border-radius: 999px;
 
-  /* lighter + less present */
   background: transparent;
   border: 1px solid rgb(255 255 255 / 0.10);
   color: rgb(240 240 240 / 0.60);
 
   font-size: 0.84em;
   font-weight: 600;
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-6px);
 
   transition:
     opacity var(--t-med) var(--ease),
@@ -493,16 +468,15 @@ textarea {
 }
 
 /* =========================================================
-   7) Model List (not selected: less present)
+   7) Model List
 ========================================================= */
 
 .model-row {
+  position: relative;
+
   display: flex;
   align-items: center;
-    justify-content: space-between;
-
-  /* Title + button close together */
-  justify-content: flex-start;
+  justify-content: space-between;
   gap: var(--sp-3);
 
   width: 100%;
@@ -515,8 +489,6 @@ textarea {
     background-color var(--t-med) var(--ease),
     color var(--t-med) var(--ease);
 }
-
-
 
 .model-row-left {
   display: flex;
@@ -536,21 +508,16 @@ textarea {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
 
-/* Subtiele highlight wanneer geselecteerd */
-.model-row.is-selected .model-row-icon {
-  color: rgb(var(--c-accent) / 0.75);
-}
-
-/* Make non-selected titles lighter (NOT bold) */
-.model-row-title {
   font-weight: 500;
   letter-spacing: 0.12px;
   color: rgb(240 240 240 / 0.72);
 }
 
-/* Small lift on hover (no bold-jump) */
+.model-row.is-selected .model-row-icon {
+  color: rgb(var(--c-accent) / 0.75);
+}
+
 .model-row:hover {
   background: rgb(255 255 255 / 0.03);
 }
@@ -559,9 +526,7 @@ textarea {
   color: rgb(240 240 240 / 0.88);
 }
 
-/* Selected model: clear but not heavy */
 .model-row.is-selected {
-  /* reduce the big “filled” feel */
   background: rgb(var(--c-accent) / 0.045);
 }
 
@@ -576,21 +541,9 @@ textarea {
   border-radius: 999px;
 
   background: rgb(var(--c-accent));
-  /* remove glow to reduce heaviness */
   box-shadow: none;
 }
 
-.model-row.is-selected .model-row-title {
-  color: rgb(240 240 240 / 0.96);
-  font-weight: 650;
-}
-
-/* Need position for ::before */
-.model-row {
-  position: relative;
-}
-
-/* Selected title slightly stronger */
 .model-row.is-selected .model-row-title {
   color: rgb(240 240 240 / 0.95);
   font-weight: 650;
@@ -610,10 +563,6 @@ textarea {
   color: var(--muted-2);
 }
 
-/* NOTE:
-   Your TSX currently uses .expression-item, not .expression-row
-   So we style .expression-item (and keep .expression-row as alias).
-*/
 .expression-item,
 .expression-row {
   position: relative;
@@ -641,15 +590,14 @@ textarea {
   border-color: rgb(255 255 255 / 0.08);
 }
 
-/* Selected expression: subtle (no heavy border) */
 .expression-item.is-selected,
-.expression-item.is-selected {
+.expression-row.is-selected {
   background: rgb(255 255 255 / 0.025);
   border-color: rgb(var(--c-accent) / 0.22);
 }
 
 .expression-item.is-selected::before,
-.expression-item.is-selected::before {
+.expression-row.is-selected::before {
   content: '';
   position: absolute;
   left: -10px;
@@ -657,7 +605,6 @@ textarea {
   bottom: 9px;
 
   width: 2px;
-  /* thinner than model */
   border-radius: 999px;
 
   background: rgb(var(--c-accent) / 0.90);
@@ -669,9 +616,8 @@ textarea {
 }
 
 /* =========================================================
-   9) action buttons 
+   9) Action buttons
 ========================================================= */
-
 
 .icon-bar {
   display: flex;
@@ -681,31 +627,24 @@ textarea {
   margin-left: auto;
 }
 
-
 .expression-item.is-selected .icon-bar,
 .model-row.is-selected .icon-bar {
- opacity: 0.7;
+  opacity: 0.7;
 }
-
 
 .expression-item:hover .icon-bar,
 .model-row:hover .icon-bar {
- opacity: 1;
+  opacity: 1;
 }
 
-.icon-btn {
-  padding: 4px 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Your TSX uses: className="btn icon-btn view-btn" etc.
-   So we must style .icon-btn (NOT only .expression-action). */
 .icon-btn {
   width: 30px;
   height: 30px;
   padding: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   border-radius: var(--r-xs);
   border: 1px solid rgb(255 255 255 / 0.10);
@@ -847,4 +786,55 @@ textarea:focus {
 
 .expression-item.is-selected .expression-icon {
   color: rgb(var(--c-accent) / 0.75);
+}
+
+/* =========================================================
+   12) Smooth view transitions (single definition only)
+========================================================= */
+
+.view-stack {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.view-layer {
+  position: absolute;
+  inset: 0;
+
+  min-height: 0;
+  min-width: 0;
+
+  will-change: opacity, transform;
+
+  transition:
+    opacity var(--view-fade-ms) var(--ease),
+    transform var(--view-move-ms) var(--ease);
+}
+
+.view-layer--active {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+  z-index: 2;
+}
+
+.view-layer--inactive {
+  opacity: 0;
+  transform: translateX(calc(var(--view-slide) * -1));
+  pointer-events: none;
+  z-index: 1;
+}
+
+.view-layer--details.view-layer--inactive {
+  transform: translateX(var(--view-slide));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view-layer {
+    transition: none;
+    transform: none;
+  }
 }
