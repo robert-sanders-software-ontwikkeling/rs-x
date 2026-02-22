@@ -33,11 +33,6 @@ export interface IExpressionTreeProps {
   zoomPercent?: number;
 
   isVisible?: boolean;
-
-  /**
-   * Force-replay trigger (e.g. after panel becomes visible).
-   * Incrementing this should replay the wave even if highlight data didn't change.
-   */
   playNonce?: number;
 }
 
@@ -72,6 +67,9 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
 
   const [hostRef, hostSize] = useResizeObserverSize<HTMLDivElement>();
 
+  // ✅ Prevent layout calculation while size is 0 (panel animating)
+  const hasValidSize = (hostSize.width ?? 0) > 0 && (hostSize.height ?? 0) > 0;
+
   const layoutEngine = useMemo(() => {
     return new TreeLayoutEngine();
   }, []);
@@ -90,14 +88,15 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
 
   useExpressionChangedRerender(root);
 
-  const { selectedNodeIds, selectedEdgeKeys, activeNodeIds, activeEdgeKeys } = useHighlightAnimation({
-    highlightChanges,
-    highlightVersion,
-    highlightKey,
-    expressionIndex,
-    isVisible,
-    playNonce,
-  });
+  const { selectedNodeIds, selectedEdgeKeys, activeNodeIds, activeEdgeKeys } =
+    useHighlightAnimation({
+      highlightChanges,
+      highlightVersion,
+      highlightKey,
+      expressionIndex,
+      isVisible,
+      playNonce,
+    });
 
   const valueFormatterFn = useMemo(() => {
     if (formatValue) {
@@ -110,14 +109,22 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
     };
   }, [formatValue, valueMaxDepth, valueMaxChars]);
 
-  const { zoomScale, paddedW, paddedH, scaledW, scaledH, nodePos } = useExpressionTreeViewport({
+  // ✅ Only compute viewport with real dimensions
+  const {
+    zoomScale,
+    paddedW,
+    paddedH,
+    scaledW,
+    scaledH,
+    nodePos,
+  } = useExpressionTreeViewport({
     layout,
     nodeWidth,
     nodeHeight,
     horizontalGap,
     verticalGap,
-    panelW: hostSize.width || 0,
-    panelH: hostSize.height || 0,
+    panelW: hasValidSize ? hostSize.width : 0,
+    panelH: hasValidSize ? hostSize.height : 0,
     zoomPercent,
   });
 
@@ -141,51 +148,63 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
 
   return (
     <div ref={hostRef} className={`exprTreeRoot ${className ?? ''}`} style={style}>
-      <div className='exprTreeViewport'>
-        <div className='exprTreeSpacer' style={{ width: scaledW, height: scaledH }}>
-          <div
-            className='exprTreeZoomLayer'
-            style={{
-              width: paddedW,
-              height: paddedH,
-              transform: `scale(${zoomScale})`,
-              transformOrigin: 'top left',
-            }}
-          >
-            <div className='exprTreeCanvas' style={{ width: paddedW, height: paddedH }}>
-              <svg className='exprTreeLines' width={paddedW} height={paddedH} viewBox={`0 0 ${paddedW} ${paddedH}`}>
-                {edgePaths.map((p) => {
-                  return <path key={p.key} d={p.d} className={p.className} />;
-                })}
-              </svg>
+      {/* ✅ Do not render tree until panel has real size */}
+      {!hasValidSize ? null : (
+        <div className='exprTreeViewport'>
+          <div className='exprTreeSpacer' style={{ width: scaledW, height: scaledH }}>
+            <div
+              className='exprTreeZoomLayer'
+              style={{
+                width: paddedW,
+                height: paddedH,
+                transform: `scale(${zoomScale})`,
+                transformOrigin: 'top left',
+              }}
+            >
+              <div className='exprTreeCanvas' style={{ width: paddedW, height: paddedH }}>
+                <svg
+                  className='exprTreeLines'
+                  width={paddedW}
+                  height={paddedH}
+                  viewBox={`0 0 ${paddedW} ${paddedH}`}
+                >
+                  {edgePaths.map((p) => {
+                    return <path key={p.key} d={p.d} className={p.className} />;
+                  })}
+                </svg>
 
-              {nodeViewModels.map((vm) => {
-                return (
-                  <div key={vm.id} className={vm.className} style={vm.style}>
-                    <div className='exprNodeHeader'>
-                      <div className='exprNodeDot' />
-                      <div className='exprNodeHeaderText'>
-                        <div className='exprNodeTitleRow'>
-                          <div className='exprNodeTitle' title={vm.expressionText}>
-                            {vm.expressionText}
-                          </div>
-                          <div className='exprNodeType' title={vm.typeText}>
-                            {vm.typeText}
+                {nodeViewModels.map((vm) => {
+                  return (
+                    <div key={vm.id} className={vm.className} style={vm.style}>
+                      <div className='exprNodeHeader'>
+                        <div className='exprNodeDot' />
+                        <div className='exprNodeHeaderText'>
+                          <div className='exprNodeTitleRow'>
+                            <div className='exprNodeTitle' title={vm.expressionText}>
+                              {vm.expressionText}
+                            </div>
+                            <div className='exprNodeType' title={vm.typeText}>
+                              {vm.typeText}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className='exprNodeBody'>
-                      {vm.valueText ? <pre className='exprNodePre'>{vm.valueText}</pre> : <div className='exprNodeMuted'>no value</div>}
+                      <div className='exprNodeBody'>
+                        {vm.valueText ? (
+                          <pre className='exprNodePre'>{vm.valueText}</pre>
+                        ) : (
+                          <div className='exprNodeMuted'>no value</div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
