@@ -11,6 +11,9 @@ import { catchError, finalize, skip, take, throwError, timeout } from 'rxjs';
 
 import { ModelExpressionsFactory } from './model-expressions.factory';
 
+import { rxjsScope } from './rxjs-scope';
+import { ModelEvaluator } from './model-evaluator';
+
 export type CompileExpressionResult = {
     expressionString: string;
     expression?: IExpression;
@@ -48,19 +51,7 @@ export class ExpressionEditorBusinessService {
     }
 
     public evaluateModel(editorModelString: string): EvaluateModelResult {
-        try {
-            const model = new Function(`return ${editorModelString}`)() as object;
-
-            return {
-                success: true,
-                model,
-            };
-        } catch (e) {
-            return {
-                success: false,
-                error: e instanceof Error ? e.message : String(e),
-            };
-        }
+        return ModelEvaluator.getInstance().evaluate(editorModelString);
     }
 
     public compileExpression(model: object, expressionString: string): CompileExpressionResult {

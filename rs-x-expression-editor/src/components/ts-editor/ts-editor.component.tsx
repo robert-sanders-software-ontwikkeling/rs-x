@@ -22,6 +22,7 @@ export const TSEditor: React.FC<TSEditorProps> = ({
   name,
   value,
   namePlaceholder,
+
   onMount,
   valueChange,
   save,
@@ -93,6 +94,7 @@ export const TSEditor: React.FC<TSEditorProps> = ({
       <div className='editor-wrapper'>
         <Editor
           theme='vs-dark'
+          path='file:///src/main.ts'
           height='100%'
           defaultLanguage='typescript'
           value={currentValue}

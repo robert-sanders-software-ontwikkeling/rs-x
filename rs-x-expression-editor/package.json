@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "start": "vite",
-    "build": "vite build",
-    "dev": "vite",
+    "copy:monaco-dts": "node ../scripts/copy-monaco-dts.mjs",
+    "build": "npm run copy:monaco-dts && vite build",
+    "dev": "npm run copy:monaco-dts && vite",
     "preview": "vite preview"
   },
   "dependencies": {

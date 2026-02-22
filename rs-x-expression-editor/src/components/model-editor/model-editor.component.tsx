@@ -1,8 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import './model-editor.component.css';
+import { IDeepClone, InjectionContainer, RsXCoreInjectionTokens } from '@rs-x/core';
 
 type Path = Array<string | number>;
 type AnyRecord = Record<string, any>;
+
+
+class DeepClone {
+  private static _instance: IDeepClone;
+
+
+  public static getInstance(): IDeepClone {
+    if(!this._instance) {
+      this._instance = InjectionContainer.get(RsXCoreInjectionTokens.IDeepClone);
+    }
+    return this._instance;
+  }
+}
 
 export interface ModelEditorProps<T extends AnyRecord> {
   modelIndex: number;
@@ -21,8 +35,8 @@ const isPlainObject = (v: unknown): v is AnyRecord => {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 };
 
-const deepClone = <T,>(obj: T): T => {
-  return structuredClone(obj);
+const deepClone = (obj: object): object => {
+  return DeepClone.getInstance().clone(obj) as object
 };
 
 const setAtPath = <T,>(root: T, path: Path, value: unknown): T => {

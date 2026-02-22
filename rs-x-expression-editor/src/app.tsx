@@ -1,5 +1,5 @@
 import type { OnMount } from '@monaco-editor/react';
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import { IExpressionChangeHistory } from '../../rs-x-expression-parser/lib';
 
@@ -17,11 +17,13 @@ import { useExpressionEditorState } from './hooks/use-expression-editor-state';
 import { usePersistExpressionEditorState } from './hooks/use-persist-expression-editor-state';
 
 import type { IExpressionEditorState } from './models/expression-editor-state.interface';
-import { ExpressionEditorStateBuilder } from './services/expression-editor-state-builder';
 import { ExpressionEditorBusinessService } from './services/expression-editor-business.service';
+import { ExpressionEditorStateBuilder } from './services/expression-editor-state-builder';
 import { ModelIntellisenseService } from './services/model-intellisense.service';
 
 import './app.css';
+import { RxjsMonacoTypesLoader } from './services/rxjs-monaco-types-loader';
+
 
 const emptyModel = '(\n\t{\n\n\t}\n)';
 
@@ -195,13 +197,14 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const addModel = (name: string, modelString: string) => {
     const trimmed = modelString.trim();
 
-    const { model, error } = business.evaluateModel(trimmed);
-    if (!model) {
+    const result = business.evaluateModel(trimmed);
+    if (!result.success) {
       setCurrentState((prev) => {
-        return new ExpressionEditorStateBuilder(prev).setError(error ?? 'Invalid model').state;
+        return new ExpressionEditorStateBuilder(prev).setError(result.error ?? 'Invalid model').state;
       });
       return;
     }
+    const model = result.model;
 
     setCurrentState((prev) => {
       return new ExpressionEditorStateBuilder(prev)
@@ -218,19 +221,18 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
       return;
     }
 
-    const { model, error } = business.evaluateModel(trimmed);
-    if (!model) {
+    const result = business.evaluateModel(trimmed);
+    if (!result.success) {
       setCurrentState((prev) => {
-        return new ExpressionEditorStateBuilder(prev).setError(error ?? 'Invalid model').state;
+        return new ExpressionEditorStateBuilder(prev).setError(result.error ?? 'Invalid model').state;
       });
       return;
     }
+    const model = result.model;
 
-    // compile expressions ONCE, outside setState
     const expressionStrings = prevModelInfo.expressions.map((e) => e.editorExpressionString);
     const compileResults = business.compileExpressions(model, expressionStrings);
 
-    // dispose old expressions ONCE, outside setState
     for (const exprInfo of prevModelInfo.expressions) {
       business.disposeExpression(exprInfo.expression);
     }
@@ -327,8 +329,14 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   };
 
   const handleExpressionMount: OnMount = (_, monacoInstance) => {
-    ModelIntellisenseService.getInstance().registerCompletionProvider(monacoInstance);
+    ModelIntellisenseService.getInstance().register(monacoInstance);
   };
+
+  const handleModelMount: OnMount = (_editor, monacoInstance) => {
+    // Install RxJS typings into *THIS* Monaco instance (the one the editor uses)
+    void RxjsMonacoTypesLoader.getInstance().install(monacoInstance);
+  };
+
 
   const onSelectExpression = (modelIndex: number, index: number) => {
     setCurrentState((prev) => {
@@ -587,6 +595,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                   value={getModelEditorValue()}
                   save={saveModel}
                   cancel={handleCancel}
+                  onMount={handleModelMount}
                 />
               </Panel>
 

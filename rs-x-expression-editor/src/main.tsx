@@ -1,3 +1,4 @@
+
 import * as monaco from 'monaco-editor';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -8,6 +9,7 @@ import { InjectionContainer } from '@rs-x/core';
 import { RsXExpressionParserModule } from '@rs-x/expression-parser';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
+
 
 async function bootstrap(): Promise<void> {
   await InjectionContainer.load(RsXExpressionParserModule);
@@ -20,6 +22,7 @@ async function bootstrap(): Promise<void> {
       return new editorWorker();
     },
   };
+  
 
   monaco.typescript.javascriptDefaults.setCompilerOptions({
     allowJs: true,
