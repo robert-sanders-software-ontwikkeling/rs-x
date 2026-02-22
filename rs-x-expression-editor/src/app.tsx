@@ -20,6 +20,7 @@ import { usePersistExpressionEditorState } from './hooks/use-persist-expression-
 import './app.css';
 import { ModelListPanel } from './components/model-list-panel/model-list-panel.component';
 import { ModelEditorPanel } from './components/model-editor-panel/model-editor-panel.component';
+import { ErrorPanel } from './components/error-panel/error-panel';
 
 const emptyModel = '(\n\t{\n\n\t}\n)';
 
@@ -399,7 +400,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                   onEditExpression={onEditExpression}
                   onDeleteExpression={onDeleteExpression}
                   onViewExpression={onViewExpression}
-              
               />
 
               <div
@@ -514,10 +514,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                   <Separator className='separator-horizontal' />
 
                   <Panel defaultSize={30} minSize={10} className='panel'>
-                    <div className='panel-header'>Errors</div>
-                    <div className='panel-body'>
-                      <p>{getError()}</p>
-                    </div>
+                    <ErrorPanel error={getError()}/>
                   </Panel>
                 </Group>
               </Panel>
