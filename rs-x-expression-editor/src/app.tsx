@@ -19,6 +19,7 @@ import { usePersistExpressionEditorState } from './hooks/use-persist-expression-
 
 import './app.css';
 import { ModelListPanel } from './components/model-list-panel/model-list-panel.component';
+import { ModelEditorPanel } from './components/model-editor-panel/model-editor-panel.component';
 
 const emptyModel = '(\n\t{\n\n\t}\n)';
 
@@ -385,7 +386,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
         {!isEditing && (
           <Panel defaultSize={100} minSize={25} className='panel'>
             <div className='view-stack'>
-
               <ModelListPanel
                 visible={shouldShowLeftListPanel}
                 selectedModelIndex={currentState.selectedModelIndex}
@@ -402,7 +402,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
               
               />
 
-              {/* DETAILS VIEW */}
               <div
                 className={`view-layer view-layer--details ${!isEditing && shouldShowRightDetailsPanel
                     ? 'view-layer--active'
@@ -413,15 +412,12 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                   <Panel defaultSize={20} minSize={10} className='panel'>
                     <Group orientation='vertical' className='panel-stack'>
                       <Panel defaultSize={70} minSize={20} className='panel'>
-                        <div className='panel-header'>Model</div>
-                        <div className='editor-wrapper'>
-                          <ModelEditor
-                            key={selectedModel?.version}
+                        <ModelEditorPanel
+                            modelVersion={selectedModel?.version as number}
                             modelIndex={currentState.selectedModelIndex as number}
                             model={selectedModel!.model}
-                            onCommit={onModelChange}
-                          />
-                        </div>
+                            onChange={onModelChange}
+                        />
                       </Panel>
 
                       <Separator className='separator-horizontal' />
