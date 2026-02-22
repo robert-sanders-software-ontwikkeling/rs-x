@@ -72,11 +72,17 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const editingExpression =
     !currentState.addingExpression && editingExpressionIndex >= 0;
 
+
+
+
+  const editingModelIndex = currentState.editingModelIndex;
+  const editingModel =  !currentState.addingExpression && editingModelIndex >= 0;
+
   const isAdding =
     currentState.addingModel || currentState.addingExpression;
 
   const isEditing =
-    isAdding || editingExpression;
+    isAdding || editingExpression || editingModel;
 
   const shouldShowRightDetailsPanel =
     !isEditing &&
@@ -93,12 +99,12 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const getError = (): string => {
     const errors: string[] = [];
 
-    if(currentState.error) {
+    if (currentState.error) {
       errors.push(currentState.error)
     }
 
-    if(selectedExpression?.error) {
-       errors.push(selectedExpression?.error)
+    if (selectedExpression?.error) {
+      errors.push(selectedExpression?.error)
     }
 
     return errors.join('/n');
@@ -179,14 +185,17 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   const handleCancel = () => {
     setCurrentState((prev) => {
       const b = new ExpressionEditorStateBuilder(prev);
+      const selectedModelIndex = currentState.selectedModelIndex as number;
 
       if (prev.addingExpression) {
-        return b.setAddingExpression(currentState.selectedModelIndex as number, false).state;
+        return b.setAddingExpression(selectedModelIndex, false).state;
       }
       if (prev.addingModel) {
         return b.setAddingModel(false).state;
       } else if (editingExpressionIndex >= 0) {
-        return b.setEditingExpressionIndex(currentState.selectedModelIndex as number, editingExpressionIndex).state
+        return b.setEditingExpressionIndex(selectedModelIndex, -1).state
+      } else if(editingModelIndex >= 0) {
+         return b.setEditingModelIndex( -1).state
       }
 
       return prev;
@@ -368,7 +377,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
         .setTreeHighlight(modelIndex, expressionIndex, items)
         .state;
     });
-
   };
 
   const setTreeZoomPercent = (treeZoomPercent: number) => {
@@ -380,8 +388,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
   };
 
   const onDeleteModel = (modelIndex: number) => {
-    setModelIsDeleting(currentState.selectedModelIndex, true)
-
+    setModelIsDeleting(modelIndex, true);
   }
 
   return (
@@ -430,13 +437,13 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
 
                         <Panel defaultSize={30} minSize={15} className='panel'>
                           <ChangeHistoryPanel
-                            canClearSelectedHistory= {canClearSelectedHistory}
+                            canClearSelectedHistory={canClearSelectedHistory}
                             selectedModelIndex={currentState.selectedModelIndex}
-                            selectedExpressionIndex = {selectedExpressionIndex}
+                            selectedExpressionIndex={selectedExpressionIndex}
                             selectedExpression={selectedExpression}
                             onHistoryChanged={onHistoryChanged}
                             onSelectionChanged={onSelectHistoryBatch}
-                            onClearSelectedHistory= {onClearSelectedHistory}
+                            onClearSelectedHistory={onClearSelectedHistory}
                           />
                         </Panel>
                       </Group>
@@ -448,21 +455,13 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
 
                       <ExpressionTreePanel
                         selectedExpressionString={selectedExpressionString}
+                        selectedExpression={selectedExpression}
                         treeZoomPercent={currentState.treeZoomPercent}
                         onTreeZoomPercentChange={setTreeZoomPercent}
                         onClose={onCloseRightPanel}
                       />
 
-                      <div className='errors-panel'>
-                        <ExpressionTree
-                          key={selectedExpression!.version}
-                          version={selectedExpression!.version}
-                          root={selectedExpression!.expression}
-                          highlightChanges={selectedExpression!.treeHighlight}
-                          highlightVersion={selectedExpression!.treeHighlightVersion}
-                          zoomPercent={currentState.treeZoomPercent}
-                        />
-                      </div>
+                      
                     </Panel>
                   </Group>
                 </Panel>
@@ -471,7 +470,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
           </>
         )}
 
-        {currentState.addingModel && (
+        {(currentState.addingModel || editingModel) && (
           <Panel defaultSize={100} className='panel'>
             <Group orientation='vertical' className='panel-stack'>
               <Panel defaultSize={70} minSize={10} className='panel'>
@@ -487,7 +486,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
 
               <Panel defaultSize={30} minSize={10} className='panel'>
                 <div className='panel-header'>Errors</div>
-                <div className='errors-panel'>
+                <div className='panel-body'>
                   <p>{currentState.error}</p>
                 </div>
               </Panel>
@@ -530,7 +529,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
 
                   <Panel defaultSize={30} minSize={10} className='panel'>
                     <div className='panel-header'>Errors</div>
-                    <div className='errors-panel'>
+                    <div className='panel-body'>
                       <p>{getError()}</p>
                     </div>
                   </Panel>
@@ -557,7 +556,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
         onConfirm={onDeleteModelConfirm}
       />
     </div>
-
   );
 };
 

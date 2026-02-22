@@ -1,33 +1,25 @@
-import { IExpression, IExpressionChangeTransactionManager, IExpressionManager, RsXExpressionParserInjectionTokens } from '@rs-x/expression-parser';
+import { IExpressionChangeTransactionManager, RsXExpressionParserInjectionTokens } from '@rs-x/expression-parser';
 import { catchError, finalize, skip, take, throwError, timeout } from 'rxjs';
-import {InjectionContainer, Type } from '../../../rs-x-core/lib';
+import { InjectionContainer, Type } from '../../../rs-x-core/lib';
 import { IExpressionChangePlayback } from '../../../rs-x-expression-parser/lib/expression-change-playback/expression-change-playback.interface';
 import { IExpressionChangeHistory, IExpressionChangeTrackerManager } from '../../../rs-x-expression-parser/lib/expression-change-tracker';
-import { IExpressionEditorState } from '../models/expression-editor-state.interface';
-import { IModelWithExpressions } from '../models/model-with-expressions.interface';
+import { IExpressionEditorState, NON_EDITITING_STATE } from '../models/expression-editor-state.interface';
 import { IExpressionInfo } from '../models/expression-info.interface';
-import { error } from 'node:console';
+import { IModelWithExpressions } from '../models/model-with-expressions.interface';
+import { ModelExpressionsFactory } from './model-expressions.factory';
 
-export const NON_EDITITING_STATE = {
-    error: undefined,
-    addingExpression: false,
-    addingModel: false,
-    selectedModelIndex: -1,
-    editingModelIndex: -1,
-}
+
 
 export class ExpressionEditorStateBuilder {
-
     private readonly _expressionChangePlayback: IExpressionChangePlayback;
     private readonly _expressionChangeTrackerManager: IExpressionChangeTrackerManager
     private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager;
-    private readonly _expressionManager: IExpressionManager;
+
 
     constructor(private _state: IExpressionEditorState) {
         this._expressionChangePlayback = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionChangePlayback);
         this._expressionChangeTrackerManager = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionChangeTrackerManager);
         this._expressionChangeTransactionManager = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager);
-        this._expressionManager = InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionManager);
     }
 
     public get state(): IExpressionEditorState {
@@ -235,11 +227,15 @@ export class ExpressionEditorStateBuilder {
             : -1;
 
 
-        const modelsWithExpressions = [...this._state.modelsWithExpressions];
-        modelsWithExpressions[modelIndex] = {
-            ...current,
-            selectedExpressionIndex: clampedEditingExpressionIndex,
-        };
+        let modelsWithExpressions = this._state.modelsWithExpressions;
+        if (editingExpressionIndex !== -1) {
+            modelsWithExpressions = [...modelsWithExpressions];
+            modelsWithExpressions[modelIndex] = {
+                ...current,
+                selectedExpressionIndex: clampedEditingExpressionIndex,
+            };
+        }
+
 
         this._state = {
             ...this._state,
@@ -317,56 +313,54 @@ export class ExpressionEditorStateBuilder {
     }
 
     public setEditingModelIndex(modelIndex: number): this {
-        const current = this._state.modelsWithExpressions[modelIndex];
-
-        if (!current) {
-            return this;
-        }
-
         const clampedEditingModelIndex = modelIndex >= 0 && modelIndex < this._state.modelsWithExpressions.length
             ? modelIndex
             : -1;
 
-
-
         this._state = {
             ...this._state,
             ...NON_EDITITING_STATE,
-            selectedModelIndex: modelIndex,
+            selectedModelIndex: clampedEditingModelIndex === -1 ? this._state.selectedModelIndex : modelIndex,
             editingModelIndex: clampedEditingModelIndex,
         };
         return this;
     }
 
-    public updateModel(modelIndex: number,name: string, modelString: string): this {
+    public updateModel(modelIndex: number, name: string, editorModelString: string): this {
         const modelInfo = this._state.modelsWithExpressions[modelIndex];
         if (!modelInfo) {
             return this;
         }
 
-        const model = this.evaluateModel(modelString);
+        const model = this.evaluateModel(editorModelString);
         if (model === undefined) {
             return this;
         }
 
-        const validation = this.validateExpressions(modelIndex, model);
+
+        const expressionStrings = modelInfo.expressions.map(expressionInfo => expressionInfo.editorExpressionString);
+        const result = ModelExpressionsFactory.getInstance().create(model, expressionStrings);
+
         const modelsWithExpressions = [...this._state.modelsWithExpressions];
         const expressions = [...modelInfo.expressions];
-
-        for (let i = 0; i < expressions.length; i++) {
-            const validated = validation.get(i) as { expression: IExpression; error: string };
-            if (!validated.error) {
+        for (let i = 0; i < result.length; i++) {
+            if (result[i].expression) {
                 expressions[i].expression.dispose();
             }
             expressions[i] = {
                 ...expressions[i],
-                expression: validated.expression,
-                error: validated.error,
-            };
+                expression: result[i].expression,
+                editorExpressionString: result[i].expressionString,
+                changeHistory: [],
+                selecteChangeHistoryIndex: -1,
+                error: result[i].error,
+            } as IExpressionInfo;
         }
 
         modelsWithExpressions[modelIndex] = {
             ...modelInfo,
+            editorModelString,
+            model,
             name,
             expressions,
         };
@@ -374,6 +368,7 @@ export class ExpressionEditorStateBuilder {
         this._state = {
             ...this._state,
             ...NON_EDITITING_STATE,
+            selectedModelIndex: modelIndex,
             modelsWithExpressions,
         };
 
@@ -416,9 +411,11 @@ export class ExpressionEditorStateBuilder {
             modelsWithExpressions
         );
 
-        model.expressions.forEach((expressionInfo) => {
-            expressionInfo.expression.dispose();
-        });
+        model.expressions
+            .filter(expressionInfo => expressionInfo.exppression)
+            .forEach((expressionInfo) => {
+                expressionInfo.expression.dispose();
+            });
 
         modelsWithExpressions.splice(modelIndex, 1);
 
@@ -519,7 +516,7 @@ export class ExpressionEditorStateBuilder {
         }
 
 
-        this.replayChangeHistory(expressionInfo, clampedSelectedChangeHistoryIndex, currentCursorIndex);
+        this.replayChangeHistory(expressionInfo, clampedSelectedChangeHistoryIndex);
 
 
         const changedExpressionInfo = {
@@ -637,18 +634,11 @@ export class ExpressionEditorStateBuilder {
         }
 
 
-        const expression = this.tryToExecute(() =>
-            this._expressionManager
-                .create(modelInfo.model)
-                .instance.create({ expressionString }).instance
-        );
-
-        if (!expression) {
-            return this;
+        const result = ModelExpressionsFactory.getInstance().create(modelInfo.model, [expressionString])[0];
+        if (result.expression && expressionInfo.expression) {
+            expressionInfo.expression.dispose();
         }
 
-
-        expressionInfo.expression.dispose();
 
         const modelsWithExpressions = [...this._state.modelsWithExpressions];
 
@@ -658,11 +648,11 @@ export class ExpressionEditorStateBuilder {
             editorExpressionString: expressionString,
             changeHistory: [],
             version: expressionInfo.version + 1,
-            error: '',
+            error: result?.error,
             name,
             treeHighlight: [],
             treeHighlightVersion: expressionInfo.treeHighlightVersion + 1,
-            expression
+            expression: result?.expression
         }
 
         modelsWithExpressions[modelIndex] = {
@@ -686,13 +676,12 @@ export class ExpressionEditorStateBuilder {
         }
 
         const model = this._state.modelsWithExpressions[modelIndex].model;
-
-        const expression = this.tryToExecute(() =>
-            this._expressionManager
-                .create(model)
-                .instance.create({ expressionString }).instance
-        );
-        if (!expression) {
+        const result = ModelExpressionsFactory.getInstance().create(model, [expressionString])[0];
+        if (!result.expression) {
+            this._state = {
+                ...this._state,
+                error: result.error
+            };
             return this;
         }
 
@@ -700,7 +689,7 @@ export class ExpressionEditorStateBuilder {
 
         const newExpressionInfo: IExpressionInfo = {
             version: 0,
-            expression,
+            expression: result.expression,
             editorExpressionString: expressionString,
             isDeleting: false,
             error: '',
@@ -746,8 +735,11 @@ export class ExpressionEditorStateBuilder {
     private replayChangeHistory(
         expressionInfo: IExpressionInfo,
         index: number,
-        currentCursorIndex: number
     ): void {
+
+        if(!expressionInfo.expression) {
+            return;
+        }
         const tracker = this._expressionChangeTrackerManager
             .create(expressionInfo.expression).instance;
 
@@ -837,32 +829,6 @@ export class ExpressionEditorStateBuilder {
 
     private evaluateModel(editorModelString: string): object {
         return this.tryToExecute(() => new Function(`return ${editorModelString}`)());
-    }
-
-    private validateExpressions(
-        modelIndex: number,
-        model: object
-    ): Map<number, { expression: IExpression; error: string }> {
-        const result = new Map<number, { expression: IExpression; error: string }>();
-        const expressions = this._state.modelsWithExpressions[modelIndex]?.expressions ?? [];
-
-        expressions.forEach((expressionInfo, index) => {
-            let expression = expressionInfo.expression;
-            let error = '';
-
-            try {
-                expression = this._expressionManager
-                    .create(model)
-                    .instance.create({ expressionString: expressionInfo.editorExpressionString })
-                    .instance;
-            } catch (e) {
-                error = e instanceof Error ? e.message : String(e);
-            }
-
-            result.set(index, { expression, error });
-        });
-
-        return result;
     }
 
 }

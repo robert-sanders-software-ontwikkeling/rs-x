@@ -251,7 +251,7 @@ textarea {
 ========================================================= */
 
 .editor-wrapper,
-.errors-panel {
+.panel-body {
   flex: 1;
   overflow: auto;
   padding: var(--sp-2);
@@ -678,6 +678,7 @@ textarea {
   gap: 8px;
   opacity: 0.2;
   transition: opacity var(--t-med) var(--ease);
+  margin-left: auto;
 }
 
 

@@ -1,15 +1,21 @@
 import { InjectionContainer, type IObjectStorage, RsXCoreInjectionTokens } from '@rs-x/core';
-import type { IExpressionChangePlayback } from '@rs-x/expression-parser';
+import type { IExpression, IExpressionChangePlayback } from '@rs-x/expression-parser';
 import {
-    ExpressionNodeIdIndex,
-    type IExpressionChangeHistory,
-    type IExpressionFactory,
-    RsXExpressionParserInjectionTokens
+  ExpressionNodeIdIndex,
+  type IExpressionChangeHistory,
+  type IExpressionFactory,
+  RsXExpressionParserInjectionTokens
 } from '@rs-x/expression-parser';
-import { take } from 'rxjs/operators';
-import type { IExpressionEditorState } from '../models/expression-editor-state.interface';
+import { take, timeout } from 'rxjs/operators';
+import { getInitialExpressionEditorState, type IExpressionEditorState } from '../models/expression-editor-state.interface';
 import { ISerializedExpressionChangeHistory } from '../models/serialized-expression-change-history.interface';
 import { ISerializedExpressionEditorState } from '../models/serialized-expression-editor-state.interface';
+import { IModelWithExpressions } from '../models/model-with-expressions.interface';
+import { ISerializedModelWithExpressions } from '../models/serialized-model-with-expressions.interface';
+import { IExpressionInfo } from '../models/expression-info.interface';
+import { ISerializedExpressionInfo } from '../models/serialized-expression-info.interface';
+import { ModelExpressionsFactory } from './model-expressions.factory';
+import { firstValueFrom } from 'rxjs';
 
 
 const stateId = '1513bdf8-c3fc-4f74-ad4f-e670724fc625';
@@ -26,12 +32,10 @@ export class ExpressionEdtitorStateSerializer {
   private readonly _expressionChangePlayback: IExpressionChangePlayback =
     InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionChangePlayback);
 
-  private readonly _expressionFactory: IExpressionFactory =
-    InjectionContainer.get(RsXExpressionParserInjectionTokens.IExpressionFactory);
 
   private static _instance: ExpressionEdtitorStateSerializer;
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): ExpressionEdtitorStateSerializer {
     if (!this._instance) {
@@ -39,6 +43,7 @@ export class ExpressionEdtitorStateSerializer {
     }
     return this._instance;
   }
+
 
   public async serialize(state: IExpressionEditorState): Promise<void> {
     const serializedState: ISerializedExpressionEditorState = {
@@ -50,27 +55,7 @@ export class ExpressionEdtitorStateSerializer {
       editingExpressionIndex: state.editingExpressionIndex,
       editingModelIndex: state.editingModelIndex,
       selectedModelIndex: state.selectedModelIndex,
-      modelsWithExpressions: state.modelsWithExpressions.map((modelWithExpressions) => {
-        return {
-          name: modelWithExpressions.name,
-          editorModelString: modelWithExpressions.editorModelString,
-          isDeleting: modelWithExpressions.isDeleting,
-          selectedExpressionIndex: modelWithExpressions.selectedExpressionIndex,
-          expressions: modelWithExpressions.expressions.map((expressionInfo) => {
-            const nodeIdIndex = ExpressionNodeIdIndex.build(expressionInfo.expression);
-
-            return {
-              name: expressionInfo.name,
-              editorExpressionString: expressionInfo.editorExpressionString,
-              isDeleting: expressionInfo.isDeleting,
-              selecteChangeHistoryIndex: expressionInfo.selecteChangeHistoryIndex,
-
-              treeHighlight: this.serializeHistorySet(expressionInfo.treeHighlight, nodeIdIndex),
-              changeHistory: this.serializeHistory(expressionInfo.changeHistory ?? [], nodeIdIndex),
-            };
-          }),
-        };
-      }),
+      modelsWithExpressions: state.modelsWithExpressions.map(this.serializeModelWithExpressions),
     };
 
     await this._objectStorage.set(stateId, serializedState);
@@ -81,19 +66,112 @@ export class ExpressionEdtitorStateSerializer {
       await this._objectStorage.get<ISerializedExpressionEditorState>(stateId);
 
     if (!deserializeState) {
-      return {
-        addingModel: false,
-        addingExpression: false,
-        selectedModelIndex: -1,
-        editingExpressionIndex: -1,
-        editingModelIndex: -1,
-        showExpressionTreeView: false,
-        treeZoomPercent: 75,
-        modelsWithExpressions: [],
-      };
+      return getInitialExpressionEditorState();
+    }
+
+    try {
+      const { state, tasks } = this.tryGetExpressionEditorState(deserializeState);
+
+      await Promise.all(tasks);
+
+      return state;
+    } catch (e) {
+      console.log(e instanceof Error ? e.message : String(e));
+      return getInitialExpressionEditorState();
+    }
+  }
+
+  private async createAutoPlayTask(
+    expression: IExpression,
+    selectedIndex: number,
+    changeHistory: IExpressionChangeHistory[][]
+  ): Promise<void> {
+    try {
+      await firstValueFrom(
+        expression.changed.pipe(
+          take(1),
+          timeout(10000)
+        )
+      );
+
+      this._expressionChangePlayback.play(
+        selectedIndex,
+        changeHistory
+      );
+    } catch {
+      // swallow (same behavior as before)
+    }
+  }
+
+  private deserializedExpressionInfo(
+    model: object,
+    index: number,
+    selectedExpressionIndex: number,
+    serializedExpressionInfo: ISerializedExpressionInfo
+  ): { info: IExpressionInfo; task?: Promise<void> } {
+
+    const result = ModelExpressionsFactory.getInstance().create(
+      model,
+      [serializedExpressionInfo.editorExpressionString]
+    )[0];
+
+    let changeHistory: IExpressionChangeHistory[][] = [];
+    let treeHighlight: IExpressionChangeHistory<IExpression>[] = [];
+    let task: Promise<void> | undefined;
+
+    if (result.expression) {
+      const nodeIdIndex = ExpressionNodeIdIndex.build(result.expression);
+
+      changeHistory = this.deserializeHistory(
+        nodeIdIndex,
+        serializedExpressionInfo.changeHistory ?? []
+      );
+
+      treeHighlight = this.deserializeHistorySet(
+        nodeIdIndex,
+        serializedExpressionInfo.treeHighlight ?? []
+      );
+
+      const shouldAutoPlay =
+        index === selectedExpressionIndex &&
+        isValidSelectionIndex({
+          index: serializedExpressionInfo.selecteChangeHistoryIndex,
+          historyLength: changeHistory.length
+        });
+
+      if (shouldAutoPlay) {
+        task = this.createAutoPlayTask(
+          result.expression,
+          serializedExpressionInfo.selecteChangeHistoryIndex,
+          changeHistory
+        );
+      }
     }
 
     return {
+      info: {
+        name: serializedExpressionInfo.name,
+        editorExpressionString: serializedExpressionInfo.editorExpressionString,
+        version: 0,
+        error: result.error,
+        isDeleting: serializedExpressionInfo.isDeleting,
+        expression: result.expression,
+        treeHighlight,
+        treeHighlightVersion: 0,
+        selecteChangeHistoryIndex: serializedExpressionInfo.selecteChangeHistoryIndex,
+        changeHistory
+      },
+      task
+    };
+  }
+
+  private tryGetExpressionEditorState(
+    deserializeState: ISerializedExpressionEditorState
+  ): { state: IExpressionEditorState; tasks: Promise<void>[] } {
+
+    const tasks: Promise<void>[] = [];
+
+    const state: IExpressionEditorState = {
       error: deserializeState.error,
       treeZoomPercent: deserializeState.treeZoomPercent ?? 75,
       showExpressionTreeView: deserializeState.showExpressionTreeView ?? false,
@@ -103,69 +181,71 @@ export class ExpressionEdtitorStateSerializer {
       editingExpressionIndex: deserializeState.editingExpressionIndex ?? -1,
       editingModelIndex: deserializeState.editingModelIndex ?? -1,
       modelsWithExpressions: deserializeState.modelsWithExpressions.map((modelWithExpressions) => {
-        const model = new Function(`return ${modelWithExpressions.editorModelString}`)();
 
+        const model = new Function(`return ${modelWithExpressions.editorModelString}`)();
         const selectedExpressionIndex = modelWithExpressions.selectedExpressionIndex;
+
+        const expressions = modelWithExpressions.expressions.map((serializedExpressionInfo, index) => {
+          const { info, task } = this.deserializedExpressionInfo(
+            model,
+            index,
+            selectedExpressionIndex,
+            serializedExpressionInfo
+          );
+
+          if (task) {
+            tasks.push(task);
+          }
+
+          return info;
+        });
 
         return {
           name: modelWithExpressions.name,
           model,
+          version: modelWithExpressions.version,
           editorModelString: modelWithExpressions.editorModelString,
           isDeleting: modelWithExpressions.isDeleting,
           selectedExpressionIndex,
-          expressions: modelWithExpressions.expressions.map((exprInfo, index) => {
-            const rootExpression = this._expressionFactory.create(model, exprInfo.editorExpressionString);
-
-            const nodeIdIndex = ExpressionNodeIdIndex.build(rootExpression);
-
-            const changeHistory = this.deserializeHistory(
-              nodeIdIndex,
-              exprInfo.changeHistory ?? []
-            );
-
-            const treeHighlight = this.deserializeHistorySet(
-              nodeIdIndex,
-              exprInfo.treeHighlight ?? []
-            );
-
-            const shouldAutoPlay =
-              selectedExpressionIndex !== null &&
-              index === selectedExpressionIndex &&
-              isValidSelectionIndex({
-                index: exprInfo.selecteChangeHistoryIndex,
-                historyLength: changeHistory.length,
-              });
-
-            if (shouldAutoPlay) {
-              rootExpression.changed
-                .pipe(take(1))
-                .subscribe(() => {
-                  try {
-                    this._expressionChangePlayback.play(
-                      exprInfo.selecteChangeHistoryIndex,
-                      changeHistory
-                    );
-                  } catch {
-                    // swallow
-                  }
-                });
-            }
-
-            return {
-              name: exprInfo.name,
-              editorExpressionString: exprInfo.editorExpressionString,
-              version: 0,
-              isDeleting: exprInfo.isDeleting,
-              expression: rootExpression,
-              treeHighlight,
-              treeHighlightVersion: 0,
-              selecteChangeHistoryIndex: exprInfo.selecteChangeHistoryIndex,
-              changeHistory,
-            };
-          }),
+          expressions
         };
-      }),
+      })
     };
+
+    return { state, tasks };
+  }
+
+  private serializeExpressionInfo = (expressionInfo: IExpressionInfo): ISerializedExpressionInfo => {
+    let treeHighlight: ISerializedExpressionChangeHistory[] = [];
+    let changeHistory: ISerializedExpressionChangeHistory[][] = [];
+
+    if(expressionInfo.expression) {
+       const nodeIdIndex = ExpressionNodeIdIndex.build(expressionInfo.expression);
+       treeHighlight = this.serializeHistorySet(expressionInfo.treeHighlight, nodeIdIndex);
+       changeHistory = this.serializeHistory(expressionInfo.changeHistory ?? [], nodeIdIndex)
+    }
+
+    return {
+      name: expressionInfo.name,
+      editorExpressionString: expressionInfo.editorExpressionString,
+      isDeleting: expressionInfo.isDeleting,
+      selecteChangeHistoryIndex: expressionInfo.selecteChangeHistoryIndex,
+      treeHighlight,
+      changeHistory,
+    };  
+  }
+
+  private serializeModelWithExpressions = (
+    modelWithExpressions: IModelWithExpressions): ISerializedModelWithExpressions => {
+    return {
+      name: modelWithExpressions.name,
+      version: 0,
+      editorModelString: modelWithExpressions.editorModelString,
+      isDeleting: modelWithExpressions.isDeleting,
+      selectedExpressionIndex: modelWithExpressions.selectedExpressionIndex,
+      expressions: modelWithExpressions.expressions.map(this.serializeExpressionInfo),
+    };
+
   }
 
   private serializeHistorySet(

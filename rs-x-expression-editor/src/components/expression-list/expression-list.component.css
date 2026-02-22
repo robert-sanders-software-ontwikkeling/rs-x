@@ -93,20 +93,15 @@
   font-weight: 600;
 }
 
-.expression-item.has-error {
-  position: relative;
+.expression-error-icon {
+   color: rgb(var(--c-danger) / 0.9);
+  font-size: 12px;
+  flex: 0 0 auto;
+   display: flex;
+  align-items: center;
+ margin-right: var(--sp-3);
 }
 
-.expression-item.has-error::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 6px;
-  bottom: 6px;
-  width: 3px;
-  border-radius: 999px;
-  background-color: rgb(var(--c-danger));
-}
 
 
 

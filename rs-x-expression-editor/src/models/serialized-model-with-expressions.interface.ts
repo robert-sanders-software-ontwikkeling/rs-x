@@ -2,6 +2,7 @@ import { ISerializedExpressionInfo } from './serialized-expression-info.interfac
 
 export interface ISerializedModelWithExpressions {
     name: string;
+    version: number;
     editorModelString: string;
     isDeleting: boolean;
     selectedExpressionIndex: number;

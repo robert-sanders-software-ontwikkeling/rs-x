@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaEye, FaSuperscript } from 'react-icons/fa';
+import { FaEye, FaSuperscript, FaExclamationTriangle } from 'react-icons/fa';
 
 import { IExpressionInfo } from '../../models/expression-info.interface';
 import { CrudRowActions } from '../crud-row-actions/crud-row-actions.component';
@@ -34,45 +34,53 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
     <div className='expression-list'>
       {expressions.map((expressionInfo, expressionIndex) => {
         const isSelected = selectedExpressionIndex === expressionIndex;
-        const className = `expression-item ${isSelected ? 'is-selected' : ''}  ${!!expressionInfo.error  ? 'has-error' : ''}`;
+        const className = `expression-item ${isSelected ? 'is-selected' : ''}`;
       
         return (
-          <div
+
+          
+          (<div
             key={`${expressionIndex}-${expressionInfo.version}`}
             className={className} 
             title={expressionInfo.error}
-            onClick={() => {
+            onClick={ expressionInfo.expression ? () => {
+
               onSelect(modelIndex, expressionIndex);
-            }}
+            } : undefined}
             role='button'
             tabIndex={0}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
+              
+              if (expressionInfo.expression && e.key === 'Enter' || e.key === ' ') {
                 onSelect(modelIndex, expressionIndex);
               }
             }}
           >
+             {expressionInfo.error  &&  (<FaExclamationTriangle title={expressionInfo.error} className='expression-error-icon'/>)}
             {/* LEFT SIDE */}
             <div className='expression-left'>
               <FaSuperscript className='expression-icon' />
               <div className='expression-code'>
-                {expressionInfo.expression.expressionString}
+                {expressionInfo.expression?.expressionString ?? expressionInfo.editorExpressionString }
               </div>
             </div>
 
             {/* RIGHT SIDE */}
             <CrudRowActions
               prepend={
-                <button
-                  type='button'
-                  className='icon-btn view-btn'
-                  title='View details'
-                  onClick={() => {
-                    onView(modelIndex, expressionIndex);
-                  }}
-                >
-                  <FaEye />
-                </button>
+                ( expressionInfo.expression &&
+                  <button
+
+                    type='button'
+                    className='icon-btn view-btn'
+                    title='View details'
+                    onClick={() => {
+                      onView(modelIndex, expressionIndex);
+                    }}
+                  >
+                    <FaEye />
+                  </button>
+                )
               }
               onEdit={() => {
                 onEdit(modelIndex, expressionIndex);
@@ -82,6 +90,7 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
               }}
             />
           </div>
+          )
         );
       })}
     </div>

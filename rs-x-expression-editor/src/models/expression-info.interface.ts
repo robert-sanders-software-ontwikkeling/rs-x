@@ -5,7 +5,7 @@ export interface IExpressionInfo {
     version: number;
     isDeleting: boolean;
     editorExpressionString: string;
-    expression: IExpression;
+    expression: IExpression | undefined;
     error: string;
     selecteChangeHistoryIndex: number;
     treeHighlightVersion: number
