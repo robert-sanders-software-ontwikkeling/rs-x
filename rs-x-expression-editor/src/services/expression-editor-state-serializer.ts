@@ -3,20 +3,18 @@ import type { IExpression, IExpressionChangePlayback } from '@rs-x/expression-pa
 import {
   ExpressionNodeIdIndex,
   type IExpressionChangeHistory,
-  type IExpressionFactory,
   RsXExpressionParserInjectionTokens
 } from '@rs-x/expression-parser';
+import { firstValueFrom } from 'rxjs';
 import { take, timeout } from 'rxjs/operators';
 import { getInitialExpressionEditorState, type IExpressionEditorState } from '../models/expression-editor-state.interface';
+import { IExpressionInfo } from '../models/expression-info.interface';
+import { IModelWithExpressions } from '../models/model-with-expressions.interface';
 import { ISerializedExpressionChangeHistory } from '../models/serialized-expression-change-history.interface';
 import { ISerializedExpressionEditorState } from '../models/serialized-expression-editor-state.interface';
-import { IModelWithExpressions } from '../models/model-with-expressions.interface';
-import { ISerializedModelWithExpressions } from '../models/serialized-model-with-expressions.interface';
-import { IExpressionInfo } from '../models/expression-info.interface';
 import { ISerializedExpressionInfo } from '../models/serialized-expression-info.interface';
+import { ISerializedModelWithExpressions } from '../models/serialized-model-with-expressions.interface';
 import { ModelExpressionsFactory } from './model-expressions.factory';
-import { firstValueFrom } from 'rxjs';
-
 
 const stateId = '1513bdf8-c3fc-4f74-ad4f-e670724fc625';
 

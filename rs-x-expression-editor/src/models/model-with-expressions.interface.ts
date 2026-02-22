@@ -1,4 +1,5 @@
-import { IExpressionInfo } from './expressionI-info.interface';
+import { IExpressionInfo } from './expression-info.interface';
+
 
 export interface IModelWithExpressions {
     name: string;

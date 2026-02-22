@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { IExpressionInfo } from '../../../models/model-with-expressions.interface';
+
 import { IExpressionChangeHistory } from '@rs-x/expression-parser';
+import { IExpressionInfo } from '../../../models/expression-info.interface';
 
 function defer(fn: () => void): void {
     queueMicrotask(() => {fn()});

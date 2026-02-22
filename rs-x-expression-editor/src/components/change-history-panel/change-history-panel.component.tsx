@@ -53,7 +53,7 @@ export const ChangeHistoryPanel: React.FC<IChangeHistoryPanel> = ({
                         modelIndex={selectedModelIndex as number}
                         expressionIndex={selectedExpressionIndex as number}
                         expressionInfo={selectedExpression}
-                        selectedChangeSetIndex={selectedExpression!.selecteChangeHistoryIndex}
+                        selectedChangeSetIndex={selectedExpression?.selecteChangeHistoryIndex ?? -1}
                         onHistoryChange={onHistoryChanged}
                         onSelectionChanged={onSelectionChanged}
                     />

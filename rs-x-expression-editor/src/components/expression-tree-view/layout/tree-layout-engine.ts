@@ -7,8 +7,12 @@ import { LayoutResult } from './layout-result.interface';
 export class TreeLayoutEngine {
     private _seq = 0;
 
-    public computeLayout(rootExpr: IExpression): LayoutResult {
-        const { root, nodes } = this.buildTNodeTree(rootExpr);
+    public computeLayout(expresssion: IExpression): LayoutResult {
+
+        if(!expresssion) {
+             return { nodes: [], edges: [], maxX: -1, maxDepth: 0 };
+        }
+        const { root, nodes } = this.buildTNodeTree(expresssion);
 
         const distance = 1;
         const stats = this.tidyLayout(root, distance);
@@ -41,10 +45,10 @@ export class TreeLayoutEngine {
 
         const nodes: TNode[] = [];
 
-        const build = (expr: IExpression, depth: number, parent?: TNode, number = 1): TNode => {
+        const build = (expresssion: IExpression, depth: number, parent?: TNode, number = 1): TNode => {
             const node: TNode = {
                 id: this.makeId(),
-                expr,
+                expr: expresssion,
                 parent,
                 children: [],
                 depth,
@@ -61,7 +65,7 @@ export class TreeLayoutEngine {
             node.ancestor = node;
             nodes.push(node);
 
-            const kids = expr.childExpressions ?? [];
+            const kids = expresssion.childExpressions ?? [];
             node.children = kids.map((c, i) => build(c, depth + 1, node, i + 1));
 
             return node;

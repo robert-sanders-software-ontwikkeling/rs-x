@@ -1,4 +1,3 @@
-// expression-tree-view.component.tsx
 import React, { useMemo } from 'react';
 
 import type { IExpression, IExpressionChangeHistory } from '@rs-x/expression-parser';
@@ -29,9 +28,17 @@ export interface IExpressionTreeProps {
   className?: string;
   style?: React.CSSProperties;
 
-  highlightChanges?:  IExpressionChangeHistory[];
+  highlightChanges?: IExpressionChangeHistory[];
   highlightVersion?: number;
   zoomPercent?: number;
+
+  isVisible?: boolean;
+
+  /**
+   * Force-replay trigger (e.g. after panel becomes visible).
+   * Incrementing this should replay the wave even if highlight data didn't change.
+   */
+  playNonce?: number;
 }
 
 const DEFAULTS = {
@@ -59,6 +66,8 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
     highlightChanges = [],
     highlightVersion = 0,
     zoomPercent = 100,
+    isVisible = true,
+    playNonce = 0,
   } = props;
 
   const [hostRef, hostSize] = useResizeObserverSize<HTMLDivElement>();
@@ -68,27 +77,26 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
   }, []);
 
   const layout = useMemo(() => {
-    void version;
     return layoutEngine.computeLayout(root);
   }, [layoutEngine, root, version]);
 
   const expressionIndex = useMemo(() => {
     return new ExpressionIndex(layout);
-  }, [layout]);
+  }, [layout, version]);
 
   const highlightKey = useMemo(() => {
     return expressionIndex.buildHighlightKey(highlightChanges);
-  }, [expressionIndex, highlightChanges]);
+  }, [expressionIndex, highlightChanges, version]);
 
-  // Re-render when expression values recompute (including async replay)
   useExpressionChangedRerender(root);
 
-  // ✅ UPDATED: parallel animation => active sets, not single id/key
   const { selectedNodeIds, selectedEdgeKeys, activeNodeIds, activeEdgeKeys } = useHighlightAnimation({
     highlightChanges,
     highlightVersion,
     highlightKey,
-    expressionIndex: expressionIndex,
+    expressionIndex,
+    isVisible,
+    playNonce,
   });
 
   const valueFormatterFn = useMemo(() => {
@@ -145,12 +153,7 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
             }}
           >
             <div className='exprTreeCanvas' style={{ width: paddedW, height: paddedH }}>
-              <svg
-                className='exprTreeLines'
-                width={paddedW}
-                height={paddedH}
-                viewBox={`0 0 ${paddedW} ${paddedH}`}
-              >
+              <svg className='exprTreeLines' width={paddedW} height={paddedH} viewBox={`0 0 ${paddedW} ${paddedH}`}>
                 {edgePaths.map((p) => {
                   return <path key={p.key} d={p.d} className={p.className} />;
                 })}
@@ -174,11 +177,7 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
                     </div>
 
                     <div className='exprNodeBody'>
-                      {vm.valueText ? (
-                        <pre className='exprNodePre'>{vm.valueText}</pre>
-                      ) : (
-                        <div className='exprNodeMuted'>no value</div>
-                      )}
+                      {vm.valueText ? <pre className='exprNodePre'>{vm.valueText}</pre> : <div className='exprNodeMuted'>no value</div>}
                     </div>
                   </div>
                 );

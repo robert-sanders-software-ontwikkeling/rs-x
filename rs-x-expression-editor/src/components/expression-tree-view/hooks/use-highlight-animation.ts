@@ -1,5 +1,6 @@
 import type { IExpressionChangeHistory } from '@rs-x/expression-parser';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type React from 'react';
 import { ExpressionIndex } from '../expression-index';
 import { NodeId } from '../layout/node.interface';
 
@@ -40,12 +41,8 @@ class HighlightAnimator {
       };
     }
 
-    const selectedNodes = new Set<NodeId>();
+    const selectedNodes = new Set<NodeId>(stepIds);
     const selectedEdges = new Set<string>();
-
-    for (const id of stepIds) {
-      selectedNodes.add(id);
-    }
 
     const nodePathSequence: NodeId[] = [];
 
@@ -103,13 +100,15 @@ class HighlightAnimator {
     return d;
   }
 
-  private buildWaves(args: { nodePathSequence: NodeId[]; selectedEdges: Set<string>; index: ExpressionIndex }): Wave[] {
+  private buildWaves(args: {
+    nodePathSequence: NodeId[];
+    selectedEdges: Set<string>;
+    index: ExpressionIndex;
+  }): Wave[] {
     const { nodePathSequence, selectedEdges, index } = args;
 
-    // Unique nodes from the path
     const unique = Array.from(new Set<NodeId>(nodePathSequence));
 
-    // Group nodes by depth (deepest first) => parallel waves
     const byDepth = new Map<number, NodeId[]>();
     let maxDepth = 0;
 
@@ -130,8 +129,8 @@ class HighlightAnimator {
         continue;
       }
 
-      // Edges: node -> parent (if that edge is in selectedEdges)
       const edges: string[] = [];
+
       for (const nodeId of nodes) {
         const parent = index.parentById.get(nodeId) ?? null;
         if (!parent) {
@@ -161,37 +160,34 @@ class HighlightAnimator {
     timersRef: React.MutableRefObject<number[]>;
     clearTimers: () => void;
   }): void {
-    const { nodePathSequence, selectedEdges, expressionIndex: index, setActiveNodeIds, setActiveEdgeKeys, timersRef, clearTimers } = args;
+    const {
+      nodePathSequence,
+      selectedEdges,
+      expressionIndex,
+      setActiveNodeIds,
+      setActiveEdgeKeys,
+      timersRef,
+      clearTimers,
+    } = args;
 
     clearTimers();
 
     if (nodePathSequence.length === 0) {
-      setActiveEdgeKeys(() => new Set<string>());
-      setActiveNodeIds(() => new Set<NodeId>());
       return;
     }
 
-    const waves = this.buildWaves({ nodePathSequence, selectedEdges, index });
-
-    if (waves.length === 0) {
-      setActiveEdgeKeys(() => new Set<string>());
-      setActiveNodeIds(() => new Set<NodeId>());
-      return;
-    }
+    const waves = this.buildWaves({
+      nodePathSequence,
+      selectedEdges,
+      index: expressionIndex,
+    });
 
     const nodeMs = 520;
     const edgeMs = 260;
 
-    // Start with first wave nodes active (parallel)
-    setActiveNodeIds(() => new Set<NodeId>(waves[0].nodes));
-    setActiveEdgeKeys(() => new Set<string>());
-
     let t = 0;
 
-    for (let i = 0; i < waves.length; i++) {
-      const wave = waves[i];
-
-      // briefly highlight edges into this wave
+    for (const wave of waves) {
       t += edgeMs;
       timersRef.current.push(
         window.setTimeout(() => {
@@ -200,7 +196,6 @@ class HighlightAnimator {
         }, t)
       );
 
-      // then highlight nodes (keep edges off)
       t += nodeMs;
       timersRef.current.push(
         window.setTimeout(() => {
@@ -225,23 +220,37 @@ export function useHighlightAnimation(args: {
   highlightVersion: number;
   highlightKey: string;
   expressionIndex: ExpressionIndex;
+  isVisible: boolean;
+  playNonce: number;
 }): {
   selectedNodeIds: Set<NodeId>;
   selectedEdgeKeys: Set<string>;
   activeNodeIds: Set<NodeId>;
   activeEdgeKeys: Set<string>;
 } {
-  const { highlightChanges, highlightVersion, highlightKey, expressionIndex } = args;
+  const {
+    highlightChanges,
+    highlightVersion,
+    highlightKey,
+    expressionIndex,
+    isVisible,
+    playNonce,
+  } = args;
 
-  const animator = useMemo(() => {
-    return new HighlightAnimator();
-  }, []);
+  const animator = useMemo(() => new HighlightAnimator(), []);
 
-  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<NodeId>>(() => new Set<NodeId>());
-  const [selectedEdgeKeys, setSelectedEdgeKeys] = useState<Set<string>>(() => new Set<string>());
-
-  const [activeNodeIds, setActiveNodeIds] = useState<Set<NodeId>>(() => new Set<NodeId>());
-  const [activeEdgeKeys, setActiveEdgeKeys] = useState<Set<string>>(() => new Set<string>());
+  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<NodeId>>(
+    () => new Set<NodeId>()
+  );
+  const [selectedEdgeKeys, setSelectedEdgeKeys] = useState<Set<string>>(
+    () => new Set<string>()
+  );
+  const [activeNodeIds, setActiveNodeIds] = useState<Set<NodeId>>(
+    () => new Set<NodeId>()
+  );
+  const [activeEdgeKeys, setActiveEdgeKeys] = useState<Set<string>>(
+    () => new Set<string>()
+  );
 
   const timersRef = useRef<number[]>([]);
 
@@ -264,18 +273,25 @@ export function useHighlightAnimation(args: {
 
     if (!highlightChanges || highlightChanges.length === 0) {
       resetState();
-      return;
+      return () => clearTimers();
     }
 
-    const selection = animator.computeSelection({ highlightChanges, expressionIndex: expressionIndex });
+    const selection = animator.computeSelection({
+      highlightChanges,
+      expressionIndex,
+    });
 
     if (selection.nodePathSequence.length === 0) {
       resetState();
-      return;
+      return () => clearTimers();
     }
 
     setSelectedNodeIds(() => selection.selectedNodeIds);
     setSelectedEdgeKeys(() => selection.selectedEdgeKeys);
+
+    if (!isVisible) {
+      return () => clearTimers();
+    }
 
     animator.scheduleAnimation({
       nodePathSequence: selection.nodePathSequence,
@@ -287,10 +303,14 @@ export function useHighlightAnimation(args: {
       clearTimers,
     });
 
-    return () => {
-      clearTimers();
-    };
-  }, [highlightVersion, highlightKey, expressionIndex, animator, highlightChanges]);
+    return () => clearTimers();
+  }, [
+    highlightVersion,
+    highlightKey,
+    expressionIndex,
+    isVisible,
+    playNonce, // forces replay when panel becomes visible
+  ]);
 
   return {
     selectedNodeIds,
