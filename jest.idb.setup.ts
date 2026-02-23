@@ -1,3 +1,1 @@
-
-
 import 'fake-indexeddb/auto';

@@ -22,7 +22,6 @@
     "build:expression-parser": "pnpm --filter @rs-x/expression-parser run build",
     "build:react": "pnpm --filter @rs-x/react run build",
     "build:devtools": "pnpm --filter @rs-x/dev-tools run build",
-
     "build:expression-editor": "pnpm --filter @rs-x/expression-editor run build",
     "test": "cross-env TZ=UTC pnpm jest --runInBand --no-cache --config jest.config.ts",
     "test:angular": "pnpm --prefix rs-x-angular run test",

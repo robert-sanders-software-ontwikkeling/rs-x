@@ -39,7 +39,7 @@ describe('ExpressionChangeTracker tests', () => {
   beforeEach(async () => {
     model = {
       a: 20,
-      b: 30
+      b: 30,
     };
 
     expression = expressionFactory.create(model, 'a + b');
@@ -58,27 +58,27 @@ describe('ExpressionChangeTracker tests', () => {
     expressionChangeTracker =
       expressionChangeTrackerManager.create(expression).instance;
 
-    const actual = await new WaitForEvent(expressionChangeTracker, 'changed').wait(
-      emptyFunction,
-    );
+    const actual = await new WaitForEvent(
+      expressionChangeTracker,
+      'changed',
+    ).wait(emptyFunction);
 
     const expected: IExpressionChangeHistory[] = [
       {
         expression: expression.childExpressions[0],
         value: 20,
-        oldValue: undefined
+        oldValue: undefined,
       },
       {
         expression: expression.childExpressions[1],
         value: 30,
-        oldValue: undefined
+        oldValue: undefined,
       },
       {
         expression: expression,
         value: 50,
-        oldValue: undefined
-      }
-
+        oldValue: undefined,
+      },
     ];
 
     expect(actual).toEqual(expected);
