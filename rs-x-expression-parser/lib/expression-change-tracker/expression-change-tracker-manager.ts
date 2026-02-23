@@ -1,4 +1,4 @@
-import { IDisposableOwner, Injectable, SingletonFactory } from '@rs-x/core';
+import { IDisposableOwner, Inject, Injectable, IValueMetadata, RsXCoreInjectionTokens, SingletonFactory } from '@rs-x/core';
 import { Observable, ReplaySubject, Subscription } from 'rxjs';
 import { IExpression } from '../expressions/expression-parser.interface';
 import { IExpressionChangeHistory } from './expression-change-history.interface';
@@ -15,7 +15,7 @@ export class ExpressionChangeTracker implements IExpressionChangeTracker {
 
     constructor(
         private readonly _owner: IDisposableOwner,
-        private readonly _expression: IExpression
+        private readonly _expression: IExpression,
     ) {
         if (this._expression.changeHook) {
             throw new Error(`Expression ${this._expression.expressionString} is already tracked`);
@@ -65,7 +65,6 @@ export class ExpressionChangeTracker implements IExpressionChangeTracker {
         if (this._paused) {
             return;
         }
-
         // first time we see this node this cycle => push entry
         if (!this._seen.has(expression)) {
             this._seen.add(expression);
@@ -73,6 +72,7 @@ export class ExpressionChangeTracker implements IExpressionChangeTracker {
                 expression,
                 value: expression.value,
                 oldValue,
+                isAsync: expression.isAsync
             });
             return;
         }
@@ -121,8 +121,10 @@ export class ExpressionChangeTrackerManager
     implements IExpressionChangeTrackerManager {
 
 
-    constructor() {
+    constructor(
+    ) {
         super();
+        
     }
 
     public override getId(expresion: IExpression) {

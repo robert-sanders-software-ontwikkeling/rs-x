@@ -14,6 +14,8 @@ import { ModelExpressionsFactory } from './model-expressions.factory';
 import { rxjsScope } from './rxjs-scope';
 import { ModelEvaluator } from './model-evaluator';
 
+
+
 export type CompileExpressionResult = {
     expressionString: string;
     expression?: IExpression;
@@ -111,7 +113,6 @@ export class ExpressionEditorBusinessService {
                 take(1),
                 timeout({ first: 10000 }),
                 catchError((e) => {
-                    console.warn('replayChangeHistory did not emit `changed` within 10s', e);
                     return throwError(() => e);
                 }),
                 finalize(() => {

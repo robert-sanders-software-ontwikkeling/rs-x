@@ -332,11 +332,10 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     ModelIntellisenseService.getInstance().register(monacoInstance);
   };
 
-  const handleModelMount: OnMount = (_editor, monacoInstance) => {
-    // Install RxJS typings into *THIS* Monaco instance (the one the editor uses)
-    void RxjsMonacoTypesLoader.getInstance().install(monacoInstance);
-  };
+  const handleModelMount: OnMount = async (editor, monaco) => {
+    await RxjsMonacoTypesLoader.getInstance().install(monaco);
 
+  };
 
   const onSelectExpression = (modelIndex: number, index: number) => {
     setCurrentState((prev) => {

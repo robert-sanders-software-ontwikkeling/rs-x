@@ -22,20 +22,31 @@ async function bootstrap(): Promise<void> {
       return new editorWorker();
     },
   };
-  
 
-  monaco.typescript.javascriptDefaults.setCompilerOptions({
-    allowJs: true,
-    allowNonTsExtensions: true,
-    checkJs: true,
-    target: monaco.typescript.ScriptTarget.ESNext,
-  });
 
-  monaco.typescript.typescriptDefaults.setCompilerOptions({
-    allowNonTsExtensions: true,
-    noEmit: true,
-    target: monaco.typescript.ScriptTarget.ESNext,
-  });
+  // const ts = monaco.typescript;
+
+  // ts.typescriptDefaults.setCompilerOptions({
+  //   target: ts.ScriptTarget.ESNext,
+  //   module: ts.ModuleKind.ESNext,
+  //   moduleResolution: ts.ModuleResolutionKind.NodeJs,
+  //   allowNonTsExtensions: true,
+
+  //   baseUrl: 'file:///',
+
+  //   paths: {
+  //     rxjs: ['node_modules/rxjs/dist/types/index.d.ts'],
+  //     'rxjs/*': ['node_modules/rxjs/dist/types/*'],
+
+  //     // If you use operators via 'rxjs/operators':
+  //     'rxjs/operators': ['node_modules/rxjs/dist/types/operators/index.d.ts'],
+  //     'rxjs/operators/*': ['node_modules/rxjs/dist/types/operators/*']
+  //   },
+
+  //   typeRoots: ['node_modules/@types']
+  // });
+
+
 
   createRoot(document.getElementById('root')!).render(
     <StrictMode>

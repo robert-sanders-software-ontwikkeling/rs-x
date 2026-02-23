@@ -14,7 +14,7 @@ export class ModelIntellisenseService {
   private constructor(scopes: Record<string, unknown>) {
     this.scopes = scopes;
   }
-
+  
   // --------------------------------------------
   // Singleton factory with configuration
   // --------------------------------------------

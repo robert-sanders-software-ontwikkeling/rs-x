@@ -11,6 +11,7 @@ export type AnyFunction = (...args: unknown[]) => unknown;
 export const emptyFunction = () => {};
 export const truePredicate = () => true;
 export const echo = <T = unknown>(value: T) => value;
+type PlainObject = Record<string, unknown>;
 
 export class Type {
   public static isPositiveIntegerString(value: unknown): boolean {
@@ -118,9 +119,9 @@ export class Type {
     );
   }
 
-  public static isPlainObject(object: unknown): boolean {
-    if (object !== null && typeof object === 'object') {
-      const prototype = Object.getPrototypeOf(object);
+  public static isPlainObject(value: unknown): value is PlainObject {
+    if (value !== null && typeof value === 'object') {
+      const prototype = Object.getPrototypeOf(value);
       return prototype === Object.prototype || prototype === null;
     }
     return false;

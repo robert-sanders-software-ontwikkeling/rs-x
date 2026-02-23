@@ -1,74 +1,167 @@
 import React, { useEffect, useState } from 'react';
 import './model-editor.component.css';
-import { IDeepClone, InjectionContainer, RsXCoreInjectionTokens } from '@rs-x/core';
+import { InjectionContainer, RsXCoreInjectionTokens, Type } from '@rs-x/core';
+import type { IDeepClone, IValueMetadata } from '@rs-x/core';
 
-type Path = Array<string | number>;
-type AnyRecord = Record<string, any>;
-
+type PathKey = string | number;
+type Path = ReadonlyArray<PathKey>;
+type PlainObject = Record<string, unknown>;
 
 class DeepClone {
-  private static _instance: IDeepClone;
+  private static _instance: DeepClone;
+  private readonly _valueMetadata: IValueMetadata;
+  private readonly _deepClone: IDeepClone;
 
+  private constructor() {
+    this._valueMetadata = InjectionContainer.get(RsXCoreInjectionTokens.IValueMetadata);
+    this._deepClone = InjectionContainer.get(RsXCoreInjectionTokens.IDeepClone);
+  }
 
-  public static getInstance(): IDeepClone {
-    if(!this._instance) {
-      this._instance = InjectionContainer.get(RsXCoreInjectionTokens.IDeepClone);
+  public static getInstance(): DeepClone {
+    if (!this._instance) {
+      this._instance = new DeepClone();
     }
     return this._instance;
   }
+
+  private filterFields(obj: unknown, current: PlainObject): PlainObject {
+    if (obj === null || typeof obj !== 'object') {
+      return current;
+    }
+
+    Type.walkObjectTopToBottom(
+      obj as object,
+      (_, index, value) => {
+        if (this._valueMetadata.isAsync(value) || Type.isFunction(value) || Type.isArrowFunction(value ))  {
+          return;
+        }
+
+  
+        if (Type.isPlainObject(value)) {
+          current[index] = this.filterFields(value, {});
+          return;
+        }
+
+        current[index] = value;
+      },
+      false
+    );
+
+    return current;
+  }
+
+  public clone(object: unknown): unknown {
+    if (object === null || typeof object !== 'object') {
+      return object;
+    }
+
+    const editableRecords = this.filterFields(object, {});
+    return this._deepClone.clone(editableRecords);
+  }
 }
 
-export interface ModelEditorProps<T extends AnyRecord> {
-  modelIndex: number;
-  model: T;
-  onCommit: (modelIndex: number, model: T) => void;
-  title?: string;
 
-  // Controls indentation per nesting level (px)
-  // Recommended default: 8
-  indentSize?: number;
-}
-
-/* ---------------- Utilities ---------------- */
-
-const isPlainObject = (v: unknown): v is AnyRecord => {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
+const isDate = (v: unknown): v is Date => {
+  return v instanceof Date;
 };
 
-const deepClone = (obj: object): object => {
-  return DeepClone.getInstance().clone(obj) as object
+const isMap = (v: unknown): v is Map<unknown, unknown> => {
+  return v instanceof Map;
 };
 
-const setAtPath = <T,>(root: T, path: Path, value: unknown): T => {
+const isSet = (v: unknown): v is Set<unknown> => {
+  return v instanceof Set;
+};
+
+const isFunction = (v: unknown): v is (...args: unknown[]) => unknown => {
+  return typeof v === 'function';
+};
+
+const formatValue = (value: unknown): string => {
+  if (value === null) {
+    return 'null';
+  }
+  if (value === undefined) {
+    return 'undefined';
+  }
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return String(value);
+  }
+  if (typeof value === 'symbol') {
+    return value.toString();
+  }
+  if (isDate(value)) {
+    return `Date(${Number.isNaN(value.getTime()) ? 'Invalid' : value.toISOString()})`;
+  }
+  if (isMap(value)) {
+    return `Map(${value.size})`;
+  }
+  if (isSet(value)) {
+    return `Set(${value.size})`;
+  }
+  if (isFunction(value)) {
+    return `Function(${value.name || 'anonymous'})`;
+  }
+  if (Array.isArray(value)) {
+    return `Array(${value.length})`;
+  }
+  if (typeof value === 'object') {
+    const ctor = (value as object).constructor;
+    const name = ctor && typeof ctor === 'function' ? ctor.name : 'Object';
+    return name;
+  }
+  return String(value);
+};
+
+const cloneForDraft = (model: unknown): unknown => {
+  return DeepClone.getInstance().clone(model);
+};
+
+const setAtPath = (root: unknown, path: Path, value: unknown): unknown => {
   if (path.length === 0) {
-    return value as T;
+    return value;
   }
 
   const [head, ...tail] = path;
 
   if (Array.isArray(root)) {
-    const idx = head as number;
+    const idx = typeof head === 'number' ? head : Number(head);
+    const safeIdx = Number.isFinite(idx) ? idx : 0;
+
     const copy = root.slice();
-    copy[idx] = setAtPath(copy[idx], tail, value);
-    return copy as unknown as T;
+    copy[safeIdx] = setAtPath(copy[safeIdx], tail, value);
+    return copy;
   }
 
-  const obj = { ...(root as any) };
-  obj[head as string] = setAtPath(obj[head as string], tail, value);
-  return obj;
+  if (Type.isPlainObject(root) && typeof head === 'string') {
+    const copy: PlainObject = { ...root };
+    copy[head] = setAtPath(copy[head], tail, value);
+    return copy;
+  }
+
+  // Non-editable containers: Map/Set/Date/function/class instances.
+  // We keep them as-is unless you implement a dedicated editor for them.
+  return root;
 };
 
 /* ---------------- Recursive Node ---------------- */
 
 const ModelNode: React.FC<{
-  value: any;
+  value: unknown;
   path: Path;
   depth: number;
   indentSize: number;
-  onChange: (path: Path, value: any) => void;
+  onChange: (path: Path, value: unknown) => void;
 }> = ({ value, path, depth, indentSize, onChange }) => {
-  if (value === null || value === undefined) {
+  if (value === null) {
     return <div className="me-muted">null</div>;
+  }
+
+  if (value === undefined) {
+    return <div className="me-muted">undefined</div>;
   }
 
   if (typeof value === 'string') {
@@ -137,7 +230,7 @@ const ModelNode: React.FC<{
     );
   }
 
-  if (isPlainObject(value)) {
+  if (Type.isPlainObject(value)) {
     return (
       <div className="me-section" style={{ paddingLeft: depth * indentSize }}>
         {Object.entries(value).map(([key, val]) => {
@@ -162,35 +255,35 @@ const ModelNode: React.FC<{
     );
   }
 
-  return <div className="me-muted">{String(value)}</div>;
+  // Show Map/Set/Date/functions/class instances as read-only for now
+  return <div className="me-muted">{formatValue(value)}</div>;
 };
 
 
-export function ModelEditor<T extends AnyRecord>({
-  modelIndex,
-  model,
-  onCommit,
-  title = 'Model',
-  indentSize = 8,
-}: ModelEditorProps<T>) {
-  const [draft, setDraft] = useState<T>(() => deepClone(model));
+export interface ModelEditorProps {
+  modelIndex: number;
+  model: unknown;
+  onCommit: (modelIndex: number, model: unknown) => void;
+  title?: string;
+  indentSize?: number;
+}
 
-  // Rebind if parent model changes
+export function ModelEditor({ modelIndex, model, onCommit, indentSize = 8 }: ModelEditorProps) {
+  const [draft, setDraft] = useState<unknown>(() => cloneForDraft(model));
+
   useEffect(() => {
-    setDraft(deepClone(model));
+    setDraft(cloneForDraft(model));
   }, [model]);
 
-  const handleChange = (path: Path, value: any) => {
+  const handleChange = (path: Path, value: unknown) => {
     setDraft((prev) => {
       return setAtPath(prev, path, value);
     });
   };
 
   const handleCommit = () => {
-    onCommit(modelIndex, deepClone(draft));
+    onCommit(modelIndex, draft);
   };
-
-
 
   return (
     <div className="me-root">

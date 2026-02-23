@@ -1,8 +1,8 @@
-import type { IExpressionChangeHistory, IExpression } from '@rs-x/expression-parser';
+import type { IExpressionChangeHistory } from '@rs-x/expression-parser';
 import { NON_EDITITING_STATE, type IExpressionEditorState } from '../models/expression-editor-state.interface';
 import type { IExpressionInfo } from '../models/expression-info.interface';
-import type { CompileExpressionResult } from './expression-editor-business.service';
 import type { IModelWithExpressions } from '../models/model-with-expressions.interface';
+import type { CompileExpressionResult } from './expression-editor-business.service';
 
 export class ExpressionEditorStateBuilder {
     public constructor(private _state: IExpressionEditorState) { }

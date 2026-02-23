@@ -63,6 +63,11 @@ export abstract class AbstractExpression<
     return this._id;
   }
 
+
+  public get isAsync(): boolean| undefined {
+    return false;
+  }
+
   public get changeHook(): ChangeHook | undefined {
     return this._changeHook;
   }

@@ -1,9 +1,50 @@
-import { Editor, type OnMount } from '@monaco-editor/react';
+import { BeforeMount, Editor, type OnMount } from '@monaco-editor/react';
 import type * as monaco from 'monaco-editor';
 import React, { useState } from 'react';
 import { FaCheck, FaTimes } from 'react-icons/fa';
 
 import './ts-editor.component.css';
+
+
+const beforeMount: BeforeMount = (monaco) => {
+  const ts = monaco.languages.typescript;
+
+  // MUST be set before models/workers start
+  ts.typescriptDefaults.setEagerModelSync(true);
+
+  ts.typescriptDefaults.setCompilerOptions({
+    target: ts.ScriptTarget.ES2020,
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.NodeJs,
+    baseUrl: 'file:///',
+    paths: {
+      rxjs: ['node_modules/rxjs/dist/types/index.d.ts'],
+      'rxjs/*': ['node_modules/rxjs/dist/types/*'],
+      'rxjs/operators': ['node_modules/rxjs/dist/types/operators/index.d.ts'],
+      'rxjs/operators/*': ['node_modules/rxjs/dist/types/operators/*']
+    },
+        // typeRoots: ['node_modules/@types']
+  });
+
+  // Install extra libs BEFORE mount (critical)
+  // Note: beforeMount can't be async, so do it sync if possible.
+  // Best: prebundle the d.ts into your app and addExtraLib synchronously here.
+};
+
+const onMount: OnMount = (editor, monaco) => {
+  editor.updateOptions({
+    wordBasedSuggestions: 'off',
+    suggestOnTriggerCharacters: true,
+    quickSuggestions: { other: true, comments: false, strings: false }
+  });
+
+  // Optional: trigger suggest when '.' typed (works with IStandaloneCodeEditor)
+  editor.onDidChangeModelContent((e) => {
+    if (e.changes.some((c) => c.text === '.')) {
+      editor.trigger('keyboard', 'editor.action.triggerSuggest', {});
+    }
+  });
+};
 
 export interface TSEditorProps {
   onMount?: OnMount;
@@ -33,7 +74,7 @@ export const TSEditor: React.FC<TSEditorProps> = ({
   const [currentValue, setCurrentValue] = useState<string>(value ?? '');
 
   // ✅ Name is optional now; only editor content disables Save
-  const isSaveDisabled = !currentValue.trim() || !currentName.trim(); 
+  const isSaveDisabled = !currentValue.trim() || !currentName.trim();
 
   const onSave = () => {
     if (!currentValue.trim()) {
@@ -101,6 +142,7 @@ export const TSEditor: React.FC<TSEditorProps> = ({
           options={options}
           onChange={onValueChange}
           onMount={onMount}
+          beforeMount={beforeMount}
         />
       </div>
     </>

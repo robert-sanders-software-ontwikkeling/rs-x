@@ -15,6 +15,7 @@ import { ISerializedExpressionEditorState } from '../models/serialized-expressio
 import { ISerializedExpressionInfo } from '../models/serialized-expression-info.interface';
 import { ISerializedModelWithExpressions } from '../models/serialized-model-with-expressions.interface';
 import { ModelExpressionsFactory } from './model-expressions.factory';
+import { ModelEvaluator } from './model-evaluator';
 
 const stateId = '1513bdf8-c3fc-4f74-ad4f-e670724fc625';
 
@@ -42,7 +43,6 @@ export class ExpressionEdtitorStateSerializer {
     return this._instance;
   }
 
-
   public async serialize(state: IExpressionEditorState): Promise<void> {
     const serializedState: ISerializedExpressionEditorState = {
       error: state.error,
@@ -68,9 +68,13 @@ export class ExpressionEdtitorStateSerializer {
     }
 
     try {
-      const { state, tasks } = this.tryGetExpressionEditorState(deserializeState);
+      const { state, tasks, modelErrors } = this.tryGetExpressionEditorState(deserializeState);
 
       await Promise.all(tasks);
+
+      if(modelErrors.length > 0) {
+        state.error = modelErrors.join('/n') + '\n' + state.error;
+      }
 
       return state;
     } catch (e) {
@@ -165,9 +169,11 @@ export class ExpressionEdtitorStateSerializer {
 
   private tryGetExpressionEditorState(
     deserializeState: ISerializedExpressionEditorState
-  ): { state: IExpressionEditorState; tasks: Promise<void>[] } {
+  ): { modelErrors: string[], state: IExpressionEditorState; tasks: Promise<void>[] } {
 
     const tasks: Promise<void>[] = [];
+
+    const modelErrors: string[] = [];
 
     const state: IExpressionEditorState = {
       error: deserializeState.error,
@@ -180,7 +186,12 @@ export class ExpressionEdtitorStateSerializer {
       editingModelIndex: deserializeState.editingModelIndex ?? -1,
       modelsWithExpressions: deserializeState.modelsWithExpressions.map((modelWithExpressions) => {
 
-        const model = new Function(`return ${modelWithExpressions.editorModelString}`)();
+        const result = ModelEvaluator.getInstance().evaluate(modelWithExpressions.editorModelString);
+
+        const model = result.success ? result.model : {};
+        if( !result.success ) {
+          modelErrors.push(result.error);
+        }
         const selectedExpressionIndex = modelWithExpressions.selectedExpressionIndex;
 
         const expressions = modelWithExpressions.expressions.map((serializedExpressionInfo, index) => {
@@ -205,12 +216,12 @@ export class ExpressionEdtitorStateSerializer {
           editorModelString: modelWithExpressions.editorModelString,
           isDeleting: modelWithExpressions.isDeleting,
           selectedExpressionIndex,
-          expressions
+          expressions,
         };
       })
     };
 
-    return { state, tasks };
+    return { state, tasks, modelErrors };
   }
 
   private serializeExpressionInfo = (expressionInfo: IExpressionInfo): ISerializedExpressionInfo => {
@@ -250,11 +261,12 @@ export class ExpressionEdtitorStateSerializer {
     historySet: IExpressionChangeHistory[],
     nodeIdIndex: ExpressionNodeIdIndex
   ): ISerializedExpressionChangeHistory[] {
-    return historySet.map((h) => {
+    return historySet.map((historyChangeRecord) => {
       return {
-        expressionId: nodeIdIndex.getId(h.expression),
-        value: this.cloneValue(h.value),
-        oldValue: this.cloneValue(h.oldValue),
+        expressionId: nodeIdIndex.getId(historyChangeRecord.expression),
+        value: this.cloneValue(historyChangeRecord.value),
+        oldValue: this.cloneValue(historyChangeRecord.oldValue),
+        isAsync: historyChangeRecord.isAsync
       };
     });
   }
@@ -270,11 +282,12 @@ export class ExpressionEdtitorStateSerializer {
     nodeIdIndex: ExpressionNodeIdIndex,
     history: ISerializedExpressionChangeHistory[]
   ): IExpressionChangeHistory[] {
-    return history.map((h) => {
+    return history.map((historyChangeRecord) => {
       return {
-        expression: nodeIdIndex.getNode(h.expressionId),
-        value: h.value,
-        oldValue: h.oldValue,
+        expression: nodeIdIndex.getNode(historyChangeRecord.expressionId),
+        value: historyChangeRecord.value,
+        oldValue: historyChangeRecord.oldValue,
+        isAsync: historyChangeRecord.isAsync
       };
     });
   }
