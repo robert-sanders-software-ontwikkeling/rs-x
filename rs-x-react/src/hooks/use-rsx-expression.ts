@@ -22,10 +22,10 @@ export function useRsxExpression<T>(
     );
   }
   const [value, setValue] = useState<T | null>(null);
-  const expressionRef = useRef<IExpression<T>>();
+  const expressionRef = useRef<IExpression<T> | null>(null);
 
   useEffect(() => {
-    let expressionTree: IExpression;
+    let expressionTree: IExpression<T>;
     let ownsExpression = false;
 
     if (Type.isString(expression)) {
@@ -48,7 +48,7 @@ export function useRsxExpression<T>(
     expressionRef.current = expressionTree;
 
     const changedSubscription = expressionTree.changed.subscribe(() => {
-      setValue(expressionTree.value);
+      setValue(expressionTree.value ?? null);
     });
     setValue(expressionTree.value ?? null);
 
