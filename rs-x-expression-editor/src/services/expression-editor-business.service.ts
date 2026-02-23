@@ -7,13 +7,10 @@ import {
     type IExpressionChangeTransactionManager,
     RsXExpressionParserInjectionTokens,
 } from '@rs-x/expression-parser';
-import { catchError, finalize, skip, take, throwError, timeout } from 'rxjs';
+import { catchError, EMPTY, finalize, skip, take, timeout } from 'rxjs';
 
 import { ModelExpressionsFactory } from './model-expressions.factory';
-
-import { rxjsScope } from './rxjs-scope';
 import { ModelEvaluator } from './model-evaluator';
-
 
 
 export type CompileExpressionResult = {
@@ -109,21 +106,17 @@ export class ExpressionEditorBusinessService {
 
         expression.changed
             .pipe(
-                skip(1), // current value is emitted on subscribe
+                skip(1),
                 take(1),
                 timeout({ first: 10000 }),
                 catchError((e) => {
-                    return throwError(() => e);
+                   return EMPTY;
                 }),
                 finalize(() => {
                     tracker.continue();
                 })
             )
-            .subscribe({
-                error: (e) => {
-                    console.error('Replay pipeline failed', e);
-                },
-            });
+            .subscribe();
 
         this._expressionChangePlayback.play(index, changeHistory);
     }
