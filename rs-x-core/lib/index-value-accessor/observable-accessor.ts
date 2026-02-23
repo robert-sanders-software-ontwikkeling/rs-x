@@ -1,4 +1,4 @@
-import { BehaviorSubject, isObservable, Subject } from 'rxjs';
+import { BehaviorSubject, isObservable, Observable, of, Subject } from 'rxjs';
 
 import { Inject, Injectable } from '../dependency-injection';
 import { UnsupportedException } from '../exceptions';
@@ -19,7 +19,7 @@ export class ObservableAccessor implements IObservableAccessor {
   constructor(
     @Inject(RsXCoreInjectionTokens.IResolvedValueCache)
     private readonly _resolvedValueCache: IResolvedValueCache,
-  ) {}
+  ) { }
 
   public getIndexes(): IterableIterator<string> {
     return [].values();
@@ -49,9 +49,7 @@ export class ObservableAccessor implements IObservableAccessor {
     if (val instanceof Subject) {
       val.next(value);
       return;
-    }
-
-    throw new UnsupportedException('Cannot set value for an observable');
+    } 
   }
 
   public applies(context: unknown, index: string): boolean {

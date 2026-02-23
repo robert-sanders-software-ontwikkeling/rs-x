@@ -99,10 +99,10 @@ export class ExpressionEditorStateBuilder {
         modelsWithExpressions[modelIndex] = {
             ...model,
             version: (model.version ?? 0) + 1,
-            expressions: model.expressions.map((expr) => {
+            expressions: model.expressions.map((expressionInfo) => {
                 return {
-                    ...expr,
-                    treeHighlightVersion: (expr.treeHighlightVersion ?? 0) + 1,
+                    ...expressionInfo,
+                    treeHighlightVersion: (expressionInfo.treeHighlightVersion ?? 0) + 1,
                 };
             }),
         };

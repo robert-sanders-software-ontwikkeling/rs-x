@@ -402,7 +402,6 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     const modelIndex = currentState.selectedModelIndex as number;
     const modelInfo = currentState.modelsWithExpressions[modelIndex];
 
-    // dispose ONCE outside setState
     for (const exprInfo of modelInfo?.expressions ?? []) {
       business.disposeExpression(exprInfo.expression);
     }
@@ -423,13 +422,13 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     });
   };
 
-  const onModelChange = (modelIndex: number, model: object) => {
+  const onModelChange = (modelIndex: number, model: unknown) => {
     const modelInfo = currentState.modelsWithExpressions[modelIndex];
     if (!modelInfo) {
       return;
     }
 
-    business.applyModelValues(modelInfo.model, model);
+    business.applyModelValues(modelInfo.model, model as object);
 
     setCurrentState((prev) => {
       return new ExpressionEditorStateBuilder(prev)

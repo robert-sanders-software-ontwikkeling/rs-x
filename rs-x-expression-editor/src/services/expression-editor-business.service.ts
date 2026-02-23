@@ -130,12 +130,12 @@ export class ExpressionEditorBusinessService {
 
     private updateModelValues(target: object, source: object): void {
         Type.walkObjectTopToBottom(
-            target,
-            (parent, key, value) => {
+            source,
+            (_, key, value) => {
                 if (Type.isPlainObject(value)) {
-                    this.updateModelValues(value as object, (source as any)[key]);
+                    this.updateModelValues(target[key], value);
                 } else {
-                    (parent as any)[key] = (source as any)[key];
+                    target[key] = source[key];
                 }
             },
             false

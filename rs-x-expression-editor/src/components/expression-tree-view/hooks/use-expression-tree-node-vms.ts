@@ -4,7 +4,7 @@ import type { NodeId } from '../layout/node.interface';
 
 type LayoutNode = {
   id: NodeId;
-  expr: IExpression;
+  expression: IExpression;
 };
 
 type NodePos = {
@@ -16,10 +16,10 @@ export type NodeVm = {
   id: NodeId;
   className: string;
   style: React.CSSProperties;
-
   expressionText: string;
   typeText: string;
   valueText: string;
+  isAsync: boolean;
 };
 
 class NodeVmBuilder {
@@ -52,9 +52,10 @@ class NodeVmBuilder {
         continue;
       }
 
-      const expressionText = n.expr.expressionString;
-      const typeText = String(n.expr.type);
-      const valueText = formatValue(n.expr.value);
+      const expressionText = n.expression.expressionString;
+      const typeText = n.expression.type;
+      const valueText = formatValue(n.expression.value);
+      const isAsync = !!n.expression.isAsync
 
       const isSelected = selectedNodeIds.has(n.id);
       const isActive = activeNodeIds.has(n.id);
@@ -71,6 +72,7 @@ class NodeVmBuilder {
         expressionText,
         typeText,
         valueText,
+        isAsync
       });
     }
 

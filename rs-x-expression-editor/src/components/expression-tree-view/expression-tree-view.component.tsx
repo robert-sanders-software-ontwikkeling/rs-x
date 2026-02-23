@@ -45,6 +45,15 @@ const DEFAULTS = {
   valueMaxChars: 4000,
 } as const;
 
+const AsyncBadge: React.FC<{ title?: string }> = ({ title = 'Waiting for async value' }) => {
+  return (
+    <span className='exprNodeAsyncPill' title={title} aria-label={title}>
+      <span className='exprNodeAsyncPulse' aria-hidden='true' />
+      <span className='exprNodeAsyncLabel'>async</span>
+    </span>
+  );
+};
+
 export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
   const {
     root,
@@ -88,15 +97,14 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
 
   useExpressionChangedRerender(root);
 
-  const { selectedNodeIds, selectedEdgeKeys, activeNodeIds, activeEdgeKeys } =
-    useHighlightAnimation({
-      highlightChanges,
-      highlightVersion,
-      highlightKey,
-      expressionIndex,
-      isVisible,
-      playNonce,
-    });
+  const { selectedNodeIds, selectedEdgeKeys, activeNodeIds, activeEdgeKeys } = useHighlightAnimation({
+    highlightChanges,
+    highlightVersion,
+    highlightKey,
+    expressionIndex,
+    isVisible,
+    playNonce,
+  });
 
   const valueFormatterFn = useMemo(() => {
     if (formatValue) {
@@ -110,14 +118,7 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
   }, [formatValue, valueMaxDepth, valueMaxChars]);
 
   // ✅ Only compute viewport with real dimensions
-  const {
-    zoomScale,
-    paddedW,
-    paddedH,
-    scaledW,
-    scaledH,
-    nodePos,
-  } = useExpressionTreeViewport({
+  const { zoomScale, paddedW, paddedH, scaledW, scaledH, nodePos } = useExpressionTreeViewport({
     layout,
     nodeWidth,
     nodeHeight,
@@ -131,7 +132,9 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
   const edgePaths = useExpressionTreeEdgePaths({
     edges: layout.edges,
     nodePos,
-    edgeKey: (a, b) => expressionIndex.edgeKey(a, b),
+    edgeKey: (a, b) => {
+      return expressionIndex.edgeKey(a, b);
+    },
     selectedEdgeKeys,
     activeEdgeKeys,
   });
@@ -162,20 +165,17 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
               }}
             >
               <div className='exprTreeCanvas' style={{ width: paddedW, height: paddedH }}>
-                <svg
-                  className='exprTreeLines'
-                  width={paddedW}
-                  height={paddedH}
-                  viewBox={`0 0 ${paddedW} ${paddedH}`}
-                >
+                <svg className='exprTreeLines' width={paddedW} height={paddedH} viewBox={`0 0 ${paddedW} ${paddedH}`}>
                   {edgePaths.map((p) => {
                     return <path key={p.key} d={p.d} className={p.className} />;
                   })}
                 </svg>
 
                 {nodeViewModels.map((vm) => {
+                  const asyncClass = vm.isAsync ? ' exprNode--async' : '';
+
                   return (
-                    <div key={vm.id} className={vm.className} style={vm.style}>
+                    <div key={vm.id} className={`${vm.className}${asyncClass}`} style={vm.style}>
                       <div className='exprNodeHeader'>
                         <div className='exprNodeDot' />
                         <div className='exprNodeHeaderText'>
@@ -183,19 +183,20 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
                             <div className='exprNodeTitle' title={vm.expressionText}>
                               {vm.expressionText}
                             </div>
-                            <div className='exprNodeType' title={vm.typeText}>
-                              {vm.typeText}
+
+                            <div className='exprNodeTitleRowRight'>
+                              {vm.isAsync ? <AsyncBadge /> : null}
+
+                              <div className='exprNodeType' title={vm.typeText}>
+                                {vm.typeText}
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
 
                       <div className='exprNodeBody'>
-                        {vm.valueText ? (
-                          <pre className='exprNodePre'>{vm.valueText}</pre>
-                        ) : (
-                          <div className='exprNodeMuted'>no value</div>
-                        )}
+                        {vm.valueText ? <pre className='exprNodePre'>{vm.valueText}</pre> : <div className='exprNodeMuted'>no value</div>}
                       </div>
                     </div>
                   );

@@ -9,9 +9,9 @@ export class ExpressionIndex {
 
     public constructor(layout: LayoutResult) {
         for (const n of layout.nodes) {
-            this.idByExprRef.set(n.expr, n.id);
+            this.idByExprRef.set(n.expression, n.id);
 
-            const k = this.exprKey(n.expr);
+            const k = this.exprKey(n.expression);
             if (k && !this.idByExprKey.has(k)) {
                 this.idByExprKey.set(k, n.id);
             }
@@ -29,12 +29,12 @@ export class ExpressionIndex {
         return `${from}->${to}`;
     }
 
-    public exprKey(expr: IExpression): string {
-        if (!expr.id) {
-            throw new Error('ExpressionIndex: expr.id is not available (expression not initialized)');
+    public exprKey(expression: IExpression): string {
+        if (!expression.id) {
+            throw new Error('ExpressionIndex: expression.id is not available (expression not initialized)');
         }
 
-        return expr.id;
+        return expression.id;
     }
 
     public resolveNodeId(expr: IExpression): NodeId | null {

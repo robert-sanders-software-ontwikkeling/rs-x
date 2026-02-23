@@ -19,7 +19,7 @@ export class TreeLayoutEngine {
 
         const layoutNodes: LayoutNode[] = nodes.map((n) => ({
             id: n.id,
-            expr: n.expr,
+            expression: n.expr,
             depth: n.depth,
             x: n.x,
             y: n.y,

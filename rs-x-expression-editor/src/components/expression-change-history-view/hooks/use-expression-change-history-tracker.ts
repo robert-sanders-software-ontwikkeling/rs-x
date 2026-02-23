@@ -5,7 +5,7 @@ import {
 } from '@rs-x/expression-parser';
 import { useEffect, useRef } from 'react';
 import { Subscription } from 'rxjs';
-import type { IExpressionInfo } from '../../../models/model-with-expressions.interface';
+import { IExpressionInfo } from '../../../models/expression-info.interface';
 import { ExpressionChangeTrackerFactory } from '../../../services/expression-change-tracker.factory';
 
 function defer(fn: () => void): void {
@@ -21,8 +21,8 @@ function useLatestRef<T>(value: T) {
 }
 
 function expressionItemKey(item: IExpressionChangeHistory): string {
-  const expr = item.expression;
-  return `${expr.expressionString}::${String(expr.type)}::${String(item.oldValue)}=>${String(item.value)}`;
+  const expression = item.expression;
+  return `${expression.expressionString}::${String(expression.type)}::${String(item.oldValue)}=>${String(item.value)}`;
 }
 
 function stackKey(stack: readonly IExpressionChangeHistory[]): string {

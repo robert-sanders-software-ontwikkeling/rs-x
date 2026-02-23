@@ -137,25 +137,6 @@ function ValueDiff(props: {
     );
 }
 
-/**
- * Walk parent chain. This assumes your IExpression has `parent?: IExpression`.
- * If the property name differs (e.g. `parentExpression`), change it here.
- */
-function hasParentType(expression: unknown, typeToFind: string): boolean {
-    let current: any = expression;
-
-    // start at the parent of the current node
-    current = current?.parent;
-
-    while (current) {
-        if (String(current.type) === typeToFind) {
-            return true;
-        }
-        current = current.parent;
-    }
-
-    return false;
-}
 
 function getExpressionText(
     expression: IExpression
@@ -227,7 +208,6 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
     const clampedSelectedPersistedIndex =
         historyLength <= 0 || selectedChangeSetIndex < 0 ? -1 : clampIndex(selectedChangeSetIndex, historyLength);
 
-    // Auto-collapse non-selected and expand selected
     const [expandedPersistedIndex, setExpandedPersistedIndex] = useState<number>(() => clampedSelectedPersistedIndex);
 
     useEffect(() => {
@@ -281,7 +261,7 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
         <div className='changeHistoryRoot'>
             <div className='changeHistoryAccordion'>
                 <div className='changeHistoryAccordionScroll'>
-                    {batches.map((batch) => {
+                    {batches.map((batch, index) => {
                         const isActive = batch.persistedIndex === clampedSelectedPersistedIndex;
                         const isExpanded = batch.persistedIndex === expandedPersistedIndex;
 
@@ -300,17 +280,19 @@ export const ExpressionChangeHistoryView: React.FC<IExpressionChangeHistoryViewP
 
                         const displayStepItems = getDisplayStepItems(batch.items);
 
+                        const clickable =index === 0;
+
                         return (
                             <div
                                 key={batch.persistedIndex}
-                                className={`changeSet ${isActive ? 'isActive' : ''} ${isExpanded ? 'isExpanded' : ''}`}
+                                className={`changeSet ${isActive ? 'isActive' : ''} ${isExpanded ? 'isExpanded' : ''} `}
                             >
                                 <button
                                     type='button'
                                     className='changeSetHeader'
-                                    onClick={() => {
-                                        onUserSelectPersistedIndex(batch.persistedIndex, batch.items);
-                                    }}
+                                    onClick={
+                                         () => {onUserSelectPersistedIndex(batch.persistedIndex, batch.items);}
+                                    }
                                     title={headerExpr}
                                 >
                                     <div className='changeSetHeaderLeft'>

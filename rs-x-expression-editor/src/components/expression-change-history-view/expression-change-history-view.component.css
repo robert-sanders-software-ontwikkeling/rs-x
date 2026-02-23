@@ -113,6 +113,10 @@
   background-color: rgb(var(--c-accent) / 0.92);
 }
 
+.changeSet.nonClickable {
+  pointer-events: none;
+}
+
 .changeSetHeaderLeft {
   display: flex;
   align-items: center;
@@ -283,6 +287,8 @@
   padding: var(--sp-4) 0;
   border-bottom: 1px solid var(--border-1);
 }
+
+
 
 .changeStep:last-child {
   border-bottom: none;

@@ -3,7 +3,7 @@ import { NodeId } from './node.interface';
 
 export interface LayoutNode {
   id: NodeId;
-  expr: IExpression;
+  expression: IExpression;
   depth: number;
   x: number;
   y: number;

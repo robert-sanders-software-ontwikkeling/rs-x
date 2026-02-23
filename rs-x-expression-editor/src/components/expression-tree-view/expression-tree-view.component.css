@@ -191,6 +191,15 @@
   flex: 0 0 auto;
 }
 
+/* Right-side header group (badge + type) */
+.exprNodeTitleRowRight {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
 /* =========================================================
    Node Body
 ========================================================= */
@@ -274,5 +283,82 @@
   }
   100% {
     transform: translateY(-1px) scale(1);
+  }
+}
+
+/* =========================================================
+   Async indicator – minimal & clean (no left border, no spinner)
+========================================================= */
+
+.exprNode.exprNode--async {
+  /* intentionally subtle: no border changes */
+}
+
+/* Subtle header tint */
+.exprNode.exprNode--async .exprNodeHeader {
+  background: linear-gradient(
+    90deg,
+    rgb(var(--c-warn) / 0.06) 0%,
+    var(--panel-header) 55%
+  );
+}
+
+/* Header dot becomes animated "waiting" pulse */
+.exprNode.exprNode--async .exprNodeDot {
+  background: rgb(var(--c-warn) / 1);
+  box-shadow: 0 0 0 0 rgb(var(--c-warn) / 0.0);
+  animation: exprAsyncDotPulse 1.6s var(--ease) infinite;
+}
+
+/* Dot pulse animation */
+@keyframes exprAsyncDotPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(var(--c-warn) / 0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgb(var(--c-warn) / 0.0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(var(--c-warn) / 0.0);
+  }
+}
+
+/* Async pill – subtle */
+.exprNodeAsyncPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  height: 18px;
+  padding: 0 8px;
+  border-radius: 999px;
+
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+
+  border: 1px solid rgb(var(--c-warn) / 0.35);
+  background: rgb(var(--c-warn) / 0.10);
+  color: rgb(var(--c-warn) / 0.95);
+}
+
+.exprNodeAsyncLabel {
+  user-select: none;
+}
+
+/* Small dot in pill */
+.exprNodeAsyncPulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgb(var(--c-warn) / 1);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .exprNode.exprNode--async .exprNodeDot {
+    animation: none;
+    box-shadow: 0 0 0 4px rgb(var(--c-warn) / 0.14);
   }
 }

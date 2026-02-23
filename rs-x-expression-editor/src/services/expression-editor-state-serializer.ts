@@ -266,7 +266,6 @@ export class ExpressionEdtitorStateSerializer {
         expressionId: nodeIdIndex.getId(historyChangeRecord.expression),
         value: this.cloneValue(historyChangeRecord.value),
         oldValue: this.cloneValue(historyChangeRecord.oldValue),
-        isAsync: historyChangeRecord.isAsync
       };
     });
   }
@@ -287,7 +286,6 @@ export class ExpressionEdtitorStateSerializer {
         expression: nodeIdIndex.getNode(historyChangeRecord.expressionId),
         value: historyChangeRecord.value,
         oldValue: historyChangeRecord.oldValue,
-        isAsync: historyChangeRecord.isAsync
       };
     });
   }
