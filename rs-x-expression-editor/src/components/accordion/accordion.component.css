@@ -1,0 +1,139 @@
+/* =========================================================
+   Accordion (theme-aligned)
+========================================================= */
+
+.accordion {
+  display: block;
+}
+
+/* Panel shell */
+.accordionPanel {
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+
+  background-color: var(--panel);
+  box-shadow: none;
+
+  transition:
+    border-color var(--t-med) var(--ease),
+    box-shadow var(--t-med) var(--ease),
+    transform var(--t-fast) var(--ease);
+}
+
+.accordionPanel + .accordionPanel {
+  margin-top: var(--sp-3);
+}
+
+/* Open state: subtle ring like your focus */
+.accordionPanel.isOpen {
+  border-color: rgb(var(--c-accent) / 0.55);
+  box-shadow: 0 0 0 1px rgb(var(--c-accent) / 0.18);
+}
+
+/* Header */
+.accordionHeader {
+  padding: var(--sp-4) var(--sp-5);
+  font-weight: 700;
+
+  background-color: var(--panel-header);
+  border-bottom: 1px solid var(--border-1);
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+
+  color: var(--fg);
+  cursor: pointer;
+  user-select: none;
+
+  transition:
+    background-color var(--t-med) var(--ease),
+    border-color var(--t-med) var(--ease),
+    box-shadow var(--t-med) var(--ease);
+}
+
+/* Hover: slightly lift using surfaces */
+.accordionHeader:hover {
+  background-color: var(--surface-2);
+}
+
+/* Focus (keyboard) */
+.accordionHeader:focus-visible {
+  outline: none;
+  border-color: rgb(var(--c-accent) / 0.55);
+  box-shadow: var(--shadow-focus);
+}
+
+/* Open header: accent-tinted header, but still theme-driven */
+.accordionPanel.isOpen .accordionHeader {
+  background-color: var(--surface-2);
+}
+
+/* If color-mix supported, refine hover/open with nicer tints */
+@supports (background-color: color-mix(in srgb, black 50%, white 50%)) {
+  .accordionHeader:hover {
+    background-color: color-mix(in srgb, var(--panel-header) 70%, var(--fg) 6%);
+  }
+
+  .accordionPanel.isOpen .accordionHeader {
+    background-color: color-mix(
+      in srgb,
+      var(--panel-header) 78%,
+      rgb(var(--c-accent) / 0.22) 22%
+    );
+  }
+}
+
+/* Body */
+.accordionBody {
+  padding: var(--sp-5);
+  background-color: var(--panel);
+  color: var(--fg);
+
+  border-top: 1px solid var(--sep);
+
+  animation: accordionFadeIn var(--t-med) var(--ease);
+}
+
+/* If you want the body slightly “nested” from header */
+@supports (background-color: color-mix(in srgb, black 50%, white 50%)) {
+  .accordionBody {
+    background-color: color-mix(in srgb, var(--panel) 86%, var(--bg) 14%);
+    color: color-mix(in srgb, var(--fg) 88%, transparent 12%);
+  }
+}
+
+/* Optional: small helper text inside body */
+.accordionBody .muted {
+  color: var(--muted);
+}
+
+.accordionBody .muted-2 {
+  color: var(--muted-2);
+}
+
+/* Icon (chevron etc.) */
+.accordionIcon {
+  font-size: 12px;
+  opacity: 0.85;
+  flex: 0 0 auto;
+}
+
+/* Optional: rotate icon when open (if you apply it on the icon element) */
+.accordionPanel.isOpen .accordionIcon {
+  transform: rotate(90deg);
+  transition: transform var(--t-med) var(--ease);
+}
+
+@keyframes accordionFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

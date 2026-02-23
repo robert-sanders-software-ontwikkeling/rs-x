@@ -17,6 +17,7 @@ import type { IExpressionServices } from '../expression-services/expression-serv
 
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 import {
+  type ChangeHook,
   type ExpressionType,
   type IExpression,
 } from './expression-parser.interface';
@@ -26,15 +27,17 @@ export abstract class AbstractExpression<
   PT = unknown,
 > implements IExpression<T> {
   protected readonly _childExpressions: AbstractExpression[] = [];
+  protected _value: T | undefined;
+  protected _oldValue: unknown;
   private readonly _changed = new ReplaySubject<IExpression>(1);
   private _parent: AbstractExpression<PT> | undefined;
-  protected _value: T | undefined;
+  private _id!: string;
   private _isDisposed = false;
-  private _oldValue: unknown;
   private _commitedSubscription: Subscription | undefined;
   private _owner: IDisposableOwner | undefined;
   private _services!: IExpressionServices;
   private _leafIndexWatchRule?: IIndexWatchRule | undefined;
+  private _changeHook?: ChangeHook;
 
   protected constructor(
     public readonly type: ExpressionType,
@@ -47,6 +50,32 @@ export abstract class AbstractExpression<
     this.addChildExpressions(
       childExpressions.filter((childExpression) => childExpression),
     );
+  }
+
+  public get id(): string {
+    if (!this._id) {
+      this._id = this._services?.expressionIdProvider?.getId?.(this);
+    }
+    return this._id;
+  }
+
+  public get isAsync(): boolean | undefined {
+    return false;
+  }
+
+  public get changeHook(): ChangeHook | undefined {
+    return this._changeHook;
+  }
+
+  public set changeHook(value: ChangeHook | undefined) {
+    this._changeHook = value;
+    this._childExpressions.forEach(
+      (childExpression) => (childExpression.changeHook = value),
+    );
+
+    if (this._changeHook && this.value !== undefined) {
+      this._changeHook(this, undefined);
+    }
   }
 
   public abstract clone(): this;
@@ -199,6 +228,10 @@ export abstract class AbstractExpression<
       return false;
     }
     this._value = value;
+
+    if (this.changeHook) {
+      this.changeHook(this, this._oldValue);
+    }
 
     if (this.parent) {
       return this.parent.reevaluated(this, root, pendingCommits);

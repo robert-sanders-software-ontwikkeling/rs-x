@@ -1,7 +1,6 @@
 import { BehaviorSubject, isObservable, Subject } from 'rxjs';
 
 import { Inject, Injectable } from '../dependency-injection';
-import { UnsupportedException } from '../exceptions';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
 import { Type } from '../types';
 
@@ -50,8 +49,6 @@ export class ObservableAccessor implements IObservableAccessor {
       val.next(value);
       return;
     }
-
-    throw new UnsupportedException('Cannot set value for an observable');
   }
 
   public applies(context: unknown, index: string): boolean {

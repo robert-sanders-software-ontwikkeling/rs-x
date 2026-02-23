@@ -16,10 +16,16 @@ import {
 
 import { ExpressionCache } from './expression-cache/expression-cache';
 import type { IExpressionCache } from './expression-cache/expression-cache.type';
+import { ExpressionChangePlayback } from './expression-change-playback/expression-change-playback';
+import { type IExpressionChangePlayback } from './expression-change-playback/expression-change-playback.interface';
+import { ExpressionChangeTrackerManager } from './expression-change-tracker/expression-change-tracker-manager';
+import { type IExpressionChangeTrackerManager } from './expression-change-tracker/expression-change-tracker-manager.interface';
 import { ExpressionFactory } from './expression-factory/expression-factory';
 import type { IExpressionFactory } from './expression-factory/expression-factory.interface';
 import { ExpressionManager } from './expression-factory/expression-manager';
 import type { IExpressionManager } from './expression-factory/expression-manager.type';
+import { ExpressionIdProvider } from './expression-id/expression-id-provider';
+import { type IExpressionIdProvider } from './expression-id/expression-id-provider.interface';
 import { DeepCloneExceptWithExpressionSupport } from './expression-observer/deep-clone-except-with-expression-support';
 import { ExpressionIndexAccessor } from './expression-observer/expression-index-accessor';
 import { ExpressionMetadata } from './expression-observer/expression-metadata';
@@ -92,6 +98,25 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
       RsXExpressionParserInjectionTokens.IExpressionServices,
     )
     .to(ExpressionServices)
+    .inSingletonScope();
+  options
+    .bind<IExpressionChangePlayback>(
+      RsXExpressionParserInjectionTokens.IExpressionChangePlayback,
+    )
+    .to(ExpressionChangePlayback)
+    .inSingletonScope();
+  options
+    .bind<IExpressionChangeTrackerManager>(
+      RsXExpressionParserInjectionTokens.IExpressionChangeTrackerManager,
+    )
+    .to(ExpressionChangeTrackerManager)
+    .inSingletonScope();
+
+  options
+    .bind<IExpressionIdProvider>(
+      RsXExpressionParserInjectionTokens.IExpressionIdProvider,
+    )
+    .to(ExpressionIdProvider)
     .inSingletonScope();
 
   registerMultiInjectServices(

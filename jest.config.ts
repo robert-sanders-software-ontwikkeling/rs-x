@@ -62,6 +62,8 @@ const jestConfig: Config.InitialOptions = {
     '^.+\\.(scss|css|html)$': 'jest-transform-stub',
   },
 
+  setupFiles: ['<rootDir>/jest.idb.setup.ts'],
+
   // Setup
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
 

@@ -1,0 +1,845 @@
+/* =========================================================
+   0) Reset
+========================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   1) Theme tokens
+========================================================= */
+
+:root {
+  /* Typography */
+  --font-mono:
+    'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
+
+  /* Radius */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+
+  /* Spacing */
+  --sp-1: 4px;
+  --sp-2: 6px;
+  --sp-3: 8px;
+  --sp-4: 10px;
+  --sp-5: 12px;
+  --sp-6: 14px;
+  --sp-7: 18px;
+
+  /* Sizing */
+  --control-h: 32px;
+  --control-h-lg: 38px;
+  --icon-btn-w: 34px;
+
+  /* Motion */
+  --t-fast: 80ms;
+  --t-med: 150ms;
+  --ease: ease;
+
+  /* View transition tuning */
+  --view-slide: 26px;
+  /* 18–30px recommended */
+  --view-fade-ms: 170ms;
+  --view-move-ms: 260ms;
+
+  /* Shadows */
+  --shadow-panel: 0 1px 10px rgba(0, 0, 0, 0.35);
+  --shadow-focus: 0 0 0 3px rgba(92, 124, 250, 0.14);
+
+  /* Brand (rgb triplets) */
+  --c-accent: 92 124 250;
+  --c-success: 63 127 84;
+  --c-danger: 239 68 68;
+  --c-info: 120 180 255;
+  --c-warn: 255 210 120;
+
+  /* Base surfaces (dark defaults) */
+  --bg: #1e1e2f;
+  --fg: #f0f0f0;
+
+  --panel: #2b2b3b;
+  --panel-header: #323248;
+
+  --surface-1: rgba(255, 255, 255, 0.06);
+  --surface-2: rgba(255, 255, 255, 0.1);
+
+  --border-1: rgba(255, 255, 255, 0.08);
+  --border-2: rgba(255, 255, 255, 0.14);
+  --border-3: rgba(255, 255, 255, 0.22);
+
+  --muted: rgba(240, 240, 240, 0.75);
+  --muted-2: rgba(240, 240, 240, 0.55);
+
+  /* Inputs */
+  --input-bg: rgba(255, 255, 255, 0.06);
+  --input-border: rgba(255, 255, 255, 0.14);
+
+  /* Separators */
+  --sep: rgba(255, 255, 255, 0.08);
+}
+
+/* Dark (explicit) */
+.app[data-theme='dark'] {
+  --bg: #1e1e2f;
+  --fg: #f0f0f0;
+
+  --panel: #2b2b3b;
+  --panel-header: #323248;
+
+  --surface-1: rgba(255, 255, 255, 0.06);
+  --surface-2: rgba(255, 255, 255, 0.1);
+
+  --border-1: rgba(255, 255, 255, 0.08);
+  --border-2: rgba(255, 255, 255, 0.14);
+  --border-3: rgba(255, 255, 255, 0.22);
+
+  --muted: rgba(240, 240, 240, 0.75);
+  --muted-2: rgba(240, 240, 240, 0.55);
+
+  --sep: rgba(255, 255, 255, 0.08);
+}
+
+/* Light theme */
+.app[data-theme='light'] {
+  --bg: #f4f6fb;
+  --fg: #111827;
+
+  --panel: #ffffff;
+  --panel-header: #f0f3fa;
+
+  --surface-1: rgba(17, 24, 39, 0.04);
+  --surface-2: rgba(17, 24, 39, 0.07);
+
+  --border-1: rgba(17, 24, 39, 0.1);
+  --border-2: rgba(17, 24, 39, 0.16);
+  --border-3: rgba(17, 24, 39, 0.22);
+
+  --muted: rgba(17, 24, 39, 0.72);
+  --muted-2: rgba(17, 24, 39, 0.55);
+
+  --sep: rgba(17, 24, 39, 0.12);
+
+  --shadow-panel: 0 2px 14px rgba(17, 24, 39, 0.1);
+}
+
+/* =========================================================
+   2) Base
+========================================================= */
+
+html,
+body,
+#root,
+.app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-mono);
+  background-color: var(--bg);
+  color: var(--fg);
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* =========================================================
+   3) Layout / Panels
+========================================================= */
+
+.fullscreen-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.panels-container {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+}
+
+.panel-stack {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  background-color: var(--panel);
+  border-radius: var(--r-md);
+  margin: 2px;
+
+  box-shadow: var(--shadow-panel);
+  border: 1px solid var(--border-1);
+
+  min-height: 0;
+  min-width: 0;
+}
+
+/* =========================================================
+   4) Panel Header
+========================================================= */
+
+.panel-header {
+  padding: var(--sp-4) var(--sp-6);
+  font-weight: 700;
+
+  background-color: var(--panel-header);
+  border-bottom: 1px solid var(--border-1);
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+
+  min-width: 0;
+  width: 100%;
+}
+
+.panel-header__left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.panel-header__icon {
+  font-size: 16px;
+  color: var(--muted);
+  flex: 0 0 auto;
+  transition: color var(--t-med) var(--ease);
+}
+
+.panel-header:hover .panel-header__icon {
+  color: rgb(var(--c-accent) / 0.65);
+}
+
+.panel-header-row {
+  flex-wrap: nowrap;
+  width: 100%;
+  min-width: 0;
+}
+
+/* =========================================================
+   5) Content / Scroll
+========================================================= */
+
+.editor-wrapper,
+.panel-body {
+  flex: 1;
+  overflow: auto;
+  padding: var(--sp-2);
+  min-height: 0;
+  min-width: 0;
+}
+
+.panel-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+  min-width: 0;
+}
+
+.scroll-host {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  overflow-x: hidden;
+  padding: var(--sp-3);
+}
+
+.separator {
+  width: 4px;
+  cursor: col-resize;
+  background-color: var(--sep);
+}
+
+.separator-horizontal {
+  height: 4px;
+  cursor: row-resize;
+  background-color: var(--sep);
+  flex-shrink: 0;
+}
+
+/* =========================================================
+   6) UI Primitives
+========================================================= */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+
+  height: var(--control-h);
+  padding: 0 var(--sp-5);
+
+  font-size: 0.92em;
+
+  border-radius: var(--r-xs);
+  border: 1px solid var(--border-2);
+
+  background-color: var(--surface-1);
+  color: var(--fg);
+
+  cursor: pointer;
+  transition:
+    background-color var(--t-med) var(--ease),
+    border-color var(--t-med) var(--ease),
+    opacity var(--t-med) var(--ease),
+    transform var(--t-fast) var(--ease);
+}
+
+.btn:hover {
+  background-color: var(--surface-2);
+  border-color: var(--border-3);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.btn--success {
+  background: rgb(var(--c-success));
+  border-color: rgb(var(--c-success) / 0.75);
+  color: #fff;
+}
+
+.btn--success:hover {
+  background: rgb(var(--c-success) / 0.92);
+  border-color: rgb(var(--c-success) / 0.95);
+}
+
+.btn--success:active {
+  background: rgb(var(--c-success) / 0.86);
+}
+
+.btn--ghost,
+.me-cancel {
+  background-color: var(--surface-1);
+  border-color: var(--border-2);
+  color: var(--fg);
+}
+
+.btn--ghost:hover,
+.me-cancel:hover {
+  background-color: var(--surface-2);
+  border-color: var(--border-3);
+}
+
+/* Add Model (Primary CTA) */
+.btn--save,
+.btn--commit,
+.btn--addModel {
+  height: var(--control-h-lg);
+  padding: 0 16px;
+
+  letter-spacing: 0.2px;
+
+  border: 1px solid rgb(var(--c-accent) / 0.55);
+  background: linear-gradient(
+    180deg,
+    rgb(var(--c-accent) / 0.22),
+    rgb(var(--c-accent) / 0.14)
+  );
+
+  color: var(--fg);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
+
+  transition:
+    background-color var(--t-med) var(--ease),
+    border-color var(--t-med) var(--ease),
+    box-shadow var(--t-med) var(--ease),
+    transform var(--t-fast) var(--ease),
+    filter var(--t-med) var(--ease);
+}
+
+.btn--save:hover,
+.btn--commit:hover,
+.btn--addModel:hover {
+  border-color: rgb(var(--c-accent) / 0.78);
+  background: linear-gradient(
+    180deg,
+    rgb(var(--c-accent) / 0.28),
+    rgb(var(--c-accent) / 0.18)
+  );
+
+  box-shadow:
+    0 0 0 3px rgb(var(--c-accent) / 0.18),
+    0 14px 26px rgba(0, 0, 0, 0.26);
+}
+
+.btn--save:active,
+.btn--commit:active,
+.btn--addModel:active {
+  transform: translateY(1px);
+}
+
+.btn--save:focus-visible,
+.btn--commit:focus-visible,
+.btn--addModel:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgb(var(--c-accent) / 0.18),
+    0 14px 26px rgba(0, 0, 0, 0.26),
+    var(--shadow-focus);
+}
+
+.btn--save svg,
+.btn--addModel svg,
+.btn--addExpression svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+/* Add Expression (density-friendly, hidden until hover/focus/selected) */
+.btn--addExpression {
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+
+  background: transparent;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  color: rgb(240 240 240 / 0.6);
+
+  font-size: 0.84em;
+  font-weight: 600;
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-6px);
+
+  transition:
+    opacity var(--t-med) var(--ease),
+    transform var(--t-med) var(--ease),
+    visibility 0s linear var(--t-med),
+    background-color var(--t-med) var(--ease),
+    border-color var(--t-med) var(--ease),
+    color var(--t-med) var(--ease);
+}
+
+.btn--addExpression:hover {
+  background: rgb(255 255 255 / 0.04);
+  border-color: rgb(255 255 255 / 0.16);
+  color: rgb(240 240 240 / 0.86);
+}
+
+.model-row:hover .btn--addExpression,
+.model-row:focus-within .btn--addExpression,
+.model-row.is-selected .btn--addExpression {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(0);
+
+  transition:
+    opacity var(--t-med) var(--ease),
+    transform var(--t-med) var(--ease),
+    visibility 0s;
+}
+
+/* =========================================================
+   7) Model List
+========================================================= */
+
+.model-row {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+
+  width: 100%;
+  padding: 12px 14px;
+
+  background: transparent;
+  border-bottom: 1px solid var(--sep);
+
+  transition:
+    background-color var(--t-med) var(--ease),
+    color var(--t-med) var(--ease);
+}
+
+.model-row-left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.model-row-icon {
+  font-size: 14px;
+  color: var(--muted);
+  flex: 0 0 auto;
+  transition: color var(--t-med) var(--ease);
+}
+
+.model-row-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  font-weight: 500;
+  letter-spacing: 0.12px;
+  color: rgb(240 240 240 / 0.72);
+}
+
+.model-row.is-selected .model-row-icon {
+  color: rgb(var(--c-accent) / 0.75);
+}
+
+.model-row:hover {
+  background: rgb(255 255 255 / 0.03);
+}
+
+.model-row:hover .model-row-title {
+  color: rgb(240 240 240 / 0.88);
+}
+
+.model-row.is-selected {
+  background: rgb(var(--c-accent) / 0.045);
+}
+
+.model-row.is-selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+
+  width: 3px;
+  border-radius: 999px;
+
+  background: rgb(var(--c-accent));
+  box-shadow: none;
+}
+
+.model-row.is-selected .model-row-title {
+  color: rgb(240 240 240 / 0.95);
+  font-weight: 650;
+}
+
+/* =========================================================
+   8) Expression List
+========================================================= */
+
+.expression-list {
+  padding: 8px 0;
+}
+
+.expression-empty {
+  display: inline-block;
+  padding: 10px 12px;
+  color: var(--muted-2);
+}
+
+.expression-item,
+.expression-row {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 10px 12px;
+  margin: 8px 12px 8px 22px;
+
+  border-radius: var(--r-sm);
+
+  background: rgb(255 255 255 / 0.02);
+  border: 1px solid rgb(255 255 255 / 0.05);
+
+  transition:
+    background-color var(--t-med) var(--ease),
+    border-color var(--t-med) var(--ease);
+}
+
+.expression-item:hover,
+.expression-row:hover {
+  background: rgb(255 255 255 / 0.04);
+  border-color: rgb(255 255 255 / 0.08);
+}
+
+.expression-item.is-selected,
+.expression-row.is-selected {
+  background: rgb(255 255 255 / 0.025);
+  border-color: rgb(var(--c-accent) / 0.22);
+}
+
+.expression-item.is-selected::before,
+.expression-row.is-selected::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 9px;
+  bottom: 9px;
+
+  width: 2px;
+  border-radius: 999px;
+
+  background: rgb(var(--c-accent) / 0.9);
+  box-shadow: none;
+}
+
+.expression-code {
+  color: rgb(240 240 240 / 0.88);
+}
+
+/* =========================================================
+   9) Action buttons
+========================================================= */
+
+.icon-bar {
+  display: flex;
+  gap: 8px;
+  opacity: 0.2;
+  transition: opacity var(--t-med) var(--ease);
+  margin-left: auto;
+}
+
+.expression-item.is-selected .icon-bar,
+.model-row.is-selected .icon-bar {
+  opacity: 0.7;
+}
+
+.expression-item:hover .icon-bar,
+.model-row:hover .icon-bar {
+  opacity: 1;
+}
+
+.icon-btn {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: var(--r-xs);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(255 255 255 / 0.03);
+
+  color: rgb(240 240 240 / 0.92);
+  opacity: 0.85;
+
+  transition:
+    opacity var(--t-fast) var(--ease),
+    background-color var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    transform var(--t-fast) var(--ease);
+}
+
+.icon-btn svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+  opacity: 0.95;
+}
+
+.expression-item:hover .icon-btn,
+.expression-item:focus-within .icon-btn,
+.expression-row:hover .icon-btn,
+.expression-row:focus-within .icon-btn {
+  opacity: 0.95;
+}
+
+.icon-btn:hover {
+  opacity: 1;
+  background: rgb(255 255 255 / 0.08);
+  border-color: rgb(255 255 255 / 0.18);
+}
+
+.icon-btn:active {
+  transform: translateY(1px);
+}
+
+.delete-btn:hover {
+  border-color: rgb(var(--c-danger) / 0.45);
+  background: rgb(var(--c-danger) / 0.12);
+}
+
+/* =========================================================
+   10) Inputs/select (global look)
+========================================================= */
+
+input[type='text'],
+input[type='search'],
+select {
+  height: var(--control-h);
+  padding: 0 var(--sp-4);
+  border-radius: var(--r-xs);
+
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+
+  outline: none;
+  color: inherit;
+}
+
+input::placeholder {
+  color: var(--muted-2);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: rgb(var(--c-accent) / 0.55);
+  box-shadow: var(--shadow-focus);
+}
+
+/* =========================================================
+   11) Expression Tree header helpers (unchanged)
+========================================================= */
+
+.exprTreeHeaderTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.exprTreeHeaderExpr {
+  font-weight: 600;
+  font-size: 0.9em;
+  opacity: 0.9;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  min-width: 0;
+  max-width: 420px;
+}
+
+.exprTreeHeaderControls {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.exprTreeHeaderZoom {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: 0.9em;
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+.exprTreeHeaderZoom select {
+  width: 110px;
+  min-width: 110px;
+  max-width: 110px;
+}
+
+.expression-left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.expression-icon {
+  font-size: 13px;
+  color: var(--muted);
+  flex: 0 0 auto;
+  transition: color var(--t-med) var(--ease);
+}
+
+.expression-item.is-selected .expression-icon {
+  color: rgb(var(--c-accent) / 0.75);
+}
+
+/* =========================================================
+   12) Smooth view transitions (single definition only)
+========================================================= */
+
+.view-stack {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.view-layer {
+  position: absolute;
+  inset: 0;
+
+  min-height: 0;
+  min-width: 0;
+
+  will-change: opacity, transform;
+
+  transition:
+    opacity var(--view-fade-ms) var(--ease),
+    transform var(--view-move-ms) var(--ease);
+}
+
+.view-layer--active {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+  z-index: 2;
+}
+
+.view-layer--inactive {
+  opacity: 0;
+  transform: translateX(calc(var(--view-slide) * -1));
+  pointer-events: none;
+  z-index: 1;
+}
+
+.view-layer--details.view-layer--inactive {
+  transform: translateX(var(--view-slide));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view-layer {
+    transition: none;
+    transform: none;
+  }
+}

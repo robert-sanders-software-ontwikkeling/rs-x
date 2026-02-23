@@ -38,7 +38,7 @@ export class ValueMetadata implements IValueMetadata {
 
     if (!valueMetadata) {
       throw new UnsupportedException(
-        `No accessor found for ${Type.toObject(value)?.constructor.name}}`,
+        `No value meta data found for '${Type.toObject(value)?.constructor.name}}'`,
       );
     }
 

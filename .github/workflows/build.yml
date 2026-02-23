@@ -6,7 +6,6 @@ on:
       - feature/**
       - fix/**
       - refactor/**
-
   workflow_dispatch:
 
 jobs:
@@ -21,14 +20,6 @@ jobs:
         uses: actions/checkout@v3
 
       # ------------------------------
-      # Setup Node.js
-      # ------------------------------
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: lts/*
-
-      # ------------------------------
       # Setup pnpm
       # ------------------------------
       - name: Setup pnpm
@@ -37,49 +28,57 @@ jobs:
           version: 10.22.0
 
       # ------------------------------
+      # Setup Node.js (with pnpm cache)
+      # ------------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      # ------------------------------
       # Install dependencies
       # ------------------------------
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
-      # ------------------------------
-      # Lint all projects
-      # ------------------------------
-      - name: Lint all projects
-        run: pnpm lint
-
-      # ------------------------------
-      # Check formatting (Prettier)
-      # ------------------------------
+      # =====================================================
+      # 1️⃣ FORMAT
+      # =====================================================
       - name: Check formatting
-        run: pnpm format:check
+        run: pnpm -w run format:check
 
-      # ------------------------------
-      # Run Node/TS tests
-      # ------------------------------
-      - name: Run Node tests
-        run: pnpm run test
+      # =====================================================
+      # 2️⃣ LINT
+      # =====================================================
+      - name: Lint all projects
+        run: pnpm -w run lint
 
-      # ------------------------------
-      # Build Node libraries
-      # ------------------------------
+      # =====================================================
+      # 3️⃣ BUILD
+      # =====================================================
+
+      # Build all node libraries
       - name: Build Node libraries
-        run: pnpm run build:libs
+        run: pnpm -w run build:libs
 
-      # ------------------------------
+      # Build expression editor
+      - name: Build expression-editor
+        run: pnpm -w run build:expression-editor
+
       # Build Angular library
-      # ------------------------------
       - name: Build Angular library
-        run: pnpm run build:angular
+        run: pnpm -w run build:angular
 
-      # ------------------------------
-      # Run Angular tests
-      # ------------------------------
+      # =====================================================
+      # 4️⃣ TEST
+      # =====================================================
+
+      - name: Run Node tests
+        run: pnpm -w run test
+
       - name: Run Angular tests
-        run: pnpm run test:angular
+        run: pnpm -w run test:angular
 
-      # ------------------------------
-      # Run React tests
-      # ------------------------------
-      - name: Run  React tests
-        run: pnpm run test:react
+      - name: Run React tests
+        run: pnpm -w run test:react

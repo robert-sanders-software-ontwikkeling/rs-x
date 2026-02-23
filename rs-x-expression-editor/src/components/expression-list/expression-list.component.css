@@ -1,0 +1,152 @@
+/* =========================================================
+   Container
+========================================================= */
+
+.expression-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  overflow-y: auto;
+}
+
+/* =========================================================
+   Empty state
+========================================================= */
+
+.expression-empty {
+  opacity: 0.6;
+  padding: var(--sp-3);
+  font-style: italic;
+  color: var(--muted);
+}
+
+/* =========================================================
+   Row
+========================================================= */
+
+.expression-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  background-color: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-xs);
+
+  padding: var(--sp-3) var(--sp-5);
+  cursor: pointer;
+
+  transition:
+    background-color var(--t-med) var(--ease),
+    border-color var(--t-med) var(--ease),
+    box-shadow var(--t-med) var(--ease);
+}
+
+.expression-item:hover {
+  background-color: var(--surface-2);
+  border-color: var(--border-2);
+}
+
+/* =========================================================
+   Selected row
+========================================================= */
+
+.expression-item.is-selected {
+  border-color: rgb(var(--c-accent) / 0.55);
+  background-color: color-mix(
+    in srgb,
+    var(--surface-1) 70%,
+    rgb(var(--c-accent) / 0.14) 30%
+  );
+  box-shadow: 0 0 0 1px rgb(var(--c-accent) / 0.35);
+}
+
+@supports not (background-color: color-mix(in srgb, black 50%, white 50%)) {
+  .expression-item.is-selected {
+    background-color: var(--surface-2);
+  }
+}
+
+/* =========================================================
+   Expression text
+========================================================= */
+
+.expression-code {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+
+  color: color-mix(in srgb, var(--fg) 70%, rgb(var(--c-info)) 30%);
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 70%;
+}
+
+@supports not (color: color-mix(in srgb, black 50%, white 50%)) {
+  .expression-code {
+    color: var(--fg);
+    opacity: 0.9;
+  }
+}
+
+/* Selected expression text */
+.expression-item.is-selected .expression-code {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.expression-error-icon {
+  color: rgb(var(--c-danger) / 0.9);
+  font-size: 12px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  margin-right: var(--sp-3);
+}
+
+/* =========================================================
+   View button (subtle info tone)
+========================================================= */
+
+.view-btn {
+  background-color: rgb(var(--c-info) / 0.12);
+  border-color: rgb(var(--c-info) / 0.35);
+  color: var(--fg);
+}
+
+.view-btn:hover {
+  background-color: rgb(var(--c-info) / 0.18);
+  border-color: rgb(var(--c-info) / 0.55);
+}
+
+/* =========================================================
+   Edit button (accent tone)
+========================================================= */
+
+.edit-btn {
+  background-color: rgb(var(--c-accent) / 0.14);
+  border-color: rgb(var(--c-accent) / 0.4);
+  color: var(--fg);
+}
+
+.edit-btn:hover {
+  background-color: rgb(var(--c-accent) / 0.22);
+  border-color: rgb(var(--c-accent) / 0.6);
+}
+
+/* =========================================================
+   Delete button (danger tone)
+========================================================= */
+
+.delete-btn {
+  background-color: rgb(var(--c-danger) / 0.14);
+  border-color: rgb(var(--c-danger) / 0.4);
+  color: var(--fg);
+}
+
+.delete-btn:hover {
+  background-color: rgb(var(--c-danger) / 0.22);
+  border-color: rgb(var(--c-danger) / 0.6);
+}

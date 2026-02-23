@@ -1,0 +1,77 @@
+name: Deploy rs-x-expression-editor to GitHub Pages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-rs-x-expression-editor
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      # ------------------------------
+      # Checkout repository
+      # ------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ------------------------------
+      # Setup pnpm
+      # ------------------------------
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.22.0
+
+      # ------------------------------
+      # Setup Node.js (with pnpm cache)
+      # ------------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      # ------------------------------
+      # Install dependencies
+      # ------------------------------
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ------------------------------
+      # Build expression-editor
+      # ------------------------------
+      - name: Build expression-editor
+        run: pnpm -w run build:expression-editor
+
+      # ------------------------------
+      # Configure GitHub Pages
+      # ------------------------------
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      # ------------------------------
+      # Upload dist folder as Pages artifact
+      # ------------------------------
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: rs-x-expression-editor/dist
+
+      # ------------------------------
+      # Deploy to GitHub Pages
+      # ------------------------------
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

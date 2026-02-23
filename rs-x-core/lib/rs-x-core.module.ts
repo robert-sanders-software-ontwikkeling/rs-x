@@ -26,6 +26,8 @@ import { PropertyValueAccessor } from './index-value-accessor/property-value-acc
 import { ResolvedValueCache } from './index-value-accessor/resolved-value-cache';
 import { type IResolvedValueCache } from './index-value-accessor/resolved-value-cache.interface';
 import { SetKeyAccessor } from './index-value-accessor/set-key-accessor';
+import { ObjectStorage } from './object-store/object-storage';
+import { type IObjectStorage } from './object-store/object-storage.interface';
 import { SequenceIdFactory } from './sequence-id/sequence-id.factory';
 import { type ISequenceIdFactory } from './sequence-id/sequence-id-factory.interface';
 import { ArrayMetadata } from './value-metadata/array-metadata';
@@ -138,15 +140,21 @@ export const RsXCoreModule = new ContainerModule((options) => {
     .bind<IDeepCloneExcept>(RsXCoreInjectionTokens.IDeepCloneExcept)
     .to(DeepCloneValueExcept)
     .inSingletonScope();
-
   options
     .bind<IDeepCloneExcept>(RsXCoreInjectionTokens.DefaultDeepCloneExcept)
     .to(DeepCloneValueExcept)
     .inSingletonScope();
-
   options
     .bind<IValueMetadata>(RsXCoreInjectionTokens.IValueMetadata)
     .to(ValueMetadata)
+    .inSingletonScope();
+  options
+    .bind(RsXCoreInjectionTokens.IDBFactory)
+    .toConstantValue(window.indexedDB);
+
+  options
+    .bind<IObjectStorage>(RsXCoreInjectionTokens.IObjectStorage)
+    .to(ObjectStorage)
     .inSingletonScope();
 
   registerMultiInjectServices(

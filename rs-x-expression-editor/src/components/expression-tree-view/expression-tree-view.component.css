@@ -1,0 +1,376 @@
+/* =========================================================
+   Root: full-size scroll + zoom surface
+========================================================= */
+
+.exprTreeRoot {
+  position: relative;
+  width: 100%;
+  height: 100%;
+
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-mono);
+
+  min-width: 0;
+  min-height: 0;
+}
+
+.exprTreeViewport {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+
+  min-width: 0;
+  min-height: 0;
+}
+
+.exprTreeSpacer {
+  position: relative;
+}
+
+.exprTreeZoomLayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+
+/* IMPORTANT: no min-width/min-height here, it breaks scaling */
+.exprTreeCanvas {
+  position: relative;
+
+  /* stable stacking context */
+  isolation: isolate;
+}
+
+/* SVG overlay that draws lines */
+.exprTreeLines {
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  z-index: 10;
+
+  pointer-events: none;
+  overflow: visible;
+  display: block;
+}
+
+/* Nodes above the line layer */
+.exprNode {
+  position: absolute;
+  z-index: 20;
+}
+
+/* =========================================================
+   Links / Paths
+========================================================= */
+
+.exprTreeLines path.exprTreePath {
+  fill: none;
+
+  /* visible base */
+  stroke: rgb(255 255 255 / 0.28);
+  stroke-width: 2px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+
+  opacity: 1;
+
+  /* keep visible under zoom scaling */
+  vector-effect: non-scaling-stroke;
+
+  shape-rendering: geometricPrecision;
+
+  transition:
+    stroke var(--t-med) var(--ease),
+    stroke-width var(--t-med) var(--ease),
+    opacity var(--t-med) var(--ease),
+    filter var(--t-med) var(--ease);
+}
+
+/* Selected edge (blue) */
+.exprTreeLines path.exprTreePath.isSelected {
+  stroke: rgb(var(--c-info) / 0.95);
+  stroke-width: 3.2px;
+  filter: drop-shadow(0 0 6px rgb(var(--c-info) / 0.35));
+}
+
+/* Active edge (BRIGHT yellow) */
+.exprTreeLines path.exprTreePath.isActive {
+  stroke: rgb(var(--c-warn) / 1);
+  stroke-width: 4.6px;
+
+  filter: drop-shadow(0 0 9px rgb(var(--c-warn) / 0.55))
+    drop-shadow(0 0 18px rgb(var(--c-warn) / 0.25));
+}
+
+/* =========================================================
+   Node (card)
+========================================================= */
+
+.exprNode {
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-lg);
+
+  background: var(--surface-1);
+  box-shadow: var(--shadow-panel);
+
+  overflow: hidden;
+
+  transition:
+    transform var(--t-med) var(--ease),
+    box-shadow var(--t-med) var(--ease),
+    border-color var(--t-med) var(--ease),
+    background-color var(--t-med) var(--ease),
+    filter var(--t-med) var(--ease);
+}
+
+/* =========================================================
+   Node Header
+========================================================= */
+
+.exprNodeHeader {
+  padding: var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--border-1);
+
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+
+  background: var(--panel-header);
+}
+
+@supports (background: color-mix(in srgb, black 50%, white 50%)) {
+  .exprNodeHeader {
+    background: color-mix(in srgb, var(--panel-header) 78%, transparent 22%);
+  }
+}
+
+.exprNodeDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+
+  background: rgb(var(--c-info) / 0.95);
+  box-shadow: 0 0 0 4px rgb(var(--c-info) / 0.15);
+
+  flex: 0 0 auto;
+  transition:
+    background-color var(--t-med) var(--ease),
+    box-shadow var(--t-med) var(--ease);
+}
+
+.exprNodeHeaderText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+}
+
+.exprNodeTitleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  min-width: 0;
+  width: 100%;
+}
+
+.exprNodeTitle {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.exprNodeType {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+
+  border: 1px solid var(--border-2);
+  background: var(--surface-1);
+  color: var(--muted);
+
+  flex: 0 0 auto;
+}
+
+/* Right-side header group (badge + type) */
+.exprNodeTitleRowRight {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+/* =========================================================
+   Node Body
+========================================================= */
+
+.exprNodeBody {
+  padding: var(--sp-4) var(--sp-5);
+  height: calc(100% - 43px);
+  overflow: auto;
+
+  background: var(--panel);
+}
+
+@supports (background: color-mix(in srgb, black 50%, white 50%)) {
+  .exprNodeBody {
+    background: color-mix(in srgb, var(--panel) 88%, var(--bg) 12%);
+  }
+}
+
+.exprNodePre {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  tab-size: 2;
+
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+
+  color: var(--fg);
+  opacity: 0.92;
+}
+
+.exprNodeMuted {
+  font-size: 12px;
+  color: var(--muted-2);
+}
+
+/* =========================================================
+   Selected / Active nodes (pop)
+========================================================= */
+
+.exprNode.isSelected {
+  border-color: rgb(var(--c-info) / 0.85);
+
+  box-shadow:
+    var(--shadow-panel),
+    0 0 0 2px rgb(var(--c-info) / 0.25),
+    0 0 18px rgb(var(--c-info) / 0.12);
+}
+
+.exprNode.isSelected .exprNodeDot {
+  background: rgb(var(--c-info) / 0.99);
+  box-shadow:
+    0 0 0 4px rgb(var(--c-info) / 0.28),
+    0 0 14px rgb(var(--c-info) / 0.14);
+}
+
+.exprNode.isActive {
+  border-color: rgb(var(--c-warn) / 0.98);
+  transform: translateY(-1px);
+
+  box-shadow:
+    var(--shadow-panel),
+    0 0 0 2px rgb(var(--c-warn) / 0.32),
+    0 0 22px rgb(var(--c-warn) / 0.22),
+    0 0 40px rgb(var(--c-warn) / 0.1);
+
+  animation: exprPulse 520ms var(--ease);
+}
+
+.exprNode.isActive .exprNodeDot {
+  background: rgb(var(--c-warn) / 1);
+  box-shadow:
+    0 0 0 4px rgb(var(--c-warn) / 0.32),
+    0 0 18px rgb(var(--c-warn) / 0.32),
+    0 0 30px rgb(var(--c-warn) / 0.16);
+}
+
+@keyframes exprPulse {
+  0% {
+    transform: translateY(-1px) scale(1);
+  }
+  45% {
+    transform: translateY(-1px) scale(1.02);
+  }
+  100% {
+    transform: translateY(-1px) scale(1);
+  }
+}
+
+/* =========================================================
+   Async indicator – minimal & clean (no left border, no spinner)
+========================================================= */
+
+.exprNode.exprNode--async {
+  /* intentionally subtle: no border changes */
+}
+
+/* Subtle header tint */
+.exprNode.exprNode--async .exprNodeHeader {
+  background: linear-gradient(
+    90deg,
+    rgb(var(--c-warn) / 0.06) 0%,
+    var(--panel-header) 55%
+  );
+}
+
+/* Header dot becomes animated "waiting" pulse */
+.exprNode.exprNode--async .exprNodeDot {
+  background: rgb(var(--c-warn) / 1);
+  box-shadow: 0 0 0 0 rgb(var(--c-warn) / 0);
+  animation: exprAsyncDotPulse 1.6s var(--ease) infinite;
+}
+
+/* Dot pulse animation */
+@keyframes exprAsyncDotPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(var(--c-warn) / 0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgb(var(--c-warn) / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(var(--c-warn) / 0);
+  }
+}
+
+/* Async pill – subtle */
+.exprNodeAsyncPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  height: 18px;
+  padding: 0 8px;
+  border-radius: 999px;
+
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+
+  border: 1px solid rgb(var(--c-warn) / 0.35);
+  background: rgb(var(--c-warn) / 0.1);
+  color: rgb(var(--c-warn) / 0.95);
+}
+
+.exprNodeAsyncLabel {
+  user-select: none;
+}
+
+/* Small dot in pill */
+.exprNodeAsyncPulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgb(var(--c-warn) / 1);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .exprNode.exprNode--async .exprNodeDot {
+    animation: none;
+    box-shadow: 0 0 0 4px rgb(var(--c-warn) / 0.14);
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@rs-x/expression-editor",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "vite",
+    "copy:monaco-dts": "node ../scripts/copy-monaco-dts.mjs",
+    "build": "npm run copy:monaco-dts && vite build",
+    "dev": "npm run copy:monaco-dts && vite",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@rs-x/core": "workspace:*",
+    "@rs-x/expression-parser": "workspace:*",
+    "@rs-x/react": "workspace:*"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.1.4",
+    "globals": "^17.3.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
+  },
+  "peerDependencies": {
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  }
+}

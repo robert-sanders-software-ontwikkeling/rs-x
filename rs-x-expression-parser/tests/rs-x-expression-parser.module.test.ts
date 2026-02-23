@@ -23,8 +23,11 @@ import {
 
 import { ExpressionChangeTransactionManager } from '../lib/expresion-change-transaction-manager';
 import { ExpressionCache } from '../lib/expression-cache/expression-cache';
+import { ExpressionChangePlayback } from '../lib/expression-change-playback/expression-change-playback';
+import { ExpressionChangeTrackerManager } from '../lib/expression-change-tracker/expression-change-tracker-manager';
 import { ExpressionFactory } from '../lib/expression-factory/expression-factory';
 import { ExpressionManager } from '../lib/expression-factory/expression-manager';
+import { ExpressionIdProvider } from '../lib/expression-id/expression-id-provider';
 import { DeepCloneExceptWithExpressionSupport } from '../lib/expression-observer/deep-clone-except-with-expression-support';
 import { ExpressionIndexAccessor } from '../lib/expression-observer/expression-index-accessor';
 import { ExpressionObserverFactory } from '../lib/expression-observer/expression-observer.factory';
@@ -303,12 +306,63 @@ describe('RsXExpressionParserModule tests', () => {
     expect(actual).toBeInstanceOf(ExpressionServices);
   });
 
-  it('ExpressionServices instance is a singleton', () => {
+  it('IExpressionServices instance is a singleton', () => {
     const a1 = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
     const a2 = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionServices,
+    );
+    expect(a1).toBe(a2);
+  });
+
+  it('can get instance of IExpressionChangePlayback', () => {
+    const actual = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionChangePlayback,
+    );
+    expect(actual).toBeInstanceOf(ExpressionChangePlayback);
+  });
+
+  it('IExpressionChangePlayback instance is a singleton', () => {
+    const a1 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionChangePlayback,
+    );
+    const a2 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionChangePlayback,
+    );
+    expect(a1).toBe(a2);
+  });
+
+  it('can get instance of IExpressionChangeTrackerManager', () => {
+    const actual = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionChangeTrackerManager,
+    );
+    expect(actual).toBeInstanceOf(ExpressionChangeTrackerManager);
+  });
+
+  it('IExpressionChangeTrackerManager instance is a singleton', () => {
+    const a1 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionChangeTrackerManager,
+    );
+    const a2 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionChangeTrackerManager,
+    );
+    expect(a1).toBe(a2);
+  });
+
+  it('can get instance of IExpressionIdProvider', () => {
+    const actual = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionIdProvider,
+    );
+    expect(actual).toBeInstanceOf(ExpressionIdProvider);
+  });
+
+  it('IExpressionIdProvider instance is a singleton', () => {
+    const a1 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionIdProvider,
+    );
+    const a2 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionIdProvider,
     );
     expect(a1).toBe(a2);
   });

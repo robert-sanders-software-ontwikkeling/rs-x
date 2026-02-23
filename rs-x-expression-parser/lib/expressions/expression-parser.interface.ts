@@ -5,7 +5,10 @@ import { type IDisposable } from '@rs-x/core';
 import { type AbstractExpression } from './abstract-expression';
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 
+export type ChangeHook = (expression: IExpression, oldValue: unknown) => void;
+
 export interface IExpression<T = unknown, PT = unknown> extends IDisposable {
+  readonly id: string;
   readonly changed: Observable<IExpression>;
   readonly type: ExpressionType;
   readonly expressionString: string;
@@ -13,6 +16,8 @@ export interface IExpression<T = unknown, PT = unknown> extends IDisposable {
   readonly childExpressions: readonly IExpression[];
   readonly value: T | undefined;
   readonly isRoot: boolean;
+  readonly isAsync: boolean | undefined;
+  changeHook?: ChangeHook;
   toString(): string;
   clone(): this;
   bind(settings: IExpressionBindConfiguration): IExpression;
