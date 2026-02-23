@@ -39,8 +39,9 @@
     "@rs-x/core": "workspace:*"
   },
   "devDependencies": {
-    "tsup": "^8.5.1",
-    "rimraf": "^6.1.2"
+    "globals": "^17.3.0",
+    "rimraf": "^6.1.2",
+    "tsup": "^8.5.1"
   },
   "engines": {
     "node": ">=24"
