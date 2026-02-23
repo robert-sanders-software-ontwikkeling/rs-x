@@ -72,7 +72,6 @@ export class ExpressionChangeTracker implements IExpressionChangeTracker {
                 expression,
                 value: expression.value,
                 oldValue,
-                isAsync: expression.isAsync
             });
             return;
         }
