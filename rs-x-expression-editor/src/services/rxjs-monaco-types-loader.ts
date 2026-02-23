@@ -6,6 +6,18 @@ type Manifest = {
   files: string[];
 };
 
+type Chunk = {
+  files: Array<{ uri: string; content: string }>;
+};
+
+const normalizeBaseUrl = (baseUrl: string): string => {
+  return baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+};
+
+const normalizeWebPath = (webPath: string): string => {
+  return webPath.replace(/^\//, '');
+};
+
 export class RxjsMonacoTypesLoader {
   private static _instance: RxjsMonacoTypesLoader | null = null;
   private _installed = false;
@@ -30,43 +42,48 @@ export class RxjsMonacoTypesLoader {
       module: monaco.languages.typescript.ModuleKind.ESNext,
       moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
       baseUrl: 'file:///',
-
       paths: {
         rxjs: ['node_modules/rxjs/dist/types/index.d.ts'],
         'rxjs/*': ['node_modules/rxjs/dist/types/*'],
-
         'rxjs/operators': ['node_modules/rxjs/dist/types/operators/index.d.ts'],
         'rxjs/operators/*': ['node_modules/rxjs/dist/types/operators/*'],
       },
-
       typeRoots: ['node_modules/@types'],
     });
 
-    // ✅ Works locally (/) and on GitHub Pages (/rs-x/)
-    const baseUrl = import.meta.env.BASE_URL.endsWith('/')
-      ? import.meta.env.BASE_URL
-      : `${import.meta.env.BASE_URL}/`;
+    const baseUrl = normalizeBaseUrl(import.meta.env.BASE_URL);
 
-    // Manifest now should contain RELATIVE paths (recommended):
-    // "monaco-dts/node_modules/..."
-    // If some entries still start with "/", we normalize them anyway.
-    const res = await fetch(`${baseUrl}monaco-dts/manifest.json`);
-    const manifest = (await res.json()) as Manifest;
-
-    for (const webPathRaw of manifest.files) {
-      const webPath = webPathRaw.replace(/^\//, ''); // tolerate old manifests too
-      const fileRes = await fetch(`${baseUrl}${webPath}`);
-      const content = await fileRes.text();
-
-      // Map public path -> Monaco virtual FS path
-      // monaco-dts/node_modules/<pkg>/... -> file:///node_modules/<pkg>/...
-      const rel = webPath.replace(/^monaco-dts\/node_modules\//, '');
-      const uri = `file:///node_modules/${rel}`;
-
-      ts.typescriptDefaults.addExtraLib(content, uri);
+    const manifestRes = await fetch(`${baseUrl}monaco-dts/manifest.json`);
+    if (!manifestRes.ok) {
+      throw new Error(
+        `Failed to load manifest: ${manifestRes.status} ${manifestRes.statusText}`,
+      );
     }
 
-    // ✅ Better completions for `rxjs.<...>` (core + operators together)
+    const manifest = (await manifestRes.json()) as Manifest;
+
+    // Fetch only ~24 chunk files
+    const chunkResults = await Promise.all(
+      manifest.files.map(async (chunkPathRaw) => {
+        const chunkPath = normalizeWebPath(chunkPathRaw);
+        const res = await fetch(`${baseUrl}${chunkPath}`);
+        if (!res.ok) {
+          throw new Error(
+            `Failed to load chunk ${chunkPath}: ${res.status} ${res.statusText}`,
+          );
+        }
+        return (await res.json()) as Chunk;
+      }),
+    );
+
+    // Add all d.ts (no network here, only addExtraLib calls)
+    for (const chunk of chunkResults) {
+      for (const f of chunk.files) {
+        ts.typescriptDefaults.addExtraLib(f.content, f.uri);
+      }
+    }
+
+    // Global rxjs value: rxjs.map, rxjs.Observable, etc.
     const globalLib = `
       import * as Core from 'rxjs';
       import * as Ops from 'rxjs/operators';

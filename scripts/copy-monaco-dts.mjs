@@ -9,11 +9,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const repoRoot = path.resolve(__dirname, '..');
-
 const appRoot = path.join(repoRoot, 'rs-x-expression-editor');
 
 const outRoot = path.join(appRoot, 'public', 'monaco-dts');
 const outNodeModules = path.join(outRoot, 'node_modules');
+const outChunksDir = path.join(outRoot, 'chunks');
+
+const CHUNK_COUNT = 24;
 
 function ensureDir(p) {
   fs.mkdirSync(p, { recursive: true });
@@ -55,6 +57,14 @@ function resolvePackageDir(pkgName) {
   return path.dirname(pkgJsonPath);
 }
 
+function chunkArray(items, chunkCount) {
+  const chunks = Array.from({ length: chunkCount }, () => []);
+  for (let i = 0; i < items.length; i++) {
+    chunks[i % chunkCount].push(items[i]);
+  }
+  return chunks.filter((c) => c.length > 0);
+}
+
 function main() {
   console.log('[monaco-dts] Writing to:', outRoot);
 
@@ -62,73 +72,84 @@ function main() {
   const tslibDir = resolvePackageDir('tslib');
 
   ensureDir(outNodeModules);
+  ensureDir(outChunksDir);
 
   const rxjsDts = walkFiles(rxjsDir, (p) => p.endsWith('.d.ts'));
   const tslibDts = walkFiles(tslibDir, (p) => p.endsWith('.d.ts'));
 
   const filesToCopy = [...rxjsDts, ...tslibDts];
 
-  const manifest = [];
+  // We'll build a list of { uri, content } entries for chunking
+  const entries = [];
 
   for (const abs of filesToCopy) {
     const rel = relToNodeModules(abs);
+
+    // Copy into public so it's easy to inspect/debug
     const dest = path.join(outNodeModules, rel);
     copyFile(abs, dest);
 
-    manifest.push(`monaco-dts/node_modules/${rel}`);
+    // IMPORTANT: Monaco virtual path that TS will use for module resolution
+    const uri = `file:///node_modules/${rel}`;
+
+    // Read content (we'll embed it into chunk files)
+    const content = fs.readFileSync(abs, 'utf8');
+
+    entries.push({ uri, content });
   }
 
+  // Preserve RxJS package.json types field (helps TS module resolution)
   const realPkg = JSON.parse(
     fs.readFileSync(path.join(rxjsDir, 'package.json'), 'utf8'),
   );
 
   const virtualPkgPath = path.join(outNodeModules, 'rxjs', 'package.json');
   ensureDir(path.dirname(virtualPkgPath));
-
   fs.writeFileSync(
     virtualPkgPath,
     JSON.stringify(
-      {
-        name: 'rxjs',
-        types: realPkg.types || realPkg.typings,
-      },
+      { name: 'rxjs', types: realPkg.types || realPkg.typings },
       null,
       2,
     ),
     'utf8',
   );
 
-  // operators subpath
   const operatorsPkgPath = path.join(
     outNodeModules,
     'rxjs',
     'operators',
     'package.json',
   );
-
   ensureDir(path.dirname(operatorsPkgPath));
-
   fs.writeFileSync(
     operatorsPkgPath,
-    JSON.stringify(
-      {
-        name: 'rxjs/operators',
-        types: 'index.d.ts',
-      },
-      null,
-      2,
-    ),
+    JSON.stringify({ name: 'rxjs/operators', types: 'index.d.ts' }, null, 2),
     'utf8',
   );
 
-  ensureDir(outRoot);
+  // Chunk entries into JSON files
+  const chunks = chunkArray(entries, CHUNK_COUNT);
+
+  const chunkFiles = [];
+  for (let i = 0; i < chunks.length; i++) {
+    const name = `chunk-${String(i).padStart(2, '0')}.json`;
+    const webPath = `monaco-dts/chunks/${name}`;
+    const absPath = path.join(outChunksDir, name);
+
+    fs.writeFileSync(absPath, JSON.stringify({ files: chunks[i] }), 'utf8');
+    chunkFiles.push(webPath);
+  }
+
+  // Manifest lists chunk JSON files only
   fs.writeFileSync(
     path.join(outRoot, 'manifest.json'),
-    JSON.stringify({ files: manifest }, null, 2),
+    JSON.stringify({ files: chunkFiles }, null, 2),
     'utf8',
   );
 
   console.log(`[monaco-dts] Copied ${filesToCopy.length} .d.ts files`);
+  console.log(`[monaco-dts] Wrote ${chunkFiles.length} chunk files`);
   console.log('[monaco-dts] Done.');
 }
 
