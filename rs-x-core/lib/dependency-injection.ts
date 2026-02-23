@@ -13,7 +13,6 @@ import {
 } from 'inversify';
 
 import 'reflect-metadata';
-import { Type } from './types/type';
 
 /* ---------------------------------------------------------
  * Runtime values
@@ -21,9 +20,7 @@ import { Type } from './types/type';
 
 export const InjectionContainer = new Container();
 
-
 window.RSX_INJECTION_CONTAINER = InjectionContainer;
-
 
 /* ---------------------------------------------------------
  * Runtime re-exports (decorators & classes)

@@ -382,9 +382,7 @@ describe('rs-x core module', () => {
   });
 
   it('can get instance of IDBFactory', () => {
-    const actual = InjectionContainer.get(
-      RsXCoreInjectionTokens.IDBFactory,
-    );
+    const actual = InjectionContainer.get(RsXCoreInjectionTokens.IDBFactory);
     expect(actual).toBe(window.indexedDB);
   });
 
@@ -393,7 +391,6 @@ describe('rs-x core module', () => {
     const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IDBFactory);
     expect(a1).toBe(a2);
   });
-
 
   it('can get instance of IObjectStorage', () => {
     const actual = InjectionContainer.get(

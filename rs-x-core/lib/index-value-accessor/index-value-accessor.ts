@@ -1,6 +1,5 @@
 import { Injectable, MultiInject } from '../dependency-injection';
 import { NoAccessorFoundExeception } from '../exceptions/no-accessor-found-exception';
-import { UnsupportedException } from '../exceptions/unsupported-exception';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
 
 import type { IIndexValueAccessor } from './index-value-accessor.interface';

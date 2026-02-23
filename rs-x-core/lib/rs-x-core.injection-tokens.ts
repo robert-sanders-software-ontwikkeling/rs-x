@@ -33,5 +33,5 @@ export const RsXCoreInjectionTokens = {
   SetMetadata: Symbol('SetMetadata'),
   IValueMetadata: Symbol('IValueMetadata'),
   IDBFactory: Symbol('IDBFactory'),
-  IObjectStorage: Symbol('IObjectStorage')
+  IObjectStorage: Symbol('IObjectStorage'),
 };

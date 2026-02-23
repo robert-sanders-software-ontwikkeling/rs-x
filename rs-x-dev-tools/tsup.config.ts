@@ -8,10 +8,10 @@ export default defineConfig({
     'panel/panel.component': 'src/panel/panel.component.tsx',
     'proxies/page-proxy': 'src/proxies/page-proxy.ts',
   },
-  bundle: true,           // explicitly bundle all dependencies
-  format: ['iife'],       // single browser-friendly script
-  globalName: 'RSX',      // optional global for your scripts
-  splitting: false,       // Chrome DevTools panel cannot handle ESM splitting
+  bundle: true, // explicitly bundle all dependencies
+  format: ['iife'], // single browser-friendly script
+  globalName: 'RSX', // optional global for your scripts
+  splitting: false, // Chrome DevTools panel cannot handle ESM splitting
   outDir: 'dist',
   sourcemap: true,
   minify: false,

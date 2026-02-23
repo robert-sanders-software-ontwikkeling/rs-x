@@ -1,3 +1,3 @@
 export enum MessageType {
-    getModels = 'getModels'
+  getModels = 'getModels',
 }

@@ -8,6 +8,7 @@ Your **data model itself becomes reactive**, and React simply renders the result
 ## What changes with RS-X in React
 
 Instead of thinking in terms of:
+
 - syncing state
 - effects
 - memoized selectors
@@ -15,6 +16,7 @@ Instead of thinking in terms of:
 You work directly with your **data model**.
 
 When the model changes:
+
 - dependent expressions update automatically
 - React re-renders only where needed
 
@@ -32,6 +34,7 @@ RS-X tracks dependencies at the **expression level**, not the component level.
 ## Async is first-class
 
 RS-X also handles asynchronous data naturally:
+
 - Promises in your model are resolved reactively
 - Expressions update when async values arrive
 - No loading-state orchestration required
@@ -42,6 +45,7 @@ RS-X doesn’t replace React — it **simplifies what React has to manage**.
 
 React stays focused on rendering.  
 RS-X handles:
+
 - reactivity
 - dependency tracking
 - expression evaluation
@@ -49,6 +53,7 @@ RS-X handles:
 ## Why I built this
 
 I wanted:
+
 - reactive data without a global store
 - fewer hooks and less boilerplate
 - a model-driven way of thinking
@@ -62,6 +67,7 @@ Feedback is very welcome.
 — Robert
 
 ### References
+
 - [Showing the Power of RS-X with a “Scary” Credit-Risk Formula](https://dev.to/robert_sanders_04918a4344/showing-the-power-of-rs-x-with-a-scary-credit-risk-formula-nlp)
 - [RS-X: Reactive State and Expressions for JavaScript and TypeScript](https://dev.to/robert_sanders_04918a4344/rs-x-reactive-state-and-expressions-for-javascript-and-typescript-3a76)
 - [Using RS-X with React](https://dev.to/robert_sanders_04918a4344/rs-x-now-works-with-react-4a56)

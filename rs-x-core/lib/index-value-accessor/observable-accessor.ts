@@ -1,7 +1,6 @@
-import { BehaviorSubject, isObservable, Observable, of, Subject } from 'rxjs';
+import { BehaviorSubject, isObservable, Subject } from 'rxjs';
 
 import { Inject, Injectable } from '../dependency-injection';
-import { UnsupportedException } from '../exceptions';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
 import { Type } from '../types';
 
@@ -19,7 +18,7 @@ export class ObservableAccessor implements IObservableAccessor {
   constructor(
     @Inject(RsXCoreInjectionTokens.IResolvedValueCache)
     private readonly _resolvedValueCache: IResolvedValueCache,
-  ) { }
+  ) {}
 
   public getIndexes(): IterableIterator<string> {
     return [].values();
@@ -49,7 +48,7 @@ export class ObservableAccessor implements IObservableAccessor {
     if (val instanceof Subject) {
       val.next(value);
       return;
-    } 
+    }
   }
 
   public applies(context: unknown, index: string): boolean {

@@ -1,4 +1,4 @@
-import type { Container } from "@rs-x/core";
+import type { Container } from '@rs-x/core';
 
 declare global {
   interface Window {

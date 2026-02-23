@@ -42,10 +42,10 @@ In this example, we only have two pieces of state, and it is still manageable.
 
 But when the state in your component starts to grow, it becomes difficult to manage. You begin losing track of which parts of state exist and how they interact.
 
-  
 ## A Structured Approach
 
 To improve this, you can reorganize your code:
+
 - Define an interface for your state
 - Define a class that builds a new state based on changes
 - Use a single useState call
@@ -94,14 +94,14 @@ const  Sum: React.FC = () => {
 
 	const onAChange = (e: ChangEvent) => {
 		const  value = Number(e.target.value);
-		setState((prevState) =>  
+		setState((prevState) =>
 			new AppStateBuilder(prevState).setA(value).state
 		);
 	};
 
 	const onBChange = (e: ChangEvent) => {
 		const  value = Number(e.target.value);
-		setState((prevState) => 
+		setState((prevState) =>
 			new  AppStateBuilder(prevState).setB(value).state
 		);
 	};
@@ -121,8 +121,6 @@ const  Sum: React.FC = () => {
 	);
 };
 ```
-
-  
 
 This reduces complexity by separating state construction logic from UI logic.
 However, this approach still has a major drawback.
@@ -146,6 +144,7 @@ With RS-X:
 - The UI updates automatically
 
 Example:
+
 ```tsx
 import React { useRef, useState } from 'react';
 import { useRsxModel } from  '@rs-x/react'
@@ -187,6 +186,7 @@ const  Sum: React.FC = () => {
 ```
 
 References:
+
 - [RS-X github](https://github.com/robert-sanders-software-ontwikkeling/rs-x)
 - [RS-X with React](https://dev.to/robert_sanders_04918a4344/rs-x-now-works-with-react-4a56)
 - [RS-X React demo](https://stackblitz.com/~/github.com/robert-sanders-software-ontwikkeling/rs-x-react-demo)

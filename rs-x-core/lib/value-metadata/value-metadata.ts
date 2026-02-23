@@ -37,7 +37,6 @@ export class ValueMetadata implements IValueMetadata {
     );
 
     if (!valueMetadata) {
-      
       throw new UnsupportedException(
         `No value meta data found for '${Type.toObject(value)?.constructor.name}}'`,
       );

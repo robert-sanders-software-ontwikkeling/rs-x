@@ -1,6 +1,6 @@
 # Make Reactivity easy
 
-Many UI frameworks make reactivity *feel unnatural*.
+Many UI frameworks make reactivity _feel unnatural_.
 
 React relies heavily on **immutability** so it can detect changes efficiently using reference checks.  
 That works, but it also means you often end up writing lots of copying/spreading code just to update state.
@@ -23,7 +23,7 @@ We think in:
 
 ## A More Natural Approach
 
-What if reactivity was not something you had to *learn*…
+What if reactivity was not something you had to _learn_…
 
 …but something that felt like a natural extension of JavaScript?
 
@@ -38,7 +38,7 @@ Just write your model, mix promises and values, and let the framework handle the
 ```ts
 const model = {
   a: Promise.resolve(10),
-  b: 20
+  b: 20,
 };
 
 const expression = rsx`a + b`(model);
@@ -53,4 +53,3 @@ model.b = 40;
 ```
 
 Check out the [RS-X project on github](https://github.com/robert-sanders-software-ontwikkeling/rs-x)
-

@@ -1,4 +1,4 @@
 export interface IModelWithId {
-    id: string;
-    model: object;
+  id: string;
+  model: object;
 }

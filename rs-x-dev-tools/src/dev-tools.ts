@@ -4,5 +4,5 @@ chrome.devtools.panels.create(
   'panel/panel.html',
   () => {
     console.log('RS-X panel created!');
-  }
+  },
 );
