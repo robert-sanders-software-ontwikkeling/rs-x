@@ -5,17 +5,13 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 
-// Script zit in root/scripts
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Repo root is 1 niveau omhoog
 const repoRoot = path.resolve(__dirname, '..');
 
-// 🔥 App folder aanpassen als naam anders is
 const appRoot = path.join(repoRoot, 'rs-x-expression-editor');
 
-// 🔥 BELANGRIJK: we gebruiken public/
 const outRoot = path.join(appRoot, 'public', 'monaco-dts');
 const outNodeModules = path.join(outRoot, 'node_modules');
 
@@ -78,10 +74,10 @@ function main() {
     const rel = relToNodeModules(abs);
     const dest = path.join(outNodeModules, rel);
     copyFile(abs, dest);
-    manifest.push(`/monaco-dts/node_modules/${rel}`);
+
+    manifest.push(`monaco-dts/node_modules/${rel}`);
   }
 
-  // 🔥 Real rxjs package.json → preserve correct "types"
   const realPkg = JSON.parse(
     fs.readFileSync(path.join(rxjsDir, 'package.json'), 'utf8'),
   );
