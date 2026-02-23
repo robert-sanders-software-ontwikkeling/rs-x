@@ -7,6 +7,7 @@ import { RsxPipe } from './rsx.pipe';
 import { providexRsx } from './rsx.providers';
 
 @Component({
+  standalone: true,
   template: `{{ expression | rsx: ctx }}`,
   imports: [RsxPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,

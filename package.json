@@ -83,5 +83,16 @@
   },
   "dependencies": {
     "react-icons": "^5.5.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@angular/core": "21.1.5",
+      "@angular/common": "21.1.5",
+      "@angular/compiler": "21.1.5",
+      "@angular/compiler-cli": "21.1.5",
+      "@angular/platform-browser": "21.1.5",
+      "@angular/platform-browser-dynamic": "21.1.5",
+      "zone.js": "0.16.1"
+    }
   }
 }
