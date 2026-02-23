@@ -18,6 +18,7 @@ export interface IExpression<T = unknown, PT = unknown> extends IDisposable {
   readonly childExpressions: readonly IExpression[];
   readonly value: T | undefined;
   readonly isRoot: boolean;
+  readonly isAsync: boolean| undefined;
   changeHook?: ChangeHook
   toString(): string;
   clone(): this;

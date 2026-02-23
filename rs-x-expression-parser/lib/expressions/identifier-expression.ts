@@ -99,6 +99,7 @@ export class IdentifierExpression extends AbstractExpression {
   private readonly _commitHandler: IExpressionChangeCommitHandler;
   private _context: unknown;
   private _indexWatchRule!: IIndexWatchRule | undefined;
+  private _isAsync: boolean| undefined 
 
   constructor(
     expressionString: string,
@@ -112,8 +113,21 @@ export class IdentifierExpression extends AbstractExpression {
     };
   }
 
+
+  public override get isAsync(): boolean| undefined {
+    if(this._isAsync === undefined && this._context) {
+      const value = this.indexValueAccessor.getValue(this._context, this.index)
+      this._isAsync  = this.valueMetadata.isAsync(value);
+    }
+    return this._isAsync;
+  }
+
+  private get index(): unknown {
+    return this._indexValue ?? this.expressionString;
+  }
+
   public setValue(value: unknown): void {
-    this.indexValueAccessor.setValue(this._context,  this._indexValue ?? this.expressionString, value);
+    this.indexValueAccessor.setValue(this._context,  this.index, value);
   }
 
   public override clone(): this {
@@ -142,10 +156,10 @@ export class IdentifierExpression extends AbstractExpression {
     } else {
       const newValue = this._indexValueObserver.getValue(
         this._context,
-        this._indexValue ?? this.expressionString,
+        this.index,
       );
       this.onValueChanged({
-        index: this._indexValue ?? this.expressionString,
+        index: this.index,
         context: this._context,
         oldValue: this._value,
         newValue,
@@ -186,7 +200,7 @@ export class IdentifierExpression extends AbstractExpression {
     targetIndex: unknown,
     target: unknown,
   ): boolean => {
-    const index = this._indexValue ?? this.expressionString;
+    const index = this.index;
 
     // Fast reject: rule-based watching only
     if (index !== targetIndex || this._context !== target) {
@@ -210,7 +224,7 @@ export class IdentifierExpression extends AbstractExpression {
   };
 
   private observeChange(): void {
-    const index = this._indexValue ?? this.expressionString;
+    const index = this.index;
     this._indexValueObserver = new IndexValueObserver(
       this._context,
       index,

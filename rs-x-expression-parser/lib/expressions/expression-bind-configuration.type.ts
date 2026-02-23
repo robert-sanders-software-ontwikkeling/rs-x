@@ -1,4 +1,4 @@
-import type { IDisposableOwner } from '@rs-x/core';
+import type { IDisposableOwner, IValueMetadata } from '@rs-x/core';
 import type { IIndexWatchRule } from '@rs-x/state-manager/lib';
 
 import type { IExpressionServices } from '../expression-services/expression-services.interface';
