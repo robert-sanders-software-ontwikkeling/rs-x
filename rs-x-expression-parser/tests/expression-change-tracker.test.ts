@@ -12,7 +12,7 @@ import {
 
 interface IModel {
   a: number;
-  b: { c: number };
+  b: number;
 }
 
 describe('ExpressionChangeTracker tests', () => {
@@ -39,12 +39,10 @@ describe('ExpressionChangeTracker tests', () => {
   beforeEach(async () => {
     model = {
       a: 20,
-      b: {
-        c: 30,
-      },
+      b: 30
     };
 
-    expression = expressionFactory.create(model, 'a + b.c');
+    expression = expressionFactory.create(model, 'a + b');
 
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
@@ -60,11 +58,28 @@ describe('ExpressionChangeTracker tests', () => {
     expressionChangeTracker =
       expressionChangeTrackerManager.create(expression).instance;
 
-    const actual = new WaitForEvent(expressionChangeTracker, 'changed').wait(
+    const actual = await new WaitForEvent(expressionChangeTracker, 'changed').wait(
       emptyFunction,
     );
 
-    const expected: IExpressionChangeHistory[] = [];
+    const expected: IExpressionChangeHistory[] = [
+      {
+        expression: expression.childExpressions[0],
+        value: 20,
+        oldValue: undefined
+      },
+      {
+        expression: expression.childExpressions[1],
+        value: 30,
+        oldValue: undefined
+      },
+      {
+        expression: expression,
+        value: 50,
+        oldValue: undefined
+      }
+
+    ];
 
     expect(actual).toEqual(expected);
   });
