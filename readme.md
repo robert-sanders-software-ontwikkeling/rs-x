@@ -148,7 +148,7 @@ RS-X is actively evolving. The roadmap below shows **progress**, **planned featu
     - Allows you to define the data model for your app as the **single source of truth**.
     - Any changes to the model are **automatically detected** by the RS-X framework — no extra work is needed from the developer.
 
-- [**React Extension**](rs-x-react/readme.md)  — ✅ **Done**
+- [**React Extension**](rs-x-react/readme.md) — ✅ **Done**
   - **Aim:** Enable the use of RS-X expressions directly within React components.
   - **Goal:** Make **data binding to complex data in React easy and efficient**, providing hooks and utilities that automatically subscribe to expression changes and trigger re-renders.
   - **Objective:** Support both synchronous and asynchronous data sources, allowing modular expressions to seamlessly update components when underlying data changes.
@@ -166,7 +166,6 @@ RS-X is actively evolving. The roadmap below shows **progress**, **planned featu
     - Simplifies debugging of reactive expressions and application state.
     - Provides visibility into RS-X internals without modifying application code.
     - Improves developer productivity by making state changes and expression updates transparent and traceable.
-      
 - **TS Transformer / Plugin — ⚙️ Planned**
   - **Aim:** Provide **compile-time syntax validation** for RS-X expressions written in tagged template literals or lambda-like strings.
   - **Goal:** Offer **IntelliSense / autocomplete** for all properties on the provided context, preventing invalid identifiers from compiling.

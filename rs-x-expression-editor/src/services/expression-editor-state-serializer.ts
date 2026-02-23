@@ -6,11 +6,11 @@ import {
   type IObjectStorage,
   RsXCoreInjectionTokens,
 } from '@rs-x/core';
-import type {
+import {
   ExpressionNodeIdIndex,
-  IExpression,
+  type IExpression,
   type IExpressionChangeHistory,
-  IExpressionChangePlayback,
+  type IExpressionChangePlayback,
   RsXExpressionParserInjectionTokens,
 } from '@rs-x/expression-parser';
 
