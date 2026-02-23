@@ -1,4 +1,4 @@
-import { NodeId } from './node.interface';
+import { type NodeId } from './node.interface';
 
 export interface LayoutEdge {
   from: NodeId;

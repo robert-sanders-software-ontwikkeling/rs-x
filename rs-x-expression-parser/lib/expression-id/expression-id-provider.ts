@@ -1,5 +1,10 @@
+import {
+  type IGuidFactory,
+  Inject,
+  Injectable,
+  RsXCoreInjectionTokens,
+} from '@rs-x/core';
 import type { IExpression } from '@rs-x/expression-parser';
-import { Inject, Injectable, RsXCoreInjectionTokens, type IGuidFactory } from '@rs-x/core';
 
 @Injectable()
 export class ExpressionIdProvider {
@@ -7,10 +12,8 @@ export class ExpressionIdProvider {
 
   constructor(
     @Inject(RsXCoreInjectionTokens.IGuidFactory)
-    private readonly _idFactory: IGuidFactory) {
-
-  }
-
+    private readonly _idFactory: IGuidFactory,
+  ) {}
 
   public getId(node: IExpression): string {
     const root = this.getRoot(node);
@@ -31,7 +34,7 @@ export class ExpressionIdProvider {
 
       if (index < 0) {
         throw new Error(
-          `ExpressionIdProvider: node '${current.expressionString}' not found in parent.childExpressions of '${parent.expressionString}'`
+          `ExpressionIdProvider: node '${current.expressionString}' not found in parent.childExpressions of '${parent.expressionString}'`,
         );
       }
 

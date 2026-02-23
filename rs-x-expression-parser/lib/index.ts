@@ -1,5 +1,5 @@
-export * from './expresion-change-transaction-manager.interface';
 export * from './expresion-change-transaction-manager';
+export * from './expresion-change-transaction-manager.interface';
 export * from './expression-cache';
 export * from './expression-change-playback';
 export * from './expression-change-tracker';
@@ -11,5 +11,5 @@ export * from './expression-services';
 export * from './expressions';
 export * from './identifier-owner-resolver';
 export * from './js-espree-expression-parser';
-export * from './rs-x-expression-parser-injection-tokes';
 export * from './rs-x-expression-parser.module';
+export * from './rs-x-expression-parser-injection-tokes';

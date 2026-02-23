@@ -58,7 +58,9 @@
   outline: none;
   min-width: 0;
 
-  transition: border-color var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease),
+  transition:
+    border-color var(--t-med) var(--ease),
+    box-shadow var(--t-med) var(--ease),
     background-color var(--t-med) var(--ease);
 }
 
@@ -77,7 +79,6 @@
   gap: var(--sp-5);
   flex: 0 0 auto;
 }
-
 
 /* Responsive: wrap cleanly */
 @media (max-width: 720px) {

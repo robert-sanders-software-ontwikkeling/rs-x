@@ -1,4 +1,5 @@
-import React, { useState, ReactNode } from 'react';
+import React, { type ReactNode, useState } from 'react';
+
 import './accordion.component.css';
 
 export interface AccordionPanel {
@@ -18,20 +19,19 @@ export const Accordion: React.FC<AccordionProps> = ({
   openPanelIndex,
   onOpenChange,
 }) => {
-
-  const [internalOpenPanelId, setInternalOpenPanelId] = useState<number | null>( openPanelIndex ?? 0);
-
+  const [internalOpenPanelId, setInternalOpenPanelId] = useState<number | null>(
+    openPanelIndex ?? 0,
+  );
 
   const setOpenPanelIndex = (index: number) => {
     if (onOpenChange) {
       onOpenChange(index);
     }
-    setInternalOpenPanelId(index)
-  
-  }; 
+    setInternalOpenPanelId(index);
+  };
 
   const togglePanel = (index: number) => {
-    if( internalOpenPanelId === index) {
+    if (internalOpenPanelId === index) {
       return;
     }
     setOpenPanelIndex(index);
@@ -42,19 +42,14 @@ export const Accordion: React.FC<AccordionProps> = ({
       {panels.map((panel, index) => (
         <div
           key={panel.id}
-          className={`accordion-panel ${internalOpenPanelId === index? 'is-open' : ''}`}
+          className={`accordion-panel ${internalOpenPanelId === index ? 'is-open' : ''}`}
         >
-          <div
-            className="panel-header"
-            onClick={() => togglePanel(index)}
-          >
+          <div className="panel-header" onClick={() => togglePanel(index)}>
             {panel.header}
           </div>
 
           {internalOpenPanelId === index && (
-            <div className="accordion-body">
-              {panel.body}
-            </div>
+            <div className="accordion-body">{panel.body}</div>
           )}
         </div>
       ))}

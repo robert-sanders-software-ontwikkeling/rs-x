@@ -23,8 +23,11 @@ import {
 
 import { ExpressionChangeTransactionManager } from '../lib/expresion-change-transaction-manager';
 import { ExpressionCache } from '../lib/expression-cache/expression-cache';
+import { ExpressionChangePlayback } from '../lib/expression-change-playback/expression-change-playback';
+import { ExpressionChangeTrackerManager } from '../lib/expression-change-tracker/expression-change-tracker-manager';
 import { ExpressionFactory } from '../lib/expression-factory/expression-factory';
 import { ExpressionManager } from '../lib/expression-factory/expression-manager';
+import { ExpressionIdProvider } from '../lib/expression-id/expression-id-provider';
 import { DeepCloneExceptWithExpressionSupport } from '../lib/expression-observer/deep-clone-except-with-expression-support';
 import { ExpressionIndexAccessor } from '../lib/expression-observer/expression-index-accessor';
 import { ExpressionObserverFactory } from '../lib/expression-observer/expression-observer.factory';
@@ -40,9 +43,6 @@ import {
   unloadRsXExpressionParserModule,
 } from '../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../lib/rs-x-expression-parser-injection-tokes';
-import { ExpressionChangePlayback } from '../lib/expression-change-playback/expression-change-playback';
-import { ExpressionChangeTrackerManager } from '../lib/expression-change-tracker/expression-change-tracker-manager';
-import { ExpressionIdProvider } from '../lib/expression-id/expression-id-provider';
 
 describe('RsXExpressionParserModule tests', () => {
   beforeAll(async () => {
@@ -316,7 +316,6 @@ describe('RsXExpressionParserModule tests', () => {
     expect(a1).toBe(a2);
   });
 
-
   it('can get instance of IExpressionChangePlayback', () => {
     const actual = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionChangePlayback,
@@ -351,7 +350,6 @@ describe('RsXExpressionParserModule tests', () => {
     expect(a1).toBe(a2);
   });
 
-
   it('can get instance of IExpressionIdProvider', () => {
     const actual = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionIdProvider,
@@ -368,7 +366,6 @@ describe('RsXExpressionParserModule tests', () => {
     );
     expect(a1).toBe(a2);
   });
-
 
   it('can get an instance of IObjectObserverProxyPairFactoryList', () => {
     const actual = InjectionContainer.getAll(

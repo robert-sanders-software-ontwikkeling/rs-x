@@ -56,7 +56,11 @@
 
 .changeSet.isActive {
   border-color: rgb(var(--c-accent) / 0.55);
-  background-color: color-mix(in srgb, var(--surface-1) 70%, rgb(var(--c-accent) / 0.10) 30%);
+  background-color: color-mix(
+    in srgb,
+    var(--surface-1) 70%,
+    rgb(var(--c-accent) / 0.1) 30%
+  );
   box-shadow: 0 0 0 1px rgb(var(--c-accent) / 0.16);
 }
 
@@ -288,8 +292,6 @@
   border-bottom: 1px solid var(--border-1);
 }
 
-
-
 .changeStep:last-child {
   border-bottom: none;
 }
@@ -315,7 +317,7 @@
 .changeStepDot.isTrigger {
   background-color: rgb(var(--c-accent) / 0.95);
   box-shadow: 0 0 0 3px rgb(var(--c-accent) / 0.12);
-  border-color: rgb(var(--c-accent) / 0.40);
+  border-color: rgb(var(--c-accent) / 0.4);
 }
 
 .changeStepLine {

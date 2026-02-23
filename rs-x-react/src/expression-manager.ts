@@ -1,7 +1,6 @@
 import { InjectionContainer } from '@rs-x/core';
 import {
-  type IExpressionFactory,
-  IExpressionManager,
+  type IExpressionManager,
   RsXExpressionParserInjectionTokens,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';

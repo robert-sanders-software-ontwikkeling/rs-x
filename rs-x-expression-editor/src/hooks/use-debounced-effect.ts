@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 export function useDebouncedEffect(
   effect: () => void | Promise<void>,
   deps: React.DependencyList,
-  delay: number
+  delay: number,
 ): void {
   useEffect(() => {
     const id = window.setTimeout(() => {

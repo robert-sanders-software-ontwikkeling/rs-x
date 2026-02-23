@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
+
 import type { IExpression } from '@rs-x/expression-parser';
+
 import type { NodeId } from '../layout/node.interface';
 
 type LayoutNode = {
@@ -55,7 +57,7 @@ class NodeVmBuilder {
       const expressionText = n.expression.expressionString;
       const typeText = n.expression.type;
       const valueText = formatValue(n.expression.value);
-      const isAsync = !!n.expression.isAsync
+      const isAsync = !!n.expression.isAsync;
 
       const isSelected = selectedNodeIds.has(n.id);
       const isActive = activeNodeIds.has(n.id);
@@ -72,7 +74,7 @@ class NodeVmBuilder {
         expressionText,
         typeText,
         valueText,
-        isAsync
+        isAsync,
       });
     }
 

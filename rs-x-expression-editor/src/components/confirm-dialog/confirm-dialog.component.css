@@ -196,7 +196,7 @@
 }
 
 .confirmDialogBtnDanger:hover {
-  background: rgb(var(--c-danger) / 0.20);
+  background: rgb(var(--c-danger) / 0.2);
   border-color: rgb(var(--c-danger) / 0.55);
 }
 

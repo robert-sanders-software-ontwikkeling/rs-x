@@ -54,7 +54,11 @@
 
 .expression-item.is-selected {
   border-color: rgb(var(--c-accent) / 0.55);
-  background-color: color-mix(in srgb, var(--surface-1) 70%, rgb(var(--c-accent) / 0.14) 30%);
+  background-color: color-mix(
+    in srgb,
+    var(--surface-1) 70%,
+    rgb(var(--c-accent) / 0.14) 30%
+  );
   box-shadow: 0 0 0 1px rgb(var(--c-accent) / 0.35);
 }
 
@@ -94,16 +98,13 @@
 }
 
 .expression-error-icon {
-   color: rgb(var(--c-danger) / 0.9);
+  color: rgb(var(--c-danger) / 0.9);
   font-size: 12px;
   flex: 0 0 auto;
-   display: flex;
+  display: flex;
   align-items: center;
- margin-right: var(--sp-3);
+  margin-right: var(--sp-3);
 }
-
-
-
 
 /* =========================================================
    View button (subtle info tone)
@@ -126,13 +127,13 @@
 
 .edit-btn {
   background-color: rgb(var(--c-accent) / 0.14);
-  border-color: rgb(var(--c-accent) / 0.40);
+  border-color: rgb(var(--c-accent) / 0.4);
   color: var(--fg);
 }
 
 .edit-btn:hover {
   background-color: rgb(var(--c-accent) / 0.22);
-  border-color: rgb(var(--c-accent) / 0.60);
+  border-color: rgb(var(--c-accent) / 0.6);
 }
 
 /* =========================================================
@@ -141,11 +142,11 @@
 
 .delete-btn {
   background-color: rgb(var(--c-danger) / 0.14);
-  border-color: rgb(var(--c-danger) / 0.40);
+  border-color: rgb(var(--c-danger) / 0.4);
   color: var(--fg);
 }
 
 .delete-btn:hover {
   background-color: rgb(var(--c-danger) / 0.22);
-  border-color: rgb(var(--c-danger) / 0.60);
+  border-color: rgb(var(--c-danger) / 0.6);
 }

@@ -99,7 +99,7 @@ export class IdentifierExpression extends AbstractExpression {
   private readonly _commitHandler: IExpressionChangeCommitHandler;
   private _context: unknown;
   private _indexWatchRule!: IIndexWatchRule | undefined;
-  private _isAsync: boolean| undefined 
+  private _isAsync: boolean | undefined;
 
   constructor(
     expressionString: string,
@@ -113,11 +113,10 @@ export class IdentifierExpression extends AbstractExpression {
     };
   }
 
-
-  public override get isAsync(): boolean| undefined {
-    if(this._isAsync === undefined && this._context) {
-      const value = this.indexValueAccessor.getValue(this._context, this.index)
-      this._isAsync  = this.valueMetadata.isAsync(value);
+  public override get isAsync(): boolean | undefined {
+    if (this._isAsync === undefined && this._context) {
+      const value = this.indexValueAccessor.getValue(this._context, this.index);
+      this._isAsync = this.valueMetadata.isAsync(value);
     }
     return this._isAsync;
   }
@@ -127,7 +126,7 @@ export class IdentifierExpression extends AbstractExpression {
   }
 
   public setValue(value: unknown): void {
-    this.indexValueAccessor.setValue(this._context,  this.index, value);
+    this.indexValueAccessor.setValue(this._context, this.index, value);
   }
 
   public override clone(): this {

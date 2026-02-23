@@ -17,19 +17,15 @@ import type { IExpressionServices } from '../expression-services/expression-serv
 
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 import {
-  ChangeHook,
+  type ChangeHook,
   type ExpressionType,
   type IExpression,
 } from './expression-parser.interface';
-
-
-
 
 export abstract class AbstractExpression<
   T = unknown,
   PT = unknown,
 > implements IExpression<T> {
-
   protected readonly _childExpressions: AbstractExpression[] = [];
   protected _value: T | undefined;
   protected _oldValue: unknown;
@@ -63,8 +59,7 @@ export abstract class AbstractExpression<
     return this._id;
   }
 
-
-  public get isAsync(): boolean| undefined {
+  public get isAsync(): boolean | undefined {
     return false;
   }
 
@@ -74,7 +69,9 @@ export abstract class AbstractExpression<
 
   public set changeHook(value: ChangeHook | undefined) {
     this._changeHook = value;
-    this._childExpressions.forEach(childExpression => childExpression.changeHook = value);
+    this._childExpressions.forEach(
+      (childExpression) => (childExpression.changeHook = value),
+    );
 
     if (this._changeHook && this.value !== undefined) {
       this._changeHook(this, undefined);
@@ -257,5 +254,4 @@ export abstract class AbstractExpression<
     this._childExpressions.push(...expressions);
     expressions.forEach((expression) => (expression._parent = this));
   }
-
 }

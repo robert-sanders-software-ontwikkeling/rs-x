@@ -7,17 +7,8 @@
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "jsx": "react-jsx",
-    "types": [
-      "vite/client",
-      "node"
-    ]
+    "types": ["vite/client", "node"]
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "lib/testing"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "lib/testing"]
 }

@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import './model-editor.component.css';
-import { InjectionContainer, RsXCoreInjectionTokens, Type } from '@rs-x/core';
+
 import type { IDeepClone, IValueMetadata } from '@rs-x/core';
+import { InjectionContainer, RsXCoreInjectionTokens, Type } from '@rs-x/core';
+
+import './model-editor.component.css';
 
 type PathKey = string | number;
 type Path = ReadonlyArray<PathKey>;
@@ -13,7 +15,9 @@ class DeepClone {
   private readonly _deepClone: IDeepClone;
 
   private constructor() {
-    this._valueMetadata = InjectionContainer.get(RsXCoreInjectionTokens.IValueMetadata);
+    this._valueMetadata = InjectionContainer.get(
+      RsXCoreInjectionTokens.IValueMetadata,
+    );
     this._deepClone = InjectionContainer.get(RsXCoreInjectionTokens.IDeepClone);
   }
 
@@ -32,11 +36,14 @@ class DeepClone {
     Type.walkObjectTopToBottom(
       obj as object,
       (_, index, value) => {
-        if (this._valueMetadata.isAsync(value) || Type.isFunction(value) || Type.isArrowFunction(value ))  {
+        if (
+          this._valueMetadata.isAsync(value) ||
+          Type.isFunction(value) ||
+          Type.isArrowFunction(value)
+        ) {
           return;
         }
 
-  
         if (Type.isPlainObject(value)) {
           current[index] = this.filterFields(value, {});
           return;
@@ -44,7 +51,7 @@ class DeepClone {
 
         current[index] = value;
       },
-      false
+      false,
     );
 
     return current;
@@ -59,7 +66,6 @@ class DeepClone {
     return this._deepClone.clone(editableRecords);
   }
 }
-
 
 const isDate = (v: unknown): v is Date => {
   return v instanceof Date;
@@ -87,7 +93,11 @@ const formatValue = (value: unknown): string => {
   if (typeof value === 'string') {
     return value;
   }
-  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+  if (
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    typeof value === 'bigint'
+  ) {
     return String(value);
   }
   if (typeof value === 'symbol') {
@@ -259,7 +269,6 @@ const ModelNode: React.FC<{
   return <div className="me-muted">{formatValue(value)}</div>;
 };
 
-
 export interface ModelEditorProps {
   modelIndex: number;
   model: unknown;
@@ -268,7 +277,12 @@ export interface ModelEditorProps {
   indentSize?: number;
 }
 
-export function ModelEditor({ modelIndex, model, onCommit, indentSize = 8 }: ModelEditorProps) {
+export function ModelEditor({
+  modelIndex,
+  model,
+  onCommit,
+  indentSize = 8,
+}: ModelEditorProps) {
   const [draft, setDraft] = useState<unknown>(() => cloneForDraft(model));
 
   useEffect(() => {
@@ -287,10 +301,20 @@ export function ModelEditor({ modelIndex, model, onCommit, indentSize = 8 }: Mod
 
   return (
     <div className="me-root">
-      <ModelNode value={draft} path={[]} depth={0} indentSize={indentSize} onChange={handleChange} />
+      <ModelNode
+        value={draft}
+        path={[]}
+        depth={0}
+        indentSize={indentSize}
+        onChange={handleChange}
+      />
 
       <div className="me-actions">
-        <button className="btn btn--commit" type="button" onClick={handleCommit}>
+        <button
+          className="btn btn--commit"
+          type="button"
+          onClick={handleCommit}
+        >
           Commit
         </button>
       </div>

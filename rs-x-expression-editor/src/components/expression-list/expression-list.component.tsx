@@ -1,8 +1,9 @@
 import React from 'react';
-import { FaEye, FaSuperscript, FaExclamationTriangle } from 'react-icons/fa';
+import { FaExclamationTriangle, FaEye, FaSuperscript } from 'react-icons/fa';
 
-import { IExpressionInfo } from '../../models/expression-info.interface';
+import { type IExpressionInfo } from '../../models/expression-info.interface';
 import { CrudRowActions } from '../crud-row-actions/crud-row-actions.component';
+
 import './expression-list.component.css';
 
 export interface IExpressionListProps {
@@ -26,54 +27,61 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
   onView,
 }) => {
   if (!expressions.length) {
-    return <i className='expression-empty'>No expressions yet</i>;
+    return <i className="expression-empty">No expressions yet</i>;
   }
 
-
   return (
-    <div className='expression-list'>
+    <div className="expression-list">
       {expressions.map((expressionInfo, expressionIndex) => {
         const isSelected = selectedExpressionIndex === expressionIndex;
         const className = `expression-item ${isSelected ? 'is-selected' : ''}`;
-      
+
         return (
-
-          
-          (<div
+          <div
             key={`${expressionIndex}-${expressionInfo.version}`}
-            className={className} 
+            className={className}
             title={expressionInfo.error}
-            onClick={ expressionInfo.expression ? () => {
-
-              onSelect(modelIndex, expressionIndex);
-            } : undefined}
-            role='button'
+            onClick={
+              expressionInfo.expression
+                ? () => {
+                    onSelect(modelIndex, expressionIndex);
+                  }
+                : undefined
+            }
+            role="button"
             tabIndex={0}
             onKeyDown={(e) => {
-              
-              if (expressionInfo.expression && e.key === 'Enter' || e.key === ' ') {
+              if (
+                (expressionInfo.expression && e.key === 'Enter') ||
+                e.key === ' '
+              ) {
                 onSelect(modelIndex, expressionIndex);
               }
             }}
           >
-             {expressionInfo.error  &&  (<FaExclamationTriangle title={expressionInfo.error} className='expression-error-icon'/>)}
+            {expressionInfo.error && (
+              <FaExclamationTriangle
+                title={expressionInfo.error}
+                className="expression-error-icon"
+              />
+            )}
             {/* LEFT SIDE */}
-            <div className='expression-left'>
-              <FaSuperscript className='expression-icon' />
-              <div className='expression-code'>
-                {expressionInfo.expression?.expressionString ?? expressionInfo.editorExpressionString }
+            <div className="expression-left">
+              <FaSuperscript className="expression-icon" />
+              <div className="expression-code">
+                {expressionInfo.expression?.expressionString ??
+                  expressionInfo.editorExpressionString}
               </div>
             </div>
 
             {/* RIGHT SIDE */}
             <CrudRowActions
               prepend={
-                ( expressionInfo.expression &&
+                expressionInfo.expression && (
                   <button
-
-                    type='button'
-                    className='icon-btn view-btn'
-                    title='View details'
+                    type="button"
+                    className="icon-btn view-btn"
+                    title="View details"
                     onClick={() => {
                       onView(modelIndex, expressionIndex);
                     }}
@@ -90,7 +98,6 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
               }}
             />
           </div>
-          )
         );
       })}
     </div>

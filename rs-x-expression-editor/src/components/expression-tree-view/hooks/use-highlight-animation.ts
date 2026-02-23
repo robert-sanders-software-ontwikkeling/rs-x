@@ -1,8 +1,10 @@
-import type { IExpressionChangeHistory } from '@rs-x/expression-parser';
-import { useEffect, useMemo, useRef, useState } from 'react';
 import type React from 'react';
-import { ExpressionIndex } from '../expression-index';
-import { NodeId } from '../layout/node.interface';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+import type { IExpressionChangeHistory } from '@rs-x/expression-parser';
+
+import { type ExpressionIndex } from '../expression-index';
+import { type NodeId } from '../layout/node.interface';
 
 const animationSpeed = 350;
 
@@ -193,7 +195,7 @@ class HighlightAnimator {
         window.setTimeout(() => {
           setActiveEdgeKeys(() => new Set<string>(wave.edges));
           setActiveNodeIds(() => new Set<NodeId>(wave.nodes));
-        }, t)
+        }, t),
       );
 
       t += nodeMs;
@@ -201,7 +203,7 @@ class HighlightAnimator {
         window.setTimeout(() => {
           setActiveEdgeKeys(() => new Set<string>());
           setActiveNodeIds(() => new Set<NodeId>(wave.nodes));
-        }, t)
+        }, t),
       );
     }
 
@@ -210,7 +212,7 @@ class HighlightAnimator {
       window.setTimeout(() => {
         setActiveEdgeKeys(() => new Set<string>());
         setActiveNodeIds(() => new Set<NodeId>());
-      }, t)
+      }, t),
     );
   }
 }
@@ -240,16 +242,16 @@ export function useHighlightAnimation(args: {
   const animator = useMemo(() => new HighlightAnimator(), []);
 
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<NodeId>>(
-    () => new Set<NodeId>()
+    () => new Set<NodeId>(),
   );
   const [selectedEdgeKeys, setSelectedEdgeKeys] = useState<Set<string>>(
-    () => new Set<string>()
+    () => new Set<string>(),
   );
   const [activeNodeIds, setActiveNodeIds] = useState<Set<NodeId>>(
-    () => new Set<NodeId>()
+    () => new Set<NodeId>(),
   );
   const [activeEdgeKeys, setActiveEdgeKeys] = useState<Set<string>>(
-    () => new Set<string>()
+    () => new Set<string>(),
   );
 
   const timersRef = useRef<number[]>([]);

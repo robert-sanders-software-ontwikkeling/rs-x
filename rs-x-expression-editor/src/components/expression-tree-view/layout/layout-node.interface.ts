@@ -1,5 +1,6 @@
-import { IExpression } from '@rs-x/expression-parser';
-import { NodeId } from './node.interface';
+import { type IExpression } from '@rs-x/expression-parser';
+
+import { type NodeId } from './node.interface';
 
 export interface LayoutNode {
   id: NodeId;

@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 
-
 class ResizeObserverController<T extends HTMLElement> {
   private _ro: ResizeObserver | null = null;
 
-  public attach(el: T, onSize: (size: { width: number; height: number }) => void): void {
+  public attach(
+    el: T,
+    onSize: (size: { width: number; height: number }) => void,
+  ): void {
     this.detach();
 
     this._ro = new ResizeObserver((entries) => {
@@ -32,7 +34,7 @@ class ResizeObserverController<T extends HTMLElement> {
 
 export function useResizeObserverSize<T extends HTMLElement>(): [
   React.RefObject<T | null>,
-  { width: number; height: number }
+  { width: number; height: number },
 ] {
   const ref = useRef<T>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });

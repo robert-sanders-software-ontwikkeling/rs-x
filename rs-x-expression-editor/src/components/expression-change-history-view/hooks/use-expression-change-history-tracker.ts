@@ -1,11 +1,13 @@
+import { useEffect, useRef } from 'react';
+import { type Subscription } from 'rxjs';
+
 import {
   type IExpression,
   type IExpressionChangeHistory,
   type IExpressionChangeTracker,
 } from '@rs-x/expression-parser';
-import { useEffect, useRef } from 'react';
-import { Subscription } from 'rxjs';
-import { IExpressionInfo } from '../../../models/expression-info.interface';
+
+import { type IExpressionInfo } from '../../../models/expression-info.interface';
 import { ExpressionChangeTrackerFactory } from '../../../services/expression-change-tracker.factory';
 
 function defer(fn: () => void): void {
@@ -29,7 +31,9 @@ function stackKey(stack: readonly IExpressionChangeHistory[]): string {
   return stack.map((x) => expressionItemKey(x)).join('|');
 }
 
-function lastPersistedStackKey(info: IExpressionInfo | null | undefined): string | null {
+function lastPersistedStackKey(
+  info: IExpressionInfo | null | undefined,
+): string | null {
   const history = info?.changeHistory;
   if (!history || history.length === 0) {
     return null;
@@ -57,14 +61,14 @@ export function useExpressionChangeHistoryTracker(args: {
   onHistoryChange: (
     modelIndex: number,
     expressionIndex: number,
-    nextHistory: IExpressionChangeHistory[][]
+    nextHistory: IExpressionChangeHistory[][],
   ) => void;
 
   onSelectionChanged: (
     modelIndex: number,
     expressionIndex: number,
     newestPersistedIndex: number,
-    stack: IExpressionChangeHistory[]
+    stack: IExpressionChangeHistory[],
   ) => void;
 }) {
   const {
@@ -114,7 +118,11 @@ export function useExpressionChangeHistoryTracker(args: {
     }
 
     // already tracking this instance => do nothing (no dispose)
-    if (trackedExpressionRef.current === expression && trackerRef.current && subscriptionRef.current) {
+    if (
+      trackedExpressionRef.current === expression &&
+      trackerRef.current &&
+      subscriptionRef.current
+    ) {
       return;
     }
 
@@ -127,7 +135,9 @@ export function useExpressionChangeHistoryTracker(args: {
 
     // When subscribing, tracker emits current state immediately:
     // treat it as replay if it equals the last persisted stack
-    const persistedLastKeyAtSubscribe = lastPersistedStackKey(expressionInfoRef.current);
+    const persistedLastKeyAtSubscribe = lastPersistedStackKey(
+      expressionInfoRef.current,
+    );
 
     subscriptionRef.current = tracker.changed.subscribe((stack) => {
       const info = expressionInfoRef.current;
@@ -140,7 +150,8 @@ export function useExpressionChangeHistoryTracker(args: {
 
       const alreadyEmitted = lastEmittedStackKeyRef.current === nextKey;
       const equalsPersistedLast =
-        persistedLastKeyNow === nextKey || persistedLastKeyAtSubscribe === nextKey;
+        persistedLastKeyNow === nextKey ||
+        persistedLastKeyAtSubscribe === nextKey;
 
       if (alreadyEmitted || equalsPersistedLast) {
         lastEmittedStackKeyRef.current = nextKey;
@@ -162,7 +173,12 @@ export function useExpressionChangeHistoryTracker(args: {
 
         const sel = onSelectionChangedRef.current;
         if (typeof sel === 'function') {
-          sel(modelIndexRef.current, expressionIndexRef.current, newestPersistedIndex, stack);
+          sel(
+            modelIndexRef.current,
+            expressionIndexRef.current,
+            newestPersistedIndex,
+            stack,
+          );
         }
       });
     });

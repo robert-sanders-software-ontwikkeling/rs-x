@@ -17,7 +17,9 @@ export class ExpressionNodeIdIndex {
   public getId(node: IExpression): ExpressionNodeId {
     const id = this._nodeToId.get(node);
     if (!id) {
-      throw new Error('Node is not part of this index (build from the same root).');
+      throw new Error(
+        'Node is not part of this index (build from the same root).',
+      );
     }
     return id;
   }
@@ -31,7 +33,9 @@ export class ExpressionNodeIdIndex {
   }
 
   private buildInternal(root: IExpression): void {
-    const stack: Array<{ node: IExpression; id: ExpressionNodeId }> = [ { node: root, id: 'r' } ];
+    const stack: Array<{ node: IExpression; id: ExpressionNodeId }> = [
+      { node: root, id: 'r' },
+    ];
 
     while (stack.length) {
       const { node, id } = stack.pop()!;

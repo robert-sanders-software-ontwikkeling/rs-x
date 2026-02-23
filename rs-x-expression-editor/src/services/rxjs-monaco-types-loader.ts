@@ -1,59 +1,60 @@
-import { Monaco } from '@monaco-editor/react';
+import { type Monaco } from '@monaco-editor/react';
+
 import 'monaco-editor/esm/vs/language/typescript/monaco.contribution';
 
 type Manifest = {
-    files: string[];
+  files: string[];
 };
 
 export class RxjsMonacoTypesLoader {
-    private static _instance: RxjsMonacoTypesLoader | null = null;
-    private _installed = false;
+  private static _instance: RxjsMonacoTypesLoader | null = null;
+  private _installed = false;
 
-    private constructor() { }
+  private constructor() {}
 
-    public static getInstance(): RxjsMonacoTypesLoader {
-        if (!this._instance) {
-            this._instance = new RxjsMonacoTypesLoader();
-        }
-        return this._instance;
+  public static getInstance(): RxjsMonacoTypesLoader {
+    if (!this._instance) {
+      this._instance = new RxjsMonacoTypesLoader();
+    }
+    return this._instance;
+  }
+
+  public async install(monaco: Monaco): Promise<void> {
+    if (this._installed) return;
+
+    const ts = monaco.typescript;
+    if (!ts) return;
+
+    ts.typescriptDefaults.setCompilerOptions({
+      target: monaco.languages.typescript.ScriptTarget.ES2020,
+      module: monaco.languages.typescript.ModuleKind.ESNext,
+      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+      baseUrl: 'file:///',
+
+      paths: {
+        rxjs: ['node_modules/rxjs/dist/types/index.d.ts'],
+        'rxjs/*': ['node_modules/rxjs/dist/types/*'],
+
+        // If you use operators via 'rxjs/operators':
+        'rxjs/operators': ['node_modules/rxjs/dist/types/operators/index.d.ts'],
+        'rxjs/operators/*': ['node_modules/rxjs/dist/types/operators/*'],
+      },
+
+      typeRoots: ['node_modules/@types'],
+    });
+
+    const res = await fetch('/monaco-dts/manifest.json');
+    const manifest = (await res.json()) as Manifest;
+
+    for (const webPath of manifest.files) {
+      const fileRes = await fetch(webPath);
+      const content = await fileRes.text();
+      const rel = webPath.replace('/monaco-dts/node_modules/', '');
+      const uri = `file:///node_modules/${rel}`;
+      ts.typescriptDefaults.addExtraLib(content, uri);
     }
 
-    public async install(monaco: Monaco): Promise<void> {
-        if (this._installed) return;
-
-        const ts = (monaco as any).typescript;
-        if (!ts) return;
-
-        ts.typescriptDefaults.setCompilerOptions({
-            target: monaco.languages.typescript.ScriptTarget.ES2020,
-            module: monaco.languages.typescript.ModuleKind.ESNext,
-            moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
-            baseUrl: 'file:///',
-
-            paths: {
-                rxjs: ['node_modules/rxjs/dist/types/index.d.ts'],
-                'rxjs/*': ['node_modules/rxjs/dist/types/*'],
-
-                // If you use operators via 'rxjs/operators':
-                'rxjs/operators': ['node_modules/rxjs/dist/types/operators/index.d.ts'],
-                'rxjs/operators/*': ['node_modules/rxjs/dist/types/operators/*']
-            },
-
-            typeRoots: ['node_modules/@types']
-        });
-
-        const res = await fetch('/monaco-dts/manifest.json');
-        const manifest = (await res.json()) as Manifest;
-
-        for (const webPath of manifest.files) {
-            const fileRes = await fetch(webPath);
-            const content = await fileRes.text();
-            const rel = webPath.replace('/monaco-dts/node_modules/', '');
-            const uri = `file:///node_modules/${rel}`;
-            ts.typescriptDefaults.addExtraLib(content, uri);
-        }
-
-        const globalLib = `
+    const globalLib = `
             import * as Core from 'rxjs';
             import * as Ops from 'rxjs/operators';
 
@@ -173,21 +174,20 @@ export class RxjsMonacoTypesLoader {
             export {};
         `;
 
-        monaco.languages.typescript.typescriptDefaults.addExtraLib(
-            globalLib,
-            'file:///globals/rxjs-global.d.ts'
-        );
+    monaco.languages.typescript.typescriptDefaults.addExtraLib(
+      globalLib,
+      'file:///globals/rxjs-global.d.ts',
+    );
 
+    // const libs = ts.typescriptDefaults.getExtraLibs();
+    // console.log('extraLib count:', Object.keys(libs).length);
 
-        // const libs = ts.typescriptDefaults.getExtraLibs();
-        // console.log('extraLib count:', Object.keys(libs).length);
+    // // check a few
+    // console.log(JSON.stringify(libs));
 
-        // // check a few
-        // console.log(JSON.stringify(libs));
+    // // check a specific one you expect
+    // console.log('has rxjs ajax d.ts?', Boolean(libs['file:///node_modules/rxjs/dist/types/ajax/index.d.ts']));
 
-        // // check a specific one you expect
-        // console.log('has rxjs ajax d.ts?', Boolean(libs['file:///node_modules/rxjs/dist/types/ajax/index.d.ts']));
-
-        this._installed = true;
-    }
+    this._installed = true;
+  }
 }

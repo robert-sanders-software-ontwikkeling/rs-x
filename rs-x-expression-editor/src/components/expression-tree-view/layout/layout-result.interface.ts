@@ -1,5 +1,5 @@
-import { LayoutEdge } from './layout-edge.interface';
-import { LayoutNode } from './layout-node.interface';
+import { type LayoutEdge } from './layout-edge.interface';
+import { type LayoutNode } from './layout-node.interface';
 
 export interface LayoutResult {
   nodes: LayoutNode[];

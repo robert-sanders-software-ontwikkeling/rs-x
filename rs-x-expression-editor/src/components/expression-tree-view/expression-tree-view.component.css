@@ -82,8 +82,11 @@
 
   shape-rendering: geometricPrecision;
 
-  transition: stroke var(--t-med) var(--ease), stroke-width var(--t-med) var(--ease),
-    opacity var(--t-med) var(--ease), filter var(--t-med) var(--ease);
+  transition:
+    stroke var(--t-med) var(--ease),
+    stroke-width var(--t-med) var(--ease),
+    opacity var(--t-med) var(--ease),
+    filter var(--t-med) var(--ease);
 }
 
 /* Selected edge (blue) */
@@ -115,8 +118,11 @@
 
   overflow: hidden;
 
-  transition: transform var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease),
-    border-color var(--t-med) var(--ease), background-color var(--t-med) var(--ease),
+  transition:
+    transform var(--t-med) var(--ease),
+    box-shadow var(--t-med) var(--ease),
+    border-color var(--t-med) var(--ease),
+    background-color var(--t-med) var(--ease),
     filter var(--t-med) var(--ease);
 }
 
@@ -150,7 +156,9 @@
   box-shadow: 0 0 0 4px rgb(var(--c-info) / 0.15);
 
   flex: 0 0 auto;
-  transition: background-color var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease);
+  transition:
+    background-color var(--t-med) var(--ease),
+    box-shadow var(--t-med) var(--ease);
 }
 
 .exprNodeHeaderText {
@@ -244,14 +252,16 @@
 .exprNode.isSelected {
   border-color: rgb(var(--c-info) / 0.85);
 
-  box-shadow: var(--shadow-panel),
+  box-shadow:
+    var(--shadow-panel),
     0 0 0 2px rgb(var(--c-info) / 0.25),
     0 0 18px rgb(var(--c-info) / 0.12);
 }
 
 .exprNode.isSelected .exprNodeDot {
   background: rgb(var(--c-info) / 0.99);
-  box-shadow: 0 0 0 4px rgb(var(--c-info) / 0.28),
+  box-shadow:
+    0 0 0 4px rgb(var(--c-info) / 0.28),
     0 0 14px rgb(var(--c-info) / 0.14);
 }
 
@@ -259,17 +269,19 @@
   border-color: rgb(var(--c-warn) / 0.98);
   transform: translateY(-1px);
 
-  box-shadow: var(--shadow-panel),
+  box-shadow:
+    var(--shadow-panel),
     0 0 0 2px rgb(var(--c-warn) / 0.32),
     0 0 22px rgb(var(--c-warn) / 0.22),
-    0 0 40px rgb(var(--c-warn) / 0.10);
+    0 0 40px rgb(var(--c-warn) / 0.1);
 
   animation: exprPulse 520ms var(--ease);
 }
 
 .exprNode.isActive .exprNodeDot {
   background: rgb(var(--c-warn) / 1);
-  box-shadow: 0 0 0 4px rgb(var(--c-warn) / 0.32),
+  box-shadow:
+    0 0 0 4px rgb(var(--c-warn) / 0.32),
     0 0 18px rgb(var(--c-warn) / 0.32),
     0 0 30px rgb(var(--c-warn) / 0.16);
 }
@@ -306,7 +318,7 @@
 /* Header dot becomes animated "waiting" pulse */
 .exprNode.exprNode--async .exprNodeDot {
   background: rgb(var(--c-warn) / 1);
-  box-shadow: 0 0 0 0 rgb(var(--c-warn) / 0.0);
+  box-shadow: 0 0 0 0 rgb(var(--c-warn) / 0);
   animation: exprAsyncDotPulse 1.6s var(--ease) infinite;
 }
 
@@ -316,10 +328,10 @@
     box-shadow: 0 0 0 0 rgb(var(--c-warn) / 0.35);
   }
   70% {
-    box-shadow: 0 0 0 8px rgb(var(--c-warn) / 0.0);
+    box-shadow: 0 0 0 8px rgb(var(--c-warn) / 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgb(var(--c-warn) / 0.0);
+    box-shadow: 0 0 0 0 rgb(var(--c-warn) / 0);
   }
 }
 
@@ -339,7 +351,7 @@
   text-transform: uppercase;
 
   border: 1px solid rgb(var(--c-warn) / 0.35);
-  background: rgb(var(--c-warn) / 0.10);
+  background: rgb(var(--c-warn) / 0.1);
   color: rgb(var(--c-warn) / 0.95);
 }
 

@@ -1,7 +1,7 @@
-
+import { type Monaco } from '@monaco-editor/react';
 import type * as MonacoTypes from 'monaco-editor';
+
 import { rxjsScope } from './rxjs-scope';
-import { Monaco } from '@monaco-editor/react';
 
 export class ModelIntellisenseService {
   private static _instance: ModelIntellisenseService;
@@ -14,18 +14,14 @@ export class ModelIntellisenseService {
   private constructor(scopes: Record<string, unknown>) {
     this.scopes = scopes;
   }
-  
+
   // --------------------------------------------
   // Singleton factory with configuration
   // --------------------------------------------
 
-  public static getInstance(
-
-  ): ModelIntellisenseService {
+  public static getInstance(): ModelIntellisenseService {
     if (!this._instance) {
-      
-
-      this._instance = new ModelIntellisenseService({rxjs: rxjsScope});
+      this._instance = new ModelIntellisenseService({ rxjs: rxjsScope });
     }
 
     return this._instance;
@@ -45,12 +41,12 @@ export class ModelIntellisenseService {
     monacoInstance.languages.registerCompletionItemProvider('typescript', {
       triggerCharacters:
         '_$abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.'.split(
-          ''
+          '',
         ),
 
       provideCompletionItems: (
         editorModel: MonacoTypes.editor.ITextModel,
-        position: MonacoTypes.Position
+        position: MonacoTypes.Position,
       ): MonacoTypes.languages.ProviderResult<MonacoTypes.languages.CompletionList> => {
         if (!this.monaco) {
           return { suggestions: [] };
@@ -87,15 +83,13 @@ export class ModelIntellisenseService {
   }
 
   private getCurrentMemberExpression(textBeforeCursor: string): string {
-    const match = textBeforeCursor.match(
-      /[\w$][\w\d$]*(\.[\w$][\w\d$]*)*\.?$/
-    );
+    const match = textBeforeCursor.match(/[\w$][\w\d$]*(\.[\w$][\w\d$]*)*\.?$/);
     return match ? match[0] : '';
   }
 
   private getWordRangeAtPosition(
     editorModel: MonacoTypes.editor.ITextModel,
-    position: MonacoTypes.Position
+    position: MonacoTypes.Position,
   ): MonacoTypes.IRange {
     const word = editorModel.getWordUntilPosition(position);
 
@@ -103,13 +97,13 @@ export class ModelIntellisenseService {
       position.lineNumber,
       word.startColumn,
       position.lineNumber,
-      word.endColumn
+      word.endColumn,
     );
   }
 
   private getSuggestions(
     memberExpression: string,
-    range: MonacoTypes.IRange
+    range: MonacoTypes.IRange,
   ): MonacoTypes.languages.CompletionItem[] {
     if (!this.monaco) return [];
 
@@ -130,9 +124,10 @@ export class ModelIntellisenseService {
       }));
   }
 
-  private resolveMemberExpression(
-    memberExpression: string
-  ): { objectAtPath: unknown; lastSegment: string } {
+  private resolveMemberExpression(memberExpression: string): {
+    objectAtPath: unknown;
+    lastSegment: string;
+  } {
     const fullExpr = memberExpression.trim();
 
     if (!fullExpr) {
@@ -144,18 +139,12 @@ export class ModelIntellisenseService {
 
     const parts = fullExpr.split('.').filter(Boolean);
 
-    const lastSegment = fullExpr.endsWith('.')
-      ? ''
-      : parts.pop() || '';
+    const lastSegment = fullExpr.endsWith('.') ? '' : parts.pop() || '';
 
     let current: unknown = this.getRootScope();
 
     for (const part of parts) {
-      if (
-        current &&
-        typeof current === 'object' &&
-        !Array.isArray(current)
-      ) {
+      if (current && typeof current === 'object' && !Array.isArray(current)) {
         current = (current as Record<string, unknown>)[part];
       } else {
         current = {};

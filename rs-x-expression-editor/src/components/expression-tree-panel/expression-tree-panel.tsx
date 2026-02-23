@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { FaTimes } from 'react-icons/fa';
 
-import { ZoomDropdown } from '../zoom-dropdown/zoom-dropdown.component';
-import { ExpressionTree } from '../expression-tree-view/expression-tree-view.component';
-import type { IExpressionInfo } from '../../models/expression-info.interface';
 import type { IExpression } from '../../../../rs-x-expression-parser/lib';
+import type { IExpressionInfo } from '../../models/expression-info.interface';
+import { ExpressionTree } from '../expression-tree-view/expression-tree-view.component';
+import { ZoomDropdown } from '../zoom-dropdown/zoom-dropdown.component';
 
 export interface IExpressionTreePanelProps {
   selectedExpressionString: string | undefined;
@@ -54,25 +54,33 @@ export const ExpressionTreePanel: React.FC<IExpressionTreePanelProps> = ({
 
   return (
     <>
-      <div className='panel-header panel-header-row'>
-        <div className='exprTreeHeaderTitle'>
+      <div className="panel-header panel-header-row">
+        <div className="exprTreeHeaderTitle">
           <span>Expression Tree</span>
 
-          <span className='exprTreeHeaderExpr' title={selectedExpressionString}>
+          <span className="exprTreeHeaderExpr" title={selectedExpressionString}>
             {selectedExpressionString}
           </span>
         </div>
 
-        <div className='exprTreeHeaderControls'>
-          <ZoomDropdown value={treeZoomPercent} onChange={onTreeZoomPercentChange} />
+        <div className="exprTreeHeaderControls">
+          <ZoomDropdown
+            value={treeZoomPercent}
+            onChange={onTreeZoomPercentChange}
+          />
 
-          <button type='button' className='icon-btn' onClick={onClose} title='Close'>
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={onClose}
+            title="Close"
+          >
             <FaTimes />
           </button>
         </div>
       </div>
 
-      <div className='panel-body'>
+      <div className="panel-body">
         <ExpressionTree
           key={`${version}:${highlightVersion}`}
           version={version}

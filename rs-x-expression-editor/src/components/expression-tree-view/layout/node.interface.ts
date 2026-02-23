@@ -1,4 +1,4 @@
-import { IExpression } from '@rs-x/expression-parser';
+import { type IExpression } from '@rs-x/expression-parser';
 
 export type NodeId = string;
 
