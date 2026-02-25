@@ -509,19 +509,26 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
 
   const onClearSelectedHistory = () => {
     const modelIndex = currentState.selectedModelIndex as number;
-    const exprIndex = selectedModel?.selectedExpressionIndex ?? null;
+    const expressionIndex = selectedModel?.selectedExpressionIndex ?? null;
+    const selectChangeIndex = selectedExpression?.selecteChangeHistoryIndex;
 
-    if (exprIndex === null || exprIndex === undefined) {
+    if (expressionIndex === null || expressionIndex === undefined) {
       return;
     }
+
+    const history = selectedExpression!.changeHistory.slice(0, 1);
 
     setCurrentState((prev) => {
       return new ExpressionEditorStateBuilder(prev).setExpressionHistory({
         modelIndex,
-        expressionIndex: exprIndex,
-        history: [],
+        expressionIndex,
+        history,
       }).state;
     });
+
+    if (selectChangeIndex != 0) {
+      onSelectHistoryBatch(modelIndex, expressionIndex, 0, history[0], true);
+    }
   };
 
   const onSelectHistoryBatch = (
@@ -529,24 +536,11 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
     expressionIndex: number,
     selectedChangeSetIndex: number,
     items: IExpressionChangeHistory[],
+    replay: boolean,
   ) => {
     const modelInfo = currentState.modelsWithExpressions[modelIndex];
     const exprInfo = modelInfo?.expressions[expressionIndex];
 
-    // ✅ Side effect (business) OUTSIDE setState
-    if (exprInfo?.expression) {
-      try {
-        business.replayChangeHistory({
-          expression: exprInfo.expression,
-          index: selectedChangeSetIndex,
-          changeHistory: exprInfo.changeHistory ?? [],
-        });
-      } catch {
-        // swallow
-      }
-    }
-
-    // ✅ State update in builder
     setCurrentState((prev) => {
       return new ExpressionEditorStateBuilder(
         prev,
@@ -557,6 +551,18 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
         items,
       ).state;
     });
+
+    if (replay && exprInfo?.expression) {
+      try {
+        business.replayChangeHistory({
+          expression: exprInfo.expression,
+          index: selectedChangeSetIndex,
+          changeHistory: exprInfo.changeHistory ?? [],
+        });
+      } catch {
+        // swallow
+      }
+    }
   };
   const setTreeZoomPercent = (treeZoomPercent: number) => {
     setCurrentState((prev) => {
@@ -637,6 +643,7 @@ const AppLoaded: React.FC<AppLoadedProps> = ({ initialState }) => {
                     <Panel defaultSize={80} minSize={20} className="panel">
                       {selectedExpression && (
                         <ExpressionTreePanel
+                          key={`${selectedExpression.version}-${selectedModel?.version}-${selectedExpression?.treeHighlightVersion}`}
                           selectedExpressionString={selectedExpressionString}
                           expressionInfo={selectedExpression}
                           treeZoomPercent={currentState.treeZoomPercent}

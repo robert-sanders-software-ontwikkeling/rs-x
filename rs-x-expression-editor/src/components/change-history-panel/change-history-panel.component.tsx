@@ -22,6 +22,7 @@ export interface IChangeHistoryPanel {
     expressionIndex: number,
     selectedChangeSetIndex: number,
     items: IExpressionChangeHistory[],
+    replay: boolean,
   ) => void;
 }
 

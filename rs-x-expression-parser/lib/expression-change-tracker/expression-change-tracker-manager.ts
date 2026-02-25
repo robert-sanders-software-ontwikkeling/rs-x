@@ -90,6 +90,7 @@ export class ExpressionChangeTracker implements IExpressionChangeTracker {
       const item = this._changes[i]!;
       if (item.expression === expression) {
         item.value = expression.value;
+        item.oldValue = oldValue;
         break;
       }
     }
