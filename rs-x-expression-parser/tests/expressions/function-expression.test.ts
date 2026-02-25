@@ -31,7 +31,7 @@ describe('FunctionExpression tests', () => {
 
   it('type', () => {
     const model = { a: 10, multiplWithTwo: (a: number) => 2 * a };
-    expression = rsx`multiplWithTwo(a)`(model);
+    expression = rsx('multiplWithTwo(a)')(model);
 
     expect(expression.type).toEqual(ExpressionType.Function);
   });
@@ -41,7 +41,7 @@ describe('FunctionExpression tests', () => {
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
     const model = { a: 10, multiplWithTwo: (a: number) => 2 * a };
-    expression = rsx`multiplWithTwo(a)`(model);
+    expression = rsx('multiplWithTwo(a)')(model);
 
     const clonedExpression = expression.clone();
 
@@ -66,7 +66,7 @@ describe('FunctionExpression tests', () => {
 
   it('method on root object', async () => {
     const model = { a: 10, multiplWithTwo: (a: number) => 2 * a };
-    expression = rsx`multiplWithTwo(a)`(model);
+    expression = rsx('multiplWithTwo(a)')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -87,7 +87,7 @@ describe('FunctionExpression tests', () => {
       },
     };
 
-    expression = rsx`b.multiply(a)`(model);
+    expression = rsx('b.multiply(a)')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -109,7 +109,7 @@ describe('FunctionExpression tests', () => {
       },
     };
 
-    expression = rsx`b[b.methodName](a)`(model);
+    expression = rsx('b[b.methodName](a)')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -122,7 +122,7 @@ describe('FunctionExpression tests', () => {
   it('method on root object: change event is emitted when arguments changes', async () => {
     const model = { a: 10, multiplWithTwo: (a: number) => 2 * a };
 
-    expression = rsx`multiplWithTwo(a)`(model);
+    expression = rsx('multiplWithTwo(a)')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -149,7 +149,7 @@ describe('FunctionExpression tests', () => {
       },
     };
 
-    expression = rsx`b[b.methodName](a)`(model);
+    expression = rsx('b[b.methodName](a)')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -173,7 +173,7 @@ describe('FunctionExpression tests', () => {
         },
       },
     };
-    expression = rsx`b[b.methodName](a)`(model);
+    expression = rsx('b[b.methodName](a)')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -206,7 +206,7 @@ describe('FunctionExpression tests', () => {
         },
       },
     };
-    expression = rsx`b[b.methodName](a)`(model);
+    expression = rsx('b[b.methodName](a)')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});

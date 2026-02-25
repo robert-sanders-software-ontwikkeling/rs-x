@@ -31,7 +31,7 @@ describe('LogicalNotExpression tests', () => {
 
   it('type', () => {
     const model = { a: false };
-    expression = rsx`!a`(model);
+    expression = rsx('!a')(model);
 
     expect(expression.type).toEqual(ExpressionType.Not);
   });
@@ -41,7 +41,7 @@ describe('LogicalNotExpression tests', () => {
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
     const model = { a: false };
-    expression = rsx`!a`(model);
+    expression = rsx('!a')(model);
 
     const clonedExpression = expression.clone();
 
@@ -66,7 +66,7 @@ describe('LogicalNotExpression tests', () => {
 
   it('will emit change event for initial value', async () => {
     const model = { a: true };
-    expression = rsx`!a`(model);
+    expression = rsx('!a')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -82,7 +82,7 @@ describe('LogicalNotExpression tests', () => {
         b: true,
       },
     };
-    expression = rsx`!a.b`(model);
+    expression = rsx('!a.b')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});

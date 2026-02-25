@@ -26,7 +26,7 @@ describe('AbstractExpression tests', () => {
   });
 
   it('evaluate with constant expression', async () => {
-    const expression = rsx<number>`1 + 2`({});
+    const expression = rsx<number>('1 + 2')({});
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -40,7 +40,7 @@ describe('AbstractExpression tests', () => {
       a: 10,
       b: 20,
     };
-    const expression = rsx<number>`a + b`(model);
+    const expression = rsx<number>('a + b')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -53,7 +53,7 @@ describe('AbstractExpression tests', () => {
     const model = {
       observable: new BehaviorSubject<number>(50),
     };
-    const expression = rsx<number>`observable + 1`(model);
+    const expression = rsx<number>('observable + 1')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -67,7 +67,7 @@ describe('AbstractExpression tests', () => {
     const model = {
       promise: Promise.resolve(100),
     };
-    const expression = rsx<number>`promise + 1`(model);
+    const expression = rsx<number>('promise + 1')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -85,7 +85,7 @@ describe('AbstractExpression tests', () => {
         ['three', 3],
       ]),
     };
-    const expression = rsx<number>`map["three"]`(model);
+    const expression = rsx<number>('map["three"]')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -99,7 +99,7 @@ describe('AbstractExpression tests', () => {
     const model = {
       array: [11, 21, 31, 41, 51],
     };
-    const expression = rsx<number>`array[1]`(model);
+    const expression = rsx<number>('array[1]')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -114,7 +114,7 @@ describe('AbstractExpression tests', () => {
       a: 10,
       b: 20,
     };
-    const expression = rsx<number>`a + b`(model);
+    const expression = rsx<number>('a + b')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -133,7 +133,7 @@ describe('AbstractExpression tests', () => {
     const model = {
       promise: Promise.resolve(100),
     };
-    const expression = rsx<number>`promise + 1`(model);
+    const expression = rsx<number>('promise + 1')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -156,7 +156,7 @@ describe('AbstractExpression tests', () => {
     const model = {
       observable: new BehaviorSubject<number>(50),
     };
-    const expression = rsx<number>`observable + 1`(model);
+    const expression = rsx<number>('observable + 1')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -175,7 +175,7 @@ describe('AbstractExpression tests', () => {
     const model = {
       observable: new BehaviorSubject<number>(50),
     };
-    const expression = rsx<number>`observable + 1`(model);
+    const expression = rsx<number>('observable + 1')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -194,7 +194,7 @@ describe('AbstractExpression tests', () => {
     const model = {
       array: [11, 21, 31, 41, 51],
     };
-    const expression = rsx<number>`array`(model);
+    const expression = rsx<number>('array')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -217,7 +217,7 @@ describe('AbstractExpression tests', () => {
         ['three', 3],
       ]),
     };
-    const expression = rsx<number>`map`(model);
+    const expression = rsx<number>('map')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -248,7 +248,7 @@ describe('AbstractExpression tests', () => {
       c: 2,
     };
 
-    const expression = rsx<number>`a.b + c`(model);
+    const expression = rsx<number>('a.b + c')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -270,7 +270,7 @@ describe('AbstractExpression tests', () => {
       },
       c: 2,
     };
-    const expression = rsx<number>`a.b + c`(model);
+    const expression = rsx<number>('a.b + c')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -302,11 +302,11 @@ describe('AbstractExpression tests', () => {
       selected: null as { a: number; b: number } | null,
     };
 
-    const selectedExpression = rsx<{ a: number; b: number } | null>`selected`(
+    const selectedExpression = rsx<{ a: number; b: number } | null>('selected')(
       model,
     );
-    const row1Expression = rsx<number>`a + b`(rows[0]);
-    const row2Expression = rsx<number>`a + b`(rows[1]);
+    const row1Expression = rsx<number>('a + b')(rows[0]);
+    const row2Expression = rsx<number>('a + b')(rows[1]);
 
     await new WaitForEvent(selectedExpression, 'changed', {
       ignoreInitialValue: true,

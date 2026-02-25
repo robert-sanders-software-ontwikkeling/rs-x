@@ -35,7 +35,7 @@ describe('NullishCoalescingExpression tests', () => {
       b: 10,
     };
 
-    expression = rsx`a ?? b`(model);
+    expression = rsx('a ?? b')(model);
     expect(expression.type).toEqual(ExpressionType.NullishCoalescing);
   });
 
@@ -47,7 +47,7 @@ describe('NullishCoalescingExpression tests', () => {
       a: null,
       b: 10,
     };
-    expression = rsx`a ?? b`(model);
+    expression = rsx('a ?? b')(model);
 
     const clonedExpression = expression.clone();
 
@@ -75,7 +75,7 @@ describe('NullishCoalescingExpression tests', () => {
       a: null,
       b: 10,
     };
-    expression = rsx`a ?? b`(model);
+    expression = rsx('a ?? b')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -90,7 +90,7 @@ describe('NullishCoalescingExpression tests', () => {
       a: null,
       b: 10,
     };
-    expression = rsx`a ?? b`(model);
+    expression = rsx('a ?? b')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});

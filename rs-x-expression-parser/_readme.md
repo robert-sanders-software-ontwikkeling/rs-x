@@ -270,7 +270,7 @@ Instead of manually resolving the IExpressionFactory and calling create, you can
 import { rsx } from '@rs-x/expression-parser';
 
 const model = { a: 10, b: 20 };
-const expression = rsx<number>`a + b`(model);
+const expression = rsx<number>('a + b')(model);
 ```
 
 This is equivalent to:

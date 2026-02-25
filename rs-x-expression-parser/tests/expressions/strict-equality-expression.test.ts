@@ -31,7 +31,7 @@ describe('StrictEqualityExpression tests', () => {
 
   it('type', () => {
     const model = { a: 1, b: 2 };
-    expression = rsx`a === b`(model);
+    expression = rsx('a === b')(model);
 
     expect(expression.type).toEqual(ExpressionType.StrictEquality);
   });
@@ -41,7 +41,7 @@ describe('StrictEqualityExpression tests', () => {
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
     const model = { a: 1, b: '1' };
-    expression = rsx`a === b`(model);
+    expression = rsx('a === b')(model);
 
     const clonedExpression = expression.clone();
 
@@ -66,7 +66,7 @@ describe('StrictEqualityExpression tests', () => {
 
   it('will emit change event for initial value: false', async () => {
     const model = { a: 1, b: '1' };
-    expression = rsx`a === b`(model);
+    expression = rsx('a === b')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -78,7 +78,7 @@ describe('StrictEqualityExpression tests', () => {
 
   it('will emit change event for initial value: true', async () => {
     const model = { a: 1, b: 1 };
-    expression = rsx`a === b`(model);
+    expression = rsx('a === b')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -93,7 +93,7 @@ describe('StrictEqualityExpression tests', () => {
       a: 3,
       b: 2,
     };
-    expression = rsx`a === b`(model);
+    expression = rsx('a === b')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});

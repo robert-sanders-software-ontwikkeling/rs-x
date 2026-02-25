@@ -34,7 +34,7 @@ describe('InstanceofExpression tests', () => {
       type: Date,
       a: new Date(),
     };
-    expression = rsx`a instanceof type`(model);
+    expression = rsx('a instanceof type')(model);
 
     expect(expression.type).toEqual(ExpressionType.Instanceof);
   });
@@ -47,7 +47,7 @@ describe('InstanceofExpression tests', () => {
       type: Date,
       a: new Date(),
     };
-    expression = rsx`a instanceof type`(model);
+    expression = rsx('a instanceof type')(model);
 
     const clonedExpression = expression.clone();
 
@@ -75,7 +75,7 @@ describe('InstanceofExpression tests', () => {
       type: Date,
       a: new Date(),
     };
-    expression = rsx`a instanceof type`(model);
+    expression = rsx('a instanceof type')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -90,7 +90,7 @@ describe('InstanceofExpression tests', () => {
       type: String,
       a: new Date(),
     };
-    expression = rsx`a instanceof type`(model);
+    expression = rsx('a instanceof type')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -105,7 +105,7 @@ describe('InstanceofExpression tests', () => {
       type: String.constructor,
       a: new Date(),
     };
-    expression = rsx`a instanceof type`(model);
+    expression = rsx('a instanceof type')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});

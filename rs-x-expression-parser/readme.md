@@ -39,7 +39,7 @@ This parser forms the core of the **data-binding implementation** for the SPA fr
       },
     };
 
-    const expression = rsx<number>`a.b.c.d`(model);
+    const expression = rsx<number>('a.b.c.d')(model);
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -226,11 +226,7 @@ First, we will show an implementation **without modular expressions**, followed 
 import { BehaviorSubject } from 'rxjs';
 
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  rsx,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
@@ -264,7 +260,7 @@ export const run = (async () => {
     },
   };
 
-  const expression = rsx`(
+  const expression = rsx(`
       (
         // =========================
         // Numeric risk score
@@ -328,7 +324,7 @@ export const run = (async () => {
                 : 'LOW'
             )
         )
-    )`(riskModel);
+    `)(riskModel);
 
   console.log('Initial risk: ');
   const changeSubscription = expression.changed.subscribe(() => {
@@ -403,25 +399,25 @@ export const run = (async () => {
     }),
   };
 
-  const basePersonalRisk = rsx`
+  const basePersonalRisk = rsx(`
     (credit.score < 600 ? 0.4 : 0.1) +
     (credit.outstandingDebt / customer.income) * 0.6 -
     (customer.employmentYears * 0.03)     
-  `(riskModel);
+  `)(riskModel);
 
-  const ageBasedRiskAdjustment = rsx`
+  const ageBasedRiskAdjustment = rsx(`
     customer.age < 25 ? 0.15 :
     customer.age < 35 ? 0.05 :
     customer.age < 55 ? 0.00 :
     0.08
-  `(riskModel);
+  `)(riskModel);
 
-  const marketRisk = rsx`
+  const marketRisk = rsx(`
     (risk.volatilityIndex * 0.5) +
     (risk.recessionProbability * 0.5)
-  `(riskModel);
+  `)(riskModel);
 
-  const interestRateImpact = rsx`market.baseInterestRate * 2`(marketRisk);
+  const interestRateImpact = rsx('market.baseInterestRate * 2')(riskModel);
 
   const riskScoreModel = {
     basePersonalRisk,
@@ -430,12 +426,12 @@ export const run = (async () => {
     interestRateImpact,
   };
 
-  const riskScore = rsx`
+  const riskScore = rsx(`
     basePersonalRisk + 
     ageBasedRiskAdjustment +
     marketRisk + 
     interestRateImpact
-  `(riskScoreModel);
+  `)(riskScoreModel);
 
   const riskClassificationModel = {
     riskScore,
@@ -445,13 +441,13 @@ export const run = (async () => {
     },
   };
 
-  const riskClassification = rsx`
+  const riskClassification = rsx(`
     riskScore >= thresholds.highRisk
       ? 'HIGH'
       : riskScore >= thresholds.mediumRisk
           ? 'MEDIUM'
           : 'LOW'
-    `(riskClassificationModel);
+    `)(riskClassificationModel);
 
   console.log('Initial risk: ');
   const changeSubscription = riskClassification.changed.subscribe(() => {
@@ -583,7 +579,7 @@ Instead of manually resolving the IExpressionFactory and calling create, you can
 import { rsx } from '@rs-x/expression-parser';
 
 const model = { a: 10, b: 20 };
-const expression = rsx<number>`a + b`(model);
+const expression = rsx<number>('a + b')(model);
 ```
 
 This is equivalent to:
@@ -684,7 +680,7 @@ export const run = (async () => {
     b: 3,
   };
 
-  const expression = rsx<number>`a + b`(model);
+  const expression = rsx<number>('a + b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -738,7 +734,7 @@ export const run = (async () => {
     array: [1, 2],
   };
 
-  const expression = rsx<number[]>`[a, ...array, 100]`(model);
+  const expression = rsx<number[]>('[a, ...array, 100]')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -798,7 +794,7 @@ export const run = (async () => {
     b: 3,
   };
 
-  const expression = rsx<number>`a & b`(model);
+  const expression = rsx<number>('a & b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -847,7 +843,7 @@ export const run = (async () => {
     b: 2,
   };
 
-  const expression = rsx<number>`a << b`(model);
+  const expression = rsx<number>('a << b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -895,7 +891,7 @@ export const run = (async () => {
     a: 5,
   };
 
-  const expression = rsx<number>`~a`(model);
+  const expression = rsx<number>('~a')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -937,7 +933,7 @@ export const run = (async () => {
     b: 2,
   };
 
-  const expression = rsx<number>`a | b`(model);
+  const expression = rsx<number>('a | b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -986,7 +982,7 @@ export const run = (async () => {
     b: 2,
   };
 
-  const expression = rsx<number>`a >> b`(model);
+  const expression = rsx<number>('a >> b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1035,7 +1031,7 @@ export const run = (async () => {
     b: 2,
   };
 
-  const expression = rsx<number>`a >>> b`(model);
+  const expression = rsx<number>('a >>> b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1084,7 +1080,7 @@ export const run = (async () => {
     b: 3,
   };
 
-  const expression = rsx<number>`a ^ b`(model);
+  const expression = rsx<number>('a ^ b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1135,7 +1131,7 @@ export const run = (async () => {
     d: 200,
   };
 
-  const expression = rsx<number>`a > b ? c : d`(model);
+  const expression = rsx<number>('a > b ? c : d')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1198,7 +1194,7 @@ export const run = (async () => {
     b: 2,
   };
 
-  const expression = rsx<boolean>`a / b`(model);
+  const expression = rsx<boolean>('a / b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1247,7 +1243,7 @@ export const run = (async () => {
     b: 2,
   };
 
-  const expression = rsx<number>`a == b`(model);
+  const expression = rsx<number>('a == b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1296,7 +1292,7 @@ export const run = (async () => {
     b: 3,
   };
 
-  const expression = rsx<number>`a ** b`(model);
+  const expression = rsx<number>('a ** b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1348,7 +1344,7 @@ export const run = (async () => {
     },
   };
 
-  const expression = rsx<number>`multiply(a, b)`(model);
+  const expression = rsx<number>('multiply(a, b)')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1397,7 +1393,7 @@ export const run = (async () => {
     b: 2,
   };
 
-  const expression = rsx<boolean>`a > b`(model);
+  const expression = rsx<boolean>('a > b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1446,7 +1442,7 @@ export const run = (async () => {
     b: 2,
   };
 
-  const expression = rsx<boolean>`a >= b`(model);
+  const expression = rsx<boolean>('a >= b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1502,7 +1498,7 @@ export const run = (async () => {
     },
   };
 
-  const expression = rsx<boolean>`propertyName in b`(model);
+  const expression = rsx<boolean>('propertyName in b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1551,7 +1547,7 @@ export const run = (async () => {
     b: 2,
   };
 
-  const expression = rsx<boolean>`a != b`(model);
+  const expression = rsx<boolean>('a != b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1605,7 +1601,7 @@ export const run = (async () => {
     a: new Date(),
   };
 
-  const expression = rsx<boolean>`a instanceof type`(model);
+  const expression = rsx<boolean>('a instanceof type')(model);
   try {
     // Wait until the expression has been resolved (has a value)
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);
@@ -1657,7 +1653,7 @@ export const run = (async () => {
     b: 3,
   };
 
-  const expression = rsx<boolean>`a < b`(model);
+  const expression = rsx<boolean>('a < b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1706,7 +1702,7 @@ export const run = (async () => {
     b: 3,
   };
 
-  const expression = rsx<boolean>`a <= b`(model);
+  const expression = rsx<boolean>('a <= b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1755,7 +1751,7 @@ export const run = (async () => {
     b: true,
   };
 
-  const expression = rsx<boolean>`a && b`(model);
+  const expression = rsx<boolean>('a && b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1803,7 +1799,7 @@ export const run = (async () => {
     a: false,
   };
 
-  const expression = rsx<boolean>`!a`(model);
+  const expression = rsx<boolean>('!a')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1845,7 +1841,7 @@ export const run = (async () => {
     b: false,
   };
 
-  const expression = rsx<boolean>`a || b`(model);
+  const expression = rsx<boolean>('a || b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1904,7 +1900,7 @@ export const run = (async () => {
       },
     };
 
-    const expression = rsx<number>`a.b.c`(model);
+    const expression = rsx<number>('a.b.c')(model);
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -1978,7 +1974,7 @@ export const run = (async () => {
       x: { y: 1 },
     };
 
-    const expression = rsx<number>`a.b[1].c.d`(model);
+    const expression = rsx<number>('a.b[1].c.d')(model);
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -2072,7 +2068,7 @@ export const run = (async () => {
       },
     };
 
-    const expression = rsx<number>`a.b['b'].c.d`(model);
+    const expression = rsx<number>(`a.b['b'].c.d`)(model);
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -2160,8 +2156,9 @@ export const run = (async () => {
       },
     };
 
-    const expression =
-      rsx<string>`a.b.mail(message, subject).messageWithSubject`(model);
+    const expression = rsx<string>(
+      'a.b.mail(message, subject).messageWithSubject',
+    )(model);
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -2230,7 +2227,7 @@ export const run = (async () => {
       },
     };
 
-    const expression = rsx<number>`a.b.c.d`(model);
+    const expression = rsx<number>('a.b.c.d')(model);
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -2304,7 +2301,7 @@ export const run = (async () => {
       },
     };
 
-    const expression = rsx<number>`a.b.c.d`(model);
+    const expression = rsx<number>('a.b.c.d')(model);
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -2350,7 +2347,7 @@ export const run = (async () => {
     b: 3,
   };
 
-  const expression = rsx<number>`a * b`(model);
+  const expression = rsx<number>('a * b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2415,7 +2412,7 @@ export const run = (async () => {
     value: 10,
   };
 
-  const expression = rsx<Value | Add10>`new type(value)`(model);
+  const expression = rsx<Value | Add10>('new type(value)')(model);
 
   function print(instance: unknown): void {
     console.log(Type.getConstructorName(instance));
@@ -2469,7 +2466,7 @@ export const run = (async () => {
     b: 10,
   };
 
-  const expression = rsx<number>`a ?? b`(model);
+  const expression = rsx<number>('a ?? b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2530,7 +2527,7 @@ export const run = (async () => {
     y: 20,
   };
 
-  const expression = rsx<{ a: number; b: number }>`({ a: x, b: y })`(model);
+  const expression = rsx<{ a: number; b: number }>('({ a: x, b: y })')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2579,7 +2576,7 @@ export const run = (async () => {
     b: 2,
   };
 
-  const expression = rsx<number>`a % b`(model);
+  const expression = rsx<number>('a % b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2631,7 +2628,7 @@ export const run = (async () => {
     },
   };
 
-  const expression = rsx<number>`(setB(value), b)`(model);
+  const expression = rsx<number>('(setB(value), b)')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2682,7 +2679,7 @@ export const run = (async () => {
     b: 2 as string | number,
   };
 
-  const expression = rsx<boolean>`a === b`(model);
+  const expression = rsx<boolean>('a === b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2731,7 +2728,7 @@ export const run = (async () => {
     b: 2 as string | number,
   };
 
-  const expression = rsx<boolean>`a !== b`(model);
+  const expression = rsx<boolean>('a !== b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2780,7 +2777,7 @@ export const run = (async () => {
     b: 3,
   };
 
-  const expression = rsx<number>`a - b`(model);
+  const expression = rsx<number>('a - b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2828,7 +2825,7 @@ export const run = (async () => {
     message: 'hi',
   };
 
-  const expression = rsx<string>`\`Say \${message}\``(model);
+  const expression = rsx<string>('`Say ${message}`')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2872,7 +2869,7 @@ export const run = (async () => {
     a: ['1', 1],
   };
 
-  const expression = rsx<string>`typeof a[index]`(model);
+  const expression = rsx<string>('typeof a[index]')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2913,7 +2910,7 @@ export const run = (async () => {
     value: 1,
   };
 
-  const expression = rsx<number>`-value`(model);
+  const expression = rsx<number>('-value')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2954,7 +2951,7 @@ export const run = (async () => {
     value: '2',
   };
 
-  const expression = rsx<number>`+value`(model);
+  const expression = rsx<number>('+value')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)

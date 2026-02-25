@@ -31,7 +31,7 @@ describe('Array expression tests', () => {
   });
 
   it('type', () => {
-    expression = rsx`[1,2]`({});
+    expression = rsx('[1,2]')({});
 
     expect(expression.type).toEqual(ExpressionType.Array);
   });
@@ -41,7 +41,7 @@ describe('Array expression tests', () => {
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
 
-    expression = rsx`[1,2]`({});
+    expression = rsx('[1,2]')({});
 
     const clonedExpression = expression.clone();
 
@@ -65,7 +65,7 @@ describe('Array expression tests', () => {
   });
 
   it('will emit change event for initial value: [1, 2]', async () => {
-    expression = rsx`[1,2]`({});
+    expression = rsx('[1,2]')({});
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
     )) as IExpression;
@@ -75,7 +75,7 @@ describe('Array expression tests', () => {
   });
 
   it('will emit change event for initial value: [1, ...[2, 3]]', async () => {
-    expression = rsx`[1, ...[2, 3]]`({});
+    expression = rsx('[1, ...[2, 3]]')({});
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -90,7 +90,7 @@ describe('Array expression tests', () => {
       array: [2, 3],
     };
 
-    expression = rsx`[1, ...array]`(model);
+    expression = rsx('[1, ...array]')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -107,7 +107,7 @@ describe('Array expression tests', () => {
     const model = {
       array: [{ value: 2 }, { value: 3 }],
     };
-    expression = rsx`[1, ...array]`(model);
+    expression = rsx('[1, ...array]')(model);
 
     expect(model.array[0]).not.isWritableProperty('value');
     expect(model.array[1]).not.isWritableProperty('value');
@@ -131,7 +131,7 @@ describe('Array expression tests', () => {
       },
     );
 
-    expression = rsx`[1, ...array]`(model, indexWatchRule);
+    expression = rsx('[1, ...array]')(model, indexWatchRule);
 
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 

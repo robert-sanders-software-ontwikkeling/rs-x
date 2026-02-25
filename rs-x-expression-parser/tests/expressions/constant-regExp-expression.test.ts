@@ -30,7 +30,7 @@ describe('ConstantRegExpExpression tests', () => {
   });
 
   it('type', () => {
-    expression = rsx`/ab+c/i`({});
+    expression = rsx('/ab+c/i')({});
 
     expect(expression.type).toEqual(ExpressionType.RegExp);
   });
@@ -39,7 +39,7 @@ describe('ConstantRegExpExpression tests', () => {
     const services: IExpressionServices = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
-    expression = expression = rsx`/ab+c/i`({});
+    expression = expression = rsx('/ab+c/i')({});
 
     const clonedExpression = expression.clone();
 
@@ -63,7 +63,7 @@ describe('ConstantRegExpExpression tests', () => {
   });
 
   it('will emit change event for initial value', async () => {
-    expression = expression = rsx`/ab+c/i`({});
+    expression = expression = rsx('/ab+c/i')({});
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},

@@ -41,7 +41,7 @@ const model = {
   b: 20,
 };
 
-const expression = rsx`a + b`(model);
+const expression = rsx('a + b')(model);
 
 expression.changed.subscribe(() => {
   console.log(expression.value);

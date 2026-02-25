@@ -31,7 +31,7 @@ describe('BitwiseXorExpression tests', () => {
 
   it('type', () => {
     const model = { a: 5, b: 3 };
-    expression = rsx`a ^ b`(model);
+    expression = rsx('a ^ b')(model);
 
     expect(expression.type).toEqual(ExpressionType.BitwiseXor);
   });
@@ -41,7 +41,7 @@ describe('BitwiseXorExpression tests', () => {
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
     const model = { a: 5, b: 3 };
-    expression = rsx`a ^ b`(model);
+    expression = rsx('a ^ b')(model);
 
     const clonedExpression = expression.clone();
 
@@ -66,7 +66,7 @@ describe('BitwiseXorExpression tests', () => {
 
   it('will emit change event for initial value', async () => {
     const model = { a: 5, b: 3 };
-    expression = rsx`a ^ b`(model);
+    expression = rsx('a ^ b')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -83,7 +83,7 @@ describe('BitwiseXorExpression tests', () => {
       },
       c: 3,
     };
-    expression = rsx`a.b ^ c`(model);
+    expression = rsx('a.b ^ c')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});

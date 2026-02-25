@@ -35,7 +35,7 @@ describe('TypeofExpression tests', () => {
       a: ['1', 1],
     };
 
-    expression = rsx`typeof a[index]`(model);
+    expression = rsx('typeof a[index]')(model);
     expect(expression.type).toEqual(ExpressionType.Typeof);
   });
 
@@ -47,7 +47,7 @@ describe('TypeofExpression tests', () => {
       index: 0,
       a: ['1', 1],
     };
-    expression = rsx`typeof a[index]`(model);
+    expression = rsx('typeof a[index]')(model);
 
     const clonedExpression = expression.clone();
 
@@ -75,7 +75,7 @@ describe('TypeofExpression tests', () => {
       index: 0,
       a: ['1', 1],
     };
-    expression = rsx`typeof a[index]`(model);
+    expression = rsx('typeof a[index]')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -90,7 +90,7 @@ describe('TypeofExpression tests', () => {
       index: 0,
       a: ['1', 1],
     };
-    expression = rsx`typeof a[index]`(model);
+    expression = rsx('typeof a[index]')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});

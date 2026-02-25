@@ -31,7 +31,7 @@ describe('LogicalAndExpression tests', () => {
 
   it('type', () => {
     const model = { a: true, b: true };
-    expression = rsx`a && b`(model);
+    expression = rsx('a && b')(model);
 
     expect(expression.type).toEqual(ExpressionType.And);
   });
@@ -41,7 +41,7 @@ describe('LogicalAndExpression tests', () => {
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
     const model = { a: true, b: true };
-    expression = rsx`a && b`(model);
+    expression = rsx('a && b')(model);
 
     const clonedExpression = expression.clone();
 
@@ -66,7 +66,7 @@ describe('LogicalAndExpression tests', () => {
 
   it('will emit change event for initial value', async () => {
     const model = { a: true, b: true };
-    expression = rsx`a && b`(model);
+    expression = rsx('a && b')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -83,7 +83,7 @@ describe('LogicalAndExpression tests', () => {
       },
       c: true,
     };
-    expression = rsx`a.b && c`(model);
+    expression = rsx('a.b && c')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});

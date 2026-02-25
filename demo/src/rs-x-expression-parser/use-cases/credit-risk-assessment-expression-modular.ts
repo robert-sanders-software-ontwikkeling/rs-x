@@ -31,25 +31,25 @@ export const run = (async () => {
     }),
   };
 
-  const basePersonalRisk = rsx`
+  const basePersonalRisk = rsx(`
     (credit.score < 600 ? 0.4 : 0.1) +
     (credit.outstandingDebt / customer.income) * 0.6 -
     (customer.employmentYears * 0.03)     
-  `(riskModel);
+  `)(riskModel);
 
-  const ageBasedRiskAdjustment = rsx`
+  const ageBasedRiskAdjustment = rsx(`
     customer.age < 25 ? 0.15 :
     customer.age < 35 ? 0.05 :
     customer.age < 55 ? 0.00 :
     0.08
-  `(riskModel);
+  `)(riskModel);
 
-  const marketRisk = rsx`
+  const marketRisk = rsx(`
     (risk.volatilityIndex * 0.5) +
     (risk.recessionProbability * 0.5)
-  `(riskModel);
+  `)(riskModel);
 
-  const interestRateImpact = rsx`market.baseInterestRate * 2`(riskModel);
+  const interestRateImpact = rsx('market.baseInterestRate * 2')(riskModel);
 
   const riskScoreModel = {
     basePersonalRisk,
@@ -58,12 +58,12 @@ export const run = (async () => {
     interestRateImpact,
   };
 
-  const riskScore = rsx`
+  const riskScore = rsx(`
     basePersonalRisk + 
     ageBasedRiskAdjustment +
     marketRisk + 
     interestRateImpact
-  `(riskScoreModel);
+  `)(riskScoreModel);
 
   const riskClassificationModel = {
     riskScore,
@@ -73,13 +73,13 @@ export const run = (async () => {
     },
   };
 
-  const riskClassification = rsx`
+  const riskClassification = rsx(`
     riskScore >= thresholds.highRisk
       ? 'HIGH'
       : riskScore >= thresholds.mediumRisk
           ? 'MEDIUM'
           : 'LOW'
-    `(riskClassificationModel);
+    `)(riskClassificationModel);
 
   console.log('Initial risk: ');
   const changeSubscription = riskClassification.changed.subscribe(() => {

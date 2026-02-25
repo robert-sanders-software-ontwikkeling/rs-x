@@ -41,7 +41,7 @@ describe('ExpressionChangeTracker tests', () => {
       b: 30,
     };
 
-    expression = rsx`a + b`(model);
+    expression = rsx('a + b')(model);
 
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);
   });

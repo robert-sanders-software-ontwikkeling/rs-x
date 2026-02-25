@@ -36,7 +36,7 @@ describe('InExpression tests', () => {
       },
     };
 
-    expression = rsx`"hello" in b`(model);
+    expression = rsx('"hello" in b')(model);
 
     expect(expression.type).toEqual(ExpressionType.In);
   });
@@ -50,7 +50,7 @@ describe('InExpression tests', () => {
         hello: 'hi',
       },
     };
-    expression = rsx`"hello" in b`(model);
+    expression = rsx('"hello" in b')(model);
 
     const clonedExpression = expression.clone();
 
@@ -79,7 +79,7 @@ describe('InExpression tests', () => {
         hello: 'hi',
       },
     };
-    expression = rsx`"hello" in b`(model);
+    expression = rsx('"hello" in b')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -96,7 +96,7 @@ describe('InExpression tests', () => {
       },
     };
 
-    expression = rsx`"x" in b`(model);
+    expression = rsx('"x" in b')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -113,7 +113,7 @@ describe('InExpression tests', () => {
         hello: 'hi',
       },
     };
-    expression = rsx`propertyName in b`(model);
+    expression = rsx('propertyName in b')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});

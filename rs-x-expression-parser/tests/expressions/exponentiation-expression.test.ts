@@ -31,7 +31,7 @@ describe('ExponentiationExpression tests', () => {
 
   it('type', () => {
     const model = { a: 2, b: 3 };
-    expression = rsx`a ** b`(model);
+    expression = rsx('a ** b')(model);
 
     expect(expression.type).toEqual(ExpressionType.Exponentiation);
   });
@@ -41,7 +41,7 @@ describe('ExponentiationExpression tests', () => {
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
     const model = { a: 2, b: 3 };
-    expression = rsx`a ** b`(model);
+    expression = rsx('a ** b')(model);
 
     const clonedExpression = expression.clone();
 
@@ -66,7 +66,7 @@ describe('ExponentiationExpression tests', () => {
 
   it('will emit change event for initial value', async () => {
     const model = { a: 2, b: 3 };
-    expression = rsx`a ** b`(model);
+    expression = rsx('a ** b')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -83,7 +83,7 @@ describe('ExponentiationExpression tests', () => {
       },
       c: 3,
     };
-    expression = rsx`a.b ** c`(model);
+    expression = rsx('a.b ** c')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});

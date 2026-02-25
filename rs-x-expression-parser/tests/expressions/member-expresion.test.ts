@@ -39,7 +39,7 @@ describe('Member expression tests', () => {
 
   it('type', () => {
     const model = { a: { b: 1 } };
-    expression = rsx`a.b`(model);
+    expression = rsx('a.b')(model);
     expect(expression.type).toEqual(ExpressionType.Member);
   });
 
@@ -49,7 +49,7 @@ describe('Member expression tests', () => {
     );
 
     const model = { a: { b: 1 } };
-    expression = rsx`a.b`(model);
+    expression = rsx('a.b')(model);
 
     const clonedExpression = expression.clone();
 
@@ -77,7 +77,7 @@ describe('Member expression tests', () => {
       const model = {
         array: [11, 21, 31, 41, 51],
       };
-      expression = rsx`array[1]`(model);
+      expression = rsx('array[1]')(model);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
         () => {},
@@ -97,7 +97,7 @@ describe('Member expression tests', () => {
         },
       };
 
-      expression = rsx`nestedA.nestedB.array[a + 1]`(model);
+      expression = rsx('nestedA.nestedB.array[a + 1]')(model);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
         () => {},
@@ -112,7 +112,7 @@ describe('Member expression tests', () => {
         index: 0,
         a: ['1', 1],
       };
-      expression = rsx`a[index]`(model);
+      expression = rsx('a[index]')(model);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
         () => {},
@@ -127,7 +127,7 @@ describe('Member expression tests', () => {
         index: 0,
         a: ['1', 1],
       };
-      expression = rsx`a[index]`(model);
+      expression = rsx('a[index]')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -152,7 +152,7 @@ describe('Member expression tests', () => {
         },
       };
 
-      expression = rsx`nestedA.nestedB.array[a + 1]`(model);
+      expression = rsx('nestedA.nestedB.array[a + 1]')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -175,7 +175,7 @@ describe('Member expression tests', () => {
         },
       };
 
-      expression = rsx`nestedA.nestedB.array[a + 1]`(model);
+      expression = rsx('nestedA.nestedB.array[a + 1]')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -200,7 +200,7 @@ describe('Member expression tests', () => {
         },
       };
 
-      expression = rsx`nestedA.nestedB.array[a + 1]`(model);
+      expression = rsx('nestedA.nestedB.array[a + 1]')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -226,7 +226,7 @@ describe('Member expression tests', () => {
         ]),
       };
 
-      expression = rsx`map["b"]`(model);
+      expression = rsx('map["b"]')(model);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
         emptyFunction,
@@ -248,7 +248,7 @@ describe('Member expression tests', () => {
         },
       };
 
-      expression = rsx`nestedA.map[key]`(model);
+      expression = rsx('nestedA.map[key]')(model);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
         emptyFunction,
@@ -270,7 +270,7 @@ describe('Member expression tests', () => {
         },
       };
 
-      expression = rsx`nestedA.map[key]`(model);
+      expression = rsx('nestedA.map[key]')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(emptyFunction);
@@ -295,7 +295,7 @@ describe('Member expression tests', () => {
         },
       };
 
-      expression = rsx`nestedA.map[key]`(model);
+      expression = rsx('nestedA.map[key]')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -321,7 +321,7 @@ describe('Member expression tests', () => {
           ]),
         },
       };
-      expression = rsx`nestedA.map[key]`(model);
+      expression = rsx('nestedA.map[key]')(model);
 
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
@@ -354,7 +354,7 @@ describe('Member expression tests', () => {
           ]),
         },
       };
-      expression = rsx`nestedA.map[key]`(model);
+      expression = rsx('nestedA.map[key]')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -383,7 +383,7 @@ describe('Member expression tests', () => {
           },
         }),
       };
-      expression = rsx`x.y.z`(model);
+      expression = rsx('x.y.z')(model);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
         () => {},
@@ -402,7 +402,7 @@ describe('Member expression tests', () => {
         }),
       };
 
-      expression = rsx`x.y.z`(model);
+      expression = rsx('x.y.z')(model);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
         emptyFunction,
@@ -421,7 +421,7 @@ describe('Member expression tests', () => {
         }),
       };
 
-      expression = rsx`x.y.z`(model);
+      expression = rsx('x.y.z')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -445,7 +445,7 @@ describe('Member expression tests', () => {
       const model = {
         x: of(nestedModel),
       };
-      expression = rsx`x.y.z`(model);
+      expression = rsx('x.y.z')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -466,7 +466,7 @@ describe('Member expression tests', () => {
           },
         }),
       };
-      expression = rsx`x.y.z`(model);
+      expression = rsx('x.y.z')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -493,7 +493,7 @@ describe('Member expression tests', () => {
           }),
         },
       };
-      const expression = rsx`a.b.c.d`(model);
+      const expression = rsx('a.b.c.d')(model);
 
       await new WaitForEvent(expression, 'changed').wait(emptyFunction);
       expect(expression.value).toEqual(20);
@@ -533,7 +533,7 @@ describe('Member expression tests', () => {
         }),
       };
 
-      expression = rsx`x.y.z`(model);
+      expression = rsx('x.y.z')(model);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
         () => {},
@@ -552,7 +552,7 @@ describe('Member expression tests', () => {
         }),
       };
 
-      expression = rsx`x.y.z`(model);
+      expression = rsx('x.y.z')(model);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
         () => {},
@@ -571,7 +571,7 @@ describe('Member expression tests', () => {
         }),
       };
 
-      expression = rsx`x.y.z`(model);
+      expression = rsx('x.y.z')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -598,7 +598,7 @@ describe('Member expression tests', () => {
           }),
         },
       };
-      expression = rsx`a.b.c.d`(model);
+      expression = rsx('a.b.c.d')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -639,7 +639,7 @@ describe('Member expression tests', () => {
         },
         x: { y: 1 },
       };
-      expression = rsx`a.b[1].c.d`(model);
+      expression = rsx('a.b[1].c.d')(model);
 
       await new WaitForEvent(expression, 'changed').wait(() => {});
 
@@ -664,7 +664,7 @@ describe('Member expression tests', () => {
         },
         x: { y: 1 },
       };
-      expression = rsx`a.b[1].c.d`(model);
+      expression = rsx('a.b[1].c.d')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -709,7 +709,7 @@ describe('Member expression tests', () => {
         },
         x: { y: 1 },
       };
-      expression = rsx`a.b[1].c.d`(model);
+      expression = rsx('a.b[1].c.d')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(emptyFunction);
@@ -745,7 +745,7 @@ describe('Member expression tests', () => {
         },
         x: { y: 1 },
       };
-      expression = rsx`a.b[1].c.d`(model);
+      expression = rsx('a.b[1].c.d')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -777,7 +777,7 @@ describe('Member expression tests', () => {
         },
         x: { y: 1 },
       };
-      expression = rsx`a.b[1].c.d`(model);
+      expression = rsx('a.b[1].c.d')(model);
 
       await new WaitForEvent(expression, 'changed').wait(() => {});
 
@@ -850,7 +850,7 @@ describe('Member expression tests', () => {
         },
       };
 
-      expression = rsx`a.b.mail(message, subject).messageWithSubject`(model);
+      expression = rsx('a.b.mail(message, subject).messageWithSubject')(model);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
         emptyFunction,
@@ -874,7 +874,7 @@ describe('Member expression tests', () => {
         },
       };
 
-      expression = rsx`a.b.mail(message, subject).messageWithSubject`(model);
+      expression = rsx('a.b.mail(message, subject).messageWithSubject')(model);
 
       await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
@@ -895,7 +895,7 @@ describe('Member expression tests', () => {
         }),
       };
 
-      expression = rsx`parameters.a + parameters.b`(model);
+      expression = rsx('parameters.a + parameters.b')(model);
 
       await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
@@ -910,7 +910,7 @@ describe('Member expression tests', () => {
         }),
       };
 
-      expression = rsx`parameters.a + parameters.b`(model);
+      expression = rsx('parameters.a + parameters.b')(model);
 
       await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
@@ -943,7 +943,7 @@ describe('Member expression tests', () => {
         (index === 'c' && target === model.a.b),
     );
 
-    expression = rsx`a.b`(model, indexWatchRule);
+    expression = rsx('a.b')(model, indexWatchRule);
 
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
@@ -966,7 +966,7 @@ describe('Member expression tests', () => {
       },
       f: 40,
     };
-    expression = rsx`a.b`(model);
+    expression = rsx('a.b')(model);
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
     expect(model).isWritableProperty('a');
@@ -990,7 +990,7 @@ describe('Member expression tests', () => {
     };
 
     const indexWatchRule = new IndexWatchRuleMock(truePredicate);
-    expression = rsx`a.b`(model, indexWatchRule);
+    expression = rsx('a.b')(model, indexWatchRule);
 
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
@@ -1023,11 +1023,11 @@ describe('Member expression tests', () => {
       f: 40,
     };
 
-    const expression1 = rsx`a.b`(model);
+    const expression1 = rsx('a.b')(model);
     await new WaitForEvent(expression1, 'changed').wait(emptyFunction);
-    const expression2 = rsx`a.b`(model);
+    const expression2 = rsx('a.b')(model);
     await new WaitForEvent(expression2, 'changed').wait(emptyFunction);
-    const expression3 = rsx`c`(model.a.b);
+    const expression3 = rsx('c')(model.a.b);
     await new WaitForEvent(expression3, 'changed').wait(emptyFunction);
 
     expect(model).isWritableProperty('a');

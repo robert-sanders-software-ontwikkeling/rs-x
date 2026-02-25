@@ -31,7 +31,7 @@ describe('IdentifierExpression tests', () => {
 
   it('type', () => {
     const model = { a: 1 };
-    expression = rsx`a`(model);
+    expression = rsx('a')(model);
 
     expect(expression.type).toEqual(ExpressionType.Identifier);
   });
@@ -41,7 +41,7 @@ describe('IdentifierExpression tests', () => {
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
     const model = { a: 1 };
-    expression = rsx`a`(model);
+    expression = rsx('a')(model);
 
     const clonedExpression = expression.clone();
 
@@ -66,7 +66,7 @@ describe('IdentifierExpression tests', () => {
 
   it('will emit change event for initial value', async () => {
     const model = { a: 1 };
-    expression = rsx`a`(model);
+    expression = rsx('a')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -78,7 +78,7 @@ describe('IdentifierExpression tests', () => {
 
   it('will emit change event when identifier value changes', async () => {
     const model = { a: 1 };
-    expression = rsx`a`(model);
+    expression = rsx('a')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});

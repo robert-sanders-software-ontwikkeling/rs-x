@@ -30,7 +30,7 @@ describe('ConstantNullExpression tests', () => {
   });
 
   it('type', () => {
-    expression = rsx`null`({});
+    expression = rsx('null')({});
 
     expect(expression.type).toEqual(ExpressionType.Null);
   });
@@ -40,7 +40,7 @@ describe('ConstantNullExpression tests', () => {
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
 
-    expression = rsx`null`({});
+    expression = rsx('null')({});
 
     const clonedExpression = expression.clone();
 
@@ -64,7 +64,7 @@ describe('ConstantNullExpression tests', () => {
   });
 
   it('will emit change event for initial value', async () => {
-    expression = rsx`null`({});
+    expression = rsx('null')({});
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},

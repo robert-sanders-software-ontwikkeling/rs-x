@@ -38,9 +38,9 @@ describe('Expression observer tests', () => {
       c: 40,
       aPlusB: undefined,
     };
-    context.aPlusB = rsx`a + b`(context);
+    context.aPlusB = rsx('a + b')(context);
 
-    const largerThanExpression = rsx`aPlusB > c`(context);
+    const largerThanExpression = rsx('aPlusB > c')(context);
 
     await new WaitForEvent(largerThanExpression, 'changed').wait(emptyFunction);
 
@@ -60,8 +60,8 @@ describe('Expression observer tests', () => {
       aPlusB: undefined,
     };
 
-    context.aPlusB = rsx`a + b`(context);
-    const largerThanExpression = rsx`aPlusB > c`(context);
+    context.aPlusB = rsx('a + b')(context);
+    const largerThanExpression = rsx('aPlusB > c')(context);
 
     await new WaitForEvent(largerThanExpression, 'changed').wait(emptyFunction);
 

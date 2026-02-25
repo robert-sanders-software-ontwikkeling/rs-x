@@ -30,7 +30,7 @@ describe('ConstantBooleanExpression tests', () => {
   });
 
   it('type', () => {
-    expression = rsx`true`({});
+    expression = rsx('true')({});
 
     expect(expression.type).toEqual(ExpressionType.Boolean);
   });
@@ -39,7 +39,7 @@ describe('ConstantBooleanExpression tests', () => {
     const services: IExpressionServices = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
-    expression = rsx`true`({});
+    expression = rsx('true')({});
 
     const clonedExpression = expression.clone();
 
@@ -63,7 +63,7 @@ describe('ConstantBooleanExpression tests', () => {
   });
 
   it('will emit change event for initial value: true', async () => {
-    expression = rsx`true`({});
+    expression = rsx('true')({});
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -74,7 +74,7 @@ describe('ConstantBooleanExpression tests', () => {
   });
 
   it('will emit change event for initial value: false', async () => {
-    expression = rsx`false`({});
+    expression = rsx('false')({});
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},

@@ -30,7 +30,7 @@ describe('ConstantBigIntExpression tests', () => {
   });
 
   it('type', () => {
-    expression = rsx`9007199254740991n`({});
+    expression = rsx('9007199254740991n')({});
 
     expect(expression.type).toEqual(ExpressionType.BigInt);
   });
@@ -40,7 +40,7 @@ describe('ConstantBigIntExpression tests', () => {
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
 
-    expression = rsx`9007199254740991n`({});
+    expression = rsx('9007199254740991n')({});
 
     const clonedExpression = expression.clone();
 
@@ -64,7 +64,7 @@ describe('ConstantBigIntExpression tests', () => {
   });
 
   it('will emit change event for initial value', async () => {
-    expression = rsx`9007199254740991n`({});
+    expression = rsx('9007199254740991n')({});
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},

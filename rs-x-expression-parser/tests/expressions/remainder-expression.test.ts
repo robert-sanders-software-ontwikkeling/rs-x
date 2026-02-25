@@ -31,7 +31,7 @@ describe('RemainderExpression tests', () => {
 
   it('type', () => {
     const model = { a: 5, b: 2 };
-    expression = rsx`a % b`(model);
+    expression = rsx('a % b')(model);
 
     expect(expression.type).toEqual(ExpressionType.Remainder);
   });
@@ -41,7 +41,7 @@ describe('RemainderExpression tests', () => {
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
     const model = { a: 5, b: 2 };
-    expression = rsx`a % b`(model);
+    expression = rsx('a % b')(model);
 
     const clonedExpression = expression.clone();
 
@@ -66,7 +66,7 @@ describe('RemainderExpression tests', () => {
 
   it('will emit change event for initial value', async () => {
     const model = { a: 5, b: 2 };
-    expression = rsx`a % b`(model);
+    expression = rsx('a % b')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -78,7 +78,7 @@ describe('RemainderExpression tests', () => {
 
   it('will emit change event when operands changes', async () => {
     const model = { a: 4, b: 3 };
-    expression = rsx`a % b`(model);
+    expression = rsx('a % b')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});

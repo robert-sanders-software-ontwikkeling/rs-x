@@ -31,7 +31,7 @@ describe('BitwiseNotExpression tests', () => {
 
   it('type', () => {
     const model = { a: 5 };
-    expression = rsx`~a`(model);
+    expression = rsx('~a')(model);
 
     expect(expression.type).toEqual(ExpressionType.BitwiseNot);
   });
@@ -41,7 +41,7 @@ describe('BitwiseNotExpression tests', () => {
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
     const model = { a: 5 };
-    expression = rsx`~a`(model);
+    expression = rsx('~a')(model);
 
     const clonedExpression = expression.clone();
 
@@ -66,7 +66,7 @@ describe('BitwiseNotExpression tests', () => {
 
   it('will emit change event for initial value', async () => {
     const model = { a: 5 };
-    expression = rsx`~a`(model);
+    expression = rsx('~a')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -82,7 +82,7 @@ describe('BitwiseNotExpression tests', () => {
         b: 5,
       },
     };
-    expression = rsx`~a.b`(model);
+    expression = rsx('~a.b')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});

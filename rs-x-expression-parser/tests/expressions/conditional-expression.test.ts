@@ -31,7 +31,7 @@ describe('ConditionalExpression tests', () => {
 
   it('type', () => {
     const model = { a: 1, b: 2, c: 100, d: 200 };
-    expression = rsx`a > b ? c : d`(model);
+    expression = rsx('a > b ? c : d')(model);
 
     expect(expression.type).toEqual(ExpressionType.Conditional);
   });
@@ -41,7 +41,7 @@ describe('ConditionalExpression tests', () => {
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
     const model = { a: 10, b: 2, c: 100, d: 200 };
-    expression = rsx`a > b ? c : d`(model);
+    expression = rsx('a > b ? c : d')(model);
 
     const clonedExpression = expression.clone();
 
@@ -66,7 +66,7 @@ describe('ConditionalExpression tests', () => {
 
   it('will return consequent if condition is true', async () => {
     const model = { a: 10, b: 2, c: 100, d: 200 };
-    expression = rsx`a > b ? c : d`(model);
+    expression = rsx('a > b ? c : d')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -78,7 +78,7 @@ describe('ConditionalExpression tests', () => {
 
   it('will return alternate if condition is false', async () => {
     const model = { a: 1, b: 2, c: 100, d: 200 };
-    expression = rsx`a > b ? c : d`(model);
+    expression = rsx('a > b ? c : d')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -90,7 +90,7 @@ describe('ConditionalExpression tests', () => {
 
   it('will return emit change event when condition changes', async () => {
     const model = { a: 1, b: 2, c: 100, d: 200 };
-    expression = rsx`a > b ? c : d`(model);
+    expression = rsx('a > b ? c : d')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -107,7 +107,7 @@ describe('ConditionalExpression tests', () => {
 
   it('will emit change event if consequent changes', async () => {
     const model = { a: 10, b: 2, c: 100, d: 200 };
-    expression = rsx`a > b ? c : d`(model);
+    expression = rsx('a > b ? c : d')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -124,7 +124,7 @@ describe('ConditionalExpression tests', () => {
 
   it('will not emit change event if condition is true and changing alternate', async () => {
     const model = { a: 10, b: 2, c: 100, d: 200 };
-    expression = rsx`a > b ? c : d`(model);
+    expression = rsx('a > b ? c : d')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -140,7 +140,7 @@ describe('ConditionalExpression tests', () => {
 
   it('will emit change event if alternate changes', async () => {
     const model = { a: 1, b: 2, c: 100, d: 200 };
-    expression = rsx`a > b ? c : d`(model);
+    expression = rsx('a > b ? c : d')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -157,7 +157,7 @@ describe('ConditionalExpression tests', () => {
 
   it('will not emit change event if condition is false and changing consequent', async () => {
     const model = { a: 1, b: 2, c: 100, d: 200 };
-    expression = rsx`a > b ? c : d`(model);
+    expression = rsx('a > b ? c : d')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});

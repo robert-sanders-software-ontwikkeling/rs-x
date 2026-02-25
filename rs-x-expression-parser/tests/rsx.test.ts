@@ -19,20 +19,7 @@ describe('rsx (integration)', () => {
   it('creates an expression and evaluates correctly', () => {
     const model = { a: 1, b: 2 };
 
-    const expression = rsx<number>`a+b`(model);
+    const expression = rsx<number>('a+b')(model);
     expect(expression).toBeInstanceOf(AbstractExpression);
-  });
-
-  it('throws when interpolations are used', () => {
-    expect(() => {
-      rsx`a + ${1}`({ a: 1 });
-    }).toThrow('rsx`...` does not support interpolations');
-  });
-
-  it('throws when called with more than one string segment (should never happen without interpolation, but still guarded)', () => {
-    expect(() => {
-      const fake = ['a', 'b'] as unknown as TemplateStringsArray;
-      rsx(fake);
-    }).toThrow('rsx`...` does not support interpolations');
   });
 });

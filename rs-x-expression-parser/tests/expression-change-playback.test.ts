@@ -71,7 +71,7 @@ describe('ExpressionChangePlayback tests', () => {
       b: { c: 30 },
     };
 
-    expression = rsx`a + b.c`(model);
+    expression = rsx('a + b.c')(model);
 
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 

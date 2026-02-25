@@ -32,7 +32,7 @@ describe('UnaryNegationExpression tests', () => {
   it('type', () => {
     const model = { value: 1 };
 
-    expression = rsx`-value`(model);
+    expression = rsx('-value')(model);
 
     expect(expression.type).toEqual(ExpressionType.UnaryNegation);
   });
@@ -42,7 +42,7 @@ describe('UnaryNegationExpression tests', () => {
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
     const model = { value: 1 };
-    expression = rsx`-value`(model);
+    expression = rsx('-value')(model);
 
     const clonedExpression = expression.clone();
 
@@ -67,7 +67,7 @@ describe('UnaryNegationExpression tests', () => {
 
   it('will emit change event for initial value', async () => {
     const model = { value: 1 };
-    expression = rsx`-value`(model);
+    expression = rsx('-value')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -79,7 +79,7 @@ describe('UnaryNegationExpression tests', () => {
 
   it('will emit change event when operands changes', async () => {
     const model = { value: 1 };
-    expression = rsx`-value`(model);
+    expression = rsx('-value')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});

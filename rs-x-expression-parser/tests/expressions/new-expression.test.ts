@@ -37,7 +37,7 @@ describe('NewExpression tests', () => {
       type: Test,
       value: 10,
     };
-    expression = rsx`new type(value)`(model);
+    expression = rsx('new type(value)')(model);
 
     expect(expression.type).toEqual(ExpressionType.New);
   });
@@ -50,7 +50,7 @@ describe('NewExpression tests', () => {
       type: Test,
       value: 10,
     };
-    expression = rsx`new type(value)`(model);
+    expression = rsx('new type(value)')(model);
 
     const clonedExpression = expression.clone();
 
@@ -78,7 +78,7 @@ describe('NewExpression tests', () => {
       type: Test,
       value: 10,
     };
-    expression = rsx`new type(value)`(model);
+    expression = rsx('new type(value)')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -93,7 +93,7 @@ describe('NewExpression tests', () => {
       type: Test,
       value: 10,
     };
-    expression = rsx`new type(value)`(model);
+    expression = rsx('new type(value)')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});

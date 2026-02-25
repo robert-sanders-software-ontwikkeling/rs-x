@@ -32,7 +32,7 @@ describe('TemplateStringExpression tests', () => {
   it('type', () => {
     const model = { name: 'Robert' };
 
-    expression = rsx`\`Hello \${name}\``(model);
+    expression = rsx('`Hello ${name}`')(model);
     expect(expression.type).toEqual(ExpressionType.TemlateString);
   });
 
@@ -41,7 +41,7 @@ describe('TemplateStringExpression tests', () => {
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
     const model = { name: 'Robert' };
-    expression = rsx`\`Hello \${name}\``(model);
+    expression = rsx('`Hello ${name}`')(model);
 
     const clonedExpression = expression.clone();
 
@@ -66,7 +66,7 @@ describe('TemplateStringExpression tests', () => {
 
   it('will emit change event for initial value', async () => {
     const model = { name: 'Robert' };
-    expression = rsx`\`Hello \${name}\``(model);
+    expression = rsx('`Hello ${name}`')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -78,7 +78,7 @@ describe('TemplateStringExpression tests', () => {
 
   it('will emit change event when operands changes', async () => {
     const model = { name: 'Robert' };
-    expression = rsx`\`Hello \${name}\``(model);
+    expression = rsx('`Hello ${name}`')(model);
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 

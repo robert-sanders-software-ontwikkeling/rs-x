@@ -30,7 +30,7 @@ describe('ConstantNumberExpression tests', () => {
   });
 
   it('type', () => {
-    expression = rsx`100`({});
+    expression = rsx('100')({});
 
     expect(expression.type).toEqual(ExpressionType.Number);
   });
@@ -39,7 +39,7 @@ describe('ConstantNumberExpression tests', () => {
     const services: IExpressionServices = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
-    expression = rsx`100`({});
+    expression = rsx('100')({});
 
     const clonedExpression = expression.clone();
 
@@ -63,7 +63,7 @@ describe('ConstantNumberExpression tests', () => {
   });
 
   it('will emit change event for initial value', async () => {
-    expression = rsx`100`({});
+    expression = rsx('100')({});
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},

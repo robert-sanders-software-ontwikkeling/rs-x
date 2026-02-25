@@ -37,7 +37,7 @@ describe('SequenceExpression tests', () => {
         this.b = v;
       },
     };
-    expression = rsx`(setB(value), b)`(model);
+    expression = rsx('(setB(value), b)')(model);
 
     expect(expression.type).toEqual(ExpressionType.Sequence);
   });
@@ -53,7 +53,7 @@ describe('SequenceExpression tests', () => {
         this.b = v;
       },
     };
-    expression = rsx`(setB(value), b)`(model);
+    expression = rsx('(setB(value), b)')(model);
 
     const clonedExpression = expression.clone();
 
@@ -84,7 +84,7 @@ describe('SequenceExpression tests', () => {
         this.b = v;
       },
     };
-    expression = rsx`(setB(value), b)`(model);
+    expression = rsx('(setB(value), b)')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -102,7 +102,7 @@ describe('SequenceExpression tests', () => {
         this.b = v;
       },
     };
-    expression = rsx`(setB(value), b)`(model);
+    expression = rsx('(setB(value), b)')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});

@@ -35,7 +35,7 @@ export const run = (async () => {
     },
   };
 
-  const expression = rsx`(
+  const expression = rsx(`
       (
         // =========================
         // Numeric risk score
@@ -99,7 +99,7 @@ export const run = (async () => {
                 : 'LOW'
             )
         )
-    )`(riskModel);
+    `)(riskModel);
 
   console.log('Initial risk: ');
   const changeSubscription = expression.changed.subscribe(() => {

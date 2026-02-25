@@ -30,7 +30,7 @@ describe('ConstantStringExpression tests', () => {
   });
 
   it('type', () => {
-    expression = rsx`"hi"`({});
+    expression = rsx('"hi"')({});
 
     expect(expression.type).toEqual(ExpressionType.String);
   });
@@ -40,7 +40,7 @@ describe('ConstantStringExpression tests', () => {
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
 
-    expression = rsx`'hi'`({});
+    expression = rsx(`'hi'`)({});
 
     const clonedExpression = expression.clone();
 
@@ -64,13 +64,13 @@ describe('ConstantStringExpression tests', () => {
   });
 
   it('will return type "string" for template string without parameters ', () => {
-    expression = rsx`\`hi\``({});
+    expression = rsx('`hi`')({});
 
     expect(expression.type).toEqual(ExpressionType.String);
   });
 
   it('will emit change event for initial value', async () => {
-    expression = rsx`'hi'`({});
+    expression = rsx('"hi"')({});
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},

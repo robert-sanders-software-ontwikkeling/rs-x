@@ -33,7 +33,7 @@ describe('Expression with expression reference', () => {
   });
   it('initial value', async () => {
     const item = { a: 1 };
-    const itemExpression = rsx<number>`a`(item);
+    const itemExpression = rsx<number>('a')(item);
     const model: IModel = {
       items: [
         {
@@ -42,7 +42,7 @@ describe('Expression with expression reference', () => {
       ],
     };
 
-    expression = rsx<number>`items`(model);
+    expression = rsx<number>('items')(model);
 
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 

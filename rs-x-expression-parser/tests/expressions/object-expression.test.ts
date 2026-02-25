@@ -34,7 +34,7 @@ describe('ObjectExpression tests', () => {
       x: 10,
       y: 20,
     };
-    expression = rsx`({ a: x, b: y })`(model);
+    expression = rsx('({ a: x, b: y })')(model);
 
     expect(expression.type).toEqual(ExpressionType.Object);
   });
@@ -47,7 +47,7 @@ describe('ObjectExpression tests', () => {
       x: 10,
       y: 20,
     };
-    expression = rsx`({ a: x, b: y })`(model);
+    expression = rsx('({ a: x, b: y })')(model);
 
     const clonedExpression = expression.clone();
 
@@ -77,7 +77,7 @@ describe('ObjectExpression tests', () => {
       x: 10,
       y: 20,
     };
-    expression = rsx`({ a: x, b: y })`(model);
+    expression = rsx('({ a: x, b: y })')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -92,7 +92,7 @@ describe('ObjectExpression tests', () => {
       x: 10,
       y: 20,
     };
-    expression = rsx`({ a: x, b: y })`(model);
+    expression = rsx('({ a: x, b: y })')(model);
 
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
