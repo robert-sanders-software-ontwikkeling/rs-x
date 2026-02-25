@@ -15,7 +15,7 @@ export const run = (async () => {
     array: [1, 2],
   };
 
-  const expression = rsx<number[]>`[a, ...array, 100]`(model);
+  const expression = rsx<number[]>('[a, ...array, 100]')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)

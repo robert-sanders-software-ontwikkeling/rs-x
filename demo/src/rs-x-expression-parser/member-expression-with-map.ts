@@ -20,7 +20,7 @@ export const run = (async () => {
     },
   };
 
-  const expression = rsx<number>`a.b['b'].c.d`(model);
+  const expression = rsx<number>(`a.b['b'].c.d`)(model);
 
   try {
     // Wait until the expression has been resolved (has a value)

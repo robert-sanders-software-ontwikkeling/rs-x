@@ -54,7 +54,7 @@ RS-X will also provide **TypeScript and HTML language extensions** that parse ex
       },
     };
 
-    const expression = rsx<number>`a.b.c.d`(model);
+    const expression = rsx<number>('a.b.c.d')(model);
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -154,7 +154,7 @@ RS-X is actively evolving. The roadmap below shows **progress**, **planned featu
 - **TS Transformer / Plugin — ⚙️ Planned**
   - **Aim:** Provide **compile-time syntax validation** for RS-X expressions written in tagged template literals or lambda-like strings.
   - **Goal:** Offer **IntelliSense / autocomplete** for all properties on the provided context, preventing invalid identifiers from compiling.
-  - **Objective:** Automatically convert tagged template expressions (e.g., ``rsX`x + observable` ``) into RS-X expression trees at **compile time**.
+  - **Objective:** Automatically convert tagged template expressions (e.g., `rsx('x + observable') `) into RS-X expression trees at **compile time**.
   - **Impact:**
     - Enables **full TypeScript safety** for reactive expressions and prevents runtime errors.
     - Eliminates **runtime parsing**, resulting in **significant performance gains** in large or frequently updated reactive models.
@@ -171,15 +171,15 @@ RS-X is actively evolving. The roadmap below shows **progress**, **planned featu
     };
 
     // ✅ Correct expression — compiles and subscribes to changes
-    const expression1 = rsX`x + observable`(model);
+    const expression1 = rsx('x + observable')(model);
     expression1.change.subscribe(() => console.log(expression1.value));
 
     // ❌ Incorrect expression — will fail at compile time
-    // const expression2 = rsX`x + y`(model);
+    // const expression2 = rsx('x + y')(model);
     // Error: 'y' does not exist on model
 
     // ❌ Syntax error — will fail at compile time
-    // const expression3 = rsX`x + `();
+    // const expression3 = rsx('x + ')();
     // Error: incomplete expression
     ```
 

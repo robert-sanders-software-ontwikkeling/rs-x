@@ -26,7 +26,7 @@ export const run = (async () => {
     value: 10,
   };
 
-  const expression = rsx<Value | Add10>`new type(value)`(model);
+  const expression = rsx<Value | Add10>('new type(value)')(model);
 
   function print(instance: unknown): void {
     console.log(Type.getConstructorName(instance));

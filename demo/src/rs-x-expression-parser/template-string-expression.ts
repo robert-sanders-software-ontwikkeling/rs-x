@@ -9,7 +9,7 @@ export const run = (async () => {
     message: 'hi',
   };
 
-  const expression = rsx<string>`\`Say \${message}\``(model);
+  const expression = rsx<string>('`Say ${message}`')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)

@@ -9,7 +9,7 @@ export const run = (async () => {
     a: false,
   };
 
-  const expression = rsx<boolean>`!a`(model);
+  const expression = rsx<boolean>('!a')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)

@@ -15,7 +15,7 @@ export const run = (async () => {
     y: 20,
   };
 
-  const expression = rsx<{ a: number; b: number }>`({ a: x, b: y })`(model);
+  const expression = rsx<{ a: number; b: number }>('({ a: x, b: y })')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)

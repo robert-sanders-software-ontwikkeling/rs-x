@@ -10,7 +10,7 @@ export const run = (async () => {
     a: ['1', 1],
   };
 
-  const expression = rsx<string>`typeof a[index]`(model);
+  const expression = rsx<string>('typeof a[index]')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)

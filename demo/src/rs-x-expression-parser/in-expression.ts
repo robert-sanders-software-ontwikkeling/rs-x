@@ -17,7 +17,7 @@ export const run = (async () => {
     },
   };
 
-  const expression = rsx<boolean>`propertyName in b`(model);
+  const expression = rsx<boolean>('propertyName in b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)

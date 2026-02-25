@@ -12,7 +12,7 @@ export const run = (async () => {
     d: 200,
   };
 
-  const expression = rsx<number>`a > b ? c : d`(model);
+  const expression = rsx<number>('a > b ? c : d')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)

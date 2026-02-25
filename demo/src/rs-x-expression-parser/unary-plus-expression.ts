@@ -9,7 +9,7 @@ export const run = (async () => {
     value: '2',
   };
 
-  const expression = rsx<number>`+value`(model);
+  const expression = rsx<number>('+value')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)

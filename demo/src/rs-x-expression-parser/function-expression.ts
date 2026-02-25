@@ -13,7 +13,7 @@ export const run = (async () => {
     },
   };
 
-  const expression = rsx<number>`multiply(a, b)`(model);
+  const expression = rsx<number>('multiply(a, b)')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)

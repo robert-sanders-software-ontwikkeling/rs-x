@@ -10,7 +10,7 @@ export const run = (async () => {
     b: 2 as string | number,
   };
 
-  const expression = rsx<boolean>`a === b`(model);
+  const expression = rsx<boolean>('a === b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)

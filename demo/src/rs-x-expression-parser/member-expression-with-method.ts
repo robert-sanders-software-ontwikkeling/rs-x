@@ -24,9 +24,9 @@ export const run = (async () => {
     },
   };
 
-  const expression = rsx<string>`a.b.mail(message, subject).messageWithSubject`(
-    model,
-  );
+  const expression = rsx<string>(
+    'a.b.mail(message, subject).messageWithSubject',
+  )(model);
 
   try {
     // Wait until the expression has been resolved (has a value)

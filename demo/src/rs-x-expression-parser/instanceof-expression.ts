@@ -15,7 +15,7 @@ export const run = (async () => {
     a: new Date(),
   };
 
-  const expression = rsx<boolean>`a instanceof type`(model);
+  const expression = rsx<boolean>('a instanceof type')(model);
   try {
     // Wait until the expression has been resolved (has a value)
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);

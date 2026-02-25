@@ -9,7 +9,7 @@ export const run = (async () => {
     a: 5,
   };
 
-  const expression = rsx<number>`~a`(model);
+  const expression = rsx<number>('~a')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
