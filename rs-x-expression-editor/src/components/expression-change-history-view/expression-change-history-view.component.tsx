@@ -1,5 +1,5 @@
 // expression-change-history-view.component.tsx
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import {
   ExpressionType,
@@ -10,41 +10,31 @@ import {
 import { type IExpressionInfo } from '../../models/expression-info.interface';
 
 import { useExpressionChangeHistoryTracker } from './hooks/use-expression-change-history-tracker';
-import { useReemitSelectionOnHistoryChange } from './hooks/use-reemit-selection-on-history-change';
 
 import './expression-change-history-view.component.css';
 
 export interface IExpressionChangeHistoryViewProps {
   modelIndex: number;
   expressionIndex: number;
-
   expressionInfo: IExpressionInfo | undefined;
+  selectedChangeSetIndex: number;
 
-  /** persisted history update (oldest -> newest) */
   onHistoryChange: (
     modelIndex: number,
     expressionIndex: number,
     changes: IExpressionChangeHistory[][],
   ) => void;
 
-  /** persisted selection index (0..n-1, oldest -> newest). Use -1 for none. */
-  selectedChangeSetIndex: number;
-
-  /**
-   * SINGLE event: selection changed.
-   * selectedChangeSetIndex = 0..n-1 (oldest -> newest)
-   * items = selected batch items (for tree highlighting)
-   */
   onSelectionChanged: (
     modelIndex: number,
     expressionIndex: number,
     selectedChangeSetIndex: number,
     items: IExpressionChangeHistory[],
+    replay: boolean,
   ) => void;
 }
 
 type HistoryBatch = {
-  /** persisted index (0 oldest -> newest) */
   persistedIndex: number;
   items: IExpressionChangeHistory[];
 };
@@ -198,14 +188,6 @@ export const ExpressionChangeHistoryView: React.FC<
     onSelectionChanged,
   } = props;
 
-  const onHistoryChangeRef = useRef(onHistoryChange);
-  const onSelectionChangedRef = useRef(onSelectionChanged);
-
-  useEffect(() => {
-    onHistoryChangeRef.current = onHistoryChange;
-    onSelectionChangedRef.current = onSelectionChanged;
-  }, [onHistoryChange, onSelectionChanged]);
-
   const expression = expressionInfo?.expression;
   const version = expressionInfo?.version ?? 0;
 
@@ -241,19 +223,6 @@ export const ExpressionChangeHistoryView: React.FC<
     setExpandedPersistedIndex(() => clampedSelectedPersistedIndex);
   }, [clampedSelectedPersistedIndex]);
 
-  useReemitSelectionOnHistoryChange({
-    expressionInfo,
-    modelIndex,
-    expressionIndex,
-    version,
-    historyLength,
-    clampedSelectedPersistedIndex,
-    persistedHistory,
-    onSelectionChanged: (m, e, idx, items) => {
-      onSelectionChangedRef.current(m, e, idx, items);
-    },
-  });
-
   useExpressionChangeHistoryTracker({
     expressionInfo,
     expression,
@@ -268,7 +237,13 @@ export const ExpressionChangeHistoryView: React.FC<
     persistedIndex: number,
     items: IExpressionChangeHistory[],
   ) => {
-    onSelectionChanged(modelIndex, expressionIndex, persistedIndex, items);
+    onSelectionChanged(
+      modelIndex,
+      expressionIndex,
+      persistedIndex,
+      items,
+      true,
+    );
   };
 
   if (!expressionInfo) {

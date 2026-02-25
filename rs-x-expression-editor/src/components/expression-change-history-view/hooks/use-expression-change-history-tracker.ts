@@ -69,6 +69,7 @@ export function useExpressionChangeHistoryTracker(args: {
     expressionIndex: number,
     newestPersistedIndex: number,
     stack: IExpressionChangeHistory[],
+    replay: boolean,
   ) => void;
 }) {
   const {
@@ -164,22 +165,20 @@ export function useExpressionChangeHistoryTracker(args: {
       const nextHistory: IExpressionChangeHistory[][] = [...prevHistory, stack];
 
       defer(() => {
-        const mh = onHistoryChangeRef.current;
-        if (typeof mh === 'function') {
-          mh(modelIndexRef.current, expressionIndexRef.current, nextHistory);
-        }
+        onHistoryChangeRef.current(
+          modelIndexRef.current,
+          expressionIndexRef.current,
+          nextHistory,
+        );
 
         const newestPersistedIndex = Math.max(0, nextHistory.length - 1);
-
-        const sel = onSelectionChangedRef.current;
-        if (typeof sel === 'function') {
-          sel(
-            modelIndexRef.current,
-            expressionIndexRef.current,
-            newestPersistedIndex,
-            stack,
-          );
-        }
+        onSelectionChangedRef.current(
+          modelIndexRef.current,
+          expressionIndexRef.current,
+          newestPersistedIndex,
+          stack,
+          false,
+        );
       });
     });
 
