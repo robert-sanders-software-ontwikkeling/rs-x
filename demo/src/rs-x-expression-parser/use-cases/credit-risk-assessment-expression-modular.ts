@@ -1,17 +1,10 @@
 import { BehaviorSubject } from 'rxjs';
 
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   interface IRisk {
@@ -38,37 +31,25 @@ export const run = (async () => {
     }),
   };
 
-  const basePersonalRisk = expressionFactory.create(
-    riskModel,
-    `
-        (credit.score < 600 ? 0.4 : 0.1) +
-        (credit.outstandingDebt / customer.income) * 0.6 -
-        (customer.employmentYears * 0.03)     
-    `,
-  );
+  const basePersonalRisk = rsx(`
+    (credit.score < 600 ? 0.4 : 0.1) +
+    (credit.outstandingDebt / customer.income) * 0.6 -
+    (customer.employmentYears * 0.03)     
+  `)(riskModel);
 
-  const ageBasedRiskAdjustment = expressionFactory.create(
-    riskModel,
-    `
-        customer.age < 25 ? 0.15 :
-        customer.age < 35 ? 0.05 :
-        customer.age < 55 ? 0.00 :
-        0.08
-    `,
-  );
+  const ageBasedRiskAdjustment = rsx(`
+    customer.age < 25 ? 0.15 :
+    customer.age < 35 ? 0.05 :
+    customer.age < 55 ? 0.00 :
+    0.08
+  `)(riskModel);
 
-  const marketRisk = expressionFactory.create(
-    riskModel,
-    `
-        (risk.volatilityIndex * 0.5) +
-        (risk.recessionProbability * 0.5)
-    `,
-  );
+  const marketRisk = rsx(`
+    (risk.volatilityIndex * 0.5) +
+    (risk.recessionProbability * 0.5)
+  `)(riskModel);
 
-  const interestRateImpact = expressionFactory.create(
-    riskModel,
-    'market.baseInterestRate * 2',
-  );
+  const interestRateImpact = rsx('market.baseInterestRate * 2')(riskModel);
 
   const riskScoreModel = {
     basePersonalRisk,
@@ -77,15 +58,12 @@ export const run = (async () => {
     interestRateImpact,
   };
 
-  const riskScore = expressionFactory.create(
-    riskScoreModel,
-    `
-        basePersonalRisk + 
-        ageBasedRiskAdjustment +
-        marketRisk + 
-        interestRateImpact
-    `,
-  );
+  const riskScore = rsx(`
+    basePersonalRisk + 
+    ageBasedRiskAdjustment +
+    marketRisk + 
+    interestRateImpact
+  `)(riskScoreModel);
 
   const riskClassificationModel = {
     riskScore,
@@ -95,16 +73,13 @@ export const run = (async () => {
     },
   };
 
-  const riskClassification = expressionFactory.create(
-    riskClassificationModel,
-    `
-        riskScore >= thresholds.highRisk
-            ? 'HIGH'
-            : riskScore >= thresholds.mediumRisk
-                ? 'MEDIUM'
-                : 'LOW'
-    `,
-  );
+  const riskClassification = rsx(`
+    riskScore >= thresholds.highRisk
+      ? 'HIGH'
+      : riskScore >= thresholds.mediumRisk
+          ? 'MEDIUM'
+          : 'LOW'
+    `)(riskClassificationModel);
 
   console.log('Initial risk: ');
   const changeSubscription = riskClassification.changed.subscribe(() => {

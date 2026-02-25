@@ -1,6 +1,5 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import {
   ExpressionType,
@@ -12,16 +11,13 @@ import {
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../../lib/rsx';
 
 describe('StrictEqualityExpression tests', () => {
-  let expressionFactory: IExpressionFactory;
   let expression: IExpression | undefined;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
-    expressionFactory = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    );
   });
 
   afterAll(async () => {
@@ -34,8 +30,9 @@ describe('StrictEqualityExpression tests', () => {
   });
 
   it('type', () => {
-    const context = { a: 1, b: 2 };
-    expression = expressionFactory.create(context, 'a === b');
+    const model = { a: 1, b: 2 };
+    expression = rsx('a === b')(model);
+
     expect(expression.type).toEqual(ExpressionType.StrictEquality);
   });
 
@@ -43,8 +40,8 @@ describe('StrictEqualityExpression tests', () => {
     const services: IExpressionServices = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
-    const context = { a: 1, b: '1' };
-    expression = expressionFactory.create(context, 'a === b');
+    const model = { a: 1, b: '1' };
+    expression = rsx('a === b')(model);
 
     const clonedExpression = expression.clone();
 
@@ -55,7 +52,7 @@ describe('StrictEqualityExpression tests', () => {
 
       await new WaitForEvent(clonedExpression, 'changed').wait(() => {
         clonedExpression.bind({
-          rootContext: context,
+          rootContext: model,
           services,
         });
 
@@ -68,8 +65,8 @@ describe('StrictEqualityExpression tests', () => {
   });
 
   it('will emit change event for initial value: false', async () => {
-    const context = { a: 1, b: '1' };
-    expression = expressionFactory.create(context, 'a === b');
+    const model = { a: 1, b: '1' };
+    expression = rsx('a === b')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -80,8 +77,8 @@ describe('StrictEqualityExpression tests', () => {
   });
 
   it('will emit change event for initial value: true', async () => {
-    const context = { a: 1, b: 1 };
-    expression = expressionFactory.create(context, 'a === b');
+    const model = { a: 1, b: 1 };
+    expression = rsx('a === b')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -92,18 +89,19 @@ describe('StrictEqualityExpression tests', () => {
   });
 
   it('will emit change event when operands changes', async () => {
-    const context = {
+    const model = {
       a: 3,
       b: 2,
     };
-    expression = expressionFactory.create(context, 'a === b');
+    expression = rsx('a === b')(model);
+
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
     const actual = (await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      context.b = 3;
+      model.b = 3;
     })) as IExpression;
 
     expect(actual.value).toEqual(true);

@@ -1,6 +1,5 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import {
   ExpressionType,
@@ -12,16 +11,13 @@ import {
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../../lib/rsx';
 
 describe('FunctionExpression tests', () => {
-  let expressionFactory: IExpressionFactory;
   let expression: IExpression | undefined;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
-    expressionFactory = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    );
   });
 
   afterAll(async () => {
@@ -34,8 +30,9 @@ describe('FunctionExpression tests', () => {
   });
 
   it('type', () => {
-    const context = { a: 10, multiplWithTwo: (a: number) => 2 * a };
-    expression = expressionFactory.create(context, 'multiplWithTwo(a)');
+    const model = { a: 10, multiplWithTwo: (a: number) => 2 * a };
+    expression = rsx('multiplWithTwo(a)')(model);
+
     expect(expression.type).toEqual(ExpressionType.Function);
   });
 
@@ -43,8 +40,8 @@ describe('FunctionExpression tests', () => {
     const services: IExpressionServices = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
-    const context = { a: 10, multiplWithTwo: (a: number) => 2 * a };
-    expression = expressionFactory.create(context, 'multiplWithTwo(a)');
+    const model = { a: 10, multiplWithTwo: (a: number) => 2 * a };
+    expression = rsx('multiplWithTwo(a)')(model);
 
     const clonedExpression = expression.clone();
 
@@ -55,7 +52,7 @@ describe('FunctionExpression tests', () => {
 
       await new WaitForEvent(clonedExpression, 'changed').wait(() => {
         clonedExpression.bind({
-          rootContext: context,
+          rootContext: model,
           services,
         });
 
@@ -68,8 +65,8 @@ describe('FunctionExpression tests', () => {
   });
 
   it('method on root object', async () => {
-    const context = { a: 10, multiplWithTwo: (a: number) => 2 * a };
-    expression = expressionFactory.create(context, 'multiplWithTwo(a)');
+    const model = { a: 10, multiplWithTwo: (a: number) => 2 * a };
+    expression = rsx('multiplWithTwo(a)')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -80,7 +77,7 @@ describe('FunctionExpression tests', () => {
   });
 
   it('method on nested object', async () => {
-    const context = {
+    const model = {
       a: 10,
       b: {
         x: 10,
@@ -89,7 +86,8 @@ describe('FunctionExpression tests', () => {
         },
       },
     };
-    expression = expressionFactory.create(context, 'b.multiply(a)');
+
+    expression = rsx('b.multiply(a)')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -100,7 +98,7 @@ describe('FunctionExpression tests', () => {
   });
 
   it('computed method on nested object', async () => {
-    const context = {
+    const model = {
       a: 10,
       b: {
         methodName: 'multiply',
@@ -110,7 +108,8 @@ describe('FunctionExpression tests', () => {
         },
       },
     };
-    expression = expressionFactory.create(context, 'b[b.methodName](a)');
+
+    expression = rsx('b[b.methodName](a)')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -121,15 +120,17 @@ describe('FunctionExpression tests', () => {
   });
 
   it('method on root object: change event is emitted when arguments changes', async () => {
-    const context = { a: 10, multiplWithTwo: (a: number) => 2 * a };
-    expression = expressionFactory.create(context, 'multiplWithTwo(a)');
+    const model = { a: 10, multiplWithTwo: (a: number) => 2 * a };
+
+    expression = rsx('multiplWithTwo(a)')(model);
+
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
     const actual = (await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      context.a = 20;
+      model.a = 20;
     })) as IExpression;
 
     expect(actual.value).toEqual(40);
@@ -137,7 +138,7 @@ describe('FunctionExpression tests', () => {
   });
 
   it('computed method on nested object: change event is emitted when arguments changes', async () => {
-    const context = {
+    const model = {
       a: 10,
       b: {
         methodName: 'multiply',
@@ -147,12 +148,14 @@ describe('FunctionExpression tests', () => {
         },
       },
     };
-    expression = expressionFactory.create(context, 'b[b.methodName](a)');
+
+    expression = rsx('b[b.methodName](a)')(model);
+
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
-      context.a = 20;
+      model.a = 20;
     })) as IExpression;
 
     expect(actual.value).toEqual(200);
@@ -160,7 +163,7 @@ describe('FunctionExpression tests', () => {
   });
 
   it('computed method on nested object: change event is emitted when owner object is replaced', async () => {
-    const context = {
+    const model = {
       a: 10,
       b: {
         methodName: 'multiply',
@@ -170,12 +173,13 @@ describe('FunctionExpression tests', () => {
         },
       },
     };
-    expression = expressionFactory.create(context, 'b[b.methodName](a)');
+    expression = rsx('b[b.methodName](a)')(model);
+
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
-      context.b = {
+      model.b = {
         methodName: 'multiply',
         x: 30,
         multiply(a: number) {
@@ -189,7 +193,7 @@ describe('FunctionExpression tests', () => {
   });
 
   it('computed method on nested object: change event is emitted when changing method name', async () => {
-    const context = {
+    const model = {
       a: 10,
       b: {
         methodName: 'multiply',
@@ -202,12 +206,13 @@ describe('FunctionExpression tests', () => {
         },
       },
     };
-    expression = expressionFactory.create(context, 'b[b.methodName](a)');
+    expression = rsx('b[b.methodName](a)')(model);
+
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
-      context.b.methodName = 'add';
+      model.b.methodName = 'add';
     })) as IExpression;
 
     expect(actual.value).toEqual(20);

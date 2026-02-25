@@ -1,6 +1,5 @@
 import { InjectionContainer, Type, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import {
   ExpressionType,
@@ -12,16 +11,13 @@ import {
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../../lib/rsx';
 
 describe('InstanceofExpression tests', () => {
-  let expressionFactory: IExpressionFactory;
   let expression: IExpression | undefined;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
-    expressionFactory = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    );
   });
 
   afterAll(async () => {
@@ -34,11 +30,12 @@ describe('InstanceofExpression tests', () => {
   });
 
   it('type', () => {
-    const context = {
+    const model = {
       type: Date,
       a: new Date(),
     };
-    expression = expressionFactory.create(context, 'a instanceof type');
+    expression = rsx('a instanceof type')(model);
+
     expect(expression.type).toEqual(ExpressionType.Instanceof);
   });
 
@@ -46,11 +43,11 @@ describe('InstanceofExpression tests', () => {
     const services: IExpressionServices = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
-    const context = {
+    const model = {
       type: Date,
       a: new Date(),
     };
-    expression = expressionFactory.create(context, 'a instanceof type');
+    expression = rsx('a instanceof type')(model);
 
     const clonedExpression = expression.clone();
 
@@ -61,7 +58,7 @@ describe('InstanceofExpression tests', () => {
 
       await new WaitForEvent(clonedExpression, 'changed').wait(() => {
         clonedExpression.bind({
-          rootContext: context,
+          rootContext: model,
           services,
         });
 
@@ -74,11 +71,12 @@ describe('InstanceofExpression tests', () => {
   });
 
   it('will emit change event for initial value: true', async () => {
-    const context = {
+    const model = {
       type: Date,
       a: new Date(),
     };
-    expression = expressionFactory.create(context, 'a instanceof type');
+    expression = rsx('a instanceof type')(model);
+
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
     )) as IExpression;
@@ -88,11 +86,11 @@ describe('InstanceofExpression tests', () => {
   });
 
   it('will emit change event for initial value: true', async () => {
-    const context = {
+    const model = {
       type: String,
       a: new Date(),
     };
-    expression = expressionFactory.create(context, 'a instanceof type');
+    expression = rsx('a instanceof type')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -103,18 +101,19 @@ describe('InstanceofExpression tests', () => {
   });
 
   it('will emit change event when parameters changes', async () => {
-    const context = {
+    const model = {
       type: String.constructor,
       a: new Date(),
     };
-    expression = expressionFactory.create(context, 'a instanceof type');
+    expression = rsx('a instanceof type')(model);
+
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
     const actual = (await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      context.type = Type.cast(Date);
+      model.type = Type.cast(Date);
     })) as IExpression;
 
     expect(actual.value).toEqual(true);

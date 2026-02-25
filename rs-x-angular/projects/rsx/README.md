@@ -51,7 +51,7 @@ bootstrapApplication(App, {
 
 The `rsx` pipe enables binding RS-X expressions or strings to Angular templates and automatically updates the view whenever the underlying data changes. It transforms expressions into reactive values, subscribes to changes, triggers Angular change detection, and cleans up subscriptions when no longer needed. It supports both synchronous and asynchronous data sources.
 
-The value passed to the `rsx` pipe can be either an expression string or an expression tree. Expression trees are created by the expression factory. The `rsx` pipe also requires a model, as the expression tree is bound to that model to resolve the necessary data.
+The value passed to the `rsx(' pipe can be either an expression string or an expression tree. Expression trees are created by the expression factory. The ')rsx` pipe also requires a model, as the expression tree is bound to that model to resolve the necessary data.
 
 Example:
 

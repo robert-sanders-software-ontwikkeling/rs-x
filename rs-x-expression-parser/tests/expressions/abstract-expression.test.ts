@@ -2,23 +2,18 @@ import { BehaviorSubject } from 'rxjs';
 
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import { type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
-import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../../lib/rsx';
 
 describe('AbstractExpression tests', () => {
-  let expressionFactory: IExpressionFactory;
   let expression: IExpression | undefined;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
-    expressionFactory = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    );
   });
 
   afterAll(async () => {
@@ -31,7 +26,7 @@ describe('AbstractExpression tests', () => {
   });
 
   it('evaluate with constant expression', async () => {
-    const expression = expressionFactory.create({}, '1 + 2');
+    const expression = rsx<number>('1 + 2')({});
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -41,11 +36,11 @@ describe('AbstractExpression tests', () => {
   });
 
   it('evaluate with identifier', async () => {
-    const context = {
+    const model = {
       a: 10,
       b: 20,
     };
-    const expression = expressionFactory.create(context, 'a + b');
+    const expression = rsx<number>('a + b')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -55,10 +50,11 @@ describe('AbstractExpression tests', () => {
   });
 
   it('expression with observable', async () => {
-    const context = {
+    const model = {
       observable: new BehaviorSubject<number>(50),
     };
-    expression = expressionFactory.create(context, 'observable + 1');
+    const expression = rsx<number>('observable + 1')(model);
+
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
     )) as IExpression;
@@ -68,10 +64,10 @@ describe('AbstractExpression tests', () => {
   });
 
   it('expression with promise', async () => {
-    const context = {
+    const model = {
       promise: Promise.resolve(100),
     };
-    expression = expressionFactory.create(context, 'promise + 1');
+    const expression = rsx<number>('promise + 1')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -82,14 +78,14 @@ describe('AbstractExpression tests', () => {
   });
 
   it('expression with map index', async () => {
-    const context = {
+    const model = {
       map: new Map<string, number>([
         ['one', 1],
         ['two', 2],
         ['three', 3],
       ]),
     };
-    expression = expressionFactory.create(context, 'map["three"]');
+    const expression = rsx<number>('map["three"]')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -100,10 +96,10 @@ describe('AbstractExpression tests', () => {
   });
 
   it('expression with array index', async () => {
-    const context = {
+    const model = {
       array: [11, 21, 31, 41, 51],
     };
-    expression = expressionFactory.create(context, 'array[1]');
+    const expression = rsx<number>('array[1]')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -114,18 +110,19 @@ describe('AbstractExpression tests', () => {
   });
 
   it('will emit change event after changing identifier', async () => {
-    const context = {
+    const model = {
       a: 10,
       b: 20,
     };
-    expression = expressionFactory.create(context, 'a + b');
+    const expression = rsx<number>('a + b')(model);
+
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
     const actual = (await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      context.a = 200;
+      model.a = 200;
     })) as IExpression;
 
     expect(actual.value).toEqual(220);
@@ -133,10 +130,11 @@ describe('AbstractExpression tests', () => {
   });
 
   it('will emit change event after changing promise', async () => {
-    const context = {
+    const model = {
       promise: Promise.resolve(100),
     };
-    expression = expressionFactory.create(context, 'promise + 1');
+    const expression = rsx<number>('promise + 1')(model);
+
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
@@ -147,7 +145,7 @@ describe('AbstractExpression tests', () => {
     const actual = (await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      context.promise = Promise.resolve(200);
+      model.promise = Promise.resolve(200);
     })) as IExpression;
 
     expect(actual.value).toEqual(201);
@@ -155,17 +153,18 @@ describe('AbstractExpression tests', () => {
   });
 
   it('will emit change event after changing observable', async () => {
-    const context = {
+    const model = {
       observable: new BehaviorSubject<number>(50),
     };
-    expression = expressionFactory.create(context, 'observable + 1');
+    const expression = rsx<number>('observable + 1')(model);
+
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
     const actual = (await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      context.observable.next(200);
+      model.observable.next(200);
     })) as IExpression;
 
     expect(actual.value).toEqual(201);
@@ -173,17 +172,18 @@ describe('AbstractExpression tests', () => {
   });
 
   it('will emit change event after replacing observable', async () => {
-    const context = {
+    const model = {
       observable: new BehaviorSubject<number>(50),
     };
-    expression = expressionFactory.create(context, 'observable + 1');
+    const expression = rsx<number>('observable + 1')(model);
+
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
     const actual = (await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      context.observable = new BehaviorSubject(300);
+      model.observable = new BehaviorSubject(300);
     })) as IExpression;
 
     expect(actual.value).toEqual(301);
@@ -191,17 +191,18 @@ describe('AbstractExpression tests', () => {
   });
 
   it('will emit change event when changing array', async () => {
-    const context = {
+    const model = {
       array: [11, 21, 31, 41, 51],
     };
-    expression = expressionFactory.create(context, 'array');
+    const expression = rsx<number>('array')(model);
+
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
     const actual = (await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      context.array.push(61);
+      model.array.push(61);
     })) as IExpression;
 
     expect(actual.value).toEqual([11, 21, 31, 41, 51, 61]);
@@ -209,21 +210,22 @@ describe('AbstractExpression tests', () => {
   });
 
   it('will emit change event when changing map', async () => {
-    const context = {
+    const model = {
       map: new Map<string, number>([
         ['one', 1],
         ['two', 2],
         ['three', 3],
       ]),
     };
-    expression = expressionFactory.create(context, 'map');
+    const expression = rsx<number>('map')(model);
+
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
     const actual = (await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      context.map.set('four', 4);
+      model.map.set('four', 4);
     })) as IExpression;
 
     expect(actual.value).toDeepEqualCircular(
@@ -239,20 +241,22 @@ describe('AbstractExpression tests', () => {
   });
 
   it('will emit change event when promise changes', async () => {
-    const context = {
+    const model = {
       a: {
         b: Promise.resolve(3),
       },
       c: 2,
     };
-    expression = expressionFactory.create(context, 'a.b + c');
+
+    const expression = rsx<number>('a.b + c')(model);
+
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
     const actual = (await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      context.a.b = Promise.resolve(4);
+      model.a.b = Promise.resolve(4);
     })) as IExpression;
 
     expect(actual.value).toEqual(6);
@@ -260,20 +264,21 @@ describe('AbstractExpression tests', () => {
   });
 
   it('will emit change event when observable changes', async () => {
-    const context = {
+    const model = {
       a: {
         b: new BehaviorSubject(3),
       },
       c: 2,
     };
-    expression = expressionFactory.create(context, 'a.b + c');
+    const expression = rsx<number>('a.b + c')(model);
+
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
     const actual = (await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      context.a.b.next(4);
+      model.a.b.next(4);
     })) as IExpression;
 
     expect(actual.value).toEqual(6);
@@ -297,10 +302,11 @@ describe('AbstractExpression tests', () => {
       selected: null as { a: number; b: number } | null,
     };
 
-    const selectedExpression = expressionFactory.create(model, 'selected');
-
-    const row1Expression = expressionFactory.create<number>(rows[0], 'a+b');
-    const row2Expression = expressionFactory.create<number>(rows[1], 'a+b');
+    const selectedExpression = rsx<{ a: number; b: number } | null>('selected')(
+      model,
+    );
+    const row1Expression = rsx<number>('a + b')(rows[0]);
+    const row2Expression = rsx<number>('a + b')(rows[1]);
 
     await new WaitForEvent(selectedExpression, 'changed', {
       ignoreInitialValue: true,

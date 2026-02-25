@@ -1,14 +1,17 @@
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
+
+import { type IExpressionChangeHistory } from '../lib/expression-change-tracker/expression-change-history.interface';
 import {
-  type IExpression,
-  type IExpressionChangeHistory,
   type IExpressionChangeTracker,
   type IExpressionChangeTrackerManager,
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
+} from '../lib/expression-change-tracker/expression-change-tracker-manager.interface';
+import { type IExpression } from '../lib/expressions/expression-parser.interface';
+import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+} from '../lib/rs-x-expression-parser.module';
+import { RsXExpressionParserInjectionTokens } from '../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../lib/rsx';
 
 interface IModel {
   a: number;
@@ -20,13 +23,9 @@ describe('ExpressionChangeTracker tests', () => {
   let expressionChangeTrackerManager: IExpressionChangeTrackerManager;
   let expression: IExpression;
   let model: IModel;
-  let expressionFactory: IExpressionFactory;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
-    expressionFactory = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    );
     expressionChangeTrackerManager = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionChangeTrackerManager,
     );
@@ -42,11 +41,9 @@ describe('ExpressionChangeTracker tests', () => {
       b: 30,
     };
 
-    expression = expressionFactory.create(model, 'a + b');
+    expression = rsx('a + b')(model);
 
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);
-
-    // expressionChangeTracker = expressionChangeTrackerManager.create(expression).instance;
   });
 
   afterEach(() => {

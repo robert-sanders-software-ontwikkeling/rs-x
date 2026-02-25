@@ -1,21 +1,18 @@
-import {
-  emptyFunction,
-  InjectionContainer,
-  WaitForEvent,
-} from '../../rs-x-core/lib';
-import {
-  type IExpression,
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-  unloadRsXExpressionParserModule,
-} from '../lib';
+import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
+
 import { type IExpressionChangePlayback } from '../lib/expression-change-playback';
 import { type IExpressionChangeHistory } from '../lib/expression-change-tracker/expression-change-history.interface';
 import {
   type IExpressionChangeTracker,
   type IExpressionChangeTrackerManager,
 } from '../lib/expression-change-tracker/expression-change-tracker-manager.interface';
+import { type IExpression } from '../lib/expressions/expression-parser.interface';
+import {
+  RsXExpressionParserModule,
+  unloadRsXExpressionParserModule,
+} from '../lib/rs-x-expression-parser.module';
+import { RsXExpressionParserInjectionTokens } from '../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../lib/rsx';
 
 interface IModel {
   a: number;
@@ -28,7 +25,6 @@ describe('ExpressionChangePlayback tests', () => {
   let expressionChangeTrackerManager: IExpressionChangeTrackerManager;
   let expression: IExpression;
   let model: IModel;
-  let expressionFactory: IExpressionFactory;
 
   const setA = (value: number) => {
     return new WaitForEvent(expression, 'changed', {
@@ -57,9 +53,6 @@ describe('ExpressionChangePlayback tests', () => {
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
-    expressionFactory = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    );
     expressionChangePlayback = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionChangePlayback,
     );
@@ -78,7 +71,7 @@ describe('ExpressionChangePlayback tests', () => {
       b: { c: 30 },
     };
 
-    expression = expressionFactory.create(model, 'a + b.c');
+    expression = rsx('a + b.c')(model);
 
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 

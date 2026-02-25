@@ -3,15 +3,12 @@ import { afterEach } from 'node:test';
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import { type IObserver } from '@rs-x/state-manager';
 
-import {
-  type IExpression,
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-} from '../../lib';
+import { type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
+import { rsx } from '../../lib/rsx';
 
 describe('Expression observer tests', () => {
   let observer: IObserver | undefined;
@@ -30,9 +27,6 @@ describe('Expression observer tests', () => {
   });
 
   it('initial value', async () => {
-    let expressionFactory: IExpressionFactory = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    );
     const context: {
       a: number;
       b: number;
@@ -44,11 +38,9 @@ describe('Expression observer tests', () => {
       c: 40,
       aPlusB: undefined,
     };
-    context.aPlusB = expressionFactory.create(context, 'a + b');
-    const largerThanExpression = expressionFactory.create(
-      context,
-      'aPlusB > c',
-    );
+    context.aPlusB = rsx('a + b')(context);
+
+    const largerThanExpression = rsx('aPlusB > c')(context);
 
     await new WaitForEvent(largerThanExpression, 'changed').wait(emptyFunction);
 
@@ -56,9 +48,6 @@ describe('Expression observer tests', () => {
   });
 
   it('changed value', async () => {
-    let expressionFactory: IExpressionFactory = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    );
     const context: {
       a: number;
       b: number;
@@ -70,11 +59,9 @@ describe('Expression observer tests', () => {
       c: 40,
       aPlusB: undefined,
     };
-    context.aPlusB = expressionFactory.create(context, 'a + b');
-    const largerThanExpression = expressionFactory.create(
-      context,
-      'aPlusB > c',
-    );
+
+    context.aPlusB = rsx('a + b')(context);
+    const largerThanExpression = rsx('aPlusB > c')(context);
 
     await new WaitForEvent(largerThanExpression, 'changed').wait(emptyFunction);
 

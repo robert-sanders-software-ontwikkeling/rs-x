@@ -1,6 +1,5 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import { ConstantNullExpression } from '../../lib/expressions/constant-null-expression';
 import {
@@ -12,16 +11,13 @@ import {
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../../lib/rsx';
 
 describe('ConstantNullExpression tests', () => {
-  let expressionFactory: IExpressionFactory;
   let expression: IExpression | undefined;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
-    expressionFactory = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    );
   });
 
   afterAll(async () => {
@@ -34,7 +30,8 @@ describe('ConstantNullExpression tests', () => {
   });
 
   it('type', () => {
-    expression = expressionFactory.create({}, 'null');
+    expression = rsx('null')({});
+
     expect(expression.type).toEqual(ExpressionType.Null);
   });
 
@@ -42,7 +39,8 @@ describe('ConstantNullExpression tests', () => {
     const services: IExpressionServices = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
-    expression = expressionFactory.create({}, 'null');
+
+    expression = rsx('null')({});
 
     const clonedExpression = expression.clone();
 
@@ -66,7 +64,7 @@ describe('ConstantNullExpression tests', () => {
   });
 
   it('will emit change event for initial value', async () => {
-    expression = expressionFactory.create({}, 'null');
+    expression = rsx('null')({});
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},

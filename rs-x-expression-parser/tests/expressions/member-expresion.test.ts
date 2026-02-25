@@ -8,7 +8,6 @@ import {
 } from '@rs-x/core';
 import { IndexWatchRuleMock } from '@rs-x/state-manager/testing';
 
-import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import {
   ExpressionType,
@@ -20,25 +19,17 @@ import {
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../../lib/rsx';
 
 describe('Member expression tests', () => {
-  let expressionFactory: IExpressionFactory;
   let expression: IExpression | undefined;
-  let indexWatchRule: IndexWatchRuleMock;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
-    expressionFactory = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    );
   });
 
   afterAll(async () => {
     await unloadRsXExpressionParserModule();
-  });
-
-  beforeEach(() => {
-    indexWatchRule = new IndexWatchRuleMock(truePredicate);
   });
 
   afterEach(() => {
@@ -47,8 +38,8 @@ describe('Member expression tests', () => {
   });
 
   it('type', () => {
-    const context = { a: { b: 1 } };
-    expression = expressionFactory.create(context, 'a.b');
+    const model = { a: { b: 1 } };
+    expression = rsx('a.b')(model);
     expect(expression.type).toEqual(ExpressionType.Member);
   });
 
@@ -57,8 +48,8 @@ describe('Member expression tests', () => {
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
 
-    const context = { a: { b: 1 } };
-    expression = expressionFactory.create(context, 'a.b');
+    const model = { a: { b: 1 } };
+    expression = rsx('a.b')(model);
 
     const clonedExpression = expression.clone();
 
@@ -69,7 +60,7 @@ describe('Member expression tests', () => {
 
       await new WaitForEvent(clonedExpression, 'changed').wait(() => {
         clonedExpression.bind({
-          rootContext: context,
+          rootContext: model,
           services,
         });
 
@@ -83,10 +74,10 @@ describe('Member expression tests', () => {
 
   describe('member expression with array index', () => {
     it('Emits the initial value for a member expression with a static array index', async () => {
-      const context = {
+      const model = {
         array: [11, 21, 31, 41, 51],
       };
-      expression = expressionFactory.create(context, 'array[1]');
+      expression = rsx('array[1]')(model);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
         () => {},
@@ -97,7 +88,7 @@ describe('Member expression tests', () => {
     });
 
     it('Emits the initial value for a member expression with a calculated array index', async () => {
-      const context = {
+      const model = {
         a: 1,
         nestedA: {
           nestedB: {
@@ -105,10 +96,8 @@ describe('Member expression tests', () => {
           },
         },
       };
-      expression = expressionFactory.create(
-        context,
-        'nestedA.nestedB.array[a + 1]',
-      );
+
+      expression = rsx('nestedA.nestedB.array[a + 1]')(model);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
         () => {},
@@ -119,11 +108,11 @@ describe('Member expression tests', () => {
     });
 
     it('dynamic index on root array: emit change event for initial value', async () => {
-      const context = {
+      const model = {
         index: 0,
         a: ['1', 1],
       };
-      expression = expressionFactory.create(context, 'a[index]');
+      expression = rsx('a[index]')(model);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
         () => {},
@@ -134,18 +123,19 @@ describe('Member expression tests', () => {
     });
 
     it('dynamic index on root array: emit value when dynamic index changes', async () => {
-      const context = {
+      const model = {
         index: 0,
         a: ['1', 1],
       };
-      expression = expressionFactory.create(context, 'a[index]');
+      expression = rsx('a[index]')(model);
+
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
 
       const actual = (await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        context.index = 1;
+        model.index = 1;
       })) as IExpression;
 
       expect(actual.value).toEqual(1);
@@ -153,7 +143,7 @@ describe('Member expression tests', () => {
     });
 
     it('Emits a changed value for a member expression with a calculated array index when the index is set to a new value', async () => {
-      const context = {
+      const model = {
         a: 1,
         nestedA: {
           nestedB: {
@@ -162,16 +152,13 @@ describe('Member expression tests', () => {
         },
       };
 
-      expression = expressionFactory.create(
-        context,
-        'nestedA.nestedB.array[a + 1]',
-      );
+      expression = rsx('nestedA.nestedB.array[a + 1]')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
-        context.nestedA.nestedB.array[2] = 10;
+        model.nestedA.nestedB.array[2] = 10;
       })) as IExpression;
 
       expect(actual.value).toEqual(10);
@@ -179,7 +166,7 @@ describe('Member expression tests', () => {
     });
 
     it('Emits a changed value for a member expression with a calculated array index when the index value changes', async () => {
-      const context = {
+      const model = {
         a: 1,
         nestedA: {
           nestedB: {
@@ -187,10 +174,8 @@ describe('Member expression tests', () => {
           },
         },
       };
-      expression = expressionFactory.create(
-        context,
-        'nestedA.nestedB.array[a + 1]',
-      );
+
+      expression = rsx('nestedA.nestedB.array[a + 1]')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -198,7 +183,7 @@ describe('Member expression tests', () => {
       expect(expression.value).toEqual(1200);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
-        context.a = 2;
+        model.a = 2;
       })) as IExpression;
 
       expect(actual.value).toEqual(1300);
@@ -206,7 +191,7 @@ describe('Member expression tests', () => {
     });
 
     it('Emits a changed value for a member expression  when replacing a parent object', async () => {
-      const context = {
+      const model = {
         a: 1,
         nestedA: {
           nestedB: {
@@ -214,16 +199,14 @@ describe('Member expression tests', () => {
           },
         },
       };
-      expression = expressionFactory.create(
-        context,
-        'nestedA.nestedB.array[a + 1]',
-      );
+
+      expression = rsx('nestedA.nestedB.array[a + 1]')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
-        context.nestedA.nestedB = {
+        model.nestedA.nestedB = {
           array: [-1, -2, -3, -4],
         };
       })) as IExpression;
@@ -235,14 +218,15 @@ describe('Member expression tests', () => {
 
   describe('member expression with map key', () => {
     it('Emits the initial value for a member expression with a static array index', async () => {
-      const context = {
+      const model = {
         map: new Map([
           ['a', 1],
           ['b', 2],
           ['c', 3],
         ]),
       };
-      expression = expressionFactory.create(context, 'map["b"]');
+
+      expression = rsx('map["b"]')(model);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
         emptyFunction,
@@ -253,7 +237,7 @@ describe('Member expression tests', () => {
     });
 
     it('Emits the initial value for a member expression with a calculated map key', async () => {
-      const context = {
+      const model = {
         key: 'c',
         nestedA: {
           map: new Map([
@@ -263,7 +247,8 @@ describe('Member expression tests', () => {
           ]),
         },
       };
-      expression = expressionFactory.create(context, 'nestedA.map[key]');
+
+      expression = rsx('nestedA.map[key]')(model);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
         emptyFunction,
@@ -274,7 +259,7 @@ describe('Member expression tests', () => {
     });
 
     it('Emits a changed value for a member expression with a calculated map key when we change the value for the key', async () => {
-      const context = {
+      const model = {
         key: 'c',
         nestedA: {
           map: new Map([
@@ -285,13 +270,13 @@ describe('Member expression tests', () => {
         },
       };
 
-      expression = expressionFactory.create(context, 'nestedA.map[key]');
+      expression = rsx('nestedA.map[key]')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
-        context.nestedA.map.set('c', 30);
+        model.nestedA.map.set('c', 30);
       })) as IExpression;
 
       expect(actual.value).toEqual(30);
@@ -299,7 +284,7 @@ describe('Member expression tests', () => {
     });
 
     it('Emits a changed value for a member expression with a calculated map key when the calcuulated key changed', async () => {
-      const context = {
+      const model = {
         key: 'c',
         nestedA: {
           map: new Map([
@@ -310,7 +295,7 @@ describe('Member expression tests', () => {
         },
       };
 
-      expression = expressionFactory.create(context, 'nestedA.map[key]');
+      expression = rsx('nestedA.map[key]')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -318,7 +303,7 @@ describe('Member expression tests', () => {
       const actual = (await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        context.key = 'b';
+        model.key = 'b';
       })) as IExpression;
 
       expect(actual.value).toEqual(2);
@@ -326,7 +311,7 @@ describe('Member expression tests', () => {
     });
 
     it('Emits a changed value for a member expression  when replacing a parent object directly', async () => {
-      const context = {
+      const model = {
         key: 'c',
         nestedA: {
           map: new Map([
@@ -336,7 +321,7 @@ describe('Member expression tests', () => {
           ]),
         },
       };
-      expression = expressionFactory.create(context, 'nestedA.map[key]');
+      expression = rsx('nestedA.map[key]')(model);
 
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
@@ -345,7 +330,7 @@ describe('Member expression tests', () => {
       const actual = (await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        context.nestedA = {
+        model.nestedA = {
           map: new Map([
             ['a', -1],
             ['b', -2],
@@ -359,7 +344,7 @@ describe('Member expression tests', () => {
     });
 
     it('Emits a changed value for a member expression  when replacing a parent object', async () => {
-      const context = {
+      const model = {
         key: 'c',
         nestedA: {
           map: new Map([
@@ -369,13 +354,13 @@ describe('Member expression tests', () => {
           ]),
         },
       };
-      expression = expressionFactory.create(context, 'nestedA.map[key]');
+      expression = rsx('nestedA.map[key]')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
-        context.nestedA = {
+        model.nestedA = {
           map: new Map([
             ['a', -1],
             ['b', -2],
@@ -391,15 +376,14 @@ describe('Member expression tests', () => {
 
   describe('member expression with observable', () => {
     it('will emit initial value', async () => {
-      const context = {
+      const model = {
         x: of({
           y: {
             z: 100,
           },
         }),
       };
-
-      expression = expressionFactory.create(context, 'x.y.z');
+      expression = rsx('x.y.z')(model);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
         () => {},
@@ -410,7 +394,7 @@ describe('Member expression tests', () => {
     });
 
     it('resolves nested observables', async () => {
-      const context = {
+      const model = {
         x: of({
           y: {
             z: of(100),
@@ -418,7 +402,7 @@ describe('Member expression tests', () => {
         }),
       };
 
-      expression = expressionFactory.create(context, 'x.y.z');
+      expression = rsx('x.y.z')(model);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
         emptyFunction,
@@ -429,7 +413,7 @@ describe('Member expression tests', () => {
     });
 
     it('will emit change event when changing observable', async () => {
-      const context = {
+      const model = {
         x: of({
           y: {
             z: of(100),
@@ -437,13 +421,13 @@ describe('Member expression tests', () => {
         }),
       };
 
-      expression = expressionFactory.create(context, 'x.y.z');
+      expression = rsx('x.y.z')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
-        context.x = of({
+        model.x = of({
           y: { z: of(200) },
         });
       })) as IExpression;
@@ -453,22 +437,21 @@ describe('Member expression tests', () => {
     });
 
     it('will emit change event when nested obserable emit new value', async () => {
-      const nestedContext = {
+      const nestedModel = {
         y: {
           z: new BehaviorSubject(100),
         },
       };
-      const context = {
-        x: of(nestedContext),
+      const model = {
+        x: of(nestedModel),
       };
-
-      expression = expressionFactory.create(context, 'x.y.z');
+      expression = rsx('x.y.z')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
-        nestedContext.y.z.next(200);
+        nestedModel.y.z.next(200);
       })) as IExpression;
 
       expect(actual.value).toEqual(200);
@@ -476,21 +459,20 @@ describe('Member expression tests', () => {
     });
 
     it('will emit change event when obserable emit new value', async () => {
-      const context = {
+      const model = {
         x: new BehaviorSubject({
           y: {
             z: of(100),
           },
         }),
       };
-
-      expression = expressionFactory.create(context, 'x.y.z');
+      expression = rsx('x.y.z')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
-        context.x.next({
+        model.x.next({
           y: {
             z: of(200),
           },
@@ -504,14 +486,14 @@ describe('Member expression tests', () => {
     it('multiple nested obserable emit new value', async () => {
       const nestedObservable = new BehaviorSubject({ d: 200 });
       const rootObservable = new BehaviorSubject({ c: nestedObservable });
-      const expressionContext = {
+      const model = {
         a: {
           b: new BehaviorSubject({
             c: new BehaviorSubject({ d: 20 }),
           }),
         },
       };
-      const expression = expressionFactory.create(expressionContext, `a.b.c.d`);
+      const expression = rsx('a.b.c.d')(model);
 
       await new WaitForEvent(expression, 'changed').wait(emptyFunction);
       expect(expression.value).toEqual(20);
@@ -519,7 +501,7 @@ describe('Member expression tests', () => {
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a = { b: rootObservable };
+        model.a = { b: rootObservable };
       });
       expect(expression.value).toEqual(200);
 
@@ -543,7 +525,7 @@ describe('Member expression tests', () => {
 
   describe('member expression with promises', () => {
     it('will emit initial value', async () => {
-      const context = {
+      const model = {
         x: Promise.resolve({
           y: {
             z: 100,
@@ -551,7 +533,7 @@ describe('Member expression tests', () => {
         }),
       };
 
-      expression = expressionFactory.create(context, 'x.y.z');
+      expression = rsx('x.y.z')(model);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
         () => {},
@@ -562,7 +544,7 @@ describe('Member expression tests', () => {
     });
 
     it('resolves nested promised', async () => {
-      const context = {
+      const model = {
         x: Promise.resolve({
           y: {
             z: Promise.resolve(100),
@@ -570,7 +552,7 @@ describe('Member expression tests', () => {
         }),
       };
 
-      expression = expressionFactory.create(context, 'x.y.z');
+      expression = rsx('x.y.z')(model);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(
         () => {},
@@ -581,7 +563,7 @@ describe('Member expression tests', () => {
     });
 
     it('will emit change event when changing promise', async () => {
-      const context = {
+      const model = {
         x: Promise.resolve({
           y: {
             z: Promise.resolve(100),
@@ -589,7 +571,7 @@ describe('Member expression tests', () => {
         }),
       };
 
-      expression = expressionFactory.create(context, 'x.y.z');
+      expression = rsx('x.y.z')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -597,7 +579,7 @@ describe('Member expression tests', () => {
       const actual = (await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        context.x = Promise.resolve({
+        model.x = Promise.resolve({
           y: { z: Promise.resolve(200) },
         });
       })) as IExpression;
@@ -607,7 +589,7 @@ describe('Member expression tests', () => {
     });
 
     it('will emit change event when changing object with nested promise', async () => {
-      const context = {
+      const model = {
         a: {
           b: Promise.resolve({
             c: Promise.resolve({
@@ -616,8 +598,7 @@ describe('Member expression tests', () => {
           }),
         },
       };
-
-      expression = expressionFactory.create(context, 'a.b.c.d');
+      expression = rsx('a.b.c.d')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -625,7 +606,7 @@ describe('Member expression tests', () => {
       const actual = (await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        context.a = {
+        model.a = {
           b: Promise.resolve({
             c: Promise.resolve({
               d: 200,
@@ -641,7 +622,7 @@ describe('Member expression tests', () => {
 
   describe('member expression with object array', () => {
     it(`initial value of 'a.b[1].c.d')`, async () => {
-      const expressionContext = {
+      const model = {
         a: {
           b: [
             {
@@ -658,11 +639,7 @@ describe('Member expression tests', () => {
         },
         x: { y: 1 },
       };
-
-      const expression = expressionFactory.create(
-        expressionContext,
-        'a.b[1].c.d',
-      );
+      expression = rsx('a.b[1].c.d')(model);
 
       await new WaitForEvent(expression, 'changed').wait(() => {});
 
@@ -670,7 +647,7 @@ describe('Member expression tests', () => {
     });
 
     it(`value of 'a.b[1].c.d') after changing 'a' to '{b: [{ c: { d: 100}},{ c: { d: 110}}}`, async () => {
-      const expressionContext = {
+      const model = {
         a: {
           b: [
             {
@@ -687,10 +664,7 @@ describe('Member expression tests', () => {
         },
         x: { y: 1 },
       };
-      const expression = expressionFactory.create(
-        expressionContext,
-        'a.b[1].c.d',
-      );
+      expression = rsx('a.b[1].c.d')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -698,7 +672,7 @@ describe('Member expression tests', () => {
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a = {
+        model.a = {
           b: [
             {
               c: {
@@ -718,7 +692,7 @@ describe('Member expression tests', () => {
     });
 
     it(`value of 'a.b[1].c.d' after changing b[1] to '{ c: { d: 120}}`, async () => {
-      const expressionContext = {
+      const model = {
         a: {
           b: [
             {
@@ -735,10 +709,7 @@ describe('Member expression tests', () => {
         },
         x: { y: 1 },
       };
-      const expression = expressionFactory.create(
-        expressionContext,
-        'a.b[1].c.d',
-      );
+      expression = rsx('a.b[1].c.d')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(emptyFunction);
@@ -746,7 +717,7 @@ describe('Member expression tests', () => {
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a.b[1] = {
+        model.a.b[1] = {
           c: {
             d: 120,
           },
@@ -757,7 +728,7 @@ describe('Member expression tests', () => {
     });
 
     it(`value of 'a.b[1].c.d' after changing b[1].c to '{d: 220}`, async () => {
-      const expressionContext = {
+      const model = {
         a: {
           b: [
             {
@@ -774,10 +745,7 @@ describe('Member expression tests', () => {
         },
         x: { y: 1 },
       };
-      const expression = expressionFactory.create(
-        expressionContext,
-        'a.b[1].c.d',
-      );
+      expression = rsx('a.b[1].c.d')(model);
 
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
@@ -785,14 +753,14 @@ describe('Member expression tests', () => {
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a.b[1].c = { d: 220 };
+        model.a.b[1].c = { d: 220 };
       });
 
       expect(expression.value).toEqual(220);
     });
 
     it(`Value of a.b[1].c.d after first changing path segements.`, async () => {
-      const expressionContext = {
+      const model = {
         a: {
           b: [
             {
@@ -809,10 +777,7 @@ describe('Member expression tests', () => {
         },
         x: { y: 1 },
       };
-      const expression = expressionFactory.create(
-        expressionContext,
-        'a.b[1].c.d',
-      );
+      expression = rsx('a.b[1].c.d')(model);
 
       await new WaitForEvent(expression, 'changed').wait(() => {});
 
@@ -821,7 +786,7 @@ describe('Member expression tests', () => {
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a = {
+        model.a = {
           b: [
             {
               c: {
@@ -842,7 +807,7 @@ describe('Member expression tests', () => {
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a.b[1] = {
+        model.a.b[1] = {
           c: {
             d: 120,
           },
@@ -854,7 +819,7 @@ describe('Member expression tests', () => {
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a.b[1].c = { d: 130 };
+        model.a.b[1].c = { d: 130 };
       });
 
       expect(expression.value).toEqual(130);
@@ -862,7 +827,7 @@ describe('Member expression tests', () => {
       await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
-        expressionContext.a.b[1].c.d = 140;
+        model.a.b[1].c.d = 140;
       });
 
       expect(expression.value).toEqual(140);
@@ -871,7 +836,7 @@ describe('Member expression tests', () => {
 
   describe('member expression with method', () => {
     it(`will emit initial value for 'a.b.mail(message, subject).messageWithSubject'`, async () => {
-      const expressionContext = {
+      const model = {
         message: 'Hello',
         subject: 'Message',
         a: {
@@ -885,10 +850,8 @@ describe('Member expression tests', () => {
         },
       };
 
-      const expression = expressionFactory.create(
-        expressionContext,
-        'a.b.mail(message, subject).messageWithSubject',
-      );
+      expression = rsx('a.b.mail(message, subject).messageWithSubject')(model);
+
       const actual = (await new WaitForEvent(expression, 'changed').wait(
         emptyFunction,
       )) as IExpression;
@@ -897,7 +860,7 @@ describe('Member expression tests', () => {
     });
 
     it(`will emit change for 'a.b.mail(message, subject).messageWithSubject' when setting 'message'`, async () => {
-      const expressionContext = {
+      const model = {
         message: 'Hello',
         subject: 'Message',
         a: {
@@ -911,14 +874,12 @@ describe('Member expression tests', () => {
         },
       };
 
-      const expression = expressionFactory.create(
-        expressionContext,
-        'a.b.mail(message, subject).messageWithSubject',
-      );
+      expression = rsx('a.b.mail(message, subject).messageWithSubject')(model);
+
       await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
       const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
-        expressionContext.message = 'hi';
+        model.message = 'hi';
       })) as IExpression;
 
       expect(actual.value).toEqual('message: hi, subject: Message');
@@ -927,17 +888,14 @@ describe('Member expression tests', () => {
 
   describe('member expression with complex expression with observabble', () => {
     it('initial value', async () => {
-      const expressionContext = {
+      const model = {
         parameters: new BehaviorSubject({
           a: 10,
           b: 20,
         }),
       };
 
-      expression = expressionFactory.create(
-        expressionContext,
-        'parameters.a + parameters.b',
-      );
+      expression = rsx('parameters.a + parameters.b')(model);
 
       await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
@@ -945,22 +903,19 @@ describe('Member expression tests', () => {
     });
 
     it('will emit change event when new parameters have been emitted', async () => {
-      const expressionContext = {
+      const model = {
         parameters: new BehaviorSubject({
           a: 10,
           b: 20,
         }),
       };
 
-      expression = expressionFactory.create(
-        expressionContext,
-        'parameters.a + parameters.b',
-      );
+      expression = rsx('parameters.a + parameters.b')(model);
 
       await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
       await new WaitForEvent(expression, 'changed', { count: 2 }).wait(() => {
-        expressionContext.parameters.next({
+        model.parameters.next({
           a: 5,
           b: 20,
         });
@@ -971,7 +926,7 @@ describe('Member expression tests', () => {
   });
 
   it('Only non-root path segments and the specified leave properties will be observed.”', async () => {
-    const expressionContext = {
+    const model = {
       a: {
         b: {
           c: 10,
@@ -981,27 +936,27 @@ describe('Member expression tests', () => {
       },
       f: 40,
     };
-    expression = expressionFactory.create(
-      expressionContext,
-      'a.b',
-      new IndexWatchRuleMock(
-        (index: unknown, target: unknown) =>
-          (index === 'b' && target === expressionContext.a) ||
-          (index === 'c' && target === expressionContext.a.b),
-      ),
+
+    const indexWatchRule = new IndexWatchRuleMock(
+      (index: unknown, target: unknown) =>
+        (index === 'b' && target === model.a) ||
+        (index === 'c' && target === model.a.b),
     );
+
+    expression = rsx('a.b')(model, indexWatchRule);
+
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-    expect(expressionContext).isWritableProperty('a');
-    expect(expressionContext.a).isWritableProperty('b');
-    expect(expressionContext.a.b).isWritableProperty('c');
-    expect(expressionContext.a.b).not.isWritableProperty('d');
-    expect(expressionContext.a).not.isWritableProperty('e');
-    expect(expressionContext).not.isWritableProperty('f');
+    expect(model).isWritableProperty('a');
+    expect(model.a).isWritableProperty('b');
+    expect(model.a.b).isWritableProperty('c');
+    expect(model.a.b).not.isWritableProperty('d');
+    expect(model.a).not.isWritableProperty('e');
+    expect(model).not.isWritableProperty('f');
   });
 
   it('Will not watch leaf objects recursively by default', async () => {
-    const expressionContext = {
+    const model = {
       a: {
         b: {
           c: 10,
@@ -1011,19 +966,19 @@ describe('Member expression tests', () => {
       },
       f: 40,
     };
-    expression = expressionFactory.create(expressionContext, 'a.b');
+    expression = rsx('a.b')(model);
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-    expect(expressionContext).isWritableProperty('a');
-    expect(expressionContext.a).isWritableProperty('b');
-    expect(expressionContext.a.b).not.isWritableProperty('c');
-    expect(expressionContext.a.b).not.isWritableProperty('d');
-    expect(expressionContext.a).not.isWritableProperty('e');
-    expect(expressionContext).not.isWritableProperty('f');
+    expect(model).isWritableProperty('a');
+    expect(model.a).isWritableProperty('b');
+    expect(model.a.b).not.isWritableProperty('c');
+    expect(model.a.b).not.isWritableProperty('d');
+    expect(model.a).not.isWritableProperty('e');
+    expect(model).not.isWritableProperty('f');
   });
 
   it('Watched identifiers will be released when the associated expressions are disposed.', async () => {
-    const expressionContext = {
+    const model = {
       a: {
         b: {
           c: 10,
@@ -1033,32 +988,31 @@ describe('Member expression tests', () => {
       },
       f: 40,
     };
-    expression = expressionFactory.create(
-      expressionContext,
-      'a.b',
-      indexWatchRule,
-    );
+
+    const indexWatchRule = new IndexWatchRuleMock(truePredicate);
+    expression = rsx('a.b')(model, indexWatchRule);
+
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-    expect(expressionContext).isWritableProperty('a');
-    expect(expressionContext.a).isWritableProperty('b');
-    expect(expressionContext.a.b).isWritableProperty('c');
-    expect(expressionContext.a.b).isWritableProperty('d');
-    expect(expressionContext.a).not.isWritableProperty('e');
-    expect(expressionContext).not.isWritableProperty('f');
+    expect(model).isWritableProperty('a');
+    expect(model.a).isWritableProperty('b');
+    expect(model.a.b).isWritableProperty('c');
+    expect(model.a.b).isWritableProperty('d');
+    expect(model.a).not.isWritableProperty('e');
+    expect(model).not.isWritableProperty('f');
 
     expression.dispose();
 
-    expect(expressionContext).not.isWritableProperty('a');
-    expect(expressionContext.a).not.isWritableProperty('b');
-    expect(expressionContext.a.b).not.isWritableProperty('c');
-    expect(expressionContext.a.b).not.isWritableProperty('d');
-    expect(expressionContext.a).not.isWritableProperty('e');
-    expect(expressionContext).not.isWritableProperty('f');
+    expect(model).not.isWritableProperty('a');
+    expect(model.a).not.isWritableProperty('b');
+    expect(model.a.b).not.isWritableProperty('c');
+    expect(model.a.b).not.isWritableProperty('d');
+    expect(model.a).not.isWritableProperty('e');
+    expect(model).not.isWritableProperty('f');
   });
 
   it('When creating expressions with shared identifiers, the expressions will be observed until all associated expressions have been released.', async () => {
-    const expressionContext = {
+    const model = {
       a: {
         b: {
           c: 10,
@@ -1069,45 +1023,45 @@ describe('Member expression tests', () => {
       f: 40,
     };
 
-    const expression1 = expressionFactory.create(expressionContext, 'a.b');
+    const expression1 = rsx('a.b')(model);
     await new WaitForEvent(expression1, 'changed').wait(emptyFunction);
-    const expression2 = expressionFactory.create(expressionContext, 'a.b');
+    const expression2 = rsx('a.b')(model);
     await new WaitForEvent(expression2, 'changed').wait(emptyFunction);
-    const expression3 = expressionFactory.create(expressionContext.a.b, 'c');
+    const expression3 = rsx('c')(model.a.b);
     await new WaitForEvent(expression3, 'changed').wait(emptyFunction);
 
-    expect(expressionContext).isWritableProperty('a');
-    expect(expressionContext.a).isWritableProperty('b');
-    expect(expressionContext.a.b).isWritableProperty('c');
-    expect(expressionContext.a.b).not.isWritableProperty('d');
-    expect(expressionContext.a).not.isWritableProperty('e');
-    expect(expressionContext).not.isWritableProperty('f');
+    expect(model).isWritableProperty('a');
+    expect(model.a).isWritableProperty('b');
+    expect(model.a.b).isWritableProperty('c');
+    expect(model.a.b).not.isWritableProperty('d');
+    expect(model.a).not.isWritableProperty('e');
+    expect(model).not.isWritableProperty('f');
 
     expression1.dispose();
 
-    expect(expressionContext).isWritableProperty('a');
-    expect(expressionContext.a).isWritableProperty('b');
-    expect(expressionContext.a.b).isWritableProperty('c');
-    expect(expressionContext.a.b).not.isWritableProperty('d');
-    expect(expressionContext.a).not.isWritableProperty('e');
-    expect(expressionContext).not.isWritableProperty('f');
+    expect(model).isWritableProperty('a');
+    expect(model.a).isWritableProperty('b');
+    expect(model.a.b).isWritableProperty('c');
+    expect(model.a.b).not.isWritableProperty('d');
+    expect(model.a).not.isWritableProperty('e');
+    expect(model).not.isWritableProperty('f');
 
     expression2.dispose();
 
-    expect(expressionContext).not.isWritableProperty('a');
-    expect(expressionContext.a).not.isWritableProperty('b');
-    expect(expressionContext.a.b).isWritableProperty('c');
-    expect(expressionContext.a.b).not.isWritableProperty('d');
-    expect(expressionContext.a).not.isWritableProperty('e');
-    expect(expressionContext).not.isWritableProperty('f');
+    expect(model).not.isWritableProperty('a');
+    expect(model.a).not.isWritableProperty('b');
+    expect(model.a.b).isWritableProperty('c');
+    expect(model.a.b).not.isWritableProperty('d');
+    expect(model.a).not.isWritableProperty('e');
+    expect(model).not.isWritableProperty('f');
 
     expression3.dispose();
 
-    expect(expressionContext).not.isWritableProperty('a');
-    expect(expressionContext.a).not.isWritableProperty('b');
-    expect(expressionContext.a.b).not.isWritableProperty('c');
-    expect(expressionContext.a.b).not.isWritableProperty('d');
-    expect(expressionContext.a).not.isWritableProperty('e');
-    expect(expressionContext).not.isWritableProperty('f');
+    expect(model).not.isWritableProperty('a');
+    expect(model.a).not.isWritableProperty('b');
+    expect(model.a.b).not.isWritableProperty('c');
+    expect(model.a.b).not.isWritableProperty('d');
+    expect(model.a).not.isWritableProperty('e');
+    expect(model).not.isWritableProperty('f');
   });
 });

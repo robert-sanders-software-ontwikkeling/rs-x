@@ -337,7 +337,9 @@ export const run = (() => {
     // so we pass a predicate that always returns true.
     // This will emit an initial value { y: 10 }
     console.log('Initial value:');
-    stateManager.watchState(model, 'x', watchIndexRecursiveRule);
+    stateManager.watchState(model, 'x', {
+      indexWatchRule: watchIndexRecursiveRule,
+    });
 
     console.log('Changed value:');
     // This will emit the new value { y: 10 }
@@ -432,7 +434,7 @@ export const run = (() => {
     }
 
     private setAPlusB(): void {
-      stateManager.setState(this, this._aPlusBId, this._a + this._b);
+      stateManager.setState(this, this._aPlusBId, this._a + this._b, undefined);
     }
   }
 
@@ -655,7 +657,9 @@ export const run = (() => {
     // Otherwise, only assigning a new value to model.b would emit a change event.
     // This will emit a change event with the initial (current) value.
     console.log('Initial value:');
-    stateManager.watchState(model, 'b', watchIndexRecursiveRule);
+    stateManager.watchState(model, 'b', {
+      indexWatchRule: watchIndexRecursiveRule,
+    });
 
     console.log('\nReplacing model.b.nested.nested will emit a change event');
     console.log('Changed value:');
@@ -759,7 +763,9 @@ function watchDate(stateManager: IStateManager) {
   );
   try {
     console.log('Initial value:');
-    stateManager.watchState(model, 'date', watchIndexRecursiveRule);
+    stateManager.watchState(model, 'date', {
+      indexWatchRule: watchIndexRecursiveRule,
+    });
 
     console.log('Changed value:');
     model.date.setFullYear(2023);
@@ -883,7 +889,9 @@ export const run = (() => {
   try {
     // This will emit a change event with the initial (current) value.
     console.log('Initial value:');
-    stateManager.watchState(model, 'array', watchIndexRecursiveRule);
+    stateManager.watchState(model, 'array', {
+      indexWatchRule: watchIndexRecursiveRule,
+    });
 
     console.log('Changed value:');
     model.array[1].push(5);
@@ -977,7 +985,9 @@ export const run = (() => {
   try {
     // This will emit a change event with the initial (current) value.
     console.log('Initial value:');
-    stateManager.watchState(model, 'map', watchIndexRecursiveRule);
+    stateManager.watchState(model, 'map', {
+      indexWatchRule: watchIndexRecursiveRule,
+    });
 
     console.log('Changed value:');
     model.map.get('b')?.push(5);
@@ -1087,7 +1097,9 @@ export const run = (() => {
   try {
     // This will emit a change event with the initial (current) value.
     console.log('Initial value:');
-    stateManager.watchState(model, 'set', watchIndexRecursiveRule);
+    stateManager.watchState(model, 'set', {
+      indexWatchRule: watchIndexRecursiveRule,
+    });
 
     console.log('Changed value:');
     const proxyRegister: IProxyRegistry = InjectionContainer.get(
@@ -1801,7 +1813,9 @@ function testMonitorTextDocument(
     console.log('\n***********************************************');
     console.log('Start watching the whole book\n');
     console.log('My initial book:\n');
-    stateManager.watchState(model, 'myBook', watchIndexRecursiveRule);
+    stateManager.watchState(model, 'myBook', {
+      indexWatchRule: watchIndexRecursiveRule,
+    });
 
     console.log('\nUpdate second line on the first page:\n');
     console.log('My book after change:\n');

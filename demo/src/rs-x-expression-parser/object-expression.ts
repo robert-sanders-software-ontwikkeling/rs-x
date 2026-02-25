@@ -4,17 +4,10 @@ import {
   printValue,
   WaitForEvent,
 } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -22,7 +15,7 @@ export const run = (async () => {
     y: 20,
   };
 
-  const expression = expressionFactory.create(model, '({ a: x, b: y })');
+  const expression = rsx<{ a: number; b: number }>('({ a: x, b: y })')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)

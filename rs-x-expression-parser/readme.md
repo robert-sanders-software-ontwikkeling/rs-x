@@ -23,17 +23,10 @@ This parser forms the core of the **data-binding implementation** for the SPA fr
     printValue,
     WaitForEvent,
   } from '@rs-x/core';
-  import {
-    type IExpressionFactory,
-    RsXExpressionParserInjectionTokens,
-    RsXExpressionParserModule,
-  } from '@rs-x/expression-parser';
+  import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
   // Load the expression parser module into the injection container
   InjectionContainer.load(RsXExpressionParserModule);
-  const expressionFactory: IExpressionFactory = InjectionContainer.get(
-    RsXExpressionParserInjectionTokens.IExpressionFactory,
-  );
 
   export const run = (async () => {
     const model = {
@@ -46,7 +39,7 @@ This parser forms the core of the **data-binding implementation** for the SPA fr
       },
     };
 
-    const expression = expressionFactory.create(model, `a.b.c.d`);
+    const expression = rsx<number>('a.b.c.d')(model);
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -233,17 +226,10 @@ First, we will show an implementation **without modular expressions**, followed 
 import { BehaviorSubject } from 'rxjs';
 
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   interface IRisk {
@@ -274,7 +260,7 @@ export const run = (async () => {
     },
   };
 
-  const expressionString = `(
+  const expression = rsx(`
       (
         // =========================
         // Numeric risk score
@@ -338,9 +324,7 @@ export const run = (async () => {
                 : 'LOW'
             )
         )
-    )`;
-
-  const expression = expressionFactory.create(riskModel, expressionString);
+    `)(riskModel);
 
   console.log('Initial risk: ');
   const changeSubscription = expression.changed.subscribe(() => {
@@ -385,17 +369,10 @@ export const run = (async () => {
 import { BehaviorSubject } from 'rxjs';
 
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   interface IRisk {
@@ -422,37 +399,25 @@ export const run = (async () => {
     }),
   };
 
-  const basePersonalRisk = expressionFactory.create(
-    riskModel,
-    `
-        (credit.score < 600 ? 0.4 : 0.1) +
-        (credit.outstandingDebt / customer.income) * 0.6 -
-        (customer.employmentYears * 0.03)     
-    `,
-  );
+  const basePersonalRisk = rsx(`
+    (credit.score < 600 ? 0.4 : 0.1) +
+    (credit.outstandingDebt / customer.income) * 0.6 -
+    (customer.employmentYears * 0.03)     
+  `)(riskModel);
 
-  const ageBasedRiskAdjustment = expressionFactory.create(
-    riskModel,
-    `
-        customer.age < 25 ? 0.15 :
-        customer.age < 35 ? 0.05 :
-        customer.age < 55 ? 0.00 :
-        0.08
-    `,
-  );
+  const ageBasedRiskAdjustment = rsx(`
+    customer.age < 25 ? 0.15 :
+    customer.age < 35 ? 0.05 :
+    customer.age < 55 ? 0.00 :
+    0.08
+  `)(riskModel);
 
-  const marketRisk = expressionFactory.create(
-    riskModel,
-    `
-        (risk.volatilityIndex * 0.5) +
-        (risk.recessionProbability * 0.5)
-    `,
-  );
+  const marketRisk = rsx(`
+    (risk.volatilityIndex * 0.5) +
+    (risk.recessionProbability * 0.5)
+  `)(riskModel);
 
-  const interestRateImpact = expressionFactory.create(
-    riskModel,
-    'market.baseInterestRate * 2',
-  );
+  const interestRateImpact = rsx('market.baseInterestRate * 2')(riskModel);
 
   const riskScoreModel = {
     basePersonalRisk,
@@ -461,15 +426,12 @@ export const run = (async () => {
     interestRateImpact,
   };
 
-  const riskScore = expressionFactory.create(
-    riskScoreModel,
-    `
-        basePersonalRisk + 
-        ageBasedRiskAdjustment +
-        marketRisk + 
-        interestRateImpact
-    `,
-  );
+  const riskScore = rsx(`
+    basePersonalRisk + 
+    ageBasedRiskAdjustment +
+    marketRisk + 
+    interestRateImpact
+  `)(riskScoreModel);
 
   const riskClassificationModel = {
     riskScore,
@@ -479,16 +441,13 @@ export const run = (async () => {
     },
   };
 
-  const riskClassification = expressionFactory.create(
-    riskClassificationModel,
-    `
-        riskScore >= thresholds.highRisk
-            ? 'HIGH'
-            : riskScore >= thresholds.mediumRisk
-                ? 'MEDIUM'
-                : 'LOW'
-    `,
-  );
+  const riskClassification = rsx(`
+    riskScore >= thresholds.highRisk
+      ? 'HIGH'
+      : riskScore >= thresholds.mediumRisk
+          ? 'MEDIUM'
+          : 'LOW'
+    `)(riskClassificationModel);
 
   console.log('Initial risk: ');
   const changeSubscription = riskClassification.changed.subscribe(() => {
@@ -560,11 +519,11 @@ With the modular implementation, we notice the following improvements:
 
 Modular expressions form a powerful foundation for advanced data binding and reactive logic in RS-X.
 
-## Get an instance of the Expression Parser Factory
+## Creating an RS-X expression
 
-The expression parser factory is registered as a **singleton service**.  
-You must load the module into the injection container if you went
-to use it.
+Using the IExpressionFactory directly is one way to create an RS-X expression. The factory is registered as a **singleton service** in the injection container and internally handles caching. This means that the same expression string is only parsed once, even if it is used multiple times.
+
+Before using it, you must ensure that the expression parser module has been loaded into the InjectionContainer.
 
 ```ts
 import { InjectionContainer } from '@rs-x/core';
@@ -609,6 +568,36 @@ There are two ways to get an instance:
      ) {}
    }
    ```
+
+### Shortcut for Creating an RS-X Expression
+
+You can use the rsx template tag function to simplify the creation of an RS-X expression.
+
+Instead of manually resolving the IExpressionFactory and calling create, you can write:
+
+```ts
+import { rsx } from '@rs-x/expression-parser';
+
+const model = { a: 10, b: 20 };
+const expression = rsx<number>('a + b')(model);
+```
+
+This is equivalent to:
+
+```ts
+import { InjectionContainer } from '@rs-x/core';
+
+import {
+  IExpressionFactory,
+  RsXExpressionParserInjectionTokens,
+} from '@rs-x/expression-parser';
+
+const model = { a: 10, b: 20 };
+const expressionFactory: IExpressionFactory = InjectionContainer.get(
+  RsXExpressionParserInjectionTokens.IExpressionFactory,
+);
+const expression = expressionFactory.create(model, 'a + b');
+```
 
 ## Resolving Identifier Owner
 
@@ -680,17 +669,10 @@ All non-assignment JavaScript expressions are supported. These expressions can b
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -698,7 +680,7 @@ export const run = (async () => {
     b: 3,
   };
 
-  const expression = expressionFactory.create(model, 'a + b');
+  const expression = rsx<number>('a + b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -741,17 +723,10 @@ import {
   printValue,
   WaitForEvent,
 } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -759,7 +734,7 @@ export const run = (async () => {
     array: [1, 2],
   };
 
-  const expression = expressionFactory.create(model, '[a, ...array, 100]');
+  const expression = rsx<number[]>('[a, ...array, 100]')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -808,17 +783,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -826,7 +794,7 @@ export const run = (async () => {
     b: 3,
   };
 
-  const expression = expressionFactory.create(model, 'a & b');
+  const expression = rsx<number>('a & b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -864,17 +832,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -882,7 +843,7 @@ export const run = (async () => {
     b: 2,
   };
 
-  const expression = expressionFactory.create(model, 'a << b');
+  const expression = rsx<number>('a << b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -920,24 +881,17 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
     a: 5,
   };
 
-  const expression = expressionFactory.create(model, '~a');
+  const expression = rsx<number>('~a')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -968,17 +922,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -986,7 +933,7 @@ export const run = (async () => {
     b: 2,
   };
 
-  const expression = expressionFactory.create(model, 'a | b');
+  const expression = rsx<number>('a | b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1024,17 +971,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -1042,7 +982,7 @@ export const run = (async () => {
     b: 2,
   };
 
-  const expression = expressionFactory.create(model, 'a >> b');
+  const expression = rsx<number>('a >> b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1080,17 +1020,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -1098,7 +1031,7 @@ export const run = (async () => {
     b: 2,
   };
 
-  const expression = expressionFactory.create(model, 'a >>> b');
+  const expression = rsx<number>('a >>> b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1136,17 +1069,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -1154,7 +1080,7 @@ export const run = (async () => {
     b: 3,
   };
 
-  const expression = expressionFactory.create(model, 'a ^ b');
+  const expression = rsx<number>('a ^ b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1192,17 +1118,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -1212,7 +1131,7 @@ export const run = (async () => {
     d: 200,
   };
 
-  const expression = expressionFactory.create(model, 'a > b ? c : d');
+  const expression = rsx<number>('a > b ? c : d')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1264,17 +1183,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -1282,7 +1194,7 @@ export const run = (async () => {
     b: 2,
   };
 
-  const expression = expressionFactory.create(model, 'a / b');
+  const expression = rsx<boolean>('a / b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1320,17 +1232,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -1338,7 +1243,7 @@ export const run = (async () => {
     b: 2,
   };
 
-  const expression = expressionFactory.create(model, 'a == b');
+  const expression = rsx<number>('a == b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1376,17 +1281,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -1394,7 +1292,7 @@ export const run = (async () => {
     b: 3,
   };
 
-  const expression = expressionFactory.create(model, 'a ** b');
+  const expression = rsx<number>('a ** b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1432,17 +1330,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -1453,7 +1344,7 @@ export const run = (async () => {
     },
   };
 
-  const expression = expressionFactory.create(model, 'multiply(a, b)');
+  const expression = rsx<number>('multiply(a, b)')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1491,17 +1382,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -1509,7 +1393,7 @@ export const run = (async () => {
     b: 2,
   };
 
-  const expression = expressionFactory.create(model, 'a > b');
+  const expression = rsx<boolean>('a > b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1547,17 +1431,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -1565,7 +1442,7 @@ export const run = (async () => {
     b: 2,
   };
 
-  const expression = expressionFactory.create(model, 'a >= b');
+  const expression = rsx<boolean>('a >= b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1608,17 +1485,10 @@ import {
   Type,
   WaitForEvent,
 } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -1628,7 +1498,7 @@ export const run = (async () => {
     },
   };
 
-  const expression = expressionFactory.create(model, 'propertyName in b');
+  const expression = rsx<boolean>('propertyName in b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1666,17 +1536,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -1684,7 +1547,7 @@ export const run = (async () => {
     b: 2,
   };
 
-  const expression = expressionFactory.create(model, 'a != b');
+  const expression = rsx<boolean>('a != b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1727,17 +1590,10 @@ import {
   Type,
   WaitForEvent,
 } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -1745,8 +1601,7 @@ export const run = (async () => {
     a: new Date(),
   };
 
-  const expression = expressionFactory.create(model, 'a instanceof type');
-
+  const expression = rsx<boolean>('a instanceof type')(model);
   try {
     // Wait until the expression has been resolved (has a value)
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);
@@ -1787,17 +1642,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -1805,7 +1653,7 @@ export const run = (async () => {
     b: 3,
   };
 
-  const expression = expressionFactory.create(model, 'a < b');
+  const expression = rsx<boolean>('a < b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1843,17 +1691,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -1861,7 +1702,7 @@ export const run = (async () => {
     b: 3,
   };
 
-  const expression = expressionFactory.create(model, 'a <= b');
+  const expression = rsx<boolean>('a <= b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1899,17 +1740,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -1917,7 +1751,7 @@ export const run = (async () => {
     b: true,
   };
 
-  const expression = expressionFactory.create(model, 'a && b');
+  const expression = rsx<boolean>('a && b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -1955,24 +1789,17 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
     a: false,
   };
 
-  const expression = expressionFactory.create(model, '!a');
+  const expression = rsx<boolean>('!a')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2003,17 +1830,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -2021,7 +1841,7 @@ export const run = (async () => {
     b: false,
   };
 
-  const expression = expressionFactory.create(model, 'a || b');
+  const expression = rsx<boolean>('a || b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2066,17 +1886,10 @@ export const run = (async () => {
     printValue,
     WaitForEvent,
   } from '@rs-x/core';
-  import {
-    type IExpressionFactory,
-    RsXExpressionParserInjectionTokens,
-    RsXExpressionParserModule,
-  } from '@rs-x/expression-parser';
+  import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
   // Load the expression parser module into the injection container
   InjectionContainer.load(RsXExpressionParserModule);
-  const expressionFactory: IExpressionFactory = InjectionContainer.get(
-    RsXExpressionParserInjectionTokens.IExpressionFactory,
-  );
 
   export const run = (async () => {
     const model = {
@@ -2087,7 +1900,7 @@ export const run = (async () => {
       },
     };
 
-    const expression = expressionFactory.create(model, 'a.b.c');
+    const expression = rsx<number>('a.b.c')(model);
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -2137,17 +1950,10 @@ export const run = (async () => {
     printValue,
     WaitForEvent,
   } from '@rs-x/core';
-  import {
-    type IExpressionFactory,
-    RsXExpressionParserInjectionTokens,
-    RsXExpressionParserModule,
-  } from '@rs-x/expression-parser';
+  import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
   // Load the expression parser module into the injection container
   InjectionContainer.load(RsXExpressionParserModule);
-  const expressionFactory: IExpressionFactory = InjectionContainer.get(
-    RsXExpressionParserInjectionTokens.IExpressionFactory,
-  );
 
   export const run = (async () => {
     const model = {
@@ -2168,7 +1974,7 @@ export const run = (async () => {
       x: { y: 1 },
     };
 
-    const expression = expressionFactory.create(model, 'a.b[1].c.d');
+    const expression = rsx<number>('a.b[1].c.d')(model);
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -2247,17 +2053,10 @@ export const run = (async () => {
     Type,
     WaitForEvent,
   } from '@rs-x/core';
-  import {
-    type IExpressionFactory,
-    RsXExpressionParserInjectionTokens,
-    RsXExpressionParserModule,
-  } from '@rs-x/expression-parser';
+  import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
   // Load the expression parser module into the injection container
   InjectionContainer.load(RsXExpressionParserModule);
-  const expressionFactory: IExpressionFactory = InjectionContainer.get(
-    RsXExpressionParserInjectionTokens.IExpressionFactory,
-  );
 
   export const run = (async () => {
     const model: { a: { b: Map<string, { c: { d: number } }> } } = {
@@ -2269,7 +2068,7 @@ export const run = (async () => {
       },
     };
 
-    const expression = expressionFactory.create(model, `a.b['b'].c.d`);
+    const expression = rsx<number>(`a.b['b'].c.d`)(model);
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -2337,17 +2136,10 @@ export const run = (async () => {
     printValue,
     WaitForEvent,
   } from '@rs-x/core';
-  import {
-    type IExpressionFactory,
-    RsXExpressionParserInjectionTokens,
-    RsXExpressionParserModule,
-  } from '@rs-x/expression-parser';
+  import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
   // Load the expression parser module into the injection container
   InjectionContainer.load(RsXExpressionParserModule);
-  const expressionFactory: IExpressionFactory = InjectionContainer.get(
-    RsXExpressionParserInjectionTokens.IExpressionFactory,
-  );
 
   export const run = (async () => {
     const model = {
@@ -2364,10 +2156,9 @@ export const run = (async () => {
       },
     };
 
-    const expression = expressionFactory.create(
-      model,
+    const expression = rsx<string>(
       'a.b.mail(message, subject).messageWithSubject',
-    );
+    )(model);
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -2420,17 +2211,10 @@ export const run = (async () => {
     printValue,
     WaitForEvent,
   } from '@rs-x/core';
-  import {
-    type IExpressionFactory,
-    RsXExpressionParserInjectionTokens,
-    RsXExpressionParserModule,
-  } from '@rs-x/expression-parser';
+  import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
   // Load the expression parser module into the injection container
   InjectionContainer.load(RsXExpressionParserModule);
-  const expressionFactory: IExpressionFactory = InjectionContainer.get(
-    RsXExpressionParserInjectionTokens.IExpressionFactory,
-  );
 
   export const run = (async () => {
     const nestedObservable = new BehaviorSubject({ d: 200 });
@@ -2442,7 +2226,8 @@ export const run = (async () => {
         }),
       },
     };
-    const expression = expressionFactory.create(model, `a.b.c.d`);
+
+    const expression = rsx<number>('a.b.c.d')(model);
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -2500,17 +2285,10 @@ export const run = (async () => {
     printValue,
     WaitForEvent,
   } from '@rs-x/core';
-  import {
-    type IExpressionFactory,
-    RsXExpressionParserInjectionTokens,
-    RsXExpressionParserModule,
-  } from '@rs-x/expression-parser';
+  import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
   // Load the expression parser module into the injection container
   InjectionContainer.load(RsXExpressionParserModule);
-  const expressionFactory: IExpressionFactory = InjectionContainer.get(
-    RsXExpressionParserInjectionTokens.IExpressionFactory,
-  );
 
   export const run = (async () => {
     const model = {
@@ -2523,7 +2301,7 @@ export const run = (async () => {
       },
     };
 
-    const expression = expressionFactory.create(model, `a.b.c.d`);
+    const expression = rsx<number>('a.b.c.d')(model);
 
     try {
       // Wait until the expression has been resolved (has a value)
@@ -2558,17 +2336,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -2576,7 +2347,7 @@ export const run = (async () => {
     b: 3,
   };
 
-  const expression = expressionFactory.create(model, 'a * b');
+  const expression = rsx<number>('a * b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2620,17 +2391,10 @@ import {
   Type,
   WaitForEvent,
 } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   class Value {
@@ -2648,7 +2412,7 @@ export const run = (async () => {
     value: 10,
   };
 
-  const expression = expressionFactory.create(model, 'new type(value)');
+  const expression = rsx<Value | Add10>('new type(value)')(model);
 
   function print(instance: unknown): void {
     console.log(Type.getConstructorName(instance));
@@ -2691,17 +2455,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model: { a: null | number; b: number } = {
@@ -2709,7 +2466,7 @@ export const run = (async () => {
     b: 10,
   };
 
-  const expression = expressionFactory.create(model, 'a ?? b');
+  const expression = rsx<number>('a ?? b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2759,17 +2516,10 @@ import {
   printValue,
   WaitForEvent,
 } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -2777,7 +2527,7 @@ export const run = (async () => {
     y: 20,
   };
 
-  const expression = expressionFactory.create(model, '({ a: x, b: y })');
+  const expression = rsx<{ a: number; b: number }>('({ a: x, b: y })')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2815,17 +2565,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -2833,7 +2576,7 @@ export const run = (async () => {
     b: 2,
   };
 
-  const expression = expressionFactory.create(model, 'a % b');
+  const expression = rsx<number>('a % b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2871,17 +2614,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -2892,7 +2628,7 @@ export const run = (async () => {
     },
   };
 
-  const expression = expressionFactory.create(model, '(setB(value), b)');
+  const expression = rsx<number>('(setB(value), b)')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2932,17 +2668,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -2950,7 +2679,7 @@ export const run = (async () => {
     b: 2 as string | number,
   };
 
-  const expression = expressionFactory.create(model, 'a === b');
+  const expression = rsx<boolean>('a === b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -2988,17 +2717,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -3006,7 +2728,7 @@ export const run = (async () => {
     b: 2 as string | number,
   };
 
-  const expression = expressionFactory.create(model, 'a !== b');
+  const expression = rsx<boolean>('a !== b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -3044,17 +2766,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -3062,7 +2777,7 @@ export const run = (async () => {
     b: 3,
   };
 
-  const expression = expressionFactory.create(model, 'a - b');
+  const expression = rsx<number>('a - b')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -3100,24 +2815,17 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
     message: 'hi',
   };
 
-  const expression = expressionFactory.create(model, '`Say ${message}`');
+  const expression = rsx<string>('`Say ${message}`')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -3150,17 +2858,10 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
@@ -3168,7 +2869,7 @@ export const run = (async () => {
     a: ['1', 1],
   };
 
-  const expression = expressionFactory.create(model, 'typeof a[index]');
+  const expression = rsx<string>('typeof a[index]')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -3199,24 +2900,17 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
     value: 1,
   };
 
-  const expression = expressionFactory.create(model, '-value');
+  const expression = rsx<number>('-value')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)
@@ -3247,24 +2941,17 @@ export const run = (async () => {
 
 ```ts
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   const model = {
     value: '2',
   };
 
-  const expression = expressionFactory.create(model, '+value');
+  const expression = rsx<number>('+value')(model);
 
   try {
     // Wait until the expression has been resolved (has a value)

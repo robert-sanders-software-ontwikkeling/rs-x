@@ -1,6 +1,5 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import {
   ExpressionType,
@@ -12,16 +11,13 @@ import {
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../../lib/rsx';
 
 describe('UnaryNegationExpression tests', () => {
-  let expressionFactory: IExpressionFactory;
   let expression: IExpression | undefined;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
-    expressionFactory = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    );
   });
 
   afterAll(async () => {
@@ -34,8 +30,9 @@ describe('UnaryNegationExpression tests', () => {
   });
 
   it('type', () => {
-    const context = { value: 1 };
-    expression = expressionFactory.create(context, '-value');
+    const model = { value: 1 };
+
+    expression = rsx('-value')(model);
 
     expect(expression.type).toEqual(ExpressionType.UnaryNegation);
   });
@@ -44,8 +41,8 @@ describe('UnaryNegationExpression tests', () => {
     const services: IExpressionServices = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
-    const context = { value: 1 };
-    expression = expressionFactory.create(context, '-value');
+    const model = { value: 1 };
+    expression = rsx('-value')(model);
 
     const clonedExpression = expression.clone();
 
@@ -56,7 +53,7 @@ describe('UnaryNegationExpression tests', () => {
 
       await new WaitForEvent(clonedExpression, 'changed').wait(() => {
         clonedExpression.bind({
-          rootContext: context,
+          rootContext: model,
           services,
         });
 
@@ -69,8 +66,8 @@ describe('UnaryNegationExpression tests', () => {
   });
 
   it('will emit change event for initial value', async () => {
-    const context = { value: 1 };
-    expression = expressionFactory.create(context, '-value');
+    const model = { value: 1 };
+    expression = rsx('-value')(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -81,15 +78,16 @@ describe('UnaryNegationExpression tests', () => {
   });
 
   it('will emit change event when operands changes', async () => {
-    const context = { value: 1 };
-    expression = expressionFactory.create(context, '-value');
+    const model = { value: 1 };
+    expression = rsx('-value')(model);
+
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
     const actual = (await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      context.value = -2;
+      model.value = -2;
     })) as IExpression;
 
     expect(actual.value).toEqual(2);
