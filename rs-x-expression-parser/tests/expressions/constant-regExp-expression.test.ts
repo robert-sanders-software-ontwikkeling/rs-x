@@ -1,6 +1,5 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import { ConstantRegExpExpression } from '../../lib/expressions/constant-regexp-expression';
 import {
@@ -12,16 +11,13 @@ import {
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../../lib/rsx';
 
 describe('ConstantRegExpExpression tests', () => {
-  let expressionFactory: IExpressionFactory;
   let expression: IExpression | undefined;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
-    expressionFactory = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    );
   });
 
   afterAll(async () => {
@@ -34,7 +30,8 @@ describe('ConstantRegExpExpression tests', () => {
   });
 
   it('type', () => {
-    expression = expressionFactory.create({}, '/ab+c/i');
+    expression = rsx`/ab+c/i`({});
+
     expect(expression.type).toEqual(ExpressionType.RegExp);
   });
 
@@ -42,7 +39,7 @@ describe('ConstantRegExpExpression tests', () => {
     const services: IExpressionServices = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
-    expression = expressionFactory.create({}, '/ab+c/i');
+    expression = expression = rsx`/ab+c/i`({});
 
     const clonedExpression = expression.clone();
 
@@ -66,7 +63,7 @@ describe('ConstantRegExpExpression tests', () => {
   });
 
   it('will emit change event for initial value', async () => {
-    expression = expressionFactory.create({}, '/ab+c/i');
+    expression = expression = rsx`/ab+c/i`({});
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},

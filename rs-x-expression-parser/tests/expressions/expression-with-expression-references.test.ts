@@ -1,15 +1,15 @@
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import { type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
-import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../../lib/rsx';
 
 describe('Expression with expression reference', () => {
-  let expressionFactory: IExpressionFactory;
+  let expression: IExpression;
+
   interface IItem {
     expression: IExpression<number>;
   }
@@ -20,18 +20,20 @@ describe('Expression with expression reference', () => {
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
-    expressionFactory = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    );
   });
 
   afterAll(async () => {
     await unloadRsXExpressionParserModule();
   });
 
+  afterEach(() => {
+    if (expression) {
+      expression.dispose();
+    }
+  });
   it('initial value', async () => {
     const item = { a: 1 };
-    const itemExpression = expressionFactory.create<number>(item, 'a');
+    const itemExpression = rsx<number>`a`(item);
     const model: IModel = {
       items: [
         {
@@ -40,10 +42,10 @@ describe('Expression with expression reference', () => {
       ],
     };
 
-    const expresion = expressionFactory.create<IItem[]>(model, 'items');
+    expression = rsx<number>`items`(model);
 
-    await new WaitForEvent(expresion, 'changed').wait(emptyFunction);
+    await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-    expect(expresion.value).toEqual(model.items);
+    expect(expression.value).toEqual(model.items);
   });
 });

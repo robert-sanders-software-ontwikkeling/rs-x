@@ -1,6 +1,5 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import { ConstantNumberExpression } from '../../lib/expressions/constant-number-expression';
 import {
@@ -12,16 +11,13 @@ import {
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../../lib/rsx';
 
 describe('ConstantNumberExpression tests', () => {
-  let expressionFactory: IExpressionFactory;
   let expression: IExpression | undefined;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
-    expressionFactory = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    );
   });
 
   afterAll(async () => {
@@ -34,7 +30,8 @@ describe('ConstantNumberExpression tests', () => {
   });
 
   it('type', () => {
-    expression = expressionFactory.create({}, '100');
+    expression = rsx`100`({});
+
     expect(expression.type).toEqual(ExpressionType.Number);
   });
 
@@ -42,7 +39,7 @@ describe('ConstantNumberExpression tests', () => {
     const services: IExpressionServices = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
-    expression = expressionFactory.create({}, '100');
+    expression = rsx`100`({});
 
     const clonedExpression = expression.clone();
 
@@ -66,7 +63,7 @@ describe('ConstantNumberExpression tests', () => {
   });
 
   it('will emit change event for initial value', async () => {
-    expression = expressionFactory.create({}, '100');
+    expression = rsx`100`({});
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},

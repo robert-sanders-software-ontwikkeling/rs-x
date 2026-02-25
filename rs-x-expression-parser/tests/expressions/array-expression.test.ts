@@ -1,7 +1,6 @@
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import { IndexWatchRuleMock } from '@rs-x/state-manager/testing';
 
-import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import { ArrayExpression } from '../../lib/expressions/array-expression';
 import {
@@ -13,16 +12,13 @@ import {
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../../lib/rsx';
 
 describe('Array expression tests', () => {
-  let expressionFactory: IExpressionFactory;
   let expression: IExpression | undefined;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
-    expressionFactory = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    );
   });
 
   afterAll(async () => {
@@ -35,7 +31,8 @@ describe('Array expression tests', () => {
   });
 
   it('type', () => {
-    expression = expressionFactory.create({}, '[1,2]');
+    expression = rsx`[1,2]`({});
+
     expect(expression.type).toEqual(ExpressionType.Array);
   });
 
@@ -43,8 +40,8 @@ describe('Array expression tests', () => {
     const services: IExpressionServices = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
-    const context = { array: [2, 3] };
-    expression = expressionFactory.create(context, '[1, 2]');
+
+    expression = rsx`[1,2]`({});
 
     const clonedExpression = expression.clone();
 
@@ -55,7 +52,7 @@ describe('Array expression tests', () => {
 
       await new WaitForEvent(clonedExpression, 'changed').wait(() => {
         clonedExpression.bind({
-          rootContext: context,
+          rootContext: {},
           services,
         });
 
@@ -68,7 +65,7 @@ describe('Array expression tests', () => {
   });
 
   it('will emit change event for initial value: [1, 2]', async () => {
-    expression = expressionFactory.create({}, '[1, 2]');
+    expression = rsx`[1,2]`({});
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
     )) as IExpression;
@@ -78,7 +75,7 @@ describe('Array expression tests', () => {
   });
 
   it('will emit change event for initial value: [1, ...[2, 3]]', async () => {
-    expression = expressionFactory.create({}, ' [1, ...[2, 3]]');
+    expression = rsx`[1, ...[2, 3]]`({});
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -89,15 +86,17 @@ describe('Array expression tests', () => {
   });
 
   it('will emit change event when one of the identifiers in array expression changes', async () => {
-    const context = {
+    const model = {
       array: [2, 3],
     };
-    expression = expressionFactory.create(context, ' [1, ...array]');
+
+    expression = rsx`[1, ...array]`(model);
+
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
-      context.array.push(4);
+      model.array.push(4);
     })) as IExpression;
 
     expect(expression.value).toEqual([1, 2, 3, 4]);
@@ -105,17 +104,17 @@ describe('Array expression tests', () => {
   });
 
   it('will  not watch items by default', async () => {
-    const context = {
+    const model = {
       array: [{ value: 2 }, { value: 3 }],
     };
-    expression = expressionFactory.create(context, ' [1, ...array]');
+    expression = rsx`[1, ...array]`(model);
 
-    expect(context.array[0]).not.isWritableProperty('value');
-    expect(context.array[1]).not.isWritableProperty('value');
+    expect(model.array[0]).not.isWritableProperty('value');
+    expect(model.array[1]).not.isWritableProperty('value');
   });
 
   it('will  watch item property for which should-watch-index predicate return true  ', async () => {
-    const context = {
+    const model = {
       array: [
         { x: 2, y: 3 },
         { x: 4, Y: 5 },
@@ -131,17 +130,14 @@ describe('Array expression tests', () => {
         return index === 'x';
       },
     );
-    expression = expressionFactory.create(
-      context,
-      ' [1, ...array]',
-      indexWatchRule,
-    );
+
+    expression = rsx`[1, ...array]`(model, indexWatchRule);
 
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-    expect(context.array[0]).isWritableProperty('x');
-    expect(context.array[1]).isWritableProperty('x');
-    expect(context.array[0]).not.isWritableProperty('y');
-    expect(context.array[1]).not.isWritableProperty('y');
+    expect(model.array[0]).isWritableProperty('x');
+    expect(model.array[1]).isWritableProperty('x');
+    expect(model.array[0]).not.isWritableProperty('y');
+    expect(model.array[1]).not.isWritableProperty('y');
   });
 });

@@ -1,6 +1,5 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import {
   ExpressionType,
@@ -12,16 +11,13 @@ import {
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../../lib/rsx';
 
 describe('NullishCoalescingExpression tests', () => {
-  let expressionFactory: IExpressionFactory;
   let expression: IExpression | undefined;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
-    expressionFactory = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    );
   });
 
   afterAll(async () => {
@@ -34,11 +30,12 @@ describe('NullishCoalescingExpression tests', () => {
   });
 
   it('type', () => {
-    const context = {
+    const model = {
       a: null,
       b: 10,
     };
-    expression = expressionFactory.create(context, 'a ?? b');
+
+    expression = rsx`a ?? b`(model);
     expect(expression.type).toEqual(ExpressionType.NullishCoalescing);
   });
 
@@ -46,11 +43,11 @@ describe('NullishCoalescingExpression tests', () => {
     const services: IExpressionServices = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
-    const context = {
+    const model = {
       a: null,
       b: 10,
     };
-    expression = expressionFactory.create(context, 'a ?? b');
+    expression = rsx`a ?? b`(model);
 
     const clonedExpression = expression.clone();
 
@@ -61,7 +58,7 @@ describe('NullishCoalescingExpression tests', () => {
 
       await new WaitForEvent(clonedExpression, 'changed').wait(() => {
         clonedExpression.bind({
-          rootContext: context,
+          rootContext: model,
           services,
         });
 
@@ -74,11 +71,11 @@ describe('NullishCoalescingExpression tests', () => {
   });
 
   it('will emit change event for initial value', async () => {
-    const context = {
+    const model = {
       a: null,
       b: 10,
     };
-    expression = expressionFactory.create(context, 'a ?? b');
+    expression = rsx`a ?? b`(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -89,18 +86,19 @@ describe('NullishCoalescingExpression tests', () => {
   });
 
   it('will emit change event when parameters changes', async () => {
-    const context: { a: number | null; b: number } = {
+    const model: { a: number | null; b: number } = {
       a: null,
       b: 10,
     };
-    expression = expressionFactory.create(context, 'a ?? b');
+    expression = rsx`a ?? b`(model);
+
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
     const actual = (await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      context.a = 20;
+      model.a = 20;
     })) as IExpression;
 
     expect(actual.value).toEqual(20);

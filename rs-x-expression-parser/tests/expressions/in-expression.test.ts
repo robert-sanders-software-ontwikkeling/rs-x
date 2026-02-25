@@ -1,6 +1,5 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import {
   ExpressionType,
@@ -12,16 +11,13 @@ import {
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../../lib/rsx';
 
 describe('InExpression tests', () => {
-  let expressionFactory: IExpressionFactory;
   let expression: IExpression | undefined;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
-    expressionFactory = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    );
   });
 
   afterAll(async () => {
@@ -34,12 +30,14 @@ describe('InExpression tests', () => {
   });
 
   it('type', () => {
-    const context = {
+    const model = {
       b: {
         hello: 'hi',
       },
     };
-    expression = expressionFactory.create(context, '"hello" in b');
+
+    expression = rsx`"hello" in b`(model);
+
     expect(expression.type).toEqual(ExpressionType.In);
   });
 
@@ -47,12 +45,12 @@ describe('InExpression tests', () => {
     const services: IExpressionServices = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
-    const context = {
+    const model = {
       b: {
         hello: 'hi',
       },
     };
-    expression = expressionFactory.create(context, '"hello" in b');
+    expression = rsx`"hello" in b`(model);
 
     const clonedExpression = expression.clone();
 
@@ -63,7 +61,7 @@ describe('InExpression tests', () => {
 
       await new WaitForEvent(clonedExpression, 'changed').wait(() => {
         clonedExpression.bind({
-          rootContext: context,
+          rootContext: model,
           services,
         });
 
@@ -76,12 +74,12 @@ describe('InExpression tests', () => {
   });
 
   it('will emit change event for initial value: true', async () => {
-    const context = {
+    const model = {
       b: {
         hello: 'hi',
       },
     };
-    expression = expressionFactory.create(context, ' "hello" in b');
+    expression = rsx`"hello" in b`(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -92,12 +90,13 @@ describe('InExpression tests', () => {
   });
 
   it('will emit change event for initial value: false', async () => {
-    const context = {
+    const model = {
       b: {
         hello: 'hi',
       },
     };
-    expression = expressionFactory.create(context, ' "x" in b');
+
+    expression = rsx`"x" in b`(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -108,20 +107,21 @@ describe('InExpression tests', () => {
   });
 
   it('will emit change event when argument changes', async () => {
-    const context = {
+    const model = {
       propertyName: 'hello',
       b: {
         hello: 'hi',
       },
     };
-    expression = expressionFactory.create(context, ' propertyName in b');
+    expression = rsx`propertyName in b`(model);
+
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
     const actual = (await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      context.propertyName = 'x';
+      model.propertyName = 'x';
     })) as IExpression;
 
     expect(actual.value).toEqual(false);

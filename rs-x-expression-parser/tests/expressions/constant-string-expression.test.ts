@@ -1,6 +1,5 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import { ConstantStringExpression } from '../../lib/expressions/constant-string-expression';
 import {
@@ -12,16 +11,13 @@ import {
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../../lib/rsx';
 
 describe('ConstantStringExpression tests', () => {
-  let expressionFactory: IExpressionFactory;
   let expression: IExpression | undefined;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
-    expressionFactory = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    );
   });
 
   afterAll(async () => {
@@ -34,7 +30,8 @@ describe('ConstantStringExpression tests', () => {
   });
 
   it('type', () => {
-    expression = expressionFactory.create({}, '"hi"');
+    expression = rsx`"hi"`({});
+
     expect(expression.type).toEqual(ExpressionType.String);
   });
 
@@ -42,7 +39,8 @@ describe('ConstantStringExpression tests', () => {
     const services: IExpressionServices = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
-    expression = expressionFactory.create({}, '`hi`');
+
+    expression = rsx`'hi'`({});
 
     const clonedExpression = expression.clone();
 
@@ -65,35 +63,14 @@ describe('ConstantStringExpression tests', () => {
     }
   });
 
-  it('type: backtick', () => {
-    expression = expressionFactory.create({}, '`hi`');
+  it('will return type "string" for template string without parameters ', () => {
+    expression = rsx`\`hi\``({});
+
     expect(expression.type).toEqual(ExpressionType.String);
   });
 
-  it('will emit change event for initial value: double quotes', async () => {
-    expression = expressionFactory.create({}, '"hi"');
-
-    const actual = (await new WaitForEvent(expression, 'changed').wait(
-      () => {},
-    )) as IExpression;
-
-    expect(actual.value).toEqual('hi');
-    expect(actual).toBe(expression);
-  });
-
-  it('will emit change event for initial value: single quotes', async () => {
-    expression = expressionFactory.create({}, "'hi'");
-
-    const actual = (await new WaitForEvent(expression, 'changed').wait(
-      () => {},
-    )) as IExpression;
-
-    expect(actual.value).toEqual('hi');
-    expect(actual).toBe(expression);
-  });
-
-  it('will emit change event for initial value: backtick', async () => {
-    expression = expressionFactory.create({}, '`hi`');
+  it('will emit change event for initial value', async () => {
+    expression = rsx`'hi'`({});
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},

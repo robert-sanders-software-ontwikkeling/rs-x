@@ -1,6 +1,5 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import {
   ExpressionType,
@@ -12,16 +11,13 @@ import {
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../../lib/rsx';
 
 describe('SequenceExpression tests', () => {
-  let expressionFactory: IExpressionFactory;
   let expression: IExpression | undefined;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
-    expressionFactory = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    );
   });
 
   afterAll(async () => {
@@ -34,14 +30,15 @@ describe('SequenceExpression tests', () => {
   });
 
   it('type', () => {
-    const context = {
+    const model = {
       b: 2,
       value: 100,
       setB(v: number) {
         this.b = v;
       },
     };
-    expression = expressionFactory.create(context, '(setB(value), b)');
+    expression = rsx`(setB(value), b)`(model);
+
     expect(expression.type).toEqual(ExpressionType.Sequence);
   });
 
@@ -49,15 +46,14 @@ describe('SequenceExpression tests', () => {
     const services: IExpressionServices = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
-    const context: { b: number | null; value: number; setB(v: number): void } =
-      {
-        b: null,
-        value: 100,
-        setB(v: number) {
-          this.b = v;
-        },
-      };
-    expression = expressionFactory.create(context, '(setB(value), b)');
+    const model: { b: number | null; value: number; setB(v: number): void } = {
+      b: null,
+      value: 100,
+      setB(v: number) {
+        this.b = v;
+      },
+    };
+    expression = rsx`(setB(value), b)`(model);
 
     const clonedExpression = expression.clone();
 
@@ -68,7 +64,7 @@ describe('SequenceExpression tests', () => {
 
       await new WaitForEvent(clonedExpression, 'changed').wait(() => {
         clonedExpression.bind({
-          rootContext: context,
+          rootContext: model,
           services,
         });
 
@@ -81,15 +77,14 @@ describe('SequenceExpression tests', () => {
   });
 
   it('will emit change event for initial value', async () => {
-    const context: { b: number | null; value: number; setB(v: number): void } =
-      {
-        b: null,
-        value: 100,
-        setB(v: number) {
-          this.b = v;
-        },
-      };
-    expression = expressionFactory.create(context, '(setB(value), b)');
+    const model: { b: number | null; value: number; setB(v: number): void } = {
+      b: null,
+      value: 100,
+      setB(v: number) {
+        this.b = v;
+      },
+    };
+    expression = rsx`(setB(value), b)`(model);
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},
@@ -100,22 +95,22 @@ describe('SequenceExpression tests', () => {
   });
 
   it('will emit change event when operands changes', async () => {
-    const context: { b: number | null; value: number; setB(v: number): void } =
-      {
-        b: null,
-        value: 100,
-        setB(v: number) {
-          this.b = v;
-        },
-      };
-    expression = expressionFactory.create(context, '(setB(value), b)');
+    const model: { b: number | null; value: number; setB(v: number): void } = {
+      b: null,
+      value: 100,
+      setB(v: number) {
+        this.b = v;
+      },
+    };
+    expression = rsx`(setB(value), b)`(model);
+
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
     const actual = (await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
-      context.value = 200;
+      model.value = 200;
     })) as IExpression;
 
     expect(actual.value).toEqual(200);

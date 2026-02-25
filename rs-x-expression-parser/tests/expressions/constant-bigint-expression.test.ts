@@ -1,6 +1,5 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionFactory } from '../../lib/expression-factory/expression-factory.interface';
 import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import { ConstantBigIntExpression } from '../../lib/expressions/constant-bigint-expression';
 import {
@@ -12,16 +11,13 @@ import {
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../../lib/rsx';
 
 describe('ConstantBigIntExpression tests', () => {
-  let expressionFactory: IExpressionFactory;
   let expression: IExpression | undefined;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
-    expressionFactory = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    );
   });
 
   afterAll(async () => {
@@ -34,7 +30,8 @@ describe('ConstantBigIntExpression tests', () => {
   });
 
   it('type', () => {
-    expression = expressionFactory.create({}, '9007199254740991n');
+    expression = rsx`9007199254740991n`({});
+
     expect(expression.type).toEqual(ExpressionType.BigInt);
   });
 
@@ -42,7 +39,8 @@ describe('ConstantBigIntExpression tests', () => {
     const services: IExpressionServices = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionServices,
     );
-    expression = expressionFactory.create({}, '9007199254740991n');
+
+    expression = rsx`9007199254740991n`({});
 
     const clonedExpression = expression.clone();
 
@@ -66,7 +64,7 @@ describe('ConstantBigIntExpression tests', () => {
   });
 
   it('will emit change event for initial value', async () => {
-    expression = expressionFactory.create({}, '9007199254740991n');
+    expression = rsx`9007199254740991n`({});
 
     const actual = (await new WaitForEvent(expression, 'changed').wait(
       () => {},

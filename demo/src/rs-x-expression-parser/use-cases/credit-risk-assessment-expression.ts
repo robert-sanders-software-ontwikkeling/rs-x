@@ -1,17 +1,10 @@
 import { BehaviorSubject } from 'rxjs';
 
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
-import {
-  type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
-  RsXExpressionParserModule,
-} from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 // Load the expression parser module into the injection container
 InjectionContainer.load(RsXExpressionParserModule);
-const expressionFactory: IExpressionFactory = InjectionContainer.get(
-  RsXExpressionParserInjectionTokens.IExpressionFactory,
-);
 
 export const run = (async () => {
   interface IRisk {
@@ -42,7 +35,7 @@ export const run = (async () => {
     },
   };
 
-  const expressionString = `(
+  const expression = rsx`(
       (
         // =========================
         // Numeric risk score
@@ -106,9 +99,7 @@ export const run = (async () => {
                 : 'LOW'
             )
         )
-    )`;
-
-  const expression = expressionFactory.create(riskModel, expressionString);
+    )`(riskModel);
 
   console.log('Initial risk: ');
   const changeSubscription = expression.changed.subscribe(() => {

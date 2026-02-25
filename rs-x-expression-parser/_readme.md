@@ -210,11 +210,11 @@ With the modular implementation, we notice the following improvements:
 
 Modular expressions form a powerful foundation for advanced data binding and reactive logic in RS-X.
 
-## Get an instance of the Expression Parser Factory
+## Creating an RS-X expression
 
-The expression parser factory is registered as a **singleton service**.  
-You must load the module into the injection container if you went
-to use it.
+Using the IExpressionFactory directly is one way to create an RS-X expression. The factory is registered as a **singleton service** in the injection container and internally handles caching. This means that the same expression string is only parsed once, even if it is used multiple times.
+
+Before using it, you must ensure that the expression parser module has been loaded into the InjectionContainer.
 
 ```ts
 import { InjectionContainer } from '@rs-x/core';
@@ -259,6 +259,36 @@ There are two ways to get an instance:
      ) {}
    }
    ```
+
+### Shortcut for Creating an RS-X Expression
+
+You can use the rsx template tag function to simplify the creation of an RS-X expression.
+
+Instead of manually resolving the IExpressionFactory and calling create, you can write:
+
+```ts
+import { rsx } from '@rs-x/expression-parser';
+
+const model = { a: 10, b: 20 };
+const expression = rsx<number>`a + b`(model);
+```
+
+This is equivalent to:
+
+```ts
+import { InjectionContainer } from '@rs-x/core';
+
+import {
+  IExpressionFactory,
+  RsXExpressionParserInjectionTokens,
+} from '@rs-x/expression-parser';
+
+const model = { a: 10, b: 20 };
+const expressionFactory: IExpressionFactory = InjectionContainer.get(
+  RsXExpressionParserInjectionTokens.IExpressionFactory,
+);
+const expression = expressionFactory.create(model, 'a + b');
+```
 
 ## Resolving Identifier Owner
 
