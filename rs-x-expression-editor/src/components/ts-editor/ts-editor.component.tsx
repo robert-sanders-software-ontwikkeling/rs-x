@@ -6,7 +6,7 @@ import { FaCheck, FaTimes } from 'react-icons/fa';
 import './ts-editor.component.css';
 
 const beforeMount: BeforeMount = (monaco) => {
-  const ts = monaco.languages.typescript;
+  const ts = monaco.typescript;
   ts.typescriptDefaults.setEagerModelSync(true);
   ts.typescriptDefaults.setCompilerOptions({
     target: ts.ScriptTarget.ES2020,

@@ -7,8 +7,8 @@
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "jsx": "react-jsx",
-    "types": ["vite/client", "node"]
+    "skipLibCheck": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "lib/testing"]
+  "include": ["next-env.d.ts", "src/**/*", "app/**/*", "types/**/*.d.ts"],
+  "exclude": ["node_modules", "dist", "lib/testing", ".next"]
 }

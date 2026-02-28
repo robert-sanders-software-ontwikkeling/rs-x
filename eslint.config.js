@@ -10,7 +10,15 @@ import globals from 'globals';
 export default [
   // Ignore compiled and declaration files
   {
-    ignores: ['**/dist/**', '**/*.d.ts'],
+    ignores: [
+      '**/*.d.ts',
+      '**/.next/**',
+      '**/out/**',
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/build/**',
+      '**/coverage/**',
+    ],
   },
 
   // TypeScript files

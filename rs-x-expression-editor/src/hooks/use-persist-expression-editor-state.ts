@@ -4,12 +4,16 @@ import { ExpressionEdtitorStateSerializer } from '../services/expression-editor-
 import { useDebouncedEffect } from './use-debounced-effect';
 
 export function usePersistExpressionEditorState(
-  state: IExpressionEditorState,
+  state: IExpressionEditorState | null | undefined,
   delay = 200,
 ): void {
   useDebouncedEffect(
     () => {
-      return ExpressionEdtitorStateSerializer.getInstance().serialize(state);
+      if (!state) {
+        return;
+      }
+
+      ExpressionEdtitorStateSerializer.getInstance().serialize(state);
     },
     [state],
     delay,

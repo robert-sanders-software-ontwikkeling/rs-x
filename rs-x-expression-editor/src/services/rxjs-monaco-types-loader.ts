@@ -38,9 +38,9 @@ export class RxjsMonacoTypesLoader {
     if (!ts) return;
 
     ts.typescriptDefaults.setCompilerOptions({
-      target: monaco.languages.typescript.ScriptTarget.ES2020,
-      module: monaco.languages.typescript.ModuleKind.ESNext,
-      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+      target: monaco.typescript.ScriptTarget.ES2020,
+      module: monaco.typescript.ModuleKind.ESNext,
+      moduleResolution: monaco.typescript.ModuleResolutionKind.NodeJs,
       baseUrl: 'file:///',
       paths: {
         rxjs: ['node_modules/rxjs/dist/types/index.d.ts'],
@@ -51,7 +51,7 @@ export class RxjsMonacoTypesLoader {
       typeRoots: ['node_modules/@types'],
     });
 
-    const baseUrl = normalizeBaseUrl(import.meta.env.BASE_URL);
+    const baseUrl = normalizeBaseUrl(process.env.NEXT_PUBLIC_BASE_PATH ?? '/');
 
     const manifestRes = await fetch(`${baseUrl}monaco-dts/manifest.json`);
     if (!manifestRes.ok) {
@@ -95,7 +95,7 @@ export class RxjsMonacoTypesLoader {
       export {};
     `;
 
-    monaco.languages.typescript.typescriptDefaults.addExtraLib(
+    monaco.typescript.typescriptDefaults.addExtraLib(
       globalLib,
       'file:///globals/rxjs-global.d.ts',
     );

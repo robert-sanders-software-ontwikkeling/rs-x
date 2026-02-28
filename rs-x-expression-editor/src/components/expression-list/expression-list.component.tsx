@@ -9,12 +9,10 @@ import './expression-list.component.css';
 export interface IExpressionListProps {
   modelIndex: number;
   expressions: IExpressionInfo[];
-  selectedExpressionIndex: number | null;
-
+  selectedExpressionIndex: number | undefined;
   onSelect: (modelIndex: number, expressionIndex: number) => void;
   onEdit: (modelIndex: number, expressionIndex: number) => void;
   onDelete: (modelIndex: number, expressionIndex: number) => void;
-  onView: (modelIndex: number, expressionIndex: number) => void;
 }
 
 export const ExpressionList: React.FC<IExpressionListProps> = ({
@@ -24,7 +22,6 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
   onSelect,
   onEdit,
   onDelete,
-  onView,
 }) => {
   if (!expressions.length) {
     return <i className="expression-empty">No expressions yet</i>;
@@ -68,10 +65,7 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
             {/* LEFT SIDE */}
             <div className="expression-left">
               <FaSuperscript className="expression-icon" />
-              <div className="expression-code">
-                {expressionInfo.expression?.expressionString ??
-                  expressionInfo.editorExpressionString}
-              </div>
+              <div className="expression-code">{expressionInfo.name}</div>
             </div>
 
             {/* RIGHT SIDE */}
@@ -83,7 +77,7 @@ export const ExpressionList: React.FC<IExpressionListProps> = ({
                     className="icon-btn view-btn"
                     title="View details"
                     onClick={() => {
-                      onView(modelIndex, expressionIndex);
+                      onSelect(modelIndex, expressionIndex);
                     }}
                   >
                     <FaEye />

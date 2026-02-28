@@ -1,11 +1,13 @@
 import { type IModelWithExpressions } from './model-with-expressions.interface';
 
 export interface IExpressionEditorState {
-  error?: string;
+  errors: string[];
   addingModel: boolean;
   addingExpression: boolean;
   editingModelIndex: number;
   editingExpressionIndex: number;
+  deletingExpressionIndex: number;
+  deletingModelIndex: number;
   selectedModelIndex: number;
   treeZoomPercent: number;
   showExpressionTreeView: boolean;
@@ -13,11 +15,13 @@ export interface IExpressionEditorState {
 }
 
 export const NON_EDITITING_STATE = {
-  error: undefined,
+  errors: [],
   addingExpression: false,
   addingModel: false,
   editingExpressionIndex: -1,
   editingModelIndex: -1,
+  deletingExpressionIndex: -1,
+  deletingModelIndex: -1,
 };
 
 export function getInitialExpressionEditorState(): IExpressionEditorState {

@@ -15,7 +15,6 @@ export interface IModelListPanelProps {
   onSelectExpression: (modelIndex: number, expressionIndex: number) => void;
   onEditExpression: (modelIndex: number, expressionIndex: number) => void;
   onDeleteExpression: (modelIndex: number, expressionIndex: number) => void;
-  onViewExpression: (modelIndex: number, expressionIndex: number) => void;
 }
 
 export const ModelListPanel: React.FC<IModelListPanelProps> = ({
@@ -30,7 +29,6 @@ export const ModelListPanel: React.FC<IModelListPanelProps> = ({
   onSelectExpression,
   onEditExpression,
   onDeleteExpression,
-  onViewExpression,
 }) => {
   return (
     <div
@@ -39,7 +37,7 @@ export const ModelListPanel: React.FC<IModelListPanelProps> = ({
       }`}
     >
       <ModelList
-        selectModelIndex={selectedModelIndex}
+        selectedModelIndex={selectedModelIndex}
         modelsWithExpressions={modelsWithExpressions}
         onSelectModel={onSelectModel}
         onAddModel={onAddModel}
@@ -49,7 +47,6 @@ export const ModelListPanel: React.FC<IModelListPanelProps> = ({
         onSelectExpression={onSelectExpression}
         onEditExpression={onEditExpression}
         onDeleteExpression={onDeleteExpression}
-        onViewExpression={onViewExpression}
       />
     </div>
   );

@@ -10,6 +10,8 @@ import {
   RsXExpressionParserInjectionTokens,
 } from '@rs-x/expression-parser';
 
+import { type IModelWithExpressions } from '../models/model-with-expressions.interface';
+
 import { ModelEvaluator } from './model-evaluator';
 import { ModelExpressionsFactory } from './model-expressions.factory';
 
@@ -50,6 +52,46 @@ export class ExpressionEditorBusinessService {
 
   public evaluateModel(editorModelString: string): EvaluateModelResult {
     return ModelEvaluator.getInstance().evaluate(editorModelString);
+  }
+
+  public validateModelName(
+    name: string,
+    modelIndex: number,
+    models: IModelWithExpressions[],
+  ): string {
+    const trimmedName = name.trim();
+
+    if (
+      models.some(
+        (modelWithExpressions, index) =>
+          modelIndex !== index && modelWithExpressions.name === trimmedName,
+      )
+    ) {
+      return `Model name '${trimmedName}' already exists. Model name must be unique`;
+    }
+
+    return '';
+  }
+
+  public validateExpressionlName(
+    name: string,
+    modelIndex: number,
+    expressionIndex: number,
+    models: IModelWithExpressions[],
+  ): string {
+    if (!models[modelIndex]) {
+      return `No model found for index '${modelIndex}'`;
+    }
+
+    if (
+      models[modelIndex].expressions.some(
+        (expression, index) =>
+          expressionIndex !== index && expression.name === name,
+      )
+    ) {
+      return `Model '${models[modelIndex].name}' already contains an expression named '${name}'. Expression names must be unique within a model.`;
+    }
+    return '';
   }
 
   public compileExpression(

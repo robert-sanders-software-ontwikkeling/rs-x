@@ -16,10 +16,20 @@ export class ExpressionEditorStateBuilder {
     return this._state;
   }
 
-  public setError(error: string): this {
+  public clearErrors(): this {
     this._state = {
       ...this._state,
-      error,
+      errors: [],
+    };
+
+    return this;
+  }
+
+  public addError(error: string): this {
+    const errors = [...this._state.errors, error];
+    this._state = {
+      ...this._state,
+      errors,
     };
     return this;
   }
@@ -300,59 +310,22 @@ export class ExpressionEditorStateBuilder {
   public setExpressionIsDeleting(
     modelIndex: number,
     expressionIndex: number,
-    isDeleting: boolean,
   ): this {
-    const modelWithExpressions = this._state.modelsWithExpressions[modelIndex];
-    if (!modelWithExpressions) {
-      return this;
-    }
-
-    if (
-      expressionIndex < 0 ||
-      expressionIndex >= modelWithExpressions.expressions.length
-    ) {
-      return this;
-    }
-
-    const modelsWithExpressions = [...this._state.modelsWithExpressions];
-    const expressions = [...modelsWithExpressions[modelIndex].expressions];
-
-    expressions[expressionIndex] = {
-      ...expressions[expressionIndex],
-      isDeleting,
-    };
-
-    modelsWithExpressions[modelIndex] = {
-      ...modelsWithExpressions[modelIndex],
-      expressions,
-      selectedExpressionIndex: expressionIndex,
-    };
-
     this._state = {
       ...this._state,
+      ...NON_EDITITING_STATE,
       selectedModelIndex: modelIndex,
-      modelsWithExpressions,
+      deletingExpressionIndex: expressionIndex,
     };
 
     return this;
   }
 
-  public setModelIsDeleting(modelIndex: number, isDeleting: boolean): this {
-    const model = this._state.modelsWithExpressions[modelIndex];
-    if (!model) {
-      return this;
-    }
-
-    const modelsWithExpressions = [...this._state.modelsWithExpressions];
-
-    modelsWithExpressions[modelIndex] = {
-      ...model,
-      isDeleting,
-    };
-
+  public setModelIsDeleting(modelIndex: number): this {
     this._state = {
       ...this._state,
-      modelsWithExpressions,
+      ...NON_EDITITING_STATE,
+      deletingModelIndex: modelIndex,
     };
 
     return this;
@@ -370,7 +343,6 @@ export class ExpressionEditorStateBuilder {
       model,
       version: 0,
       editorModelString,
-      isDeleting: false,
       selectedExpressionIndex: -1,
       expressions: [],
     };
@@ -392,13 +364,19 @@ export class ExpressionEditorStateBuilder {
   }
 
   public updateModel(args: {
-    modelIndex: number;
+    modelId: number;
     name: string;
     editorModelString: string;
     model: object;
     compileResults: CompileExpressionResult[];
   }): this {
-    const { modelIndex, name, editorModelString, model, compileResults } = args;
+    const {
+      modelId: modelIndex,
+      name,
+      editorModelString,
+      model,
+      compileResults,
+    } = args;
 
     const modelInfo = this._state.modelsWithExpressions[modelIndex];
     if (!modelInfo) {
@@ -462,7 +440,6 @@ export class ExpressionEditorStateBuilder {
       version: 0,
       expression: compileResult.expression,
       editorExpressionString: expressionString,
-      isDeleting: false,
       error: compileResult.error ?? '',
       name,
       treeHighlight: [],
@@ -657,6 +634,7 @@ export class ExpressionEditorStateBuilder {
 
     this._state = {
       ...this._state,
+      deletingExpressionIndex: -1,
       modelsWithExpressions,
     };
 
@@ -681,6 +659,7 @@ export class ExpressionEditorStateBuilder {
     this._state = {
       ...this._state,
       selectedModelIndex: newSelectedIndex,
+      deletingModelIndex: -1,
       modelsWithExpressions,
     };
 

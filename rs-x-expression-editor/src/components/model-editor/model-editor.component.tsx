@@ -126,8 +126,8 @@ const formatValue = (value: unknown): string => {
   return String(value);
 };
 
-const cloneForDraft = (model: unknown): unknown => {
-  return DeepClone.getInstance().clone(model);
+const cloneForDraft = (model: object): object => {
+  return DeepClone.getInstance().clone(model) as object;
 };
 
 const setAtPath = (root: unknown, path: Path, value: unknown): unknown => {
@@ -271,8 +271,8 @@ const ModelNode: React.FC<{
 
 export interface ModelEditorProps {
   modelIndex: number;
-  model: unknown;
-  onCommit: (modelIndex: number, model: unknown) => void;
+  model: object;
+  onCommit: (modelIndex: number, model: object) => void;
   title?: string;
   indentSize?: number;
 }
@@ -283,7 +283,7 @@ export function ModelEditor({
   onCommit,
   indentSize = 8,
 }: ModelEditorProps) {
-  const [draft, setDraft] = useState<unknown>(() => cloneForDraft(model));
+  const [draft, setDraft] = useState<object>(() => cloneForDraft(model));
 
   useEffect(() => {
     setDraft(cloneForDraft(model));
