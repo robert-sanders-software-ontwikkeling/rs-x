@@ -1,7 +1,7 @@
 import { type ISerializedModelWithExpressions } from './serialized-model-with-expressions.interface';
 
 export interface ISerializedExpressionEditorState {
-  error?: string;
+  errors: string[];
   treeZoomPercent: number;
   showExpressionTreeView: boolean;
   addingModel: boolean;
@@ -9,5 +9,7 @@ export interface ISerializedExpressionEditorState {
   selectedModelIndex: number;
   editingExpressionIndex: number;
   editingModelIndex: number;
+  deletingExpressionIndex: number;
+  deletingModelIndex: number;
   modelsWithExpressions: ISerializedModelWithExpressions[];
 }

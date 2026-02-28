@@ -20,7 +20,9 @@ import 'reflect-metadata';
 
 export const InjectionContainer = new Container();
 
-window.RSX_INJECTION_CONTAINER = InjectionContainer;
+if (typeof window !== 'undefined') {
+  window.RSX_INJECTION_CONTAINER = InjectionContainer;
+}
 
 /* ---------------------------------------------------------
  * Runtime re-exports (decorators & classes)

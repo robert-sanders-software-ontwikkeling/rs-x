@@ -1,15 +1,17 @@
 import React from 'react';
 
 export interface IErrorPanel {
-  error: string;
+  errors: string[];
 }
 
-export const ErrorPanel: React.FC<IErrorPanel> = ({ error }) => {
+export const ErrorPanel: React.FC<IErrorPanel> = ({ errors }) => {
   return (
     <>
       <div className="panel-header">Errors</div>
       <div className="panel-body">
-        <p>{error}</p>
+        {errors?.map((error, index) => (
+          <p key={`${index}`}>{error}</p>
+        ))}
       </div>
     </>
   );

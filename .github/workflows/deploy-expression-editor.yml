@@ -20,58 +20,38 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      # ------------------------------
-      # Checkout repository
-      # ------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ------------------------------
-      # Setup pnpm
-      # ------------------------------
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10.22.0
 
-      # ------------------------------
-      # Setup Node.js (with pnpm cache)
-      # ------------------------------
-      - name: Setup Node.js
+      - name: Setup Node.js (with pnpm cache)
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
           cache: pnpm
 
-      # ------------------------------
-      # Install dependencies
-      # ------------------------------
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # ------------------------------
-      # Build expression-editor
-      # ------------------------------
-      - name: Build expression-editor
+      # Build for GitHub Pages only (basePath=/rs-x etc)
+      - name: Build expression-editor (GitHub Pages)
+        env:
+          GH_PAGES: 'true'
         run: pnpm -w run build:expression-editor
 
-      # ------------------------------
-      # Configure GitHub Pages
-      # ------------------------------
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      # ------------------------------
-      # Upload dist folder as Pages artifact
-      # ------------------------------
+      # Next export output folder is "out" (not dist) when output: 'export'
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: rs-x-expression-editor/dist
+          path: rs-x-expression-editor/out
 
-      # ------------------------------
-      # Deploy to GitHub Pages
-      # ------------------------------
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

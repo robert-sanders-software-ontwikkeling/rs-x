@@ -149,8 +149,13 @@ export const RsXCoreModule = new ContainerModule((options) => {
     .to(ValueMetadata)
     .inSingletonScope();
   options
-    .bind(RsXCoreInjectionTokens.IDBFactory)
-    .toConstantValue(window.indexedDB);
+    .bind<IDBFactory>(RsXCoreInjectionTokens.IDBFactory)
+    .toDynamicValue(() => {
+      if (typeof window === 'undefined') {
+        throw new Error('IDBFactory is not available for SSR');
+      }
+      return window.indexedDB;
+    });
 
   options
     .bind<IObjectStorage>(RsXCoreInjectionTokens.IObjectStorage)

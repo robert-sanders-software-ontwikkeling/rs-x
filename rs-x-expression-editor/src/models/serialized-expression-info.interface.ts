@@ -3,7 +3,6 @@ import { type ISerializedExpressionChangeHistory } from './serialized-expression
 export interface ISerializedExpressionInfo {
   name: string;
   editorExpressionString: string;
-  isDeleting: boolean;
   selecteChangeHistoryIndex: number;
   treeHighlight: ISerializedExpressionChangeHistory[];
   changeHistory: ISerializedExpressionChangeHistory[][];

@@ -61,13 +61,15 @@ export class ExpressionEdtitorStateSerializer {
 
   public async serialize(state: IExpressionEditorState): Promise<void> {
     const serializedState: ISerializedExpressionEditorState = {
-      error: state.error,
+      errors: state.errors,
       treeZoomPercent: state.treeZoomPercent,
       showExpressionTreeView: state.showExpressionTreeView,
       addingExpression: state.addingExpression,
       addingModel: state.addingModel,
       editingExpressionIndex: state.editingExpressionIndex,
       editingModelIndex: state.editingModelIndex,
+      deletingExpressionIndex: -1,
+      deletingModelIndex: -1,
       selectedModelIndex: state.selectedModelIndex,
       modelsWithExpressions: state.modelsWithExpressions.map(
         this.serializeModelWithExpressions,
@@ -92,7 +94,7 @@ export class ExpressionEdtitorStateSerializer {
       await Promise.all(tasks);
 
       if (modelErrors.length > 0) {
-        state.error = modelErrors.join('/n') + '\n' + state.error;
+        state.errors = [...state.errors, ...modelErrors];
       }
 
       return state;
@@ -165,7 +167,6 @@ export class ExpressionEdtitorStateSerializer {
         editorExpressionString: serializedExpressionInfo.editorExpressionString,
         version: 0,
         error: result.error,
-        isDeleting: serializedExpressionInfo.isDeleting,
         expression: result.expression,
         treeHighlight,
         treeHighlightVersion: 0,
@@ -189,7 +190,7 @@ export class ExpressionEdtitorStateSerializer {
     const modelErrors: string[] = [];
 
     const state: IExpressionEditorState = {
-      error: deserializeState.error,
+      errors: deserializeState.errors,
       treeZoomPercent: deserializeState.treeZoomPercent ?? 75,
       showExpressionTreeView: deserializeState.showExpressionTreeView ?? false,
       addingModel: deserializeState.addingModel ?? false,
@@ -197,6 +198,8 @@ export class ExpressionEdtitorStateSerializer {
       selectedModelIndex: deserializeState.selectedModelIndex ?? -1,
       editingExpressionIndex: deserializeState.editingExpressionIndex ?? -1,
       editingModelIndex: deserializeState.editingModelIndex ?? -1,
+      deletingExpressionIndex: -1,
+      deletingModelIndex: -1,
       modelsWithExpressions: deserializeState.modelsWithExpressions.map(
         (modelWithExpressions) => {
           const result = ModelEvaluator.getInstance().evaluate(
@@ -232,7 +235,6 @@ export class ExpressionEdtitorStateSerializer {
             model,
             version: modelWithExpressions.version,
             editorModelString: modelWithExpressions.editorModelString,
-            isDeleting: modelWithExpressions.isDeleting,
             selectedExpressionIndex,
             expressions,
           };
@@ -266,7 +268,6 @@ export class ExpressionEdtitorStateSerializer {
     return {
       name: expressionInfo.name,
       editorExpressionString: expressionInfo.editorExpressionString,
-      isDeleting: expressionInfo.isDeleting,
       selecteChangeHistoryIndex: expressionInfo.selecteChangeHistoryIndex,
       treeHighlight,
       changeHistory,
@@ -280,7 +281,6 @@ export class ExpressionEdtitorStateSerializer {
       name: modelWithExpressions.name,
       version: 0,
       editorModelString: modelWithExpressions.editorModelString,
-      isDeleting: modelWithExpressions.isDeleting,
       selectedExpressionIndex: modelWithExpressions.selectedExpressionIndex,
       expressions: modelWithExpressions.expressions.map(
         this.serializeExpressionInfo,

@@ -10,7 +10,8 @@ import { CrudRowActions } from '../crud-row-actions/crud-row-actions.component';
 import { ExpressionList } from '../expression-list/expression-list.component';
 
 export interface IModelListProps {
-  selectModelIndex?: number;
+  selectedModelIndex?: number;
+  selectedExpressionIndex?: number;
   modelsWithExpressions: IModelWithExpressions[];
   onAddModel: () => void;
   onEditModel: (modelIndex: number) => void;
@@ -20,11 +21,11 @@ export interface IModelListProps {
   onSelectExpression: (modelIndex: number, expressionIndex: number) => void;
   onDeleteExpression: (modelIndex: number, expressionIndex: number) => void;
   onEditExpression: (modelIndex: number, expressionIndex: number) => void;
-  onViewExpression: (modelIndex: number, expressionIndex: number) => void;
 }
 
 export const ModelList: React.FC<IModelListProps> = ({
-  selectModelIndex,
+  selectedModelIndex,
+  selectedExpressionIndex,
   modelsWithExpressions,
   onSelectModel,
   onAddModel,
@@ -34,14 +35,13 @@ export const ModelList: React.FC<IModelListProps> = ({
   onSelectExpression,
   onDeleteExpression,
   onEditExpression,
-  onViewExpression,
 }) => {
   const panels: AccordionPanel[] = modelsWithExpressions.map(
     (modelWithExpressions, modelIndex) => ({
       id: modelWithExpressions.name,
       header: (
         <div
-          className={`model-row ${selectModelIndex === modelIndex ? 'is-selected' : ''}`}
+          className={`model-row ${selectedModelIndex === modelIndex ? 'is-selected' : ''}`}
         >
           <div className="model-row-left">
             <FaDatabase className="model-row-icon" />
@@ -74,12 +74,11 @@ export const ModelList: React.FC<IModelListProps> = ({
       body: (
         <ExpressionList
           expressions={modelWithExpressions.expressions}
-          selectedExpressionIndex={modelWithExpressions.selectedExpressionIndex}
+          selectedExpressionIndex={selectedExpressionIndex}
           modelIndex={modelIndex}
           onSelect={onSelectExpression}
           onDelete={onDeleteExpression}
           onEdit={onEditExpression}
-          onView={onViewExpression}
         />
       ),
     }),
@@ -106,7 +105,7 @@ export const ModelList: React.FC<IModelListProps> = ({
       <div className="editor-wrapper">
         <Accordion
           panels={panels}
-          openPanelIndex={selectModelIndex}
+          openPanelIndex={selectedModelIndex}
           onOpenChange={onSelectModel}
         />
       </div>

@@ -6,7 +6,6 @@ import {
 export interface IExpressionInfo {
   name: string;
   version: number;
-  isDeleting: boolean;
   editorExpressionString: string;
   expression: IExpression | undefined;
   error: string;
