@@ -1,4 +1,5 @@
 import { rsx } from '@rs-x/expression-parser';
+
 import { rxjsScope } from './rxjs-scope';
 
 export type EvaluateModelResult<T> =
@@ -19,14 +20,11 @@ export class ScriptEvaluator {
   }
 
   public evaluateScript<T>(editorModelString: string): EvaluateModelResult<T> {
-   
     try {
-      const result = new Function('api', `${editorModelString}`)(
-        {
-          rxjs: rxjsScope,
-          rsx
-        },
-      );
+      const result = new Function('api', `${editorModelString}`)({
+        rxjs: rxjsScope,
+        rsx,
+      });
 
       return {
         success: true,
@@ -41,14 +39,11 @@ export class ScriptEvaluator {
   }
 
   public evaluateModel<T>(editorModelString: string): EvaluateModelResult<T> {
-   
     try {
-      const result = new Function('api', `return ${editorModelString}`)(
-        {
-          rxjs: rxjsScope,
-          rsx
-        },
-      );
+      const result = new Function('api', `return ${editorModelString}`)({
+        rxjs: rxjsScope,
+        rsx,
+      });
 
       return {
         success: true,

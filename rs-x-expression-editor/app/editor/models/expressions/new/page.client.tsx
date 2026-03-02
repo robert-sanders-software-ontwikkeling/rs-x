@@ -89,7 +89,10 @@ const NewExpressionPageClient: React.FC = () => {
 
   const onCancel = () => {
     setCurrentState((prev) => {
-      return new ExpressionEditorStateBuilder(prev).setAddingExpression(modelIndex, false).state;
+      return new ExpressionEditorStateBuilder(prev).setAddingExpression(
+        modelIndex,
+        false,
+      ).state;
     });
     const expressionIndex = getExpressionIndex();
     router.replace(`/editor?${createQueryString(modelIndex, expressionIndex)}`);
@@ -108,11 +111,9 @@ const NewExpressionPageClient: React.FC = () => {
         <Separator className="separator" />
 
         <Panel defaultSize={70} minSize={30} className="panel">
-
           <TsEditorWithErrorPanel
             header="Add expression"
             namePlaceholder="Expression name"
-
             errors={currentState.errors}
             save={addExpression}
             cancel={onCancel}

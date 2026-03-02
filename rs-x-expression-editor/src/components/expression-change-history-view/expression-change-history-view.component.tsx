@@ -13,8 +13,6 @@ import { useExpressionChangeHistoryTracker } from './hooks/use-expression-change
 
 import './expression-change-history-view.component.css';
 
-
-
 type HistoryBatch = {
   persistedIndex: number;
   items: IExpressionChangeHistory[];
@@ -162,7 +160,7 @@ export interface IExpressionChangeHistoryViewProps {
   modelIndex: number;
   expressionIndex: number;
   expression: IExpression;
-  changeHistory: IExpressionChangeHistory[][]
+  changeHistory: IExpressionChangeHistory[][];
   changeHistoryIndex: number;
   onHistoryChange?: (
     modelIndex: number,
@@ -190,210 +188,205 @@ export const ExpressionChangeHistoryView: React.FC<
   onHistoryChange,
   onSelectionChanged,
 }) => {
+  const persistedHistory: IExpressionChangeHistory[][] = changeHistory ?? [];
+  const historyLength = persistedHistory.length;
 
-
-
-    const persistedHistory: IExpressionChangeHistory[][] = changeHistory ?? [];
-    const historyLength = persistedHistory.length;
-
-    const batches = useMemo((): HistoryBatch[] => {
-      const out: HistoryBatch[] = [];
-      for (
-        let persistedIndex = persistedHistory.length - 1;
-        persistedIndex >= 0;
-        persistedIndex--
-      ) {
-        out.push({
-          persistedIndex,
-          items: persistedHistory[persistedIndex] ?? [],
-        });
-      }
-      return out;
-    }, [persistedHistory, historyLength, version]);
-
-    const clampedSelectedPersistedIndex =
-      historyLength <= 0 || changeHistoryIndex < 0
-        ? -1
-        : clampIndex(changeHistoryIndex, historyLength);
-
-    const [expandedPersistedIndex, setExpandedPersistedIndex] = useState<number>(
-      () => clampedSelectedPersistedIndex,
-    );
-
-    useEffect(() => {
-      setExpandedPersistedIndex(() => clampedSelectedPersistedIndex);
-    }, [clampedSelectedPersistedIndex]);
-
-    if (onHistoryChange && onSelectionChanged) {
-      useExpressionChangeHistoryTracker({
-        changeHistory: persistedHistory,
-        expression,
-        version,
-        modelIndex,
-        expressionIndex,
-        onHistoryChange,
-        onSelectionChanged,
+  const batches = useMemo((): HistoryBatch[] => {
+    const out: HistoryBatch[] = [];
+    for (
+      let persistedIndex = persistedHistory.length - 1;
+      persistedIndex >= 0;
+      persistedIndex--
+    ) {
+      out.push({
+        persistedIndex,
+        items: persistedHistory[persistedIndex] ?? [],
       });
     }
+    return out;
+  }, [persistedHistory, historyLength, version]);
 
+  const clampedSelectedPersistedIndex =
+    historyLength <= 0 || changeHistoryIndex < 0
+      ? -1
+      : clampIndex(changeHistoryIndex, historyLength);
 
-    const onUserSelectPersistedIndex = (
-      persistedIndex: number,
-      items: IExpressionChangeHistory[],
-    ) => {
+  const [expandedPersistedIndex, setExpandedPersistedIndex] = useState<number>(
+    () => clampedSelectedPersistedIndex,
+  );
 
-      onSelectionChanged?.(
-        modelIndex,
-        expressionIndex,
-        persistedIndex,
-        items,
-        true,
-      );
-    };
+  useEffect(() => {
+    setExpandedPersistedIndex(() => clampedSelectedPersistedIndex);
+  }, [clampedSelectedPersistedIndex]);
 
-    if (!expression) {
-      return (
-        <div className="changeHistoryRoot">
-          <div className="changeHistoryEmpty">No expression selected</div>
-        </div>
-      );
-    }
+  if (onHistoryChange && onSelectionChanged) {
+    useExpressionChangeHistoryTracker({
+      changeHistory: persistedHistory,
+      expression,
+      version,
+      modelIndex,
+      expressionIndex,
+      onHistoryChange,
+      onSelectionChanged,
+    });
+  }
 
-    if (historyLength === 0) {
-      return (
-        <div className="changeHistoryRoot">
-          <div className="changeHistoryEmpty">No changes yet</div>
-        </div>
-      );
-    }
+  const onUserSelectPersistedIndex = (
+    persistedIndex: number,
+    items: IExpressionChangeHistory[],
+  ) => {
+    onSelectionChanged?.(
+      modelIndex,
+      expressionIndex,
+      persistedIndex,
+      items,
+      true,
+    );
+  };
 
+  if (!expression) {
     return (
       <div className="changeHistoryRoot">
-        <div className="changeHistoryAccordion">
-          <div className="changeHistoryAccordionScroll">
-            {batches.map((batch) => {
-              const isActive =
-                batch.persistedIndex === clampedSelectedPersistedIndex;
-              const isExpanded = batch.persistedIndex === expandedPersistedIndex;
+        <div className="changeHistoryEmpty">No expression selected</div>
+      </div>
+    );
+  }
 
-              const headerChange = pickHeaderChange({
-                batchItems: batch.items,
-                rootExpression: expression,
-              });
+  if (historyLength === 0) {
+    return (
+      <div className="changeHistoryRoot">
+        <div className="changeHistoryEmpty">No changes yet</div>
+      </div>
+    );
+  }
 
-              const tLabel = `t${batch.persistedIndex}`;
-              const headerExpr =
-                headerChange?.expression?.expressionString ??
-                expression?.expressionString ??
-                '(unknown)';
+  return (
+    <div className="changeHistoryRoot">
+      <div className="changeHistoryAccordion">
+        <div className="changeHistoryAccordionScroll">
+          {batches.map((batch) => {
+            const isActive =
+              batch.persistedIndex === clampedSelectedPersistedIndex;
+            const isExpanded = batch.persistedIndex === expandedPersistedIndex;
 
-              const stepsCount = batch.items.length;
+            const headerChange = pickHeaderChange({
+              batchItems: batch.items,
+              rootExpression: expression,
+            });
 
-              const displayStepItems = getDisplayStepItems(batch.items);
+            const tLabel = `t${batch.persistedIndex}`;
+            const headerExpr =
+              headerChange?.expression?.expressionString ??
+              expression?.expressionString ??
+              '(unknown)';
 
-              return (
-                <div
-                  key={batch.persistedIndex}
-                  className={`changeSet ${isActive ? 'isActive' : ''} ${isExpanded ? 'isExpanded' : ''} `}
+            const stepsCount = batch.items.length;
+
+            const displayStepItems = getDisplayStepItems(batch.items);
+
+            return (
+              <div
+                key={batch.persistedIndex}
+                className={`changeSet ${isActive ? 'isActive' : ''} ${isExpanded ? 'isExpanded' : ''} `}
+              >
+                <button
+                  type="button"
+                  className="changeSetHeader"
+                  onClick={() => {
+                    onUserSelectPersistedIndex(
+                      batch.persistedIndex,
+                      batch.items,
+                    );
+                  }}
+                  title={headerExpr}
                 >
-                  <button
-                    type="button"
-                    className="changeSetHeader"
-                    onClick={() => {
-                      onUserSelectPersistedIndex(
-                        batch.persistedIndex,
-                        batch.items,
-                      );
-                    }}
-                    title={headerExpr}
-                  >
-                    <div className="changeSetHeaderLeft">
-                      <span className="changeSetBadge">{tLabel}</span>
+                  <div className="changeSetHeaderLeft">
+                    <span className="changeSetBadge">{tLabel}</span>
 
-                      <div className="changeSetHeaderMeta">
-                        <div className="changeSetExpr" title={headerExpr}>
-                          {headerExpr}
-                        </div>
-                        <div className="changeSetSteps">
-                          {stepsCount} step{stepsCount === 1 ? '' : 's'}
-                        </div>
+                    <div className="changeSetHeaderMeta">
+                      <div className="changeSetExpr" title={headerExpr}>
+                        {headerExpr}
+                      </div>
+                      <div className="changeSetSteps">
+                        {stepsCount} step{stepsCount === 1 ? '' : 's'}
                       </div>
                     </div>
+                  </div>
 
-                    <div className="changeSetHeaderRight">
-                      <ValueDiff
-                        size="header"
-                        oldValue={
-                          headerChange ? headerChange.oldValue : undefined
-                        }
-                        newValue={headerChange ? headerChange.value : undefined}
-                      />
-                      <span
-                        className={`changeSetChevron ${isExpanded ? 'isOpen' : ''}`}
-                      >
-                        ▾
-                      </span>
-                    </div>
-                  </button>
+                  <div className="changeSetHeaderRight">
+                    <ValueDiff
+                      size="header"
+                      oldValue={
+                        headerChange ? headerChange.oldValue : undefined
+                      }
+                      newValue={headerChange ? headerChange.value : undefined}
+                    />
+                    <span
+                      className={`changeSetChevron ${isExpanded ? 'isOpen' : ''}`}
+                    >
+                      ▾
+                    </span>
+                  </div>
+                </button>
 
-                  {isExpanded ? (
-                    <div className="changeSetBody">
-                      <div className="changePath">
-                        {displayStepItems.map((changeItem, index) => {
-                          const { expressionString, type } = getExpressionText(
-                            changeItem.expression,
-                          );
+                {isExpanded ? (
+                  <div className="changeSetBody">
+                    <div className="changePath">
+                      {displayStepItems.map((changeItem, index) => {
+                        const { expressionString, type } = getExpressionText(
+                          changeItem.expression,
+                        );
 
-                          // Trigger visual: only first displayed item gets the trigger dot
-                          const isTrigger = type !== 'derived';
+                        // Trigger visual: only first displayed item gets the trigger dot
+                        const isTrigger = type !== 'derived';
 
-                          return (
-                            <div
-                              key={`${batch.persistedIndex}_${index}_${exprKey(changeItem)}`}
-                              className="changeStep"
-                            >
-                              <div className="changeStepRail">
-                                <div
-                                  className={`changeStepDot ${isTrigger ? 'isTrigger' : ''}`}
-                                />
-                                {index < displayStepItems.length - 1 ? (
-                                  <div className="changeStepLine" />
-                                ) : null}
-                              </div>
+                        return (
+                          <div
+                            key={`${batch.persistedIndex}_${index}_${exprKey(changeItem)}`}
+                            className="changeStep"
+                          >
+                            <div className="changeStepRail">
+                              <div
+                                className={`changeStepDot ${isTrigger ? 'isTrigger' : ''}`}
+                              />
+                              {index < displayStepItems.length - 1 ? (
+                                <div className="changeStepLine" />
+                              ) : null}
+                            </div>
 
-                              <div className="changeStepCard">
-                                <div className="changeStepHeader">
-                                  <div className="changeStepHeaderLeft">
-                                    <div
-                                      className="changeStepExpr"
-                                      title={expressionString}
-                                    >
-                                      {expressionString}
-                                    </div>
-
-                                    <div className="changeStepTag">{type}</div>
+                            <div className="changeStepCard">
+                              <div className="changeStepHeader">
+                                <div className="changeStepHeaderLeft">
+                                  <div
+                                    className="changeStepExpr"
+                                    title={expressionString}
+                                  >
+                                    {expressionString}
                                   </div>
 
-                                  <div className="changeStepHeaderRight">
-                                    <ValueDiff
-                                      size="row"
-                                      oldValue={changeItem.oldValue}
-                                      newValue={changeItem.value}
-                                    />
-                                  </div>
+                                  <div className="changeStepTag">{type}</div>
+                                </div>
+
+                                <div className="changeStepHeaderRight">
+                                  <ValueDiff
+                                    size="row"
+                                    oldValue={changeItem.oldValue}
+                                    newValue={changeItem.value}
+                                  />
                                 </div>
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};

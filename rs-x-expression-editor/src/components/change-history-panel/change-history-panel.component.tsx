@@ -1,17 +1,19 @@
 import React from 'react';
 import { FaTrash } from 'react-icons/fa';
 
-import { type IExpressionChangeHistory } from '@rs-x/expression-parser';
+import {
+  type IExpression,
+  type IExpressionChangeHistory,
+} from '@rs-x/expression-parser';
 
-import { IExpression } from '@rs-x/expression-parser';
 import { ExpressionChangeHistoryView } from '../expression-change-history-view/expression-change-history-view.component';
 
 export interface IChangeHistoryPanel {
-  version: number,
+  version: number;
   canClearSelectedHistory: boolean;
   modelIndex: number;
   expressionIndex: number;
-  changeHistoryIndex: number,
+  changeHistoryIndex: number;
   expression: IExpression;
   changeHistory: IExpressionChangeHistory[][];
   onClearSelectedHistory?: () => void;

@@ -25,8 +25,8 @@ import { type ISerializedExpressionEditorState } from '../models/serialized-expr
 import { type ISerializedExpressionInfo } from '../models/serialized-expression-info.interface';
 import { type ISerializedModelWithExpressions } from '../models/serialized-model-with-expressions.interface';
 
-import { ScriptEvaluator } from './script-evaluator';
 import { ModelExpressionsFactory } from './model-expressions.factory';
+import { ScriptEvaluator } from './script-evaluator';
 
 const stateId = '1513bdf8-c3fc-4f74-ad4f-e670724fc625';
 

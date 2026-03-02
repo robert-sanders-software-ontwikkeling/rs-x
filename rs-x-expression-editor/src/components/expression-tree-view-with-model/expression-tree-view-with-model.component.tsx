@@ -1,9 +1,13 @@
 'use client';
 
-import React, { JSX } from 'react';
+import React, { type JSX } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 
-import { IExpression, type IExpressionChangeHistory } from '@rs-x/expression-parser';
+import {
+  type IExpression,
+  type IExpressionChangeHistory,
+} from '@rs-x/expression-parser';
+
 import { ChangeHistoryPanel } from '../change-history-panel/change-history-panel.component';
 import { ExpressionTreePanel } from '../expression-tree-panel/expression-tree-panel';
 
@@ -13,13 +17,13 @@ export interface IExpressionTreeViewWithModel {
   modelIndex?: number;
   expressionIndex?: number;
   hideTrackChange?: boolean;
-  hideHeader?:boolean;
-  changeHistoryIndex?: number
+  hideHeader?: boolean;
+  changeHistoryIndex?: number;
   expression?: IExpression;
   changeHistory?: IExpressionChangeHistory[][];
   treeHighlight: IExpressionChangeHistory[];
-  treeZoomPercent: number,
-  modelEditor: JSX.Element,
+  treeZoomPercent: number;
+  modelEditor: JSX.Element;
   onHistoryChanged?: (
     modelIndex: number,
     expressionIndex: number,
@@ -37,7 +41,9 @@ export interface IExpressionTreeViewWithModel {
   onClose?: () => void;
 }
 
-export const ExpressionTreeViewWithModel: React.FC<IExpressionTreeViewWithModel> = ({
+export const ExpressionTreeViewWithModel: React.FC<
+  IExpressionTreeViewWithModel
+> = ({
   version,
   treeHighlightVersion,
   modelIndex,
@@ -46,7 +52,7 @@ export const ExpressionTreeViewWithModel: React.FC<IExpressionTreeViewWithModel>
   expression,
   changeHistory,
   treeHighlight,
- 
+
   modelEditor,
   hideTrackChange,
   treeZoomPercent,
@@ -55,14 +61,13 @@ export const ExpressionTreeViewWithModel: React.FC<IExpressionTreeViewWithModel>
   onHistoryChanged,
   onClearSelectedHistory,
   setTreeZoomPercent,
-  onClose
+  onClose,
 }) => {
-
   const showChangeHistoryPanel = !hideTrackChange && expression;
   const selectedExpressionString = expression?.expressionString ?? '';
   const canClearSelectedHistory = changeHistory && changeHistory.length > 0;
   const leftPanelSize = expression ? 35 : 100;
-  const editorPanelSize = showChangeHistoryPanel ? 40 : 100
+  const editorPanelSize = showChangeHistoryPanel ? 40 : 100;
 
   return (
     <div className="app">
@@ -72,15 +77,10 @@ export const ExpressionTreeViewWithModel: React.FC<IExpressionTreeViewWithModel>
             <Panel defaultSize={leftPanelSize} className="panel">
               <Group orientation="vertical" className="panel-stack">
                 <Panel defaultSize={editorPanelSize} className="panel">
-                  {
-                    !hideHeader &&   <div className="panel-header">Model</div>
-                  }
-                  <div className="editor-wrapper">
-                    {modelEditor}
-                  </div>
+                  {!hideHeader && <div className="panel-header">Model</div>}
+                  <div className="editor-wrapper">{modelEditor}</div>
                 </Panel>
-                {
-                  showChangeHistoryPanel &&
+                {showChangeHistoryPanel && (
                   <>
                     <Separator className="separator-horizontal" />
                     <Panel defaultSize={60} className="panel">
@@ -98,11 +98,10 @@ export const ExpressionTreeViewWithModel: React.FC<IExpressionTreeViewWithModel>
                       />
                     </Panel>
                   </>
-                }
+                )}
               </Group>
             </Panel>
-            {
-              expression &&
+            {expression && (
               <>
                 <Separator className="separator" />
                 <Panel defaultSize={65} className="panel">
@@ -120,11 +119,10 @@ export const ExpressionTreeViewWithModel: React.FC<IExpressionTreeViewWithModel>
                   />
                 </Panel>
               </>
-            }
+            )}
           </Group>
         </Panel>
       </Group>
     </div>
   );
 };
-

@@ -70,7 +70,7 @@ const EditorProviderState: React.FC<{ children: React.ReactNode }> = (
 
   if (!currentState) {
     return (
-      <div className='fullscreen-loader'>
+      <div className="fullscreen-loader">
         <Spinner size={60} />
       </div>
     );

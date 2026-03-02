@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
+
 import { Spinner } from '../../src/components/spinner/spinner.component';
+
 import { useAppBootstrap } from './use-app-bootstrap';
 
 export const AppBootstrapProvider: React.FC<{ children: React.ReactNode }> = (
@@ -11,7 +13,7 @@ export const AppBootstrapProvider: React.FC<{ children: React.ReactNode }> = (
 
   if (!isReady) {
     return (
-      <div className='fullscreen-loader'>
+      <div className="fullscreen-loader">
         <Spinner size={60} />
       </div>
     );

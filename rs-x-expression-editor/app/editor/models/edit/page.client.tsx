@@ -93,7 +93,8 @@ const EditModelPageClient: React.FC = () => {
 
   const onCancel = () => {
     setCurrentState((prev) => {
-      return new ExpressionEditorStateBuilder(prev).setEditingModelIndex(-1).state;
+      return new ExpressionEditorStateBuilder(prev).setEditingModelIndex(-1)
+        .state;
     });
     router.replace(`/editor?${queryString}`);
   };
@@ -104,7 +105,7 @@ const EditModelPageClient: React.FC = () => {
         header="Edit model"
         namePlaceholder="Model name"
         script={modelInfo.editorModelString}
-        errors={currentState.errors} 
+        errors={currentState.errors}
         save={updateModel}
         cancel={onCancel}
         onMount={handleModelMount}

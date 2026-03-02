@@ -1,4 +1,7 @@
-import type { IExpression, IExpressionChangeHistory } from '@rs-x/expression-parser';
+import type {
+  IExpression,
+  IExpressionChangeHistory,
+} from '@rs-x/expression-parser';
 
 import { useExpressionChangeTrackerSubscription } from './use-expression-change-tracker-subscription';
 import { usePersistChangeHistoryFromStack } from './use-persist-change-history-from-stack';

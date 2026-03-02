@@ -2,17 +2,14 @@
 
 import { useRouter } from 'next/navigation';
 import React from 'react';
-import { Group, Panel, Separator } from 'react-resizable-panels';
 
 import { type IExpressionChangeHistory } from '@rs-x/expression-parser';
 
-import { ChangeHistoryPanel } from '../../../../../src/components/change-history-panel/change-history-panel.component';
-import { ExpressionTreePanel } from '../../../../../src/components/expression-tree-panel/expression-tree-panel';
+import { ExpressionTreeViewWithModel } from '../../../../../src/components/expression-tree-view-with-model/expression-tree-view-with-model.component';
 import { ModelEditor } from '../../../../../src/components/model-editor/model-editor.component';
 import { ExpressionEditorBusinessService } from '../../../../../src/services/expression-editor-business.service';
 import { ExpressionEditorStateBuilder } from '../../../../../src/services/expression-editor-state-builder';
 import { createQueryString, useEditorContext } from '../../../provider.client';
-import { ExpressionTreeViewWithModel } from '../../../../../src/components/expression-tree-view-with-model/expression-tree-view-with-model.component';
 
 const ExpressionDetailsPageClient: React.FC = () => {
   const router = useRouter();
@@ -134,17 +131,16 @@ const ExpressionDetailsPageClient: React.FC = () => {
     });
   };
 
-
-  const modelEditor =
+  const modelEditor = (
     <ModelEditor
       key={`${modelIndex}`}
       modelIndex={modelIndex}
       model={modelInfo.model}
       onCommit={onModelChange}
-    />;
+    />
+  );
   return (
     <div className="app">
-
       <ExpressionTreeViewWithModel
         version={expressionInfo.version}
         treeHighlightVersion={expressionInfo.treeHighlightVersion}

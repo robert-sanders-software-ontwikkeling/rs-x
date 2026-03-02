@@ -22,7 +22,7 @@ export class RxjsMonacoTypesLoader {
   private static _instance: RxjsMonacoTypesLoader | null = null;
   private _installed = false;
 
-  private constructor() { }
+  private constructor() {}
 
   public static getInstance(): RxjsMonacoTypesLoader {
     if (!this._instance) {

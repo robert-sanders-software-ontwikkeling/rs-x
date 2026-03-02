@@ -27,7 +27,7 @@ export interface TSEditorProps {
   header: string;
   name?: string;
   hideName?: boolean;
-  hideCancelButton?: boolean
+  hideCancelButton?: boolean;
   namePlaceholder;
   value?: string;
   options?: monaco.editor.IStandaloneEditorConstructionOptions;
@@ -53,9 +53,9 @@ export const TSEditor: React.FC<TSEditorProps> = ({
   const [currentName, setCurrentName] = useState(name ?? '');
   const [currentValue, setCurrentValue] = useState<string>(value ?? '');
 
-
   // ✅ Name is optional now; only editor content disables Save
-  const isSaveDisabled = !currentValue.trim() ||  (!hideName && !currentName.trim());
+  const isSaveDisabled =
+    !currentValue.trim() || (!hideName && !currentName.trim());
 
   const onSave = () => {
     if (!currentValue.trim()) {
@@ -83,8 +83,7 @@ export const TSEditor: React.FC<TSEditorProps> = ({
         <div className="tsEditorHeaderLeft">
           <div className="tsEditorTitle">{header}</div>
 
-          {
-            !hideName &&
+          {!hideName && (
             <div className="tsEditorInputGroup">
               <input
                 id="tsEditorName"
@@ -97,8 +96,7 @@ export const TSEditor: React.FC<TSEditorProps> = ({
                 placeholder={namePlaceholder}
               />
             </div>
-          }
-
+          )}
         </div>
 
         <div className="tsEditorHeaderRight">
@@ -112,9 +110,7 @@ export const TSEditor: React.FC<TSEditorProps> = ({
           >
             <FaCheck /> {saveButtonName ?? 'Save'}
           </button>
-          {
-            cancel &&
-
+          {cancel && (
             <button
               type="button"
               className="btn btn--cancel"
@@ -124,8 +120,7 @@ export const TSEditor: React.FC<TSEditorProps> = ({
             >
               <FaTimes /> Cancel
             </button>
-          }
-
+          )}
         </div>
       </div>
 

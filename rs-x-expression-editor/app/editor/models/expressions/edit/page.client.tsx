@@ -103,7 +103,10 @@ const EditExpressionPageClient: React.FC = () => {
 
   const onCancel = () => {
     setCurrentState((prev) => {
-      return new ExpressionEditorStateBuilder(prev).setEditingExpressionIndex(modelIndex, -1).state;
+      return new ExpressionEditorStateBuilder(prev).setEditingExpressionIndex(
+        modelIndex,
+        -1,
+      ).state;
     });
     router.replace(`/editor?${queryString}`);
   };

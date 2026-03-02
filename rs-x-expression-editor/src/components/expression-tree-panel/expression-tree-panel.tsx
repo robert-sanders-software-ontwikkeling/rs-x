@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { FaTimes } from 'react-icons/fa';
 
-import type { IExpression, IExpressionChangeHistory } from '@rs-x/expression-parser';
+import type {
+  IExpression,
+  IExpressionChangeHistory,
+} from '@rs-x/expression-parser';
+
 import { ExpressionTree } from '../expression-tree-view/expression-tree-view.component';
 import { ZoomDropdown } from '../zoom-dropdown/zoom-dropdown.component';
 
@@ -36,9 +40,6 @@ export const ExpressionTreePanel: React.FC<IExpressionTreePanelProps> = ({
   onClose,
   isVisible,
 }) => {
-
-
-
   // This forces the highlight animation to play again after panel becomes visible.
   const [playNonce, setPlayNonce] = useState<number>(0);
 
@@ -73,19 +74,16 @@ export const ExpressionTreePanel: React.FC<IExpressionTreePanelProps> = ({
             value={treeZoomPercent}
             onChange={onTreeZoomPercentChange}
           />
-          {
-            onClose &&
-            (
-              <button
-                type="button"
-                className="icon-btn"
-                onClick={onClose}
-                title="Close"
-              >
-                <FaTimes />
-              </button>
-            )
-          }
+          {onClose && (
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={onClose}
+              title="Close"
+            >
+              <FaTimes />
+            </button>
+          )}
         </div>
       </div>
 
