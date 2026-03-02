@@ -41,6 +41,10 @@ const EditorListPageClient: React.FC = () => {
   };
 
   const onAddModel = () => {
+     setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev).setAddingModel(true).state;
+    });
+
     router.push('/editor/models/new');
   };
 
@@ -49,10 +53,17 @@ const EditorListPageClient: React.FC = () => {
   };
 
   const onAddExpression = (modelIndex: number) => {
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev).setAddingExpression(
+        modelIndex,
+        true
+      ).state;
+
+    });
     router.push(
-      `/editor/models/expressions/new?${createQueryString(modelIndex)}`,
+      `/editor/models/expressions/new?${createQueryString(modelIndex)}`
     );
-  };
+  }
 
   const onSelectExpression = (modelIndex: number, expressionIndex: number) => {
     setCurrentState((prev) => {

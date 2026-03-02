@@ -25,7 +25,7 @@ import { type ISerializedExpressionEditorState } from '../models/serialized-expr
 import { type ISerializedExpressionInfo } from '../models/serialized-expression-info.interface';
 import { type ISerializedModelWithExpressions } from '../models/serialized-model-with-expressions.interface';
 
-import { ModelEvaluator } from './model-evaluator';
+import { ScriptEvaluator } from './script-evaluator';
 import { ModelExpressionsFactory } from './model-expressions.factory';
 
 const stateId = '1513bdf8-c3fc-4f74-ad4f-e670724fc625';
@@ -202,11 +202,11 @@ export class ExpressionEdtitorStateSerializer {
       deletingModelIndex: -1,
       modelsWithExpressions: deserializeState.modelsWithExpressions.map(
         (modelWithExpressions) => {
-          const result = ModelEvaluator.getInstance().evaluate(
+          const result = ScriptEvaluator.getInstance().evaluateModel<object>(
             modelWithExpressions.editorModelString,
           );
 
-          const model = result.success ? result.model : {};
+          const model = result.success ? result.returnValue : {};
           if (!result.success) {
             modelErrors.push(result.error);
           }

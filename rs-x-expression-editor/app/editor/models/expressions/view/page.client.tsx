@@ -12,6 +12,7 @@ import { ModelEditor } from '../../../../../src/components/model-editor/model-ed
 import { ExpressionEditorBusinessService } from '../../../../../src/services/expression-editor-business.service';
 import { ExpressionEditorStateBuilder } from '../../../../../src/services/expression-editor-state-builder';
 import { createQueryString, useEditorContext } from '../../../provider.client';
+import { ExpressionTreeViewWithModel } from '../../../../../src/components/expression-tree-view-with-model/expression-tree-view-with-model.component';
 
 const ExpressionDetailsPageClient: React.FC = () => {
   const router = useRouter();
@@ -46,12 +47,6 @@ const ExpressionDetailsPageClient: React.FC = () => {
       </div>
     );
   }
-
-  const selectedExpressionString =
-    expressionInfo.expression?.expressionString ?? '';
-
-  const canClearSelectedHistory =
-    (expressionInfo.changeHistory?.length ?? 0) > 0;
 
   const onClose = () => {
     router.push(`/editor?${createQueryString(modelIndex, expressionIndex)}`);
@@ -139,57 +134,34 @@ const ExpressionDetailsPageClient: React.FC = () => {
     });
   };
 
+
+  const modelEditor =
+    <ModelEditor
+      key={`${modelIndex}`}
+      modelIndex={modelIndex}
+      model={modelInfo.model}
+      onCommit={onModelChange}
+    />;
   return (
     <div className="app">
-      <Group orientation="horizontal" className="panels-container">
-        <Panel defaultSize={100} className="panel">
-          <Group orientation="horizontal" className="panels-container">
-            <Panel defaultSize={35} className="panel">
-              <Group orientation="vertical" className="panel-stack">
-                <Panel defaultSize={40} className="panel">
-                  <div className="panel-header">Model</div>
-                  <div className="editor-wrapper">
-                    <ModelEditor
-                      key={`${modelIndex}`}
-                      modelIndex={modelIndex}
-                      model={modelInfo.model}
-                      onCommit={onModelChange}
-                    />
-                  </div>
-                </Panel>
 
-                <Separator className="separator-horizontal" />
-
-                <Panel defaultSize={60} className="panel">
-                  <ChangeHistoryPanel
-                    canClearSelectedHistory={canClearSelectedHistory}
-                    selectedModelIndex={modelIndex}
-                    selectedExpressionIndex={expressionIndex}
-                    selectedExpression={expressionInfo}
-                    onHistoryChanged={onHistoryChanged}
-                    onSelectionChanged={onSelectHistoryBatch}
-                    onClearSelectedHistory={onClearSelectedHistory}
-                  />
-                </Panel>
-              </Group>
-            </Panel>
-
-            <Separator className="separator" />
-
-            <Panel defaultSize={65} className="panel">
-              <ExpressionTreePanel
-                key={`${modelIndex}-${expressionIndex}`}
-                selectedExpressionString={selectedExpressionString}
-                expressionInfo={expressionInfo}
-                treeZoomPercent={currentState.treeZoomPercent}
-                onTreeZoomPercentChange={setTreeZoomPercent}
-                onClose={onClose}
-                isVisible={true}
-              />
-            </Panel>
-          </Group>
-        </Panel>
-      </Group>
+      <ExpressionTreeViewWithModel
+        version={expressionInfo.version}
+        treeHighlightVersion={expressionInfo.treeHighlightVersion}
+        modelIndex={modelIndex}
+        expressionIndex={expressionIndex}
+        changeHistoryIndex={expressionInfo.selecteChangeHistoryIndex}
+        expression={expressionInfo.expression}
+        changeHistory={expressionInfo.changeHistory}
+        treeHighlight={expressionInfo.treeHighlight}
+        treeZoomPercent={currentState.treeZoomPercent}
+        onHistoryChanged={onHistoryChanged}
+        onSelectHistoryBatch={onSelectHistoryBatch}
+        onClearSelectedHistory={onClearSelectedHistory}
+        onClose={onClose}
+        setTreeZoomPercent={setTreeZoomPercent}
+        modelEditor={modelEditor}
+      />
     </div>
   );
 };

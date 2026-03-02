@@ -3,21 +3,24 @@ import { FaTrash } from 'react-icons/fa';
 
 import { type IExpressionChangeHistory } from '@rs-x/expression-parser';
 
-import { type IExpressionInfo } from '../../models/expression-info.interface';
+import { IExpression } from '@rs-x/expression-parser';
 import { ExpressionChangeHistoryView } from '../expression-change-history-view/expression-change-history-view.component';
 
 export interface IChangeHistoryPanel {
+  version: number,
   canClearSelectedHistory: boolean;
-  selectedModelIndex: number;
-  selectedExpressionIndex: number;
-  selectedExpression: IExpressionInfo;
-  onClearSelectedHistory: () => void;
-  onHistoryChanged: (
+  modelIndex: number;
+  expressionIndex: number;
+  changeHistoryIndex: number,
+  expression: IExpression;
+  changeHistory: IExpressionChangeHistory[][];
+  onClearSelectedHistory?: () => void;
+  onHistoryChanged?: (
     modelIndex: number,
     expressionIndex,
     changes: IExpressionChangeHistory[][],
   ) => void;
-  onSelectionChanged: (
+  onSelectionChanged?: (
     modelIndex: number,
     expressionIndex: number,
     selectedChangeSetIndex: number,
@@ -27,10 +30,13 @@ export interface IChangeHistoryPanel {
 }
 
 export const ChangeHistoryPanel: React.FC<IChangeHistoryPanel> = ({
+  version,
   canClearSelectedHistory,
-  selectedModelIndex,
-  selectedExpressionIndex,
-  selectedExpression,
+  modelIndex,
+  expressionIndex,
+  changeHistoryIndex,
+  expression,
+  changeHistory,
   onHistoryChanged,
   onSelectionChanged,
   onClearSelectedHistory,
@@ -53,12 +59,12 @@ export const ChangeHistoryPanel: React.FC<IChangeHistoryPanel> = ({
       <div className="panel-content">
         <div className="scroll-host">
           <ExpressionChangeHistoryView
-            modelIndex={selectedModelIndex as number}
-            expressionIndex={selectedExpressionIndex as number}
-            expressionInfo={selectedExpression}
-            selectedChangeSetIndex={
-              selectedExpression?.selecteChangeHistoryIndex ?? -1
-            }
+            version={version}
+            modelIndex={modelIndex as number}
+            expressionIndex={expressionIndex as number}
+            expression={expression}
+            changeHistory={changeHistory}
+            changeHistoryIndex={changeHistoryIndex}
             onHistoryChange={onHistoryChanged}
             onSelectionChanged={onSelectionChanged}
           />

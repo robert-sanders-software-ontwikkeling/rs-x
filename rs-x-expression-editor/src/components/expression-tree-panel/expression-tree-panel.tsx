@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { FaTimes } from 'react-icons/fa';
 
-import type { IExpression } from '../../../../rs-x-expression-parser/lib';
-import type { IExpressionInfo } from '../../models/expression-info.interface';
+import type { IExpression, IExpressionChangeHistory } from '@rs-x/expression-parser';
 import { ExpressionTree } from '../expression-tree-view/expression-tree-view.component';
 import { ZoomDropdown } from '../zoom-dropdown/zoom-dropdown.component';
 
 export interface IExpressionTreePanelProps {
   selectedExpressionString: string | undefined;
   treeZoomPercent: number;
-  expressionInfo: IExpressionInfo;
+  expression: IExpression;
+  version: number;
+  highlightVersion: number;
+  treeHighlight: IExpressionChangeHistory[];
   onTreeZoomPercentChange: (value: number) => void;
-  onClose: () => void;
+  onClose?: () => void;
 
   // IMPORTANT: pass true only when the details view is actually shown
   isVisible: boolean;
@@ -26,13 +28,16 @@ const PANEL_SHOW_DELAY_MS = 300;
 export const ExpressionTreePanel: React.FC<IExpressionTreePanelProps> = ({
   selectedExpressionString,
   treeZoomPercent,
-  expressionInfo,
+  expression,
+  version,
+  highlightVersion,
+  treeHighlight,
   onTreeZoomPercentChange,
   onClose,
   isVisible,
 }) => {
-  const version = expressionInfo?.version ?? 0;
-  const highlightVersion = expressionInfo?.treeHighlightVersion ?? 0;
+
+
 
   // This forces the highlight animation to play again after panel becomes visible.
   const [playNonce, setPlayNonce] = useState<number>(0);
@@ -68,15 +73,19 @@ export const ExpressionTreePanel: React.FC<IExpressionTreePanelProps> = ({
             value={treeZoomPercent}
             onChange={onTreeZoomPercentChange}
           />
-
-          <button
-            type="button"
-            className="icon-btn"
-            onClick={onClose}
-            title="Close"
-          >
-            <FaTimes />
-          </button>
+          {
+            onClose &&
+            (
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={onClose}
+                title="Close"
+              >
+                <FaTimes />
+              </button>
+            )
+          }
         </div>
       </div>
 
@@ -84,8 +93,8 @@ export const ExpressionTreePanel: React.FC<IExpressionTreePanelProps> = ({
         <ExpressionTree
           key={`${version}:${highlightVersion}`}
           version={version}
-          root={expressionInfo?.expression as IExpression}
-          highlightChanges={expressionInfo?.treeHighlight ?? []}
+          root={expression}
+          highlightChanges={treeHighlight ?? []}
           highlightVersion={highlightVersion}
           zoomPercent={treeZoomPercent}
           isVisible={isVisible}
