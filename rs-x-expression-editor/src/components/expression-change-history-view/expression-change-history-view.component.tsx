@@ -13,27 +13,6 @@ import { useExpressionChangeHistoryTracker } from './hooks/use-expression-change
 
 import './expression-change-history-view.component.css';
 
-export interface IExpressionChangeHistoryViewProps {
-  modelIndex: number;
-  expressionIndex: number;
-  expressionInfo: IExpressionInfo | undefined;
-  selectedChangeSetIndex: number;
-
-  onHistoryChange: (
-    modelIndex: number,
-    expressionIndex: number,
-    changes: IExpressionChangeHistory[][],
-  ) => void;
-
-  onSelectionChanged: (
-    modelIndex: number,
-    expressionIndex: number,
-    selectedChangeSetIndex: number,
-    items: IExpressionChangeHistory[],
-    replay: boolean,
-  ) => void;
-}
-
 type HistoryBatch = {
   persistedIndex: number;
   items: IExpressionChangeHistory[];
@@ -176,23 +155,40 @@ function getDisplayStepItems(
   });
 }
 
+export interface IExpressionChangeHistoryViewProps {
+  version: number;
+  modelIndex: number;
+  expressionIndex: number;
+  expression: IExpression;
+  changeHistory: IExpressionChangeHistory[][];
+  changeHistoryIndex: number;
+  onHistoryChange?: (
+    modelIndex: number,
+    expressionIndex: number,
+    changes: IExpressionChangeHistory[][],
+  ) => void;
+  onSelectionChanged?: (
+    modelIndex: number,
+    expressionIndex: number,
+    selectedChangeSetIndex: number,
+    items: IExpressionChangeHistory[],
+    replay: boolean,
+  ) => void;
+}
+
 export const ExpressionChangeHistoryView: React.FC<
   IExpressionChangeHistoryViewProps
-> = (props) => {
-  const {
-    modelIndex,
-    expressionIndex,
-    expressionInfo,
-    onHistoryChange,
-    selectedChangeSetIndex,
-    onSelectionChanged,
-  } = props;
-
-  const expression = expressionInfo?.expression;
-  const version = expressionInfo?.version ?? 0;
-
-  const persistedHistory: IExpressionChangeHistory[][] =
-    expressionInfo?.changeHistory ?? [];
+> = ({
+  version,
+  modelIndex,
+  expressionIndex,
+  expression,
+  changeHistory,
+  changeHistoryIndex,
+  onHistoryChange,
+  onSelectionChanged,
+}) => {
+  const persistedHistory: IExpressionChangeHistory[][] = changeHistory ?? [];
   const historyLength = persistedHistory.length;
 
   const batches = useMemo((): HistoryBatch[] => {
@@ -211,9 +207,9 @@ export const ExpressionChangeHistoryView: React.FC<
   }, [persistedHistory, historyLength, version]);
 
   const clampedSelectedPersistedIndex =
-    historyLength <= 0 || selectedChangeSetIndex < 0
+    historyLength <= 0 || changeHistoryIndex < 0
       ? -1
-      : clampIndex(selectedChangeSetIndex, historyLength);
+      : clampIndex(changeHistoryIndex, historyLength);
 
   const [expandedPersistedIndex, setExpandedPersistedIndex] = useState<number>(
     () => clampedSelectedPersistedIndex,
@@ -223,21 +219,23 @@ export const ExpressionChangeHistoryView: React.FC<
     setExpandedPersistedIndex(() => clampedSelectedPersistedIndex);
   }, [clampedSelectedPersistedIndex]);
 
-  useExpressionChangeHistoryTracker({
-    expressionInfo,
-    expression,
-    version,
-    modelIndex,
-    expressionIndex,
-    onHistoryChange,
-    onSelectionChanged,
-  });
+  if (onHistoryChange && onSelectionChanged) {
+    useExpressionChangeHistoryTracker({
+      changeHistory: persistedHistory,
+      expression,
+      version,
+      modelIndex,
+      expressionIndex,
+      onHistoryChange,
+      onSelectionChanged,
+    });
+  }
 
   const onUserSelectPersistedIndex = (
     persistedIndex: number,
     items: IExpressionChangeHistory[],
   ) => {
-    onSelectionChanged(
+    onSelectionChanged?.(
       modelIndex,
       expressionIndex,
       persistedIndex,
@@ -246,7 +244,7 @@ export const ExpressionChangeHistoryView: React.FC<
     );
   };
 
-  if (!expressionInfo) {
+  if (!expression) {
     return (
       <div className="changeHistoryRoot">
         <div className="changeHistoryEmpty">No expression selected</div>
@@ -273,13 +271,13 @@ export const ExpressionChangeHistoryView: React.FC<
 
             const headerChange = pickHeaderChange({
               batchItems: batch.items,
-              rootExpression: expressionInfo.expression,
+              rootExpression: expression,
             });
 
             const tLabel = `t${batch.persistedIndex}`;
             const headerExpr =
               headerChange?.expression?.expressionString ??
-              expressionInfo.expression?.expressionString ??
+              expression?.expressionString ??
               '(unknown)';
 
             const stepsCount = batch.items.length;

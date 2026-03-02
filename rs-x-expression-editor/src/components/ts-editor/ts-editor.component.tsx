@@ -23,15 +23,18 @@ const beforeMount: BeforeMount = (monaco) => {
 };
 
 export interface TSEditorProps {
-  onMount?: OnMount;
-  valueChange?: (value: string | undefined) => void;
-  save: (name: string, value: string) => void;
-  cancel: () => void;
+  saveButtonName?: string;
   header: string;
   name?: string;
+  hideName?: boolean;
+  hideCancelButton?: boolean;
   namePlaceholder;
   value?: string;
   options?: monaco.editor.IStandaloneEditorConstructionOptions;
+  onMount?: OnMount;
+  onChange?: (value: string) => void;
+  save: (name: string, value: string) => void;
+  cancel?: () => void;
 }
 
 export const TSEditor: React.FC<TSEditorProps> = ({
@@ -39,9 +42,10 @@ export const TSEditor: React.FC<TSEditorProps> = ({
   name,
   value,
   namePlaceholder,
-
+  hideName,
+  saveButtonName,
   onMount,
-  valueChange,
+  onChange,
   save,
   cancel,
   options,
@@ -50,24 +54,27 @@ export const TSEditor: React.FC<TSEditorProps> = ({
   const [currentValue, setCurrentValue] = useState<string>(value ?? '');
 
   // ✅ Name is optional now; only editor content disables Save
-  const isSaveDisabled = !currentValue.trim() || !currentName.trim();
+  const isSaveDisabled =
+    !currentValue.trim() || (!hideName && !currentName.trim());
 
   const onSave = () => {
     if (!currentValue.trim()) {
       return;
     }
 
-    // ✅ If name is empty, use the first line of the editor as default name
-    const fallbackName = currentValue.split('\n')[0]?.trim() ?? '';
-    const finalName = currentName.trim() || fallbackName;
+    let name = '';
+    if (!hideName) {
+      const fallbackName = currentValue.split('\n')[0]?.trim() ?? '';
+      name = currentName.trim() || fallbackName;
+    }
 
-    save(finalName, currentValue);
+    save(currentValue, name);
   };
 
   const onValueChange = (next: string | undefined) => {
     const nextValue = next ?? '';
     setCurrentValue(nextValue);
-    valueChange?.(next);
+    onChange?.(next ?? '');
   };
 
   return (
@@ -76,18 +83,20 @@ export const TSEditor: React.FC<TSEditorProps> = ({
         <div className="tsEditorHeaderLeft">
           <div className="tsEditorTitle">{header}</div>
 
-          <div className="tsEditorInputGroup">
-            <input
-              id="tsEditorName"
-              className="tsEditorInput"
-              type="text"
-              value={currentName}
-              onChange={(e) => {
-                setCurrentName(e.target.value);
-              }}
-              placeholder={namePlaceholder}
-            />
-          </div>
+          {!hideName && (
+            <div className="tsEditorInputGroup">
+              <input
+                id="tsEditorName"
+                className="tsEditorInput"
+                type="text"
+                value={currentName}
+                onChange={(e) => {
+                  setCurrentName(e.target.value);
+                }}
+                placeholder={namePlaceholder}
+              />
+            </div>
+          )}
         </div>
 
         <div className="tsEditorHeaderRight">
@@ -99,18 +108,19 @@ export const TSEditor: React.FC<TSEditorProps> = ({
               onSave();
             }}
           >
-            <FaCheck /> Save
+            <FaCheck /> {saveButtonName ?? 'Save'}
           </button>
-
-          <button
-            type="button"
-            className="btn btn--cancel"
-            onClick={() => {
-              cancel();
-            }}
-          >
-            <FaTimes /> Cancel
-          </button>
+          {cancel && (
+            <button
+              type="button"
+              className="btn btn--cancel"
+              onClick={() => {
+                cancel();
+              }}
+            >
+              <FaTimes /> Cancel
+            </button>
+          )}
         </div>
       </div>
 

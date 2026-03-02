@@ -12,18 +12,14 @@ import {
 
 import { type IModelWithExpressions } from '../models/model-with-expressions.interface';
 
-import { ModelEvaluator } from './model-evaluator';
 import { ModelExpressionsFactory } from './model-expressions.factory';
+import { type EvaluateModelResult, ScriptEvaluator } from './script-evaluator';
 
 export type CompileExpressionResult = {
   expressionString: string;
   expression?: IExpression;
   error?: string;
 };
-
-export type EvaluateModelResult =
-  | { success: true; model: object }
-  | { success: false; error: string };
 
 export class ExpressionEditorBusinessService {
   private readonly _expressionChangePlayback: IExpressionChangePlayback;
@@ -50,8 +46,10 @@ export class ExpressionEditorBusinessService {
     return this._instance;
   }
 
-  public evaluateModel(editorModelString: string): EvaluateModelResult {
-    return ModelEvaluator.getInstance().evaluate(editorModelString);
+  public evaluateModel(editorModelString: string): EvaluateModelResult<object> {
+    return ScriptEvaluator.getInstance().evaluateModel<object>(
+      editorModelString,
+    );
   }
 
   public validateModelName(

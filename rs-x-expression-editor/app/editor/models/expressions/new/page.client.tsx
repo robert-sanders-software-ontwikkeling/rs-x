@@ -5,9 +5,8 @@ import { useRouter } from 'next/navigation';
 import React from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 
-import { ErrorPanel } from '../../../../../src/components/error-panel/error-panel';
 import { ObjectViewer } from '../../../../../src/components/object-viewer/object-viewer.component';
-import { TSEditor } from '../../../../../src/components/ts-editor/ts-editor.component';
+import { TsEditorWithErrorPanel } from '../../../../../src/components/ts-editor-with-error-panel/ts-editor-with-error-panel.component';
 import { ExpressionEditorBusinessService } from '../../../../../src/services/expression-editor-business.service';
 import { ExpressionEditorStateBuilder } from '../../../../../src/services/expression-editor-state-builder';
 import { ModelIntellisenseService } from '../../../../../src/services/model-intellisense.service';
@@ -89,6 +88,12 @@ const NewExpressionPageClient: React.FC = () => {
   };
 
   const onCancel = () => {
+    setCurrentState((prev) => {
+      return new ExpressionEditorStateBuilder(prev).setAddingExpression(
+        modelIndex,
+        false,
+      ).state;
+    });
     const expressionIndex = getExpressionIndex();
     router.replace(`/editor?${createQueryString(modelIndex, expressionIndex)}`);
   };
@@ -106,30 +111,19 @@ const NewExpressionPageClient: React.FC = () => {
         <Separator className="separator" />
 
         <Panel defaultSize={70} minSize={30} className="panel">
-          <Group orientation="vertical" className="panel-stack">
-            <Panel defaultSize={70} minSize={10} className="panel">
-              <TSEditor
-                header="Add expression"
-                options={{
-                  suggestOnTriggerCharacters: true,
-                  quickSuggestions: true,
-                  wordBasedSuggestions: 'off',
-                }}
-                namePlaceholder="Expression name"
-                name=""
-                value=""
-                save={addExpression}
-                cancel={onCancel}
-                onMount={handleExpressionMount}
-              />
-            </Panel>
-
-            <Separator className="separator-horizontal" />
-
-            <Panel defaultSize={30} minSize={10} className="panel">
-              <ErrorPanel errors={currentState.errors} />
-            </Panel>
-          </Group>
+          <TsEditorWithErrorPanel
+            header="Add expression"
+            namePlaceholder="Expression name"
+            errors={currentState.errors}
+            save={addExpression}
+            cancel={onCancel}
+            onMount={handleExpressionMount}
+            options={{
+              suggestOnTriggerCharacters: true,
+              quickSuggestions: true,
+              wordBasedSuggestions: 'off',
+            }}
+          />
         </Panel>
       </Group>
     </div>

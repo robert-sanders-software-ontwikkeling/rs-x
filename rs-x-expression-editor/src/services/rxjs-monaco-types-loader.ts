@@ -32,15 +32,21 @@ export class RxjsMonacoTypesLoader {
   }
 
   public async install(monaco: Monaco): Promise<void> {
-    if (this._installed) return;
+    if (this._installed) {
+      return;
+    }
 
+    // ✅ Use canonical API surface for Monaco TS/JS language service
     const ts = monaco.typescript;
-    if (!ts) return;
+    if (!ts) {
+      return;
+    }
 
-    ts.typescriptDefaults.setCompilerOptions({
-      target: monaco.typescript.ScriptTarget.ES2020,
-      module: monaco.typescript.ModuleKind.ESNext,
-      moduleResolution: monaco.typescript.ModuleResolutionKind.NodeJs,
+    // ✅ Apply compiler options to BOTH TypeScript + JavaScript defaults
+    const compilerOptions = {
+      target: ts.ScriptTarget.ES2020,
+      module: ts.ModuleKind.ESNext,
+      moduleResolution: ts.ModuleResolutionKind.NodeJs,
       baseUrl: 'file:///',
       paths: {
         rxjs: ['node_modules/rxjs/dist/types/index.d.ts'],
@@ -49,7 +55,15 @@ export class RxjsMonacoTypesLoader {
         'rxjs/operators/*': ['node_modules/rxjs/dist/types/operators/*'],
       },
       typeRoots: ['node_modules/@types'],
-    });
+
+      // JS IntelliSense + checking
+      allowJs: true,
+      checkJs: true,
+      allowNonTsExtensions: true,
+    };
+
+    ts.typescriptDefaults.setCompilerOptions(compilerOptions);
+    ts.javascriptDefaults.setCompilerOptions(compilerOptions);
 
     const baseUrl = normalizeBaseUrl(process.env.NEXT_PUBLIC_BASE_PATH ?? '/');
 
@@ -76,28 +90,51 @@ export class RxjsMonacoTypesLoader {
       }),
     );
 
-    // Add all d.ts (no network here, only addExtraLib calls)
+    // ✅ Add all d.ts to BOTH TS + JS defaults
     for (const chunk of chunkResults) {
       for (const f of chunk.files) {
         ts.typescriptDefaults.addExtraLib(f.content, f.uri);
+        ts.javascriptDefaults.addExtraLib(f.content, f.uri);
       }
     }
 
-    // Global rxjs value: rxjs.map, rxjs.Observable, etc.
+    // ✅ Global 'api' for scripts (visible in JS + TS models)
     const globalLib = `
       import * as Core from 'rxjs';
       import * as Ops from 'rxjs/operators';
 
       declare global {
-        const rxjs: typeof Core & typeof Ops;
+        interface IIndexWatchRule {
+          context: unknown;
+          test(index: unknown, target: unknown): boolean;
+        }
+
+        interface IExpression<TReturn = unknown> {
+          value: TReturn;
+        }
+
+        const api: {
+          rxjs: typeof Core & typeof Ops;
+
+          rsx: <TReturn, TModel extends object = object>(
+            expressionString: string,
+          ) => (
+            model: TModel,
+            leafIndexWatchRule?: IIndexWatchRule,
+          ) => IExpression<TReturn>;
+        };
       }
 
       export {};
     `;
 
-    monaco.typescript.typescriptDefaults.addExtraLib(
+    ts.typescriptDefaults.addExtraLib(
       globalLib,
-      'file:///globals/rxjs-global.d.ts',
+      'file:///globals/rsx-global.d.ts',
+    );
+    ts.javascriptDefaults.addExtraLib(
+      globalLib,
+      'file:///globals/rsx-global.d.ts',
     );
 
     this._installed = true;
