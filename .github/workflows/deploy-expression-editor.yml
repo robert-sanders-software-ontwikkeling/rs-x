@@ -1,4 +1,7 @@
 name: Deploy rs-x-expression-editor to GitHub Pages
+env:
+  GH_PAGES: 'true'
+  NEXT_PUBLIC_BASE_PATH: '/rs-x'
 
 on:
   workflow_dispatch:
