@@ -56,6 +56,9 @@ export abstract class AbstractExpression<
     if (!this._id) {
       this._id = this._services?.expressionIdProvider?.getId?.(this);
     }
+    if (!this._id) {
+      this._id = this._services?.expressionIdProvider?.getId?.(this);
+    }
     return this._id;
   }
 

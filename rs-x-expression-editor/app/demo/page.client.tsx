@@ -129,6 +129,8 @@ const DemoPageClient: React.FC = () => {
     [],
   );
 
+  const [treeHighlightVersion, setTreeHighlightVersion] = useState<number>(0);
+
   const [treeZoomPercent, setTreeZoomPercent] = useState<number>(75);
   const [errors, setErrors] = useState<string[]>([]);
 
@@ -160,7 +162,8 @@ const DemoPageClient: React.FC = () => {
       stack,
       _replay,
     ) => {
-      setTreeHighLight(stack);
+      setTreeHighlightVersion(treeHighlightVersion + 1);
+      setTreeHighLight([...stack]);
     },
   });
 
@@ -257,6 +260,7 @@ const DemoPageClient: React.FC = () => {
     <div className="app">
       <ExpressionTreeViewWithModel
         hideTrackChange={true}
+        treeHighlightVersion={treeHighlightVersion}
         hideHeader={true}
         expression={expression}
         treeHighlight={treeHighligh}

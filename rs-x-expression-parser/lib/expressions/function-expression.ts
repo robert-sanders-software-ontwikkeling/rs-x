@@ -55,14 +55,23 @@ export class FunctionExpression extends AbstractExpression {
   ): AbstractExpression {
     super.bind(settings);
     this._functionId = this.guidFactory.create();
-    this._context = settings.context ?? settings.rootContext;
+    this._context = settings.context;
     if (this.objectExpression) {
       this.objectExpression.bind(settings);
+
+      this.functionExpression.bind(
+        this.computed ? settings : { ...settings, context: undefined },
+      );
+
       if (this.computed) {
         this.functionExpression.bind(settings);
       }
-    } else if (this.functionExpression.type !== ExpressionType.Identifier) {
-      this.functionExpression.bind(settings);
+    } else {
+      this.functionExpression.bind(
+        this.functionExpression.type == ExpressionType.Identifier
+          ? { ...settings, context: undefined }
+          : settings,
+      );
     }
 
     this.argumentsExpression.bind(settings);

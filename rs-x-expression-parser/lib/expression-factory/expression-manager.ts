@@ -50,7 +50,7 @@ class ExpressionForContextManager
     const result = super.create(expressionData);
 
     result.instance.bind({
-      rootContext: this._context,
+      context: this._context,
       services: this._services,
       owner: {
         release: () => {

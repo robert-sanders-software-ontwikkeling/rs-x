@@ -52,7 +52,7 @@ describe('SubtractionExpression tests', () => {
 
       await new WaitForEvent(clonedExpression, 'changed').wait(() => {
         clonedExpression.bind({
-          rootContext: model,
+          context: model,
           services,
         });
 

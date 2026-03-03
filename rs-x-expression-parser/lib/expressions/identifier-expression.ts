@@ -88,6 +88,7 @@ export class IndexValueObserver {
 
 export type IIdentifierBindConfiguration = IExpressionBindConfiguration & {
   currentValue?: unknown;
+  isRoot?: boolean;
 };
 
 export class IdentifierExpression extends AbstractExpression {
@@ -142,8 +143,12 @@ export class IdentifierExpression extends AbstractExpression {
     this._isBound = false;
     super.bind(settings);
 
-    this._context = settings.context ?? settings.rootContext;
-    this._commitAfterInitialized = settings.context !== settings.rootContext;
+    this._context = settings.context;
+
+    if (!this._context) {
+      return this;
+    }
+    this._commitAfterInitialized = !settings.isRoot;
 
     this._indexWatchRule = new IndexWatchRule(
       this._context,

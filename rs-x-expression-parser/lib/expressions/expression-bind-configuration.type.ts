@@ -11,16 +11,15 @@ export interface IBindConfigurationBase {
 
 export type IExpressionBindConfigurationExtra = {
   readonly currentValue?: unknown;
+  readonly isRoot?: boolean;
 };
 
 export type IExpressionBindConfiguration =
   | (IBindConfigurationBase &
       IExpressionBindConfigurationExtra & {
-        rootContext: unknown;
         context?: never;
       })
   | (IBindConfigurationBase &
       IExpressionBindConfigurationExtra & {
-        rootContext?: never;
         context: unknown;
       });
