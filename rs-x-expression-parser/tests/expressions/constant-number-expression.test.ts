@@ -50,7 +50,7 @@ describe('ConstantNumberExpression tests', () => {
 
       await new WaitForEvent(clonedExpression, 'changed').wait(() => {
         clonedExpression.bind({
-          rootContext: {},
+          context: {},
           services,
         });
 

@@ -48,9 +48,10 @@ export class MemberExpression extends AbstractExpression {
 
     for (let i = 0; i < this._childExpressions.length; i++) {
       const currentSegment = this._childExpressions[i];
-      if (i === 0 || this.isCalculated(currentSegment)) {
-        currentSegment.bind(settings);
-      }
+      const isRoot = i === 0 || this.isCalculated(currentSegment);
+      currentSegment.bind(
+        isRoot ? settings : { ...settings, context: undefined, isRoot },
+      );
     }
 
     return this;
