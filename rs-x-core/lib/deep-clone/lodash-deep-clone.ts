@@ -1,6 +1,7 @@
 import cloneDeepWith from 'lodash.clonedeepwith';
 
 import { Inject, Injectable } from '../dependency-injection';
+import type { IProxyRegistry } from '../proxy-registry/proxy-registry.interface';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
 
 import type { IDeepClone } from './deep-clone.interface';
@@ -13,10 +14,15 @@ export class LodashDeepClone implements IDeepClone {
   constructor(
     @Inject(RsXCoreInjectionTokens.DefaultDeepCloneExcept)
     private readonly _deepCloneExcept: IDeepCloneExcept,
+    @Inject(RsXCoreInjectionTokens.IProxyRegistry)
+    private readonly _proxyRegistry: IProxyRegistry,
   ) {}
 
   public clone(source: unknown): unknown {
-    return cloneDeepWith(source, this.cloneExceptPredicate);
+    return cloneDeepWith(
+      this._proxyRegistry.getProxyTarget(source) ?? source,
+      this.cloneExceptPredicate,
+    );
   }
 
   private cloneExceptPredicate = (value: unknown): unknown => {

@@ -14,6 +14,7 @@ import {
   type IExpressionChangeTransactionManager,
 } from '../expresion-change-transaction-manager.interface';
 import type { IExpressionServices } from '../expression-services/expression-services.interface';
+import { type IIdentifierOwnerResolver } from '../identifier-owner-resolver/identifier-owner-resolver.interface';
 
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 import {
@@ -39,6 +40,8 @@ export abstract class AbstractExpression<
   private _leafIndexWatchRule?: IIndexWatchRule | undefined;
   private _changeHook?: ChangeHook;
 
+  private _hidden: boolean;
+
   protected constructor(
     public readonly type: ExpressionType,
     public readonly expressionString: string,
@@ -50,12 +53,15 @@ export abstract class AbstractExpression<
     this.addChildExpressions(
       childExpressions.filter((childExpression) => childExpression),
     );
+
+    this._hidden = false;
+  }
+
+  public get hidden(): boolean {
+    return this._hidden;
   }
 
   public get id(): string {
-    if (!this._id) {
-      this._id = this._services?.expressionIdProvider?.getId?.(this);
-    }
     if (!this._id) {
       this._id = this._services?.expressionIdProvider?.getId?.(this);
     }
@@ -152,6 +158,10 @@ export abstract class AbstractExpression<
     return this._services?.indexValueAccessor;
   }
 
+  protected get identifierOwnerResolver(): IIdentifierOwnerResolver {
+    return this._services?.identifierOwnerResolver;
+  }
+
   protected get transactionManager(): IExpressionChangeTransactionManager {
     return this._services?.transactionManager;
   }
@@ -166,6 +176,11 @@ export abstract class AbstractExpression<
 
   protected get absoluteRoot(): AbstractExpression {
     return this.parent ? this.parent.absoluteRoot : this;
+  }
+
+  protected static setHidden<T extends AbstractExpression>(target: T): T {
+    target._hidden = true;
+    return target;
   }
 
   protected static setValue(

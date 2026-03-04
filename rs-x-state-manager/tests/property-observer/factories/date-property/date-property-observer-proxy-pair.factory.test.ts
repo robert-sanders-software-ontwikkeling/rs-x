@@ -1,6 +1,8 @@
 import {
   InjectionContainer,
   type IPropertyChange,
+  type IProxyRegistry,
+  RsXCoreInjectionTokens,
   Type,
   WaitForEvent,
 } from '@rs-x/core';
@@ -8,7 +10,6 @@ import { DisposableOwnerMock } from '@rs-x/core/testing';
 
 import { type IObserver } from '../../../../lib/observer.interface';
 import { type IDatePropertyObserverProxyPairFactory } from '../../../../lib/property-observer/factories/date-property/date-property-observer-proxy-pair.factory.type';
-import type { IProxyRegistry } from '../../../../lib/proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
 import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokens';
 
@@ -22,7 +23,7 @@ describe('IDatePropertyObserverProxyPairFactory tests', () => {
     await InjectionContainer.load(RsXStateManagerModule);
 
     proxyRegistry = InjectionContainer.get(
-      RsXStateManagerInjectionTokens.IProxyRegistry,
+      RsXCoreInjectionTokens.IProxyRegistry,
     );
     datePropertyObserverProxyPairFactory = InjectionContainer.get(
       RsXStateManagerInjectionTokens.IDatePropertyObserverProxyPairFactory,

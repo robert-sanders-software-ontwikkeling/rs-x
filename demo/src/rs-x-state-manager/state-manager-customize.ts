@@ -11,6 +11,7 @@ import {
   Injectable,
   InjectionContainer,
   type IPropertyChange,
+  type IProxyRegistry,
   type IValueMetadata,
   overrideMultiInjectServices,
   RsXCoreInjectionTokens,
@@ -27,7 +28,6 @@ import {
   type IObjectObserverProxyPairManager,
   type IObserverProxyPair,
   type IPropertyInfo,
-  type IProxyRegistry,
   type IProxyTarget,
   type IStateChange,
   type IStateManager,
@@ -112,7 +112,7 @@ class TextDocumentObserverManager extends SingletonFactory<
   TextDocumentObserver
 > {
   constructor(
-    @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
+    @Inject(RsXCoreInjectionTokens.IProxyRegistry)
     private readonly _proxyRegister: IProxyRegistry,
   ) {
     super();
@@ -241,7 +241,7 @@ export class TextDocumentInxdexObserverProxyPairFactory extends IndexObserverPro
     guidFactory: IGuidFactory,
     @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
     indexValueAccessor: IIndexValueAccessor,
-    @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
+    @Inject(RsXCoreInjectionTokens.IProxyRegistry)
     proxyRegister: IProxyRegistry,
     @Inject(RsXCoreInjectionTokens.IValueMetadata)
     valueMetadata: IValueMetadata,
@@ -550,7 +550,7 @@ function testMonitoreSpecificLineInDocument(
     stateManager.watchState(model.myBook, line3OnPage1Index);
 
     const proxRegistry: IProxyRegistry = InjectionContainer.get(
-      RsXStateManagerInjectionTokens.IProxyRegistry,
+      RsXCoreInjectionTokens.IProxyRegistry,
     );
     const bookProxy: TextDocument = proxRegistry.getProxy(model.myBook);
 

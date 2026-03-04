@@ -1,6 +1,10 @@
-import { InjectionContainer, utCDate } from '@rs-x/core';
 import {
+  InjectionContainer,
   type IProxyRegistry,
+  RsXCoreInjectionTokens,
+  utCDate,
+} from '@rs-x/core';
+import {
   type IStateChange,
   type IStateManager,
   RsXStateManagerInjectionTokens,
@@ -63,7 +67,7 @@ function watchDateProperty(stateManager: IStateManager) {
     stateManager.watchState(date, 'year');
 
     const proxyRegister: IProxyRegistry = InjectionContainer.get(
-      RsXStateManagerInjectionTokens.IProxyRegistry,
+      RsXCoreInjectionTokens.IProxyRegistry,
     );
     const dateProxy = proxyRegister.getProxy<Date>(date);
     console.log('Changed value:');

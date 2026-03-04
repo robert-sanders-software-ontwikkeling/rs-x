@@ -1,4 +1,3 @@
-import { ObjectStorage } from '../lib';
 import { DeepCloneValueExcept } from '../lib/deep-clone/deep-clone-except';
 import { DefaultDeepClone } from '../lib/deep-clone/default-deep-clone';
 import { InjectionContainer } from '../lib/dependency-injection';
@@ -9,6 +8,7 @@ import { FunctionCallResultCacheFactory } from '../lib/function-call-result-cach
 import { GuidFactory } from '../lib/guid/guid.factory';
 import { ArrayIndexAccessor } from '../lib/index-value-accessor/array-index-accessor';
 import { DatePropertyAccessor } from '../lib/index-value-accessor/date-property-accessor';
+import { GlobalIndexAccessor } from '../lib/index-value-accessor/global-index-accesor';
 import { IndexValueAccessor } from '../lib/index-value-accessor/index-value-accessor';
 import { MapKeyAccessor } from '../lib/index-value-accessor/map-key-accessor';
 import { MethodAccessor } from '../lib/index-value-accessor/method-accessor';
@@ -17,6 +17,8 @@ import { PromiseAccessor } from '../lib/index-value-accessor/promise-accessor';
 import { PropertyValueAccessor } from '../lib/index-value-accessor/property-value-accessor';
 import { ResolvedValueCache } from '../lib/index-value-accessor/resolved-value-cache';
 import { SetKeyAccessor } from '../lib/index-value-accessor/set-key-accessor';
+import { ObjectStorage } from '../lib/object-store/object-storage';
+import { ProxyRegistry } from '../lib/proxy-registry/proxy-registry';
 import { RsXCoreInjectionTokens } from '../lib/rs-x-core.injection-tokens';
 import { RsXCoreModule } from '../lib/rs-x-core.module';
 import { SequenceIdFactory } from '../lib/sequence-id/sequence-id.factory';
@@ -161,7 +163,7 @@ describe('rs-x core module', () => {
       RsXCoreInjectionTokens.IIndexValueAccessorList,
     );
 
-    expect(actual.length).toEqual(8);
+    expect(actual.length).toEqual(9);
 
     expect(actual[0]).toBeInstanceOf(PropertyValueAccessor);
     expect(actual[1]).toBeInstanceOf(MethodAccessor);
@@ -171,6 +173,7 @@ describe('rs-x core module', () => {
     expect(actual[5]).toBeInstanceOf(ObservableAccessor);
     expect(actual[6]).toBeInstanceOf(PromiseAccessor);
     expect(actual[7]).toBeInstanceOf(DatePropertyAccessor);
+    expect(actual[8]).toBeInstanceOf(GlobalIndexAccessor);
   });
 
   it('IIndexValueAccessorList instance is a singelton', () => {
@@ -402,6 +405,19 @@ describe('rs-x core module', () => {
   it('IObjectStorage instance is a singleton', () => {
     const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IObjectStorage);
     const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IObjectStorage);
+    expect(a1).toBe(a2);
+  });
+
+  it('can get a instance of IProxyRegistry', () => {
+    const actual = InjectionContainer.get(
+      RsXCoreInjectionTokens.IProxyRegistry,
+    );
+    expect(actual).toBeInstanceOf(ProxyRegistry);
+  });
+
+  it('instance of IProxyRegistry is a singelton', () => {
+    const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IProxyRegistry);
+    const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IProxyRegistry);
     expect(a1).toBe(a2);
   });
 });

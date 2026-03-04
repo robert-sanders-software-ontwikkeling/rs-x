@@ -2,6 +2,8 @@ export * from './array-index-accessor';
 export * from './array-index-accessor.type';
 export * from './date-property-accessor';
 export * from './date-property-accessor.interface';
+export * from './global-index-accesor';
+export * from './global-index-accesor.type';
 export * from './index-value-accessor';
 export * from './index-value-accessor.interface';
 export * from './map-key-accessor';

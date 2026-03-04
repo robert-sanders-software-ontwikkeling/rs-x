@@ -1,12 +1,9 @@
-import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { IExpressionChangeHistory } from '@rs-x/expression-parser';
 
 import { type ExpressionIndex } from '../expression-index';
 import { type NodeId } from '../layout/node.interface';
-
-const animationSpeed = 350;
 
 type Selection = {
   selectedNodeIds: Set<NodeId>;
@@ -19,6 +16,21 @@ type Wave = {
   edges: string[];
 };
 
+type FlowState = {
+  nodeIds: Set<NodeId>;
+  edgeKeys: Set<string>;
+};
+
+function unionSets<T>(sets: Iterable<Set<T>>): Set<T> {
+  const out = new Set<T>();
+  for (const s of sets) {
+    for (const v of s) {
+      out.add(v);
+    }
+  }
+  return out;
+}
+
 class HighlightAnimator {
   public computeSelection(args: {
     highlightChanges: readonly IExpressionChangeHistory[];
@@ -26,16 +38,15 @@ class HighlightAnimator {
   }): Selection {
     const { highlightChanges, expressionIndex } = args;
 
-    const stepIds: NodeId[] = [];
-
+    const changedIds: NodeId[] = [];
     for (const h of highlightChanges) {
       const id = expressionIndex.resolveNodeId(h.expression);
       if (id) {
-        stepIds.push(id);
+        changedIds.push(id);
       }
     }
 
-    if (stepIds.length === 0) {
+    if (changedIds.length === 0) {
       return {
         selectedNodeIds: new Set<NodeId>(),
         selectedEdgeKeys: new Set<string>(),
@@ -43,47 +54,41 @@ class HighlightAnimator {
       };
     }
 
-    const selectedNodes = new Set<NodeId>(stepIds);
-    const selectedEdges = new Set<string>();
+    // selected styling: only actually-changed nodes
+    const selectedNodeIds = new Set<NodeId>(changedIds);
 
-    const nodePathSequence: NodeId[] = [];
+    // bubble-up path: changed node(s) -> root
+    const path: NodeId[] = [];
+    const selectedEdgeKeys = new Set<string>();
 
-    for (let i = 0; i < stepIds.length - 1; i++) {
-      const a = stepIds[i];
-      const b = stepIds[i + 1];
+    for (const startId of changedIds) {
+      const chain = expressionIndex.chainToRoot(startId); // [start, parent, ..., root]
 
-      const segment = expressionIndex.pathNodesBetween(a, b);
-      if (segment.length) {
-        if (nodePathSequence.length === 0) {
-          nodePathSequence.push(...segment);
-        } else {
-          nodePathSequence.push(...segment.slice(1));
-        }
+      for (const id of chain) {
+        path.push(id);
+      }
+
+      // edges along the chain (parent -> child)
+      for (let i = 0; i < chain.length - 1; i++) {
+        const child = chain[i];
+        const parent = chain[i + 1];
+        selectedEdgeKeys.add(expressionIndex.edgeKey(parent, child));
       }
     }
 
-    if (nodePathSequence.length === 0) {
-      nodePathSequence.push(stepIds[0]);
-    }
-
-    for (let i = 0; i < nodePathSequence.length - 1; i++) {
-      const from = nodePathSequence[i + 1];
-      const to = nodePathSequence[i];
-
-      const p = expressionIndex.parentById.get(from) ?? null;
-      if (p === to) {
-        selectedEdges.add(expressionIndex.edgeKey(to, from));
-      } else {
-        const p2 = expressionIndex.parentById.get(to) ?? null;
-        if (p2 === from) {
-          selectedEdges.add(expressionIndex.edgeKey(from, to));
-        }
+    // de-dupe while keeping order
+    const seen = new Set<NodeId>();
+    const nodePathSequence: NodeId[] = [];
+    for (const id of path) {
+      if (!seen.has(id)) {
+        seen.add(id);
+        nodePathSequence.push(id);
       }
     }
 
     return {
-      selectedNodeIds: selectedNodes,
-      selectedEdgeKeys: selectedEdges,
+      selectedNodeIds,
+      selectedEdgeKeys,
       nodePathSequence,
     };
   }
@@ -125,6 +130,7 @@ class HighlightAnimator {
 
     const waves: Wave[] = [];
 
+    // deepest -> root, include edges for those nodes (parent->child)
     for (let depth = maxDepth; depth >= 0; depth--) {
       const nodes = byDepth.get(depth) ?? [];
       if (nodes.length === 0) {
@@ -132,7 +138,6 @@ class HighlightAnimator {
       }
 
       const edges: string[] = [];
-
       for (const nodeId of nodes) {
         const parent = index.parentById.get(nodeId) ?? null;
         if (!parent) {
@@ -151,32 +156,12 @@ class HighlightAnimator {
     return waves;
   }
 
-  public scheduleAnimation(args: {
+  public buildSchedule(args: {
     nodePathSequence: NodeId[];
     selectedEdges: Set<string>;
     expressionIndex: ExpressionIndex;
-
-    setActiveNodeIds: React.Dispatch<React.SetStateAction<Set<NodeId>>>;
-    setActiveEdgeKeys: React.Dispatch<React.SetStateAction<Set<string>>>;
-
-    timersRef: React.MutableRefObject<number[]>;
-    clearTimers: () => void;
-  }): void {
-    const {
-      nodePathSequence,
-      selectedEdges,
-      expressionIndex,
-      setActiveNodeIds,
-      setActiveEdgeKeys,
-      timersRef,
-      clearTimers,
-    } = args;
-
-    clearTimers();
-
-    if (nodePathSequence.length === 0) {
-      return;
-    }
+  }): Array<{ atMs: number; nodes: NodeId[]; edges: string[] }> {
+    const { nodePathSequence, selectedEdges, expressionIndex } = args;
 
     const waves = this.buildWaves({
       nodePathSequence,
@@ -184,36 +169,25 @@ class HighlightAnimator {
       index: expressionIndex,
     });
 
+    const edgeMs = 320;
     const nodeMs = 520;
-    const edgeMs = 260;
+    const clearMs = 350;
 
+    const steps: Array<{ atMs: number; nodes: NodeId[]; edges: string[] }> = [];
     let t = 0;
 
     for (const wave of waves) {
       t += edgeMs;
-      timersRef.current.push(
-        window.setTimeout(() => {
-          setActiveEdgeKeys(() => new Set<string>(wave.edges));
-          setActiveNodeIds(() => new Set<NodeId>(wave.nodes));
-        }, t),
-      );
+      steps.push({ atMs: t, nodes: wave.nodes, edges: wave.edges });
 
       t += nodeMs;
-      timersRef.current.push(
-        window.setTimeout(() => {
-          setActiveEdgeKeys(() => new Set<string>());
-          setActiveNodeIds(() => new Set<NodeId>(wave.nodes));
-        }, t),
-      );
+      steps.push({ atMs: t, nodes: wave.nodes, edges: [] });
     }
 
-    t += animationSpeed;
-    timersRef.current.push(
-      window.setTimeout(() => {
-        setActiveEdgeKeys(() => new Set<string>());
-        setActiveNodeIds(() => new Set<NodeId>());
-      }, t),
-    );
+    t += clearMs;
+    steps.push({ atMs: t, nodes: [], edges: [] });
+
+    return steps;
   }
 }
 
@@ -239,7 +213,9 @@ export function useHighlightAnimation(args: {
     playNonce,
   } = args;
 
-  const animator = useMemo(() => new HighlightAnimator(), []);
+  const animator = useMemo(() => {
+    return new HighlightAnimator();
+  }, []);
 
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<NodeId>>(
     () => new Set<NodeId>(),
@@ -247,6 +223,7 @@ export function useHighlightAnimation(args: {
   const [selectedEdgeKeys, setSelectedEdgeKeys] = useState<Set<string>>(
     () => new Set<string>(),
   );
+
   const [activeNodeIds, setActiveNodeIds] = useState<Set<NodeId>>(
     () => new Set<NodeId>(),
   );
@@ -254,28 +231,79 @@ export function useHighlightAnimation(args: {
     () => new Set<string>(),
   );
 
-  const timersRef = useRef<number[]>([]);
+  const flowsRef = useRef<Map<number, FlowState>>(new Map());
+  const timersRef = useRef<Map<number, number[]>>(new Map());
+  const nextFlowIdRef = useRef<number>(1);
 
-  const clearTimers = (): void => {
-    for (const t of timersRef.current) {
-      window.clearTimeout(t);
+  const clearAllFlows = (): void => {
+    for (const [, timerIds] of timersRef.current) {
+      for (const t of timerIds) {
+        window.clearTimeout(t);
+      }
     }
-    timersRef.current = [];
-  };
+    timersRef.current.clear();
+    flowsRef.current.clear();
 
-  const resetState = (): void => {
-    setSelectedNodeIds(() => new Set<NodeId>());
-    setSelectedEdgeKeys(() => new Set<string>());
     setActiveNodeIds(() => new Set<NodeId>());
     setActiveEdgeKeys(() => new Set<string>());
   };
 
+  const recomputeUnion = (): void => {
+    // ✅ FIX: materialize once; Map.values() is an iterator and gets consumed
+    const flowStates = Array.from(flowsRef.current.values());
+
+    const nodes = unionSets(flowStates.map((s) => s.nodeIds));
+    const edges = unionSets(flowStates.map((s) => s.edgeKeys));
+
+    setActiveNodeIds(() => nodes);
+    setActiveEdgeKeys(() => edges);
+  };
+
+  const setFlowState = (
+    flowId: number,
+    nodes: NodeId[],
+    edges: string[],
+  ): void => {
+    flowsRef.current.set(flowId, {
+      nodeIds: new Set<NodeId>(nodes),
+      edgeKeys: new Set<string>(edges),
+    });
+
+    recomputeUnion();
+  };
+
+  const removeFlow = (flowId: number): void => {
+    flowsRef.current.delete(flowId);
+
+    const timerIds = timersRef.current.get(flowId) ?? [];
+    for (const t of timerIds) {
+      window.clearTimeout(t);
+    }
+    timersRef.current.delete(flowId);
+
+    recomputeUnion();
+  };
+
   useEffect(() => {
-    clearTimers();
+    clearAllFlows();
+  }, [expressionIndex]);
+
+  useEffect(() => {
+    if (!isVisible) {
+      clearAllFlows();
+    }
+  }, [isVisible]);
+
+  useEffect(() => {
+    if (!isVisible) {
+      return;
+    }
 
     if (!highlightChanges || highlightChanges.length === 0) {
-      resetState();
-      return () => clearTimers();
+      setSelectedNodeIds(() => new Set<NodeId>());
+      setSelectedEdgeKeys(() => new Set<string>());
+      clearAllFlows();
+      return;
     }
 
     const selection = animator.computeSelection({
@@ -283,35 +311,46 @@ export function useHighlightAnimation(args: {
       expressionIndex,
     });
 
-    if (selection.nodePathSequence.length === 0) {
-      resetState();
-      return () => clearTimers();
-    }
-
     setSelectedNodeIds(() => selection.selectedNodeIds);
     setSelectedEdgeKeys(() => selection.selectedEdgeKeys);
 
-    if (!isVisible) {
-      return () => clearTimers();
+    if (selection.nodePathSequence.length === 0) {
+      return;
     }
 
-    animator.scheduleAnimation({
+    const schedule = animator.buildSchedule({
       nodePathSequence: selection.nodePathSequence,
       selectedEdges: selection.selectedEdgeKeys,
       expressionIndex,
-      setActiveNodeIds,
-      setActiveEdgeKeys,
-      timersRef,
-      clearTimers,
     });
 
-    return () => clearTimers();
+    const flowId = nextFlowIdRef.current++;
+    timersRef.current.set(flowId, []);
+
+    setFlowState(flowId, [], []);
+
+    for (const step of schedule) {
+      const tid = window.setTimeout(() => {
+        if (!timersRef.current.has(flowId)) {
+          return;
+        }
+
+        setFlowState(flowId, step.nodes, step.edges);
+
+        if (step.nodes.length === 0 && step.edges.length === 0) {
+          removeFlow(flowId);
+        }
+      }, step.atMs);
+
+      timersRef.current.get(flowId)?.push(tid);
+    }
   }, [
+    animator,
+    expressionIndex,
     highlightVersion,
     highlightKey,
-    expressionIndex,
     isVisible,
-    playNonce, // forces replay when panel becomes visible
+    playNonce,
   ]);
 
   return {

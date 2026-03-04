@@ -1,6 +1,7 @@
 import {
   ArrayIndexAccessor,
   DatePropertyAccessor,
+  GlobalIndexAccessor,
   InjectionContainer,
   MapKeyAccessor,
   MethodAccessor,
@@ -35,6 +36,7 @@ import { ExpressionObserverProxyPairFactory } from '../lib/expression-observer/e
 import { ExpressionServices } from '../lib/expression-services/expression-services';
 import { ArrayIndexOwnerResolver } from '../lib/identifier-owner-resolver/array-index-owner-resolver';
 import { DefaultIdentifierOwnerResolver } from '../lib/identifier-owner-resolver/default-identifier-owner-resolver';
+import { GlobalIdentifierOwnerResolver } from '../lib/identifier-owner-resolver/global-identifier-owner-resolver';
 import { MapKeyOwnerResolver } from '../lib/identifier-owner-resolver/map-key-owner-resolver';
 import { PropertyOwnerResolver } from '../lib/identifier-owner-resolver/property-owner-resolver';
 import { JsEspreeExpressionParser } from '../lib/js-espree-expression-parser';
@@ -194,11 +196,12 @@ describe('RsXExpressionParserModule tests', () => {
       RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList,
     );
 
-    expect(actual.length).toEqual(3);
+    expect(actual.length).toEqual(4);
 
     expect(actual[0]).toBeInstanceOf(PropertyOwnerResolver);
     expect(actual[1]).toBeInstanceOf(ArrayIndexOwnerResolver);
     expect(actual[2]).toBeInstanceOf(MapKeyOwnerResolver);
+    expect(actual[3]).toBeInstanceOf(GlobalIdentifierOwnerResolver);
   });
 
   it('IIdentifierOwnerResolverList instance is a singelton', () => {
@@ -218,7 +221,7 @@ describe('RsXExpressionParserModule tests', () => {
       RsXCoreInjectionTokens.IIndexValueAccessorList,
     );
 
-    expect(actual.length).toEqual(9);
+    expect(actual.length).toEqual(10);
     expect(actual[0]).toBeInstanceOf(ExpressionIndexAccessor);
     expect(actual[1]).toBeInstanceOf(PropertyValueAccessor);
     expect(actual[2]).toBeInstanceOf(MethodAccessor);
@@ -228,6 +231,7 @@ describe('RsXExpressionParserModule tests', () => {
     expect(actual[6]).toBeInstanceOf(ObservableAccessor);
     expect(actual[7]).toBeInstanceOf(PromiseAccessor);
     expect(actual[8]).toBeInstanceOf(DatePropertyAccessor);
+    expect(actual[9]).toBeInstanceOf(GlobalIndexAccessor);
   });
 
   it('IIndexValueAccessorList instance is a singelton', () => {

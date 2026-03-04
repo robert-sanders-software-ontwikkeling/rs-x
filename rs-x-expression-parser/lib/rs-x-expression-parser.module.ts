@@ -37,6 +37,7 @@ import type { IExpressionServices } from './expression-services/expression-servi
 import type { IExpressionParser } from './expressions/expression-parser.interface';
 import { ArrayIndexOwnerResolver } from './identifier-owner-resolver/array-index-owner-resolver';
 import { DefaultIdentifierOwnerResolver } from './identifier-owner-resolver/default-identifier-owner-resolver';
+import { GlobalIdentifierOwnerResolver } from './identifier-owner-resolver/global-identifier-owner-resolver';
 import type { IIdentifierOwnerResolver } from './identifier-owner-resolver/identifier-owner-resolver.interface';
 import { MapKeyOwnerResolver } from './identifier-owner-resolver/map-key-owner-resolver';
 import { PropertyOwnerResolver } from './identifier-owner-resolver/property-owner-resolver';
@@ -134,6 +135,10 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
       {
         target: MapKeyOwnerResolver,
         token: RsXExpressionParserInjectionTokens.MapKeyOwnerResolver,
+      },
+      {
+        target: GlobalIdentifierOwnerResolver,
+        token: RsXExpressionParserInjectionTokens.GlobalIdentifierOwnerResolver,
       },
     ],
   );

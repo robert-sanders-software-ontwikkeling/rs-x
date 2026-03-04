@@ -1,6 +1,8 @@
 import {
   InjectionContainer,
   type IPropertyChange,
+  type IProxyRegistry,
+  RsXCoreInjectionTokens,
   Type,
   WaitForEvent,
 } from '@rs-x/core';
@@ -8,7 +10,6 @@ import { DisposableOwnerMock } from '@rs-x/core/testing';
 
 import { type IObserver } from '../../../../lib/observer.interface';
 import { type ICollectionItemObserverProxyPairFactory } from '../../../../lib/property-observer/factories/collection-item/collection-item-observer-proxy-pair.factory.type';
-import { type IProxyRegistry } from '../../../../lib/proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerModule } from '../../../../lib/rs-x-state-manager.module';
 import { RsXStateManagerInjectionTokens } from '../../../../lib/rs-x-state-manager-injection-tokens';
 import { IndexWatchRuleMock } from '../../../../lib/testing/watch-index-rule.mock';
@@ -28,7 +29,7 @@ describe('CollectionItemObserverProxyPairFactory tests', () => {
     );
 
     proxyRegister = InjectionContainer.get(
-      RsXStateManagerInjectionTokens.IProxyRegistry,
+      RsXCoreInjectionTokens.IProxyRegistry,
     );
     disposableOwner = new DisposableOwnerMock();
   });

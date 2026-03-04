@@ -16,6 +16,7 @@ import { GuidFactory } from './guid/guid.factory';
 import { type IGuidFactory } from './guid/guid.factory.interface';
 import { ArrayIndexAccessor } from './index-value-accessor/array-index-accessor';
 import { DatePropertyAccessor } from './index-value-accessor/date-property-accessor';
+import { GlobalIndexAccessor } from './index-value-accessor/global-index-accesor';
 import { IndexValueAccessor } from './index-value-accessor/index-value-accessor';
 import { type IIndexValueAccessor } from './index-value-accessor/index-value-accessor.interface';
 import { MapKeyAccessor } from './index-value-accessor/map-key-accessor';
@@ -28,6 +29,8 @@ import { type IResolvedValueCache } from './index-value-accessor/resolved-value-
 import { SetKeyAccessor } from './index-value-accessor/set-key-accessor';
 import { ObjectStorage } from './object-store/object-storage';
 import { type IObjectStorage } from './object-store/object-storage.interface';
+import { ProxyRegistry } from './proxy-registry/proxy-registry';
+import type { IProxyRegistry } from './proxy-registry/proxy-registry.interface';
 import { SequenceIdFactory } from './sequence-id/sequence-id.factory';
 import { type ISequenceIdFactory } from './sequence-id/sequence-id-factory.interface';
 import { ArrayMetadata } from './value-metadata/array-metadata';
@@ -68,6 +71,10 @@ export const defaultIndexValueAccessorList: readonly IMultiInjectService[] = [
   {
     target: DatePropertyAccessor,
     token: RsXCoreInjectionTokens.IDatePropertyAccessor,
+  },
+  {
+    target: GlobalIndexAccessor,
+    token: RsXCoreInjectionTokens.IGlobalIndexAccessor,
   },
 ];
 
@@ -160,6 +167,10 @@ export const RsXCoreModule = new ContainerModule((options) => {
   options
     .bind<IObjectStorage>(RsXCoreInjectionTokens.IObjectStorage)
     .to(ObjectStorage)
+    .inSingletonScope();
+  options
+    .bind<IProxyRegistry>(RsXCoreInjectionTokens.IProxyRegistry)
+    .to(ProxyRegistry)
     .inSingletonScope();
 
   registerMultiInjectServices(

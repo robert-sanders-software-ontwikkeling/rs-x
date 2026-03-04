@@ -29,7 +29,7 @@ export function getInitialExpressionEditorState(): IExpressionEditorState {
     ...NON_EDITITING_STATE,
     selectedModelIndex: -1,
     showExpressionTreeView: false,
-    treeZoomPercent: 75,
+    treeZoomPercent: 50,
     modelsWithExpressions: [],
   };
 }

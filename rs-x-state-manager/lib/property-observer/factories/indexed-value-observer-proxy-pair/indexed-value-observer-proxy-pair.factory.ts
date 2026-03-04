@@ -4,6 +4,7 @@ import {
   type IGuidFactory,
   type IIndexValueAccessor,
   type IPropertyChange,
+  type IProxyRegistry,
   type IValueMetadata,
   Type,
   UnexpectedException,
@@ -17,7 +18,6 @@ import {
 } from '../../../object-property-observer-proxy-pair-manager.type';
 import { type IObserver } from '../../../observer.interface';
 import { type ObserverGroup } from '../../../observer-group';
-import { type IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
 import { type IIndexObserverProxyPairFactory } from '../../index-observer-proxy-pair.factory.interface';
 
 import {

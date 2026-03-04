@@ -1,6 +1,10 @@
-import { InjectionContainer, printValue } from '@rs-x/core';
 import {
+  InjectionContainer,
   type IProxyRegistry,
+  printValue,
+  RsXCoreInjectionTokens,
+} from '@rs-x/core';
+import {
   type IStateChange,
   type IStateManager,
   RsXStateManagerInjectionTokens,
@@ -35,7 +39,7 @@ export const run = (() => {
 
     console.log('Changed value:');
     const proxyRegister: IProxyRegistry = InjectionContainer.get(
-      RsXStateManagerInjectionTokens.IProxyRegistry,
+      RsXCoreInjectionTokens.IProxyRegistry,
     );
     proxyRegister.getProxy<number[]>(item2).push(5);
 

@@ -1,8 +1,15 @@
 import { useMemo } from 'react';
 
+import type { IExpression } from '@rs-x/expression-parser';
+
 import type { NodeId } from '../layout/node.interface';
 
 type LayoutEdge = { from: NodeId; to: NodeId };
+
+type LayoutNode = {
+  id: NodeId;
+  expression: IExpression;
+};
 
 type NodePos = {
   cx: number;
@@ -16,22 +23,48 @@ export type EdgePathVm = {
   className: string;
 };
 
+function isHiddenExpression(expr: IExpression): boolean {
+  return (expr as unknown as { hidden?: boolean }).hidden === true;
+}
+
+function buildHiddenNodeIdSet(
+  nodes: readonly LayoutNode[],
+): ReadonlySet<NodeId> {
+  const hidden = new Set<NodeId>();
+  for (const n of nodes) {
+    if (isHiddenExpression(n.expression)) {
+      hidden.add(n.id);
+    }
+  }
+  return hidden;
+}
+
 class EdgePathBuilder {
   public build(args: {
     edges: readonly LayoutEdge[];
+    nodes: readonly LayoutNode[];
     nodePos: Map<NodeId, NodePos>;
     edgeKey: (from: NodeId, to: NodeId) => string;
     selectedEdgeKeys: Set<string>;
     activeEdgeKeys: ReadonlySet<string>;
   }): EdgePathVm[] {
-    const { edges, nodePos, edgeKey, selectedEdgeKeys, activeEdgeKeys } = args;
+    const { edges, nodes, nodePos, edgeKey, selectedEdgeKeys, activeEdgeKeys } =
+      args;
+
+    const hiddenNodeIds = buildHiddenNodeIdSet(nodes);
 
     const out: EdgePathVm[] = [];
 
     for (const e of edges) {
+      // 🚀 skip edges touching hidden nodes
+      if (hiddenNodeIds.has(e.from) || hiddenNodeIds.has(e.to)) {
+        continue;
+      }
+
       const p = nodePos.get(e.from);
       const c = nodePos.get(e.to);
 
+      // missing positions => don't draw
       if (!p || !c) {
         continue;
       }
@@ -52,7 +85,9 @@ class EdgePathBuilder {
       out.push({
         key: k,
         d,
-        className: `exprTreePath ${isSelected ? 'isSelected' : ''} ${isActive ? 'isActive' : ''}`,
+        className: `exprTreePath ${isSelected ? 'isSelected' : ''} ${
+          isActive ? 'isActive' : ''
+        }`,
       });
     }
 
@@ -62,6 +97,7 @@ class EdgePathBuilder {
 
 export function useExpressionTreeEdgePaths(args: {
   edges: readonly LayoutEdge[];
+  nodes: readonly LayoutNode[];
   nodePos: Map<NodeId, NodePos>;
   edgeKey: (from: NodeId, to: NodeId) => string;
   selectedEdgeKeys: Set<string>;
@@ -71,15 +107,25 @@ export function useExpressionTreeEdgePaths(args: {
     return new EdgePathBuilder();
   }, []);
 
-  const { edges, nodePos, edgeKey, selectedEdgeKeys, activeEdgeKeys } = args;
+  const { edges, nodes, nodePos, edgeKey, selectedEdgeKeys, activeEdgeKeys } =
+    args;
 
   return useMemo(() => {
     return builder.build({
       edges,
+      nodes,
       nodePos,
       edgeKey,
       selectedEdgeKeys,
       activeEdgeKeys,
     });
-  }, [builder, edges, nodePos, edgeKey, selectedEdgeKeys, activeEdgeKeys]);
+  }, [
+    builder,
+    edges,
+    nodes,
+    nodePos,
+    edgeKey,
+    selectedEdgeKeys,
+    activeEdgeKeys,
+  ]);
 }

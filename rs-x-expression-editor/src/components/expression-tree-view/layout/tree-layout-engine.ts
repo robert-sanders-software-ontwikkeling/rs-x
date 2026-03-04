@@ -6,14 +6,22 @@ import { type LayoutNode } from './layout-node.interface';
 import { type LayoutResult } from './layout-result.interface';
 import { type NodeId, type TNode } from './node.interface';
 
+function isHiddenExpression(expr: IExpression): boolean {
+  return Type.cast<{ hidden?: boolean }>(expr).hidden === true;
+}
+
 export class TreeLayoutEngine {
   private _seq = 0;
 
-  public computeLayout(expresssion: IExpression): LayoutResult {
-    if (!expresssion) {
+  public computeLayout(expression: IExpression): LayoutResult {
+    if (!expression) {
       return { nodes: [], edges: [], maxX: -1, maxDepth: 0 };
     }
-    const { root, nodes } = this.buildTNodeTree(expresssion);
+
+    const { root, nodes } = this.buildVisibleTNodeTree(expression);
+    if (!root) {
+      return { nodes: [], edges: [], maxX: -1, maxDepth: 0 };
+    }
 
     const distance = 1;
     const stats = this.tidyLayout(root, distance);
@@ -46,46 +54,138 @@ export class TreeLayoutEngine {
     return `n${this._seq}`;
   }
 
-  private buildTNodeTree(rootExpr: IExpression): {
-    root: TNode;
+  /**
+   * Build a visible-only tree:
+   * - Hidden nodes are NOT added to the layout
+   * - Children of hidden nodes are "lifted" to the nearest visible parent
+   */
+  private buildVisibleTNodeTree(rootExpr: IExpression): {
+    root: TNode | null;
     nodes: TNode[];
   } {
     this._seq = 0;
 
     const nodes: TNode[] = [];
 
-    const build = (
-      expresssion: IExpression,
-      depth: number,
-      parent?: TNode,
-      number = 1,
-    ): TNode => {
+    const makeNode = (args: {
+      expression: IExpression;
+      depth: number;
+      parent?: TNode;
+      number: number;
+    }): TNode => {
+      const { expression, depth, parent, number } = args;
+
       const node: TNode = {
         id: this.makeId(),
-        expr: expresssion,
+        expr: expression,
         parent,
         children: [],
         depth,
         x: 0,
         y: depth,
+
+        // Reingold–Tilford fields
         prelim: 0,
         mod: 0,
         change: 0,
         shift: 0,
         ancestor: Type.cast(undefined),
         number,
+
+        // IMPORTANT: your algorithm uses thread; make sure it exists
+        thread: undefined,
       };
 
       node.ancestor = node;
       nodes.push(node);
 
-      const kids = expresssion.childExpressions ?? [];
-      node.children = kids.map((c, i) => build(c, depth + 1, node, i + 1));
-
       return node;
     };
 
-    const root = build(rootExpr, 0, undefined, 1);
+    const buildChildrenLiftHidden = (args: {
+      parent: TNode;
+      expressions: readonly IExpression[];
+      depth: number;
+    }): void => {
+      const { parent, expressions, depth } = args;
+
+      const visibleChildren: IExpression[] = [];
+
+      for (const child of expressions ?? []) {
+        if (!child) {
+          continue;
+        }
+
+        if (isHiddenExpression(child)) {
+          // lift grandchildren
+          const grandKids = child.childExpressions ?? [];
+          for (const g of grandKids) {
+            if (g) {
+              visibleChildren.push(g);
+            }
+          }
+        } else {
+          visibleChildren.push(child);
+        }
+      }
+
+      parent.children = visibleChildren.map((expr, i) => {
+        const childNode = makeNode({
+          expression: expr,
+          depth,
+          parent,
+          number: i + 1,
+        });
+
+        const kids = expr.childExpressions ?? [];
+        buildChildrenLiftHidden({
+          parent: childNode,
+          expressions: kids,
+          depth: depth + 1,
+        });
+
+        return childNode;
+      });
+    };
+
+    // Root handling: if root is hidden, lift until we find a visible root
+    const resolveVisibleRoot = (expr: IExpression): IExpression | null => {
+      if (!expr) {
+        return null;
+      }
+      if (!isHiddenExpression(expr)) {
+        return expr;
+      }
+
+      const kids = expr.childExpressions ?? [];
+      for (const k of kids) {
+        const v = resolveVisibleRoot(k);
+        if (v) {
+          return v;
+        }
+      }
+
+      return null;
+    };
+
+    const visibleRootExpr = resolveVisibleRoot(rootExpr);
+    if (!visibleRootExpr) {
+      return { root: null, nodes };
+    }
+
+    const root = makeNode({
+      expression: visibleRootExpr,
+      depth: 0,
+      parent: undefined,
+      number: 1,
+    });
+
+    buildChildrenLiftHidden({
+      parent: root,
+      expressions: visibleRootExpr.childExpressions ?? [],
+      depth: 1,
+    });
+
     return { root, nodes };
   }
 

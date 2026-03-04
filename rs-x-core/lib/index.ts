@@ -9,6 +9,7 @@ export * from './global.d';
 export * from './guid';
 export * from './index-value-accessor';
 export * from './object-store';
+export * from './proxy-registry';
 export * from './rs-x-core.injection-tokens';
 export * from './rs-x-core.module';
 export * from './sequence-id';

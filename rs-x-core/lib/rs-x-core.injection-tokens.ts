@@ -1,6 +1,7 @@
 export const RsXCoreInjectionTokens = {
   IInjectionContainer: Symbol('IInjectionContainer'),
   IErrorLog: Symbol('IErrorLog'),
+  IGlobalIndexAccessor: Symbol('IGlobalIndexAccessor'),
   IIndexValueAccessor: Symbol('IIndexValueAccessor'),
   IMapKeyAccessor: Symbol('IMapKeyAccessor'),
   ISetKeyAccessor: Symbol('ISetKeyAccessor'),
@@ -34,4 +35,5 @@ export const RsXCoreInjectionTokens = {
   IValueMetadata: Symbol('IValueMetadata'),
   IDBFactory: Symbol('IDBFactory'),
   IObjectStorage: Symbol('IObjectStorage'),
+  IProxyRegistry: Symbol('IProxyRegistry'),
 };

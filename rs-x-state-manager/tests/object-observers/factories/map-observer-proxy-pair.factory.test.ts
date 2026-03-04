@@ -2,6 +2,8 @@ import {
   ErrorLog,
   InjectionContainer,
   type IPropertyChange,
+  type IProxyRegistry,
+  RsXCoreInjectionTokens,
   truePredicate,
   Type,
   WaitForEvent,
@@ -16,7 +18,6 @@ import {
   type IMapObserverProxyPair,
   type IMapProxyFactory,
 } from '../../../lib/proxies/map-proxy/map-proxy.factory.type';
-import { type IProxyRegistry } from '../../../lib/proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerModule } from '../../../lib/rs-x-state-manager.module';
 import { RsXStateManagerInjectionTokens } from '../../../lib/rs-x-state-manager-injection-tokens';
 import { IndexWatchRuleMock } from '../../../lib/testing/watch-index-rule.mock';
@@ -251,7 +252,7 @@ describe('MapObserverProxyPairFactory tests', () => {
 
     beforeEach(() => {
       proxyRegister = InjectionContainer.get(
-        RsXStateManagerInjectionTokens.IProxyRegistry,
+        RsXCoreInjectionTokens.IProxyRegistry,
       );
     });
 
@@ -343,7 +344,7 @@ describe('MapObserverProxyPairFactory tests', () => {
 
     beforeEach(() => {
       proxyRegister = InjectionContainer.get(
-        RsXStateManagerInjectionTokens.IProxyRegistry,
+        RsXCoreInjectionTokens.IProxyRegistry,
       );
     });
 

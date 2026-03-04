@@ -7,6 +7,7 @@ import {
   type IGuidFactory,
   Inject,
   Injectable,
+  type IProxyRegistry,
   RsXCoreInjectionTokens,
   SingletonFactoryWithGuid,
   Type,
@@ -14,8 +15,6 @@ import {
 
 import { AbstractObserver } from '../../abstract-observer';
 import type { IIndexWatchRule } from '../../index-watch-rule-registry/index-watch-rule.interface';
-import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokens';
-import type { IProxyRegistry } from '../proxy-registry/proxy-registry.interface';
 
 import type {
   IDateObserverProxyPair,
@@ -302,7 +301,7 @@ export class DateProxyFactory
   constructor(
     @Inject(RsXCoreInjectionTokens.IGuidFactory)
     guidFactory: IGuidFactory,
-    @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
+    @Inject(RsXCoreInjectionTokens.IProxyRegistry)
     private readonly _proxyRegistry: IProxyRegistry,
   ) {
     super(guidFactory);

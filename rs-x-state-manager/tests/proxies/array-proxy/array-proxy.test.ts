@@ -1,11 +1,11 @@
 import { type IPropertyChange, Type, WaitForEvent } from '@rs-x/core';
+import { ProxyRegistryMock } from '@rs-x/core/testing';
 
 import { ArrayProxyFactory } from '../../../lib/proxies/array-proxy/array-proxy.factory';
 import {
   type IArrayObserverProxyPair,
   type IArrayProxyData,
 } from '../../../lib/proxies/array-proxy/array-proxy.factory.type';
-import { ProxyRegistryMock } from '../../../lib/testing/proxies/proxy-registry.mock';
 
 describe('ArrayProxy tests', () => {
   let observerProxyPair: IArrayObserverProxyPair;

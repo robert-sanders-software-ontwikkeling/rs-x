@@ -2,13 +2,13 @@ import {
   type IDisposableOwner,
   Inject,
   Injectable,
+  type IProxyRegistry,
+  RsXCoreInjectionTokens,
   SingletonFactory,
   Type,
 } from '@rs-x/core';
 
 import { AbstractObserver } from '../../abstract-observer';
-import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokens';
-import type { IProxyRegistry } from '../proxy-registry/proxy-registry.interface';
 
 import type {
   IMapObserverProxyPair,
@@ -139,7 +139,7 @@ export class MapProxyFactory
   implements IMapProxyFactory
 {
   constructor(
-    @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
+    @Inject(RsXCoreInjectionTokens.IProxyRegistry)
     private readonly _proxyRegistry: IProxyRegistry,
   ) {
     super();

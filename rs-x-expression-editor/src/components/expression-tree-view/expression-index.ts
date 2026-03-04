@@ -57,10 +57,27 @@ export class ExpressionIndex {
     return null;
   }
 
+  /**
+   * ✅ IMPORTANT:
+   * For single-node updates, expr.id is constant, so a key like "id|id|id"
+   * never changes and animation effects won't re-run.
+   *
+   * So include the old->new values in the signature.
+   */
   public buildHighlightKey(
     highlightChanges: readonly IExpressionChangeHistory[],
   ): string {
-    return highlightChanges.map((h) => this.exprKey(h.expression)).join('|');
+    return highlightChanges
+      .map((h) => {
+        const id = this.exprKey(h.expression);
+
+        const oldV =
+          h.oldValue === undefined ? 'undefined' : String(h.oldValue);
+        const newV = h.value === undefined ? 'undefined' : String(h.value);
+
+        return `${id}:${oldV}=>${newV}`;
+      })
+      .join('|');
   }
 
   private _buildChainToRoot(start: NodeId): NodeId[] {
@@ -73,6 +90,11 @@ export class ExpressionIndex {
     }
 
     return chain;
+  }
+
+  /** ✅ public helper for animators: [start, parent, ..., root] */
+  public chainToRoot(start: NodeId): NodeId[] {
+    return this._buildChainToRoot(start);
   }
 
   public pathNodesBetween(a: NodeId, b: NodeId): NodeId[] {

@@ -4,10 +4,10 @@ import {
   utCDate,
   WaitForEvent,
 } from '@rs-x/core';
+import { ProxyRegistryMock } from '@rs-x/core/testing';
 
-import type { IObserver } from '../../../lib';
+import type { IObserver } from '../../../lib/observer.interface';
 import { DateProxyFactory } from '../../../lib/proxies/date-proxy/date-proxy.factory';
-import { ProxyRegistryMock } from '../../../lib/testing/proxies/proxy-registry.mock';
 import { IndexWatchRuleMock } from '../../../lib/testing/watch-index-rule.mock';
 
 describe('DateProxy tests', () => {
