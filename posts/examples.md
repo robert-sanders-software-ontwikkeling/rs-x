@@ -110,3 +110,83 @@ return rsx(`
   formatTime(clock)
 `)(model);
 ```
+
+## IIS
+
+```ts
+const $ = api.rxjs;
+const rsx = api.rsx;
+
+// Real data that changes every poll (no key required)
+const iss$ = $.interval(2000).pipe(
+  $.startWith(0),
+  $.switchMap(() =>
+    $.from(
+      fetch('https://api.wheretheiss.at/v1/satellites/25544').then((r) =>
+        r.json(),
+      ),
+    ),
+  ),
+  $.map((data) => {
+    return {
+      ts: Number(data.timestamp ?? 0),
+      lat: Number(data.latitude ?? NaN),
+      lon: Number(data.longitude ?? NaN),
+      altKm: Number(data.altitude ?? NaN),
+      velKph: Number(data.velocity ?? NaN),
+    };
+  }),
+  $.distinctUntilChanged((a, b) => {
+    return a.ts === b.ts && a.lat === b.lat && a.lon === b.lon;
+  }),
+  $.tap((v) => console.log('[API] ISS updated:', v.ts, v.lat, v.lon)),
+);
+
+const model = {
+  iss: iss$,
+
+  // Unrelated changing data (pure data, used to prove isolation)
+  heartbeat: 0,
+
+  expensiveRuns: 0,
+
+  // EXPENSIVE: depends ONLY on lat+lon
+  expensiveGeoScore(lat, lon) {
+    model.expensiveRuns++;
+
+    let acc = 0;
+    for (let i = 0; i < 3_000_000; i++) {
+      acc += Math.sin(i);
+    }
+
+    const score =
+      Math.round((Math.abs(lat) * 1.7 + Math.abs(lon) * 0.9) * 100) / 100;
+
+    console.log('[EXPENSIVE] run:', model.expensiveRuns, 'score:', score);
+    return score;
+  },
+};
+
+// Change ONLY heartbeat frequently (should NOT trigger expensive re-run)
+setInterval(() => {
+  model.heartbeat++;
+  console.log('[MODEL] heartbeat:', model.heartbeat);
+}, 5000);
+
+// ✅ Single expression returns the result (data-only).
+// Both parts are inside the expression, but the expensive branch depends only on iss.*
+return rsx(`
+({
+  heartbeat,
+
+  issTs: iss.ts,
+  lat: iss.lat,
+  lon: iss.lon,
+  altKm: iss.altKm,
+  velKph: iss.velKph,
+
+  geoScore: expensiveGeoScore(iss.lat, iss.lon),
+  expensiveRuns
+})
+`)(model);
+```

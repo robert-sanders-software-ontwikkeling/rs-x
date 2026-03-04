@@ -61,6 +61,41 @@ const AsyncBadge: React.FC<{ title?: string }> = ({
   );
 };
 
+function valueKey(v: unknown): string {
+  if (v === null) {
+    return 'null';
+  }
+  if (v === undefined) {
+    return 'undefined';
+  }
+  if (typeof v === 'object') {
+    // stable-ish; good enough for keys, avoids "[object Object]" collisions
+    try {
+      return JSON.stringify(v);
+    } catch {
+      return String(v);
+    }
+  }
+  return String(v);
+}
+
+/**
+ * ✅ IMPORTANT:
+ * Build a content-based key that changes for every emission,
+ * even if highlightChanges array reference is reused.
+ */
+function buildHighlightKey(
+  index: ExpressionIndex,
+  changes: readonly IExpressionChangeHistory[],
+): string {
+  return changes
+    .map((h) => {
+      const id = index.exprKey(h.expression);
+      return `${id}:${valueKey(h.oldValue)}=>${valueKey(h.value)}`;
+    })
+    .join('|');
+}
+
 export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
   const {
     root,
@@ -83,7 +118,6 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
 
   const [hostRef, hostSize] = useResizeObserverSize<HTMLDivElement>();
 
-  // ✅ Prevent layout calculation while size is 0 (panel animating)
   const hasValidSize = (hostSize.width ?? 0) > 0 && (hostSize.height ?? 0) > 0;
 
   const layoutEngine = useMemo(() => {
@@ -98,9 +132,8 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
     return new ExpressionIndex(layout);
   }, [layout, version]);
 
-  const highlightKey = useMemo(() => {
-    return expressionIndex.buildHighlightKey(highlightChanges);
-  }, [expressionIndex, highlightChanges, version]);
+  // ✅ DO NOT memoize off highlightChanges reference.
+  const highlightKey = buildHighlightKey(expressionIndex, highlightChanges);
 
   useExpressionChangedRerender(root);
 
@@ -125,7 +158,6 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
     };
   }, [formatValue, valueMaxDepth, valueMaxChars]);
 
-  // ✅ Only compute viewport with real dimensions
   const { zoomScale, paddedW, paddedH, scaledW, scaledH, nodePos } =
     useExpressionTreeViewport({
       layout,
@@ -140,7 +172,7 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
 
   const edgePaths = useExpressionTreeEdgePaths({
     edges: layout.edges,
-    nodes: layout.nodes, // ✅ add this
+    nodes: layout.nodes,
     nodePos,
     edgeKey: (a, b) => {
       return expressionIndex.edgeKey(a, b);
@@ -165,7 +197,6 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
       className={`exprTreeRoot ${className ?? ''}`}
       style={style}
     >
-      {/* ✅ Do not render tree until panel has real size */}
       {!hasValidSize ? null : (
         <div className="exprTreeViewport">
           <div

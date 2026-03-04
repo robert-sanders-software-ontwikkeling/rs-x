@@ -13,10 +13,8 @@ export class ExpressionIndex {
 
   public constructor(layout: LayoutResult) {
     for (const n of layout.nodes) {
-      // fast path: reference equality
       this.idByExprRef.set(n.expression, n.id);
 
-      // stable path: id signature
       const k = this.exprKey(n.expression);
       if (k && !this.idByExprKey.has(k)) {
         this.idByExprKey.set(k, n.id);
@@ -25,7 +23,6 @@ export class ExpressionIndex {
 
     for (const e of layout.edges) {
       this.parentById.set(e.to, e.from);
-
       if (!this.parentById.has(e.from)) {
         this.parentById.set(e.from, null);
       }
@@ -47,42 +44,38 @@ export class ExpressionIndex {
   }
 
   public resolveNodeId(expr: IExpression): NodeId | null {
-    // 1️⃣ fast path (same instance)
     const byRef = this.idByExprRef.get(expr);
-    if (byRef !== undefined) {
+    if (byRef) {
       return byRef;
     }
 
-    // 2️⃣ stable id lookup
-    try {
-      const key = this.exprKey(expr);
-      const byKey = this.idByExprKey.get(key);
-
-      if (byKey !== undefined) {
-        return byKey;
-      }
-    } catch {
-      // ignore missing id
+    const byKey = this.idByExprKey.get(this.exprKey(expr));
+    if (byKey) {
+      return byKey;
     }
 
     return null;
   }
 
   /**
-   * IMPORTANT:
-   * Must change when value changes.
-   * Otherwise animations for a single-node tree never restart.
+   * ✅ IMPORTANT:
+   * For single-node updates, expr.id is constant, so a key like "id|id|id"
+   * never changes and animation effects won't re-run.
+   *
+   * So include the old->new values in the signature.
    */
   public buildHighlightKey(
     highlightChanges: readonly IExpressionChangeHistory[],
   ): string {
     return highlightChanges
       .map((h) => {
-        const exprId = this.exprKey(h.expression);
-        const oldVal = String(h.oldValue);
-        const newVal = String(h.value);
+        const id = this.exprKey(h.expression);
 
-        return `${exprId}:${oldVal}->${newVal}`;
+        const oldV =
+          h.oldValue === undefined ? 'undefined' : String(h.oldValue);
+        const newV = h.value === undefined ? 'undefined' : String(h.value);
+
+        return `${id}:${oldV}=>${newV}`;
       })
       .join('|');
   }
@@ -97,6 +90,11 @@ export class ExpressionIndex {
     }
 
     return chain;
+  }
+
+  /** ✅ public helper for animators: [start, parent, ..., root] */
+  public chainToRoot(start: NodeId): NodeId[] {
+    return this._buildChainToRoot(start);
   }
 
   public pathNodesBetween(a: NodeId, b: NodeId): NodeId[] {

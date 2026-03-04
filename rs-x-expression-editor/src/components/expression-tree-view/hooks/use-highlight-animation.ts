@@ -38,16 +38,15 @@ class HighlightAnimator {
   }): Selection {
     const { highlightChanges, expressionIndex } = args;
 
-    const stepIds: NodeId[] = [];
-
+    const changedIds: NodeId[] = [];
     for (const h of highlightChanges) {
       const id = expressionIndex.resolveNodeId(h.expression);
       if (id) {
-        stepIds.push(id);
+        changedIds.push(id);
       }
     }
 
-    if (stepIds.length === 0) {
+    if (changedIds.length === 0) {
       return {
         selectedNodeIds: new Set<NodeId>(),
         selectedEdgeKeys: new Set<string>(),
@@ -55,47 +54,41 @@ class HighlightAnimator {
       };
     }
 
-    const selectedNodes = new Set<NodeId>(stepIds);
-    const selectedEdges = new Set<string>();
+    // selected styling: only actually-changed nodes
+    const selectedNodeIds = new Set<NodeId>(changedIds);
 
-    const nodePathSequence: NodeId[] = [];
+    // bubble-up path: changed node(s) -> root
+    const path: NodeId[] = [];
+    const selectedEdgeKeys = new Set<string>();
 
-    for (let i = 0; i < stepIds.length - 1; i++) {
-      const a = stepIds[i];
-      const b = stepIds[i + 1];
+    for (const startId of changedIds) {
+      const chain = expressionIndex.chainToRoot(startId); // [start, parent, ..., root]
 
-      const segment = expressionIndex.pathNodesBetween(a, b);
-      if (segment.length) {
-        if (nodePathSequence.length === 0) {
-          nodePathSequence.push(...segment);
-        } else {
-          nodePathSequence.push(...segment.slice(1));
-        }
+      for (const id of chain) {
+        path.push(id);
+      }
+
+      // edges along the chain (parent -> child)
+      for (let i = 0; i < chain.length - 1; i++) {
+        const child = chain[i];
+        const parent = chain[i + 1];
+        selectedEdgeKeys.add(expressionIndex.edgeKey(parent, child));
       }
     }
 
-    if (nodePathSequence.length === 0) {
-      nodePathSequence.push(stepIds[0]);
-    }
-
-    for (let i = 0; i < nodePathSequence.length - 1; i++) {
-      const from = nodePathSequence[i + 1];
-      const to = nodePathSequence[i];
-
-      const p = expressionIndex.parentById.get(from) ?? null;
-      if (p === to) {
-        selectedEdges.add(expressionIndex.edgeKey(to, from));
-      } else {
-        const p2 = expressionIndex.parentById.get(to) ?? null;
-        if (p2 === from) {
-          selectedEdges.add(expressionIndex.edgeKey(from, to));
-        }
+    // de-dupe while keeping order
+    const seen = new Set<NodeId>();
+    const nodePathSequence: NodeId[] = [];
+    for (const id of path) {
+      if (!seen.has(id)) {
+        seen.add(id);
+        nodePathSequence.push(id);
       }
     }
 
     return {
-      selectedNodeIds: selectedNodes,
-      selectedEdgeKeys: selectedEdges,
+      selectedNodeIds,
+      selectedEdgeKeys,
       nodePathSequence,
     };
   }
@@ -137,6 +130,7 @@ class HighlightAnimator {
 
     const waves: Wave[] = [];
 
+    // deepest -> root, include edges for those nodes (parent->child)
     for (let depth = maxDepth; depth >= 0; depth--) {
       const nodes = byDepth.get(depth) ?? [];
       if (nodes.length === 0) {
@@ -144,7 +138,6 @@ class HighlightAnimator {
       }
 
       const edges: string[] = [];
-
       for (const nodeId of nodes) {
         const parent = index.parentById.get(nodeId) ?? null;
         if (!parent) {
@@ -176,11 +169,11 @@ class HighlightAnimator {
       index: expressionIndex,
     });
 
+    const edgeMs = 320;
     const nodeMs = 520;
-    const edgeMs = 260;
+    const clearMs = 350;
 
     const steps: Array<{ atMs: number; nodes: NodeId[]; edges: string[] }> = [];
-
     let t = 0;
 
     for (const wave of waves) {
@@ -191,8 +184,7 @@ class HighlightAnimator {
       steps.push({ atMs: t, nodes: wave.nodes, edges: [] });
     }
 
-    // clear at the end
-    t += 350;
+    t += clearMs;
     steps.push({ atMs: t, nodes: [], edges: [] });
 
     return steps;
@@ -201,11 +193,11 @@ class HighlightAnimator {
 
 export function useHighlightAnimation(args: {
   highlightChanges: readonly IExpressionChangeHistory[];
-  highlightVersion: number; // "event counter" (monotonic) — NOT used for remounts
-  highlightKey: string; // stable signature of highlightChanges
+  highlightVersion: number;
+  highlightKey: string;
   expressionIndex: ExpressionIndex;
   isVisible: boolean;
-  playNonce: number; // optional external replay trigger
+  playNonce: number;
 }): {
   selectedNodeIds: Set<NodeId>;
   selectedEdgeKeys: Set<string>;
@@ -225,7 +217,6 @@ export function useHighlightAnimation(args: {
     return new HighlightAnimator();
   }, []);
 
-  // latest selection styling
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<NodeId>>(
     () => new Set<NodeId>(),
   );
@@ -233,7 +224,6 @@ export function useHighlightAnimation(args: {
     () => new Set<string>(),
   );
 
-  // union of all running flows
   const [activeNodeIds, setActiveNodeIds] = useState<Set<NodeId>>(
     () => new Set<NodeId>(),
   );
@@ -241,7 +231,6 @@ export function useHighlightAnimation(args: {
     () => new Set<string>(),
   );
 
-  // flow states live in refs to avoid re-renders per timer tick
   const flowsRef = useRef<Map<number, FlowState>>(new Map());
   const timersRef = useRef<Map<number, number[]>>(new Map());
   const nextFlowIdRef = useRef<number>(1);
@@ -260,9 +249,11 @@ export function useHighlightAnimation(args: {
   };
 
   const recomputeUnion = (): void => {
-    const flowStates = flowsRef.current.values();
-    const nodes = unionSets(Array.from(flowStates, (s) => s.nodeIds));
-    const edges = unionSets(Array.from(flowStates, (s) => s.edgeKeys));
+    // ✅ FIX: materialize once; Map.values() is an iterator and gets consumed
+    const flowStates = Array.from(flowsRef.current.values());
+
+    const nodes = unionSets(flowStates.map((s) => s.nodeIds));
+    const edges = unionSets(flowStates.map((s) => s.edgeKeys));
 
     setActiveNodeIds(() => nodes);
     setActiveEdgeKeys(() => edges);
@@ -277,7 +268,7 @@ export function useHighlightAnimation(args: {
       nodeIds: new Set<NodeId>(nodes),
       edgeKeys: new Set<string>(edges),
     });
-    // one union update per step (still very cheap: 10–20 nodes)
+
     recomputeUnion();
   };
 
@@ -293,12 +284,10 @@ export function useHighlightAnimation(args: {
     recomputeUnion();
   };
 
-  // If the underlying graph changes, kill all old flows (their node ids are invalid anyway)
   useEffect(() => {
     clearAllFlows();
   }, [expressionIndex]);
 
-  // If not visible, stop animating (WCAG + perf)
   useEffect(() => {
     if (!isVisible) {
       clearAllFlows();
@@ -306,16 +295,11 @@ export function useHighlightAnimation(args: {
   }, [isVisible]);
 
   useEffect(() => {
-    // NOTE:
-    // - highlightChanges is often a new array reference
-    // - highlightKey is your stable signature
-    // - highlightVersion is the "event counter" that forces *starting* a new flow
     if (!isVisible) {
       return;
     }
 
     if (!highlightChanges || highlightChanges.length === 0) {
-      // keep selection empty + clear running flows
       setSelectedNodeIds(() => new Set<NodeId>());
       setSelectedEdgeKeys(() => new Set<string>());
       clearAllFlows();
@@ -343,19 +327,16 @@ export function useHighlightAnimation(args: {
     const flowId = nextFlowIdRef.current++;
     timersRef.current.set(flowId, []);
 
-    // seed flow as empty (so union includes it consistently)
     setFlowState(flowId, [], []);
 
     for (const step of schedule) {
       const tid = window.setTimeout(() => {
-        // if flow already removed, ignore
         if (!timersRef.current.has(flowId)) {
           return;
         }
 
         setFlowState(flowId, step.nodes, step.edges);
 
-        // last step clears itself and ends the flow
         if (step.nodes.length === 0 && step.edges.length === 0) {
           removeFlow(flowId);
         }
@@ -366,7 +347,7 @@ export function useHighlightAnimation(args: {
   }, [
     animator,
     expressionIndex,
-    highlightVersion, // <-- event start trigger
+    highlightVersion,
     highlightKey,
     isVisible,
     playNonce,
