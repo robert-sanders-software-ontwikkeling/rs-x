@@ -26,7 +26,8 @@ export class FunctionExpression extends AbstractExpression {
     super(
       ExpressionType.Function,
       expressionString,
-      objectExpression ?? AbstractExpression.setHidden(new ConstantNullExpression()),
+      objectExpression ??
+        AbstractExpression.setHidden(new ConstantNullExpression()),
       functionExpression,
       argumentsExpression,
     );
@@ -66,11 +67,11 @@ export class FunctionExpression extends AbstractExpression {
       if (this.computed) {
         this.functionExpression.bind(settings);
       } else {
-          AbstractExpression.setHidden(this.functionExpression);
+        AbstractExpression.setHidden(this.functionExpression);
       }
     } else {
       this._childExpressions[0].bind(settings);
-       AbstractExpression.setHidden(this.functionExpression);
+      AbstractExpression.setHidden(this.functionExpression);
       this.functionExpression.bind(
         this.functionExpression.type == ExpressionType.Identifier
           ? { ...settings, context: undefined }

@@ -13,10 +13,10 @@ import {
 
 import type { IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 import type { IExpressionIdProvider } from '../expression-id/expression-id-provider.interface';
+import type { IIdentifierOwnerResolver } from '../identifier-owner-resolver/identifier-owner-resolver.interface';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
 
 import type { IExpressionServices } from './expression-services.interface';
-import type { IIdentifierOwnerResolver } from '../identifier-owner-resolver/identifier-owner-resolver.interface';
 
 @Injectable()
 export class ExpressionServices implements IExpressionServices {
@@ -37,5 +37,5 @@ export class ExpressionServices implements IExpressionServices {
     public readonly expressionIdProvider: IExpressionIdProvider,
     @Inject(RsXExpressionParserInjectionTokens.IdentifierOwnerResolver)
     public readonly identifierOwnerResolver: IIdentifierOwnerResolver,
-  ) { }
+  ) {}
 }

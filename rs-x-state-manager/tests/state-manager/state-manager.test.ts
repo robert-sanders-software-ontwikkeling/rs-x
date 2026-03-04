@@ -12,8 +12,8 @@ import { ObservableMock } from '@rs-x/core/testing';
 
 import { type IArrayProxyFactory } from '../../lib/proxies/array-proxy/array-proxy.factory.type';
 import { type IMapProxyFactory } from '../../lib/proxies/map-proxy/map-proxy.factory.type';
-import { RsXStateManagerInjectionTokens } from '../../lib/rs-x-state-manager-injection-tokens';
 import { RsXStateManagerModule } from '../../lib/rs-x-state-manager.module';
+import { RsXStateManagerInjectionTokens } from '../../lib/rs-x-state-manager-injection-tokens';
 import {
   type IStateChange,
   type IStateManager,

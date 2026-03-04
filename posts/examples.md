@@ -9,12 +9,14 @@ const eurRate$ = $.interval(15000).pipe(
   $.startWith(0),
   $.switchMap(() =>
     $.from(
-      fetch('https://api.frankfurter.app/latest?from=USD&to=EUR').then((r) => r.json())
-    )
+      fetch('https://api.frankfurter.app/latest?from=USD&to=EUR').then((r) =>
+        r.json(),
+      ),
+    ),
   ),
   $.map((data) => data.rates.EUR),
   $.distinctUntilChanged(),
-  $.tap((v) => console.log('[API] eurRate updated:', v))
+  $.tap((v) => console.log('[API] eurRate updated:', v)),
 );
 
 const model = {
@@ -63,7 +65,7 @@ setInterval(() => {
 
 // ✅ Single expression returning a result (no UI refs).
 // It contains BOTH: expensive calc + lastUpdated-derived value.
-return  rsx(`
+return rsx(`
   ({
     usdAmount,
     eurRate,
@@ -73,7 +75,6 @@ return  rsx(`
     expensiveRuns
   })
 `)(model);
-
 ```
 
 ## Clock
@@ -105,8 +106,7 @@ window.setInterval(() => {
 }, 1000);
 
 // expression returns digital time
-return  rsx(`
+return rsx(`
   formatTime(clock)
 `)(model);
-
 ```

@@ -1,6 +1,5 @@
 import type { IProxyRegistry } from '../proxy-registry/proxy-registry.interface';
 
-
 export class ProxyRegistryMock implements IProxyRegistry {
   public readonly getProxyTarget = jest.fn();
   public readonly getProxy = jest.fn();

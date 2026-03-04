@@ -1,7 +1,7 @@
 import { GuidFactory } from '@rs-x/core';
 import { ProxyRegistryMock } from '@rs-x/core/testing';
-import { DateProxyFactory } from '../../../lib/proxies/date-proxy/date-proxy.factory';
 
+import { DateProxyFactory } from '../../../lib/proxies/date-proxy/date-proxy.factory';
 
 describe('DateProxyFactory tests', () => {
   let dateProxyFactory: DateProxyFactory;

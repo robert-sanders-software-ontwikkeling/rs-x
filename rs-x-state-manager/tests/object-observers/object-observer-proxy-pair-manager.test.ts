@@ -1,10 +1,8 @@
-
 import { GuidFactoryMock, ProxyRegistryMock } from '@rs-x/core/testing';
 
 import { ObjectObserverProxyPairManager } from '../../lib/object-observer/object-observer-proxy-pair-manager';
 import { ObjectObserverProxyPairFactoryMock } from '../../lib/testing/object-observer-proxy-pair.factory.mock';
 import { ObserverMock } from '../../lib/testing/observer.mock';
-
 
 describe('ObjectObserverProxyPairManager tests', () => {
   let objectObserverProxyPairFactory: ObjectObserverProxyPairFactoryMock;

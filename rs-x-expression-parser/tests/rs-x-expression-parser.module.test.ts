@@ -31,8 +31,8 @@ import { ExpressionManager } from '../lib/expression-factory/expression-manager'
 import { ExpressionIdProvider } from '../lib/expression-id/expression-id-provider';
 import { DeepCloneExceptWithExpressionSupport } from '../lib/expression-observer/deep-clone-except-with-expression-support';
 import { ExpressionIndexAccessor } from '../lib/expression-observer/expression-index-accessor';
-import { ExpressionObserverProxyPairFactory } from '../lib/expression-observer/expression-observer-proxy-pair.factory';
 import { ExpressionObserverFactory } from '../lib/expression-observer/expression-observer.factory';
+import { ExpressionObserverProxyPairFactory } from '../lib/expression-observer/expression-observer-proxy-pair.factory';
 import { ExpressionServices } from '../lib/expression-services/expression-services';
 import { ArrayIndexOwnerResolver } from '../lib/identifier-owner-resolver/array-index-owner-resolver';
 import { DefaultIdentifierOwnerResolver } from '../lib/identifier-owner-resolver/default-identifier-owner-resolver';
@@ -40,12 +40,11 @@ import { GlobalIdentifierOwnerResolver } from '../lib/identifier-owner-resolver/
 import { MapKeyOwnerResolver } from '../lib/identifier-owner-resolver/map-key-owner-resolver';
 import { PropertyOwnerResolver } from '../lib/identifier-owner-resolver/property-owner-resolver';
 import { JsEspreeExpressionParser } from '../lib/js-espree-expression-parser';
-import { RsXExpressionParserInjectionTokens } from '../lib/rs-x-expression-parser-injection-tokes';
 import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
 } from '../lib/rs-x-expression-parser.module';
-
+import { RsXExpressionParserInjectionTokens } from '../lib/rs-x-expression-parser-injection-tokes';
 
 describe('RsXExpressionParserModule tests', () => {
   beforeAll(async () => {

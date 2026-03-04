@@ -1,12 +1,11 @@
 import { type IPropertyChange, WaitForEvent } from '@rs-x/core';
+import { ProxyRegistryMock } from '@rs-x/core/testing';
 
 import { MapProxyFactory } from '../../../lib/proxies/map-proxy/map-proxy.factory';
 import {
   type IMapObserverProxyPair,
   type IMapProxifyData,
 } from '../../../lib/proxies/map-proxy/map-proxy.factory.type';
-import { ProxyRegistryMock } from '@rs-x/core/testing';
-
 
 describe('MapProxy tests', () => {
   let observerProxyPair: IMapObserverProxyPair;

@@ -1,12 +1,11 @@
 import { type IPropertyChange, WaitForEvent } from '@rs-x/core';
+import { ProxyRegistryMock } from '@rs-x/core/testing';
 
 import { SetProxyFactory } from '../../../lib/proxies/set-proxy/set-proxy.factory';
 import {
   type ISetObserverProxyPair,
   type ISetProxifyData,
 } from '../../../lib/proxies/set-proxy/set-proxy.factory.type';
-import { ProxyRegistryMock } from '@rs-x/core/testing';
-
 
 interface ISetItem {
   x: number;

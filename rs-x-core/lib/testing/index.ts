@@ -7,6 +7,6 @@ export * from './proxy-registry.mock';
 export * from './resolved-value-cache.mock';
 export * from './sequence-id.factory.mock';
 export * from './sequence-id.mock';
-export * from './singleton-factory-private.interface';
 export * from './singleton-factory.mock';
+export * from './singleton-factory-private.interface';
 export * from './subscription.mock';

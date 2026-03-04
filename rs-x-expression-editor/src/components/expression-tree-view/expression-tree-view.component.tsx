@@ -7,7 +7,7 @@ import type {
 
 import { useExpressionChangedRerender } from './hooks/use-expression-changed-rerender';
 import { useExpressionTreeEdgePaths } from './hooks/use-expression-tree-edge-paths';
-
+import { useExpressionTreeNodeVms } from './hooks/use-expression-tree-node-vms';
 import { useExpressionTreeViewport } from './hooks/use-expression-tree-viewport';
 import { useHighlightAnimation } from './hooks/use-highlight-animation';
 import { useResizeObserverSize } from './hooks/use-resize-observer-size';
@@ -16,7 +16,6 @@ import { ExpressionIndex } from './expression-index';
 import { ValueFormatter } from './value-formatter';
 
 import './expression-tree-view.component.css';
-import { useExpressionTreeNodeVms } from './hooks/use-expression-tree-node-vms';
 
 export interface IExpressionTreeProps {
   version: number;

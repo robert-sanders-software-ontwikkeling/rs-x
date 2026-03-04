@@ -16,7 +16,7 @@ export class DefaultIdentifierOwnerResolver implements IIdentifierOwnerResolver 
   public resolve(index: unknown, context?: unknown): object | null {
     const resolvers = this._identifierOwnerResolvers;
     for (let i = 0; i < resolvers.length; i++) {
-      const result = resolvers[i].resolve(index, context );
+      const result = resolvers[i].resolve(index, context);
       if (result) {
         return result;
       }

@@ -7,7 +7,7 @@ import type { IStateManager } from '@rs-x/state-manager';
 
 import type { IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 import { type IExpressionIdProvider } from '../expression-id/expression-id-provider.interface';
-import { IIdentifierOwnerResolver } from '../identifier-owner-resolver';
+import { type IIdentifierOwnerResolver } from '../identifier-owner-resolver';
 
 export interface IExpressionServices {
   readonly transactionManager: IExpressionChangeTransactionManager;

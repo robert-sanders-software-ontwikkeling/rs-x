@@ -226,12 +226,20 @@ export function useHighlightAnimation(args: {
   }, []);
 
   // latest selection styling
-  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<NodeId>>(() => new Set<NodeId>());
-  const [selectedEdgeKeys, setSelectedEdgeKeys] = useState<Set<string>>(() => new Set<string>());
+  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<NodeId>>(
+    () => new Set<NodeId>(),
+  );
+  const [selectedEdgeKeys, setSelectedEdgeKeys] = useState<Set<string>>(
+    () => new Set<string>(),
+  );
 
   // union of all running flows
-  const [activeNodeIds, setActiveNodeIds] = useState<Set<NodeId>>(() => new Set<NodeId>());
-  const [activeEdgeKeys, setActiveEdgeKeys] = useState<Set<string>>(() => new Set<string>());
+  const [activeNodeIds, setActiveNodeIds] = useState<Set<NodeId>>(
+    () => new Set<NodeId>(),
+  );
+  const [activeEdgeKeys, setActiveEdgeKeys] = useState<Set<string>>(
+    () => new Set<string>(),
+  );
 
   // flow states live in refs to avoid re-renders per timer tick
   const flowsRef = useRef<Map<number, FlowState>>(new Map());
@@ -260,7 +268,11 @@ export function useHighlightAnimation(args: {
     setActiveEdgeKeys(() => edges);
   };
 
-  const setFlowState = (flowId: number, nodes: NodeId[], edges: string[]): void => {
+  const setFlowState = (
+    flowId: number,
+    nodes: NodeId[],
+    edges: string[],
+  ): void => {
     flowsRef.current.set(flowId, {
       nodeIds: new Set<NodeId>(nodes),
       edgeKeys: new Set<string>(edges),
@@ -284,7 +296,6 @@ export function useHighlightAnimation(args: {
   // If the underlying graph changes, kill all old flows (their node ids are invalid anyway)
   useEffect(() => {
     clearAllFlows();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expressionIndex]);
 
   // If not visible, stop animating (WCAG + perf)
@@ -292,7 +303,6 @@ export function useHighlightAnimation(args: {
     if (!isVisible) {
       clearAllFlows();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isVisible]);
 
   useEffect(() => {

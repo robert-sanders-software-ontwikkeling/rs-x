@@ -1,4 +1,9 @@
-import { InjectionContainer, type IProxyRegistry, printValue, RsXCoreInjectionTokens } from '@rs-x/core';
+import {
+  InjectionContainer,
+  type IProxyRegistry,
+  printValue,
+  RsXCoreInjectionTokens,
+} from '@rs-x/core';
 import {
   type IStateChange,
   type IStateManager,

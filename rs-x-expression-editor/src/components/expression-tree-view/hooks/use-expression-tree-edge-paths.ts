@@ -27,7 +27,9 @@ function isHiddenExpression(expr: IExpression): boolean {
   return (expr as unknown as { hidden?: boolean }).hidden === true;
 }
 
-function buildHiddenNodeIdSet(nodes: readonly LayoutNode[]): ReadonlySet<NodeId> {
+function buildHiddenNodeIdSet(
+  nodes: readonly LayoutNode[],
+): ReadonlySet<NodeId> {
   const hidden = new Set<NodeId>();
   for (const n of nodes) {
     if (isHiddenExpression(n.expression)) {
@@ -46,14 +48,8 @@ class EdgePathBuilder {
     selectedEdgeKeys: Set<string>;
     activeEdgeKeys: ReadonlySet<string>;
   }): EdgePathVm[] {
-    const {
-      edges,
-      nodes,
-      nodePos,
-      edgeKey,
-      selectedEdgeKeys,
-      activeEdgeKeys,
-    } = args;
+    const { edges, nodes, nodePos, edgeKey, selectedEdgeKeys, activeEdgeKeys } =
+      args;
 
     const hiddenNodeIds = buildHiddenNodeIdSet(nodes);
 
@@ -123,5 +119,13 @@ export function useExpressionTreeEdgePaths(args: {
       selectedEdgeKeys,
       activeEdgeKeys,
     });
-  }, [builder, edges, nodes, nodePos, edgeKey, selectedEdgeKeys, activeEdgeKeys]);
+  }, [
+    builder,
+    edges,
+    nodes,
+    nodePos,
+    edgeKey,
+    selectedEdgeKeys,
+    activeEdgeKeys,
+  ]);
 }

@@ -1,6 +1,6 @@
 import { ProxyRegistryMock } from '@rs-x/core/testing';
-import { MapProxyFactory } from '../../../lib/proxies/map-proxy/map-proxy.factory';
 
+import { MapProxyFactory } from '../../../lib/proxies/map-proxy/map-proxy.factory';
 
 describe('MapProxyFactory tests', () => {
   let mapProxyFactory: MapProxyFactory;

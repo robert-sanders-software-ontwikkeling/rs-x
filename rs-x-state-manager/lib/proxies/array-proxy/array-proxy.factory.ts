@@ -12,7 +12,6 @@ import {
 
 import { AbstractObserver } from '../../abstract-observer';
 
-
 import type {
   IArrayObserverProxyPair,
   IArrayProxyData,

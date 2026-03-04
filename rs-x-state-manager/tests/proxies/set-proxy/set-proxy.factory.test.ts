@@ -1,5 +1,5 @@
-
 import { ProxyRegistry } from '@rs-x/core';
+
 import { SetProxyFactory } from '../../../lib/proxies/set-proxy/set-proxy.factory';
 
 describe('SetProxyFactory tests', () => {

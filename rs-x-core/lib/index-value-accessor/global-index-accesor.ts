@@ -1,7 +1,6 @@
-
 import { UnsupportedException } from '../exceptions/unsupported-exception';
-import { IGlobalIndexAccessor } from './global-index-accesor.type';
 
+import { type IGlobalIndexAccessor } from './global-index-accesor.type';
 
 export class GlobalIndexAccessor implements IGlobalIndexAccessor {
   public readonly priority = -1;
@@ -23,10 +22,10 @@ export class GlobalIndexAccessor implements IGlobalIndexAccessor {
   }
 
   public setValue(_: unknown, index: string): void {
-        throw new UnsupportedException(`Cannot set  '${index}' on globalThis`);
+    throw new UnsupportedException(`Cannot set  '${index}' on globalThis`);
   }
 
   public applies(context: unknown, index: string): boolean {
-        return context === globalThis && index in context;
+    return context === globalThis && index in context;
   }
 }

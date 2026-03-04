@@ -4,23 +4,27 @@ import type { OnMount } from '@monaco-editor/react';
 import dedent from 'dedent';
 import React, { useEffect, useRef, useState } from 'react';
 
-import { AbstractExpression, type IExpression, type IExpressionChangeHistory } from '@rs-x/expression-parser';
+import {
+  AbstractExpression,
+  type IExpression,
+  type IExpressionChangeHistory,
+} from '@rs-x/expression-parser';
 
 import { useExpressionChangeHistoryTracker } from '../../src/components/expression-change-history-view/hooks/use-expression-change-history-tracker';
 import { ExpressionTreeViewWithModel } from '../../src/components/expression-tree-view-with-model/expression-tree-view-with-model.component';
+import { installMonacoPlaceholder } from '../../src/components/ts-editor/ts-editor.component';
 import { TsEditorWithErrorPanel } from '../../src/components/ts-editor-with-error-panel/ts-editor-with-error-panel.component';
 import { RxjsMonacoTypesLoader } from '../../src/services/rxjs-monaco-types-loader';
 import { ScriptEvaluator } from '../../src/services/script-evaluator';
 import { setupScriptModels } from '../../src/services/setup-script-models';
 
 import { useSyncScriptToUrl } from './hooks/use-sync-script-to-url';
-import { installMonacoPlaceholder } from '../../src/components/ts-editor/ts-editor.component';
 
 const dataKey = 'data';
 
-
-
-type EvalResult = { ok: true; value:  IExpression } | { ok: false; error: string };
+type EvalResult =
+  | { ok: true; value: IExpression }
+  | { ok: false; error: string };
 
 function readInitialScriptFromUrl(): string {
   if (typeof window === 'undefined') {
@@ -37,7 +41,6 @@ function buildScriptQuery(script: string): string {
   return params.toString();
 }
 
-
 function evaluateScript(scriptBody: string): EvalResult {
   const body = scriptBody.trim();
   if (!body) {
@@ -45,7 +48,8 @@ function evaluateScript(scriptBody: string): EvalResult {
   }
 
   try {
-    const result = ScriptEvaluator.getInstance().evaluateScript<IExpression>(body);
+    const result =
+      ScriptEvaluator.getInstance().evaluateScript<IExpression>(body);
 
     if (!result.success) {
       return {
@@ -93,7 +97,7 @@ const editorPlaceholder = dedent`
     b: $.of(20)
   };
   return rsx('a + b')(model);
-`
+`;
 
 const USER_MODEL_URI = 'inmemory://rsx/demo.user.js';
 
@@ -102,14 +106,19 @@ const DemoPageClient: React.FC = () => {
     return readInitialScriptFromUrl();
   });
 
-  const [expression, setExpression] = useState<IExpression | undefined>(undefined);
+  const [expression, setExpression] = useState<IExpression | undefined>(
+    undefined,
+  );
 
   // persisted change history for this demo expression
-  const [persistedHistory, setPersistedHistory] = useState<IExpressionChangeHistory[][]>([]);
+  const [persistedHistory, setPersistedHistory] = useState<
+    IExpressionChangeHistory[][]
+  >([]);
 
   // latest selection (for “selected” styling)
-  const [treeHighligh, setTreeHighLight] = useState<IExpressionChangeHistory[]>([]);
-
+  const [treeHighligh, setTreeHighLight] = useState<IExpressionChangeHistory[]>(
+    [],
+  );
 
   const [treeZoomPercent, setTreeZoomPercent] = useState<number>(50);
   const [errors, setErrors] = useState<string[]>([]);
@@ -139,7 +148,6 @@ const DemoPageClient: React.FC = () => {
     ) => {
       // latest selection for “selected” styling (stable reference is fine)
       setTreeHighLight(stack);
-
     },
   });
 
@@ -156,7 +164,7 @@ const DemoPageClient: React.FC = () => {
       editor.setModel(userModel);
     }
 
-     installMonacoPlaceholder(editor, monaco, editorPlaceholder);
+    installMonacoPlaceholder(editor, monaco, editorPlaceholder);
   };
 
   const disposeExpression = (expr: IExpression | undefined) => {
@@ -220,7 +228,6 @@ const DemoPageClient: React.FC = () => {
   const modelEditor = (
     <TsEditorWithErrorPanel
       saveButtonName="Compile"
-    
       header="Edit script"
       hideName={true}
       script={script}

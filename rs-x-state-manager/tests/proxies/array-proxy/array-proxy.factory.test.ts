@@ -1,6 +1,6 @@
 import { ProxyRegistry } from '@rs-x/core';
-import { ArrayProxyFactory } from '../../../lib/proxies/array-proxy/array-proxy.factory';
 
+import { ArrayProxyFactory } from '../../../lib/proxies/array-proxy/array-proxy.factory';
 
 describe('ArrayProxyFactory tests', () => {
   let arrayProxyFactory: ArrayProxyFactory;

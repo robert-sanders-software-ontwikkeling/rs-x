@@ -1,4 +1,3 @@
-
 import { DeepCloneValueExcept } from '../lib/deep-clone/deep-clone-except';
 import { DefaultDeepClone } from '../lib/deep-clone/default-deep-clone';
 import { InjectionContainer } from '../lib/dependency-injection';
@@ -417,12 +416,8 @@ describe('rs-x core module', () => {
   });
 
   it('instance of IProxyRegistry is a singelton', () => {
-    const a1 = InjectionContainer.get(
-      RsXCoreInjectionTokens.IProxyRegistry,
-    );
-    const a2 = InjectionContainer.get(
-      RsXCoreInjectionTokens.IProxyRegistry,
-    );
+    const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IProxyRegistry);
+    const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IProxyRegistry);
     expect(a1).toBe(a2);
   });
 });

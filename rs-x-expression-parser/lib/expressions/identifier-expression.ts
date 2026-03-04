@@ -13,7 +13,6 @@ import { type IExpressionChangeCommitHandler } from '../expresion-change-transac
 import { AbstractExpression } from './abstract-expression';
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 import { ExpressionType } from './expression-parser.interface';
-import { IIdentifierOwnerResolver } from '../identifier-owner-resolver';
 
 export class IndexValueObserver {
   private readonly _changeSubscription: Subscription;
@@ -32,8 +31,6 @@ export class IndexValueObserver {
     this._changeSubscription = this._stateManager.changed.subscribe(
       this.emitChange,
     );
-
-  
 
     this._contextChangeSubscription =
       this._stateManager.contextChanged.subscribe(this.onContextCHanged);
@@ -146,11 +143,14 @@ export class IdentifierExpression extends AbstractExpression {
     this._isBound = false;
     super.bind(settings);
 
-     if (! settings.context) {
+    if (!settings.context) {
       return this;
     }
 
-    this._context = this.identifierOwnerResolver.resolve(this.index, settings.context);
+    this._context = this.identifierOwnerResolver.resolve(
+      this.index,
+      settings.context,
+    );
     this._commitAfterInitialized = !settings.isRoot;
 
     this._indexWatchRule = new IndexWatchRule(

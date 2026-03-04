@@ -1,4 +1,3 @@
-
 export const RsXExpressionParserInjectionTokens = {
   PropertyOwnerResolver: Symbol('PropertyOwnerResolver'),
   ArrayIndexOwnerResolver: Symbol('ArrayIndexOwnerResolver'),
