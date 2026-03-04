@@ -4,10 +4,7 @@ import type { OnMount } from '@monaco-editor/react';
 import dedent from 'dedent';
 import React, { useEffect, useRef, useState } from 'react';
 
-import type {
-  IExpression,
-  IExpressionChangeHistory,
-} from '@rs-x/expression-parser';
+import { AbstractExpression, type IExpression, type IExpressionChangeHistory } from '@rs-x/expression-parser';
 
 import { useExpressionChangeHistoryTracker } from '../../src/components/expression-change-history-view/hooks/use-expression-change-history-tracker';
 import { ExpressionTreeViewWithModel } from '../../src/components/expression-tree-view-with-model/expression-tree-view-with-model.component';
@@ -17,20 +14,13 @@ import { ScriptEvaluator } from '../../src/services/script-evaluator';
 import { setupScriptModels } from '../../src/services/setup-script-models';
 
 import { useSyncScriptToUrl } from './hooks/use-sync-script-to-url';
+import { installMonacoPlaceholder } from '../../src/components/ts-editor/ts-editor.component';
 
 const dataKey = 'data';
 
-export type ExpressionWithData<
-  TModel extends object = object,
-  TReturn = unknown,
-> = {
-  model: TModel;
-  expression: IExpression<TReturn>;
-};
 
-type EvalResult =
-  | { ok: true; value: ExpressionWithData }
-  | { ok: false; error: string };
+
+type EvalResult = { ok: true; value:  IExpression } | { ok: false; error: string };
 
 function readInitialScriptFromUrl(): string {
   if (typeof window === 'undefined') {
@@ -47,23 +37,6 @@ function buildScriptQuery(script: string): string {
   return params.toString();
 }
 
-function isExpressionWithData(value: unknown): value is ExpressionWithData {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const v = value as { model?: unknown; expression?: unknown };
-
-  if (!v.model || typeof v.model !== 'object') {
-    return false;
-  }
-
-  if (!v.expression || typeof v.expression !== 'object') {
-    return false;
-  }
-
-  return true;
-}
 
 function evaluateScript(scriptBody: string): EvalResult {
   const body = scriptBody.trim();
@@ -72,8 +45,7 @@ function evaluateScript(scriptBody: string): EvalResult {
   }
 
   try {
-    const result =
-      ScriptEvaluator.getInstance().evaluateScript<ExpressionWithData>(body);
+    const result = ScriptEvaluator.getInstance().evaluateScript<IExpression>(body);
 
     if (!result.success) {
       return {
@@ -82,18 +54,21 @@ function evaluateScript(scriptBody: string): EvalResult {
       };
     }
 
-    if (!isExpressionWithData(result.returnValue)) {
+    if (!(result.returnValue instanceof AbstractExpression)) {
       return {
         ok: false,
         error: dedent`
-          Script must return: { model: object, expression: IExpression }.
+          Script must return an rs-x expression
 
           Example:
 
-          return {
-            model: ({ a: 1 }),
-            expression: api.rsx('a + 1')(({ a: 1 })),
+          const $ = api.rxjs;
+          const rsx = api.rsx;
+          cont model = {
+            a: 10, 
+            b: $.of(20)
           };
+          return rsx('a + b')(model);
         `,
       };
     }
@@ -107,47 +82,47 @@ function evaluateScript(scriptBody: string): EvalResult {
   }
 }
 
+const editorPlaceholder = dedent`
+  // You should return a rs-x expression
+  // For example:
+
+  const $ = api.rxjs;
+  const rsx = api.rsx;
+  cont model = {
+    a: 10, 
+    b: $.of(20)
+  };
+  return rsx('a + b')(model);
+`
+
 const USER_MODEL_URI = 'inmemory://rsx/demo.user.js';
 
 const DemoPageClient: React.FC = () => {
-  // ✅ read once from URL
   const [script, setScript] = useState<string>(() => {
     return readInitialScriptFromUrl();
   });
 
-  const [expression, setExpression] = useState<IExpression | undefined>(
-    undefined,
-  );
+  const [expression, setExpression] = useState<IExpression | undefined>(undefined);
 
   // persisted change history for this demo expression
-  const [persistedHistory, setPersistedHistory] = useState<
-    IExpressionChangeHistory[][]
-  >([]);
+  const [persistedHistory, setPersistedHistory] = useState<IExpressionChangeHistory[][]>([]);
 
-  // highlight (selected stack)
-  const [treeHighligh, setTreeHighLight] = useState<IExpressionChangeHistory[]>(
-    [],
-  );
+  // latest selection (for “selected” styling)
+  const [treeHighligh, setTreeHighLight] = useState<IExpressionChangeHistory[]>([]);
 
-  const [treeHighlightVersion, setTreeHighlightVersion] = useState<number>(0);
 
-  const [treeZoomPercent, setTreeZoomPercent] = useState<number>(75);
+  const [treeZoomPercent, setTreeZoomPercent] = useState<number>(50);
   const [errors, setErrors] = useState<string[]>([]);
 
-  // keep URL in sync with script (no re-read)
   useSyncScriptToUrl({
     script,
     buildQuery: buildScriptQuery,
   });
 
-  // Track changes on the currently compiled expression and keep highlight in sync
   useExpressionChangeHistoryTracker({
     changeHistory: persistedHistory,
     expression: expression ?? null,
-
-    // only `expression` should drive lifecycle; version is ignored by your hook anyway
     version: 0,
-
     modelIndex: 0,
     expressionIndex: 0,
 
@@ -162,8 +137,9 @@ const DemoPageClient: React.FC = () => {
       stack,
       _replay,
     ) => {
-      setTreeHighlightVersion(treeHighlightVersion + 1);
-      setTreeHighLight([...stack]);
+      // latest selection for “selected” styling (stable reference is fine)
+      setTreeHighLight(stack);
+
     },
   });
 
@@ -179,6 +155,8 @@ const DemoPageClient: React.FC = () => {
     if (userModel) {
       editor.setModel(userModel);
     }
+
+     installMonacoPlaceholder(editor, monaco, editorPlaceholder);
   };
 
   const disposeExpression = (expr: IExpression | undefined) => {
@@ -193,13 +171,10 @@ const DemoPageClient: React.FC = () => {
   };
 
   const setNewExpression = (next: IExpression | undefined) => {
-    // dispose old expression instance
     disposeExpression(expression);
 
-    // reset history/highlight for the new compiled expression instance
     setPersistedHistory([]);
     setTreeHighLight([]);
-
     setExpression(next);
   };
 
@@ -210,7 +185,7 @@ const DemoPageClient: React.FC = () => {
 
     if (result.ok) {
       setErrors([]);
-      setNewExpression(result.value.expression);
+      setNewExpression(result.value);
       return;
     }
 
@@ -218,7 +193,7 @@ const DemoPageClient: React.FC = () => {
     setNewExpression(undefined);
   };
 
-  // ✅ AUTO-COMPILE the initial script once (so page loads “working”)
+  // auto compile once
   const didAutoCompileRef = useRef<boolean>(false);
   useEffect(() => {
     if (didAutoCompileRef.current) {
@@ -229,7 +204,7 @@ const DemoPageClient: React.FC = () => {
     if (script.trim().length === 0) {
       return;
     }
-    // compile initial URL script once
+
     compileScript(script);
   }, []);
 
@@ -239,13 +214,13 @@ const DemoPageClient: React.FC = () => {
     _selectedIndex: number,
     items: IExpressionChangeHistory[],
   ) => {
-    // manual selection highlight (still works)
     setTreeHighLight(items);
   };
 
   const modelEditor = (
     <TsEditorWithErrorPanel
       saveButtonName="Compile"
+    
       header="Edit script"
       hideName={true}
       script={script}
@@ -260,7 +235,6 @@ const DemoPageClient: React.FC = () => {
     <div className="app">
       <ExpressionTreeViewWithModel
         hideTrackChange={true}
-        treeHighlightVersion={treeHighlightVersion}
         hideHeader={true}
         expression={expression}
         treeHighlight={treeHighligh}

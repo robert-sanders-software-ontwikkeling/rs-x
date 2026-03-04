@@ -13,6 +13,7 @@ export interface ITsEditorWithErrorPanelProp {
   header: string;
   name?: string;
   namePlaceholder?: string;
+  editorPlaceholder?: string;
   errors: string[];
   saveButtonName?: string;
   hideName?: boolean;
@@ -28,6 +29,7 @@ export const TsEditorWithErrorPanel: React.FC<ITsEditorWithErrorPanelProp> = ({
   header,
   name,
   namePlaceholder,
+  editorPlaceholder,
   errors,
   saveButtonName,
   hideName,

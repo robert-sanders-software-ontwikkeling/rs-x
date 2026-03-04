@@ -21,7 +21,7 @@ function buildWrapper(userCode: string): {
 } {
   const header = `/* --- RS-X Demo Wrapper (generated) --- */
 
-        type __Result = { model: object; expression: IExpression<any, any> };
+        type __Result =  IExpression<any, any>;
 
         function __rsx_demo(): __Result {
         `;

@@ -1,5 +1,6 @@
 import { type BeforeMount, Editor, type OnMount } from '@monaco-editor/react';
 import type * as monaco from 'monaco-editor';
+
 import React, { useState } from 'react';
 import { FaCheck, FaTimes } from 'react-icons/fa';
 
@@ -22,13 +23,54 @@ const beforeMount: BeforeMount = (monaco) => {
   });
 };
 
+
+
+export function installMonacoPlaceholder(
+  editor: monaco.editor.IStandaloneCodeEditor,
+  monaco: typeof import('monaco-editor'),
+  text: string
+) {
+
+  const domNode = document.createElement('div');
+
+  domNode.className = 'monaco-placeholder';
+  domNode.textContent = text;
+
+  const widget: monaco.editor.IContentWidget = {
+    getId() {
+      return 'rsx-editor-placeholder';
+    },
+
+    getDomNode() {
+      return domNode;
+    },
+
+    getPosition() {
+      return {
+        position: { lineNumber: 1, column: 1 },
+        preference: [monaco.editor.ContentWidgetPositionPreference.EXACT],
+      };
+    },
+  };
+
+  const update = () => {
+    const value = editor.getValue();
+    domNode.style.display = value.trim().length === 0 ? 'block' : 'none';
+  };
+
+  editor.addContentWidget(widget);
+  update();
+
+  editor.onDidChangeModelContent(update);
+}
+
 export interface TSEditorProps {
   saveButtonName?: string;
   header: string;
   name?: string;
   hideName?: boolean;
   hideCancelButton?: boolean;
-  namePlaceholder;
+  namePlaceholder?: string;
   value?: string;
   options?: monaco.editor.IStandaloneEditorConstructionOptions;
   onMount?: OnMount;
@@ -129,6 +171,7 @@ export const TSEditor: React.FC<TSEditorProps> = ({
           theme="vs-dark"
           path="file:///src/main.ts"
           height="100%"
+
           defaultLanguage="typescript"
           value={currentValue}
           options={options}

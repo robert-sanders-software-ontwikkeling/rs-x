@@ -191,7 +191,7 @@ export class ExpressionEdtitorStateSerializer {
 
     const state: IExpressionEditorState = {
       errors: deserializeState.errors,
-      treeZoomPercent: deserializeState.treeZoomPercent ?? 75,
+      treeZoomPercent: deserializeState.treeZoomPercent ?? 50,
       showExpressionTreeView: deserializeState.showExpressionTreeView ?? false,
       addingModel: deserializeState.addingModel ?? false,
       addingExpression: deserializeState.addingExpression ?? false,

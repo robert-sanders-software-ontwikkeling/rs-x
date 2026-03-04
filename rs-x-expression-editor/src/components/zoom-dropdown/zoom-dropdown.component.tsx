@@ -1,6 +1,6 @@
 import React from 'react';
 
-const zoomPresets = [50, 75, 100, 125, 150, 200, 250, 300];
+const zoomPresets = [10, 25, 50, 75, 100, 125, 150, 200, 250, 300];
 
 export interface IZoomDropdown {
   value: number;
@@ -8,7 +8,7 @@ export interface IZoomDropdown {
 }
 
 export const ZoomDropdown: React.FC<IZoomDropdown> = ({
-  value = 75,
+  value = 50,
   onChange,
 }) => {
   return (
