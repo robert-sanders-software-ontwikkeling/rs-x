@@ -2,6 +2,8 @@ import {
   ErrorLog,
   InjectionContainer,
   type IPropertyChange,
+  type IProxyRegistry,
+  RsXCoreInjectionTokens,
   truePredicate,
   WaitForEvent,
 } from '@rs-x/core';
@@ -11,7 +13,6 @@ import { type ISetObserverProxyPairFactory } from '../../../lib/object-observer/
 import { type IObjectPropertyObserverProxyPairManager } from '../../../lib/object-property-observer-proxy-pair-manager.type';
 import { type IObserver } from '../../../lib/observer.interface';
 import { ObserverGroup } from '../../../lib/observer-group';
-import { type IProxyRegistry } from '../../../lib/proxies/proxy-registry/proxy-registry.interface';
 import {
   type ISetObserverProxyPair,
   type ISetProxyFactory,
@@ -241,7 +242,7 @@ describe('SetObserverProxyPairFactory tests', () => {
 
     beforeEach(() => {
       proxyRegister = InjectionContainer.get(
-        RsXStateManagerInjectionTokens.IProxyRegistry,
+        RsXCoreInjectionTokens.IProxyRegistry,
       );
     });
 
@@ -325,7 +326,7 @@ describe('SetObserverProxyPairFactory tests', () => {
 
     beforeEach(() => {
       proxyRegister = InjectionContainer.get(
-        RsXStateManagerInjectionTokens.IProxyRegistry,
+        RsXCoreInjectionTokens.IProxyRegistry,
       );
     });
 

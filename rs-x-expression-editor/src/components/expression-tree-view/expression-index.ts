@@ -13,8 +13,10 @@ export class ExpressionIndex {
 
   public constructor(layout: LayoutResult) {
     for (const n of layout.nodes) {
+      // fast path: reference equality
       this.idByExprRef.set(n.expression, n.id);
 
+      // stable path: id signature
       const k = this.exprKey(n.expression);
       if (k && !this.idByExprKey.has(k)) {
         this.idByExprKey.set(k, n.id);
@@ -23,6 +25,7 @@ export class ExpressionIndex {
 
     for (const e of layout.edges) {
       this.parentById.set(e.to, e.from);
+
       if (!this.parentById.has(e.from)) {
         this.parentById.set(e.from, null);
       }
@@ -44,23 +47,44 @@ export class ExpressionIndex {
   }
 
   public resolveNodeId(expr: IExpression): NodeId | null {
+    // 1️⃣ fast path (same instance)
     const byRef = this.idByExprRef.get(expr);
-    if (byRef) {
+    if (byRef !== undefined) {
       return byRef;
     }
 
-    const byKey = this.idByExprKey.get(this.exprKey(expr));
-    if (byKey) {
-      return byKey;
+    // 2️⃣ stable id lookup
+    try {
+      const key = this.exprKey(expr);
+      const byKey = this.idByExprKey.get(key);
+
+      if (byKey !== undefined) {
+        return byKey;
+      }
+    } catch {
+      // ignore missing id
     }
 
     return null;
   }
 
+  /**
+   * IMPORTANT:
+   * Must change when value changes.
+   * Otherwise animations for a single-node tree never restart.
+   */
   public buildHighlightKey(
     highlightChanges: readonly IExpressionChangeHistory[],
   ): string {
-    return highlightChanges.map((h) => this.exprKey(h.expression)).join('|');
+    return highlightChanges
+      .map((h) => {
+        const exprId = this.exprKey(h.expression);
+        const oldVal = String(h.oldValue);
+        const newVal = String(h.value);
+
+        return `${exprId}:${oldVal}->${newVal}`;
+      })
+      .join('|');
   }
 
   private _buildChainToRoot(start: NodeId): NodeId[] {

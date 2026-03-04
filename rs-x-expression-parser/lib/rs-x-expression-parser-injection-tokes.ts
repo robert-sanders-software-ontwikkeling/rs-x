@@ -1,7 +1,9 @@
+
 export const RsXExpressionParserInjectionTokens = {
   PropertyOwnerResolver: Symbol('PropertyOwnerResolver'),
   ArrayIndexOwnerResolver: Symbol('ArrayIndexOwnerResolver'),
   MapKeyOwnerResolver: Symbol('MapKeyOwnerResolver'),
+  GlobalIdentifierOwnerResolver: Symbol('GlobalIdentifierOwnerResolver'),
   IdentifierOwnerResolver: Symbol('IdentifierOwnerResolver'),
   IIdentifierOwnerResolverList: Symbol('IIdentifierOwnerResolverList'),
   IExpressionManager: Symbol('IExpressionManager'),

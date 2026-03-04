@@ -5,7 +5,8 @@ import {
   type IMapObserverProxyPair,
   type IMapProxifyData,
 } from '../../../lib/proxies/map-proxy/map-proxy.factory.type';
-import { ProxyRegistryMock } from '../../../lib/testing/proxies/proxy-registry.mock';
+import { ProxyRegistryMock } from '@rs-x/core/testing';
+
 
 describe('MapProxy tests', () => {
   let observerProxyPair: IMapObserverProxyPair;

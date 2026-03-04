@@ -1,4 +1,5 @@
-import { ProxyRegistry } from '../../../lib/proxies/proxy-registry/proxy-registry';
+
+import { ProxyRegistry } from '@rs-x/core';
 import { SetProxyFactory } from '../../../lib/proxies/set-proxy/set-proxy.factory';
 
 describe('SetProxyFactory tests', () => {

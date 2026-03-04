@@ -7,15 +7,15 @@ import {
   InvalidOperationException,
   type IPropertyChange,
   type IPropertyDescriptor,
+  type IProxyRegistry,
   PropertyDescriptorType,
+  RsXCoreInjectionTokens,
   SingletonFactory,
   Type,
 } from '@rs-x/core';
 
 import { AbstractObserver } from '../../../abstract-observer';
 import type { IObserver } from '../../../observer.interface';
-import type { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
-import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokens';
 
 import type {
   IObjectPropertyObserverManager,
@@ -242,7 +242,7 @@ export class ObjectPropertyObserverManager
   implements IObjectPropertyObserverManager
 {
   constructor(
-    @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
+    @Inject(RsXCoreInjectionTokens.IProxyRegistry)
     private readonly _proxyRegister: IProxyRegistry,
   ) {
     super();

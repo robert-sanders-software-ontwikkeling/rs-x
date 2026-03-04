@@ -49,6 +49,12 @@ class NodeVmBuilder {
     const out: NodeVm[] = [];
 
     for (const n of nodes) {
+
+      // 🚀 skip hidden expressions
+      if (n.expression.hidden === true) {
+        continue;
+      }
+
       const pos = nodePos.get(n.id);
       if (!pos) {
         continue;

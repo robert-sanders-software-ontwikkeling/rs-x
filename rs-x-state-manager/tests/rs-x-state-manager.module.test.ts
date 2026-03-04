@@ -21,7 +21,6 @@ import { DateProxyFactory } from '../lib/proxies/date-proxy/date-proxy.factory';
 import { MapProxyFactory } from '../lib/proxies/map-proxy/map-proxy.factory';
 import { ObservableProxyFactory } from '../lib/proxies/observable-proxy/observable-proxy.factory';
 import { PromiseProxyFactory } from '../lib/proxies/promise-proxy/promise-proxy.factory';
-import { ProxyRegistry } from '../lib/proxies/proxy-registry/proxy-registry';
 import { SetProxyFactory } from '../lib/proxies/set-proxy/set-proxy.factory';
 import {
   RsXStateManagerModule,
@@ -138,23 +137,6 @@ describe('RsXStateManagerModule', () => {
     );
     const a2 = InjectionContainer.get(
       RsXStateManagerInjectionTokens.IObservableProxyFactory,
-    );
-    expect(a1).toBe(a2);
-  });
-
-  it('can get a instance of IProxyRegistry', () => {
-    const actual = InjectionContainer.get(
-      RsXStateManagerInjectionTokens.IProxyRegistry,
-    );
-    expect(actual).toBeInstanceOf(ProxyRegistry);
-  });
-
-  it('instance of IProxyRegistry is a singelton', () => {
-    const a1 = InjectionContainer.get(
-      RsXStateManagerInjectionTokens.IProxyRegistry,
-    );
-    const a2 = InjectionContainer.get(
-      RsXStateManagerInjectionTokens.IProxyRegistry,
     );
     expect(a1).toBe(a2);
   });

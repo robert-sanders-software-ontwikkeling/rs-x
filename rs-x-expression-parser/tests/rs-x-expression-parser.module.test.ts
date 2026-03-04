@@ -1,6 +1,7 @@
 import {
   ArrayIndexAccessor,
   DatePropertyAccessor,
+  GlobalIndexAccessor,
   InjectionContainer,
   MapKeyAccessor,
   MethodAccessor,
@@ -30,19 +31,21 @@ import { ExpressionManager } from '../lib/expression-factory/expression-manager'
 import { ExpressionIdProvider } from '../lib/expression-id/expression-id-provider';
 import { DeepCloneExceptWithExpressionSupport } from '../lib/expression-observer/deep-clone-except-with-expression-support';
 import { ExpressionIndexAccessor } from '../lib/expression-observer/expression-index-accessor';
-import { ExpressionObserverFactory } from '../lib/expression-observer/expression-observer.factory';
 import { ExpressionObserverProxyPairFactory } from '../lib/expression-observer/expression-observer-proxy-pair.factory';
+import { ExpressionObserverFactory } from '../lib/expression-observer/expression-observer.factory';
 import { ExpressionServices } from '../lib/expression-services/expression-services';
 import { ArrayIndexOwnerResolver } from '../lib/identifier-owner-resolver/array-index-owner-resolver';
 import { DefaultIdentifierOwnerResolver } from '../lib/identifier-owner-resolver/default-identifier-owner-resolver';
+import { GlobalIdentifierOwnerResolver } from '../lib/identifier-owner-resolver/global-identifier-owner-resolver';
 import { MapKeyOwnerResolver } from '../lib/identifier-owner-resolver/map-key-owner-resolver';
 import { PropertyOwnerResolver } from '../lib/identifier-owner-resolver/property-owner-resolver';
 import { JsEspreeExpressionParser } from '../lib/js-espree-expression-parser';
+import { RsXExpressionParserInjectionTokens } from '../lib/rs-x-expression-parser-injection-tokes';
 import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
 } from '../lib/rs-x-expression-parser.module';
-import { RsXExpressionParserInjectionTokens } from '../lib/rs-x-expression-parser-injection-tokes';
+
 
 describe('RsXExpressionParserModule tests', () => {
   beforeAll(async () => {
@@ -194,11 +197,12 @@ describe('RsXExpressionParserModule tests', () => {
       RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList,
     );
 
-    expect(actual.length).toEqual(3);
+    expect(actual.length).toEqual(4);
 
     expect(actual[0]).toBeInstanceOf(PropertyOwnerResolver);
     expect(actual[1]).toBeInstanceOf(ArrayIndexOwnerResolver);
     expect(actual[2]).toBeInstanceOf(MapKeyOwnerResolver);
+    expect(actual[3]).toBeInstanceOf(GlobalIdentifierOwnerResolver);
   });
 
   it('IIdentifierOwnerResolverList instance is a singelton', () => {
@@ -218,7 +222,7 @@ describe('RsXExpressionParserModule tests', () => {
       RsXCoreInjectionTokens.IIndexValueAccessorList,
     );
 
-    expect(actual.length).toEqual(9);
+    expect(actual.length).toEqual(10);
     expect(actual[0]).toBeInstanceOf(ExpressionIndexAccessor);
     expect(actual[1]).toBeInstanceOf(PropertyValueAccessor);
     expect(actual[2]).toBeInstanceOf(MethodAccessor);
@@ -228,6 +232,7 @@ describe('RsXExpressionParserModule tests', () => {
     expect(actual[6]).toBeInstanceOf(ObservableAccessor);
     expect(actual[7]).toBeInstanceOf(PromiseAccessor);
     expect(actual[8]).toBeInstanceOf(DatePropertyAccessor);
+    expect(actual[9]).toBeInstanceOf(GlobalIndexAccessor);
   });
 
   it('IIndexValueAccessorList instance is a singelton', () => {

@@ -2,6 +2,8 @@ import { BehaviorSubject, type Observable, of } from 'rxjs';
 
 import {
   InjectionContainer,
+  type IProxyRegistry,
+  RsXCoreInjectionTokens,
   truePredicate,
   Type,
   WaitForEvent,
@@ -10,9 +12,8 @@ import { ObservableMock } from '@rs-x/core/testing';
 
 import { type IArrayProxyFactory } from '../../lib/proxies/array-proxy/array-proxy.factory.type';
 import { type IMapProxyFactory } from '../../lib/proxies/map-proxy/map-proxy.factory.type';
-import { type IProxyRegistry } from '../../lib/proxies/proxy-registry/proxy-registry.interface';
-import { RsXStateManagerModule } from '../../lib/rs-x-state-manager.module';
 import { RsXStateManagerInjectionTokens } from '../../lib/rs-x-state-manager-injection-tokens';
+import { RsXStateManagerModule } from '../../lib/rs-x-state-manager.module';
 import {
   type IStateChange,
   type IStateManager,
@@ -484,7 +485,7 @@ describe('StateManager tests', () => {
 
     beforeAll(() => {
       proxyRegistry = InjectionContainer.get(
-        RsXStateManagerInjectionTokens.IProxyRegistry,
+        RsXCoreInjectionTokens.IProxyRegistry,
       );
     });
 

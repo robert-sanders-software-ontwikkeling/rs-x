@@ -36,8 +36,6 @@ import { ObservableProxyFactory } from './proxies/observable-proxy/observable-pr
 import { type IObservableProxyFactory } from './proxies/observable-proxy/observable-proxy.factory.type';
 import { PromiseProxyFactory } from './proxies/promise-proxy/promise-proxy.factory';
 import { type IPromiseProxyFactory } from './proxies/promise-proxy/promise-proxy.factory.type';
-import { ProxyRegistry } from './proxies/proxy-registry/proxy-registry';
-import { type IProxyRegistry } from './proxies/proxy-registry/proxy-registry.interface';
 import { SetProxyFactory } from './proxies/set-proxy/set-proxy.factory';
 import { type ISetProxyFactory } from './proxies/set-proxy/set-proxy.factory.type';
 import { ObjectStateManager } from './state-manager/object-state-manager';
@@ -130,10 +128,6 @@ export const RsXStateManagerModule = new ContainerModule((options) => {
       RsXStateManagerInjectionTokens.IObservableProxyFactory,
     )
     .to(ObservableProxyFactory)
-    .inSingletonScope();
-  options
-    .bind<IProxyRegistry>(RsXStateManagerInjectionTokens.IProxyRegistry)
-    .to(ProxyRegistry)
     .inSingletonScope();
   options
     .bind<IObjectPropertyObserverProxyPairManager>(

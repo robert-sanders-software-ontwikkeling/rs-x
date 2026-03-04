@@ -3,6 +3,7 @@ import {
   Inject,
   Injectable,
   InvalidOperationException,
+  type IProxyRegistry,
   RsXCoreInjectionTokens,
   SingletonFactoryWithGuid,
   Type,
@@ -10,7 +11,6 @@ import {
 
 import type { IIndexWatchRule } from '../index-watch-rule-registry/index-watch-rule.interface';
 import type { IObserverProxyPair } from '../object-property-observer-proxy-pair-manager.type';
-import type { IProxyRegistry } from '../proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerInjectionTokens } from '../rs-x-state-manager-injection-tokens';
 
 import type { IObjectObserverProxyPairFactoryProvider } from './object-observer-proxy-pair-factory.provider.interface';
@@ -29,7 +29,7 @@ export class ObjectObserverProxyPairManager
       RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryProviderFactory,
     )
     private readonly getObserverFactoryProvider: () => IObjectObserverProxyPairFactoryProvider,
-    @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
+    @Inject(RsXCoreInjectionTokens.IProxyRegistry)
     private readonly _proxyRegistry: IProxyRegistry,
     @Inject(RsXCoreInjectionTokens.IGuidFactory)
     guidFactory: IGuidFactory,

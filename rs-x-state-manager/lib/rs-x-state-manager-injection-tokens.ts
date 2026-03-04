@@ -3,7 +3,6 @@ export const RsXStateManagerInjectionTokens = {
   IMapProxyFactory: Symbol('IMapProxyFactory'),
   ISetProxyFactory: Symbol('ISetProxyFactory'),
   IDateProxyFactory: Symbol('IDateProxyFactory'),
-  IProxyRegistry: Symbol('IProxyRegistry'),
   IPromiseProxyFactory: Symbol('IPromiseProxyFactory'),
   IObservableProxyFactory: Symbol('IObservableProxyFactory'),
   IObjectPropertyObserverProxyPairManager: Symbol(

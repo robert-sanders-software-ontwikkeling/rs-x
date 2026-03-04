@@ -16,6 +16,7 @@ import type { IExpressionIdProvider } from '../expression-id/expression-id-provi
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
 
 import type { IExpressionServices } from './expression-services.interface';
+import type { IIdentifierOwnerResolver } from '../identifier-owner-resolver/identifier-owner-resolver.interface';
 
 @Injectable()
 export class ExpressionServices implements IExpressionServices {
@@ -34,5 +35,7 @@ export class ExpressionServices implements IExpressionServices {
     public readonly valueMetadata: IValueMetadata,
     @Inject(RsXExpressionParserInjectionTokens.IExpressionIdProvider)
     public readonly expressionIdProvider: IExpressionIdProvider,
-  ) {}
+    @Inject(RsXExpressionParserInjectionTokens.IdentifierOwnerResolver)
+    public readonly identifierOwnerResolver: IIdentifierOwnerResolver,
+  ) { }
 }

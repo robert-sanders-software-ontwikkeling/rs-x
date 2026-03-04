@@ -5,7 +5,8 @@ import {
   type ISetObserverProxyPair,
   type ISetProxifyData,
 } from '../../../lib/proxies/set-proxy/set-proxy.factory.type';
-import { ProxyRegistryMock } from '../../../lib/testing/proxies/proxy-registry.mock';
+import { ProxyRegistryMock } from '@rs-x/core/testing';
+
 
 interface ISetItem {
   x: number;

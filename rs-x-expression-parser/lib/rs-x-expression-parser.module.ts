@@ -14,6 +14,8 @@ import {
   RsXStateManagerModule,
 } from '@rs-x/state-manager';
 
+import { ExpressionChangeTransactionManager } from './expresion-change-transaction-manager';
+import type { IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
 import { ExpressionCache } from './expression-cache/expression-cache';
 import type { IExpressionCache } from './expression-cache/expression-cache.type';
 import { ExpressionChangePlayback } from './expression-change-playback/expression-change-playback';
@@ -29,21 +31,22 @@ import { type IExpressionIdProvider } from './expression-id/expression-id-provid
 import { DeepCloneExceptWithExpressionSupport } from './expression-observer/deep-clone-except-with-expression-support';
 import { ExpressionIndexAccessor } from './expression-observer/expression-index-accessor';
 import { ExpressionMetadata } from './expression-observer/expression-metadata';
-import { ExpressionObserverFactory } from './expression-observer/expression-observer.factory';
 import { ExpressionObserverProxyPairFactory } from './expression-observer/expression-observer-proxy-pair.factory';
+import { ExpressionObserverFactory } from './expression-observer/expression-observer.factory';
 import type { IExpressionObserverFactory } from './expression-observer/expression-proxy.factory.type';
 import { ExpressionServices } from './expression-services/expression-services';
 import type { IExpressionServices } from './expression-services/expression-services.interface';
 import type { IExpressionParser } from './expressions/expression-parser.interface';
 import { ArrayIndexOwnerResolver } from './identifier-owner-resolver/array-index-owner-resolver';
 import { DefaultIdentifierOwnerResolver } from './identifier-owner-resolver/default-identifier-owner-resolver';
+import { GlobalIdentifierOwnerResolver } from './identifier-owner-resolver/global-identifier-owner-resolver';
 import type { IIdentifierOwnerResolver } from './identifier-owner-resolver/identifier-owner-resolver.interface';
 import { MapKeyOwnerResolver } from './identifier-owner-resolver/map-key-owner-resolver';
 import { PropertyOwnerResolver } from './identifier-owner-resolver/property-owner-resolver';
-import { ExpressionChangeTransactionManager } from './expresion-change-transaction-manager';
-import type { IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
 import { JsEspreeExpressionParser } from './js-espree-expression-parser';
 import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
+
+
 
 InjectionContainer.load(RsXStateManagerModule);
 
@@ -135,6 +138,10 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
         target: MapKeyOwnerResolver,
         token: RsXExpressionParserInjectionTokens.MapKeyOwnerResolver,
       },
+      {
+        target: GlobalIdentifierOwnerResolver,
+        token: RsXExpressionParserInjectionTokens.GlobalIdentifierOwnerResolver
+      }
     ],
   );
 

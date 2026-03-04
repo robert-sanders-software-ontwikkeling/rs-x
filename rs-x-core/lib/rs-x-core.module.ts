@@ -47,6 +47,9 @@ import {
   registerMultiInjectServices,
 } from './dependency-injection';
 import { RsXCoreInjectionTokens } from './rs-x-core.injection-tokens';
+import { GlobalIndexAccessor } from './index-value-accessor/global-index-accesor';
+import { ProxyRegistry } from './proxy-registry/proxy-registry';
+import type { IProxyRegistry } from './proxy-registry/proxy-registry.interface';
 
 export const defaultIndexValueAccessorList: readonly IMultiInjectService[] = [
   {
@@ -68,6 +71,10 @@ export const defaultIndexValueAccessorList: readonly IMultiInjectService[] = [
   {
     target: DatePropertyAccessor,
     token: RsXCoreInjectionTokens.IDatePropertyAccessor,
+  },
+  {
+    target: GlobalIndexAccessor,
+    token: RsXCoreInjectionTokens.IGlobalIndexAccessor,
   },
 ];
 
@@ -160,6 +167,10 @@ export const RsXCoreModule = new ContainerModule((options) => {
   options
     .bind<IObjectStorage>(RsXCoreInjectionTokens.IObjectStorage)
     .to(ObjectStorage)
+    .inSingletonScope();
+  options
+    .bind<IProxyRegistry>(RsXCoreInjectionTokens.IProxyRegistry)
+    .to(ProxyRegistry)
     .inSingletonScope();
 
   registerMultiInjectServices(

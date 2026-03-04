@@ -4,13 +4,13 @@ import {
   type IIndexValueAccessor,
   Inject,
   Injectable,
+  type IProxyRegistry,
   type IValueMetadata,
   RsXCoreInjectionTokens,
   truePredicate,
 } from '@rs-x/core';
 
 import type { IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
-import type { IProxyRegistry } from '../../../proxies/proxy-registry/proxy-registry.interface';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokens';
 import { IndexObserverProxyPairFactory } from '../indexed-value-observer-proxy-pair/indexed-value-observer-proxy-pair.factory';
 
@@ -35,7 +35,7 @@ export class CollectionItemObserverProxyPairFactory extends IndexObserverProxyPa
     guidFactory: IGuidFactory,
     @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
     indexValueAccessor: IIndexValueAccessor,
-    @Inject(RsXStateManagerInjectionTokens.IProxyRegistry)
+    @Inject(RsXCoreInjectionTokens.IProxyRegistry)
     proxyRegister: IProxyRegistry,
     @Inject(RsXCoreInjectionTokens.IValueMetadata)
     valueMetadata: IValueMetadata,
