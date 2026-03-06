@@ -1,0 +1,399 @@
+/* =========================================================
+   Expression Tree — rs-x site style
+========================================================= */
+
+.exprTreeRoot {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+  color: var(--text);
+  font-family: var(--font-mono);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+}
+
+.exprTreeViewport {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.exprTreeSpacer {
+  position: relative;
+}
+
+.exprTreeZoomLayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+
+.exprTreeCanvas {
+  position: relative;
+  isolation: isolate;
+}
+
+.exprTreeLines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  pointer-events: none;
+  overflow: visible;
+  display: block;
+}
+
+/* =========================================================
+   Paths
+========================================================= */
+
+.exprTreeLines path.exprTreePath {
+  fill: none;
+  stroke: rgba(11, 19, 36, 0.18);
+  stroke-width: 2px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 1;
+  vector-effect: non-scaling-stroke;
+  shape-rendering: geometricPrecision;
+  transition:
+    stroke var(--t-med) var(--ease),
+    stroke-width var(--t-med) var(--ease),
+    opacity var(--t-med) var(--ease),
+    filter var(--t-med) var(--ease);
+}
+
+html[data-theme='dark'] .exprTreeLines path.exprTreePath {
+  stroke: rgba(237, 242, 255, 0.22);
+}
+
+.exprTreeLines path.exprTreePath.isSelected {
+  stroke: var(--brand);
+  stroke-width: 3.2px;
+  filter: drop-shadow(0 0 6px rgba(11, 102, 255, 0.24));
+}
+
+html[data-theme='dark'] .exprTreeLines path.exprTreePath.isSelected {
+  stroke: var(--brand);
+  filter: drop-shadow(0 0 6px rgba(122, 182, 255, 0.28));
+}
+
+.exprTreeLines path.exprTreePath.isActive {
+  stroke: var(--brand-2);
+  stroke-width: 4.4px;
+  filter:
+    drop-shadow(0 0 8px rgba(43, 182, 169, 0.32))
+    drop-shadow(0 0 16px rgba(43, 182, 169, 0.16));
+}
+
+html[data-theme='dark'] .exprTreeLines path.exprTreePath.isActive {
+  stroke: var(--brand-2);
+  filter:
+    drop-shadow(0 0 8px rgba(73, 217, 200, 0.34))
+    drop-shadow(0 0 16px rgba(73, 217, 200, 0.18));
+}
+
+/* =========================================================
+   Node card
+========================================================= */
+
+.exprNode {
+  position: absolute;
+  z-index: 20;
+
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+
+  transition:
+    transform var(--t-med) var(--ease),
+    box-shadow var(--t-med) var(--ease),
+    border-color var(--t-med) var(--ease),
+    background var(--t-med) var(--ease),
+    filter var(--t-med) var(--ease);
+}
+
+/* =========================================================
+   Header
+========================================================= */
+
+.exprNodeHeader {
+  padding: var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--border-soft);
+
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+}
+
+.exprNodeDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--brand);
+  box-shadow: 0 0 0 4px rgba(11, 102, 255, 0.12);
+  flex: 0 0 auto;
+
+  transition:
+    background-color var(--t-med) var(--ease),
+    box-shadow var(--t-med) var(--ease);
+}
+
+html[data-theme='dark'] .exprNodeDot {
+  box-shadow: 0 0 0 4px rgba(122, 182, 255, 0.14);
+}
+
+.exprNodeHeaderText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+}
+
+.exprNodeTitleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  min-width: 0;
+  width: 100%;
+}
+
+.exprNodeTitle {
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text);
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.exprNodeType {
+  font-size: 0.68rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+
+  border: 1px solid var(--border-soft);
+  background: var(--surface-solid);
+  color: var(--muted);
+
+  flex: 0 0 auto;
+}
+
+.exprNodeTitleRowRight {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+/* =========================================================
+   Body
+========================================================= */
+
+.exprNodeBody {
+  padding: var(--sp-4) var(--sp-5);
+  height: calc(100% - 45px);
+  overflow: auto;
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+}
+
+.exprNodePre {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  tab-size: 2;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  color: var(--text);
+}
+
+.exprNodeMuted {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* =========================================================
+   Selected / Active
+========================================================= */
+
+.exprNode.isSelected {
+  border-color: rgba(11, 102, 255, 0.38);
+  box-shadow:
+    var(--shadow-1),
+    0 0 0 2px rgba(11, 102, 255, 0.14),
+    0 0 18px rgba(11, 102, 255, 0.08);
+}
+
+html[data-theme='dark'] .exprNode.isSelected {
+  border-color: rgba(122, 182, 255, 0.42);
+  box-shadow:
+    var(--shadow-1),
+    0 0 0 2px rgba(122, 182, 255, 0.16),
+    0 0 18px rgba(122, 182, 255, 0.1);
+}
+
+.exprNode.isSelected .exprNodeDot {
+  background: var(--brand);
+  box-shadow:
+    0 0 0 4px rgba(11, 102, 255, 0.18),
+    0 0 12px rgba(11, 102, 255, 0.1);
+}
+
+html[data-theme='dark'] .exprNode.isSelected .exprNodeDot {
+  box-shadow:
+    0 0 0 4px rgba(122, 182, 255, 0.2),
+    0 0 12px rgba(122, 182, 255, 0.12);
+}
+
+.exprNode.isActive {
+  border-color: rgba(43, 182, 169, 0.55);
+  transform: translateY(-1px);
+  box-shadow:
+    var(--shadow-1),
+    0 0 0 2px rgba(43, 182, 169, 0.16),
+    0 0 22px rgba(43, 182, 169, 0.12);
+  animation: exprPulse 520ms var(--ease);
+}
+
+html[data-theme='dark'] .exprNode.isActive {
+  border-color: rgba(73, 217, 200, 0.6);
+  box-shadow:
+    var(--shadow-1),
+    0 0 0 2px rgba(73, 217, 200, 0.18),
+    0 0 22px rgba(73, 217, 200, 0.14);
+}
+
+.exprNode.isActive .exprNodeDot {
+  background: var(--brand-2);
+  box-shadow:
+    0 0 0 4px rgba(43, 182, 169, 0.18),
+    0 0 16px rgba(43, 182, 169, 0.14);
+}
+
+html[data-theme='dark'] .exprNode.isActive .exprNodeDot {
+  box-shadow:
+    0 0 0 4px rgba(73, 217, 200, 0.2),
+    0 0 16px rgba(73, 217, 200, 0.16);
+}
+
+@keyframes exprPulse {
+  0% {
+    transform: translateY(-1px) scale(1);
+  }
+
+  45% {
+    transform: translateY(-1px) scale(1.015);
+  }
+
+  100% {
+    transform: translateY(-1px) scale(1);
+  }
+}
+
+/* =========================================================
+   Async
+========================================================= */
+
+.exprNode.exprNode--async .exprNodeHeader {
+  background: linear-gradient(
+    90deg,
+    rgba(43, 182, 169, 0.08) 0%,
+    var(--surface) 55%
+  );
+}
+
+html[data-theme='dark'] .exprNode.exprNode--async .exprNodeHeader {
+  background: linear-gradient(
+    90deg,
+    rgba(73, 217, 200, 0.1) 0%,
+    var(--surface) 55%
+  );
+}
+
+.exprNode.exprNode--async .exprNodeDot {
+  background: var(--brand-2);
+  box-shadow: 0 0 0 0 rgba(43, 182, 169, 0);
+  animation: exprAsyncDotPulse 1.6s var(--ease) infinite;
+}
+
+html[data-theme='dark'] .exprNode.exprNode--async .exprNodeDot {
+  box-shadow: 0 0 0 0 rgba(73, 217, 200, 0);
+}
+
+@keyframes exprAsyncDotPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(43, 182, 169, 0.32);
+  }
+
+  70% {
+    box-shadow: 0 0 0 8px rgba(43, 182, 169, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(43, 182, 169, 0);
+  }
+}
+
+html[data-theme='dark'] .exprNodeAsyncPill {
+  border-color: rgba(73, 217, 200, 0.34);
+  background: rgba(73, 217, 200, 0.12);
+  color: var(--brand-2);
+}
+
+.exprNodeAsyncPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  height: 18px;
+  padding: 0 8px;
+  border-radius: 999px;
+
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+
+  border: 1px solid rgba(43, 182, 169, 0.3);
+  background: rgba(43, 182, 169, 0.1);
+  color: var(--brand-2);
+}
+
+.exprNodeAsyncLabel {
+  user-select: none;
+}
+
+.exprNodeAsyncPulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exprNode.exprNode--async .exprNodeDot {
+    animation: none;
+    box-shadow: 0 0 0 4px rgba(43, 182, 169, 0.12);
+  }
+
+  html[data-theme='dark'] .exprNode.exprNode--async .exprNodeDot {
+    box-shadow: 0 0 0 4px rgba(73, 217, 200, 0.14);
+  }
+}
