@@ -1,0 +1,405 @@
+@import '../../styles/theme-tokens.css';
+
+/* =========================================================
+   Expression Tree — rs-x site style
+========================================================= */
+
+.exprTreeRoot {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+
+  background: var(--panel-surface);
+  color: var(--text);
+  font-family: var(--font-sans);
+  border: none;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.exprTreeViewport {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.exprTreeSpacer {
+  position: relative;
+}
+
+.exprTreeZoomLayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+
+.exprTreeCanvas {
+  position: relative;
+  isolation: isolate;
+}
+
+.exprTreeLines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  pointer-events: none;
+  overflow: visible;
+  display: block;
+}
+
+/* =========================================================
+   Paths
+========================================================= */
+
+.exprTreeLines path.exprTreePath {
+  fill: none;
+  stroke: var(--expr-tree-path-stroke);
+  stroke-width: var(--expr-tree-path-stroke-width);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 1;
+  vector-effect: non-scaling-stroke;
+  shape-rendering: geometricPrecision;
+  transition:
+    stroke var(--t-med) var(--ease),
+    stroke-width var(--t-med) var(--ease),
+    opacity var(--t-med) var(--ease),
+    filter var(--t-med) var(--ease);
+}
+
+html[data-theme='dark'] .exprTreeLines path.exprTreePath {
+  stroke: var(--expr-tree-path-stroke-dark);
+}
+
+.exprTreeLines path.exprTreePath.isSelected {
+  stroke: var(--brand);
+  stroke-width: var(--expr-tree-path-selected-stroke-width);
+  filter: var(--expr-tree-path-selected-shadow);
+}
+
+html[data-theme='dark'] .exprTreeLines path.exprTreePath.isSelected {
+  stroke: var(--brand);
+  filter: var(--expr-tree-path-selected-shadow-dark);
+}
+
+.exprTreeLines path.exprTreePath.isActive {
+  stroke: var(--brand-2);
+  stroke-width: var(--expr-tree-path-active-stroke-width);
+  filter: var(--expr-tree-path-active-shadow);
+  animation: exprActivePathPulse 420ms var(--ease) 2;
+}
+
+html[data-theme='dark'] .exprTreeLines path.exprTreePath.isActive {
+  stroke: var(--brand-2);
+  filter: var(--expr-tree-path-active-shadow-dark);
+  animation: none;
+}
+
+@keyframes exprActivePathPulse {
+  0% {
+    opacity: 0.72;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.86;
+  }
+}
+
+/* =========================================================
+   Node card
+========================================================= */
+
+.exprNode {
+  position: absolute;
+  z-index: 20;
+
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08), 0 6px 18px rgba(16, 24, 40, 0.06);
+  overflow: hidden;
+
+  transition:
+    transform var(--t-med) var(--ease),
+    box-shadow var(--t-med) var(--ease),
+    border-color var(--t-med) var(--ease),
+    background var(--t-med) var(--ease),
+    filter var(--t-med) var(--ease);
+}
+
+/* =========================================================
+   Header
+========================================================= */
+
+.exprNodeHeader {
+  padding: var(--sp-3) var(--sp-5);
+  border-bottom: 1px solid var(--border-soft);
+
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+}
+
+.exprNodeDot {
+  width: var(--expr-node-dot-size);
+  height: var(--expr-node-dot-size);
+  border-radius: var(--expr-node-dot-radius);
+  background: var(--brand);
+  box-shadow: var(--expr-node-dot-ring-shadow);
+  flex: 0 0 auto;
+
+  transition:
+    background-color var(--t-med) var(--ease),
+    box-shadow var(--t-med) var(--ease);
+}
+
+html[data-theme='dark'] .exprNodeDot {
+  box-shadow: var(--expr-node-dot-ring-shadow-dark);
+}
+
+.exprNodeHeaderText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+}
+
+.exprNodeTitleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  min-width: 0;
+  width: 100%;
+}
+
+.exprNodeTitle {
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text);
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.exprNodeType {
+  font-size: 0.68rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+
+  border: 1px solid var(--border-soft);
+  background: var(--surface-solid);
+  color: var(--muted);
+
+  flex: 0 0 auto;
+}
+
+.exprNodeTitleRowRight {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+/* =========================================================
+   Body
+========================================================= */
+
+.exprNodeBody {
+  padding: var(--sp-3) var(--sp-5);
+  height: calc(100% - var(--expr-node-body-header-offset));
+  overflow: auto;
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+}
+
+.exprNodePre {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  tab-size: 2;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  color: var(--text);
+}
+
+.exprNodeMuted {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* =========================================================
+   Selected / Active
+========================================================= */
+
+.exprNode.isSelected {
+  border-color: var(--expr-node-selected-border);
+  box-shadow:
+    var(--shadow-1),
+    var(--expr-node-selected-ring),
+    var(--expr-node-selected-glow);
+}
+
+html[data-theme='dark'] .exprNode.isSelected {
+  border-color: var(--expr-node-selected-border-dark);
+  box-shadow:
+    var(--shadow-1),
+    var(--expr-node-selected-ring-dark),
+    var(--expr-node-selected-glow-dark);
+}
+
+.exprNode.isSelected .exprNodeDot {
+  background: var(--brand);
+  box-shadow:
+    var(--expr-node-selected-dot-ring),
+    var(--expr-node-selected-dot-glow);
+}
+
+html[data-theme='dark'] .exprNode.isSelected .exprNodeDot {
+  box-shadow:
+    var(--expr-node-selected-dot-ring-dark),
+    var(--expr-node-selected-dot-glow-dark);
+}
+
+.exprNode.isActive {
+  border-color: var(--expr-node-active-border);
+  transform: translateY(var(--expr-node-hover-lift));
+  box-shadow:
+    var(--shadow-1),
+    var(--expr-node-active-ring),
+    var(--expr-node-active-glow);
+  animation: exprPulse 520ms var(--ease);
+}
+
+html[data-theme='dark'] .exprNode.isActive {
+  border-color: var(--expr-node-active-border-dark);
+  box-shadow:
+    var(--shadow-1),
+    var(--expr-node-active-ring-dark),
+    var(--expr-node-active-glow-dark);
+}
+
+.exprNode.isActive .exprNodeDot {
+  background: var(--brand-2);
+  box-shadow:
+    var(--expr-node-active-dot-ring),
+    var(--expr-node-active-dot-glow);
+}
+
+html[data-theme='dark'] .exprNode.isActive .exprNodeDot {
+  box-shadow:
+    var(--expr-node-active-dot-ring-dark),
+    var(--expr-node-active-dot-glow-dark);
+}
+
+@keyframes exprPulse {
+  0% {
+    transform: translateY(var(--expr-node-hover-lift)) scale(1);
+  }
+
+  45% {
+    transform: translateY(var(--expr-node-hover-lift)) scale(var(--expr-node-pulse-scale));
+  }
+
+  100% {
+    transform: translateY(var(--expr-node-hover-lift)) scale(1);
+  }
+}
+
+/* =========================================================
+   Async
+========================================================= */
+
+.exprNode.exprNode--async .exprNodeHeader {
+  background: var(--expr-node-async-header);
+}
+
+html[data-theme='dark'] .exprNode.exprNode--async .exprNodeHeader {
+  background: var(--expr-node-async-header-dark);
+}
+
+.exprNode.exprNode--async .exprNodeDot {
+  background: var(--brand-2);
+  box-shadow: var(--expr-node-async-dot-shadow);
+  animation: exprAsyncDotPulse 1.6s var(--ease) infinite;
+}
+
+html[data-theme='dark'] .exprNode.exprNode--async .exprNodeDot {
+  box-shadow: var(--expr-node-async-dot-shadow-dark);
+}
+
+@keyframes exprAsyncDotPulse {
+  0% {
+    box-shadow: var(--expr-node-async-dot-pulse-start);
+  }
+
+  70% {
+    box-shadow: var(--expr-node-async-dot-pulse-mid);
+  }
+
+  100% {
+    box-shadow: var(--expr-node-async-dot-pulse-end);
+  }
+}
+
+html[data-theme='dark'] .exprNodeAsyncPill {
+  border-color: var(--expr-node-async-pill-border-dark);
+  background: var(--expr-node-async-pill-bg-dark);
+  color: var(--brand-2);
+}
+
+.exprNodeAsyncPill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--expr-node-async-pill-gap);
+
+  height: var(--expr-node-async-pill-height);
+  padding: 0 var(--expr-node-async-pill-px);
+  border-radius: var(--expr-node-async-pill-radius);
+
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+
+  border: 1px solid var(--expr-node-async-pill-border);
+  background: var(--expr-node-async-pill-bg);
+  color: var(--brand-2);
+}
+
+.exprNodeAsyncLabel {
+  user-select: none;
+}
+
+.exprNodeAsyncPulse {
+  width: var(--expr-node-async-pulse-size);
+  height: var(--expr-node-async-pulse-size);
+  border-radius: 999px;
+  background: currentColor;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exprNode.exprNode--async .exprNodeDot {
+    animation: none;
+    box-shadow: var(--expr-node-dot-ring-shadow);
+  }
+
+  html[data-theme='dark'] .exprNode.exprNode--async .exprNodeDot {
+    box-shadow: var(--expr-node-dot-ring-shadow-dark);
+  }
+}

@@ -1,6 +1,7 @@
 
-import Link from 'next/link';
 import dedent from 'dedent';
+import Link from 'next/link';
+
 import { HeroGraphic } from '../components/HeroGraphic';
 
 const codeExample = dedent`

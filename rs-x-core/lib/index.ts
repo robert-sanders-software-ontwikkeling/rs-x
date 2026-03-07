@@ -5,7 +5,6 @@ export * from './error-log';
 export * from './exceptions';
 export * from './function-call-index';
 export * from './function-call-result-cache';
-export * from './global.d';
 export * from './guid';
 export * from './index-value-accessor';
 export * from './object-store';

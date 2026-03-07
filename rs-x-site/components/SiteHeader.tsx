@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useId, useState } from 'react';
 
 type NavItem = {
@@ -24,9 +25,80 @@ const navItems: NavItem[] = [
   { label: 'Playground', href: '/playground' },
 ];
 
+let hasWarmedPlayground = false;
+
+async function warmPlaygroundMonacoTypes(): Promise<void> {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const baseUrl = '/';
+  const manifestUrl = `${baseUrl}monaco-dts/manifest.json`;
+
+  const manifestRes = await fetch(manifestUrl, { cache: 'force-cache' });
+  if (!manifestRes.ok) {
+    return;
+  }
+
+  const manifest = (await manifestRes.json()) as { files?: string[] };
+  const files = manifest.files ?? [];
+
+  await Promise.all(
+    files.map(async (f) => {
+      const normalized = f.replace(/^\//, '');
+      await fetch(`${baseUrl}${normalized}`, { cache: 'force-cache' });
+    }),
+  );
+}
+
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuId = useId();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const isActivePath = (href: string): boolean => {
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
+  useEffect(() => {
+    if (hasWarmedPlayground) {
+      return;
+    }
+    hasWarmedPlayground = true;
+
+    const run = () => {
+      router.prefetch('/playground');
+      void warmPlaygroundMonacoTypes().catch(() => {
+        // best-effort warmup only
+      });
+    };
+
+    const host = globalThis as unknown as {
+      requestIdleCallback?: (cb: () => void) => number;
+      cancelIdleCallback?: (id: number) => void;
+      setTimeout: typeof window.setTimeout;
+      clearTimeout: typeof window.clearTimeout;
+    };
+
+    if (host.requestIdleCallback) {
+      const id = host.requestIdleCallback(() => {
+        run();
+      });
+
+      return () => {
+        host.cancelIdleCallback?.(id);
+      };
+    }
+
+    const timeoutId = host.setTimeout(() => {
+      run();
+    }, 300);
+
+    return () => {
+      host.clearTimeout(timeoutId);
+    };
+  }, [router]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -88,7 +160,11 @@ export function SiteHeader() {
 
                 return (
                   <li key={item.label}>
-                    <Link className='navLink' href={item.href}>
+                    <Link
+                      className={`navLink ${isActivePath(item.href) ? 'isActive' : ''}`}
+                      href={item.href}
+                      aria-current={isActivePath(item.href) ? 'page' : undefined}
+                    >
                       {item.label}
                     </Link>
                   </li>
@@ -155,8 +231,9 @@ export function SiteHeader() {
                 return (
                   <li key={item.label}>
                     <Link
-                      className='navMobileLink'
+                      className={`navMobileLink ${isActivePath(item.href) ? 'isActive' : ''}`}
                       href={item.href}
+                      aria-current={isActivePath(item.href) ? 'page' : undefined}
                       onClick={() => {
                         setMenuOpen(false);
                       }}

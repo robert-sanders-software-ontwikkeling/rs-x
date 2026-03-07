@@ -18,7 +18,7 @@ export function ThemeToggle() {
     document.documentElement.setAttribute('data-theme', next);
     try {
       localStorage.setItem('rsx-theme', next);
-    } catch (e) {}
+    } catch {}
   };
 
   return (

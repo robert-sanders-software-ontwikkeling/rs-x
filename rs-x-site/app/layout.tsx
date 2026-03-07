@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 
-import './globals.css';
-import { SiteHeader } from '../components/SiteHeader';
 import { SiteFooter } from '../components/Footer';
+import { SiteHeader } from '../components/SiteHeader';
+
+import './globals.css';
 
 
 export const metadata: Metadata = {
