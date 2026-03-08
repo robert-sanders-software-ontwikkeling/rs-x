@@ -9,7 +9,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const repoRoot = path.resolve(__dirname, '..');
-const appRoot = path.join(repoRoot, 'rs-x-expression-editor');
+const appNameFromArg = process.argv
+  .slice(2)
+  .find((arg) => !arg.startsWith('--'));
+const appName = appNameFromArg || process.env.MONACO_DTS_APP || 'rs-x-expression-editor';
+const appRoot = path.join(repoRoot, appName);
 
 const outRoot = path.join(appRoot, 'public', 'monaco-dts');
 const outNodeModules = path.join(outRoot, 'node_modules');
@@ -66,6 +70,13 @@ function chunkArray(items, chunkCount) {
 }
 
 function main() {
+  if (!fs.existsSync(appRoot)) {
+    throw new Error(
+      `[monaco-dts] Target app folder does not exist: ${appRoot}\n` +
+        `Pass app name as first arg, e.g.: node scripts/copy-monaco-dts.mjs rs-x-site`,
+    );
+  }
+
   console.log('[monaco-dts] Writing to:', outRoot);
 
   const rxjsDir = resolvePackageDir('rxjs');

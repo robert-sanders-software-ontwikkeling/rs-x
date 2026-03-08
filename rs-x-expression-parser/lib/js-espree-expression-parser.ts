@@ -90,7 +90,7 @@ import { SpreadExpression } from './expressions/spread-expression';
 import { StrictEqualityExpression } from './expressions/strict-equality-expression';
 import { StrictInequalityExpression } from './expressions/strict-inequality-expression';
 import { SubtractionExpression as SubstractionExpression } from './expressions/substraction-expression';
-import { TemplateStringExpression } from './expressions/template-string-expression';
+import { TemplateLiteralExpression } from './expressions/template-literal-expression';
 import { TypeofExpression } from './expressions/typeof-expression';
 import { UnaryNegationExpression } from './expressions/unary-negation-expression';
 import { UnaryPlusExpression } from './expressions/unary-plus-expression';
@@ -463,7 +463,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       return expressions[0];
     }
 
-    return new TemplateStringExpression(
+    return new TemplateLiteralExpression(
       astToString(templateLiteral),
       expressions,
     );

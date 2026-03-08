@@ -1,0 +1,42 @@
+@import '../../styles/component-shell.css';
+
+.errorPanel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.errorPanelBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-6);
+}
+
+.errorPanelList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.errorPanelItem {
+  margin: 0;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-sm, 6px);
+  border: 1px solid var(--err-item-border);
+  background: var(--err-item-bg);
+  color: var(--err-item-text);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.errorPanelEmpty {
+  margin: 0;
+  color: var(--muted);
+  font-style: italic;
+}

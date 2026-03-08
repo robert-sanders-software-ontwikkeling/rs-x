@@ -1,0 +1,30 @@
+{
+   "name": "@rs-x/site",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "copy:monaco-dts": "node ../scripts/copy-monaco-dts.mjs rs-x-site",
+    "dev": "pnpm run copy:monaco-dts && next dev",
+    "build": "pnpm run copy:monaco-dts && next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@rs-x/core": "workspace:*",
+    "@rs-x/expression-parser": "workspace:*",
+    "@rs-x/state-manager": "workspace:*",
+    "@rs-x/react-components": "workspace:*",
+    "monaco-editor": "^0.55.1"
+  },
+  
+  
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^15.1.0",
+    "typescript": "^5.7.0"
+  }
+}

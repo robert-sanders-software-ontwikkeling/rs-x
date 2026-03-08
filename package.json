@@ -9,8 +9,10 @@
     "rs-x-expression-parser",
     "rs-x-angular/projects/rsx",
     "rs-x-react",
+    "rs-x-react-components",
     "rs-x-dev-tools",
-    "rs-x-expression-editor"
+    "rs-x-expression-editor",
+    "rs-x-site"
   ],
   "scripts": {
     "build:libs": "pnpm --filter '@rs-x/core' run build && pnpm --filter '@rs-x/state-manager' run build && pnpm --filter '@rs-x/expression-parser' run build &&  pnpm --filter '@rs-x/react' run build",
