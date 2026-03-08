@@ -853,9 +853,9 @@ describe('Expression parser demos', () => {
     ).toOutputAsync(expected);
   });
 
-  it('template-string-expression.ts', async () => {
+  it('template-literal-expression.ts', async () => {
     const expected = dedent`
-            Running demo: demo/src/rs-x-expression-parser/template-string-expression.ts
+            Running demo: demo/src/rs-x-expression-parser/template-literal-expression.ts
             Initial value of '\`Say \${message}\`':
             Say hi
             Value of '\`Say \${message}\`' after changing message a to 'hello':
@@ -865,7 +865,7 @@ describe('Expression parser demos', () => {
         `;
 
     await expect(() =>
-      runDemo('rs-x-expression-parser/template-string-expression.ts'),
+      runDemo('rs-x-expression-parser/template-literal-expression.ts'),
     ).toOutputAsync(expected);
   });
 

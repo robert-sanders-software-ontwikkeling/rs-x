@@ -5,7 +5,7 @@ import {
   ExpressionType,
   type IExpression,
 } from '../../lib/expressions/expression-parser.interface';
-import { TemplateStringExpression } from '../../lib/expressions/template-string-expression';
+import { TemplateLiteralExpression } from '../../lib/expressions/template-literal-expression';
 import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
@@ -13,7 +13,7 @@ import {
 import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
 import { rsx } from '../../lib/rsx';
 
-describe('TemplateStringExpression tests', () => {
+describe('TemplateLiteralExpression tests', () => {
   let expression: IExpression | undefined;
 
   beforeAll(async () => {
@@ -33,7 +33,7 @@ describe('TemplateStringExpression tests', () => {
     const model = { name: 'Robert' };
 
     expression = rsx('`Hello ${name}`')(model);
-    expect(expression.type).toEqual(ExpressionType.TemlateString);
+    expect(expression.type).toEqual(ExpressionType.TemplateLiteral);
   });
 
   it('clone', async () => {
@@ -46,8 +46,8 @@ describe('TemplateStringExpression tests', () => {
     const clonedExpression = expression.clone();
 
     try {
-      expect(clonedExpression).toBeInstanceOf(TemplateStringExpression);
-      expect(clonedExpression.type).toEqual(ExpressionType.TemlateString);
+      expect(clonedExpression).toBeInstanceOf(TemplateLiteralExpression);
+      expect(clonedExpression.type).toEqual(ExpressionType.TemplateLiteral);
       expect(clonedExpression.expressionString).toEqual('`Hello ${name}`');
 
       await new WaitForEvent(clonedExpression, 'changed').wait(() => {

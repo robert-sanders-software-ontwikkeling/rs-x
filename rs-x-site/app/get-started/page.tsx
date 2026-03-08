@@ -1,13 +1,25 @@
 import dedent from 'dedent';
 import Link from 'next/link';
 
+import { SyntaxCodeBlock } from '../../components/SyntaxCodeBlock';
+
 export const metadata = {
   title: 'Get started',
-  description: 'Install rs-x and build your first reactive graph in minutes.'
+  description: 'Install rs-x and build your first reactive expression in minutes.',
 };
 
-const installCode = dedent`
+const installCommandCode = dedent`
+  # npm
+  npm install @rs-x/core @rs-x/state-manager @rs-x/expression-parser rxjs
+
+  # pnpm
   pnpm add @rs-x/core @rs-x/state-manager @rs-x/expression-parser rxjs
+
+  # yarn
+  yarn add @rs-x/core @rs-x/state-manager @rs-x/expression-parser rxjs
+
+  # bun
+  bun add @rs-x/core @rs-x/state-manager @rs-x/expression-parser rxjs
 `;
 
 const packageJsonCode = dedent`
@@ -24,7 +36,7 @@ const packageJsonCode = dedent`
   }
 `;
 
-const firstExampleCode = dedent`
+const firstWorkingExampleCode = dedent`
   import { InjectionContainer } from '@rs-x/core';
   import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
   import { interval, map } from 'rxjs';
@@ -33,10 +45,8 @@ const firstExampleCode = dedent`
 
   const model = {
     a: 10,
-    // Change trigger #1: emits a new value every 2 seconds.
-    b: interval(2000).pipe(
-      map(() => Math.round(100 * Math.random()))
-    )
+    // Change trigger #1: async source (Observable).
+    b: interval(2000).pipe(map(() => Math.round(Math.random() * 100)))
   };
 
   const expression = rsx<number>('a + b')(model);
@@ -46,146 +56,103 @@ const firstExampleCode = dedent`
     console.log('value:', expression.value);
   });
 
-  // Change trigger #2: direct model mutation.
+  // Change trigger #2: direct sync mutation.
   model.a = 20;
+`;
+
+const bootstrapCode = dedent`
+  import { InjectionContainer } from '@rs-x/core';
+  import { RsXExpressionParserModule } from '@rs-x/expression-parser';
+
+  // App startup: load once
+  await InjectionContainer.load(RsXExpressionParserModule);
 `;
 
 export default function GetStartedPage() {
   return (
     <main id='content' className='main'>
-      <section className='section'>
-        <div className='container'>
-          <h1 className='sectionTitle'>Get started</h1>
-          <p className='sectionLead'>
-            From install to a working reactive expression in a few minutes. The flow is:
-            <strong> install → load module → bind expression → observe updates</strong>.
-          </p>
-
-          <div className='grid3'>
-            <article className='card'>
-              <h2 className='cardTitle'>1. Install packages</h2>
-              <p className='cardText'>
-                Add core DI, expression parser, and RxJS.
-              </p>
-              <p className='cardText'>
-                <span className='codeInline'>{installCode}</span>
-              </p>
-              <pre className='qsCodeBlock' style={{marginTop: '1rem'}}>
-                <code>{packageJsonCode}</code>
-              </pre>
-            </article>
-
-            <article className='card'>
-              <h2 className='cardTitle'>2. Load parser module</h2>
-              <p className='cardText'>
-                Before evaluating expressions, load <span className='codeInline'>RsXExpressionParserModule</span> into the{' '}
-                <span className='codeInline'>InjectionContainer</span>. This wires parser + state manager services.
-              </p>
-            </article>
-
-            <article className='card'>
-              <h2 className='cardTitle'>3. Bind and subscribe</h2>
-              <p className='cardText'>
-                Bind with <span className='codeInline'>rsx(&apos;...&apos;)(model)</span>, then subscribe to{' '}
-                <span className='codeInline'>expression.changed</span>.
-              </p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section className='quickstartSection' aria-labelledby='get-started-example-title'>
-        <div className='container'>
-          <div className='quickstartShell'>
-            <header className='quickstartHeader'>
-              <div>
-                <h2 id='get-started-example-title' className='quickstartTitle'>
-                  First working example
-                </h2>
-                <p className='quickstartLead'>
-                  This is the minimum setup for reactive updates with rs-x + RxJS.
-                </p>
-              </div>
-
-              <div className='quickstartHeaderActions'>
-                <Link className='btn btnPrimary' href='/playground'>
-                  Open Playground <span aria-hidden='true'>→</span>
-                </Link>
-                <Link className='btn btnGhost' href='/docs'>
-                  Read Docs <span aria-hidden='true'>→</span>
-                </Link>
-              </div>
-            </header>
-
-            <div className='quickstartGrid'>
-              <div className='qsSteps'>
-                <article className='qsStepCard'>
-                  <div className='qsStepTop'>
-                    <span className='qsBadge' aria-hidden='true'>1</span>
-                    <h3 className='qsStepTitle'>Initialize DI</h3>
-                  </div>
-                  <p className='qsStepText'>
-                    Load parser services once during app startup.
-                  </p>
-                  <div className='qsInlineRow'>
-                    <span className='qsChip'>boot</span>
-                    <code className='qsInlineCode'>{`await InjectionContainer.load(RsXExpressionParserModule)`}</code>
-                  </div>
-                </article>
-
-                <article className='qsStepCard'>
-                  <div className='qsStepTop'>
-                    <span className='qsBadge' aria-hidden='true'>2</span>
-                    <h3 className='qsStepTitle'>Bind expression</h3>
-                  </div>
-                  <p className='qsStepText'>
-                    Bind declarative expression text to a plain model object.
-                  </p>
-                  <div className='qsInlineRow'>
-                    <span className='qsChip'>bind</span>
-                    <code className='qsInlineCode'>{`const expression = rsx('a + b')(model)`}</code>
-                  </div>
-                </article>
-
-                <article className='qsStepCard'>
-                  <div className='qsStepTop'>
-                    <span className='qsBadge' aria-hidden='true'>3</span>
-                    <h3 className='qsStepTitle'>React to changes</h3>
-                  </div>
-                  <p className='qsStepText'>
-                    Subscribe once and read <span className='codeInline'>expression.value</span> on updates.
-                  </p>
-                  <div className='qsInlineRow'>
-                    <span className='qsChip'>listen</span>
-                    <code className='qsInlineCode'>{`expression.changed.subscribe(() => { ... })`}</code>
-                  </div>
-                </article>
-              </div>
-
-              <aside className='qsCodeCard' aria-label='Get started code example'>
-                <div className='qsCodeHeader'>
-                  <div className='qsCodeTitle'>Complete snippet</div>
-                  <div className='qsCodeSubtitle'>Copy, run, then tweak in playground</div>
-                </div>
-                <pre className='qsCodeBlock'>
-                  <code>{firstExampleCode}</code>
-                </pre>
-                <div className='qsCodeFooter'>
-                  <Link className='btn btnGhost qsFooterBtn' href='/playground'>
-                    Try this in Playground <span aria-hidden='true'>→</span>
-                  </Link>
-                  <a
-                    className='qsTinyLink'
-                    href='https://github.com/robert-sanders-software-ontwikkeling/rs-x'
-                    target='_blank'
-                    rel='noreferrer'
-                  >
-                    View source on GitHub
-                  </a>
-                </div>
-              </aside>
+      <section className='section docsApiSection'>
+        <div className='container docsPage'>
+          <div className='getStartedHeader'>
+            <p className='docsApiEyebrow getStartedEyebrow'>Guide</p>
+            <h1 className='sectionTitle getStartedTitle'>Get started</h1>
+            <div className='docsApiActions getStartedActions'>
+              <Link className='btn btnGhost' href='/docs'>
+                Docs <span aria-hidden='true'>→</span>
+              </Link>
+              <Link className='btn btnPrimary' href='/playground'>
+                Open Playground <span aria-hidden='true'>→</span>
+              </Link>
             </div>
+            <p className='sectionLead getStartedLead'>
+              Setup is three steps: install packages, load{' '}
+              <span className='codeInline'>RsXExpressionParserModule</span> once at app startup, then bind with{' '}
+              <span className='codeInline'>rsx(&apos;...&apos;)(model)</span> and observe{' '}
+              <span className='codeInline'>changed</span>.
+            </p>
           </div>
+
+          <section className='getStartedStack'>
+            <article className='card docsApiCard'>
+              <h2 className='cardTitle'>Quick flow</h2>
+              <ol className='getStartedFlowList'>
+                <li>
+                  <span className='codeInline'>Install</span>:
+                  add <span className='codeInline'>@rs-x/core</span>,{' '}
+                  <span className='codeInline'>@rs-x/state-manager</span>,{' '}
+                  <span className='codeInline'>@rs-x/expression-parser</span>, and{' '}
+                  <span className='codeInline'>rxjs</span>.
+                </li>
+                <li>
+                  <span className='codeInline'>Bootstrap once</span>:
+                  load <span className='codeInline'>RsXExpressionParserModule</span> into{' '}
+                  <span className='codeInline'>InjectionContainer</span> during startup.
+                </li>
+                <li>
+                  <span className='codeInline'>Bind + observe</span>:
+                  create an expression with <span className='codeInline'>rsx(...)(model)</span>, read{' '}
+                  <span className='codeInline'>value</span>, and subscribe to{' '}
+                  <span className='codeInline'>changed</span>.
+                </li>
+              </ol>
+            </article>
+
+            <article className='qsCodeCard docsApiCode getStartedSetupCard'>
+              <div className='qsCodeHeader'>
+                <div className='qsCodeTitle'>Install commands</div>
+                <div className='qsCodeSubtitle'>Use the package manager you already use</div>
+              </div>
+              <div className='qsCodeHeader'>
+                <div className='qsCodeTitle'>npm / pnpm / yarn / bun</div>
+              </div>
+              <SyntaxCodeBlock code={installCommandCode} />
+              <div className='qsCodeHeader'>
+                <div className='qsCodeTitle'>package.json (example)</div>
+              </div>
+              <SyntaxCodeBlock code={packageJsonCode} />
+              <div className='qsCodeHeader'>
+                <div className='qsCodeTitle'>Bootstrap once (startup)</div>
+                <div className='qsCodeSubtitle'>Run once before creating expressions</div>
+              </div>
+              <SyntaxCodeBlock code={bootstrapCode} />
+            </article>
+
+            <aside className='qsCodeCard docsApiCode getStartedExampleCard' aria-label='First working example'>
+              <div className='qsCodeHeader'>
+                <div className='qsCodeTitle'>First working example</div>
+                <div className='qsCodeSubtitle'>Observable + sync mutation in one expression</div>
+              </div>
+              <SyntaxCodeBlock code={firstWorkingExampleCode} />
+              <div className='qsCodeFooter'>
+                <Link className='btn btnGhost qsFooterBtn' href='/playground'>
+                  Try in Playground <span aria-hidden='true'>→</span>
+                </Link>
+                <Link className='qsTinyLink' href='/docs/rsx-function'>
+                  rsx function docs
+                </Link>
+              </div>
+            </aside>
+          </section>
         </div>
       </section>
     </main>

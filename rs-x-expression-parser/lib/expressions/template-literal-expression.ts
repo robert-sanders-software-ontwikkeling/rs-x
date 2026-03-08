@@ -2,9 +2,9 @@ import { type AbstractExpression } from './abstract-expression';
 import { CollectionExpression } from './collection-expression';
 import { ExpressionType } from './expression-parser.interface';
 
-export class TemplateStringExpression extends CollectionExpression<string> {
+export class TemplateLiteralExpression extends CollectionExpression<string> {
   constructor(expressionString: string, expressions: AbstractExpression[]) {
-    super(ExpressionType.TemlateString, expressionString, expressions);
+    super(ExpressionType.TemplateLiteral, expressionString, expressions);
   }
 
   public override clone(): this {

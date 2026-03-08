@@ -3,6 +3,7 @@ import dedent from 'dedent';
 import Link from 'next/link';
 
 import { HeroGraphic } from '../components/HeroGraphic';
+import { SyntaxCodeBlock } from '../components/SyntaxCodeBlock';
 
 const codeExample = dedent`
   import { rsx } from '@rs-x/expression-parser';
@@ -92,13 +93,18 @@ export default function HomePage() {
                     Open Playground <span aria-hidden='true'>→</span>
                   </Link>
                 </article>
+
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section id='quickstart' className='quickstartSection' aria-labelledby='quickstart-title'>
+      <section
+        id='quickstart'
+        className='quickstartSection homeQuickstartSection'
+        aria-labelledby='quickstart-title'
+      >
         <div className='container'>
           <div className='quickstartShell'>
             <header className='quickstartHeader'>
@@ -187,9 +193,7 @@ export default function HomePage() {
                   <div className='qsCodeSubtitle'>Declarative expression binding</div>
                 </div>
 
-                <pre className='qsCodeBlock'>
-                  <code>{codeExample}</code>
-                </pre>
+                <SyntaxCodeBlock code={codeExample} />
 
                 <div className='qsCodeFooter'>
                   <Link className='btn btnGhost qsFooterBtn' href='/playground'>

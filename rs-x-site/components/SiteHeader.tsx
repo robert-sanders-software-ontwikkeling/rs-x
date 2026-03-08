@@ -11,6 +11,7 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
+  { label: 'Features', href: '/features' },
   { label: 'Docs', href: '/docs' },
   {
     label: 'GitHub',
@@ -56,6 +57,7 @@ export function SiteHeader() {
   const menuId = useId();
   const router = useRouter();
   const pathname = usePathname();
+  const showGetStartedCta = pathname === '/';
 
   const isActivePath = (href: string): boolean => {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -183,9 +185,11 @@ export function SiteHeader() {
               Dark mode
             </button>
 
-            <Link className='btn btnPrimary btnSm' href='/get-started'>
-              Get started
-            </Link>
+            {showGetStartedCta && (
+              <Link className='btn btnPrimary btnSm' href='/get-started'>
+                Get started
+              </Link>
+            )}
 
             {/* Mobile menu button */}
             <button

@@ -21,6 +21,15 @@ export function SiteFooter() {
             <ul className='footerLinks'>
               <li>
                 <Link
+                  href='/features'
+                  className={isActivePath('/features') ? 'isActive' : undefined}
+                  aria-current={isActivePath('/features') ? 'page' : undefined}
+                >
+                  Features
+                </Link>
+              </li>
+              <li>
+                <Link
                   href='/docs'
                   className={isActivePath('/docs') ? 'isActive' : undefined}
                   aria-current={isActivePath('/docs') ? 'page' : undefined}
