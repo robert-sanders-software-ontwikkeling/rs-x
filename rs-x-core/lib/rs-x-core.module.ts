@@ -10,8 +10,8 @@ import { ErrorLog } from './error-log/error-log';
 import { type IErrorLog } from './error-log/error-log.interface';
 import { FunctionCallIndexFactory } from './function-call-index/function-call-index.factory';
 import { type IFunctionCallIndexFactory } from './function-call-index/function-call-index.factory.type';
-import { FunctionCallResultCacheFactory } from './function-call-result-cache/function-call-result-cache.factory';
-import { type IFunctionCallResultCacheFactory } from './function-call-result-cache/function-call-result-cache.factory.interface';
+import { FunctionCallResultCache } from './function-call-result-cache/function-call-result-cache';
+import { type IFunctionCallResultCache } from './function-call-result-cache/function-call-result-cache.interface';
 import { GuidFactory } from './guid/guid.factory';
 import { type IGuidFactory } from './guid/guid.factory.interface';
 import { ArrayIndexAccessor } from './index-value-accessor/array-index-accessor';
@@ -78,7 +78,7 @@ export const defaultIndexValueAccessorList: readonly IMultiInjectService[] = [
   },
 ];
 
-export const defaultDeeoCloneList: readonly IMultiInjectService[] = [
+export const defaultDeepCloneList: readonly IMultiInjectService[] = [
   {
     target: StructuredDeepClone,
     token: RsXCoreInjectionTokens.IStructuredDeepClone,
@@ -130,10 +130,10 @@ export const RsXCoreModule = new ContainerModule((options) => {
     .to(FunctionCallIndexFactory)
     .inSingletonScope();
   options
-    .bind<IFunctionCallResultCacheFactory>(
-      RsXCoreInjectionTokens.IFunctionCallResultCacheFactory,
+    .bind<IFunctionCallResultCache>(
+      RsXCoreInjectionTokens.IFunctionCallResultCache,
     )
-    .to(FunctionCallResultCacheFactory)
+    .to(FunctionCallResultCache)
     .inSingletonScope();
   options
     .bind<IGuidFactory>(RsXCoreInjectionTokens.IGuidFactory)
@@ -181,7 +181,7 @@ export const RsXCoreModule = new ContainerModule((options) => {
   registerMultiInjectServices(
     options,
     RsXCoreInjectionTokens.IDeepCloneList,
-    defaultDeeoCloneList,
+    defaultDeepCloneList,
   );
   registerMultiInjectServices(
     options,

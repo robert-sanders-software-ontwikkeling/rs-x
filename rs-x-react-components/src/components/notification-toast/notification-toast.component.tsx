@@ -70,7 +70,12 @@ export const NotificationToast: React.FC<INotificationToastProps> = ({
 
   return (
     <div className="notificationToastHost">
-      <div ref={ref} className={`notificationToast notificationToast--${variant}`} role="status" aria-live="polite">
+      <div
+        ref={ref}
+        className={`notificationToast notificationToast--${variant}`}
+        role="status"
+        aria-live="polite"
+      >
         {title ? <div className="notificationToastTitle">{title}</div> : null}
         <div className="notificationToastMessage">{message}</div>
       </div>

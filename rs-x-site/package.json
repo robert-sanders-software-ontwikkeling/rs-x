@@ -1,5 +1,5 @@
 {
-   "name": "@rs-x/site",
+  "name": "@rs-x/site",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -17,8 +17,6 @@
     "@rs-x/react-components": "workspace:*",
     "monaco-editor": "^0.55.1"
   },
-  
-  
   "devDependencies": {
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",

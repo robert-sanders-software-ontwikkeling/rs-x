@@ -7,6 +7,7 @@ export * from './expression-tree-panel';
 export * from './expression-tree-view';
 export * from './expression-tree-view-with-model';
 export * from './hooks';
+export * from './left-accent-card';
 export * from './notification-toast';
 export * from './playground';
 export * from './ts-editor';

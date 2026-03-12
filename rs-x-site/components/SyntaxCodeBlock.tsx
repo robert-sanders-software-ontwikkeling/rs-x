@@ -44,6 +44,7 @@ const KEYWORDS = new Set([
   'let',
   'new',
   'of',
+  'override',
   'private',
   'protected',
   'public',
@@ -133,7 +134,7 @@ function tokenize(code: string): Token[] {
       continue;
     }
 
-    if (char === '\'' || char === '"' || char === '`') {
+    if (char === "'" || char === '"' || char === '`') {
       const quote = char;
       let j = i + 1;
       while (j < code.length) {
@@ -211,7 +212,10 @@ function renderCodeLines(code: string): ReactNode[] {
   return lines.map((line, lineIndex) => {
     const lineTokens = tokenize(line);
     const rendered: ReactElement[] = lineTokens.map((token, tokenIndex) => (
-      <span key={`${lineIndex}-${tokenIndex}`} className={`tok tok-${token.kind}`}>
+      <span
+        key={`${lineIndex}-${tokenIndex}`}
+        className={`tok tok-${token.kind}`}
+      >
         {token.value}
       </span>
     ));
@@ -235,10 +239,14 @@ interface SyntaxCodeBlockProps {
   style?: CSSProperties;
 }
 
-export function SyntaxCodeBlock({ code, className = 'qsCodeBlock', style }: SyntaxCodeBlockProps) {
+export function SyntaxCodeBlock({
+  code,
+  className = 'qsCodeBlock',
+  style,
+}: SyntaxCodeBlockProps) {
   return (
     <pre className={className} style={style}>
-      <code className='syntaxCode'>{renderCodeLines(code)}</code>
+      <code className="syntaxCode">{renderCodeLines(code)}</code>
     </pre>
   );
 }

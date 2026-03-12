@@ -1,4 +1,4 @@
-import { type ISingletonFactory } from './singleton.factory.interface';
+import { type IKeyedInstanceFactory } from './keyed-instance.factory.interface';
 
 export type IInstanceGroupInfo<TId, TInstance> = {
   groupId: unknown;
@@ -6,12 +6,12 @@ export type IInstanceGroupInfo<TId, TInstance> = {
   id: TId;
   instance: TInstance;
 };
-export interface ISingletonFactoryWithIdGeneration<
+export interface IGroupedKeyedInstanceFactory<
   TId,
   TData extends TIdData,
   TInstance,
   TIdData = TData,
-> extends ISingletonFactory<TId, TData, TInstance, TIdData> {
+> extends IKeyedInstanceFactory<TId, TData, TInstance, TIdData> {
   isGroupRegistered(groupId: unknown): boolean;
   instanceGroupInfoEntries(): IterableIterator<
     IInstanceGroupInfo<TId, TInstance>

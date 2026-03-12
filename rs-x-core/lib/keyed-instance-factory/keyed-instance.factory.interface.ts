@@ -1,6 +1,6 @@
 import { type IDisposable } from '../types/disposable.interface';
 
-export interface ISingletonFactory<
+export interface IKeyedInstanceFactory<
   TId = unknown,
   TData = unknown,
   TInstance = unknown,

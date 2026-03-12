@@ -6,8 +6,8 @@ import {
   InvalidOperationException,
   type IPropertyChange,
   type IPropertyDescriptor,
+  KeyedInstanceFactory,
   PropertyDescriptorType,
-  SingletonFactory,
   Type,
   UnsupportedException,
 } from '@rs-x/core';
@@ -137,7 +137,7 @@ class PropertObserver implements IObserver {
   }
 }
 
-class PropertyObserverManager extends SingletonFactory<
+class PropertyObserverManager extends KeyedInstanceFactory<
   string,
   string,
   IObserver,
@@ -181,7 +181,7 @@ class PropertyObserverManager extends SingletonFactory<
   }
 }
 
-class ObjectPropertyObserverManager extends SingletonFactory<
+class ObjectPropertyObserverManager extends KeyedInstanceFactory<
   object,
   object,
   PropertyObserverManager

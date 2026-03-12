@@ -12,7 +12,8 @@ const repoRoot = path.resolve(__dirname, '..');
 const appNameFromArg = process.argv
   .slice(2)
   .find((arg) => !arg.startsWith('--'));
-const appName = appNameFromArg || process.env.MONACO_DTS_APP || 'rs-x-expression-editor';
+const appName =
+  appNameFromArg || process.env.MONACO_DTS_APP || 'rs-x-expression-editor';
 const appRoot = path.join(repoRoot, appName);
 
 const outRoot = path.join(appRoot, 'public', 'monaco-dts');

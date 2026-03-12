@@ -71,7 +71,11 @@ export const TsEditorWithErrorPanel: React.FC<ITsEditorWithErrorPanelProp> = ({
                   secondaryActionDisabled={secondaryActionDisabled}
                 />
                 {isEditorLoading && (
-                  <div className="tsEditorLoadingOverlay" role="status" aria-live="polite">
+                  <div
+                    className="tsEditorLoadingOverlay"
+                    role="status"
+                    aria-live="polite"
+                  >
                     <div className="tsEditorLoadingSpinner" />
                     <span>Loading editor types…</span>
                   </div>

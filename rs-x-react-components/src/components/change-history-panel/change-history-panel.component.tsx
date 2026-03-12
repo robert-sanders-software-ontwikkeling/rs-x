@@ -6,8 +6,9 @@ import {
   type IExpressionChangeHistory,
 } from '@rs-x/expression-parser';
 
-import '../../styles/component-shell.css';
 import { ExpressionChangeHistoryView } from '../expression-change-history-view/expression-change-history-view.component';
+
+import '../../styles/component-shell.css';
 
 export interface IChangeHistoryPanel {
   version: number;

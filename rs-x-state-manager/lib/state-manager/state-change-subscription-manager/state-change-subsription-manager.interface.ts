@@ -1,10 +1,10 @@
 import { type Subscription } from 'rxjs';
 
 import {
+  type IGroupedKeyedInstanceFactory,
   type IInstanceGroupInfo,
+  type IKeyedInstanceFactory,
   type IPropertyChange,
-  type ISingletonFactory,
-  type ISingletonFactoryWithIdGeneration,
 } from '@rs-x/core';
 
 import type { IIndexWatchRule } from '../../index-watch-rule-registry/index-watch-rule.interface';
@@ -25,13 +25,13 @@ export interface IStateChangeSubscriptionInfo extends IStateChangeSubscriptionId
 }
 
 export type IStateChangeSubscriptionsForContextManager =
-  ISingletonFactoryWithIdGeneration<
+  IGroupedKeyedInstanceFactory<
     string,
     IStateChangeSubscriptionInfo,
     IObserver,
     IStateChangeSubscriptionIdInfo
   >;
-export interface IStateChangeSubscriptionManager extends ISingletonFactory<
+export interface IStateChangeSubscriptionManager extends IKeyedInstanceFactory<
   unknown,
   unknown,
   IStateChangeSubscriptionsForContextManager

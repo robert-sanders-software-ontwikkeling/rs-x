@@ -7,8 +7,8 @@ export type ScriptWrapperModels = {
 };
 
 const USER_URI = (monaco: typeof Monaco) => {
-  // ✅ IMPORTANT: .js so javascriptDefaults apply
-  return monaco.Uri.parse('inmemory://rsx/demo.user.js');
+  // Keep the same model URI as the mounted editor to avoid model switching.
+  return monaco.Uri.parse('file:///src/main.ts');
 };
 
 const WRAP_URI = (monaco: typeof Monaco) => {

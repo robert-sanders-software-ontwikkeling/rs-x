@@ -1,6 +1,6 @@
 import { type Observable } from 'rxjs';
 
-import { type IDisposableOwner, type ISingletonFactory } from '@rs-x/core';
+import { type IDisposableOwner, type IKeyedInstanceFactory } from '@rs-x/core';
 
 import { type IObserverProxyPair } from '../../object-property-observer-proxy-pair-manager.type';
 
@@ -12,7 +12,7 @@ export interface IObservableProxyData {
 export type IObservableObserverProxyPair = IObserverProxyPair<
   Observable<unknown>
 >;
-export type IObservableProxyFactory = ISingletonFactory<
+export type IObservableProxyFactory = IKeyedInstanceFactory<
   Observable<unknown>,
   IObservableProxyData,
   IObservableObserverProxyPair

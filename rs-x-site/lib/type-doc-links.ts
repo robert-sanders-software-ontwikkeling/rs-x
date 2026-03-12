@@ -11,15 +11,17 @@ const TYPE_DOC_LINKS: Record<string, string> = {
   IExpression: '/docs/iexpression',
   IExpressionChangeCommitHandler: '/docs/expression-change-commit-handler',
   IExpressionChangeTrackerManager: '/docs/expression-change-tracker-manager',
-  IExpressionChangeTransactionManager: '/docs/expression-change-transaction-manager',
+  IExpressionChangeTransactionManager:
+    '/docs/expression-change-transaction-manager',
   IIndexWatchRule: '/docs/index-watch-rule',
   IProxyRegistry: '/docs/iproxy-registry',
   IMultiInjectService: '/docs/core-api/IMultiInjectService',
   ServiceIdentifier: 'https://inversify.io/docs/api/service-identifier/',
-  SingletonFactory: '/docs/singleton-factory',
+  KeyedInstanceFactory: '/docs/core-api/KeyedInstanceFactory',
+  rsx: '/docs/rsx-function',
 };
 
-function extractTypeCandidates(type: string): string[] {
+export function extractTypeCandidates(type: string): string[] {
   const normalized = type
     .replace(/\breadonly\b/g, ' ')
     .replace(/\[\]/g, ' ')
@@ -29,22 +31,36 @@ function extractTypeCandidates(type: string): string[] {
   return Array.from(new Set(matches));
 }
 
+export function resolveSymbolDocumentationLink(
+  symbol: string,
+): string | undefined {
+  const direct = Object.prototype.hasOwnProperty.call(TYPE_DOC_LINKS, symbol)
+    ? TYPE_DOC_LINKS[symbol]
+    : undefined;
+  if (typeof direct === 'string') {
+    return direct;
+  }
+
+  if (CORE_API_SYMBOLS.has(symbol)) {
+    return `/docs/core-api/${encodeURIComponent(symbol)}`;
+  }
+
+  return undefined;
+}
+
 export function resolveTypeDocumentationLink(type: string): string | undefined {
-  const direct = TYPE_DOC_LINKS[type];
+  const direct = resolveSymbolDocumentationLink(type);
   if (direct) {
     return direct;
   }
 
   const candidates = extractTypeCandidates(type);
   for (const candidate of candidates) {
-    if (TYPE_DOC_LINKS[candidate]) {
-      return TYPE_DOC_LINKS[candidate];
-    }
-    if (CORE_API_SYMBOLS.has(candidate)) {
-      return `/docs/core-api/${encodeURIComponent(candidate)}`;
+    const href = resolveSymbolDocumentationLink(candidate);
+    if (href) {
+      return href;
     }
   }
 
   return undefined;
 }
-

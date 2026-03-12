@@ -4,7 +4,7 @@ import { InjectionContainer } from '../lib/dependency-injection';
 import { EqualityService } from '../lib/equality-service/equality-service';
 import { ErrorLog } from '../lib/error-log/error-log';
 import { FunctionCallIndexFactory } from '../lib/function-call-index/function-call-index.factory';
-import { FunctionCallResultCacheFactory } from '../lib/function-call-result-cache/function-call-result-cache.factory';
+import { FunctionCallResultCache } from '../lib/function-call-result-cache/function-call-result-cache';
 import { GuidFactory } from '../lib/guid/guid.factory';
 import { ArrayIndexAccessor } from '../lib/index-value-accessor/array-index-accessor';
 import { DatePropertyAccessor } from '../lib/index-value-accessor/date-property-accessor';
@@ -326,19 +326,19 @@ describe('rs-x core module', () => {
     expect(a1).toBe(a2);
   });
 
-  it('can get instance of IFunctionCallResultCacheFactory', () => {
+  it('can get instance of IFunctionCallResultCache', () => {
     const actual = InjectionContainer.get(
-      RsXCoreInjectionTokens.IFunctionCallResultCacheFactory,
+      RsXCoreInjectionTokens.IFunctionCallResultCache,
     );
-    expect(actual).toBeInstanceOf(FunctionCallResultCacheFactory);
+    expect(actual).toBeInstanceOf(FunctionCallResultCache);
   });
 
-  it('IFunctionCallResultCacheFactory instance is a singleton', () => {
+  it('IFunctionCallResultCache instance is a singleton', () => {
     const a1 = InjectionContainer.get(
-      RsXCoreInjectionTokens.IFunctionCallResultCacheFactory,
+      RsXCoreInjectionTokens.IFunctionCallResultCache,
     );
     const a2 = InjectionContainer.get(
-      RsXCoreInjectionTokens.IFunctionCallResultCacheFactory,
+      RsXCoreInjectionTokens.IFunctionCallResultCache,
     );
     expect(a1).toBe(a2);
   });

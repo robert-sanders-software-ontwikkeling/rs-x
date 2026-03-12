@@ -4,18 +4,18 @@ import type {
   IDisposableFunctionCallIndex,
   IFunctionCallIndex,
 } from '../function-call-index/function-call-index.interface';
+import type { IDisposableOwner } from '../keyed-instance-factory';
+import { KeyedInstanceFactory } from '../keyed-instance-factory/keyed-instance.factory';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
-import type { IDisposableOwner } from '../singleton-factory';
-import { SingletonFactory } from '../singleton-factory/singleton.factory';
 
 import type {
   IFunctionCallResult,
   IFunctionCallResultCache,
-  IFunctionCallResultCacheFactory,
+  IFunctionCallResultCacheEntry,
   IFunctionCallResultIdInfo,
-} from './function-call-result-cache.factory.interface';
+} from './function-call-result-cache.interface';
 
-class FunctionCallResultCache implements IFunctionCallResultCache {
+class FunctionCallResultCacheEntry implements IFunctionCallResultCacheEntry {
   private _isDisposed = false;
 
   constructor(
@@ -42,10 +42,10 @@ class FunctionCallResultCache implements IFunctionCallResultCache {
   }
 }
 
-class FunctionCallResultCacheForContextManager extends SingletonFactory<
+class FunctionCallResultCacheForContextManager extends KeyedInstanceFactory<
   IFunctionCallIndex,
   IFunctionCallResult,
-  IFunctionCallResultCache,
+  IFunctionCallResultCacheEntry,
   IFunctionCallResultIdInfo
 > {
   constructor(
@@ -69,8 +69,8 @@ class FunctionCallResultCacheForContextManager extends SingletonFactory<
   protected override createInstance(
     data: IFunctionCallResult,
     id: IDisposableFunctionCallIndex,
-  ): IFunctionCallResultCache {
-    return new FunctionCallResultCache(id, data.result, {
+  ): IFunctionCallResultCacheEntry {
+    return new FunctionCallResultCacheEntry(id, data.result, {
       canDispose: () => this.getReferenceCount(id) === 1,
       release: () => this.release(id),
     });
@@ -87,7 +87,7 @@ class FunctionCallResultCacheForContextManager extends SingletonFactory<
   }
 
   protected override releaseInstance(
-    _: IFunctionCallResultCache,
+    _: IFunctionCallResultCacheEntry,
     id: IDisposableFunctionCallIndex,
   ): void {
     this._functionCallIndexFactory.release(id.argumentsId);
@@ -98,7 +98,7 @@ class FunctionCallResultCacheForContextManager extends SingletonFactory<
   }
 }
 
-class FunctionCallResultCacheManager extends SingletonFactory<
+class FunctionCallResultCacheManager extends KeyedInstanceFactory<
   unknown,
   unknown,
   FunctionCallResultCacheForContextManager
@@ -130,7 +130,7 @@ class FunctionCallResultCacheManager extends SingletonFactory<
 }
 
 @Injectable()
-export class FunctionCallResultCacheFactory implements IFunctionCallResultCacheFactory {
+export class FunctionCallResultCache implements IFunctionCallResultCache {
   private readonly _functionCallResultCacheManager: FunctionCallResultCacheManager;
 
   constructor(
@@ -145,7 +145,7 @@ export class FunctionCallResultCacheFactory implements IFunctionCallResultCacheF
   public create(
     context: unknown,
     result: IFunctionCallResult,
-  ): IFunctionCallResultCache {
+  ): IFunctionCallResultCacheEntry {
     return this._functionCallResultCacheManager
       .create(context)
       .instance.create(result).instance;
@@ -161,7 +161,7 @@ export class FunctionCallResultCacheFactory implements IFunctionCallResultCacheF
   public get(
     context: unknown,
     index: IDisposableFunctionCallIndex,
-  ): IFunctionCallResultCache | undefined {
+  ): IFunctionCallResultCacheEntry | undefined {
     return this._functionCallResultCacheManager
       .getFromId(context)
       ?.getFromId(index);

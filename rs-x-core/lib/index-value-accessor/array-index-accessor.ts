@@ -11,7 +11,7 @@ export class ArrayIndexAccessor implements IArrayIndexAccessor {
   }
 
   public hasValue(array: unknown[], index: number): boolean {
-    return this.getValue(array, index) !== undefined;
+    return index in array;
   }
 
   public getResolvedValue(array: unknown[], index: number): unknown {

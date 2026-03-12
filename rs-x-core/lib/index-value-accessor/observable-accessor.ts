@@ -6,7 +6,7 @@ import { Type } from '../types';
 
 import type {
   IObservableAccessor,
-  LastValuObservable,
+  LastValueObservable,
 } from './observable-accessor.interface';
 import { PENDING } from './pending';
 import type { IResolvedValueCache } from './resolved-value-cache.interface';
@@ -56,11 +56,11 @@ export class ObservableAccessor implements IObservableAccessor {
     return isObservable(val);
   }
 
-  public setLastValue(observable: LastValuObservable, value: unknown): void {
+  public setLastValue(observable: LastValueObservable, value: unknown): void {
     this._resolvedValueCache.set(observable, value);
   }
 
-  public clearLastValue(observable: LastValuObservable): void {
+  public clearLastValue(observable: LastValueObservable): void {
     this._resolvedValueCache.delete(observable);
   }
 

@@ -4,7 +4,7 @@ import type {
   IDisposableFunctionCallIndex,
   IFunctionCallIndex,
 } from '../function-call-index';
-import type { IFunctionCallResultCacheFactory } from '../function-call-result-cache/function-call-result-cache.factory.interface';
+import type { IFunctionCallResultCache } from '../function-call-result-cache/function-call-result-cache.interface';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
 import { Type } from '../types/type';
 
@@ -15,8 +15,8 @@ export class MethodAccessor implements IMethodAccessor {
   public readonly priority = 6;
 
   constructor(
-    @Inject(RsXCoreInjectionTokens.IFunctionCallResultCacheFactory)
-    private readonly _functionCallResultCacheFactory: IFunctionCallResultCacheFactory,
+    @Inject(RsXCoreInjectionTokens.IFunctionCallResultCache)
+    private readonly _functionCallResultCache: IFunctionCallResultCache,
   ) {}
 
   public getIndexes(): IterableIterator<IDisposableFunctionCallIndex> {
@@ -24,7 +24,7 @@ export class MethodAccessor implements IMethodAccessor {
   }
 
   public hasValue(context: object, index: IFunctionCallIndex): boolean {
-    return this._functionCallResultCacheFactory.has(context, index);
+    return this._functionCallResultCache.has(context, index);
   }
 
   public getResolvedValue(context: object, index: IFunctionCallIndex): unknown {
@@ -32,7 +32,7 @@ export class MethodAccessor implements IMethodAccessor {
   }
 
   public getValue(context: unknown, index: IFunctionCallIndex): unknown {
-    return this._functionCallResultCacheFactory.get(context, index)?.result;
+    return this._functionCallResultCache.get(context, index)?.result;
   }
 
   public setValue(_: object, index: IFunctionCallIndex): void {

@@ -1,4 +1,4 @@
-import { SingletonFactoryWithIdGeneration } from '../../lib/singleton-factory/singleton-factory-with-id-generation';
+import { GroupedKeyedInstanceFactory } from '../../lib/keyed-instance-factory/grouped-keyed-instance-factory';
 
 class TestObject {}
 interface ITestData {
@@ -6,7 +6,7 @@ interface ITestData {
   groupMemberId: number;
 }
 
-class TestGroupedSingletonFactory extends SingletonFactoryWithIdGeneration<
+class TestGroupedKeyedInstanceFactory extends GroupedKeyedInstanceFactory<
   string,
   ITestData,
   TestObject
@@ -30,19 +30,19 @@ class TestGroupedSingletonFactory extends SingletonFactoryWithIdGeneration<
   }
 }
 
-describe('GroupedSingletonFactory tests', () => {
-  let groupedSingletonFactory: TestGroupedSingletonFactory;
+describe('GroupedKeyedInstanceFactory tests', () => {
+  let groupedKeyedInstanceFactory: TestGroupedKeyedInstanceFactory;
 
   beforeEach(() => {
-    groupedSingletonFactory = new TestGroupedSingletonFactory();
+    groupedKeyedInstanceFactory = new TestGroupedKeyedInstanceFactory();
   });
 
   it('will create different instances for different group memmbers of the the same group', () => {
-    const instance1 = groupedSingletonFactory.create({
+    const instance1 = groupedKeyedInstanceFactory.create({
       groupId: 1,
       groupMemberId: 10,
     }).instance;
-    const instance2 = groupedSingletonFactory.create({
+    const instance2 = groupedKeyedInstanceFactory.create({
       groupId: 1,
       groupMemberId: 11,
     }).instance;
@@ -53,11 +53,11 @@ describe('GroupedSingletonFactory tests', () => {
   });
 
   it('will create different instances for different groups  but same group id', () => {
-    const instance1 = groupedSingletonFactory.create({
+    const instance1 = groupedKeyedInstanceFactory.create({
       groupId: 1,
       groupMemberId: 10,
     }).instance;
-    const instance2 = groupedSingletonFactory.create({
+    const instance2 = groupedKeyedInstanceFactory.create({
       groupId: 2,
       groupMemberId: 10,
     }).instance;
@@ -68,11 +68,11 @@ describe('GroupedSingletonFactory tests', () => {
   });
 
   it('will create only one instance for the group id and group member id', () => {
-    const resul1 = groupedSingletonFactory.create({
+    const resul1 = groupedKeyedInstanceFactory.create({
       groupId: 1,
       groupMemberId: 10,
     });
-    const resul2 = groupedSingletonFactory.create({
+    const resul2 = groupedKeyedInstanceFactory.create({
       groupId: 1,
       groupMemberId: 10,
     });
@@ -84,15 +84,15 @@ describe('GroupedSingletonFactory tests', () => {
   });
 
   it('can used the returned id to release instance', () => {
-    const { id, instance } = groupedSingletonFactory.create({
+    const { id, instance } = groupedKeyedInstanceFactory.create({
       groupId: 1,
       groupMemberId: 10,
     });
 
-    expect(groupedSingletonFactory.getFromId(id)).toBe(instance);
+    expect(groupedKeyedInstanceFactory.getFromId(id)).toBe(instance);
 
-    groupedSingletonFactory.release(id);
+    groupedKeyedInstanceFactory.release(id);
 
-    expect(groupedSingletonFactory.getFromId(id)).toBeUndefined();
+    expect(groupedKeyedInstanceFactory.getFromId(id)).toBeUndefined();
   });
 });

@@ -6,9 +6,10 @@ import type {
   IExpressionChangeHistory,
 } from '@rs-x/expression-parser';
 
-import '../../styles/component-shell.css';
 import { ExpressionTree } from '../expression-tree-view/expression-tree-view.component';
 import { ZoomDropdown } from '../zoom-dropdown/zoom-dropdown.component';
+
+import '../../styles/component-shell.css';
 
 export interface IExpressionTreePanelProps {
   selectedExpressionString: string | undefined;

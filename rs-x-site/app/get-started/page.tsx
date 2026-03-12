@@ -5,7 +5,8 @@ import { SyntaxCodeBlock } from '../../components/SyntaxCodeBlock';
 
 export const metadata = {
   title: 'Get started',
-  description: 'Install rs-x and build your first reactive expression in minutes.',
+  description:
+    'Install rs-x and build your first reactive expression in minutes.',
 };
 
 const installCommandCode = dedent`
@@ -60,6 +61,29 @@ const firstWorkingExampleCode = dedent`
   model.a = 20;
 `;
 
+const playgroundExampleScript = dedent`
+  const rsx = api.rsx;
+  const { interval, map } = api.rxjs;
+
+  const model = {
+    a: 10,
+    // Change trigger #1: async source (Observable).
+    b: interval(2000).pipe(map(() => Math.round(Math.random() * 100)))
+  };
+
+  const expression = rsx('a + b')(model);
+
+  expression.changed.subscribe(() => {
+    // Runs whenever a tracked dependency changes.
+    console.log('value:', expression.value);
+  });
+
+  // Change trigger #2: direct sync mutation.
+  model.a = 20;
+
+  return expression;
+`;
+
 const bootstrapCode = dedent`
   import { InjectionContainer } from '@rs-x/core';
   import { RsXExpressionParserModule } from '@rs-x/expression-parser';
@@ -68,86 +92,108 @@ const bootstrapCode = dedent`
   await InjectionContainer.load(RsXExpressionParserModule);
 `;
 
+const tryInPlaygroundHref = `/playground?data=${encodeURIComponent(
+  `plain:${encodeURIComponent(playgroundExampleScript)}`,
+)}`;
+
 export default function GetStartedPage() {
   return (
-    <main id='content' className='main'>
-      <section className='section docsApiSection'>
-        <div className='container docsPage'>
-          <div className='getStartedHeader'>
-            <p className='docsApiEyebrow getStartedEyebrow'>Guide</p>
-            <h1 className='sectionTitle getStartedTitle'>Get started</h1>
-            <div className='docsApiActions getStartedActions'>
-              <Link className='btn btnGhost' href='/docs'>
-                Docs <span aria-hidden='true'>→</span>
-              </Link>
-              <Link className='btn btnPrimary' href='/playground'>
-                Open Playground <span aria-hidden='true'>→</span>
-              </Link>
+    <main id="content" className="main">
+      <section className="section docsApiSection">
+        <div className="container docsPage">
+          <div className="getStartedHero">
+            <div className="getStartedHeroTitleRow">
+              <div>
+                <p className="docsApiEyebrow">Guide</p>
+                <h1 className="sectionTitle">Get started</h1>
+              </div>
+              <div className="docsApiActions getStartedHeroActions">
+                <Link className="btn btnGhost" href="/docs">
+                  Docs <span aria-hidden="true">→</span>
+                </Link>
+                <Link className="btn btnPrimary" href="/playground">
+                  Open Playground <span aria-hidden="true">→</span>
+                </Link>
+              </div>
             </div>
-            <p className='sectionLead getStartedLead'>
-              Setup is three steps: install packages, load{' '}
-              <span className='codeInline'>RsXExpressionParserModule</span> once at app startup, then bind with{' '}
-              <span className='codeInline'>rsx(&apos;...&apos;)(model)</span> and observe{' '}
-              <span className='codeInline'>changed</span>.
+            <p className="sectionLead">
+              Install dependencies, load{' '}
+              <span className="codeInline">RsXExpressionParserModule</span> once
+              during startup, then bind with{' '}
+              <span className="codeInline">rsx(&apos;...&apos;)(model)</span>{' '}
+              and subscribe to <span className="codeInline">changed</span>.
             </p>
           </div>
 
-          <section className='getStartedStack'>
-            <article className='card docsApiCard'>
-              <h2 className='cardTitle'>Quick flow</h2>
-              <ol className='getStartedFlowList'>
+          <section className="getStartedLinear">
+            <article className="card docsApiCard">
+              <h2 className="cardTitle">Quick flow</h2>
+              <ol className="getStartedFlowList">
                 <li>
-                  <span className='codeInline'>Install</span>:
-                  add <span className='codeInline'>@rs-x/core</span>,{' '}
-                  <span className='codeInline'>@rs-x/state-manager</span>,{' '}
-                  <span className='codeInline'>@rs-x/expression-parser</span>, and{' '}
-                  <span className='codeInline'>rxjs</span>.
+                  <span className="codeInline">Install</span>: add{' '}
+                  <span className="codeInline">@rs-x/core</span>,{' '}
+                  <span className="codeInline">@rs-x/state-manager</span>,{' '}
+                  <span className="codeInline">@rs-x/expression-parser</span>,
+                  and <span className="codeInline">rxjs</span>.
                 </li>
                 <li>
-                  <span className='codeInline'>Bootstrap once</span>:
-                  load <span className='codeInline'>RsXExpressionParserModule</span> into{' '}
-                  <span className='codeInline'>InjectionContainer</span> during startup.
+                  <span className="codeInline">Bootstrap once</span>: load{' '}
+                  <span className="codeInline">RsXExpressionParserModule</span>{' '}
+                  into <span className="codeInline">InjectionContainer</span> at
+                  app startup.
                 </li>
                 <li>
-                  <span className='codeInline'>Bind + observe</span>:
-                  create an expression with <span className='codeInline'>rsx(...)(model)</span>, read{' '}
-                  <span className='codeInline'>value</span>, and subscribe to{' '}
-                  <span className='codeInline'>changed</span>.
+                  <span className="codeInline">Bind + observe</span>: create
+                  with <span className="codeInline">rsx(...)(model)</span>, read{' '}
+                  <span className="codeInline">value</span>, subscribe to{' '}
+                  <span className="codeInline">changed</span>.
                 </li>
               </ol>
             </article>
 
-            <article className='qsCodeCard docsApiCode getStartedSetupCard'>
-              <div className='qsCodeHeader'>
-                <div className='qsCodeTitle'>Install commands</div>
-                <div className='qsCodeSubtitle'>Use the package manager you already use</div>
-              </div>
-              <div className='qsCodeHeader'>
-                <div className='qsCodeTitle'>npm / pnpm / yarn / bun</div>
-              </div>
-              <SyntaxCodeBlock code={installCommandCode} />
-              <div className='qsCodeHeader'>
-                <div className='qsCodeTitle'>package.json (example)</div>
-              </div>
-              <SyntaxCodeBlock code={packageJsonCode} />
-              <div className='qsCodeHeader'>
-                <div className='qsCodeTitle'>Bootstrap once (startup)</div>
-                <div className='qsCodeSubtitle'>Run once before creating expressions</div>
-              </div>
-              <SyntaxCodeBlock code={bootstrapCode} />
-            </article>
+            <div className="getStartedSplit">
+              <article className="qsCodeCard docsApiCode">
+                <div className="qsCodeHeader">
+                  <div className="qsCodeTitle">Install commands</div>
+                  <div className="qsCodeSubtitle">npm / pnpm / yarn / bun</div>
+                </div>
+                <SyntaxCodeBlock code={installCommandCode} />
+                <div className="qsCodeHeader">
+                  <div className="qsCodeTitle">package.json (example)</div>
+                </div>
+                <SyntaxCodeBlock code={packageJsonCode} />
+              </article>
 
-            <aside className='qsCodeCard docsApiCode getStartedExampleCard' aria-label='First working example'>
-              <div className='qsCodeHeader'>
-                <div className='qsCodeTitle'>First working example</div>
-                <div className='qsCodeSubtitle'>Observable + sync mutation in one expression</div>
+              <article className="qsCodeCard docsApiCode">
+                <div className="qsCodeHeader">
+                  <div className="qsCodeTitle">Bootstrap once (startup)</div>
+                  <div className="qsCodeSubtitle">
+                    Run once before creating expressions
+                  </div>
+                </div>
+                <SyntaxCodeBlock code={bootstrapCode} />
+              </article>
+            </div>
+
+            <aside
+              className="qsCodeCard docsApiCode"
+              aria-label="First working example"
+            >
+              <div className="qsCodeHeader">
+                <div className="qsCodeTitle">First working example</div>
+                <div className="qsCodeSubtitle">
+                  Observable + sync mutation in one expression
+                </div>
               </div>
               <SyntaxCodeBlock code={firstWorkingExampleCode} />
-              <div className='qsCodeFooter'>
-                <Link className='btn btnGhost qsFooterBtn' href='/playground'>
-                  Try in Playground <span aria-hidden='true'>→</span>
+              <div className="qsCodeFooter">
+                <Link
+                  className="btn btnGhost qsFooterBtn"
+                  href={tryInPlaygroundHref}
+                >
+                  Try in Playground <span aria-hidden="true">→</span>
                 </Link>
-                <Link className='qsTinyLink' href='/docs/rsx-function'>
+                <Link className="qsTinyLink" href="/docs/rsx-function">
                   rsx function docs
                 </Link>
               </div>

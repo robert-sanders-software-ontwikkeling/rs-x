@@ -2,26 +2,37 @@
 
 import type { OnMount } from '@monaco-editor/react';
 import dedent from 'dedent';
+import { usePathname } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
 
+import { InjectionContainer } from '@rs-x/core';
 import {
   AbstractExpression,
   type IExpression,
   type IExpressionChangeHistory,
+  type IExpressionManager,
+  RsXExpressionParserInjectionTokens,
 } from '@rs-x/expression-parser';
 
 import { ensureExpressionParserBootstrapped } from '../../services/expression-parser-bootstrap';
 import { downloadProjectZip } from '../../services/project-export.service';
-import { ScriptEvaluator } from '../../services/script-evaluator';
-import { useExpressionChangeHistoryTracker } from '../expression-change-history-view/hooks/use-expression-change-history-tracker';
 import { RxjsMonacoTypesLoader } from '../../services/rxjs-monaco-types-loader';
+import { ScriptEvaluator } from '../../services/script-evaluator';
 import { setupScriptModels } from '../../services/setup-script-models';
-import { installMonacoPlaceholder } from '../ts-editor/ts-editor.component';
+import {
+  decodeScriptFromUrl,
+  decodeScriptParamSyncFallback,
+  encodeScriptForUrl,
+} from '../../services/url-script-codec';
+import { useExpressionChangeHistoryTracker } from '../expression-change-history-view/hooks/use-expression-change-history-tracker';
 import { ExpressionTreeViewWithModel } from '../expression-tree-view-with-model/expression-tree-view-with-model.component';
-import { NotificationToast, type NotificationToastVariant } from '../notification-toast';
-import { TsEditorWithErrorPanel } from '../ts-editor-with-error-panel/ts-editor-with-error-panel.component';
 import { useSyncScriptToUrl } from '../hooks';
-
+import {
+  NotificationToast,
+  type NotificationToastVariant,
+} from '../notification-toast';
+import { installMonacoPlaceholder } from '../ts-editor/ts-editor.component';
+import { TsEditorWithErrorPanel } from '../ts-editor-with-error-panel/ts-editor-with-error-panel.component';
 
 const dataKey = 'data';
 
@@ -35,12 +46,31 @@ function readInitialScriptFromUrl(): string {
   }
 
   const params = new URLSearchParams(window.location.search);
-  return params.get(dataKey) ?? '';
+  const raw = params.get(dataKey);
+  if (!raw) {
+    return '';
+  }
+
+  return decodeScriptParamSyncFallback(raw);
 }
 
-function buildScriptQuery(script: string): string {
+async function readInitialScriptFromUrlAsync(): Promise<string> {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const raw = params.get(dataKey);
+  if (!raw) {
+    return '';
+  }
+
+  return decodeScriptFromUrl(raw);
+}
+
+async function buildScriptQuery(script: string): Promise<string> {
   const params = new URLSearchParams();
-  params.set(dataKey, script);
+  params.set(dataKey, await encodeScriptForUrl(script));
   return params.toString();
 }
 
@@ -102,8 +132,8 @@ const editorPlaceholder = dedent`
   return rsx('a + b')(model);
 `;
 
-const USER_MODEL_URI = 'inmemory://rsx/demo.user.js';
 const MIN_EDITOR_LOADING_MS = 320;
+const RXJS_TYPES_INSTALL_TIMEOUT_MS = 15000;
 
 const yieldFrame = async (): Promise<void> => {
   await new Promise<void>((resolve) => {
@@ -113,7 +143,51 @@ const yieldFrame = async (): Promise<void> => {
   });
 };
 
+const withTimeout = async <T,>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  timeoutErrorMessage: string,
+): Promise<T> => {
+  return await new Promise<T>((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      reject(new Error(timeoutErrorMessage));
+    }, timeoutMs);
+
+    promise
+      .then((value) => {
+        window.clearTimeout(timeoutId);
+        resolve(value);
+      })
+      .catch((error) => {
+        window.clearTimeout(timeoutId);
+        reject(error);
+      });
+  });
+};
+
+const isCanceledError = (error: unknown): boolean => {
+  if (error === null || error === undefined) {
+    return false;
+  }
+
+  const maybeError = error as { name?: unknown; message?: unknown };
+  const name =
+    typeof maybeError.name === 'string' ? maybeError.name.toLowerCase() : '';
+  const message =
+    typeof maybeError.message === 'string'
+      ? maybeError.message.toLowerCase()
+      : String(error).toLowerCase();
+
+  return (
+    name.includes('cancel') ||
+    name.includes('abort') ||
+    message.includes('cancel') ||
+    message.includes('abort')
+  );
+};
+
 export const Playground: React.FC = () => {
+  const pathname = usePathname();
   const [script, setScript] = useState<string>('');
 
   const [expression, setExpression] = useState<IExpression | undefined>(
@@ -151,6 +225,19 @@ export const Playground: React.FC = () => {
     monaco: Parameters<OnMount>[1];
   } | null>(null);
   const didInitEditorRef = useRef<boolean>(false);
+  const didAutoCompileRef = useRef<boolean>(false);
+  const scriptRef = useRef<string>('');
+  const expressionRef = useRef<IExpression | undefined>(undefined);
+
+  const disposeExpressionManager = () => {
+    try {
+      InjectionContainer.get<IExpressionManager>(
+        RsXExpressionParserInjectionTokens.IExpressionManager,
+      ).dispose();
+    } catch {
+      // Module may not be bootstrapped yet; no manager to dispose.
+    }
+  };
 
   useSyncScriptToUrl({
     script,
@@ -159,8 +246,23 @@ export const Playground: React.FC = () => {
   });
 
   useEffect(() => {
-    setScript(readInitialScriptFromUrl());
-    setIsHydrated(true);
+    scriptRef.current = script;
+  }, [script]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      const decodedScript = await readInitialScriptFromUrlAsync();
+      if (!cancelled) {
+        setScript(decodedScript || readInitialScriptFromUrl());
+        setIsHydrated(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useExpressionChangeHistoryTracker({
@@ -223,6 +325,8 @@ export const Playground: React.FC = () => {
 
     let cancelled = false;
     const loadingStart = Date.now();
+    let disposeScriptModels: (() => void) | undefined;
+    let disposeMonacoPlaceholder: (() => void) | undefined;
 
     setIsEditorLoading(true);
 
@@ -236,24 +340,18 @@ export const Playground: React.FC = () => {
           return;
         }
 
-        setupScriptModels({
+        const scriptModels = setupScriptModels({
           monaco: editorMount.monaco,
-          initialUserCode: script,
+          initialUserCode: scriptRef.current,
         });
+        disposeScriptModels = scriptModels.dispose;
 
         await yieldFrame();
         if (cancelled) {
           return;
         }
 
-        const userModel = editorMount.monaco.editor.getModel(
-          editorMount.monaco.Uri.parse(USER_MODEL_URI),
-        );
-        if (userModel) {
-          editorMount.editor.setModel(userModel);
-        }
-
-        installMonacoPlaceholder(
+        disposeMonacoPlaceholder = installMonacoPlaceholder(
           editorMount.editor,
           editorMount.monaco,
           editorPlaceholder,
@@ -264,7 +362,22 @@ export const Playground: React.FC = () => {
           return;
         }
 
-        await RxjsMonacoTypesLoader.getInstance().install(editorMount.monaco);
+        await withTimeout(
+          RxjsMonacoTypesLoader.getInstance().install(editorMount.monaco),
+          RXJS_TYPES_INSTALL_TIMEOUT_MS,
+          'Loading editor types timed out',
+        );
+      } catch (error) {
+        if (cancelled || isCanceledError(error)) {
+          return;
+        }
+
+        console.error('Failed to initialize playground editor', error);
+        setErrors([
+          error instanceof Error
+            ? error.message
+            : 'Failed to initialize playground editor',
+        ]);
       } finally {
         if (cancelled) {
           return;
@@ -282,8 +395,10 @@ export const Playground: React.FC = () => {
 
     return () => {
       cancelled = true;
+      disposeMonacoPlaceholder?.();
+      disposeScriptModels?.();
     };
-  }, [editorMount, script]);
+  }, [editorMount]);
 
   const disposeExpression = (expr: IExpression | undefined) => {
     if (!expr) {
@@ -297,12 +412,45 @@ export const Playground: React.FC = () => {
   };
 
   const setNewExpression = (next: IExpression | undefined) => {
-    disposeExpression(expression);
+    disposeExpression(expressionRef.current);
+    expressionRef.current = next;
 
     setPersistedHistory([]);
     setTreeHighLight([]);
     setExpression(next);
   };
+
+  useEffect(() => {
+    expressionRef.current = expression;
+  }, [expression]);
+
+  useEffect(() => {
+    return () => {
+      expressionRef.current = undefined;
+      disposeExpressionManager();
+    };
+  }, []);
+
+  useEffect(() => {
+    const onPageHide = () => {
+      expressionRef.current = undefined;
+      didAutoCompileRef.current = false;
+      disposeExpressionManager();
+    };
+
+    window.addEventListener('pagehide', onPageHide);
+    return () => {
+      window.removeEventListener('pagehide', onPageHide);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (pathname !== '/playground') {
+      expressionRef.current = undefined;
+      didAutoCompileRef.current = false;
+      disposeExpressionManager();
+    }
+  }, [pathname]);
 
   const showNotice = (
     title: string,
@@ -351,10 +499,13 @@ export const Playground: React.FC = () => {
     void compileScriptInternal(nextScript);
   };
 
-  // auto compile once
-  const didAutoCompileRef = useRef<boolean>(false);
+  // auto compile once per mounted/active playground session
   useEffect(() => {
     if (!isBootstrapReady) {
+      return;
+    }
+
+    if (script.trim().length === 0) {
       return;
     }
 
@@ -363,12 +514,43 @@ export const Playground: React.FC = () => {
     }
     didAutoCompileRef.current = true;
 
-    if (script.trim().length === 0) {
+    compileScript(script);
+  }, [isBootstrapReady, script]);
+
+  useEffect(() => {
+    if (pathname !== '/playground') {
       return;
     }
 
-    compileScript(script);
-  }, [isBootstrapReady, script]);
+    if (!isBootstrapReady) {
+      return;
+    }
+
+    const currentScript = scriptRef.current;
+    if (currentScript.trim().length === 0) {
+      return;
+    }
+
+    if (expressionRef.current) {
+      return;
+    }
+
+    didAutoCompileRef.current = true;
+    compileScript(currentScript);
+  }, [isBootstrapReady, pathname]);
+
+  useEffect(() => {
+    const onUnhandledRejection = (event: PromiseRejectionEvent) => {
+      if (isCanceledError(event.reason)) {
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener('unhandledrejection', onUnhandledRejection);
+    return () => {
+      window.removeEventListener('unhandledrejection', onUnhandledRejection);
+    };
+  }, []);
 
   const onSelectHistoryBatch = (
     _modelIndex: number,

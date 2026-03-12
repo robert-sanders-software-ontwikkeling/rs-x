@@ -1,5 +1,5 @@
-export * from './expression-parser-bootstrap';
 export * from './expression-change-tracker.factory';
+export * from './expression-parser-bootstrap';
 export * from './model-expressions.factory';
 export * from './model-intellisense.service';
 export * from './project-export.service';

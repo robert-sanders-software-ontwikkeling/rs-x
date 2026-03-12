@@ -1,4 +1,4 @@
-import { type IDisposableOwner, type ISingletonFactory } from '@rs-x/core';
+import { type IDisposableOwner, type IKeyedInstanceFactory } from '@rs-x/core';
 import { type IObserver } from '@rs-x/state-manager';
 
 import type { AbstractExpression } from '../expressions/abstract-expression';
@@ -8,7 +8,7 @@ export interface IExpressionObserverData {
   expression: AbstractExpression;
 }
 
-export type IExpressionObserverFactory = ISingletonFactory<
+export type IExpressionObserverFactory = IKeyedInstanceFactory<
   AbstractExpression,
   IExpressionObserverData,
   IObserver

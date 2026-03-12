@@ -5,12 +5,12 @@ let bootstrapPromise: Promise<void> | null = null;
 
 export function ensureExpressionParserBootstrapped(): Promise<void> {
   if (!bootstrapPromise) {
-    bootstrapPromise = InjectionContainer.load(
-      RsXExpressionParserModule,
-    ).catch((error) => {
-      bootstrapPromise = null;
-      throw error;
-    });
+    bootstrapPromise = InjectionContainer.load(RsXExpressionParserModule).catch(
+      (error) => {
+        bootstrapPromise = null;
+        throw error;
+      },
+    );
   }
 
   return bootstrapPromise;

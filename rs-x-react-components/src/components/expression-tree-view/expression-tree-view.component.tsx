@@ -54,9 +54,9 @@ const AsyncBadge: React.FC<{ title?: string }> = ({
   title = 'Waiting for async value',
 }) => {
   return (
-    <span className='exprNodeAsyncPill' title={title} aria-label={title}>
-      <span className='exprNodeAsyncPulse' aria-hidden='true' />
-      <span className='exprNodeAsyncLabel'>async</span>
+    <span className="exprNodeAsyncPill" title={title} aria-label={title}>
+      <span className="exprNodeAsyncPulse" aria-hidden="true" />
+      <span className="exprNodeAsyncLabel">async</span>
     </span>
   );
 };
@@ -194,13 +194,13 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
       style={style}
     >
       {!hasValidSize ? null : (
-        <div className='exprTreeViewport'>
+        <div className="exprTreeViewport">
           <div
-            className='exprTreeSpacer'
+            className="exprTreeSpacer"
             style={{ width: scaledW, height: scaledH }}
           >
             <div
-              className='exprTreeZoomLayer'
+              className="exprTreeZoomLayer"
               style={{
                 width: paddedW,
                 height: paddedH,
@@ -209,11 +209,11 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
               }}
             >
               <div
-                className='exprTreeCanvas'
+                className="exprTreeCanvas"
                 style={{ width: paddedW, height: paddedH }}
               >
                 <svg
-                  className='exprTreeLines'
+                  className="exprTreeLines"
                   width={paddedW}
                   height={paddedH}
                   viewBox={`0 0 ${paddedW} ${paddedH}`}
@@ -232,21 +232,21 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
                       className={`${vm.className}${asyncClass}`}
                       style={vm.style}
                     >
-                      <div className='exprNodeHeader'>
-                        <div className='exprNodeDot' />
-                        <div className='exprNodeHeaderText'>
-                          <div className='exprNodeTitleRow'>
+                      <div className="exprNodeHeader">
+                        <div className="exprNodeDot" />
+                        <div className="exprNodeHeaderText">
+                          <div className="exprNodeTitleRow">
                             <div
-                              className='exprNodeTitle'
+                              className="exprNodeTitle"
                               title={vm.expressionText}
                             >
                               {vm.expressionText}
                             </div>
 
-                            <div className='exprNodeTitleRowRight'>
+                            <div className="exprNodeTitleRowRight">
                               {vm.isAsync ? <AsyncBadge /> : null}
 
-                              <div className='exprNodeType' title={vm.typeText}>
+                              <div className="exprNodeType" title={vm.typeText}>
                                 {vm.typeText}
                               </div>
                             </div>
@@ -254,11 +254,11 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
                         </div>
                       </div>
 
-                      <div className='exprNodeBody'>
+                      <div className="exprNodeBody">
                         {vm.valueText ? (
-                          <pre className='exprNodePre'>{vm.valueText}</pre>
+                          <pre className="exprNodePre">{vm.valueText}</pre>
                         ) : (
-                          <div className='exprNodeMuted'>no value</div>
+                          <div className="exprNodeMuted">no value</div>
                         )}
                       </div>
                     </div>

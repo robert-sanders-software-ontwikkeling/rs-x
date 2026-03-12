@@ -2,8 +2,8 @@ import {
   type IDeepClone,
   Inject,
   Injectable,
+  KeyedInstanceFactory,
   RsXCoreInjectionTokens,
-  SingletonFactory,
   UnsupportedException,
 } from '@rs-x/core';
 
@@ -16,7 +16,7 @@ import type {
 } from './object-state-manager.interface';
 
 export class StateForObjectManager
-  extends SingletonFactory<unknown, IValueWithKey, IState, IValueKey>
+  extends KeyedInstanceFactory<unknown, IValueWithKey, IState, IValueKey>
   implements IStateForObjectManager
 {
   constructor(
@@ -76,7 +76,7 @@ export class StateForObjectManager
 
 @Injectable()
 export class ObjectStateManager
-  extends SingletonFactory<unknown, unknown, IStateForObjectManager>
+  extends KeyedInstanceFactory<unknown, unknown, IStateForObjectManager>
   implements IObjectStateManager
 {
   constructor(

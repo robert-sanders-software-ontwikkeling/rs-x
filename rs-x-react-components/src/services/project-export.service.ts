@@ -13,9 +13,8 @@ const stripRsxBinding = (script: string): string => {
 };
 
 function buildProjectSource(script: string): ProjectSource {
-  const hasRxjsAliasBinding = /^\s*(const|let|var)\s+\$\s*=\s*api\.rxjs\s*;?\s*$/m.test(
-    script,
-  );
+  const hasRxjsAliasBinding =
+    /^\s*(const|let|var)\s+\$\s*=\s*api\.rxjs\s*;?\s*$/m.test(script);
 
   let normalized = stripRsxBinding(script);
   normalized = normalized.replace(/api\.rsx\b/g, 'rsx');

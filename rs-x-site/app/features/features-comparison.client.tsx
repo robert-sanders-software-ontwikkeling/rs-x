@@ -14,8 +14,14 @@ export interface IFeaturesComparisonProps {
 }
 
 const AUTO_LINKS: Array<{ token: string; href: string; label?: string }> = [
-  { token: 'IExpressionChangeTransactionManager', href: '/docs/expression-change-transaction-manager' },
-  { token: 'IExpressionChangeTrackerManager', href: '/docs/expression-change-tracker-manager' },
+  {
+    token: 'IExpressionChangeTransactionManager',
+    href: '/docs/expression-change-transaction-manager',
+  },
+  {
+    token: 'IExpressionChangeTrackerManager',
+    href: '/docs/expression-change-tracker-manager',
+  },
   {
     token: 'ExpressionChangeTrackerManager',
     href: '/docs/expression-change-tracker-manager',
@@ -55,7 +61,12 @@ function renderInlineText(value: string, keyPrefix: string): React.ReactNode {
     const end = start + raw.length;
 
     if (start > lastIndex) {
-      nodes.push(...renderTextWithAutoLinks(cleaned.slice(lastIndex, start), `${keyPrefix}-part-${start}`));
+      nodes.push(
+        ...renderTextWithAutoLinks(
+          cleaned.slice(lastIndex, start),
+          `${keyPrefix}-part-${start}`,
+        ),
+      );
     }
 
     nodes.push(
@@ -69,19 +80,32 @@ function renderInlineText(value: string, keyPrefix: string): React.ReactNode {
   }
 
   if (lastIndex < cleaned.length) {
-    nodes.push(...renderTextWithAutoLinks(cleaned.slice(lastIndex), `${keyPrefix}-tail-${lastIndex}`));
+    nodes.push(
+      ...renderTextWithAutoLinks(
+        cleaned.slice(lastIndex),
+        `${keyPrefix}-tail-${lastIndex}`,
+      ),
+    );
   }
 
   return <>{nodes}</>;
 }
 
-function renderTextWithAutoLinks(text: string, keyPrefix: string): React.ReactNode[] {
+function renderTextWithAutoLinks(
+  text: string,
+  keyPrefix: string,
+): React.ReactNode[] {
   if (!text) {
     return [];
   }
 
-  const orderedTokens = [...AUTO_LINKS].sort((a, b) => b.token.length - a.token.length);
-  const tokenRegex = new RegExp(orderedTokens.map((item) => escapeRegExp(item.token)).join('|'), 'g');
+  const orderedTokens = [...AUTO_LINKS].sort(
+    (a, b) => b.token.length - a.token.length,
+  );
+  const tokenRegex = new RegExp(
+    orderedTokens.map((item) => escapeRegExp(item.token)).join('|'),
+    'g',
+  );
   const nodes: React.ReactNode[] = [];
   let lastIndex = 0;
   let tokenMatch = tokenRegex.exec(text);
@@ -138,25 +162,25 @@ export function FeaturesComparisonClient({
   }, [rsxKey, selectedFramework]);
 
   return (
-    <div className='featuresShell'>
-      <header className='featuresHeader'>
-        <div className='featuresTitleWrap'>
-          <h1 className='featuresTitle'>Features</h1>
+    <div className="featuresShell">
+      <header className="featuresHeader">
+        <div className="featuresTitleWrap">
+          <h1 className="featuresTitle">Features</h1>
         </div>
 
-        <div className='comparisonControls'>
-          <label htmlFor='framework-select' className='comparisonLabel'>
+        <div className="comparisonControls">
+          <label htmlFor="framework-select" className="comparisonLabel">
             Compare with
           </label>
           <select
-            id='framework-select'
-            className='comparisonSelect'
+            id="framework-select"
+            className="comparisonSelect"
             value={selectedFramework}
             onChange={(event) => {
               setSelectedFramework(event.target.value);
             }}
           >
-            <option value=''>None (RS-X only)</option>
+            <option value="">None (RS-X only)</option>
             {frameworks.map((framework) => {
               return (
                 <option key={framework} value={framework}>
@@ -168,8 +192,8 @@ export function FeaturesComparisonClient({
         </div>
       </header>
 
-      <div className='comparisonWrap'>
-        <table className='comparisonTable'>
+      <div className="comparisonWrap">
+        <table className="comparisonTable">
           <thead>
             <tr>
               <th>Dimension</th>

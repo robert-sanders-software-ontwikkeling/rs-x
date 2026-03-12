@@ -14,12 +14,6 @@ import {
 
 import 'reflect-metadata';
 
-declare global {
-  interface Window {
-    RSX_INJECTION_CONTAINER?: Container;
-  }
-}
-
 /* ---------------------------------------------------------
  * Runtime values
  * --------------------------------------------------------- */

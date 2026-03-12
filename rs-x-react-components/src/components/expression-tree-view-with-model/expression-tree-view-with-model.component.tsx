@@ -8,9 +8,10 @@ import {
   type IExpressionChangeHistory,
 } from '@rs-x/expression-parser';
 
-import '../../styles/component-shell.css';
 import { ChangeHistoryPanel } from '../change-history-panel/change-history-panel.component';
 import { ExpressionTreePanel } from '../expression-tree-panel/expression-tree-panel';
+
+import '../../styles/component-shell.css';
 
 export interface IExpressionTreeViewWithModel {
   version?: number;
@@ -77,14 +78,20 @@ export const ExpressionTreeViewWithModel: React.FC<
           <Group orientation="horizontal" className="panels-container">
             <Panel defaultSize={leftPanelSize} className="panel panelPlain">
               <Group orientation="vertical" className="panel-stack">
-                <Panel defaultSize={editorPanelSize} className="panel panelPlain panelFlat">
+                <Panel
+                  defaultSize={editorPanelSize}
+                  className="panel panelPlain panelFlat"
+                >
                   {!hideHeader && <div className="panel-header">Model</div>}
                   <div className="editor-wrapper">{modelEditor}</div>
                 </Panel>
                 {showChangeHistoryPanel && (
                   <>
                     <Separator className="separator-horizontal" />
-                    <Panel defaultSize={60} className="panel panelElevated panelFlat">
+                    <Panel
+                      defaultSize={60}
+                      className="panel panelElevated panelFlat"
+                    >
                       <ChangeHistoryPanel
                         version={version ?? -1}
                         modelIndex={modelIndex ?? -1}
@@ -105,7 +112,10 @@ export const ExpressionTreeViewWithModel: React.FC<
             {expression && (
               <>
                 <Separator className="separator" />
-                <Panel defaultSize={65} className="panel panelElevated panelFlat">
+                <Panel
+                  defaultSize={65}
+                  className="panel panelElevated panelFlat"
+                >
                   <ExpressionTreePanel
                     key={`${modelIndex}-${expressionIndex}`}
                     version={version ?? -1}

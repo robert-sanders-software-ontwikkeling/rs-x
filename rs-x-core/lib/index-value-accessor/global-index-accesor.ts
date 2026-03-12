@@ -10,7 +10,7 @@ export class GlobalIndexAccessor implements IGlobalIndexAccessor {
   }
 
   public hasValue(_: unknown, index: string): boolean {
-    return !!globalThis[index];
+    return index in globalThis;
   }
 
   public getResolvedValue(context: unknown, index: string): unknown {

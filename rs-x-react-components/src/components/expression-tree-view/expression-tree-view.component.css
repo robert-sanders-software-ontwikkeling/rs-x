@@ -126,7 +126,9 @@ html[data-theme='dark'] .exprTreeLines path.exprTreePath.isActive {
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: linear-gradient(180deg, var(--surface), var(--surface-2));
-  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08), 0 6px 18px rgba(16, 24, 40, 0.06);
+  box-shadow:
+    0 1px 3px rgba(16, 24, 40, 0.08),
+    0 6px 18px rgba(16, 24, 40, 0.06);
   overflow: hidden;
 
   transition:
@@ -250,24 +252,21 @@ html[data-theme='dark'] .exprNodeDot {
 .exprNode.isSelected {
   border-color: var(--expr-node-selected-border);
   box-shadow:
-    var(--shadow-1),
-    var(--expr-node-selected-ring),
+    var(--shadow-1), var(--expr-node-selected-ring),
     var(--expr-node-selected-glow);
 }
 
 html[data-theme='dark'] .exprNode.isSelected {
   border-color: var(--expr-node-selected-border-dark);
   box-shadow:
-    var(--shadow-1),
-    var(--expr-node-selected-ring-dark),
+    var(--shadow-1), var(--expr-node-selected-ring-dark),
     var(--expr-node-selected-glow-dark);
 }
 
 .exprNode.isSelected .exprNodeDot {
   background: var(--brand);
   box-shadow:
-    var(--expr-node-selected-dot-ring),
-    var(--expr-node-selected-dot-glow);
+    var(--expr-node-selected-dot-ring), var(--expr-node-selected-dot-glow);
 }
 
 html[data-theme='dark'] .exprNode.isSelected .exprNodeDot {
@@ -280,31 +279,26 @@ html[data-theme='dark'] .exprNode.isSelected .exprNodeDot {
   border-color: var(--expr-node-active-border);
   transform: translateY(var(--expr-node-hover-lift));
   box-shadow:
-    var(--shadow-1),
-    var(--expr-node-active-ring),
-    var(--expr-node-active-glow);
+    var(--shadow-1), var(--expr-node-active-ring), var(--expr-node-active-glow);
   animation: exprPulse 520ms var(--ease);
 }
 
 html[data-theme='dark'] .exprNode.isActive {
   border-color: var(--expr-node-active-border-dark);
   box-shadow:
-    var(--shadow-1),
-    var(--expr-node-active-ring-dark),
+    var(--shadow-1), var(--expr-node-active-ring-dark),
     var(--expr-node-active-glow-dark);
 }
 
 .exprNode.isActive .exprNodeDot {
   background: var(--brand-2);
   box-shadow:
-    var(--expr-node-active-dot-ring),
-    var(--expr-node-active-dot-glow);
+    var(--expr-node-active-dot-ring), var(--expr-node-active-dot-glow);
 }
 
 html[data-theme='dark'] .exprNode.isActive .exprNodeDot {
   box-shadow:
-    var(--expr-node-active-dot-ring-dark),
-    var(--expr-node-active-dot-glow-dark);
+    var(--expr-node-active-dot-ring-dark), var(--expr-node-active-dot-glow-dark);
 }
 
 @keyframes exprPulse {
@@ -313,7 +307,8 @@ html[data-theme='dark'] .exprNode.isActive .exprNodeDot {
   }
 
   45% {
-    transform: translateY(var(--expr-node-hover-lift)) scale(var(--expr-node-pulse-scale));
+    transform: translateY(var(--expr-node-hover-lift))
+      scale(var(--expr-node-pulse-scale));
   }
 
   100% {

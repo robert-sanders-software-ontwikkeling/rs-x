@@ -1,14 +1,14 @@
 import { PreDestroy } from '../dependency-injection';
 import { PrettyPrinter } from '../error-log/pretty-printer';
 
-import type { ISingletonFactory } from './singleton.factory.interface';
+import type { IKeyedInstanceFactory } from './keyed-instance.factory.interface';
 
-export abstract class SingletonFactory<
+export abstract class KeyedInstanceFactory<
   TId,
   TData extends TIdData,
   TInstance,
   TIdData = TData,
-> implements ISingletonFactory<TId, TData, TInstance, TIdData> {
+> implements IKeyedInstanceFactory<TId, TData, TInstance, TIdData> {
   private readonly _instances = new Map<TId, TInstance>();
   private readonly _referenceCounts = new Map<TId, number>();
 
@@ -99,7 +99,7 @@ export abstract class SingletonFactory<
     this._instances.clear();
     this._referenceCounts.clear();
 
-    this.onDipose();
+    this.onDispose();
   }
 
   public getOrCreate(data: TData): TInstance {
@@ -181,7 +181,7 @@ export abstract class SingletonFactory<
 
   protected abstract createInstance(data: TData, id: TId): TInstance;
   protected abstract createId(data: TIdData): TId;
-  protected onDipose(): void {}
+  protected onDispose(): void {}
   protected onReleased(): void {}
   protected releaseInstance(_instance: TInstance, _id: TId): void {}
   protected onInstanceCreated(_instance: TInstance, _data: TData): void {}

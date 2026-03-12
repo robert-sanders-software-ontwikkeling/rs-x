@@ -1,20 +1,19 @@
 import { InvalidOperationException } from '../exceptions';
-import { type IGuidFactory } from '../guid';
 
-import { SingletonFactory } from './singleton.factory';
 import {
+  type IGroupedKeyedInstanceFactory,
   type IInstanceGroupInfo,
-  type ISingletonFactoryWithIdGeneration,
-} from './singleton-factory-with-id-generation.interface';
+} from './grouped-keyed-instance-factory.interface';
+import { KeyedInstanceFactory } from './keyed-instance.factory';
 
-export abstract class SingletonFactoryWithIdGeneration<
+export abstract class GroupedKeyedInstanceFactory<
   TId,
   TData extends TIdData,
   TInstance,
   TIdData = TData,
 >
-  extends SingletonFactory<TId, TData, TInstance, TIdData>
-  implements ISingletonFactoryWithIdGeneration<TId, TData, TInstance, TIdData>
+  extends KeyedInstanceFactory<TId, TData, TInstance, TIdData>
+  implements IGroupedKeyedInstanceFactory<TId, TData, TInstance, TIdData>
 {
   private readonly _groupedData = new Map<unknown, Map<unknown, TId>>();
 
@@ -113,18 +112,5 @@ export abstract class SingletonFactoryWithIdGeneration<
       groupId: null,
       groupMemberId: null,
     };
-  }
-}
-
-export abstract class SingletonFactoryWithGuid<
-  TData extends TIdData,
-  TInstance,
-  TIdData = TData,
-> extends SingletonFactoryWithIdGeneration<string, TData, TInstance, TIdData> {
-  protected constructor(private readonly _guidFactory: IGuidFactory) {
-    super();
-  }
-  protected createUniqueId(_data: TData): string {
-    return this._guidFactory.create();
   }
 }

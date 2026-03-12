@@ -3,13 +3,13 @@ import { Subject } from 'rxjs';
 import {
   type CheckValidKey,
   type DateProperty,
+  GuidKeyedInstanceFactory,
   type IDisposableOwner,
   type IGuidFactory,
   Inject,
   Injectable,
   type IProxyRegistry,
   RsXCoreInjectionTokens,
-  SingletonFactoryWithGuid,
   Type,
 } from '@rs-x/core';
 
@@ -291,7 +291,7 @@ class DateProxy extends AbstractObserver<Date, Date, undefined> {
 }
 @Injectable()
 export class DateProxyFactory
-  extends SingletonFactoryWithGuid<
+  extends GuidKeyedInstanceFactory<
     IDateProxyData,
     IDateObserverProxyPair,
     IDateProxyIdData

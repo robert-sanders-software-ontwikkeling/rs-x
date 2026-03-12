@@ -10,19 +10,19 @@ export interface IFunctionCallResult extends IFunctionCallResultIdInfo {
   result: unknown;
 }
 
-export interface IFunctionCallResultCache extends IDisposable {
+export interface IFunctionCallResultCacheEntry extends IDisposable {
   readonly index: IFunctionCallIndex;
   readonly result: unknown;
 }
 
-export interface IFunctionCallResultCacheFactory {
+export interface IFunctionCallResultCache {
   create(
     context: unknown,
     result: IFunctionCallResult,
-  ): IFunctionCallResultCache;
+  ): IFunctionCallResultCacheEntry;
   has(context: unknown, index: IFunctionCallIndex): boolean;
   get(
     context: unknown,
     index: IFunctionCallIndex,
-  ): IFunctionCallResultCache | undefined;
+  ): IFunctionCallResultCacheEntry | undefined;
 }

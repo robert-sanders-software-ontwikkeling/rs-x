@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 
 import { SiteFooter } from '../components/Footer';
+import { NavigationHistoryTracker } from '../components/NavigationHistoryTracker';
 import { SiteHeader } from '../components/SiteHeader';
 
 import './globals.css';
-
 
 export const metadata: Metadata = {
   title: 'rs-x — Declarative reactivity for JavaScript/TypeScript',
@@ -13,7 +13,8 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://example.com'),
   openGraph: {
     title: 'rs-x — Declarative reactivity',
-    description: 'Bind expressions to a model. rs-x builds fine-grained dependencies and updates automatically.',
+    description:
+      'Bind expressions to a model. rs-x builds fine-grained dependencies and updates automatically.',
     type: 'website',
   },
   robots: {
@@ -22,15 +23,20 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang='en' data-theme='light'>
+    <html lang="en" data-theme="light">
       <body>
-        <a className='skipLink' href='#content'>
+        <a className="skipLink" href="#content">
           Skip to content
         </a>
 
-        <div className='appShell'>
+        <div className="appShell">
+          <NavigationHistoryTracker />
           <SiteHeader />
           {children}
           <SiteFooter />

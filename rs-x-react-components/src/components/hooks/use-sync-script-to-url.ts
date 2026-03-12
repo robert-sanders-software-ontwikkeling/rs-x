@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react';
 
 export function useSyncScriptToUrl(args: {
   script: string;
-  buildQuery: (script: string) => string;
+  buildQuery: (script: string) => string | Promise<string>;
   debounceMs?: number;
   enabled?: boolean;
 }): void {
@@ -16,27 +16,35 @@ export function useSyncScriptToUrl(args: {
   const router = useRouter();
   const lastQueryRef = useRef<string>('');
   const timerRef = useRef<number | null>(null);
+  const writeSeqRef = useRef<number>(0);
 
   useEffect(() => {
     if (!enabled) {
       return;
     }
 
-    const nextQuery = buildQuery(script);
-
-    // no change → do nothing
-    if (nextQuery === lastQueryRef.current) {
-      return;
-    }
-
-    // debounce
     if (timerRef.current !== null) {
       window.clearTimeout(timerRef.current);
     }
 
+    const writeSeq = writeSeqRef.current + 1;
+    writeSeqRef.current = writeSeq;
+
     timerRef.current = window.setTimeout(() => {
-      lastQueryRef.current = nextQuery;
-      router.replace(`?${nextQuery}`);
+      void (async () => {
+        const nextQuery = await buildQuery(script);
+        if (writeSeq !== writeSeqRef.current) {
+          return;
+        }
+
+        // no change -> do nothing
+        if (nextQuery === lastQueryRef.current) {
+          return;
+        }
+
+        lastQueryRef.current = nextQuery;
+        router.replace(`?${nextQuery}`);
+      })();
     }, debounceMs);
 
     return () => {

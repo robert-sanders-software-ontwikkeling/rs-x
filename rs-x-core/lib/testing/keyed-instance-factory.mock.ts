@@ -1,11 +1,11 @@
-import { type ISingletonFactory } from '../singleton-factory/singleton.factory.interface';
+import { type IKeyedInstanceFactory } from '../keyed-instance-factory/keyed-instance.factory.interface';
 
-export class SingletonFactoryMock<
+export class KeyedInstanceFactoryMock<
   TId,
   TData,
   TInstance,
   TIdData = TData,
-> implements ISingletonFactory<TId, TData, TInstance, TIdData> {
+> implements IKeyedInstanceFactory<TId, TData, TInstance, TIdData> {
   public isEmpty: boolean = false;
   public readonly ids = jest.fn();
   public readonly has = jest.fn();
