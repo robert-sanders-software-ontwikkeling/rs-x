@@ -23,6 +23,7 @@ import { StateChangeSubscriptionManager } from './state-change-subscription-mana
 import type { IObjectStateManager } from './object-state-manager.interface';
 import type {
   IContextChanged,
+  IStateEventListener,
   IStateChange,
   IStateManager,
   IStateOptions,
@@ -39,6 +40,12 @@ interface IChainPartChange extends IChainPart {
   value: unknown;
 }
 
+interface IStateEventSubscription {
+  context: unknown;
+  index: unknown;
+  listener: IStateEventListener;
+}
+
 @Injectable()
 export class StateManager implements IStateManager {
   private readonly _changed = new Subject<IStateChange>();
@@ -47,6 +54,10 @@ export class StateManager implements IStateManager {
   private readonly _endChangeCycle = new Subject<void>();
   private readonly _stateChangeSubscriptionManager: StateChangeSubscriptionManager;
   private readonly _pending = new Map<unknown, unknown>();
+  private readonly _stateEventSubscriptionsByContext = new Map<
+    unknown,
+    Map<unknown, Set<IStateEventSubscription>>
+  >();
 
   constructor(
     @Inject(
@@ -138,6 +149,28 @@ export class StateManager implements IStateManager {
     }
   }
 
+  public subscribeStateEvents(
+    context: unknown,
+    index: unknown,
+    listener: IStateEventListener,
+  ): () => void {
+    const subscription: IStateEventSubscription = {
+      context,
+      index,
+      listener,
+    };
+
+    this.addStateEventSubscription(context, index, subscription);
+
+    return () => {
+      this.removeStateEventSubscription(
+        subscription.context,
+        subscription.index,
+        subscription,
+      );
+    };
+  }
+
   public releaseState(
     context: unknown,
     index: unknown,
@@ -153,6 +186,7 @@ export class StateManager implements IStateManager {
   public clear(): void {
     this._stateChangeSubscriptionManager.dispose();
     this._objectStateManager.dispose();
+    this._stateEventSubscriptionsByContext.clear();
   }
 
   public getState<T>(context: unknown, index: unknown): T {
@@ -280,13 +314,20 @@ export class StateManager implements IStateManager {
     ) {
       return;
     }
-    this._changed.next({
+
+    const stateChange: IStateChange = {
       oldContext: oldContext ?? context,
       context,
       index: index,
       oldValue,
       newValue,
-    });
+    };
+
+    this.emitStateChangeEvents(stateChange);
+
+    if (this.shouldPublish(this._changed)) {
+      this._changed.next(stateChange);
+    }
   }
 
   private updateState(
@@ -487,11 +528,15 @@ export class StateManager implements IStateManager {
         'Expected old and new context not to be equal',
       );
 
-      this._contextChanged.next({
+      const contextChange: IContextChanged = {
         context: stateChange.context,
         oldContext: stateChange.oldContext,
         index: stateChange.index,
-      });
+      };
+      this.emitContextChangedEvents(contextChange);
+      if (this.shouldPublish(this._contextChanged)) {
+        this._contextChanged.next(contextChange);
+      }
 
       if (!stateChange.watched) {
         this.internalUnregister(
@@ -545,6 +590,99 @@ export class StateManager implements IStateManager {
         );
       }
     }
+  }
+
+  private addStateEventSubscription(
+    context: unknown,
+    index: unknown,
+    subscription: IStateEventSubscription,
+  ): void {
+    let subscriptionsByIndex = this._stateEventSubscriptionsByContext.get(
+      context,
+    );
+    if (!subscriptionsByIndex) {
+      subscriptionsByIndex = new Map();
+      this._stateEventSubscriptionsByContext.set(context, subscriptionsByIndex);
+    }
+
+    let subscriptions = subscriptionsByIndex.get(index);
+    if (!subscriptions) {
+      subscriptions = new Set();
+      subscriptionsByIndex.set(index, subscriptions);
+    }
+
+    subscriptions.add(subscription);
+  }
+
+  private removeStateEventSubscription(
+    context: unknown,
+    index: unknown,
+    subscription: IStateEventSubscription,
+  ): void {
+    const subscriptionsByIndex =
+      this._stateEventSubscriptionsByContext.get(context);
+    if (!subscriptionsByIndex) {
+      return;
+    }
+
+    const subscriptions = subscriptionsByIndex.get(index);
+    if (!subscriptions) {
+      return;
+    }
+
+    subscriptions.delete(subscription);
+    if (subscriptions.size === 0) {
+      subscriptionsByIndex.delete(index);
+    }
+
+    if (subscriptionsByIndex.size === 0) {
+      this._stateEventSubscriptionsByContext.delete(context);
+    }
+  }
+
+  private emitStateChangeEvents(change: IStateChange): void {
+    const subscriptions = this._stateEventSubscriptionsByContext
+      .get(change.context)
+      ?.get(change.index);
+
+    if (!subscriptions || subscriptions.size === 0) {
+      return;
+    }
+
+    for (const subscription of subscriptions) {
+      subscription.listener.onStateChange(change);
+    }
+  }
+
+  private emitContextChangedEvents(change: IContextChanged): void {
+    const subscriptions = this._stateEventSubscriptionsByContext
+      .get(change.oldContext)
+      ?.get(change.index);
+
+    if (!subscriptions || subscriptions.size === 0) {
+      return;
+    }
+
+    // Snapshot protects iteration if listeners unsubscribe/rebind while handling.
+    const matchingSubscriptions = Array.from(subscriptions);
+    for (const subscription of matchingSubscriptions) {
+      this.removeStateEventSubscription(
+        subscription.context,
+        subscription.index,
+        subscription,
+      );
+      subscription.context = change.context;
+      this.addStateEventSubscription(
+        subscription.context,
+        subscription.index,
+        subscription,
+      );
+      subscription.listener.onContextChanged(change);
+    }
+  }
+
+  private shouldPublish(subject: { observed?: boolean }): boolean {
+    return subject.observed === undefined || subject.observed;
   }
   private setInitialValue(
     context: unknown,

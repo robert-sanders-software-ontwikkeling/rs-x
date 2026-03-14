@@ -80,6 +80,76 @@ describe('StateManager tests', () => {
     expect(stateManager.getState(object, 'x')).toBeUndefined();
   });
 
+  describe('subscribeStateEvents', () => {
+    it('Emits keyed state changes without using global changed subscriptions', () => {
+      const object = { x: 10, y: 20 };
+      stateManager.watchState(object, 'x');
+
+      const stateChanges: IStateChange[] = [];
+      const unsubscribe = stateManager.subscribeStateEvents(object, 'x', {
+        onStateChange: (change) => stateChanges.push(change),
+        onContextChanged: () => {},
+      });
+
+      object.x = 11;
+      object.y = 30;
+
+      expect(stateChanges).toEqual([
+        {
+          context: object,
+          oldContext: object,
+          index: 'x',
+          oldValue: 10,
+          newValue: 11,
+        },
+      ]);
+
+      unsubscribe();
+    });
+
+    it('Rebinds keyed listeners on context changes', () => {
+      const model = {
+        nested: {
+          value: 1,
+        },
+      };
+
+      stateManager.watchState(model, 'nested');
+      stateManager.watchState(model.nested, 'value');
+
+      const contextChanges: unknown[] = [];
+      const stateChanges: IStateChange[] = [];
+      const unsubscribe = stateManager.subscribeStateEvents(model.nested, 'value', {
+        onStateChange: (change) => stateChanges.push(change),
+        onContextChanged: (change) => contextChanges.push(change.context),
+      });
+
+      const newNested = { value: 2 };
+      stateManager.setState(model, 'nested', newNested, undefined);
+      newNested.value = 3;
+
+      expect(contextChanges).toEqual([newNested]);
+      expect(stateChanges).toEqual([
+        {
+          context: newNested,
+          oldContext: model.nested,
+          index: 'value',
+          oldValue: 1,
+          newValue: 2,
+        },
+        {
+          context: newNested,
+          oldContext: newNested,
+          index: 'value',
+          oldValue: 2,
+          newValue: 3,
+        },
+      ]);
+
+      unsubscribe();
+    });
+  });
+
   describe('Set state', () => {
     it('Set state', () => {
       const context = {};

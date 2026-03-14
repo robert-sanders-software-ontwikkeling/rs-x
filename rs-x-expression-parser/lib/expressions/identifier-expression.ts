@@ -15,144 +15,8 @@ import { AbstractExpression } from './abstract-expression';
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 import { ExpressionType } from './expression-parser.interface';
 
-interface IStateManagerEventSubscriber {
-  context: unknown;
-  index: unknown;
-  onStateChange: (change: IStateChange) => void;
-  onContextChanged: (change: IContextChanged) => void;
-}
-
-class StateManagerEventRouter {
-  private static readonly _routers = new WeakMap<
-    IStateManager,
-    StateManagerEventRouter
-  >();
-
-  public static get(stateManager: IStateManager): StateManagerEventRouter {
-    let router = this._routers.get(stateManager);
-    if (!router) {
-      router = new StateManagerEventRouter(stateManager);
-      this._routers.set(stateManager, router);
-    }
-
-    return router;
-  }
-
-  private readonly _changeSubscription: Subscription;
-  private readonly _contextChangeSubscription: Subscription;
-  private readonly _subscribersByContext = new Map<
-    unknown,
-    Map<unknown, Set<IStateManagerEventSubscriber>>
-  >();
-
-  private constructor(private readonly _stateManager: IStateManager) {
-    this._changeSubscription = this._stateManager.changed.subscribe(
-      this.onStateChange,
-    );
-
-    this._contextChangeSubscription = this._stateManager.contextChanged.subscribe(
-      this.onContextChanged,
-    );
-  }
-
-  public subscribe(subscriber: IStateManagerEventSubscriber): () => void {
-    this.addSubscriber(subscriber.context, subscriber.index, subscriber);
-
-    return () => {
-      this.removeSubscriber(subscriber.context, subscriber.index, subscriber);
-      this.tryDispose();
-    };
-  }
-
-  private onStateChange = (change: IStateChange): void => {
-    const subscribers = this._subscribersByContext
-      .get(change.context)
-      ?.get(change.index);
-    if (!subscribers || subscribers.size === 0) {
-      return;
-    }
-
-    // Snapshot to avoid iteration instability if subscribers rebind/dispose.
-    Array.from(subscribers).forEach((subscriber) => {
-      subscriber.onStateChange(change);
-    });
-  };
-
-  private onContextChanged = (change: IContextChanged): void => {
-    const subscribers = this._subscribersByContext
-      .get(change.oldContext)
-      ?.get(change.index);
-    if (!subscribers || subscribers.size === 0) {
-      return;
-    }
-
-    const matchedSubscribers = Array.from(subscribers);
-    matchedSubscribers.forEach((subscriber) => {
-      this.removeSubscriber(change.oldContext, change.index, subscriber);
-      subscriber.context = change.context;
-      this.addSubscriber(change.context, change.index, subscriber);
-      subscriber.onContextChanged(change);
-    });
-  };
-
-  private addSubscriber(
-    context: unknown,
-    index: unknown,
-    subscriber: IStateManagerEventSubscriber,
-  ): void {
-    let subscribersByIndex = this._subscribersByContext.get(context);
-    if (!subscribersByIndex) {
-      subscribersByIndex = new Map();
-      this._subscribersByContext.set(context, subscribersByIndex);
-    }
-
-    let subscribers = subscribersByIndex.get(index);
-    if (!subscribers) {
-      subscribers = new Set();
-      subscribersByIndex.set(index, subscribers);
-    }
-
-    subscribers.add(subscriber);
-  }
-
-  private removeSubscriber(
-    context: unknown,
-    index: unknown,
-    subscriber: IStateManagerEventSubscriber,
-  ): void {
-    const subscribersByIndex = this._subscribersByContext.get(context);
-    if (!subscribersByIndex) {
-      return;
-    }
-
-    const subscribers = subscribersByIndex.get(index);
-    if (!subscribers) {
-      return;
-    }
-
-    subscribers.delete(subscriber);
-    if (subscribers.size === 0) {
-      subscribersByIndex.delete(index);
-    }
-
-    if (subscribersByIndex.size === 0) {
-      this._subscribersByContext.delete(context);
-    }
-  }
-
-  private tryDispose(): void {
-    if (this._subscribersByContext.size > 0) {
-      return;
-    }
-
-    this._changeSubscription.unsubscribe();
-    this._contextChangeSubscription.unsubscribe();
-    StateManagerEventRouter._routers.delete(this._stateManager);
-  }
-}
-
 export class IndexValueObserver {
-  private readonly _unsubscribeFromRouter: () => void;
+  private readonly _unsubscribeFromStateEvents: () => void;
   private readonly _changed = new ReplaySubject<IStateChange>(1);
   private _isDisposed = false;
   private _isWatchingState = false;
@@ -165,14 +29,14 @@ export class IndexValueObserver {
     private readonly setContext: (context: unknown) => void,
     ownerId: unknown,
   ) {
-    this._unsubscribeFromRouter = StateManagerEventRouter.get(
-      this._stateManager,
-    ).subscribe({
-      context: this._context,
-      index: this._index,
-      onStateChange: (change) => this._changed.next(change),
-      onContextChanged: this.onContextChanged,
-    });
+    this._unsubscribeFromStateEvents = this._stateManager.subscribeStateEvents(
+      this._context,
+      this._index,
+      {
+        onStateChange: (change) => this._changed.next(change),
+        onContextChanged: this.onContextChanged,
+      },
+    );
 
     const value = Type.isReadonlyProperty(this._context, this._index)
       ? this._stateManager.getState(this._context, this._index)
@@ -197,7 +61,7 @@ export class IndexValueObserver {
     if (this._isDisposed) {
       return;
     }
-    this._unsubscribeFromRouter();
+    this._unsubscribeFromStateEvents();
     if (this._isWatchingState) {
       this._stateManager.releaseState(
         this._context,

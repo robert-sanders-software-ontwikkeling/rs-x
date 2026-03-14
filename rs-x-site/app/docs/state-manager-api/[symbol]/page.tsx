@@ -117,6 +117,8 @@ const MEMBER_DESCRIPTION_OVERRIDES: Record<string, Record<string, string>> = {
       'Observable stream emitted at the end of a change cycle, after processing and cleanup.',
     watchState:
       'Registers a watch for `(context, index)` (optionally with owner and index-watch-rule) and returns the current value snapshot.',
+    subscribeStateEvents:
+      'Registers a keyed callback listener for `(context, index)` and returns an unsubscribe function. This is the low-overhead path used by expression runtime internals.',
     releaseState:
       'Releases one watch reference for `(context, index)` and unsubscribes observers when reference count reaches zero.',
     isWatched:
@@ -141,6 +143,8 @@ const MEMBER_DESCRIPTION_OVERRIDES: Record<string, Record<string, string>> = {
       'Lifecycle stream emitted after StateManager finishes a change cycle.',
     watchState:
       'Registers (or reuses) a watch for `(context, index)` and returns current state value.',
+    subscribeStateEvents:
+      'Adds a direct keyed listener for `(context, index)` that receives state and context-rebind events without requiring global observable fan-out.',
     releaseState:
       'Releases watch references and unregisters observer subscriptions when no references remain.',
     clear:
@@ -193,6 +197,10 @@ const SYMBOL_DOCS: Record<string, SymbolDocumentation> = {
   IStateManager: {
     summary:
       'Main state-manager contract used by expression runtime services to watch, read, write, release, and observe state changes.',
+  },
+  IStateEventListener: {
+    summary:
+      'Keyed callback listener contract used by `subscribeStateEvents(...)` for direct `(context, index)` state and context-rebind notifications.',
   },
 };
 

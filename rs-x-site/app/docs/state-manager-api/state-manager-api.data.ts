@@ -673,6 +673,14 @@ export const stateManagerApiItems: StateManagerApiItem[] = [
     "signature": "export type IStateChangeSubscriptionsForContextManager ="
   },
   {
+    "symbol": "IStateEventListener",
+    "kind": "interface",
+    "module": "state-manager",
+    "description": "Keyed callback listener for state and context rebind notifications.",
+    "sourcePath": "state-manager/state-manager.interface.ts",
+    "signature": "export interface IStateEventListener {"
+  },
+  {
     "symbol": "IStateForObjectManager",
     "kind": "interface",
     "module": "state-manager",
