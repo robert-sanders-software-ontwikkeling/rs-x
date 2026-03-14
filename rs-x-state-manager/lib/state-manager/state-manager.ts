@@ -34,8 +34,6 @@ interface ITransferedValue {
   shouldEmitChange?: (context: unknown, index: unknown) => boolean;
 }
 
-type EmittedPair = readonly [unknown, unknown];
-
 interface IChainPartChange extends IChainPart {
   oldValue: unknown;
   value: unknown;
@@ -373,43 +371,72 @@ export class StateManager implements IStateManager {
     if (!oldState) {
       return [];
     }
+    const stateChanges: IStateChange[] = [];
+    this.collectStateChanges(
+      oldContext,
+      newContext,
+      parentOwnerId,
+      oldState,
+      stateChanges,
+    );
+    return stateChanges;
+  }
 
-    return Array.from(oldState.ids())
-      .map((index) => {
-        const {
-          value: oldValue,
-          watched,
-          ownerId,
-        } = oldState.getFromId(index) ?? {};
+  private collectStateChanges(
+    oldContext: unknown,
+    newContext: unknown,
+    parentOwnerId: unknown,
+    oldState: ReturnType<IObjectStateManager['getFromId']>,
+    changes: IStateChange[],
+  ): void {
+    if (!oldState) {
+      return;
+    }
 
-        if (ownerId !== parentOwnerId) {
-          return [];
-        }
-        const newValue = this.getValue(newContext, index);
+    for (const index of oldState.ids()) {
+      const state = oldState.getFromId(index);
+      if (!state) {
+        continue;
+      }
 
-        if (
-          oldContext === newContext &&
-          this._equalityService.isEqual(oldValue, newValue)
-        ) {
-          return [];
-        }
+      const { value: oldValue, watched, ownerId } = state;
+      if (ownerId !== parentOwnerId) {
+        continue;
+      }
 
-        if (newValue === PENDING) {
-          this._pending.set(newContext, oldValue);
-        }
-        const stateInfo: IStateChange = {
-          oldContext,
-          context: newContext,
-          index,
-          oldValue,
-          newValue: newValue,
-          watched,
-        };
-        return newValue === PENDING
-          ? [stateInfo]
-          : [stateInfo, ...this.getStateChanges(oldValue, newValue, ownerId)];
-      })
-      .reduce((a, b) => a.concat(b), []);
+      const newValue = this.getValue(newContext, index);
+      if (
+        oldContext === newContext &&
+        this._equalityService.isEqual(oldValue, newValue)
+      ) {
+        continue;
+      }
+
+      if (newValue === PENDING) {
+        this._pending.set(newContext, oldValue);
+      }
+
+      changes.push({
+        oldContext,
+        context: newContext,
+        index,
+        oldValue,
+        newValue,
+        watched,
+      });
+
+      if (newValue === PENDING) {
+        continue;
+      }
+
+      this.collectStateChanges(
+        oldValue,
+        newValue,
+        ownerId,
+        this._objectStateManager.getFromId(oldValue),
+        changes,
+      );
+    }
   }
 
   private tryRebindingNestedState(
@@ -422,13 +449,19 @@ export class StateManager implements IStateManager {
       return;
     }
 
-    const emitted: EmittedPair[] = [];
+    const emittedByContext = new Map<unknown, Set<unknown>>();
 
     const shouldEmitChange = (context: unknown, index: unknown): boolean => {
-      if (emitted.some(([c, i]) => c === context && i === index)) {
+      let emittedIndexes = emittedByContext.get(context);
+      if (!emittedIndexes) {
+        emittedIndexes = new Set<unknown>();
+        emittedByContext.set(context, emittedIndexes);
+      }
+
+      if (emittedIndexes.has(index)) {
         return false;
       }
-      emitted.push([context, index]);
+      emittedIndexes.add(index);
       return true;
     };
 

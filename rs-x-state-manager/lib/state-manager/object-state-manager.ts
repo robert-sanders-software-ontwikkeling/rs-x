@@ -51,6 +51,13 @@ export class StateForObjectManager
   }
 
   private deepClone(key: unknown, data: unknown): unknown {
+    if (
+      data === null ||
+      (typeof data !== 'object' && typeof data !== 'function')
+    ) {
+      return data;
+    }
+
     try {
       return this._deepClone.clone(data);
     } catch (e) {
