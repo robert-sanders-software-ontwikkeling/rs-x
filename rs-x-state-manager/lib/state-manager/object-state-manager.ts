@@ -41,6 +41,8 @@ export class StateForObjectManager
     if (state) {
       state.valueCopy = this.deepClone(key, value);
       state.value = value;
+      state.watched = watched;
+      state.ownerId = ownerId;
     } else {
       this.create({ key, value, watched, ownerId });
     }

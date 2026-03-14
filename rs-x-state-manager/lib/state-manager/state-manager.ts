@@ -850,14 +850,17 @@ export class StateManager implements IStateManager {
       );
 
       this.tryRebindingNestedState(change.newValue, currentValue, ownerId);
-      this.updateState(
-        chainLeaf.context,
-        chainLeaf.context,
-        chainLeaf.index,
-        chainLeaf.value,
-        watched,
-        ownerId,
-      );
+      for (let i = 0; i < chainChanges.length; i++) {
+        const chainChange = chainChanges[i];
+        this.updateState(
+          chainChange.context,
+          chainChange.context,
+          chainChange.index,
+          chainChange.value,
+          watched,
+          ownerId,
+        );
+      }
 
       for (let i = 0; i < chainChanges.length; i++) {
         const chainChange = chainChanges[i];

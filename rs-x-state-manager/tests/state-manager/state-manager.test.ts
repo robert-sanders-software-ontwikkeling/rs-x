@@ -1224,4 +1224,58 @@ describe('StateManager tests', () => {
     ];
     expect(actual).toEqual(expected);
   });
+
+  it('keeps parent snapshot oldValue in sync across repeated nested changes', async () => {
+    const object = {
+      nested: {
+        value: 2,
+        nested: {
+          value: 3,
+        },
+      },
+    };
+
+    const indexWatchRule = new IndexWatchRuleMock(truePredicate);
+
+    stateManager.watchState(object, 'nested', { indexWatchRule });
+    stateManager.watchState(object.nested.nested, 'value');
+
+    await new WaitForEvent(stateManager, 'changed', {
+      count: 2,
+    }).wait(() => {
+      object.nested.nested.value = 13;
+    });
+
+    const actual = (await new WaitForEvent(stateManager, 'changed', {
+      count: 2,
+    }).wait(() => {
+      object.nested.nested.value = 20;
+    })) as IStateChange[];
+
+    expect(actual[0]).toEqual({
+      context: object,
+      oldContext: object,
+      index: 'nested',
+      oldValue: {
+        value: 2,
+        nested: {
+          value: 13,
+        },
+      },
+      newValue: {
+        value: 2,
+        nested: {
+          value: 20,
+        },
+      },
+    });
+
+    expect(actual[1]).toEqual({
+      context: object.nested.nested,
+      oldContext: object.nested.nested,
+      index: 'value',
+      oldValue: 13,
+      newValue: 20,
+    });
+  });
 });
