@@ -14,6 +14,10 @@ export interface IExpressionChangeCommitHandler {
 
 export interface IExpressionChangeTransactionManager extends IDisposable {
   readonly commited: Observable<AbstractExpression>;
+  subscribeCommitted(
+    rootExpression: AbstractExpression,
+    listener: (expression: AbstractExpression) => void,
+  ): () => void;
   registerChange(
     rootExpression: AbstractExpression,
     commitHandler: IExpressionChangeCommitHandler,

@@ -1,4 +1,4 @@
-import { type Observable, ReplaySubject, type Subscription } from 'rxjs';
+import { type Observable, ReplaySubject } from 'rxjs';
 
 import {
   type IDisposableOwner,
@@ -34,7 +34,7 @@ export abstract class AbstractExpression<
   private _parent: AbstractExpression<PT> | undefined;
   private _id!: string;
   private _isDisposed = false;
-  private _commitedSubscription: Subscription | undefined;
+  private _releaseCommittedSubscription: (() => void) | undefined;
   private _owner: IDisposableOwner | undefined;
   private _services!: IExpressionServices;
   private _leafIndexWatchRule?: IIndexWatchRule | undefined;
@@ -94,9 +94,11 @@ export abstract class AbstractExpression<
     this._leafIndexWatchRule = settings.leafIndexWatchRule;
     if (!this._parent && this.transactionManager) {
       this._owner = settings.owner;
-      this._commitedSubscription = this.transactionManager.commited.subscribe(
-        this.onCommited,
-      );
+      this._releaseCommittedSubscription =
+        this.transactionManager.subscribeCommitted(
+          this,
+          this.onCommited,
+        );
     }
 
     return this;
@@ -207,8 +209,8 @@ export abstract class AbstractExpression<
   ): T | undefined;
 
   protected internalDispose(): void {
-    this._commitedSubscription?.unsubscribe();
-    this._commitedSubscription = undefined;
+    this._releaseCommittedSubscription?.();
+    this._releaseCommittedSubscription = undefined;
     this._childExpressions.forEach((childExpression) =>
       childExpression.dispose(),
     );
