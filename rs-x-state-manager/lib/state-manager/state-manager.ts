@@ -511,22 +511,27 @@ export class StateManager implements IStateManager {
   }
 
   private getChainChanges(chain: IChainPart[] | undefined): IChainPartChange[] {
-    if (!chain) {
+    if (!chain || chain.length === 0) {
       return [];
     }
 
-    const registeredChainParts = chain.filter((chainPart) =>
-      this._stateChangeSubscriptionManager.isRegistered(
-        chainPart.context,
-        chainPart.index,
-      ),
-    );
+    const chainChanges: IChainPartChange[] = [];
+    for (let i = 0; i < chain.length; i++) {
+      const chainPart = chain[i];
+      const { context, index } = chainPart;
+      if (!this._stateChangeSubscriptionManager.isRegistered(context, index)) {
+        continue;
+      }
 
-    return registeredChainParts.map((chainPart) => ({
-      ...chainPart,
-      oldValue: this.getOldValue(chainPart.context, chainPart.index),
-      value: this.getValue(chainPart.context, chainPart.index),
-    }));
+      chainChanges.push({
+        context,
+        index,
+        oldValue: this.getOldValue(context, index),
+        value: this.getValue(context, index),
+      });
+    }
+
+    return chainChanges;
   }
 
   private getCurrentValue(context: unknown, index: unknown): unknown {
@@ -568,14 +573,15 @@ export class StateManager implements IStateManager {
         ownerId,
       );
 
-      chainChanges.forEach((chainChange) =>
+      for (let i = 0; i < chainChanges.length; i++) {
+        const chainChange = chainChanges[i];
         this.emitChange(
           chainChange.context,
           chainChange.index,
           chainChange.value,
           chainChange.oldValue,
-        ),
-      );
+        );
+      }
     } finally {
       this._endChangeCycle.next();
     }

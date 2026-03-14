@@ -84,6 +84,10 @@ export class ExpressionChangeTransactionManager implements IExpressionChangeTran
   }
 
   public commit(): void {
+    if (this._changes.size === 0) {
+      return;
+    }
+
     this._emittedChangeCounter = 0;
 
     for (const root of this._changes.keys()) {
