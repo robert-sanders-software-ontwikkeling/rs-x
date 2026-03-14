@@ -1,4 +1,4 @@
-import { type ISingletonFactory } from '@rs-x/core';
+import { type IKeyedInstanceFactory } from '@rs-x/core';
 
 export interface IState {
   value: unknown;
@@ -16,16 +16,21 @@ export interface IValueWithKey extends IValueKey {
   ownerId: unknown;
 }
 
-export interface IStateForObjectManager extends ISingletonFactory<
+export interface IStateForObjectManager extends IKeyedInstanceFactory<
   unknown,
   IValueWithKey,
   IState,
   IValueKey
 > {
-  set(key: unknown, value: unknown, watched: boolean, ownerId: unknown): void;
+  set(
+    key: unknown,
+    value: unknown,
+    watched: boolean,
+    ownerId: unknown,
+  ): void;
 }
 
-export interface IObjectStateManager extends ISingletonFactory<
+export interface IObjectStateManager extends IKeyedInstanceFactory<
   unknown,
   unknown,
   IStateForObjectManager

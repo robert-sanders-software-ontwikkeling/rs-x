@@ -8,9 +8,9 @@ import {
   type IPropertyChange,
   type IPropertyDescriptor,
   type IProxyRegistry,
+  KeyedInstanceFactory,
   PropertyDescriptorType,
   RsXCoreInjectionTokens,
-  SingletonFactory,
   Type,
 } from '@rs-x/core';
 
@@ -187,7 +187,7 @@ class PropertObserver extends AbstractObserver {
 }
 
 class PropertyObserverManager
-  extends SingletonFactory<
+  extends KeyedInstanceFactory<
     string,
     IPropertyObserverInfo,
     IObserver,
@@ -238,7 +238,7 @@ class PropertyObserverManager
 
 @Injectable()
 export class ObjectPropertyObserverManager
-  extends SingletonFactory<object, object, IPropertyObserverManager>
+  extends KeyedInstanceFactory<object, object, IPropertyObserverManager>
   implements IObjectPropertyObserverManager
 {
   constructor(

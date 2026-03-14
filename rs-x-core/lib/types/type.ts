@@ -14,6 +14,76 @@ export const echo = <T = unknown>(value: T) => value;
 type PlainObject = Record<string, unknown>;
 
 export class Type {
+  private static readonly _readonlyPropertyByPrototype = new WeakMap<
+    object,
+    Map<PropertyKey, boolean>
+  >();
+
+  public static isReadonlyProperty(
+    target: unknown,
+    key: unknown,
+  ): boolean {
+    if (
+      (typeof target !== 'object' && typeof target !== 'function') ||
+      target === null
+    ) {
+      return false;
+    }
+
+    let normalizedKey: PropertyKey;
+    if (typeof key === 'number') {
+      normalizedKey = String(key);
+    } else if (typeof key === 'string' || typeof key === 'symbol') {
+      normalizedKey = key;
+    } else {
+      return false;
+    }
+
+    const targetObject = target as object;
+    const ownDescriptor = Object.getOwnPropertyDescriptor(
+      targetObject,
+      normalizedKey,
+    );
+    if (ownDescriptor) {
+      return (
+        Type.getPropertyDescriptorType(ownDescriptor) ===
+        PropertyDescriptorType.ReadonlyProperty
+      );
+    }
+
+    const prototype = Object.getPrototypeOf(targetObject);
+    if (!prototype || prototype === Object.prototype) {
+      return false;
+    }
+
+    const cachedByKey = Type._readonlyPropertyByPrototype.get(prototype);
+    if (cachedByKey?.has(normalizedKey)) {
+      return cachedByKey.get(normalizedKey) as boolean;
+    }
+
+    let current: object | null = prototype;
+    let isReadonly = false;
+    while (current && current !== Object.prototype) {
+      const descriptor = Object.getOwnPropertyDescriptor(current, normalizedKey);
+      if (descriptor) {
+        isReadonly =
+          Type.getPropertyDescriptorType(descriptor) ===
+          PropertyDescriptorType.ReadonlyProperty;
+        break;
+      }
+      current = Object.getPrototypeOf(current);
+    }
+
+    let nextCachedByKey = cachedByKey;
+    if (!nextCachedByKey) {
+      nextCachedByKey = new Map<PropertyKey, boolean>();
+      Type._readonlyPropertyByPrototype.set(prototype, nextCachedByKey);
+    }
+    nextCachedByKey.set(normalizedKey, isReadonly);
+
+    return isReadonly;
+  }
+
   public static isPositiveIntegerString(value: unknown): boolean {
     if (typeof value !== 'string' || value.length === 0) {
       return false;

@@ -50,7 +50,7 @@ export class DatePropertyAccessor implements IDatePropertyAccessor {
   }
 
   public hasValue(context: Date, index: DateProperty): boolean {
-    return this.getValue(context, index) !== undefined;
+    return context instanceof Date && index in this._getters;
   }
 
   public getResolvedValue(context: Date, index: DateProperty): unknown {

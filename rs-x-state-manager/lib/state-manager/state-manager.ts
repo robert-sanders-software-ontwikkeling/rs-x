@@ -23,6 +23,7 @@ import { StateChangeSubscriptionManager } from './state-change-subscription-mana
 import type { IObjectStateManager } from './object-state-manager.interface';
 import type {
   IContextChanged,
+  IStateEventListener,
   IStateChange,
   IStateManager,
   IStateOptions,
@@ -34,11 +35,16 @@ interface ITransferedValue {
   shouldEmitChange?: (context: unknown, index: unknown) => boolean;
 }
 
-type EmittedPair = readonly [unknown, unknown];
-
 interface IChainPartChange extends IChainPart {
   oldValue: unknown;
   value: unknown;
+}
+
+interface IStateEventSubscription {
+  active: boolean;
+  context: unknown;
+  index: unknown;
+  listener: IStateEventListener;
 }
 
 @Injectable()
@@ -49,6 +55,11 @@ export class StateManager implements IStateManager {
   private readonly _endChangeCycle = new Subject<void>();
   private readonly _stateChangeSubscriptionManager: StateChangeSubscriptionManager;
   private readonly _pending = new Map<unknown, unknown>();
+  private readonly _stateEventSubscriptionsByContext = new Map<
+    unknown,
+    Map<unknown, Set<IStateEventSubscription>>
+  >();
+  private readonly _stateEventSubscriptionPool: IStateEventSubscription[] = [];
 
   constructor(
     @Inject(
@@ -140,6 +151,28 @@ export class StateManager implements IStateManager {
     }
   }
 
+  public subscribeStateEvents(
+    context: unknown,
+    index: unknown,
+    listener: IStateEventListener,
+  ): () => void {
+    const subscription = this.acquireStateEventSubscription(
+      context,
+      index,
+      listener,
+    );
+
+    this.addStateEventSubscription(context, index, subscription);
+
+    return () => {
+      this.removeStateEventSubscription(
+        subscription.context,
+        subscription.index,
+        subscription,
+      );
+    };
+  }
+
   public releaseState(
     context: unknown,
     index: unknown,
@@ -155,6 +188,8 @@ export class StateManager implements IStateManager {
   public clear(): void {
     this._stateChangeSubscriptionManager.dispose();
     this._objectStateManager.dispose();
+    this._stateEventSubscriptionsByContext.clear();
+    this._stateEventSubscriptionPool.length = 0;
   }
 
   public getState<T>(context: unknown, index: unknown): T {
@@ -166,19 +201,30 @@ export class StateManager implements IStateManager {
     context: unknown,
     index: unknown,
     value: T,
-    ownerId: unknown,
+    ownerId?: unknown,
   ): void {
-    this.internalSetState(
-      context,
-      index,
-      value,
-      {
+    const isExternalSetState = ownerId === undefined;
+    if (isExternalSetState) {
+      this._startChangeCycle.next();
+    }
+
+    try {
+      this.internalSetState(
         context,
-        value: this.getState(context, index),
-        shouldEmitChange: truePredicate,
-      },
-      ownerId,
-    );
+        index,
+        value,
+        {
+          context,
+          value: this.getState(context, index),
+          shouldEmitChange: truePredicate,
+        },
+        ownerId,
+      );
+    } finally {
+      if (isExternalSetState) {
+        this._endChangeCycle.next();
+      }
+    }
   }
 
   private internalSetState(
@@ -251,16 +297,40 @@ export class StateManager implements IStateManager {
     oldValue: unknown,
     oldContext?: unknown,
   ): void {
-    if (this._equalityService.isEqual(newValue, oldValue)) {
+    if (
+      newValue === oldValue ||
+      (newValue !== newValue && oldValue !== oldValue)
+    ) {
       return;
     }
-    this._changed.next({
+
+    const newValueIsObjectLike =
+      newValue !== null &&
+      (typeof newValue === 'object' || typeof newValue === 'function');
+    const oldValueIsObjectLike =
+      oldValue !== null &&
+      (typeof oldValue === 'object' || typeof oldValue === 'function');
+
+    if (
+      (newValueIsObjectLike || oldValueIsObjectLike) &&
+      this._equalityService.isEqual(newValue, oldValue)
+    ) {
+      return;
+    }
+
+    const stateChange: IStateChange = {
       oldContext: oldContext ?? context,
       context,
       index: index,
       oldValue,
       newValue,
-    });
+    };
+
+    this.emitStateChangeEvents(stateChange);
+
+    if (this.shouldPublish(this._changed)) {
+      this._changed.next(stateChange);
+    }
   }
 
   private updateState(
@@ -345,43 +415,88 @@ export class StateManager implements IStateManager {
     if (!oldState) {
       return [];
     }
+    const stateChanges: IStateChange[] = [];
+    this.collectStateChanges(
+      oldContext,
+      newContext,
+      parentOwnerId,
+      oldState,
+      stateChanges,
+    );
+    return stateChanges;
+  }
 
-    return Array.from(oldState.ids())
-      .map((index) => {
-        const {
-          value: oldValue,
-          watched,
-          ownerId,
-        } = oldState.getFromId(index) ?? {};
+  private collectStateChanges(
+    oldContext: unknown,
+    newContext: unknown,
+    parentOwnerId: unknown,
+    oldState: ReturnType<IObjectStateManager['getFromId']>,
+    changes: IStateChange[],
+  ): void {
+    if (!oldState) {
+      return;
+    }
 
-        if (ownerId !== parentOwnerId) {
-          return [];
+    for (const index of oldState.ids()) {
+      const state = oldState.getFromId(index);
+      if (!state) {
+        continue;
+      }
+
+      const { value: oldValue, watched, ownerId } = state;
+      if (ownerId !== parentOwnerId) {
+        continue;
+      }
+
+      const newValue = this.getValue(newContext, index);
+      if (oldContext === newContext) {
+        if (
+          oldValue === newValue ||
+          (oldValue !== oldValue && newValue !== newValue)
+        ) {
+          continue;
         }
-        const newValue = this.getValue(newContext, index);
+
+        const newValueIsObjectLike =
+          newValue !== null &&
+          (typeof newValue === 'object' || typeof newValue === 'function');
+        const oldValueIsObjectLike =
+          oldValue !== null &&
+          (typeof oldValue === 'object' || typeof oldValue === 'function');
 
         if (
-          oldContext === newContext &&
+          (newValueIsObjectLike || oldValueIsObjectLike) &&
           this._equalityService.isEqual(oldValue, newValue)
         ) {
-          return [];
+          continue;
         }
+      }
 
-        if (newValue === PENDING) {
-          this._pending.set(newContext, oldValue);
-        }
-        const stateInfo: IStateChange = {
-          oldContext,
-          context: newContext,
-          index,
-          oldValue,
-          newValue: newValue,
-          watched,
-        };
-        return newValue === PENDING
-          ? [stateInfo]
-          : [stateInfo, ...this.getStateChanges(oldValue, newValue, ownerId)];
-      })
-      .reduce((a, b) => a.concat(b), []);
+      if (newValue === PENDING) {
+        this._pending.set(newContext, oldValue);
+      }
+
+      changes.push({
+        oldContext,
+        context: newContext,
+        index,
+        oldValue,
+        newValue,
+        watched,
+      });
+
+      if (newValue === PENDING) {
+        continue;
+      }
+
+      this.collectStateChanges(
+        oldValue,
+        newValue,
+        ownerId,
+        this._objectStateManager.getFromId(oldValue),
+        changes,
+      );
+    }
   }
 
   private tryRebindingNestedState(
@@ -394,13 +509,19 @@ export class StateManager implements IStateManager {
       return;
     }
 
-    const emitted: EmittedPair[] = [];
+    const emittedByContext = new Map<unknown, Set<unknown>>();
 
     const shouldEmitChange = (context: unknown, index: unknown): boolean => {
-      if (emitted.some(([c, i]) => c === context && i === index)) {
+      let emittedIndexes = emittedByContext.get(context);
+      if (!emittedIndexes) {
+        emittedIndexes = new Set<unknown>();
+        emittedByContext.set(context, emittedIndexes);
+      }
+
+      if (emittedIndexes.has(index)) {
         return false;
       }
-      emitted.push([context, index]);
+      emittedIndexes.add(index);
       return true;
     };
 
@@ -410,11 +531,15 @@ export class StateManager implements IStateManager {
         'Expected old and new context not to be equal',
       );
 
-      this._contextChanged.next({
+      const contextChange: IContextChanged = {
         context: stateChange.context,
         oldContext: stateChange.oldContext,
         index: stateChange.index,
-      });
+      };
+      this.emitContextChangedEvents(contextChange);
+      if (this.shouldPublish(this._contextChanged)) {
+        this._contextChanged.next(contextChange);
+      }
 
       if (!stateChange.watched) {
         this.internalUnregister(
@@ -469,6 +594,150 @@ export class StateManager implements IStateManager {
       }
     }
   }
+
+  private addStateEventSubscription(
+    context: unknown,
+    index: unknown,
+    subscription: IStateEventSubscription,
+  ): void {
+    let subscriptionsByIndex = this._stateEventSubscriptionsByContext.get(
+      context,
+    );
+    if (!subscriptionsByIndex) {
+      subscriptionsByIndex = new Map();
+      this._stateEventSubscriptionsByContext.set(context, subscriptionsByIndex);
+    }
+
+    let subscriptions = subscriptionsByIndex.get(index);
+    if (!subscriptions) {
+      subscriptions = new Set();
+      subscriptionsByIndex.set(index, subscriptions);
+    }
+
+    subscriptions.add(subscription);
+  }
+
+  private removeStateEventSubscription(
+    context: unknown,
+    index: unknown,
+    subscription: IStateEventSubscription,
+    releaseToPool: boolean = true,
+  ): void {
+    if (!subscription.active) {
+      return;
+    }
+
+    const subscriptionsByIndex =
+      this._stateEventSubscriptionsByContext.get(context);
+    if (!subscriptionsByIndex) {
+      if (releaseToPool) {
+        this.releaseStateEventSubscription(subscription);
+      }
+      return;
+    }
+
+    const subscriptions = subscriptionsByIndex.get(index);
+    if (!subscriptions) {
+      if (releaseToPool) {
+        this.releaseStateEventSubscription(subscription);
+      }
+      return;
+    }
+
+    subscriptions.delete(subscription);
+    if (subscriptions.size === 0) {
+      subscriptionsByIndex.delete(index);
+    }
+
+    if (subscriptionsByIndex.size === 0) {
+      this._stateEventSubscriptionsByContext.delete(context);
+    }
+
+    if (releaseToPool) {
+      this.releaseStateEventSubscription(subscription);
+    }
+  }
+
+  private emitStateChangeEvents(change: IStateChange): void {
+    const subscriptions = this._stateEventSubscriptionsByContext
+      .get(change.context)
+      ?.get(change.index);
+
+    if (!subscriptions || subscriptions.size === 0) {
+      return;
+    }
+
+    for (const subscription of subscriptions) {
+      subscription.listener.onStateChange(change);
+    }
+  }
+
+  private emitContextChangedEvents(change: IContextChanged): void {
+    const subscriptions = this._stateEventSubscriptionsByContext
+      .get(change.oldContext)
+      ?.get(change.index);
+
+    if (!subscriptions || subscriptions.size === 0) {
+      return;
+    }
+
+    while (subscriptions.size > 0) {
+      const subscriptionIterator = subscriptions.values().next();
+      if (subscriptionIterator.done) {
+        break;
+      }
+      const subscription = subscriptionIterator.value;
+
+      this.removeStateEventSubscription(
+        subscription.context,
+        subscription.index,
+        subscription,
+        false,
+      );
+      subscription.context = change.context;
+      this.addStateEventSubscription(
+        subscription.context,
+        subscription.index,
+        subscription,
+      );
+      subscription.listener.onContextChanged(change);
+    }
+  }
+
+  private shouldPublish(subject: { observed?: boolean }): boolean {
+    return subject.observed === undefined || subject.observed;
+  }
+
+  private acquireStateEventSubscription(
+    context: unknown,
+    index: unknown,
+    listener: IStateEventListener,
+  ): IStateEventSubscription {
+    const subscription = this._stateEventSubscriptionPool.pop() ?? {
+      active: true,
+      context,
+      index,
+      listener,
+    };
+
+    subscription.active = true;
+    subscription.context = context;
+    subscription.index = index;
+    subscription.listener = listener;
+
+    return subscription;
+  }
+
+  private releaseStateEventSubscription(
+    subscription: IStateEventSubscription,
+  ): void {
+    if (!subscription.active) {
+      return;
+    }
+    subscription.active = false;
+    this._stateEventSubscriptionPool.push(subscription);
+  }
+
   private setInitialValue(
     context: unknown,
     index: unknown,
@@ -500,27 +769,32 @@ export class StateManager implements IStateManager {
   }
 
   private getChainChanges(chain: IChainPart[] | undefined): IChainPartChange[] {
-    if (!chain) {
+    if (!chain || chain.length === 0) {
       return [];
     }
 
-    const registeredChainParts = chain.filter((chainPart) =>
-      this._stateChangeSubscriptionManager.isRegistered(
-        chainPart.context,
-        chainPart.index,
-      ),
-    );
+    const chainChanges: IChainPartChange[] = [];
+    for (let i = 0; i < chain.length; i++) {
+      const chainPart = chain[i];
+      const { context, index } = chainPart;
+      if (!this._stateChangeSubscriptionManager.isRegistered(context, index)) {
+        continue;
+      }
 
-    return registeredChainParts.map((chainPart) => ({
-      ...chainPart,
-      oldValue: this.getOldValue(chainPart.context, chainPart.index),
-      value: this.getValue(chainPart.context, chainPart.index),
-    }));
+      chainChanges.push({
+        context,
+        index,
+        oldValue: this.getOldValue(context, index),
+        value: this.getValue(context, index),
+      });
+    }
+
+    return chainChanges;
   }
 
   private getCurrentValue(context: unknown, index: unknown): unknown {
-    const value = this._pending.get(context);
-    if (value !== undefined) {
+    if (this._pending.has(context)) {
+      const value = this._pending.get(context);
       this._pending.delete(context);
       return value;
     }
@@ -528,16 +802,39 @@ export class StateManager implements IStateManager {
     return this.getState(context, index);
   }
 
-  private getOwnerId(context: unknown, index: unknown): unknown {
-    return this._objectStateManager.getFromId(context)?.getFromId(index)
-      ?.ownerId;
-  }
-
   private onChange(
     change: IPropertyChange,
     watched: boolean = false,
     ownerId: unknown,
   ): void {
+    const chain = change.chain;
+    if (!chain || chain.length === 0) {
+      return;
+    }
+
+    if (chain.length === 1) {
+      const chainPart = chain[0];
+      const { context, index } = chainPart;
+      if (!this._stateChangeSubscriptionManager.isRegistered(context, index)) {
+        return;
+      }
+
+      const value = this.getValue(context, index);
+      const oldValue = this.getOldValue(context, index);
+
+      this._startChangeCycle.next();
+
+      try {
+        const currentValue = this.getCurrentValue(context, index);
+        this.tryRebindingNestedState(change.newValue, currentValue, ownerId);
+        this.updateState(context, context, index, value, watched, ownerId);
+        this.emitChange(context, index, value, oldValue);
+      } finally {
+        this._endChangeCycle.next();
+      }
+      return;
+    }
+
     const chainChanges = this.getChainChanges(change.chain);
     if (chainChanges.length === 0) {
       return;
@@ -553,23 +850,27 @@ export class StateManager implements IStateManager {
       );
 
       this.tryRebindingNestedState(change.newValue, currentValue, ownerId);
-      this.updateState(
-        chainLeaf.context,
-        chainLeaf.context,
-        chainLeaf.index,
-        chainLeaf.value,
-        watched,
-        ownerId,
-      );
+      for (let i = 0; i < chainChanges.length; i++) {
+        const chainChange = chainChanges[i];
+        this.updateState(
+          chainChange.context,
+          chainChange.context,
+          chainChange.index,
+          chainChange.value,
+          watched,
+          ownerId,
+        );
+      }
 
-      chainChanges.forEach((chainChange) =>
+      for (let i = 0; i < chainChanges.length; i++) {
+        const chainChange = chainChanges[i];
         this.emitChange(
           chainChange.context,
           chainChange.index,
           chainChange.value,
           chainChange.oldValue,
-        ),
-      );
+        );
+      }
     } finally {
       this._endChangeCycle.next();
     }

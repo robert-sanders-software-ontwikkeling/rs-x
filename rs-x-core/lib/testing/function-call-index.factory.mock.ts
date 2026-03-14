@@ -4,9 +4,9 @@ import {
 } from '../function-call-index';
 import { type IISequenceWithIdData } from '../sequence-id';
 
-import { SingletonFactoryMock } from './singleton-factory.mock';
+import { KeyedInstanceFactoryMock } from './keyed-instance-factory.mock';
 
-export class FunctionCallIndexFactoryMock extends SingletonFactoryMock<
+export class FunctionCallIndexFactoryMock extends KeyedInstanceFactoryMock<
   IISequenceWithIdData,
   IFunctionCallIndexData,
   IDisposableFunctionCallIndex

@@ -1,10 +1,11 @@
 import { DeepCloneValueExcept } from '../lib/deep-clone/deep-clone-except';
 import { DefaultDeepClone } from '../lib/deep-clone/default-deep-clone';
+import { FastDeepClone } from '../lib/deep-clone/fast-deep-clone';
 import { InjectionContainer } from '../lib/dependency-injection';
 import { EqualityService } from '../lib/equality-service/equality-service';
 import { ErrorLog } from '../lib/error-log/error-log';
 import { FunctionCallIndexFactory } from '../lib/function-call-index/function-call-index.factory';
-import { FunctionCallResultCacheFactory } from '../lib/function-call-result-cache/function-call-result-cache.factory';
+import { FunctionCallResultCache } from '../lib/function-call-result-cache/function-call-result-cache';
 import { GuidFactory } from '../lib/guid/guid.factory';
 import { ArrayIndexAccessor } from '../lib/index-value-accessor/array-index-accessor';
 import { DatePropertyAccessor } from '../lib/index-value-accessor/date-property-accessor';
@@ -243,6 +244,17 @@ describe('rs-x core module', () => {
     expect(actual).toBeInstanceOf(DefaultDeepClone);
   });
 
+  it('can get instance of IFastDeepClone', () => {
+    const actual = InjectionContainer.get(RsXCoreInjectionTokens.IFastDeepClone);
+    expect(actual).toBeInstanceOf(FastDeepClone);
+  });
+
+  it('IFastDeepClone instance is a singleton', () => {
+    const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IFastDeepClone);
+    const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IFastDeepClone);
+    expect(a1).toBe(a2);
+  });
+
   it('IDeepClone instance is a singleton', () => {
     const a1 = InjectionContainer.get(RsXCoreInjectionTokens.IDeepClone);
     const a2 = InjectionContainer.get(RsXCoreInjectionTokens.IDeepClone);
@@ -326,19 +338,19 @@ describe('rs-x core module', () => {
     expect(a1).toBe(a2);
   });
 
-  it('can get instance of IFunctionCallResultCacheFactory', () => {
+  it('can get instance of IFunctionCallResultCache', () => {
     const actual = InjectionContainer.get(
-      RsXCoreInjectionTokens.IFunctionCallResultCacheFactory,
+      RsXCoreInjectionTokens.IFunctionCallResultCache,
     );
-    expect(actual).toBeInstanceOf(FunctionCallResultCacheFactory);
+    expect(actual).toBeInstanceOf(FunctionCallResultCache);
   });
 
-  it('IFunctionCallResultCacheFactory instance is a singleton', () => {
+  it('IFunctionCallResultCache instance is a singleton', () => {
     const a1 = InjectionContainer.get(
-      RsXCoreInjectionTokens.IFunctionCallResultCacheFactory,
+      RsXCoreInjectionTokens.IFunctionCallResultCache,
     );
     const a2 = InjectionContainer.get(
-      RsXCoreInjectionTokens.IFunctionCallResultCacheFactory,
+      RsXCoreInjectionTokens.IFunctionCallResultCache,
     );
     expect(a1).toBe(a2);
   });

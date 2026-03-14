@@ -7,10 +7,10 @@ interface WaitState<R> {
   timerId: number;
 }
 
-interface WaitOptions<
-  T extends { [K in E]: Observable<R> },
-  E extends keyof T,
-  R,
+export interface IWaitForEventOptions<
+  TTarget extends { [K in TEventName]: Observable<TValue> },
+  TEventName extends keyof TTarget,
+  TValue,
 > {
   count?: number;
   timeout?: number;
@@ -18,16 +18,16 @@ interface WaitOptions<
 }
 
 export class WaitForEvent<
-  T extends { [K in E]: Observable<R> },
-  E extends keyof T,
-  R,
+  TTarget extends { [K in TEventName]: Observable<TValue> },
+  TEventName extends keyof TTarget,
+  TValue,
 > {
-  private readonly _options: WaitOptions<T, E, R>;
+  private readonly _options: IWaitForEventOptions<TTarget, TEventName, TValue>;
 
   constructor(
-    private readonly _target: T,
-    private readonly _eventName: E,
-    options?: WaitOptions<T, E, R>,
+    private readonly _target: TTarget,
+    private readonly _eventName: TEventName,
+    options?: IWaitForEventOptions<TTarget, TEventName, TValue>,
   ) {
     this._options = {
       count: options?.count ?? 1,
@@ -38,15 +38,15 @@ export class WaitForEvent<
 
   public wait(
     trigger: () => void | Promise<unknown> | Observable<unknown>,
-  ): Promise<R | null> {
-    const state: WaitState<R> = {
+  ): Promise<TValue | null> {
+    const state: WaitState<TValue> = {
       results: [],
       pending: this._options.ignoreInitialValue,
       subscription: null!,
       timerId: 0,
     };
 
-    return new Promise<R | null>((resolve, reject) => {
+    return new Promise<TValue | null>((resolve, reject) => {
       state.timerId = window.setTimeout(() => {
         this.unsubscribeEvent(state);
         resolve(null); // timeout reached, no events
@@ -59,8 +59,8 @@ export class WaitForEvent<
   }
 
   private subscribeToEvent(
-    state: WaitState<R>,
-    resolve: (value: R | null) => void,
+    state: WaitState<TValue>,
+    resolve: (value: TValue | null) => void,
     reject: (error: unknown) => void,
   ): Subscription {
     return this._target[this._eventName].subscribe({
@@ -88,7 +88,7 @@ export class WaitForEvent<
 
   private async runTrigger(
     trigger: () => void | Promise<unknown> | Observable<unknown>,
-    state: WaitState<R>,
+    state: WaitState<TValue>,
     reject: (error: unknown) => void,
   ) {
     try {
@@ -105,21 +105,24 @@ export class WaitForEvent<
     }
   }
 
-  private finish(state: WaitState<R>, resolve: (value: R | null) => void) {
+  private finish(
+    state: WaitState<TValue>,
+    resolve: (value: TValue | null) => void,
+  ) {
     this.cleanup(state);
     resolve(
       state.results.length > 1
-        ? (state.results as unknown as R)
+        ? (state.results as unknown as TValue)
         : state.results[0],
     );
   }
 
-  private cleanup(state: WaitState<R>) {
+  private cleanup(state: WaitState<TValue>) {
     window.clearTimeout(state.timerId);
     this.unsubscribeEvent(state);
   }
 
-  private unsubscribeEvent(state: WaitState<R>) {
+  private unsubscribeEvent(state: WaitState<TValue>) {
     if (state.subscription) {
       state.subscription.unsubscribe();
     }

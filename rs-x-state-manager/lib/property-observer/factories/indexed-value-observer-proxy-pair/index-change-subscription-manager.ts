@@ -2,9 +2,9 @@ import {
   type IDisposableOwner,
   type IErrorLog,
   type IGuidFactory,
+  type IKeyedInstanceFactory,
   type IPropertyChange,
-  type ISingletonFactory,
-  SingletonFactory,
+  KeyedInstanceFactory,
 } from '@rs-x/core';
 
 import {
@@ -35,10 +35,10 @@ export interface IndexChangeSubscriptionForContext<TIndex> {
   index: TIndex;
 }
 
-export type IIndexSetObserverManager<TIndex> = ISingletonFactory<
+export type IIndexSetObserverManager<TIndex> = IKeyedInstanceFactory<
   unknown,
   unknown,
-  ISingletonFactory<
+  IKeyedInstanceFactory<
     IIndexWatchRule | TIndex,
     IIndexObserverInfo<TIndex>,
     IObserver,
@@ -126,7 +126,9 @@ class IndexChangeSubscriptionsForContextManager<TIndex>
   }
 }
 
-export class IndexChangeSubscriptionManager<TIndex> extends SingletonFactory<
+export class IndexChangeSubscriptionManager<
+  TIndex,
+> extends KeyedInstanceFactory<
   unknown,
   unknown,
   IIndexChangeSubscriptionsForContextManager<TIndex>

@@ -1,0 +1,271 @@
+/*
+  Shared style tokens for rs-x-react-component.
+  Base values intentionally mirror rs-x-site/app/globals.css.
+*/
+
+.app {
+  /* Fonts */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+    'Apple Color Emoji', 'Segoe UI Emoji';
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
+
+  /* Spacing */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.25rem;
+  --sp-6: 1.5rem;
+  --sp-7: 2rem;
+  --sp-8: 2.5rem;
+  --sp-9: 3rem;
+  --sp-10: 4rem;
+  --sp-11: 5rem;
+
+  /* Radius */
+  --r-md: 1rem;
+  --r-lg: 1.25rem;
+  --r-xl: 1.75rem;
+
+  /* Core theme tokens (match rs-x-site globals) */
+  --bg: #f6f8fc;
+  --brand: #0b66ff;
+  --brand-2: #2bb6a9;
+  --surface: rgba(255, 255, 255, 0.86);
+  --surface-2: rgba(255, 255, 255, 0.72);
+  --surface-solid: #ffffff;
+  --text: #0b1324;
+  --fg: var(--text);
+  --muted: rgba(11, 19, 36, 0.66);
+  --muted-2: rgba(11, 19, 36, 0.54);
+  --border: rgba(10, 25, 55, 0.14);
+  --border-soft: rgba(10, 25, 55, 0.1);
+  --sep: var(--border-soft);
+  --focus: rgba(11, 102, 255, 0.35);
+  --shadow-1:
+    0 1px 2px rgba(16, 24, 40, 0.06), 0 12px 34px rgba(16, 24, 40, 0.1);
+  --shadow-2:
+    0 2px 10px rgba(16, 24, 40, 0.08), 0 18px 52px rgba(16, 24, 40, 0.12);
+  --shadow-focus: 0 0 0 3px var(--focus);
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --t-fast: 160ms;
+  --t-med: 240ms;
+  --code-surface: #0b0f1a;
+  --btn-bg: var(--brand);
+  --btn-fg: #ffffff;
+  --btn-bg-hover: #0a5ae0;
+
+  /* Common control sizing */
+  --control-h: 32px;
+  --icon-btn-size: 30px;
+  --icon-size-sm: 14px;
+  --panel-gap: 0px;
+  --splitter-size: 1px;
+  --splitter-color: var(--border-soft);
+  --splitter-color-hover: var(--border);
+  --splitter-glow: transparent;
+  --zoom-select-w: 110px;
+
+  --panel-surface: var(--surface-solid);
+  --panel-header-surface: linear-gradient(
+    180deg,
+    var(--surface),
+    var(--surface-solid)
+  );
+  --panel-border-color: color-mix(in srgb, var(--border-soft) 84%, transparent);
+  --panel-divider-color: color-mix(
+    in srgb,
+    var(--border-soft) 88%,
+    transparent
+  );
+
+  /* Compatibility aliases for copied editor styles */
+  --panel: var(--surface-solid);
+  --panel-header: var(--surface-2);
+  --surface-1: var(--surface);
+  --border-1: var(--border);
+  --border-2: var(--border-soft);
+  --shadow-panel: var(--shadow-1);
+
+  /* Change history specific */
+  --chg-active-border: color-mix(in srgb, var(--brand) 55%, transparent);
+  --chg-active-bg: color-mix(in srgb, var(--surface) 70%, var(--brand) 30%);
+  --chg-active-shadow: 0 0 0 1px
+    color-mix(in srgb, var(--brand) 16%, transparent);
+  --chg-active-rail: color-mix(in srgb, var(--brand) 92%, transparent);
+  --chg-expr-color: color-mix(in srgb, var(--text) 72%, var(--brand) 28%);
+  --chg-diff-old: color-mix(in srgb, var(--text) 58%, #ef4444 42%);
+  --chg-diff-new: color-mix(in srgb, var(--text) 55%, var(--brand-2) 45%);
+  --chg-step-dot-trigger-bg: color-mix(in srgb, var(--brand) 95%, transparent);
+  --chg-step-dot-trigger-ring: 0 0 0 3px
+    color-mix(in srgb, var(--brand) 12%, transparent);
+  --chg-step-dot-trigger-border: color-mix(
+    in srgb,
+    var(--brand) 40%,
+    transparent
+  );
+  --chg-body-bg: color-mix(in srgb, var(--surface-solid) 86%, var(--bg) 14%);
+
+  /* Error panel specific */
+  --err-item-bg: color-mix(
+    in srgb,
+    var(--surface) 82%,
+    var(--surface-solid) 18%
+  );
+  --err-item-border: color-mix(in srgb, var(--border) 82%, var(--brand) 18%);
+  --err-item-text: color-mix(in srgb, var(--text) 78%, #ef4444 22%);
+
+  /* TS editor specific */
+  --ts-editor-input-width: 320px;
+  --ts-editor-input-radius: 14px;
+  --ts-editor-input-focus-ring-width: 3px;
+
+  /* Expression tree specific */
+  --expr-tree-path-stroke: rgba(11, 19, 36, 0.18);
+  --expr-tree-path-stroke-dark: rgba(237, 242, 255, 0.22);
+  --expr-tree-path-stroke-width: 2px;
+  --expr-tree-path-selected-stroke-width: 3.2px;
+  --expr-tree-path-active-stroke-width: 5.2px;
+  --expr-tree-path-selected-shadow: drop-shadow(
+    0 0 6px rgba(11, 102, 255, 0.24)
+  );
+  --expr-tree-path-selected-shadow-dark: drop-shadow(
+    0 0 6px rgba(122, 182, 255, 0.28)
+  );
+  --expr-tree-path-active-shadow: drop-shadow(0 0 10px rgba(43, 182, 169, 0.44))
+    drop-shadow(0 0 22px rgba(43, 182, 169, 0.22));
+  --expr-tree-path-active-shadow-dark: drop-shadow(
+      0 0 8px rgba(73, 217, 200, 0.34)
+    )
+    drop-shadow(0 0 16px rgba(73, 217, 200, 0.18));
+
+  --expr-node-dot-size: 10px;
+  --expr-node-dot-radius: 999px;
+  --expr-node-dot-ring-size: 4px;
+  --expr-node-dot-ring-shadow: 0 0 0 var(--expr-node-dot-ring-size)
+    rgba(11, 102, 255, 0.12);
+  --expr-node-dot-ring-shadow-dark: 0 0 0 var(--expr-node-dot-ring-size)
+    rgba(122, 182, 255, 0.14);
+
+  --expr-node-selected-border: rgba(11, 102, 255, 0.38);
+  --expr-node-selected-border-dark: rgba(122, 182, 255, 0.42);
+  --expr-node-selected-ring: 0 0 0 2px rgba(11, 102, 255, 0.14);
+  --expr-node-selected-ring-dark: 0 0 0 2px rgba(122, 182, 255, 0.16);
+  --expr-node-selected-glow: 0 0 18px rgba(11, 102, 255, 0.08);
+  --expr-node-selected-glow-dark: 0 0 18px rgba(122, 182, 255, 0.1);
+  --expr-node-selected-dot-ring: 0 0 0 4px rgba(11, 102, 255, 0.18);
+  --expr-node-selected-dot-ring-dark: 0 0 0 4px rgba(122, 182, 255, 0.2);
+  --expr-node-selected-dot-glow: 0 0 12px rgba(11, 102, 255, 0.1);
+  --expr-node-selected-dot-glow-dark: 0 0 12px rgba(122, 182, 255, 0.12);
+
+  --expr-node-active-border: rgba(43, 182, 169, 0.72);
+  --expr-node-active-border-dark: rgba(73, 217, 200, 0.6);
+  --expr-node-active-ring: 0 0 0 2px rgba(43, 182, 169, 0.22);
+  --expr-node-active-ring-dark: 0 0 0 2px rgba(73, 217, 200, 0.18);
+  --expr-node-active-glow: 0 0 24px rgba(43, 182, 169, 0.2);
+  --expr-node-active-glow-dark: 0 0 22px rgba(73, 217, 200, 0.14);
+  --expr-node-active-dot-ring: 0 0 0 4px rgba(43, 182, 169, 0.24);
+  --expr-node-active-dot-ring-dark: 0 0 0 4px rgba(73, 217, 200, 0.2);
+  --expr-node-active-dot-glow: 0 0 18px rgba(43, 182, 169, 0.22);
+  --expr-node-active-dot-glow-dark: 0 0 16px rgba(73, 217, 200, 0.16);
+
+  --expr-node-async-header: linear-gradient(
+    90deg,
+    rgba(43, 182, 169, 0.08) 0%,
+    var(--surface) 55%
+  );
+  --expr-node-async-header-dark: linear-gradient(
+    90deg,
+    rgba(73, 217, 200, 0.1) 0%,
+    var(--surface) 55%
+  );
+  --expr-node-async-dot-shadow: 0 0 0 0 rgba(43, 182, 169, 0);
+  --expr-node-async-dot-shadow-dark: 0 0 0 0 rgba(73, 217, 200, 0);
+  --expr-node-async-dot-pulse-start: 0 0 0 0 rgba(43, 182, 169, 0.32);
+  --expr-node-async-dot-pulse-mid: 0 0 0 8px rgba(43, 182, 169, 0);
+  --expr-node-async-dot-pulse-end: 0 0 0 0 rgba(43, 182, 169, 0);
+  --expr-node-async-pill-border: rgba(43, 182, 169, 0.3);
+  --expr-node-async-pill-bg: rgba(43, 182, 169, 0.1);
+  --expr-node-async-pill-border-dark: rgba(73, 217, 200, 0.34);
+  --expr-node-async-pill-bg-dark: rgba(73, 217, 200, 0.12);
+
+  --expr-node-async-pill-gap: 6px;
+  --expr-node-async-pill-height: 18px;
+  --expr-node-async-pill-px: 8px;
+  --expr-node-async-pill-radius: 999px;
+  --expr-node-async-pulse-size: 6px;
+
+  --expr-node-hover-lift: -1px;
+  --expr-node-pulse-scale: 1.015;
+  --expr-node-body-header-offset: 40px;
+}
+
+html[data-theme='dark'] .app {
+  --bg: #070b14;
+  --surface: rgba(12, 18, 35, 0.82);
+  --surface-2: rgba(12, 18, 35, 0.68);
+  --surface-solid: #0c1223;
+  --text: #edf2ff;
+  --fg: var(--text);
+  --muted: rgba(237, 242, 255, 0.7);
+  --muted-2: rgba(237, 242, 255, 0.54);
+  --border: rgba(237, 242, 255, 0.16);
+  --border-soft: rgba(237, 242, 255, 0.12);
+  --sep: var(--border-soft);
+  --brand: #7ab6ff;
+  --brand-2: #49d9c8;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.22), 0 12px 34px rgba(0, 0, 0, 0.32);
+  --shadow-2: 0 2px 10px rgba(0, 0, 0, 0.24), 0 18px 52px rgba(0, 0, 0, 0.34);
+  --shadow-focus: 0 0 0 3px var(--focus);
+  --code-surface: #050711;
+  --btn-bg: #1d5cff;
+  --btn-bg-hover: #184fe0;
+  --splitter-color: var(--border-soft);
+  --splitter-color-hover: var(--border);
+  --splitter-glow: transparent;
+
+  --panel-surface: color-mix(in srgb, var(--surface-solid) 86%, var(--bg) 14%);
+  --panel-header-surface: linear-gradient(
+    180deg,
+    rgba(12, 18, 35, 0.9),
+    rgba(12, 18, 35, 0.82)
+  );
+  --panel-border-color: rgba(237, 242, 255, 0.08);
+  --panel-divider-color: rgba(237, 242, 255, 0.07);
+
+  --panel: var(--surface-solid);
+  --panel-header: var(--surface-2);
+  --surface-1: var(--surface);
+  --border-1: var(--border);
+  --border-2: var(--border-soft);
+  --shadow-panel: var(--shadow-1);
+
+  --chg-active-border: color-mix(in srgb, var(--brand) 62%, transparent);
+  --chg-active-bg: color-mix(in srgb, var(--surface) 74%, var(--brand) 26%);
+  --chg-active-shadow: 0 0 0 1px
+    color-mix(in srgb, var(--brand) 24%, transparent);
+  --chg-active-rail: color-mix(in srgb, var(--brand) 96%, transparent);
+  --chg-expr-color: color-mix(in srgb, var(--text) 76%, var(--brand) 24%);
+  --chg-diff-old: color-mix(in srgb, var(--text) 62%, #f87171 38%);
+  --chg-diff-new: color-mix(in srgb, var(--text) 58%, var(--brand-2) 42%);
+  --chg-step-dot-trigger-bg: color-mix(in srgb, var(--brand) 96%, transparent);
+  --chg-step-dot-trigger-ring: 0 0 0 3px
+    color-mix(in srgb, var(--brand) 20%, transparent);
+  --chg-step-dot-trigger-border: color-mix(
+    in srgb,
+    var(--brand) 48%,
+    transparent
+  );
+  --chg-body-bg: color-mix(in srgb, var(--surface-solid) 86%, var(--bg) 14%);
+
+  --err-item-bg: color-mix(
+    in srgb,
+    var(--surface) 86%,
+    var(--surface-solid) 14%
+  );
+  --err-item-border: color-mix(in srgb, var(--border) 70%, #f87171 30%);
+  --err-item-text: color-mix(in srgb, var(--text) 72%, #f87171 28%);
+}

@@ -3,7 +3,7 @@ import { type AnyFunction, Assertion, PENDING, Type } from '@rs-x/core';
 import { type IExpressionChangeCommitHandler } from '../expresion-change-transaction-manager.interface';
 
 import { AbstractExpression } from './abstract-expression';
-import { type ArrayExpression } from './array-expression';
+import type { ArrayExpression } from './array-expression';
 import { ConstantNullExpression } from './constant-null-expression';
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 import { ExpressionType } from './expression-parser.interface';
@@ -12,42 +12,52 @@ export class FunctionExpression extends AbstractExpression {
   private _context: unknown;
   private _functionContext: unknown;
   private _functionId!: string;
+  private readonly _commitHandler: IExpressionChangeCommitHandler;
 
   constructor(
     expressionString: string,
-    public readonly functionExpression: AbstractExpression<
+    private readonly _functionExpression: AbstractExpression<
       AnyFunction | string | number
     >,
-    public readonly objectExpression: AbstractExpression<object>,
-    public readonly argumentsExpression: ArrayExpression,
-    public readonly computed: boolean,
-    public readonly optional: boolean,
+    private readonly _objectExpression: AbstractExpression<object>,
+    private readonly _argumentsExpression: ArrayExpression,
+    private readonly _computed: boolean,
+    private readonly _optional: boolean,
   ) {
+    const hasArguments = _argumentsExpression.childExpressions.length > 0;
+    const argumentsExpression = hasArguments
+      ? _argumentsExpression
+      : AbstractExpression.setHidden(_argumentsExpression);
+
     super(
       ExpressionType.Function,
       expressionString,
-      objectExpression ??
+      _objectExpression ??
         AbstractExpression.setHidden(new ConstantNullExpression()),
-      functionExpression,
+      _functionExpression,
       argumentsExpression,
     );
+    this._commitHandler = {
+      owner: this,
+      commit: this.commit,
+    };
   }
 
   public override clone(): this {
     return new (this.constructor as new (
       expressionString: string,
-      functionExpression: AbstractExpression<AnyFunction | string | number>,
-      objectExpression: AbstractExpression<object>,
-      argumentsExpression: ArrayExpression,
-      computed: boolean,
-      optional: boolean,
+      _functionExpression: AbstractExpression<AnyFunction | string | number>,
+      _objectExpression: AbstractExpression<object>,
+      _argumentsExpression: ArrayExpression,
+      _computed: boolean,
+      _optional: boolean,
     ) => this)(
       this.expressionString,
-      this.functionExpression.clone(),
-      this.objectExpression?.clone(),
-      this.argumentsExpression.clone(),
-      this.computed,
-      this.optional,
+      this._functionExpression.clone(),
+      this._objectExpression?.clone(),
+      this._argumentsExpression.clone(),
+      this._computed,
+      this._optional,
     );
   }
 
@@ -57,29 +67,33 @@ export class FunctionExpression extends AbstractExpression {
     super.bind(settings);
     this._functionId = this.guidFactory.create();
     this._context = settings.context;
-    if (this.objectExpression) {
-      this.objectExpression.bind(settings);
+    if (this._objectExpression) {
+      this._objectExpression.bind(settings);
 
-      this.functionExpression.bind(
-        this.computed ? settings : { ...settings, context: undefined },
+      this._functionExpression.bind(
+        this._computed ? settings : { ...settings, context: undefined },
       );
 
-      if (this.computed) {
-        this.functionExpression.bind(settings);
+      if (this._computed) {
+        this._functionExpression.bind(settings);
       } else {
-        AbstractExpression.setHidden(this.functionExpression);
+        AbstractExpression.setHidden(this._functionExpression);
       }
     } else {
       this._childExpressions[0].bind(settings);
-      AbstractExpression.setHidden(this.functionExpression);
-      this.functionExpression.bind(
-        this.functionExpression.type == ExpressionType.Identifier
+      AbstractExpression.setHidden(this._functionExpression);
+      this._functionExpression.bind(
+        this._functionExpression.type == ExpressionType.Identifier
           ? { ...settings, context: undefined }
           : settings,
       );
     }
 
-    this.argumentsExpression.bind(settings);
+    this._argumentsExpression.bind(settings);
+    this.transactionManager.registerChange(
+      this.evaluationRoot,
+      this._commitHandler,
+    );
 
     return this;
   }
@@ -94,9 +108,9 @@ export class FunctionExpression extends AbstractExpression {
     pendingCommits: Set<IExpressionChangeCommitHandler>,
   ): boolean {
     if (
-      sender === this.functionExpression ||
-      sender === this.objectExpression ||
-      sender === this.argumentsExpression
+      sender === this._functionExpression ||
+      sender === this._objectExpression ||
+      sender === this._argumentsExpression
     ) {
       super.prepareReevaluation(this, root, pendingCommits);
       return true;
@@ -107,7 +121,7 @@ export class FunctionExpression extends AbstractExpression {
 
   protected override evaluate(): unknown {
     const functionContext = Type.toObject(
-      this.objectExpression ? this.objectExpression?.value : this._context,
+      this._objectExpression ? this._objectExpression?.value : this._context,
     );
     if (!functionContext) {
       return PENDING;
@@ -117,11 +131,15 @@ export class FunctionExpression extends AbstractExpression {
       this._functionContext = functionContext;
     }
 
-    const { functionName, argumentsExpression } = this;
+    const { functionName } = this;
 
-    const args = argumentsExpression.value;
+    const args =
+      this._argumentsExpression.value ??
+      (this._argumentsExpression.childExpressions.length === 0
+        ? []
+        : undefined);
 
-    if (!functionName || !args || !functionContext) {
+    if (!functionName || args === undefined || !functionContext) {
       return PENDING;
     }
 
@@ -132,12 +150,17 @@ export class FunctionExpression extends AbstractExpression {
   }
 
   private get functionName(): string {
-    return this.computed
-      ? (this.functionExpression.value as string)
-      : this.functionExpression.expressionString;
+    return this._computed
+      ? (this._functionExpression.value as string)
+      : this._functionExpression.expressionString;
   }
 
   private releaseResult(): void {
+    if (!this.stateManager || !this._functionContext || !this._functionId) {
+      this._functionContext = undefined;
+      return;
+    }
+
     this.stateManager.releaseState(this._functionContext, this._functionId);
     this._functionContext = undefined;
   }
@@ -151,4 +174,9 @@ export class FunctionExpression extends AbstractExpression {
     );
     return result;
   }
+
+  private commit = (
+    root: AbstractExpression,
+    pendingCommits: Set<IExpressionChangeCommitHandler>,
+  ) => this.reevaluated(this, root, pendingCommits);
 }

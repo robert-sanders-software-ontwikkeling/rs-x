@@ -1,6 +1,5 @@
 import { generate as astToString } from 'astring';
 import * as espree from 'espree';
-import * as estraverse from 'estraverse';
 import type {
   ArrayExpression as EstreeArrayExpression,
   AssignmentExpression as EstreeAssignmentExpression,
@@ -90,7 +89,7 @@ import { SpreadExpression } from './expressions/spread-expression';
 import { StrictEqualityExpression } from './expressions/strict-equality-expression';
 import { StrictInequalityExpression } from './expressions/strict-inequality-expression';
 import { SubtractionExpression as SubstractionExpression } from './expressions/substraction-expression';
-import { TemplateStringExpression } from './expressions/template-string-expression';
+import { TemplateLiteralExpression } from './expressions/template-literal-expression';
 import { TypeofExpression } from './expressions/typeof-expression';
 import { UnaryNegationExpression } from './expressions/unary-negation-expression';
 import { UnaryPlusExpression } from './expressions/unary-plus-expression';
@@ -131,9 +130,16 @@ interface IPathSehment {
   computed: boolean;
 }
 
+type INormalizedMemberProperty = Pick<IPathSehment, 'expression' | 'computed'>;
+
 @Injectable()
 export class JsEspreeExpressionParser implements IExpressionParser {
   public static readonly instance: IExpressionParser;
+  private static readonly _parseOptions = {
+    ecmaVersion: 2022,
+    range: true,
+  } as const;
+  private _currentExpressionSource: string | undefined;
   private readonly createConstantExpression = {
     string: (literal: Literal) =>
       new ConstantStringExpression(literal.value as string),
@@ -248,20 +254,19 @@ export class JsEspreeExpressionParser implements IExpressionParser {
   }
 
   public parse(expressionString: string): AbstractExpression {
-    const espreeExpression = this.tryParse(expressionString);
-
-    let expression: AbstractExpression;
+    this._currentExpressionSource = expressionString;
     try {
-      expression = this.createExpression(espreeExpression);
+      const espreeExpression = this.tryParse(expressionString);
+      return this.createExpression(espreeExpression);
     } catch (e) {
       if (e instanceof Error) {
         throw new ParserException(expressionString, e.message);
       }
 
       throw new ParserException(expressionString, String(e));
+    } finally {
+      this._currentExpressionSource = undefined;
     }
-
-    return expression;
   }
 
   private tryParse(expressionString: string): Expression {
@@ -296,7 +301,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     if ((expression as RegExpLiteral).regex) {
       const regExpLiteral = expression as RegExpLiteral;
       return new ConstantRegExpExpression(
-        astToString(expression),
+        this.getExpressionSource(expression),
         new RegExp(regExpLiteral.regex.pattern, regExpLiteral.regex.flags),
       );
     }
@@ -340,7 +345,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: EstreeConditionalExpression,
   ): AbstractExpression => {
     return new ConditionalExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       this.createExpression(expression.test),
       this.createExpression(expression.consequent),
       this.createExpression(expression.alternate),
@@ -366,14 +371,14 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       const expression = this.createExpression(e.expression);
       return e.computed ? new IndexExpression(expression) : expression;
     });
-    return new MemberExpression(astToString(expression), pathSegments);
+    return new MemberExpression(this.getExpressionSource(expression), pathSegments);
   };
 
   private createSequenceExpression = (
     expression: EstreeSequenceExpression,
   ): AbstractExpression => {
     return new SequenceExpression(
-      astToString(expression),
+      this.getExpressionSource(expression, { preferGenerator: true }),
       expression.expressions.map((expression) =>
         this.createExpression(expression),
       ),
@@ -412,7 +417,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       (argumentExpressions) => this.createExpression(argumentExpressions),
     );
     return new NewExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       Type.cast(constructorExpression),
       argumentExpressions,
     );
@@ -423,11 +428,20 @@ export class JsEspreeExpressionParser implements IExpressionParser {
   ): AbstractExpression => {
     let objectExpression: IExpression<object> | null = null;
     let functionExpression: IExpression;
+    let computed = false;
+    let optional = false;
+
     if (expression.callee.type === EspreeExpressionType.MemberExpression) {
       objectExpression = this.createExpression(
         expression.callee.object,
       ) as IExpression<object>;
-      functionExpression = this.createExpression(expression.callee.property);
+      const normalizedProperty = this.normalizeMemberProperty(
+        expression.callee.property,
+        expression.callee.computed,
+      );
+      functionExpression = this.createExpression(normalizedProperty.expression);
+      computed = normalizedProperty.computed;
+      optional = expression.callee.optional;
     } else {
       functionExpression = this.createExpression(expression.callee);
     }
@@ -437,12 +451,12 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     );
 
     return new FunctionExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       Type.cast(functionExpression),
       Type.cast(objectExpression),
       new ArrayExpression(argumentExpressions),
-      Type.cast<{ computed: boolean }>(expression.callee).computed,
-      Type.cast<{ optional: boolean }>(expression.callee).optional,
+      computed,
+      optional,
     );
   };
 
@@ -463,8 +477,8 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       return expressions[0];
     }
 
-    return new TemplateStringExpression(
-      astToString(templateLiteral),
+    return new TemplateLiteralExpression(
+      this.getExpressionSource(templateLiteral),
       expressions,
     );
   };
@@ -483,8 +497,12 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       objectExpression = this.createExpression(
         expression.tag.object,
       ) as IExpression<object>;
-      functionExpression = this.createExpression(
+      const normalizedProperty = this.normalizeMemberProperty(
         expression.tag.property,
+        expression.tag.computed,
+      );
+      functionExpression = this.createExpression(
+        normalizedProperty.expression,
       ) as IExpression<AnyFunction | string | number>;
     } else {
       functionExpression = this.createExpression(expression.tag) as IExpression<
@@ -493,7 +511,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     }
 
     return new FunctionExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       Type.cast(functionExpression),
       Type.cast(objectExpression),
       new ArrayExpression([
@@ -523,7 +541,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: UnaryExpression,
   ): AbstractExpression => {
     return new UnaryPlusExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       this.createExpression(expression.argument),
     );
   };
@@ -532,7 +550,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: UnaryExpression,
   ): AbstractExpression => {
     return new UnaryNegationExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       Type.cast(this.createExpression(expression.argument)),
     );
   };
@@ -541,7 +559,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: UnaryExpression,
   ): AbstractExpression => {
     return new LogicalNotExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       this.createExpression(expression.argument),
     );
   };
@@ -550,7 +568,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: UnaryExpression,
   ): AbstractExpression => {
     return new TypeofExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       this.createExpression(expression.argument),
     );
   };
@@ -563,7 +581,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new EqualityExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       this.createExpression(expression.left),
       this.createExpression(expression.right),
     );
@@ -573,7 +591,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new InequalityExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       this.createExpression(expression.left),
       this.createExpression(expression.right),
     );
@@ -583,7 +601,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new StrictEqualityExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       this.createExpression(expression.left),
       this.createExpression(expression.right),
     );
@@ -593,7 +611,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new StrictInequalityExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       this.createExpression(expression.left),
       this.createExpression(expression.right),
     );
@@ -603,7 +621,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new LessThanExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       Type.cast(this.createExpression(expression.left)),
       Type.cast(this.createExpression(expression.right)),
     );
@@ -612,7 +630,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new LessThanOrEqualExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       Type.cast(this.createExpression(expression.left)),
       Type.cast(this.createExpression(expression.right)),
     );
@@ -622,7 +640,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new GreaterThanExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       this.createExpression(expression.left),
       this.createExpression(expression.right),
     );
@@ -632,7 +650,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new GreaterThanOrEqualExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       this.createExpression(expression.left),
       this.createExpression(expression.right),
     );
@@ -642,7 +660,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: UnaryExpression,
   ): AbstractExpression => {
     return new BitwiseNotExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       Type.cast(this.createExpression(expression.argument)),
     );
   };
@@ -651,7 +669,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new BitwiseLeftShiftExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       Type.cast(this.createExpression(expression.left)),
       Type.cast(this.createExpression(expression.right)),
     );
@@ -661,7 +679,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new BitwiseRightShiftExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       Type.cast(this.createExpression(expression.left)),
       Type.cast(this.createExpression(expression.right)),
     );
@@ -671,7 +689,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new BitwiseUnsignedRightShiftExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       Type.cast(this.createExpression(expression.left)),
       Type.cast(this.createExpression(expression.right)),
     );
@@ -681,7 +699,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new BitwiseOrExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       Type.cast(this.createExpression(expression.left)),
       Type.cast(this.createExpression(expression.right)),
     );
@@ -691,7 +709,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new BitwiseXorExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       Type.cast(this.createExpression(expression.left)),
       Type.cast(this.createExpression(expression.right)),
     );
@@ -701,7 +719,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new BitwiseAndExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       Type.cast(this.createExpression(expression.left)),
       Type.cast(this.createExpression(expression.right)),
     );
@@ -711,7 +729,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new AdditionExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       Type.cast(this.createExpression(expression.left)),
       Type.cast(this.createExpression(expression.right)),
     );
@@ -721,7 +739,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new SubstractionExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       Type.cast(this.createExpression(expression.left)),
       Type.cast(this.createExpression(expression.right)),
     );
@@ -731,7 +749,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new MultiplicationExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       Type.cast(this.createExpression(expression.left)),
       Type.cast(this.createExpression(expression.right)),
     );
@@ -741,7 +759,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new DivisionExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       Type.cast(this.createExpression(expression.left)),
       Type.cast(this.createExpression(expression.right)),
     );
@@ -751,7 +769,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new RemainderExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       Type.cast(this.createExpression(expression.left)),
       Type.cast(this.createExpression(expression.right)),
     );
@@ -761,7 +779,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new ExponentiationExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       Type.cast(this.createExpression(expression.left)),
       Type.cast(this.createExpression(expression.right)),
     );
@@ -771,7 +789,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new InstanceofExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       this.createExpression(expression.left),
       Type.cast(this.createExpression(expression.right)),
     );
@@ -781,7 +799,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: BinaryExpression,
   ): AbstractExpression => {
     return new InExpression(
-      astToString(expression),
+      this.getExpressionSource(expression, { preferGenerator: true }),
       this.createExpression(expression.left),
       this.createExpression(expression.right),
     );
@@ -791,7 +809,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: LogicalExpression,
   ): AbstractExpression => {
     return new LogicalOrExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       this.createExpression(expression.left),
       this.createExpression(expression.right),
     );
@@ -801,7 +819,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: LogicalExpression,
   ): AbstractExpression => {
     return new LogicalAndExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       this.createExpression(expression.left),
       this.createExpression(expression.right),
     );
@@ -811,7 +829,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: LogicalExpression,
   ): AbstractExpression => {
     return new NullishCoalescingExpression(
-      astToString(expression),
+      this.getExpressionSource(expression),
       this.createExpression(expression.left),
       this.createExpression(expression.right),
     );
@@ -827,7 +845,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
           | SpreadExpression,
     );
     return new ObjectExpression(
-      astToString(objectExpression),
+      this.getExpressionSource(objectExpression, { preferGenerator: true }),
       propertyExpressions,
     );
   };
@@ -843,16 +861,17 @@ export class JsEspreeExpressionParser implements IExpressionParser {
         : this.createExpression(propertyExpression.key);
 
     return new PropertyExpression(
-      astToString(propertyExpression),
+      this.getExpressionSource(propertyExpression, { preferGenerator: true }),
       keyExpression as AbstractExpression<PropertyKey, unknown>,
       this.createExpression(propertyExpression.value),
     );
   };
 
   private parseExpression(expression: string): ExpressionStatement {
-    const program = espree.parse(expression, {
-      ecmaVersion: 2022,
-    }) as Program;
+    const program = espree.parse(
+      expression,
+      JsEspreeExpressionParser._parseOptions,
+    ) as Program;
 
     if (program.body.length === 0) {
       throw new ParserException(expression, 'Empty expression', 0);
@@ -874,36 +893,49 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       );
     }
 
-    const expressionStatement = program.body[0];
-    this.normalizeAST(expressionStatement);
-    return expressionStatement;
+    return program.body[0];
   }
 
-  // Normalize a['b'] to a.b
-  private normalizeAST(ast: ExpressionStatement): void {
-    estraverse.traverse(ast, {
-      enter(node: Node) {
-        if (
-          node.type === 'MemberExpression' &&
-          node.computed &&
-          node.property.type === 'Literal'
-        ) {
-          const property = node.property as Literal;
+  private getExpressionSource(
+    expression: Node | PrivateIdentifier | Super,
+    options?: { preferGenerator?: boolean },
+  ): string {
+    if (options?.preferGenerator) {
+      return astToString(Type.cast<Node>(expression));
+    }
 
-          if (
-            typeof property.value === 'string' ||
-            typeof property.value === 'number'
-          ) {
-            node.property = {
-              type: 'Identifier',
-              name: property.value,
-            } as Identifier;
+    const range = Type.cast<{ range?: [number, number] }>(expression).range;
+    if (this._currentExpressionSource && range !== undefined) {
+      return this._currentExpressionSource.slice(range[0], range[1]);
+    }
 
-            node.computed = false;
-          }
-        }
-      },
-    });
+    return astToString(Type.cast<Node>(expression));
+  }
+
+  private normalizeMemberProperty(
+    expression: MemberExpressionSegmentType,
+    computed: boolean,
+  ): INormalizedMemberProperty {
+    if (computed && expression.type === EspreeExpressionType.Literal) {
+      const property = expression as Literal;
+      if (
+        typeof property.value === 'string' ||
+        typeof property.value === 'number'
+      ) {
+        return {
+          expression: {
+            type: EspreeExpressionType.Identifier,
+            name: property.value,
+          } as Identifier,
+          computed: false,
+        };
+      }
+    }
+
+    return {
+      expression,
+      computed,
+    };
   }
 
   private flattenMemberExpression(
@@ -911,17 +943,16 @@ export class JsEspreeExpressionParser implements IExpressionParser {
   ): IPathSehment[] {
     const result: IPathSehment[] = [];
 
-    function walk(node: MemberExpressionSegmentType): void {
+    const walk = (node: MemberExpressionSegmentType): void => {
       switch (node.type) {
         case EspreeExpressionType.MemberExpression:
           // first resolve the object
           walk(node.object as MemberExpressionSegmentType);
 
           // then push the property
-          result.push({
-            expression: node.property,
-            computed: node.computed,
-          });
+          result.push(
+            this.normalizeMemberProperty(node.property, node.computed),
+          );
           break;
 
         case EspreeExpressionType.CallExpression:
@@ -938,7 +969,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
             computed: false,
           });
       }
-    }
+    };
 
     walk(expr);
     return result;

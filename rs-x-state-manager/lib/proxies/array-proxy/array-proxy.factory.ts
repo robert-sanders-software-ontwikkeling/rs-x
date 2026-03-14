@@ -5,8 +5,8 @@ import {
   Inject,
   Injectable,
   type IProxyRegistry,
+  KeyedInstanceFactory,
   RsXCoreInjectionTokens,
-  SingletonFactory,
   Type,
 } from '@rs-x/core';
 
@@ -216,7 +216,7 @@ class ArrayProxy extends AbstractObserver<unknown[], unknown[], undefined> {
 
 @Injectable()
 export class ArrayProxyFactory
-  extends SingletonFactory<
+  extends KeyedInstanceFactory<
     unknown[],
     IArrayProxyData,
     IArrayObserverProxyPair,

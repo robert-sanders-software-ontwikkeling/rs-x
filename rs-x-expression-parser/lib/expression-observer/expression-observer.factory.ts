@@ -4,7 +4,7 @@ import {
   type IDisposableOwner,
   Injectable,
   type IPropertyChange,
-  SingletonFactory,
+  KeyedInstanceFactory,
 } from '@rs-x/core';
 import { AbstractObserver, type IObserver } from '@rs-x/state-manager';
 
@@ -45,7 +45,7 @@ class ExpressionObserver extends AbstractObserver<
 }
 @Injectable()
 export class ExpressionObserverFactory
-  extends SingletonFactory<
+  extends KeyedInstanceFactory<
     AbstractExpression,
     IExpressionObserverData,
     IObserver

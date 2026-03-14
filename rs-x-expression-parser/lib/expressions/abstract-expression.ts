@@ -1,4 +1,4 @@
-import { type Observable, ReplaySubject, type Subscription } from 'rxjs';
+import { type Observable, ReplaySubject } from 'rxjs';
 
 import {
   type IDisposableOwner,
@@ -34,7 +34,7 @@ export abstract class AbstractExpression<
   private _parent: AbstractExpression<PT> | undefined;
   private _id!: string;
   private _isDisposed = false;
-  private _commitedSubscription: Subscription | undefined;
+  private _releaseCommittedSubscription: (() => void) | undefined;
   private _owner: IDisposableOwner | undefined;
   private _services!: IExpressionServices;
   private _leafIndexWatchRule?: IIndexWatchRule | undefined;
@@ -94,9 +94,11 @@ export abstract class AbstractExpression<
     this._leafIndexWatchRule = settings.leafIndexWatchRule;
     if (!this._parent && this.transactionManager) {
       this._owner = settings.owner;
-      this._commitedSubscription = this.transactionManager.commited.subscribe(
-        this.onCommited,
-      );
+      this._releaseCommittedSubscription =
+        this.transactionManager.subscribeCommitted(
+          this,
+          this.onCommited,
+        );
     }
 
     return this;
@@ -207,8 +209,8 @@ export abstract class AbstractExpression<
   ): T | undefined;
 
   protected internalDispose(): void {
-    this._commitedSubscription?.unsubscribe();
-    this._commitedSubscription = undefined;
+    this._releaseCommittedSubscription?.();
+    this._releaseCommittedSubscription = undefined;
     this._childExpressions.forEach((childExpression) =>
       childExpression.dispose(),
     );
@@ -241,10 +243,16 @@ export abstract class AbstractExpression<
     root: AbstractExpression,
     pendingCommits: Set<IExpressionChangeCommitHandler>,
   ): boolean {
+    const previousValue = this._value;
     const value = this.evaluate(sender, root);
     if (value === PENDING) {
       return false;
     }
+
+    if (this.shouldPropagateOldValueFromSender(sender, previousValue, value)) {
+      this._oldValue = sender._oldValue;
+    }
+
     this._value = value;
 
     if (this.changeHook) {
@@ -267,6 +275,21 @@ export abstract class AbstractExpression<
       this._changed.next(this);
     }
   };
+
+  private shouldPropagateOldValueFromSender(
+    sender: AbstractExpression,
+    previousValue: unknown,
+    nextValue: unknown,
+  ): boolean {
+    const senderChangedValue = sender._oldValue !== sender.value;
+    const reusedStableReference =
+      previousValue === nextValue && nextValue === sender.value;
+
+    // For stable-reference derived values (for example cart[0] when only
+    // cart[0].qty changes), propagate sender.oldValue so commit detection and
+    // change history still capture the semantic change without cloning here.
+    return sender !== this && senderChangedValue && reusedStableReference;
+  }
 
   private addChildExpressions(expressions: AbstractExpression[]): void {
     this._childExpressions.push(...expressions);

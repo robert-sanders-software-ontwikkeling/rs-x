@@ -10,6 +10,7 @@ const packageMap = {
   '@rs-x/expression-parser': 'rs-x-expression-parser',
   '@rs-x/angular': 'rs-x-angular/projects/rsx',
   '@rs-x/react': 'rs-x-react',
+  '@rs-x/react-components': 'rs-x-react-components',
 };
 
 const basePath = './';

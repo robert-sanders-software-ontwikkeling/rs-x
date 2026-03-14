@@ -8,8 +8,8 @@ import {
   Inject,
   Injectable,
   type IPropertyChange,
+  KeyedInstanceFactory,
   RsXCoreInjectionTokens,
-  SingletonFactory,
 } from '@rs-x/core';
 
 import { AbstractObserver } from '../../../abstract-observer';
@@ -89,7 +89,7 @@ class CollectionIndexObserver extends AbstractObserver<Collection> {
 }
 
 class CollectionIndexObserverManager
-  extends SingletonFactory<unknown, IIndexObserverInfo, IObserver>
+  extends KeyedInstanceFactory<unknown, IIndexObserverInfo, IObserver>
   implements ICollectionIndexObserverManager
 {
   constructor(
@@ -140,7 +140,7 @@ class CollectionIndexObserverManager
 
 @Injectable()
 export class CollectionItemObserverManager
-  extends SingletonFactory<
+  extends KeyedInstanceFactory<
     Collection,
     Collection,
     ICollectionIndexObserverManager

@@ -1,0 +1,225 @@
+{
+  "generatedAt": "2026-03-14T21:13:36.228Z",
+  "runs": 3,
+  "environment": {
+    "nodeVersion": "v25.4.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "rssMb": 90
+  },
+  "config": {
+    "parseCounts": [
+      1000,
+      5000,
+      10000
+    ],
+    "bindCounts": [
+      1000,
+      3000,
+      5000
+    ],
+    "updateCounts": [
+      1000,
+      3000,
+      5000
+    ],
+    "runs": {
+      "parse": 7,
+      "bind": 5,
+      "updateSingle": 30,
+      "updateBulk": 10
+    },
+    "warmups": {
+      "parse": 1,
+      "bind": 1,
+      "updateSingle": 3,
+      "updateBulk": 2
+    }
+  },
+  "sourceRuns": [
+    "reports/rsx-spa-performance/benchmark-2026-03-14-median-run-1.json",
+    "reports/rsx-spa-performance/benchmark-2026-03-14-median-run-2.json",
+    "reports/rsx-spa-performance/benchmark-2026-03-14-median-run-3.json"
+  ],
+  "aggregated": {
+    "parse": [
+      {
+        "count": 1000,
+        "medianOfRunMediansMs": 8.938375000000008,
+        "minRunMedianMs": 8.532834000000008,
+        "maxRunMedianMs": 9.154958000000022,
+        "perRunMediansMs": [
+          8.938375000000008,
+          9.154958000000022,
+          8.532834000000008
+        ]
+      },
+      {
+        "count": 5000,
+        "medianOfRunMediansMs": 28.98950000000002,
+        "minRunMedianMs": 26.87850000000003,
+        "maxRunMedianMs": 32.931916,
+        "perRunMediansMs": [
+          26.87850000000003,
+          32.931916,
+          28.98950000000002
+        ]
+      },
+      {
+        "count": 10000,
+        "medianOfRunMediansMs": 38.929250000000025,
+        "minRunMedianMs": 37.982708,
+        "maxRunMedianMs": 40.38987499999996,
+        "perRunMediansMs": [
+          38.929250000000025,
+          40.38987499999996,
+          37.982708
+        ]
+      }
+    ],
+    "bind": {
+      "uniqueExpressionPerBinding": [
+        {
+          "count": 1000,
+          "medianOfRunMediansMs": 32.44416700000011,
+          "minRunMedianMs": 30.923667000000023,
+          "maxRunMedianMs": 34.807750000000055,
+          "perRunMediansMs": [
+            34.807750000000055,
+            32.44416700000011,
+            30.923667000000023
+          ]
+        },
+        {
+          "count": 3000,
+          "medianOfRunMediansMs": 113.78412499999968,
+          "minRunMedianMs": 109.06820800000014,
+          "maxRunMedianMs": 123.48512500000015,
+          "perRunMediansMs": [
+            123.48512500000015,
+            113.78412499999968,
+            109.06820800000014
+          ]
+        },
+        {
+          "count": 5000,
+          "medianOfRunMediansMs": 219.15137499999946,
+          "minRunMedianMs": 211.44533299999966,
+          "maxRunMedianMs": 227.4494590000004,
+          "perRunMediansMs": [
+            227.4494590000004,
+            211.44533299999966,
+            219.15137499999946
+          ]
+        }
+      ],
+      "cachedExpressionString": [
+        {
+          "count": 1000,
+          "medianOfRunMediansMs": 25.73349999999982,
+          "minRunMedianMs": 24.908042000000023,
+          "maxRunMedianMs": 26.03833399999985,
+          "perRunMediansMs": [
+            26.03833399999985,
+            25.73349999999982,
+            24.908042000000023
+          ]
+        },
+        {
+          "count": 3000,
+          "medianOfRunMediansMs": 124.43637499999977,
+          "minRunMedianMs": 115.19220899999982,
+          "maxRunMedianMs": 124.61437500000011,
+          "perRunMediansMs": [
+            124.61437500000011,
+            115.19220899999982,
+            124.43637499999977
+          ]
+        },
+        {
+          "count": 5000,
+          "medianOfRunMediansMs": 227.09087499999987,
+          "minRunMedianMs": 221.1647499999999,
+          "maxRunMedianMs": 241.44387500000084,
+          "perRunMediansMs": [
+            241.44387500000084,
+            221.1647499999999,
+            227.09087499999987
+          ]
+        }
+      ]
+    },
+    "update": {
+      "singleMutationWithActiveBindings": [
+        {
+          "count": 1000,
+          "medianOfRunMediansMs": 0.0997079999979178,
+          "minRunMedianMs": 0.09841700000106357,
+          "maxRunMedianMs": 0.10093750000032742,
+          "perRunMediansMs": [
+            0.0997079999979178,
+            0.09841700000106357,
+            0.10093750000032742
+          ]
+        },
+        {
+          "count": 3000,
+          "medianOfRunMediansMs": 0.07806250000066939,
+          "minRunMedianMs": 0.07460399999945366,
+          "maxRunMedianMs": 0.08199950000198442,
+          "perRunMediansMs": [
+            0.08199950000198442,
+            0.07806250000066939,
+            0.07460399999945366
+          ]
+        },
+        {
+          "count": 5000,
+          "medianOfRunMediansMs": 0.0773129999943194,
+          "minRunMedianMs": 0.06754199999704724,
+          "maxRunMedianMs": 0.08174999999755528,
+          "perRunMediansMs": [
+            0.08174999999755528,
+            0.0773129999943194,
+            0.06754199999704724
+          ]
+        }
+      ],
+      "bulkMutateAllBindings": [
+        {
+          "count": 1000,
+          "medianOfRunMediansMs": 9.016083499998786,
+          "minRunMedianMs": 8.359583499997825,
+          "maxRunMedianMs": 9.271499999997104,
+          "perRunMediansMs": [
+            9.016083499998786,
+            8.359583499997825,
+            9.271499999997104
+          ]
+        },
+        {
+          "count": 3000,
+          "medianOfRunMediansMs": 31.069833499997912,
+          "minRunMedianMs": 30.4207290000013,
+          "maxRunMedianMs": 42.14514599999893,
+          "perRunMediansMs": [
+            42.14514599999893,
+            30.4207290000013,
+            31.069833499997912
+          ]
+        },
+        {
+          "count": 5000,
+          "medianOfRunMediansMs": 44.57652049999888,
+          "minRunMedianMs": 43.03874999999971,
+          "maxRunMedianMs": 50.17383349999727,
+          "perRunMediansMs": [
+            50.17383349999727,
+            44.57652049999888,
+            43.03874999999971
+          ]
+        }
+      ]
+    }
+  }
+}

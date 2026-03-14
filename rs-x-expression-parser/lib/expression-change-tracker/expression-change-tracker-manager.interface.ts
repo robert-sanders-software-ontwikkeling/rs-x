@@ -1,6 +1,6 @@
 import { type Observable } from 'rxjs';
 
-import { type IDisposable, type ISingletonFactory } from '@rs-x/core';
+import { type IDisposable, type IKeyedInstanceFactory } from '@rs-x/core';
 
 import { type IExpression } from '../expressions/expression-parser.interface';
 
@@ -12,7 +12,7 @@ export interface IExpressionChangeTracker extends IDisposable {
   continue(): void;
 }
 
-export type IExpressionChangeTrackerManager = ISingletonFactory<
+export type IExpressionChangeTrackerManager = IKeyedInstanceFactory<
   IExpression,
   IExpression,
   IExpressionChangeTracker

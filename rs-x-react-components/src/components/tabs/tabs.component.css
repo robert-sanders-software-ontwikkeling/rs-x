@@ -1,0 +1,63 @@
+.rsxTabs {
+  min-width: 0;
+}
+
+.rsxTabsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: stretch;
+}
+
+.rsxTabsTrigger {
+  border: 1px solid color-mix(in srgb, var(--border-soft, #d7dee8) 82%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--surface-solid, #ffffff) 82%,
+    var(--surface-2, #f3f6fa)
+  );
+  color: var(--text, #102030);
+  border-radius: 12px;
+  text-align: center;
+  padding: 0.72rem 0.8rem;
+  font-weight: 700;
+  font-size: 0.98rem;
+  cursor: pointer;
+  transition:
+    background var(--t-med, 160ms) var(--ease, ease),
+    color var(--t-med, 160ms) var(--ease, ease),
+    border-color var(--t-med, 160ms) var(--ease, ease),
+    transform var(--t-fast, 100ms) var(--ease, ease);
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.rsxTabsTrigger:hover:not(:disabled) {
+  background: color-mix(
+    in srgb,
+    var(--brand, #0b66ff) 10%,
+    var(--surface-solid, #ffffff)
+  );
+  border-color: color-mix(in srgb, var(--brand, #0b66ff) 26%, var(--border-soft, #d7dee8));
+}
+
+.rsxTabsTrigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.rsxTabsTrigger.isActive,
+.rsxTabsTrigger[data-state='active'] {
+  background: color-mix(in srgb, var(--brand, #0b66ff) 84%, #ffffff);
+  color: #fff;
+  border-color: color-mix(in srgb, var(--brand, #0b66ff) 84%, #ffffff);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--brand, #0b66ff) 22%, transparent);
+  transform: translateY(-1px);
+}
+
+.rsxTabsTriggerLabel {
+  font-size: 0.96rem;
+  font-weight: 800;
+  line-height: 1.1;
+}

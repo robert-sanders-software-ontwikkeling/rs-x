@@ -1,4 +1,4 @@
-import { Inject, Injectable, SingletonFactory } from '@rs-x/core';
+import { Inject, Injectable, KeyedInstanceFactory } from '@rs-x/core';
 
 import type {
   IExpression,
@@ -10,7 +10,7 @@ import type { IExpressionCache } from './expression-cache.type';
 
 @Injectable()
 export class ExpressionCache
-  extends SingletonFactory<string, string, IExpression>
+  extends KeyedInstanceFactory<string, string, IExpression>
   implements IExpressionCache
 {
   constructor(
