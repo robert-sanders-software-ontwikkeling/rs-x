@@ -135,6 +135,10 @@ type INormalizedMemberProperty = Pick<IPathSehment, 'expression' | 'computed'>;
 @Injectable()
 export class JsEspreeExpressionParser implements IExpressionParser {
   public static readonly instance: IExpressionParser;
+  private static readonly _parseOptions = {
+    ecmaVersion: 2022,
+    range: true,
+  } as const;
   private _currentExpressionSource: string | undefined;
   private readonly createConstantExpression = {
     string: (literal: Literal) =>
@@ -864,10 +868,10 @@ export class JsEspreeExpressionParser implements IExpressionParser {
   };
 
   private parseExpression(expression: string): ExpressionStatement {
-    const program = espree.parse(expression, {
-      ecmaVersion: 2022,
-      range: true,
-    }) as Program;
+    const program = espree.parse(
+      expression,
+      JsEspreeExpressionParser._parseOptions,
+    ) as Program;
 
     if (program.body.length === 0) {
       throw new ParserException(expression, 'Empty expression', 0);

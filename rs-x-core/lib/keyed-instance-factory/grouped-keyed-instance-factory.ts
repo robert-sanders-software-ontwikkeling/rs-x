@@ -16,6 +16,10 @@ export abstract class GroupedKeyedInstanceFactory<
   implements IGroupedKeyedInstanceFactory<TId, TData, TInstance, TIdData>
 {
   private readonly _groupedData = new Map<unknown, Map<unknown, TId>>();
+  private readonly _groupMemberById = new Map<
+    TId,
+    { groupId: unknown; groupMemberId: unknown }
+  >();
 
   public *instanceGroupInfoEntries(): IterableIterator<
     IInstanceGroupInfo<TId, TInstance>
@@ -76,41 +80,32 @@ export abstract class GroupedKeyedInstanceFactory<
 
     const id = this.createUniqueId(data);
     dataGroup.set(groupMemberId, id);
+    this._groupMemberById.set(id, {
+      groupId,
+      groupMemberId,
+    });
     return id;
   }
 
   protected override releaseInstance(_instance: TInstance, id: TId): void {
-    const { groupId, groupMemberId } = this.findGroupMemberId(id);
-    let dataGroup = this._groupedData.get(groupId);
+    const groupMember = this._groupMemberById.get(id);
+    if (!groupMember) {
+      return;
+    }
+    this._groupMemberById.delete(id);
 
+    const dataGroup = this._groupedData.get(groupMember.groupId);
     if (!dataGroup) {
       return;
     }
 
-    dataGroup.delete(groupMemberId);
+    dataGroup.delete(groupMember.groupMemberId);
     if (dataGroup.size === 0) {
-      this._groupedData.delete(groupId);
+      this._groupedData.delete(groupMember.groupId);
     }
   }
 
-  private findGroupMemberId(idToFind: unknown): {
-    groupId: unknown;
-    groupMemberId: unknown;
-  } {
-    for (const [groupId, groupData] of this._groupedData) {
-      for (const [groupMemberId, id] of groupData.entries()) {
-        if (idToFind === id) {
-          return {
-            groupId,
-            groupMemberId,
-          };
-        }
-      }
-    }
-
-    return {
-      groupId: null,
-      groupMemberId: null,
-    };
+  protected override onDispose(): void {
+    this._groupMemberById.clear();
   }
 }

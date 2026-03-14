@@ -405,11 +405,27 @@ export class StateManager implements IStateManager {
       }
 
       const newValue = this.getValue(newContext, index);
-      if (
-        oldContext === newContext &&
-        this._equalityService.isEqual(oldValue, newValue)
-      ) {
-        continue;
+      if (oldContext === newContext) {
+        if (
+          oldValue === newValue ||
+          (oldValue !== oldValue && newValue !== newValue)
+        ) {
+          continue;
+        }
+
+        const newValueIsObjectLike =
+          newValue !== null &&
+          (typeof newValue === 'object' || typeof newValue === 'function');
+        const oldValueIsObjectLike =
+          oldValue !== null &&
+          (typeof oldValue === 'object' || typeof oldValue === 'function');
+
+        if (
+          (newValueIsObjectLike || oldValueIsObjectLike) &&
+          this._equalityService.isEqual(oldValue, newValue)
+        ) {
+          continue;
+        }
       }
 
       if (newValue === PENDING) {
@@ -585,8 +601,8 @@ export class StateManager implements IStateManager {
   }
 
   private getCurrentValue(context: unknown, index: unknown): unknown {
-    const value = this._pending.get(context);
-    if (value !== undefined) {
+    if (this._pending.has(context)) {
+      const value = this._pending.get(context);
       this._pending.delete(context);
       return value;
     }

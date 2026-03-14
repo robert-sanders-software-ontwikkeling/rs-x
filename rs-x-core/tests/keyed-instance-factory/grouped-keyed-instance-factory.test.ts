@@ -95,4 +95,22 @@ describe('GroupedKeyedInstanceFactory tests', () => {
 
     expect(groupedKeyedInstanceFactory.getFromId(id)).toBeUndefined();
   });
+
+  it('can recreate the same group member after release', () => {
+    const first = groupedKeyedInstanceFactory.create({
+      groupId: 1,
+      groupMemberId: 10,
+    });
+
+    groupedKeyedInstanceFactory.release(first.id);
+
+    const second = groupedKeyedInstanceFactory.create({
+      groupId: 1,
+      groupMemberId: 10,
+    });
+
+    expect(second.referenceCount).toBe(1);
+    expect(second.instance).toBeInstanceOf(TestObject);
+    expect(second.instance).not.toBe(first.instance);
+  });
 });
