@@ -43,21 +43,33 @@ export class IndexValueAccessor implements IIndexValueAccessor {
   }
 
   public applies(context: unknown, index: unknown): boolean {
-    return this.getIndexAccessor(context, index).applies(context, index);
+    return this.findIndexAccessor(context, index) !== undefined;
   }
 
   private getIndexAccessor(
     context: unknown,
     index: unknown,
   ): IIndexValueAccessor<unknown, unknown> {
-    const accessor = this._accessors.find((accessor) =>
-      accessor.applies(context, index),
-    );
+    const accessor = this.findIndexAccessor(context, index);
 
     if (!accessor) {
       throw new NoAccessorFoundExeception(context, index);
     }
 
     return accessor;
+  }
+
+  private findIndexAccessor(
+    context: unknown,
+    index: unknown,
+  ): IIndexValueAccessor<unknown, unknown> | undefined {
+    const accessors = this._accessors;
+    for (let i = 0; i < accessors.length; i++) {
+      const accessor = accessors[i];
+      if (accessor.applies(context, index)) {
+        return accessor;
+      }
+    }
+    return undefined;
   }
 }

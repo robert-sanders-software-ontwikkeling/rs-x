@@ -80,14 +80,14 @@ xychart-beta
   title "Parse unique expressions (optimized run)"
   x-axis [1000, 5000, 10000]
   y-axis "Median ms" 0 --> 50
-  bar [10.131, 28.457, 44.399]
+  bar [8.895, 27.063, 40.742]
 ```
 
 | Parses | Median ms | p95 ms | Ops/s |
 | --- | ---: | ---: | ---: |
-| 1,000 | 10.131 | 10.259 | 98,704 |
-| 5,000 | 28.457 | 31.159 | 175,705 |
-| 10,000 | 44.399 | 46.246 | 225,229 |
+| 1,000 | 8.895 | 9.110 | 112,422 |
+| 5,000 | 27.063 | 32.112 | 184,754 |
+| 10,000 | 40.742 | 41.822 | 245,446 |
 
 ### Bind (create + initial evaluate)
 
@@ -96,8 +96,8 @@ xychart-beta
   title "Bind latency (optimized run)"
   x-axis [1000, 3000, 5000]
   y-axis "Median ms" 0 --> 260
-  line [36.083, 122.775, 246.867]
-  line [28.126, 127.011, 233.404]
+  line [36.289, 131.995, 248.212]
+  line [28.992, 125.418, 235.166]
 ```
 
 Legend:
@@ -111,7 +111,7 @@ xychart-beta
   title "Single localized mutation latency (optimized run)"
   x-axis [1000, 3000, 5000]
   y-axis "Median ms" 0 --> 1
-  bar [0.119, 0.093, 0.092]
+  bar [0.123, 0.092, 0.087]
 ```
 
 ```mermaid
@@ -119,14 +119,14 @@ xychart-beta
   title "Bulk mutate all bindings latency (optimized run)"
   x-axis [1000, 3000, 5000]
   y-axis "Median ms" 0 --> 500
-  bar [8.902, 32.888, 47.161]
+  bar [10.597, 32.773, 46.284]
 ```
 
 | Active bindings | Single update median ms | Single update p95 ms | Bulk update median ms |
 | --- | ---: | ---: | ---: |
-| 1,000 | 0.119 | 0.177 | 8.902 |
-| 3,000 | 0.093 | 0.125 | 32.888 |
-| 5,000 | 0.092 | 0.120 | 47.161 |
+| 1,000 | 0.123 | 0.191 | 10.597 |
+| 3,000 | 0.092 | 0.131 | 32.773 |
+| 5,000 | 0.087 | 0.124 | 46.284 |
 
 ## Before vs after (median ms)
 
@@ -138,7 +138,7 @@ xychart-beta
   x-axis [1000, 3000, 5000]
   y-axis "Median ms" 0 --> 1700
   line [86.051, 608.480, 1647.797]
-  line [28.126, 127.011, 233.404]
+  line [28.992, 125.418, 235.166]
 ```
 
 ### Single update latency impact (baseline vs final)
@@ -149,7 +149,7 @@ xychart-beta
   x-axis [1000, 3000, 5000]
   y-axis "Median ms" 0 --> 3
   line [0.884, 2.749, 2.476]
-  line [0.119, 0.093, 0.092]
+  line [0.123, 0.092, 0.087]
 ```
 
 ### Bulk update latency impact (baseline vs final)
@@ -160,15 +160,15 @@ xychart-beta
   x-axis [1000, 3000, 5000]
   y-axis "Median ms" 0 --> 1800
   line [94.355, 797.324, 1730.699]
-  line [8.902, 32.888, 47.161]
+  line [10.597, 32.773, 46.284]
 ```
 
 | Metric | 1,000 | 3,000 | 5,000 |
 | --- | ---: | ---: | ---: |
-| Bind unique improvement | 60.0% | 81.5% | 86.6% |
-| Bind cached improvement | 67.3% | 79.1% | 85.8% |
-| Single update improvement | 86.5% | 96.6% | 96.3% |
-| Bulk update improvement | 90.6% | 95.9% | 97.3% |
+| Bind unique improvement | 59.8% | 80.1% | 86.5% |
+| Bind cached improvement | 66.3% | 79.4% | 85.7% |
+| Single update improvement | 86.1% | 96.7% | 96.5% |
+| Bulk update improvement | 88.8% | 95.9% | 97.3% |
 
 ## Parser pass delta (vs state+commit optimized run)
 
@@ -202,6 +202,24 @@ Interpretation:
 - Parse-heavy workloads improved.
 - End-to-end bind/update numbers are mixed in this run and need repeated-run averaging before treating this pass as a clear net gain.
 - Previous two optimizations (state routing + commit routing) remain the dominant and validated throughput improvements.
+
+## Stability check (latest vs previous tuned snapshot)
+
+Comparison source:
+
+- Previous snapshot: [benchmark-2026-03-14-batched-continuation.json](/Users/robertsanders/projects/rs-x/reports/rsx-spa-performance/benchmark-2026-03-14-batched-continuation.json)
+- Latest snapshot: [benchmark-2026-03-14.json](/Users/robertsanders/projects/rs-x/reports/rsx-spa-performance/benchmark-2026-03-14.json)
+
+Positive `%` in delta means latest is slower (higher median ms).
+
+| Metric | Count | Previous (ms) | Latest (ms) | Delta |
+| --- | ---: | ---: | ---: | ---: |
+| Single update | 1,000 | 0.122 | 0.123 | +1.0% |
+| Single update | 3,000 | 0.106 | 0.092 | -13.5% |
+| Single update | 5,000 | 0.104 | 0.087 | -16.2% |
+| Bulk update | 1,000 | 9.824 | 10.597 | +7.9% |
+| Bulk update | 3,000 | 34.549 | 32.773 | -5.1% |
+| Bulk update | 5,000 | 47.808 | 46.284 | -3.2% |
 
 ## Conclusion for SPA framework viability
 

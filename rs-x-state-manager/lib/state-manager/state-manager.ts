@@ -262,7 +262,24 @@ export class StateManager implements IStateManager {
     oldValue: unknown,
     oldContext?: unknown,
   ): void {
-    if (this._equalityService.isEqual(newValue, oldValue)) {
+    if (
+      newValue === oldValue ||
+      (newValue !== newValue && oldValue !== oldValue)
+    ) {
+      return;
+    }
+
+    const newValueIsObjectLike =
+      newValue !== null &&
+      (typeof newValue === 'object' || typeof newValue === 'function');
+    const oldValueIsObjectLike =
+      oldValue !== null &&
+      (typeof oldValue === 'object' || typeof oldValue === 'function');
+
+    if (
+      (newValueIsObjectLike || oldValueIsObjectLike) &&
+      this._equalityService.isEqual(newValue, oldValue)
+    ) {
       return;
     }
     this._changed.next({
@@ -549,6 +566,34 @@ export class StateManager implements IStateManager {
     watched: boolean = false,
     ownerId: unknown,
   ): void {
+    const chain = change.chain;
+    if (!chain || chain.length === 0) {
+      return;
+    }
+
+    if (chain.length === 1) {
+      const chainPart = chain[0];
+      const { context, index } = chainPart;
+      if (!this._stateChangeSubscriptionManager.isRegistered(context, index)) {
+        return;
+      }
+
+      const value = this.getValue(context, index);
+      const oldValue = this.getOldValue(context, index);
+
+      this._startChangeCycle.next();
+
+      try {
+        const currentValue = this.getCurrentValue(context, index);
+        this.tryRebindingNestedState(change.newValue, currentValue, ownerId);
+        this.updateState(context, context, index, value, watched, ownerId);
+        this.emitChange(context, index, value, oldValue);
+      } finally {
+        this._endChangeCycle.next();
+      }
+      return;
+    }
+
     const chainChanges = this.getChainChanges(change.chain);
     if (chainChanges.length === 0) {
       return;
