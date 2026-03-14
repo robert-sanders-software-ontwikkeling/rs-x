@@ -14,6 +14,11 @@ export const echo = <T = unknown>(value: T) => value;
 type PlainObject = Record<string, unknown>;
 
 export class Type {
+  private static readonly _readonlyPropertyByPrototype = new WeakMap<
+    object,
+    Map<PropertyKey, boolean>
+  >();
+
   public static isReadonlyProperty(
     target: unknown,
     key: unknown,
@@ -34,17 +39,49 @@ export class Type {
       return false;
     }
 
-    let current: object | null = target;
+    const targetObject = target as object;
+    const ownDescriptor = Object.getOwnPropertyDescriptor(
+      targetObject,
+      normalizedKey,
+    );
+    if (ownDescriptor) {
+      return (
+        Type.getPropertyDescriptorType(ownDescriptor) ===
+        PropertyDescriptorType.ReadonlyProperty
+      );
+    }
+
+    const prototype = Object.getPrototypeOf(targetObject);
+    if (!prototype || prototype === Object.prototype) {
+      return false;
+    }
+
+    const cachedByKey = Type._readonlyPropertyByPrototype.get(prototype);
+    if (cachedByKey?.has(normalizedKey)) {
+      return cachedByKey.get(normalizedKey) as boolean;
+    }
+
+    let current: object | null = prototype;
+    let isReadonly = false;
     while (current && current !== Object.prototype) {
       const descriptor = Object.getOwnPropertyDescriptor(current, normalizedKey);
       if (descriptor) {
-        return Type.getPropertyDescriptorType(descriptor) ===
+        isReadonly =
+          Type.getPropertyDescriptorType(descriptor) ===
           PropertyDescriptorType.ReadonlyProperty;
+        break;
       }
       current = Object.getPrototypeOf(current);
     }
 
-    return false;
+    let nextCachedByKey = cachedByKey;
+    if (!nextCachedByKey) {
+      nextCachedByKey = new Map<PropertyKey, boolean>();
+      Type._readonlyPropertyByPrototype.set(prototype, nextCachedByKey);
+    }
+    nextCachedByKey.set(normalizedKey, isReadonly);
+
+    return isReadonly;
   }
 
   public static isPositiveIntegerString(value: unknown): boolean {
