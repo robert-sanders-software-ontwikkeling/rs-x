@@ -63,6 +63,29 @@ export abstract class GroupedKeyedInstanceFactory<
     return this._groupedData.get(groupId) as Map<T, TId>;
   }
 
+  protected override getOrCreateId(data: TIdData): TId {
+    const groupId = this.getGroupId(data);
+    let dataGroup = this._groupedData.get(groupId);
+    if (!dataGroup) {
+      dataGroup = new Map<unknown, TId>();
+      this._groupedData.set(groupId, dataGroup);
+    }
+
+    const groupMemberId = this.getGroupMemberId(data);
+    const existingId = dataGroup.get(groupMemberId);
+    if (existingId !== undefined) {
+      return existingId;
+    }
+
+    const id = this.createUniqueId(data);
+    dataGroup.set(groupMemberId, id);
+    this._groupMemberById.set(id, {
+      groupId,
+      groupMemberId,
+    });
+    return id;
+  }
+
   protected createId(data: TData): TId {
     const groupId = this.getGroupId(data);
     let dataGroup = this._groupedData.get(groupId);

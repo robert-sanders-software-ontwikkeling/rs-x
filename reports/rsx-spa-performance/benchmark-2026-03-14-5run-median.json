@@ -1,0 +1,257 @@
+{
+  "generatedAt": "2026-03-14T12:42:27.263Z",
+  "runs": 5,
+  "environment": {
+    "nodeVersion": "v25.4.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "rssMb": 90
+  },
+  "config": {
+    "parseCounts": [
+      1000,
+      5000,
+      10000
+    ],
+    "bindCounts": [
+      1000,
+      3000,
+      5000
+    ],
+    "updateCounts": [
+      1000,
+      3000,
+      5000
+    ],
+    "runs": {
+      "parse": 7,
+      "bind": 5,
+      "updateSingle": 30,
+      "updateBulk": 10
+    },
+    "warmups": {
+      "parse": 1,
+      "bind": 1,
+      "updateSingle": 3,
+      "updateBulk": 2
+    }
+  },
+  "sourceRuns": [
+    "reports/rsx-spa-performance/benchmark-2026-03-14-median-run-1.json",
+    "reports/rsx-spa-performance/benchmark-2026-03-14-median-run-2.json",
+    "reports/rsx-spa-performance/benchmark-2026-03-14-median-run-3.json",
+    "reports/rsx-spa-performance/benchmark-2026-03-14-median-run-4.json",
+    "reports/rsx-spa-performance/benchmark-2026-03-14-median-run-5.json"
+  ],
+  "aggregated": {
+    "parse": [
+      {
+        "count": 1000,
+        "medianOfRunMediansMs": 8.825167000000022,
+        "minRunMedianMs": 8.485834000000011,
+        "maxRunMedianMs": 13.36629099999999,
+        "perRunMediansMs": [
+          8.485834000000011,
+          13.36629099999999,
+          8.825167000000022,
+          8.683875,
+          9.420041999999995
+        ]
+      },
+      {
+        "count": 5000,
+        "medianOfRunMediansMs": 29.016083999999978,
+        "minRunMedianMs": 26.970166000000006,
+        "maxRunMedianMs": 29.73708399999998,
+        "perRunMediansMs": [
+          28.92516599999999,
+          26.970166000000006,
+          29.016083999999978,
+          29.73708399999998,
+          29.478625000000022
+        ]
+      },
+      {
+        "count": 10000,
+        "medianOfRunMediansMs": 39.173833,
+        "minRunMedianMs": 38.53925000000004,
+        "maxRunMedianMs": 42.49391700000001,
+        "perRunMediansMs": [
+          39.173833,
+          40.877917000000025,
+          38.53925000000004,
+          38.87262499999997,
+          42.49391700000001
+        ]
+      }
+    ],
+    "bind": {
+      "uniqueExpressionPerBinding": [
+        {
+          "count": 1000,
+          "medianOfRunMediansMs": 37.7923330000001,
+          "minRunMedianMs": 35.754249999999956,
+          "maxRunMedianMs": 39.68345799999997,
+          "perRunMediansMs": [
+            35.754249999999956,
+            37.7923330000001,
+            39.68345799999997,
+            37.10450000000003,
+            39.07333300000005
+          ]
+        },
+        {
+          "count": 3000,
+          "medianOfRunMediansMs": 115.67291699999987,
+          "minRunMedianMs": 112.549125,
+          "maxRunMedianMs": 124.84570800000006,
+          "perRunMediansMs": [
+            124.84570800000006,
+            112.549125,
+            115.67291699999987,
+            114.21116699999993,
+            119.69729099999995
+          ]
+        },
+        {
+          "count": 5000,
+          "medianOfRunMediansMs": 223.89879199999996,
+          "minRunMedianMs": 214.30833299999995,
+          "maxRunMedianMs": 242.24870800000008,
+          "perRunMediansMs": [
+            223.89879199999996,
+            214.30833299999995,
+            218.9808750000002,
+            226.59750000000076,
+            242.24870800000008
+          ]
+        }
+      ],
+      "cachedExpressionString": [
+        {
+          "count": 1000,
+          "medianOfRunMediansMs": 29.063625000000002,
+          "minRunMedianMs": 27.774458000000095,
+          "maxRunMedianMs": 29.273707999999942,
+          "perRunMediansMs": [
+            27.774458000000095,
+            28.908290999999963,
+            29.063625000000002,
+            29.18316600000003,
+            29.273707999999942
+          ]
+        },
+        {
+          "count": 3000,
+          "medianOfRunMediansMs": 118.669625,
+          "minRunMedianMs": 112.54512499999964,
+          "maxRunMedianMs": 122.54879100000016,
+          "perRunMediansMs": [
+            122.54879100000016,
+            114.96379200000001,
+            112.54512499999964,
+            120.57408299999997,
+            118.669625
+          ]
+        },
+        {
+          "count": 5000,
+          "medianOfRunMediansMs": 215.90554200000042,
+          "minRunMedianMs": 211.98275000000103,
+          "maxRunMedianMs": 227.65091699999994,
+          "perRunMediansMs": [
+            211.98275000000103,
+            217.87425000000076,
+            215.1398339999996,
+            227.65091699999994,
+            215.90554200000042
+          ]
+        }
+      ]
+    },
+    "update": {
+      "singleMutationWithActiveBindings": [
+        {
+          "count": 1000,
+          "medianOfRunMediansMs": 0.12124999999923602,
+          "minRunMedianMs": 0.11610399999972287,
+          "maxRunMedianMs": 0.12650049999956536,
+          "perRunMediansMs": [
+            0.11945799999921292,
+            0.11610399999972287,
+            0.12650049999956536,
+            0.12362499999926513,
+            0.12124999999923602
+          ]
+        },
+        {
+          "count": 3000,
+          "medianOfRunMediansMs": 0.0947085000025254,
+          "minRunMedianMs": 0.08829150000019581,
+          "maxRunMedianMs": 0.0990830000009737,
+          "perRunMediansMs": [
+            0.0953544999974838,
+            0.0990830000009737,
+            0.0947085000025254,
+            0.09245850000297651,
+            0.08829150000019581
+          ]
+        },
+        {
+          "count": 5000,
+          "medianOfRunMediansMs": 0.08731299999635667,
+          "minRunMedianMs": 0.08316650000051595,
+          "maxRunMedianMs": 0.09095850000085193,
+          "perRunMediansMs": [
+            0.08316650000051595,
+            0.09095850000085193,
+            0.08912499999860302,
+            0.08731299999635667,
+            0.08656200000041281
+          ]
+        }
+      ],
+      "bulkMutateAllBindings": [
+        {
+          "count": 1000,
+          "medianOfRunMediansMs": 8.693875500001013,
+          "minRunMedianMs": 8.255208499998844,
+          "maxRunMedianMs": 9.111478999999235,
+          "perRunMediansMs": [
+            8.45629149999877,
+            8.693875500001013,
+            9.111478999999235,
+            8.255208499998844,
+            9.089603999998872
+          ]
+        },
+        {
+          "count": 3000,
+          "medianOfRunMediansMs": 32.844562499998574,
+          "minRunMedianMs": 30.434562500002357,
+          "maxRunMedianMs": 35.09587499999907,
+          "perRunMediansMs": [
+            33.519312500000524,
+            32.713541500001156,
+            30.434562500002357,
+            35.09587499999907,
+            32.844562499998574
+          ]
+        },
+        {
+          "count": 5000,
+          "medianOfRunMediansMs": 47.18445849999625,
+          "minRunMedianMs": 45.04410399999688,
+          "maxRunMedianMs": 48.44433299999946,
+          "perRunMediansMs": [
+            47.18445849999625,
+            45.047708500002045,
+            47.77783350000391,
+            48.44433299999946,
+            45.04410399999688
+          ]
+        }
+      ]
+    }
+  }
+}

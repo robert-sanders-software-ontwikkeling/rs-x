@@ -69,6 +69,38 @@ Run command:
 pnpm -C rs-x-expression-parser run bench:spa-readiness
 ```
 
+Median-of-runs command (recommended when evaluating optimizations):
+
+```bash
+pnpm -C rs-x-expression-parser run bench:spa-readiness:median
+```
+
+Optional run count override:
+
+```bash
+pnpm -C rs-x-expression-parser run bench:spa-readiness:median -- --runs=5
+```
+
+Generated artifacts:
+
+- Per-run snapshots:
+  - `reports/rsx-spa-performance/benchmark-<date>-median-run-<n>.json`
+- Aggregated median report:
+  - `reports/rsx-spa-performance/benchmark-<date>-<runs>run-median.json`
+  - `reports/rsx-spa-performance/benchmark-<date>-<runs>run-median.md`
+
+Why use it:
+
+- A single benchmark run can vary because of runtime noise (GC, scheduler, background load).
+- Median-of-runs gives a more stable signal before locking performance decisions.
+
+Latest 5-run median snapshot:
+
+- JSON:
+  - [benchmark-2026-03-14-5run-median.json](/Users/robertsanders/projects/rs-x/reports/rsx-spa-performance/benchmark-2026-03-14-5run-median.json)
+- Markdown:
+  - [benchmark-2026-03-14-5run-median.md](/Users/robertsanders/projects/rs-x/reports/rsx-spa-performance/benchmark-2026-03-14-5run-median.md)
+
 ## Final optimized run: key results
 
 Environment: Node `v25.4.0`, `darwin`, `arm64`
