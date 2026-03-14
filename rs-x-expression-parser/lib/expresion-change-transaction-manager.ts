@@ -92,6 +92,18 @@ export class ExpressionChangeTransactionManager implements IExpressionChangeTran
     this._changes.clear();
   }
 
+  public registerChange(
+    rootExpression: AbstractExpression,
+    commitHandler: IExpressionChangeCommitHandler,
+  ): void {
+    let commitHandlers = this._changes.get(rootExpression);
+    if (!commitHandlers) {
+      commitHandlers = new Set();
+      this._changes.set(rootExpression, commitHandlers);
+    }
+    commitHandlers.add(commitHandler);
+  }
+
   private tryCommit(root: AbstractExpression, previousCommited: boolean): void {
     const commitHandlers = this._changes.get(root);
 
@@ -109,17 +121,6 @@ export class ExpressionChangeTransactionManager implements IExpressionChangeTran
     }
 
     queueMicrotask(() => this.tryCommit(root, comitted));
-  }
-  public registerChange(
-    rootExpression: AbstractExpression,
-    commitHandler: IExpressionChangeCommitHandler,
-  ): void {
-    let commitHandlers = this._changes.get(rootExpression);
-    if (!commitHandlers) {
-      commitHandlers = new Set();
-      this._changes.set(rootExpression, commitHandlers);
-    }
-    commitHandlers.add(commitHandler);
   }
 
   private onStartChangeCycle = () => {
@@ -140,7 +141,9 @@ export class ExpressionChangeTransactionManager implements IExpressionChangeTran
   };
 
   private emitCommitted(root: AbstractExpression): void {
-    this._commited.next(root);
+    if (this._commited.observed) {
+      this._commited.next(root);
+    }
 
     // Notify listeners for the committed root and its parent chain.
     // This preserves behavior for calculated-path roots (for example
@@ -149,7 +152,9 @@ export class ExpressionChangeTransactionManager implements IExpressionChangeTran
     while (current) {
       const listeners = this._listenersByRoot.get(current);
       if (listeners && listeners.size > 0) {
-        Array.from(listeners).forEach((listener) => listener(root));
+        for (const listener of listeners) {
+          listener(root);
+        }
       }
 
       current = current.parent;
