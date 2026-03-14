@@ -48,6 +48,33 @@ Implementation file:
 
 - [js-espree-expression-parser.ts](/Users/robertsanders/projects/rs-x/rs-x-expression-parser/lib/js-espree-expression-parser.ts)
 
+### 4) Allocation reuse in bind/watch hot paths
+
+Reduced transient allocations in rebind and context-move paths:
+
+- Reused `IndexWatchRule` instances on identifier rebind by updating context instead of allocating a new rule per bind.
+- Added pooled keyed-state subscription records in `StateManager` to reduce churn from subscribe/unsubscribe cycles.
+- Removed `Array.from(...)` snapshot allocation in keyed context-rebind dispatch.
+
+Implementation files:
+
+- [identifier-expression.ts](/Users/robertsanders/projects/rs-x/rs-x-expression-parser/lib/expressions/identifier-expression.ts)
+- [state-manager.ts](/Users/robertsanders/projects/rs-x/rs-x-state-manager/lib/state-manager/state-manager.ts)
+
+### 5) Fast snapshot clone path for object-heavy state
+
+Added a fast deep-clone implementation for plain objects/arrays/Map/Set/Date plus ArrayBuffer/views:
+
+- New `FastDeepClone` runs before structured/lodash fallbacks.
+- Supports cycle-safe cloning for supported graph shapes.
+- Preserves Promise/Observable behavior via `IResolvedValueCache` + `PENDING` semantics.
+- Falls back by throwing `FastDeepCloneUnsupported` for unsupported custom prototypes.
+
+Implementation files:
+
+- [fast-deep-clone.ts](/Users/robertsanders/projects/rs-x/rs-x-core/lib/deep-clone/fast-deep-clone.ts)
+- [rs-x-core.module.ts](/Users/robertsanders/projects/rs-x/rs-x-core/lib/rs-x-core.module.ts)
+
 ## Benchmark code and data
 
 - Benchmark runner:
@@ -100,6 +127,13 @@ Latest 5-run median snapshot:
   - [benchmark-2026-03-14-5run-median.json](/Users/robertsanders/projects/rs-x/reports/rsx-spa-performance/benchmark-2026-03-14-5run-median.json)
 - Markdown:
   - [benchmark-2026-03-14-5run-median.md](/Users/robertsanders/projects/rs-x/reports/rsx-spa-performance/benchmark-2026-03-14-5run-median.md)
+
+Latest 3-run median snapshot (after allocation + fast-clone pass):
+
+- JSON:
+  - [benchmark-2026-03-14-3run-median.json](/Users/robertsanders/projects/rs-x/reports/rsx-spa-performance/benchmark-2026-03-14-3run-median.json)
+- Markdown:
+  - [benchmark-2026-03-14-3run-median.md](/Users/robertsanders/projects/rs-x/reports/rsx-spa-performance/benchmark-2026-03-14-3run-median.md)
 
 ## Final optimized run: key results
 
@@ -258,5 +292,38 @@ Positive `%` in delta means latest is slower (higher median ms).
 Yes, rs-x is fast enough to serve as a high-performance SPA reactive core.
 
 - Localized updates are now sub-millisecond to low-millisecond even with 3k–5k active bindings.
+
+## Latest pass delta (5-run median vs 3-run median)
+
+Comparison source:
+
+- Previous: [benchmark-2026-03-14-5run-median.json](/Users/robertsanders/projects/rs-x/reports/rsx-spa-performance/benchmark-2026-03-14-5run-median.json)
+- Latest: [benchmark-2026-03-14-3run-median.json](/Users/robertsanders/projects/rs-x/reports/rsx-spa-performance/benchmark-2026-03-14-3run-median.json)
+
+Positive `%` means latest is faster (lower median ms).
+
+| Metric | Count | Previous (ms) | Latest (ms) | Delta |
+| --- | ---: | ---: | ---: | ---: |
+| Parse | 1,000 | 8.820 | 8.808 | +0.1% |
+| Parse | 5,000 | 27.645 | 27.668 | -0.1% |
+| Parse | 10,000 | 42.084 | 38.589 | +8.3% |
+| Bind unique | 1,000 | 32.941 | 31.907 | +3.1% |
+| Bind unique | 3,000 | 113.485 | 109.663 | +3.4% |
+| Bind unique | 5,000 | 215.333 | 217.109 | -0.8% |
+| Bind cached | 1,000 | 26.500 | 24.769 | +6.5% |
+| Bind cached | 3,000 | 117.806 | 119.262 | -1.2% |
+| Bind cached | 5,000 | 212.290 | 212.993 | -0.3% |
+| Single update | 1,000 | 0.102 | 0.088 | +13.3% |
+| Single update | 3,000 | 0.076 | 0.065 | +15.5% |
+| Single update | 5,000 | 0.070 | 0.061 | +12.6% |
+| Bulk update | 1,000 | 8.557 | 8.098 | +5.4% |
+| Bulk update | 3,000 | 30.207 | 29.198 | +3.3% |
+| Bulk update | 5,000 | 45.312 | 42.457 | +6.3% |
+
+Interpretation:
+
+- Hot update paths improved consistently in this run-set.
+- Bind and parse are mostly neutral-to-positive with small variance on larger cached-bind counts.
+- Gains are incremental compared to the larger earlier architecture wins, but they trend in the right direction.
 - Large bulk invalidations are still expensive by definition, but significantly improved.
 - Parsing is not the dominant cost in this benchmark; change dispatch and bind setup were the main bottlenecks, and this optimization directly targets them.

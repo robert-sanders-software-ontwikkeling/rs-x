@@ -157,10 +157,14 @@ export class IdentifierExpression extends AbstractExpression {
     );
     this._commitAfterInitialized = !settings.isRoot;
 
-    this._indexWatchRule = new IndexWatchRule(
-      this._context,
-      this.shouldWatchIndex,
-    );
+    if (this._indexWatchRule) {
+      this._indexWatchRule.context = this._context;
+    } else {
+      this._indexWatchRule = new IndexWatchRule(
+        this._context,
+        this.shouldWatchIndex,
+      );
+    }
 
     if (!this._indexValueObserver) {
       this.observeChange();

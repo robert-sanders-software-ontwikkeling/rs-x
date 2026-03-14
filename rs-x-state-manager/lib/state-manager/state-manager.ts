@@ -41,6 +41,7 @@ interface IChainPartChange extends IChainPart {
 }
 
 interface IStateEventSubscription {
+  active: boolean;
   context: unknown;
   index: unknown;
   listener: IStateEventListener;
@@ -58,6 +59,7 @@ export class StateManager implements IStateManager {
     unknown,
     Map<unknown, Set<IStateEventSubscription>>
   >();
+  private readonly _stateEventSubscriptionPool: IStateEventSubscription[] = [];
 
   constructor(
     @Inject(
@@ -154,11 +156,11 @@ export class StateManager implements IStateManager {
     index: unknown,
     listener: IStateEventListener,
   ): () => void {
-    const subscription: IStateEventSubscription = {
+    const subscription = this.acquireStateEventSubscription(
       context,
       index,
       listener,
-    };
+    );
 
     this.addStateEventSubscription(context, index, subscription);
 
@@ -187,6 +189,7 @@ export class StateManager implements IStateManager {
     this._stateChangeSubscriptionManager.dispose();
     this._objectStateManager.dispose();
     this._stateEventSubscriptionsByContext.clear();
+    this._stateEventSubscriptionPool.length = 0;
   }
 
   public getState<T>(context: unknown, index: unknown): T {
@@ -618,15 +621,26 @@ export class StateManager implements IStateManager {
     context: unknown,
     index: unknown,
     subscription: IStateEventSubscription,
+    releaseToPool: boolean = true,
   ): void {
+    if (!subscription.active) {
+      return;
+    }
+
     const subscriptionsByIndex =
       this._stateEventSubscriptionsByContext.get(context);
     if (!subscriptionsByIndex) {
+      if (releaseToPool) {
+        this.releaseStateEventSubscription(subscription);
+      }
       return;
     }
 
     const subscriptions = subscriptionsByIndex.get(index);
     if (!subscriptions) {
+      if (releaseToPool) {
+        this.releaseStateEventSubscription(subscription);
+      }
       return;
     }
 
@@ -637,6 +651,10 @@ export class StateManager implements IStateManager {
 
     if (subscriptionsByIndex.size === 0) {
       this._stateEventSubscriptionsByContext.delete(context);
+    }
+
+    if (releaseToPool) {
+      this.releaseStateEventSubscription(subscription);
     }
   }
 
@@ -663,13 +681,18 @@ export class StateManager implements IStateManager {
       return;
     }
 
-    // Snapshot protects iteration if listeners unsubscribe/rebind while handling.
-    const matchingSubscriptions = Array.from(subscriptions);
-    for (const subscription of matchingSubscriptions) {
+    while (subscriptions.size > 0) {
+      const subscriptionIterator = subscriptions.values().next();
+      if (subscriptionIterator.done) {
+        break;
+      }
+      const subscription = subscriptionIterator.value;
+
       this.removeStateEventSubscription(
         subscription.context,
         subscription.index,
         subscription,
+        false,
       );
       subscription.context = change.context;
       this.addStateEventSubscription(
@@ -684,6 +707,37 @@ export class StateManager implements IStateManager {
   private shouldPublish(subject: { observed?: boolean }): boolean {
     return subject.observed === undefined || subject.observed;
   }
+
+  private acquireStateEventSubscription(
+    context: unknown,
+    index: unknown,
+    listener: IStateEventListener,
+  ): IStateEventSubscription {
+    const subscription = this._stateEventSubscriptionPool.pop() ?? {
+      active: true,
+      context,
+      index,
+      listener,
+    };
+
+    subscription.active = true;
+    subscription.context = context;
+    subscription.index = index;
+    subscription.listener = listener;
+
+    return subscription;
+  }
+
+  private releaseStateEventSubscription(
+    subscription: IStateEventSubscription,
+  ): void {
+    if (!subscription.active) {
+      return;
+    }
+    subscription.active = false;
+    this._stateEventSubscriptionPool.push(subscription);
+  }
+
   private setInitialValue(
     context: unknown,
     index: unknown,

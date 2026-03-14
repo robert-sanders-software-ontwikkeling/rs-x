@@ -2,6 +2,7 @@ import { type IDeepClone } from './deep-clone/deep-clone.interface';
 import { DeepCloneValueExcept } from './deep-clone/deep-clone-except';
 import { type IDeepCloneExcept } from './deep-clone/deep-clone-except.interface';
 import { DefaultDeepClone } from './deep-clone/default-deep-clone';
+import { FastDeepClone } from './deep-clone/fast-deep-clone';
 import { LodashDeepClone } from './deep-clone/lodash-deep-clone';
 import { StructuredDeepClone } from './deep-clone/structured-deep-clone';
 import { EqualityService } from './equality-service/equality-service';
@@ -79,6 +80,10 @@ export const defaultIndexValueAccessorList: readonly IMultiInjectService[] = [
 ];
 
 export const defaultDeepCloneList: readonly IMultiInjectService[] = [
+  {
+    target: FastDeepClone,
+    token: RsXCoreInjectionTokens.IFastDeepClone,
+  },
   {
     target: StructuredDeepClone,
     token: RsXCoreInjectionTokens.IStructuredDeepClone,
