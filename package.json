@@ -47,7 +47,6 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/chrome": "^0.1.37",
     "@types/espree": "11.1.0",
-    "@types/estraverse": "5.1.7",
     "@types/jest": "^30.0.0",
     "@types/lodash.clonedeepwith": "^4.5.9",
     "@types/node": "^25.3.0",

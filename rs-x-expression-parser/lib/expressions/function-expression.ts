@@ -156,6 +156,11 @@ export class FunctionExpression extends AbstractExpression {
   }
 
   private releaseResult(): void {
+    if (!this.stateManager || !this._functionContext || !this._functionId) {
+      this._functionContext = undefined;
+      return;
+    }
+
     this.stateManager.releaseState(this._functionContext, this._functionId);
     this._functionContext = undefined;
   }

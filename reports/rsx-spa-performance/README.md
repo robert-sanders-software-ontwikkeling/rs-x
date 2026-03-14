@@ -35,6 +35,19 @@ Implementation files:
 - [expresion-change-transaction-manager.interface.ts](/Users/robertsanders/projects/rs-x/rs-x-expression-parser/lib/expresion-change-transaction-manager.interface.ts)
 - [abstract-expression.ts](/Users/robertsanders/projects/rs-x/rs-x-expression-parser/lib/expressions/abstract-expression.ts)
 
+### 3) Parser source-slice extraction + local member normalization
+
+Reduced parser overhead by removing full-AST normalization traversal and replacing most `astToString(...)` calls with source slicing based on `range`:
+
+- Added `range: true` parse option and per-parse source caching.
+- Added `getExpressionSource(...)` with fast slice path and safe generator fallback.
+- Replaced global `normalizeAST` walk with local normalization inside member flattening and call/tagged-member handling.
+- Kept canonical generator output where tests rely on normalized rendering (`In`, `Sequence`, `Object`, `Property`).
+
+Implementation file:
+
+- [js-espree-expression-parser.ts](/Users/robertsanders/projects/rs-x/rs-x-expression-parser/lib/js-espree-expression-parser.ts)
+
 ## Benchmark code and data
 
 - Benchmark runner:
@@ -45,6 +58,8 @@ Implementation files:
   - [benchmark-2026-03-14-optimized-router.json](/Users/robertsanders/projects/rs-x/reports/rsx-spa-performance/benchmark-2026-03-14-optimized-router.json)
 - Optimized data (after state + commit routing):
   - [benchmark-2026-03-14-optimized-router-plus-commit-routing.json](/Users/robertsanders/projects/rs-x/reports/rsx-spa-performance/benchmark-2026-03-14-optimized-router-plus-commit-routing.json)
+- Parser pass data (source-slice optimization):
+  - [benchmark-2026-03-14-parser-source-slice.json](/Users/robertsanders/projects/rs-x/reports/rsx-spa-performance/benchmark-2026-03-14-parser-source-slice.json)
 - Latest benchmark output path (overwritten by reruns):
   - [benchmark-2026-03-14.json](/Users/robertsanders/projects/rs-x/reports/rsx-spa-performance/benchmark-2026-03-14.json)
 
@@ -154,6 +169,39 @@ xychart-beta
 | Bind cached improvement | 67.3% | 79.1% | 85.8% |
 | Single update improvement | 86.5% | 96.6% | 96.3% |
 | Bulk update improvement | 90.6% | 95.9% | 97.3% |
+
+## Parser pass delta (vs state+commit optimized run)
+
+Comparison source:
+
+- Before: [benchmark-2026-03-14-optimized-router-plus-commit-routing.json](/Users/robertsanders/projects/rs-x/reports/rsx-spa-performance/benchmark-2026-03-14-optimized-router-plus-commit-routing.json)
+- After: [benchmark-2026-03-14-parser-source-slice.json](/Users/robertsanders/projects/rs-x/reports/rsx-spa-performance/benchmark-2026-03-14-parser-source-slice.json)
+
+Positive `%` means faster (lower median ms).
+
+| Metric | Count | Before (ms) | After (ms) | Delta |
+| --- | ---: | ---: | ---: | ---: |
+| Parse | 1,000 | 10.131 | 8.613 | +15.0% |
+| Parse | 5,000 | 28.457 | 28.753 | -1.0% |
+| Parse | 10,000 | 44.399 | 39.179 | +11.8% |
+| Bind unique | 1,000 | 36.083 | 38.959 | -8.0% |
+| Bind unique | 3,000 | 122.775 | 137.400 | -11.9% |
+| Bind unique | 5,000 | 246.867 | 236.611 | +4.2% |
+| Bind cached | 1,000 | 28.126 | 28.873 | -2.7% |
+| Bind cached | 3,000 | 127.011 | 124.534 | +1.9% |
+| Bind cached | 5,000 | 233.404 | 221.921 | +4.9% |
+| Single update | 1,000 | 0.119 | 0.125 | -4.7% |
+| Single update | 3,000 | 0.093 | 0.103 | -11.3% |
+| Single update | 5,000 | 0.092 | 0.108 | -17.6% |
+| Bulk update | 1,000 | 8.902 | 9.953 | -11.8% |
+| Bulk update | 3,000 | 32.888 | 38.453 | -16.9% |
+| Bulk update | 5,000 | 47.161 | 56.738 | -20.3% |
+
+Interpretation:
+
+- Parse-heavy workloads improved.
+- End-to-end bind/update numbers are mixed in this run and need repeated-run averaging before treating this pass as a clear net gain.
+- Previous two optimizations (state routing + commit routing) remain the dominant and validated throughput improvements.
 
 ## Conclusion for SPA framework viability
 
