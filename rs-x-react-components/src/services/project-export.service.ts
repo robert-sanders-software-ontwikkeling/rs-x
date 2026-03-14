@@ -12,12 +12,49 @@ const stripRsxBinding = (script: string): string => {
   );
 };
 
+const stripWaitForEventBinding = (script: string): string => {
+  return script.replace(
+    /^\s*(const|let|var)\s+WaitForEvent\s*=\s*api\.WaitForEvent\s*;?\s*$/gm,
+    '',
+  );
+};
+
+const stripIndexWatchRuleBinding = (script: string): string => {
+  return script.replace(
+    /^\s*(const|let|var)\s+IndexWatchRule\s*=\s*api\.IndexWatchRule\s*;?\s*$/gm,
+    '',
+  );
+};
+
+const stripPrintValueBinding = (script: string): string => {
+  return script.replace(
+    /^\s*(const|let|var)\s+printValue\s*=\s*api\.printValue\s*;?\s*$/gm,
+    '',
+  );
+};
+
 function buildProjectSource(script: string): ProjectSource {
   const hasRxjsAliasBinding =
     /^\s*(const|let|var)\s+\$\s*=\s*api\.rxjs\s*;?\s*$/m.test(script);
+  const usesStateManagerApi = /api\.stateManager\b/.test(script);
 
   let normalized = stripRsxBinding(script);
+  normalized = stripWaitForEventBinding(normalized);
+  normalized = stripIndexWatchRuleBinding(normalized);
+  normalized = stripPrintValueBinding(normalized);
+
   normalized = normalized.replace(/api\.rsx\b/g, 'rsx');
+  normalized = normalized.replace(/api\.WaitForEvent\b/g, 'WaitForEvent');
+  normalized = normalized.replace(/api\.IndexWatchRule\b/g, 'IndexWatchRule');
+  normalized = normalized.replace(/api\.printValue\b/g, 'printValue');
+  normalized = normalized.replace(
+    /api\.stateManager\b/g,
+    'InjectionContainer.get<IStateManager>(RsXStateManagerInjectionTokens.IStateManager)',
+  );
+  normalized = normalized.replace(
+    /api\.ExpressionChangeTransactionManager\b/g,
+    'InjectionContainer.get<IExpressionChangeTransactionManager>(RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager)',
+  );
 
   let rxjsImportBlock = '';
   let usesRxjs = false;
@@ -52,12 +89,64 @@ function buildProjectSource(script: string): ProjectSource {
   }
 
   const userScript = normalized.trim();
+  const usesAwait = /\bawait\b/.test(userScript);
+  const usesWaitForEvent = /\bWaitForEvent\b/.test(userScript);
+  const usesIndexWatchRule = /\bIndexWatchRule\b/.test(userScript);
+  const usesPrintValue = /\bprintValue\b/.test(userScript);
+  const usesTransactionManager = /\bIExpressionChangeTransactionManager\b/.test(
+    userScript,
+  );
 
-  const source = `import { InjectionContainer } from '@rs-x/core';
-import { rsx, type IExpression, RsXExpressionParserModule } from '@rs-x/expression-parser';
+  const coreImports = ['InjectionContainer'];
+  if (usesWaitForEvent) {
+    coreImports.push('WaitForEvent');
+  }
+  if (usesPrintValue) {
+    coreImports.push('printValue');
+  }
+
+  const expressionParserImports = ['rsx', 'RsXExpressionParserModule'];
+  const expressionParserTypeImports = ['IExpression'];
+  if (usesTransactionManager) {
+    expressionParserImports.push('RsXExpressionParserInjectionTokens');
+    expressionParserTypeImports.push('IExpressionChangeTransactionManager');
+  }
+
+  const expressionParserImportBlock = `import { ${[
+    ...expressionParserImports,
+    ...expressionParserTypeImports.map((entry) => `type ${entry}`),
+  ].join(', ')} } from '@rs-x/expression-parser';`;
+
+  const stateManagerImports: string[] = [];
+  const stateManagerTypeImports: string[] = [];
+  if (usesIndexWatchRule) {
+    stateManagerImports.push('IndexWatchRule');
+  }
+  if (usesStateManagerApi) {
+    stateManagerImports.push('RsXStateManagerInjectionTokens');
+    stateManagerTypeImports.push('IStateManager');
+  }
+
+  const stateManagerImportBlock =
+    stateManagerImports.length > 0 || stateManagerTypeImports.length > 0
+      ? `import { ${[
+          ...stateManagerImports,
+          ...stateManagerTypeImports.map((entry) => `type ${entry}`),
+        ].join(', ')} } from '@rs-x/state-manager';`
+      : '';
+  const createExpressionSignature = usesAwait
+    ? 'async function createExpression(): Promise<IExpression<unknown>>'
+    : 'function createExpression(): IExpression<unknown>';
+  const createExpressionInvocation = usesAwait
+    ? 'await createExpression()'
+    : 'createExpression()';
+
+  const source = `import { ${coreImports.join(', ')} } from '@rs-x/core';
+${expressionParserImportBlock}
+${stateManagerImportBlock ? `${stateManagerImportBlock}\n` : ''}\
 ${rxjsImportBlock ? `${rxjsImportBlock}` : ''}
 
-function createExpression(): IExpression<unknown> {
+${createExpressionSignature} {
 ${userScript
   .split('\n')
   .map((line) => `  ${line}`)
@@ -67,7 +156,7 @@ ${userScript
 async function main(): Promise<void> {
   await InjectionContainer.load(RsXExpressionParserModule);
 
-  const expression = createExpression();
+  const expression = ${createExpressionInvocation};
   expression.changed.subscribe(() => {
     console.log('Expression changed:', expression.value);
   });

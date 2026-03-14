@@ -68,6 +68,41 @@ export function installMonacoPlaceholder(
   };
 }
 
+function installFindWidgetTitleStripper(
+  editor: Monaco.editor.IStandaloneCodeEditor,
+): () => void {
+  const root = editor.getDomNode();
+  if (!root || typeof MutationObserver === 'undefined') {
+    return () => {};
+  }
+
+  const stripTitles = () => {
+    const elements = root.querySelectorAll<HTMLElement>(
+      '.find-widget [title], .simple-find-part [title]',
+    );
+    elements.forEach((element) => {
+      element.removeAttribute('title');
+    });
+  };
+
+  stripTitles();
+
+  const observer = new MutationObserver(() => {
+    stripTitles();
+  });
+
+  observer.observe(root, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['title'],
+  });
+
+  return () => {
+    observer.disconnect();
+  };
+}
+
 export interface TSEditorProps {
   saveButtonName?: string;
   header: string;
@@ -104,6 +139,7 @@ export const TSEditor: React.FC<TSEditorProps> = ({
 }) => {
   const editorHostRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
+  const disposeFindWidgetTitleStripperRef = useRef<(() => void) | null>(null);
   const [EditorComponent, setEditorComponent] =
     useState<null | React.ComponentType<{
       theme?: string;
@@ -170,8 +206,18 @@ export const TSEditor: React.FC<TSEditorProps> = ({
     !currentValue.trim() || (!hideName && !currentName.trim());
   const handleEditorMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
+    disposeFindWidgetTitleStripperRef.current?.();
+    disposeFindWidgetTitleStripperRef.current =
+      installFindWidgetTitleStripper(editor);
     onMount?.(editor, monaco);
   };
+
+  useEffect(() => {
+    return () => {
+      disposeFindWidgetTitleStripperRef.current?.();
+      disposeFindWidgetTitleStripperRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     const host = editorHostRef.current;
@@ -208,12 +254,14 @@ export const TSEditor: React.FC<TSEditorProps> = ({
     const baseOptions: Monaco.editor.IStandaloneEditorConstructionOptions = {
       automaticLayout: true,
       minimap: { enabled: false },
-      scrollBeyondLastLine: true,
+      scrollBeyondLastLine: false,
+      scrollBeyondLastColumn: 2,
+      fixedOverflowWidgets: true,
       overviewRulerLanes: 0,
       hideCursorInOverviewRuler: true,
       padding: {
         top: 8,
-        bottom: 16,
+        bottom: 8,
       },
       scrollbar: {
         vertical: 'auto',
@@ -276,7 +324,7 @@ export const TSEditor: React.FC<TSEditorProps> = ({
         <div className="tsEditorHeaderRight">
           <button
             type="button"
-            className="btn btnSm tsEditorCompileBtn"
+            className="btn btnPrimary btnSm tsEditorCompileBtn"
             disabled={isSaveDisabled}
             onClick={() => {
               onSave();

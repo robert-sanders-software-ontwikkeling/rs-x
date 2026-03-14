@@ -91,8 +91,14 @@ export default function ExpressionChangeTransactionManagerDocsPage() {
         <article className="card docsApiCard">
           <h2 className="cardTitle">Description</h2>
           <p className="cardText">
-            Queues expression changes while updates are suspended and emits them
-            together on commit.
+            Coordinates expression commit handlers per evaluation root and
+            flushes them as one transaction boundary.
+          </p>
+          <p className="cardText">
+            In practice, identifier updates call{' '}
+            <span className="codeInline">registerChange(...)</span>, the
+            manager groups these handlers in a per-root queue, and commit emits
+            a single committed-root signal after reevaluation stabilizes.
           </p>
         </article>
 
@@ -104,7 +110,7 @@ export default function ExpressionChangeTransactionManagerDocsPage() {
                 name: 'rootExpression',
                 type: 'AbstractExpression',
                 description:
-                  'Root expression whose commit should be coordinated by the transaction manager.',
+                  'Root expression whose commit should be coordinated by the change transaction manager.',
               },
               {
                 name: 'commitHandler',
@@ -135,16 +141,42 @@ export default function ExpressionChangeTransactionManagerDocsPage() {
         <article className="card docsApiCard">
           <h2 className="cardTitle">Usage notes</h2>
           <p className="cardText">
-            <span className="codeInline">suspend()</span> pauses commit
-            emission.
+            <span className="codeInline">suspend()</span> pauses automatic
+            flushing when state-manager cycles end.
           </p>
           <p className="cardText">
-            <span className="codeInline">continue()</span> resumes and triggers{' '}
-            <span className="codeInline">commit()</span>.
+            <span className="codeInline">continue()</span> resumes and
+            immediately triggers <span className="codeInline">commit()</span>.
           </p>
           <p className="cardText">
             <span className="codeInline">commit()</span> flushes pending commit
-            handlers.
+            handlers for each root and emits on{' '}
+            <span className="codeInline">commited</span> once that root has no
+            pending handlers left in the current microtask pass.
+          </p>
+        </article>
+
+        <article className="card docsApiCard">
+          <h2 className="cardTitle">Internal lifecycle</h2>
+          <p className="cardText">
+            The manager listens to state-manager{' '}
+            <span className="codeInline">startChangeCycle</span> and{' '}
+            <span className="codeInline">endChangeCycle</span>. A depth counter
+            gates auto-commit, so flush happens only when the outermost cycle
+            finishes and batching is not suspended.
+          </p>
+          <p className="cardText">
+            Pending work is stored as{' '}
+            <span className="codeInline">
+              Map&lt;rootExpression, Set&lt;commitHandler&gt;&gt;
+            </span>
+            . This deduplicates repeated handler registrations per root in one
+            cycle.
+          </p>
+          <p className="cardText">
+            Commit execution runs in microtask passes. Each pass can trigger
+            additional registrations during reevaluation; the next microtask
+            pass flushes those before final committed emission.
           </p>
         </article>
 

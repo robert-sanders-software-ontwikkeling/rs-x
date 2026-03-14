@@ -1,3 +1,4 @@
+import { WaitForEvent } from '@rs-x/core';
 import { rsx } from '@rs-x/expression-parser';
 
 import { rxjsScope } from './rxjs-scope';
@@ -19,7 +20,9 @@ export class ScriptEvaluator {
     return this._instance;
   }
 
-  public evaluateScript<T>(editorModelString: string): EvaluateModelResult<T> {
+  public async evaluateScript<T>(
+    editorModelString: string,
+  ): Promise<EvaluateModelResult<T>> {
     const SOURCE_NAME = 'rsx-user-script.js';
 
     // We wrap so user can "return { ... }" at top-level.
@@ -43,14 +46,17 @@ export class ScriptEvaluator {
     const api = {
       rxjs: rxjsScope,
       rsx,
+      WaitForEvent,
     };
 
     try {
       // Evaluate function expression, then call it with api.
       // The expression is: (function(api){ ...user... })
       // We then immediately invoke it: (...) (api)
-      const factory = (0, eval)(wrapped) as (a: typeof api) => T;
-      const result = factory(api);
+      const factory = (0, eval)(wrapped) as (
+        a: typeof api,
+      ) => T | Promise<T>;
+      const result = await factory(api);
 
       return {
         success: true,
@@ -144,6 +150,7 @@ export class ScriptEvaluator {
       const result = new Function('api', `return ${editorModelString}`)({
         rxjs: rxjsScope,
         rsx,
+        WaitForEvent,
       });
 
       return {

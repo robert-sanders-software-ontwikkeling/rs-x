@@ -1,8 +1,5 @@
 import dedent from 'dedent';
 import Link from 'next/link';
-import type { CSSProperties } from 'react';
-
-import { LeftAccentCard } from '@rs-x/react-components';
 
 import { SyntaxCodeBlock } from '../../components/SyntaxCodeBlock';
 
@@ -113,8 +110,8 @@ const roadmapItems: RoadmapItem[] = [
   },
   {
     title: 'RS-X Presentation Layer',
-    status: 'in-progress',
-    statusLabel: 'In progress',
+    status: 'planned',
+    statusLabel: 'Planned',
     aim: 'Provide a truly reactive SPA framework with clear separation between presentation and logic.',
     goal: 'Support internally-defined Custom Elements while keeping templates readable and close to HTML standards.',
     objective:
@@ -136,8 +133,8 @@ const roadmapItems: RoadmapItem[] = [
   },
   {
     title: 'Content Projection',
-    status: 'mostly-done',
-    statusLabel: 'Mostly done',
+    status: 'planned',
+    statusLabel: 'Planned',
     aim: 'Provide flexible dynamic content injection into RS-X components via slots.',
     goal: 'Support multiple named slots for reusable customizable component layouts.',
     objective:
@@ -152,8 +149,8 @@ const roadmapItems: RoadmapItem[] = [
   },
   {
     title: 'Theming Support',
-    status: 'mostly-done',
-    statusLabel: 'Mostly done',
+    status: 'planned',
+    statusLabel: 'Planned',
     aim: 'Enable flexible theming for RS-X components.',
     goal: 'Allow easy theme switching through a simple theme property/config.',
     objective:
@@ -191,26 +188,6 @@ function statusClass(status: RoadmapItem['status']): string {
     return 'roadmapStatusMostlyDone';
   }
   return 'roadmapStatusPlanned';
-}
-
-function roadmapAccentStyle(index: number, total: number): CSSProperties {
-  const count = Math.max(total - 1, 1);
-  const progress = index / count;
-
-  // Smooth transition from blue -> cyan -> teal -> green across the roadmap.
-  const hueTop = Math.round(224 - 78 * progress);
-  const hueBottom = Math.round(196 - 64 * progress);
-  const satTop = Math.round(78 - 8 * progress);
-  const satBottom = Math.round(74 - 10 * progress);
-  const lightTop = Math.round(59 - 2 * progress);
-  const lightBottom = Math.round(52 - 2 * progress);
-
-  return {
-    ['--rsx-left-accent' as string]:
-      `linear-gradient(180deg, ` +
-      `hsl(${hueTop} ${satTop}% ${lightTop}%), ` +
-      `hsl(${hueBottom} ${satBottom}% ${lightBottom}%))`,
-  };
 }
 
 export const metadata = {
@@ -262,14 +239,8 @@ export default function RoadmapPage() {
 
           <section className="getStartedLinear">
             <div className="roadmapCards">
-              {roadmapItems.map((item, index) => (
-                <LeftAccentCard
-                  key={item.title}
-                  as="article"
-                  tone="brand"
-                  className="card docsApiCard roadmapCard"
-                  style={roadmapAccentStyle(index, roadmapItems.length)}
-                >
+              {roadmapItems.map((item) => (
+                <article key={item.title} className="card docsApiCard roadmapCard">
                   <div className="roadmapCardHead">
                     <h2 className="cardTitle">{item.title}</h2>
                     <span
@@ -315,7 +286,7 @@ export default function RoadmapPage() {
                       </ul>
                     </>
                   )}
-                </LeftAccentCard>
+                </article>
               ))}
             </div>
           </section>

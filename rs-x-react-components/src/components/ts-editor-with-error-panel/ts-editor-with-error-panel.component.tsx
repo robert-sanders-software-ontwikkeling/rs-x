@@ -47,12 +47,18 @@ export const TsEditorWithErrorPanel: React.FC<ITsEditorWithErrorPanelProp> = ({
   secondaryAction,
   secondaryActionDisabled,
 }) => {
+  const hasErrors = errors.length > 0;
+
   return (
     <div className="tsEditorWithErrorPanel">
       <Group orientation="horizontal" className="panels-container">
         <Panel defaultSize={100} className="panel">
           <Group orientation="vertical" className="panel-stack">
-            <Panel defaultSize={70} minSize={10} className="panel">
+            <Panel
+              defaultSize={hasErrors ? 70 : 100}
+              minSize={10}
+              className="panel"
+            >
               <div className="tsEditorHost">
                 <TSEditor
                   header={header}
@@ -83,11 +89,15 @@ export const TsEditorWithErrorPanel: React.FC<ITsEditorWithErrorPanelProp> = ({
               </div>
             </Panel>
 
-            <Separator className="separator-horizontal" />
+            {hasErrors ? (
+              <>
+                <Separator className="separator-horizontal" />
 
-            <Panel defaultSize={30} minSize={10} className="panel">
-              <ErrorPanel errors={errors} />
-            </Panel>
+                <Panel defaultSize={30} minSize={10} className="panel">
+                  <ErrorPanel errors={errors} />
+                </Panel>
+              </>
+            ) : null}
           </Group>
         </Panel>
       </Group>

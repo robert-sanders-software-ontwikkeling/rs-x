@@ -23,7 +23,7 @@ function buildWrapper(userCode: string): {
 
         type __Result =  IExpression<any, any>;
 
-        function __rsx_demo(): __Result {
+        async function __rsx_demo(): Promise<__Result> {
         `;
 
   const headerLines = header.split('\n').length - 1;

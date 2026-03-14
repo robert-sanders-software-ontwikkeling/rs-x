@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { ItemLinkCardContent } from '@rs-x/react-components';
+
 import { DocsBreadcrumbs } from '../../../../components/DocsBreadcrumbs';
 import { DocsPageTemplate } from '../../../../components/DocsPageTemplate';
 import {
@@ -76,11 +78,7 @@ export default async function PackageApiPage({ params }: PackagePageProps) {
           {entry.links.map((item) => (
             <li key={item.href}>
               <Link className="docsApiLinkItem" href={item.href}>
-                <span className="docsApiLinkTitle">{item.title}</span>
-                <span className="docsApiLinkMeta">{item.meta}</span>
-                <span className="docsApiLinkArrow" aria-hidden="true">
-                  →
-                </span>
+                <ItemLinkCardContent title={item.title} meta={item.meta} />
               </Link>
             </li>
           ))}

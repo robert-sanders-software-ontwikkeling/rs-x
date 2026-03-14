@@ -1,9 +1,12 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 
+import { PrettyPrinter } from '@rs-x/core';
 import type {
   IExpression,
   IExpressionChangeHistory,
 } from '@rs-x/expression-parser';
+
+import { snapZoomPercentToPreset } from '../zoom-dropdown/zoom-presets';
 
 import { useExpressionChangedRerender } from './hooks/use-expression-changed-rerender';
 import { useExpressionTreeEdgePaths } from './hooks/use-expression-tree-edge-paths';
@@ -13,7 +16,6 @@ import { useHighlightAnimation } from './hooks/use-highlight-animation';
 import { useResizeObserverSize } from './hooks/use-resize-observer-size';
 import { TreeLayoutEngine } from './layout/tree-layout-engine';
 import { ExpressionIndex } from './expression-index';
-import { ValueFormatter } from './value-formatter';
 
 import './expression-tree-view.component.css';
 
@@ -39,6 +41,9 @@ export interface IExpressionTreeProps {
 
   isVisible?: boolean;
   playNonce?: number;
+  fitRequestNonce?: number;
+  centerRequestNonce?: number;
+  onFitZoomComputed?: (zoomPercent: number) => void;
 }
 
 const DEFAULTS = {
@@ -111,9 +116,14 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
     zoomPercent = 100,
     isVisible = true,
     playNonce = 0,
+    fitRequestNonce = 0,
+    centerRequestNonce = 0,
+    onFitZoomComputed,
   } = props;
 
   const [hostRef, hostSize] = useResizeObserverSize<HTMLDivElement>();
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const lastFitRequestNonceRef = useRef<number>(0);
 
   const hasValidSize = (hostSize.width ?? 0) > 0 && (hostSize.height ?? 0) > 0;
 
@@ -124,6 +134,65 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
   const layout = useMemo(() => {
     return layoutEngine.computeLayout(root);
   }, [layoutEngine, root, version]);
+
+  useEffect(() => {
+    if (!hasValidSize) {
+      return;
+    }
+
+    const viewport = viewportRef.current;
+    if (!viewport) {
+      return;
+    }
+
+    viewport.scrollTo({
+      left: Math.max(0, (viewport.scrollWidth - viewport.clientWidth) / 2),
+      top: Math.max(0, (viewport.scrollHeight - viewport.clientHeight) / 2),
+      behavior: 'smooth',
+    });
+  }, [centerRequestNonce, hasValidSize]);
+
+  useEffect(() => {
+    if (!hasValidSize || !onFitZoomComputed) {
+      return;
+    }
+    if (
+      fitRequestNonce === 0 ||
+      fitRequestNonce === lastFitRequestNonceRef.current
+    ) {
+      return;
+    }
+    lastFitRequestNonceRef.current = fitRequestNonce;
+
+    const unitX = nodeWidth + horizontalGap;
+    const unitY = nodeHeight + verticalGap;
+    const treeW = (layout.maxX + 1) * unitX + horizontalGap;
+    const treeH = (layout.maxDepth + 1) * unitY + verticalGap;
+
+    if (treeW <= 0 || treeH <= 0) {
+      return;
+    }
+
+    const fitScale = Math.min(hostSize.width / treeW, hostSize.height / treeH);
+    if (!Number.isFinite(fitScale) || fitScale <= 0) {
+      return;
+    }
+
+    const fitPercent = Math.round(fitScale * 100);
+    const clampedFitPercent = Math.max(10, Math.min(300, fitPercent));
+    onFitZoomComputed(snapZoomPercentToPreset(clampedFitPercent));
+  }, [
+    fitRequestNonce,
+    hasValidSize,
+    onFitZoomComputed,
+    hostSize.width,
+    hostSize.height,
+    layout,
+    nodeWidth,
+    nodeHeight,
+    horizontalGap,
+    verticalGap,
+  ]);
 
   const expressionIndex = useMemo(() => {
     return new ExpressionIndex(layout);
@@ -148,9 +217,17 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
       return formatValue;
     }
 
-    const valueFormatter = new ValueFormatter(valueMaxDepth, valueMaxChars);
+    const prettyPrinter = new PrettyPrinter(2);
     return (v: unknown) => {
-      return valueFormatter.format(v);
+      try {
+        return prettyPrinter.toString(v, true, {
+          maxDepth: valueMaxDepth,
+          maxChars: valueMaxChars,
+          sortObjectKeys: true,
+        });
+      } catch {
+        return String(v);
+      }
     };
   }, [formatValue, valueMaxDepth, valueMaxChars]);
 
@@ -194,7 +271,7 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
       style={style}
     >
       {!hasValidSize ? null : (
-        <div className="exprTreeViewport">
+        <div className="exprTreeViewport" ref={viewportRef}>
           <div
             className="exprTreeSpacer"
             style={{ width: scaledW, height: scaledH }}
@@ -255,10 +332,10 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
                       </div>
 
                       <div className="exprNodeBody">
-                        {vm.valueText ? (
+                        {vm.hasValue ? (
                           <pre className="exprNodePre">{vm.valueText}</pre>
                         ) : (
-                          <div className="exprNodeMuted">no value</div>
+                          null
                         )}
                       </div>
                     </div>

@@ -9,7 +9,7 @@ import { SyntaxCodeBlock } from '../../../components/SyntaxCodeBlock';
 export const metadata = {
   title: 'IExpressionChangeCommitHandler',
   description:
-    'Commit callback contract used by expression transaction batching.',
+    'Commit callback contract used by the change transaction manager.',
 };
 
 const apiCode = dedent`
@@ -53,8 +53,8 @@ export default function ExpressionChangeCommitHandlerDocsPage() {
           <p className="docsApiEyebrow">API Reference</p>
           <h1 className="sectionTitle">IExpressionChangeCommitHandler</h1>
           <p className="sectionLead">
-            Internal commit handler contract used by the transaction manager to
-            flush pending expression changes in a batch.
+            Internal commit handler contract used by the change transaction
+            manager to flush pending expression changes in a batch.
           </p>
         </div>
         <div className="docsApiActions">
@@ -62,7 +62,7 @@ export default function ExpressionChangeCommitHandlerDocsPage() {
             className="btn btnGhost"
             href="/docs/expression-change-transaction-manager"
           >
-            Transaction manager <span aria-hidden="true">→</span>
+            Change transaction manager <span aria-hidden="true">→</span>
           </Link>
         </div>
       </div>
@@ -72,7 +72,8 @@ export default function ExpressionChangeCommitHandlerDocsPage() {
           <h2 className="cardTitle">Description</h2>
           <p className="cardText">
             Defines how one expression node participates in a commit cycle. The
-            manager gathers handlers and invokes them during flush.
+            change transaction manager gathers handlers and invokes them during
+            flush.
           </p>
         </article>
 

@@ -1,4 +1,8 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
+import {
+  type IStateManager,
+  RsXStateManagerInjectionTokens,
+} from '@rs-x/state-manager';
 
 import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import {
@@ -91,5 +95,70 @@ describe('IdentifierExpression tests', () => {
 
     expect(actual.value).toEqual(100);
     expect(actual).toBe(expression);
+  });
+
+  it('will emit change event for readonly getter-only property backed by stateManager', async () => {
+    const stateManager: IStateManager = InjectionContainer.get(
+      RsXStateManagerInjectionTokens.IStateManager,
+    );
+
+    class Model {
+      private readonly _aPlusBId = 'aPlusB';
+      private _a = 1;
+      private _b = 2;
+
+      public constructor() {
+        this.setAPlusB();
+      }
+
+      public dispose(): void {
+        stateManager.releaseState(this, this._aPlusBId);
+      }
+
+      public get aPlusB(): number {
+        return stateManager.getState<number>(this, this._aPlusBId);
+      }
+
+      public get a(): number {
+        return this._a;
+      }
+
+      public set a(value: number) {
+        this._a = value;
+        this.setAPlusB();
+      }
+
+      public get b(): number {
+        return this._b;
+      }
+
+      public set b(value: number) {
+        this._b = value;
+        this.setAPlusB();
+      }
+
+      private setAPlusB(): void {
+        stateManager.setState(this, this._aPlusBId, this._a + this._b);
+      }
+    }
+
+    const model = new Model();
+
+    try {
+      expression = rsx('aPlusB')(model);
+
+      await new WaitForEvent(expression, 'changed').wait(() => {});
+
+      const actual = (await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.a = 10;
+      })) as IExpression;
+
+      expect(actual).toBe(expression);
+      expect(expression.value).toEqual(12);
+    } finally {
+      model.dispose();
+    }
   });
 });

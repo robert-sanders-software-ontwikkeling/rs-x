@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { ItemLinkCardContent } from '@rs-x/react-components';
+
 import { DocsBreadcrumbs } from '../../../components/DocsBreadcrumbs';
 import { DocsPageTemplate } from '../../../components/DocsPageTemplate';
 
@@ -49,7 +51,7 @@ export default function CoreApiDocsPage() {
           </p>
         </div>
         <div className="docsApiActions">
-          <Link className="btn btnGhost" href="/docs/api/state-manager">
+          <Link className="btn btnGhost" href="/docs/state-manager-api">
             @rs-x/state-manager <span aria-hidden="true">→</span>
           </Link>
           <Link className="btn btnGhost" href="/docs/api/expression-parser">
@@ -91,11 +93,7 @@ export default function CoreApiDocsPage() {
                       className="docsApiLinkItem"
                       href={`/docs/core-api/${encodeURIComponent(item.symbol)}`}
                     >
-                      <span className="docsApiLinkTitle">{item.symbol}</span>
-                      <span className="docsApiLinkMeta">{item.kind}</span>
-                      <span className="docsApiLinkArrow" aria-hidden="true">
-                        →
-                      </span>
+                      <ItemLinkCardContent title={item.symbol} meta={item.kind} />
                     </Link>
                   </li>
                 ))}

@@ -44,6 +44,8 @@ export const ExpressionTreePanel: React.FC<IExpressionTreePanelProps> = ({
 }) => {
   // This forces the highlight animation to play again after panel becomes visible.
   const [playNonce, setPlayNonce] = useState<number>(0);
+  const [fitRequestNonce, setFitRequestNonce] = useState<number>(0);
+  const [centerRequestNonce, setCenterRequestNonce] = useState<number>(0);
 
   useEffect(() => {
     if (!isVisible) {
@@ -72,6 +74,40 @@ export const ExpressionTreePanel: React.FC<IExpressionTreePanelProps> = ({
         </div>
 
         <div className="exprTreeHeaderControls">
+          <div className="exprTreeHeaderQuickActions" aria-label="Tree actions">
+            <button
+              type="button"
+              className="exprTreeActionBtn"
+              onClick={() => {
+                setFitRequestNonce((value) => value + 1);
+              }}
+              title="Fit tree to panel"
+            >
+              Fit
+            </button>
+            <button
+              type="button"
+              className="exprTreeActionBtn"
+              onClick={() => {
+                setCenterRequestNonce((value) => value + 1);
+              }}
+              title="Center tree"
+            >
+              Center
+            </button>
+            <button
+              type="button"
+              className="exprTreeActionBtn"
+              onClick={() => {
+                onTreeZoomPercentChange(100);
+                setCenterRequestNonce((value) => value + 1);
+              }}
+              title="Reset zoom to 100%"
+            >
+              Reset
+            </button>
+          </div>
+
           <ZoomDropdown
             value={treeZoomPercent}
             onChange={onTreeZoomPercentChange}
@@ -99,6 +135,12 @@ export const ExpressionTreePanel: React.FC<IExpressionTreePanelProps> = ({
           zoomPercent={treeZoomPercent}
           isVisible={isVisible}
           playNonce={playNonce}
+          fitRequestNonce={fitRequestNonce}
+          centerRequestNonce={centerRequestNonce}
+          onFitZoomComputed={(fitZoomPercent) => {
+            onTreeZoomPercentChange(fitZoomPercent);
+            setCenterRequestNonce((value) => value + 1);
+          }}
         />
       </div>
     </>

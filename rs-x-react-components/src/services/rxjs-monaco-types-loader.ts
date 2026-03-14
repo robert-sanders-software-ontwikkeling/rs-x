@@ -27,6 +27,7 @@ const yieldToNextFrame = async (): Promise<void> => {
 export class RxjsMonacoTypesLoader {
   private static _instance: RxjsMonacoTypesLoader | null = null;
   private _installed = false;
+  private static readonly GLOBAL_LIB_URI = 'file:///globals/rsx-global.d.ts';
 
   private constructor() {}
 
@@ -38,10 +39,6 @@ export class RxjsMonacoTypesLoader {
   }
 
   public async install(monaco: Monaco): Promise<void> {
-    if (this._installed) {
-      return;
-    }
-
     if (typeof window === 'undefined') {
       return;
     }
@@ -49,6 +46,14 @@ export class RxjsMonacoTypesLoader {
     // ✅ Use canonical API surface for Monaco TS/JS language service
     const ts = monaco.typescript;
     if (!ts) {
+      return;
+    }
+
+    // Keep the playground API type surface available even when loader is
+    // already installed or when remote DTS chunk loading fails.
+    this.installGlobalApiTypes(ts);
+
+    if (this._installed) {
       return;
     }
 
@@ -123,6 +128,10 @@ export class RxjsMonacoTypesLoader {
       await yieldToNextFrame();
     }
 
+    this._installed = true;
+  }
+
+  private installGlobalApiTypes(ts: Monaco['typescript']): void {
     // ✅ Global 'api' for scripts (visible in JS + TS models)
     const globalLib = `
       import * as Core from 'rxjs';
@@ -134,12 +143,90 @@ export class RxjsMonacoTypesLoader {
           test(index: unknown, target: unknown): boolean;
         }
 
+        type IndexWatchRulePredicate<TContext = unknown> = (
+          index: unknown,
+          target: unknown,
+          context: TContext,
+        ) => boolean;
+
+        class IndexWatchRule<TContext = unknown> implements IIndexWatchRule {
+          context: TContext;
+          constructor(
+            context: TContext,
+            predicate: IndexWatchRulePredicate<TContext>,
+          );
+          test(index: unknown, target: unknown): boolean;
+        }
+
         interface IExpression<TReturn = unknown> {
-          value: TReturn;
+          readonly changed: Core.Observable<IExpression<TReturn>>;
+          readonly value: TReturn | undefined;
+          dispose(): void;
+        }
+
+        interface IExpressionChangeTransactionManager {
+          suspend(): void;
+          continue(): void;
+          commit(): void;
+        }
+
+        interface IStateChange {
+          index: unknown;
+          context: unknown;
+          oldContext: unknown;
+          oldValue: unknown;
+          newValue: unknown;
+        }
+
+        interface IStateManager {
+          getState(context: unknown, index: unknown): unknown;
+          setState(
+            context: unknown,
+            index: unknown,
+            newValue: unknown,
+            ownerId?: unknown,
+          ): void;
+          releaseState(
+            context: unknown,
+            index: unknown,
+            indexWatchRule?: IIndexWatchRule,
+          ): void;
+          readonly changed: Core.Observable<IStateChange>;
+        }
+
+        interface IWaitForEventOptions<
+          TTarget extends { [K in TEventName]: Core.Observable<TValue> },
+          TEventName extends keyof TTarget,
+          TValue,
+        > {
+          count?: number;
+          timeout?: number;
+          ignoreInitialValue?: boolean;
+        }
+
+        class WaitForEvent<
+          TTarget extends { [K in TEventName]: Core.Observable<TValue> },
+          TEventName extends keyof TTarget,
+          TValue,
+        > {
+          constructor(
+            target: TTarget,
+            eventName: TEventName,
+            options?: IWaitForEventOptions<TTarget, TEventName, TValue>,
+          );
+
+          wait(
+            trigger: () => void | Promise<unknown> | Core.Observable<unknown>,
+          ): Promise<TValue | null>;
         }
 
         const api: {
           rxjs: typeof Core & typeof Ops;
+          IndexWatchRule: typeof IndexWatchRule;
+          WaitForEvent: typeof WaitForEvent;
+          ExpressionChangeTransactionManager: IExpressionChangeTransactionManager;
+          stateManager: IStateManager;
+          printValue(value: unknown): void;
 
           rsx: <TReturn, TModel extends object = object>(
             expressionString: string,
@@ -153,15 +240,7 @@ export class RxjsMonacoTypesLoader {
       export {};
     `;
 
-    ts.typescriptDefaults.addExtraLib(
-      globalLib,
-      'file:///globals/rsx-global.d.ts',
-    );
-    ts.javascriptDefaults.addExtraLib(
-      globalLib,
-      'file:///globals/rsx-global.d.ts',
-    );
-
-    this._installed = true;
+    ts.typescriptDefaults.addExtraLib(globalLib, RxjsMonacoTypesLoader.GLOBAL_LIB_URI);
+    ts.javascriptDefaults.addExtraLib(globalLib, RxjsMonacoTypesLoader.GLOBAL_LIB_URI);
   }
 }

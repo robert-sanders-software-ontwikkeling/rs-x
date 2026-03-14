@@ -1,4 +1,14 @@
-import { rsx } from '@rs-x/expression-parser';
+import { InjectionContainer, printValue, WaitForEvent } from '@rs-x/core';
+import {
+  type IExpressionChangeTransactionManager,
+  RsXExpressionParserInjectionTokens,
+  rsx,
+} from '@rs-x/expression-parser';
+import {
+  IndexWatchRule,
+  type IStateManager,
+  RsXStateManagerInjectionTokens,
+} from '@rs-x/state-manager';
 
 import { rxjsScope } from './rxjs-scope';
 
@@ -19,12 +29,14 @@ export class ScriptEvaluator {
     return this._instance;
   }
 
-  public evaluateScript<T>(editorModelString: string): EvaluateModelResult<T> {
+  public async evaluateScript<T>(
+    editorModelString: string,
+  ): Promise<EvaluateModelResult<T>> {
     const SOURCE_NAME = 'rsx-user-script.js';
 
     // We wrap so user can "return { ... }" at top-level.
     // User code starts after these wrapper lines.
-    const wrapperHeaderLines = ['"use strict";', '(function (api) {'];
+    const wrapperHeaderLines = ['"use strict";', '(async function (api) {'];
 
     const wrapperFooterLines = ['})'];
 
@@ -40,17 +52,16 @@ export class ScriptEvaluator {
     // User code begins after the header lines.
     const WRAPPER_LINE_OFFSET = wrapperHeaderLines.length;
 
-    const api = {
-      rxjs: rxjsScope,
-      rsx,
-    };
+    const api = this.buildApi();
 
     try {
       // Evaluate function expression, then call it with api.
       // The expression is: (function(api){ ...user... })
       // We then immediately invoke it: (...) (api)
-      const factory = (0, eval)(wrapped) as (a: typeof api) => T;
-      const result = factory(api);
+      const factory = (0, eval)(wrapped) as (
+        a: typeof api,
+      ) => T | Promise<T>;
+      const result = await factory(api);
 
       return {
         success: true,
@@ -141,10 +152,9 @@ export class ScriptEvaluator {
 
   public evaluateModel<T>(editorModelString: string): EvaluateModelResult<T> {
     try {
-      const result = new Function('api', `return ${editorModelString}`)({
-        rxjs: rxjsScope,
-        rsx,
-      });
+      const result = new Function('api', `return ${editorModelString}`)(
+        this.buildApi(),
+      );
 
       return {
         success: true,
@@ -156,5 +166,30 @@ export class ScriptEvaluator {
         error: e instanceof Error ? e.message : String(e),
       };
     }
+  }
+
+  private buildApi(): {
+    rxjs: typeof rxjsScope;
+    rsx: typeof rsx;
+    printValue: typeof printValue;
+    stateManager: IStateManager;
+    IndexWatchRule: typeof IndexWatchRule;
+    WaitForEvent: typeof WaitForEvent;
+    ExpressionChangeTransactionManager: IExpressionChangeTransactionManager;
+  } {
+    return {
+      rxjs: rxjsScope,
+      rsx,
+      printValue,
+      stateManager: InjectionContainer.get<IStateManager>(
+        RsXStateManagerInjectionTokens.IStateManager,
+      ),
+      IndexWatchRule,
+      WaitForEvent,
+      ExpressionChangeTransactionManager:
+        InjectionContainer.get<IExpressionChangeTransactionManager>(
+          RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager,
+        ),
+    };
   }
 }

@@ -599,6 +599,10 @@ describe('Expression parser demos', () => {
                 300
             }
             Value of 'a.b' after deleting 200 from b':
+            {
+                100
+                300
+            }
             Final value of 'a.b':
             {
                 100

@@ -241,10 +241,16 @@ export abstract class AbstractExpression<
     root: AbstractExpression,
     pendingCommits: Set<IExpressionChangeCommitHandler>,
   ): boolean {
+    const previousValue = this._value;
     const value = this.evaluate(sender, root);
     if (value === PENDING) {
       return false;
     }
+
+    if (this.shouldPropagateOldValueFromSender(sender, previousValue, value)) {
+      this._oldValue = sender._oldValue;
+    }
+
     this._value = value;
 
     if (this.changeHook) {
@@ -267,6 +273,21 @@ export abstract class AbstractExpression<
       this._changed.next(this);
     }
   };
+
+  private shouldPropagateOldValueFromSender(
+    sender: AbstractExpression,
+    previousValue: unknown,
+    nextValue: unknown,
+  ): boolean {
+    const senderChangedValue = sender._oldValue !== sender.value;
+    const reusedStableReference =
+      previousValue === nextValue && nextValue === sender.value;
+
+    // For stable-reference derived values (for example cart[0] when only
+    // cart[0].qty changes), propagate sender.oldValue so commit detection and
+    // change history still capture the semantic change without cloning here.
+    return sender !== this && senderChangedValue && reusedStableReference;
+  }
 
   private addChildExpressions(expressions: AbstractExpression[]): void {
     this._childExpressions.push(...expressions);

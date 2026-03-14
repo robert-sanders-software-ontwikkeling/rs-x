@@ -38,6 +38,7 @@ const communityNavItems: ExternalNavItem[] = [
 ];
 
 let hasWarmedPlayground = false;
+const THEME_STORAGE_KEY = 'rsx-theme';
 
 async function warmPlaygroundMonacoTypes(): Promise<void> {
   if (typeof window === 'undefined') {
@@ -72,7 +73,6 @@ export function SiteHeader() {
   const communityRef = useRef<HTMLLIElement | null>(null);
   const router = useRouter();
   const pathname = usePathname();
-  const showGetStartedCta = pathname === '/';
 
   const isActivePath = (href: string): boolean => {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -158,6 +158,15 @@ export function SiteHeader() {
   useEffect(() => {
     const html = document.documentElement;
 
+    try {
+      const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+      if (storedTheme === 'dark' || storedTheme === 'light') {
+        html.dataset.theme = storedTheme;
+      }
+    } catch {
+      // ignore storage access issues
+    }
+
     const syncTheme = () => {
       setTheme(html.dataset.theme === 'dark' ? 'dark' : 'light');
     };
@@ -184,6 +193,11 @@ export function SiteHeader() {
     const next = html.dataset.theme === 'dark' ? 'light' : 'dark';
 
     html.dataset.theme = next;
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, next);
+    } catch {
+      // ignore storage access issues
+    }
     setTheme(next);
   };
 
@@ -266,11 +280,12 @@ export function SiteHeader() {
               {theme === 'dark' ? 'Light mode' : 'Dark mode'}
             </button>
 
-            {showGetStartedCta && (
-              <Link className="btn btnPrimary btnSm" href="/get-started">
-                Get started
-              </Link>
-            )}
+            <Link
+              className="btn btnPrimary btnSm headerGetStartedCta"
+              href="/get-started"
+            >
+              Get started
+            </Link>
 
             {/* Mobile menu button */}
             <button

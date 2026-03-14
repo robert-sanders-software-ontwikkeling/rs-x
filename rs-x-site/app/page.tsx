@@ -56,7 +56,7 @@ const tryInPlaygroundHref = `/playground?data=${encodeURIComponent(
 
 export default function HomePage() {
   return (
-    <main id="content" className="main">
+    <main id="content" className="main homePage">
       <section className="hero">
         <div className="container">
           <div className="heroGrid">

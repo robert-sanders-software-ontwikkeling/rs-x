@@ -5,6 +5,10 @@ import { usePathname } from 'next/navigation';
 
 export function SiteFooter() {
   const pathname = usePathname();
+  if (pathname.startsWith('/playground')) {
+    return null;
+  }
+
   const isActivePath = (href: string): boolean => {
     return pathname === href || pathname.startsWith(`${href}/`);
   };
@@ -16,8 +20,7 @@ export function SiteFooter() {
           <div className="footerBrand">
             <span className="footerTitle">rs-x</span>
             <p className="footerTagline">
-              Reactive framework and tooling shaped in public with community
-              input.
+              Declarative reactive framework: make reactivity simple.
             </p>
           </div>
 

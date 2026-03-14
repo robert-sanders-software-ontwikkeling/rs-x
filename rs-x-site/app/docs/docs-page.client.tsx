@@ -3,6 +3,12 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
+import {
+  type ITabItem,
+  ItemLinkCardContent,
+  Tabs,
+} from '@rs-x/react-components';
+
 type DocsLinkItem = {
   href: string;
   title: string;
@@ -13,6 +19,8 @@ type DocsNamespace = {
   name: string;
   href?: string;
   links: DocsLinkItem[];
+  moduleCount?: number;
+  apiEntryCount?: number;
 };
 
 type DocsPageClientProps = {
@@ -28,23 +36,28 @@ const coreConceptLinks: DocsLinkItem[] = [
   },
   {
     href: '/docs/core-concepts/batching-transactions',
-    title: 'Batching transactions',
-    meta: 'Group updates and commit once',
+    title: 'Batching changes',
+    meta: 'Group updates and emit once',
   },
   {
-    href: '/docs/core-concepts/caching-and-identity',
-    title: 'Caching and identity',
-    meta: 'Stable ids and reusable instances',
-  },
-  {
-    href: '/docs/core-concepts/collections',
+    href: '/docs/collections',
     title: 'Collections',
-    meta: 'Array/Map/Set observation and updates',
+    meta: 'Array/Map/Set guide with specific-item monitoring examples',
   },
   {
-    href: '/docs/core-concepts/error-diagnostics',
-    title: 'Error diagnostics',
-    meta: 'Capture and inspect runtime errors',
+    href: '/docs/core-concepts/dates',
+    title: 'Dates',
+    meta: 'Use date properties like month/year (not getMonth/getFullYear)',
+  },
+  {
+    href: '/docs/core-concepts/dependency-injection',
+    title: 'Dependency injection',
+    meta: 'Compose and adapt runtime services with Inversify',
+  },
+  {
+    href: '/docs/core-concepts/expression-types',
+    title: 'Expression types',
+    meta: 'Supported node types, including internal-only nodes',
   },
   {
     href: '/docs/core-concepts/member-expressions',
@@ -59,9 +72,10 @@ const coreConceptLinks: DocsLinkItem[] = [
   {
     href: '/docs/core-concepts/readonly-properties',
     title: 'Readonly properties',
-    meta: 'Safe commit flow and write constraints',
+    meta: 'Expose readonly values while updating them internally',
   },
 ];
+
 
 function namespaceMeta(name: string): {
   key: 'core' | 'state-manager' | 'expression-parser' | 'all';
@@ -151,9 +165,28 @@ export function DocsPageClient({
   const activeNamespaceMeta = activeNamespace
     ? namespaceMeta(activeNamespace.name)
     : { key: 'all' as const, label: '', packageName: '' };
+  const activeModuleCount = activeNamespace
+    ? (isSearching
+      ? activeNamespace.links.length
+      : (activeNamespace.moduleCount ?? activeNamespace.links.length))
+    : 0;
   const activeApiEntryCount = activeNamespace
-    ? getApiEntryCount(activeNamespace.links)
+    ? (isSearching
+      ? (getApiEntryCount(activeNamespace.links) ?? activeNamespace.links.length)
+      : (activeNamespace.apiEntryCount ??
+        getApiEntryCount(activeNamespace.links) ??
+        activeNamespace.links.length))
     : null;
+  const apiPackageTabs = useMemo<ITabItem<string>[]>(() => {
+    return apiNamespaces.map((namespace) => {
+      const tabMeta = namespaceMeta(namespace.name);
+      return {
+        value: namespace.name,
+        label: tabMeta.label,
+        title: tabMeta.packageName,
+      };
+    });
+  }, [apiNamespaces]);
 
   return (
     <main id="content" className="main">
@@ -161,18 +194,17 @@ export function DocsPageClient({
         <div className="container docsPage">
           <h1 className="sectionTitle">Documentation</h1>
           <p className="docsPageLead">
-            Start with concepts, then move to API details and advanced
-            internals.
+            Core concepts, API reference, and advanced documentation.
           </p>
 
           <div className="docsCards">
             <article className="card">
-              <p className="docsCardEyebrow">Guide</p>
+              <p className="docsCardEyebrow docsCardEyebrowGuide">Guide</p>
               <h2 className="cardTitle">Core concepts</h2>
               <p className="cardText">
                 Build modular expressions that work with async values,
-                collections, member access, readonly properties, and predictable
-                update flow.
+                collections, member access, dependency injection, readonly
+                properties, and predictable update flow.
               </p>
               <ul
                 className="docsApiLinkGrid docsConceptLinkGrid"
@@ -181,11 +213,7 @@ export function DocsPageClient({
                 {coreConceptLinks.map((link) => (
                   <li key={link.href}>
                     <Link className="docsApiLinkItem" href={link.href}>
-                      <span className="docsApiLinkTitle">{link.title}</span>
-                      <span className="docsApiLinkMeta">{link.meta}</span>
-                      <span className="docsApiLinkArrow" aria-hidden="true">
-                        →
-                      </span>
+                      <ItemLinkCardContent title={link.title} meta={link.meta} />
                     </Link>
                   </li>
                 ))}
@@ -193,7 +221,7 @@ export function DocsPageClient({
             </article>
 
             <article className="card">
-              <p className="docsCardEyebrow">API</p>
+              <p className="docsCardEyebrow docsCardEyebrowApi">API</p>
               <h2 className="cardTitle">API reference</h2>
 
               <div className="docsSearchBar docsSearchBarInCard">
@@ -234,33 +262,18 @@ export function DocsPageClient({
                 className="docsApiTabbedShell"
                 data-api-package={isSearching ? 'all' : activeNamespaceMeta.key}
               >
-                <div
-                  className="docsApiPackageTabs"
-                  role="tablist"
-                  aria-label="API package tabs"
-                >
-                  {apiNamespaces.map((namespace) => {
-                    const isActive = namespace.name === selectedNamespace;
-                    const tabMeta = namespaceMeta(namespace.name);
-                    return (
-                      <button
-                        key={namespace.name}
-                        type="button"
-                        role="tab"
-                        aria-selected={isActive}
-                        className={`docsApiPackageTab${isActive ? ' isActive' : ''}`}
-                        title={tabMeta.packageName}
-                        onClick={() => {
-                          setSelectedNamespace(namespace.name);
-                        }}
-                      >
-                        <span className="docsApiPackageTabLabel">
-                          {tabMeta.label}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                <Tabs
+                  unstyled
+                  ariaLabel="API package tabs"
+                  persistKey="docs.api-packages"
+                  items={apiPackageTabs}
+                  value={selectedNamespace}
+                  onValueChange={setSelectedNamespace}
+                  listClassName="docsApiPackageTabs"
+                  tabClassName="docsApiPackageTab"
+                  activeTabClassName="isActive"
+                  labelClassName="docsApiPackageTabLabel"
+                />
 
                 <div className="docsApiTabBody">
                   {activeNamespace && (
@@ -282,7 +295,7 @@ export function DocsPageClient({
                       )}
                       <div className="docsApiTabStats">
                         <span className="docsApiStatChip">
-                          {activeNamespace.links.length} modules
+                          {activeModuleCount} modules
                         </span>
                         <span className="docsApiStatChip">
                           {activeApiEntryCount === null
@@ -323,18 +336,10 @@ export function DocsPageClient({
                                 className="docsApiLinkItem"
                                 href={link.href}
                               >
-                                <span className="docsApiLinkTitle">
-                                  {link.title}
-                                </span>
-                                <span className="docsApiLinkMeta">
-                                  {link.meta}
-                                </span>
-                                <span
-                                  className="docsApiLinkArrow"
-                                  aria-hidden="true"
-                                >
-                                  →
-                                </span>
+                                <ItemLinkCardContent
+                                  title={link.title}
+                                  meta={link.meta}
+                                />
                               </Link>
                             </li>
                           ))}
@@ -347,7 +352,9 @@ export function DocsPageClient({
             </article>
 
             <article className="card">
-              <p className="docsCardEyebrow">Architecture</p>
+              <p className="docsCardEyebrow docsCardEyebrowArchitecture">
+                Architecture
+              </p>
               <h2 className="cardTitle">Advanced</h2>
               <ul
                 className="docsApiLinkGrid"
@@ -356,11 +363,7 @@ export function DocsPageClient({
                 {advancedLinks.map((link) => (
                   <li key={link.href}>
                     <Link className="docsApiLinkItem" href={link.href}>
-                      <span className="docsApiLinkTitle">{link.title}</span>
-                      <span className="docsApiLinkMeta">{link.meta}</span>
-                      <span className="docsApiLinkArrow" aria-hidden="true">
-                        →
-                      </span>
+                      <ItemLinkCardContent title={link.title} meta={link.meta} />
                     </Link>
                   </li>
                 ))}

@@ -39,6 +39,7 @@ import { DefaultIdentifierOwnerResolver } from '../lib/identifier-owner-resolver
 import { GlobalIdentifierOwnerResolver } from '../lib/identifier-owner-resolver/global-identifier-owner-resolver';
 import { MapKeyOwnerResolver } from '../lib/identifier-owner-resolver/map-key-owner-resolver';
 import { PropertyOwnerResolver } from '../lib/identifier-owner-resolver/property-owner-resolver';
+import { SetKeyOwnerResolver } from '../lib/identifier-owner-resolver/set-key-owner-resolver';
 import { JsEspreeExpressionParser } from '../lib/js-espree-expression-parser';
 import {
   RsXExpressionParserModule,
@@ -174,6 +175,23 @@ describe('RsXExpressionParserModule tests', () => {
     expect(a1).toBe(a2);
   });
 
+  it('can get instance of SetKeyOwnerResolver', () => {
+    const actual = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.SetKeyOwnerResolver,
+    );
+    expect(actual).toBeInstanceOf(SetKeyOwnerResolver);
+  });
+
+  it('SetKeyOwnerResolver instance is a singleton', () => {
+    const a1 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.SetKeyOwnerResolver,
+    );
+    const a2 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.SetKeyOwnerResolver,
+    );
+    expect(a1).toBe(a2);
+  });
+
   it('can get instance of IdentifierOwnerResolver', () => {
     const actual = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IdentifierOwnerResolver,
@@ -196,12 +214,13 @@ describe('RsXExpressionParserModule tests', () => {
       RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList,
     );
 
-    expect(actual.length).toEqual(4);
+    expect(actual.length).toEqual(5);
 
     expect(actual[0]).toBeInstanceOf(PropertyOwnerResolver);
     expect(actual[1]).toBeInstanceOf(ArrayIndexOwnerResolver);
-    expect(actual[2]).toBeInstanceOf(MapKeyOwnerResolver);
-    expect(actual[3]).toBeInstanceOf(GlobalIdentifierOwnerResolver);
+    expect(actual[2]).toBeInstanceOf(SetKeyOwnerResolver);
+    expect(actual[3]).toBeInstanceOf(MapKeyOwnerResolver);
+    expect(actual[4]).toBeInstanceOf(GlobalIdentifierOwnerResolver);
   });
 
   it('IIdentifierOwnerResolverList instance is a singelton', () => {
@@ -214,6 +233,7 @@ describe('RsXExpressionParserModule tests', () => {
     expect(a1[0]).toBe(a2[0]);
     expect(a1[1]).toBe(a2[1]);
     expect(a1[2]).toBe(a2[2]);
+    expect(a1[3]).toBe(a2[3]);
   });
 
   it('can get an instance of IIndexValueAccessorList', () => {

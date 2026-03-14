@@ -6,6 +6,8 @@ import { DocsBreadcrumbs } from '../../../components/DocsBreadcrumbs';
 import { DocsPageTemplate } from '../../../components/DocsPageTemplate';
 import { SyntaxCodeBlock } from '../../../components/SyntaxCodeBlock';
 
+import { IndexWatchRuleSemanticsTable } from './index-watch-rule-semantics-table.client';
+
 export const metadata = {
   title: 'IIndexWatchRule',
   description:
@@ -188,6 +190,8 @@ const arrayPlaygroundCode = dedent`
 
 const mapPlaygroundCode = dedent`
   const rsx = api.rsx;
+  const WaitForEvent = api.WaitForEvent;
+  const emptyFunction = () => {};
 
   const admin = { enabled: true, rank: 1 };
   const guest = { enabled: false, rank: 2 };
@@ -210,73 +214,75 @@ const mapPlaygroundCode = dedent`
         return this.context.trackedKeys.has(String(index));
       }
 
-      return String(index) === 'enabled';
+      if (target === model.roles.get('admin')) {
+        return String(index) === 'enabled';
+      }
+
+      return false;
     },
   };
 
-  const expression = rsx('roles')(model, watchRule);
+  const expression = rsx('roles["admin"]')(model, watchRule);
+    await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-  // Tracked:
-  setTimeout(() => {
-    admin.enabled = false;
-  }, 250);
+    const trackedAdminChange = await new WaitForEvent(expression, 'changed', {
+      ignoreInitialValue: true,
+    }).wait(() => {
+      admin.enabled = false;
+    });
+    console.log('admin enabled change emitted:', trackedAdminChange === expression); // true
 
-  // Not tracked: guest key is filtered out:
-  setTimeout(() => {
-    guest.enabled = true;
-  }, 500);
+    const ignoredGuestChange = await new WaitForEvent(expression, 'changed', {
+      ignoreInitialValue: true,
+      timeout: 100,
+    }).wait(() => {
+      guest.enabled = true;
+    });
+    console.log('guest enabled change emitted:', ignoredGuestChange !== null); // false
 
-  // Tracked map key update:
-  setTimeout(() => {
-    model.roles.set('admin', { enabled: true, rank: 3 });
-  }, 750);
+    const trackedMapUpdate = await new WaitForEvent(expression, 'changed', {
+      ignoreInitialValue: true,
+    }).wait(() => {
+      model.roles.set('admin', { enabled: true, rank: 3 });
+    });
+    console.log('admin map replacement emitted:', trackedMapUpdate === expression); // true
 
   return expression;
 `;
 
 const setPlaygroundCode = dedent`
   const rsx = api.rsx;
+  const WaitForEvent = api.WaitForEvent;
+  const emptyFunction = () => {};
 
-  const taskA = { id: 'A', done: false, note: 'critical' };
-  const taskB = { id: 'B', done: false, note: 'normal' };
+  const taskA = { id: 'A', done: false, note: 'leaf object' };
+  const taskB = { id: 'B', done: false, note: 'other object' };
 
   const model = {
+    trackedTask: taskA,
     tasks: new Set([taskA, taskB]),
   };
 
-  const watchRule = {
-    context: { trackedMemberProperty: 'done' },
-    test(index, target) {
-      if (target === model && index === 'tasks') {
-        return true;
-      }
+  // Default: non-recursive leaf watching
+  const trackedTaskExpression = rsx('tasks[trackedTask]')(model);
+    await new WaitForEvent(trackedTaskExpression, 'changed').wait(emptyFunction);
 
-      if (target instanceof Set) {
-        return true; // watch all set members
-      }
+    const nestedChange = await new WaitForEvent(trackedTaskExpression, 'changed', {
+      ignoreInitialValue: true,
+      timeout: 100,
+    }).wait(() => {
+      taskA.done = true;
+    });
+    console.log('nested done change emitted:', nestedChange !== null); // false
 
-      return String(index) === this.context.trackedMemberProperty;
-    },
-  };
+    const directChange = await new WaitForEvent(trackedTaskExpression, 'changed', {
+      ignoreInitialValue: true,
+    }).wait(() => {
+      model.tasks.delete(taskA);
+    });
+    console.log('set membership change emitted:', directChange === trackedTaskExpression); // true
 
-  const expression = rsx('tasks')(model, watchRule);
-
-  // Tracked:
-  setTimeout(() => {
-    taskA.done = true;
-  }, 250);
-
-  // Not tracked by rule:
-  setTimeout(() => {
-    taskA.note = 'changed';
-  }, 500);
-
-  // Tracked membership mutation:
-  setTimeout(() => {
-    model.tasks.delete(taskB);
-  }, 750);
-
-  return expression;
+  return trackedTaskExpression;
 `;
 
 const toPlaygroundHref = (script: string): string =>
@@ -355,7 +361,8 @@ const playgroundExamples: IPlaygroundExample[] = [
   },
   {
     title: 'Set Example',
-    description: 'Tracks membership updates plus done changes on set members.',
+    description:
+      'Tracks a set member path by default (non-recursive): nested done is ignored, membership changes are tracked.',
     code: setPlaygroundCode,
   },
 ];
@@ -472,30 +479,7 @@ export default function IndexWatchRuleDocsPage() {
             The meaning of <span className="codeInline">index</span> depends on
             runtime type:
           </p>
-          <div className="comparisonWrap">
-            <table className="comparisonTable">
-              <thead>
-                <tr>
-                  <th>Value Type</th>
-                  <th>index means</th>
-                  <th>target means</th>
-                  <th>Typical check</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ruleSemanticsRows.map((row) => (
-                  <tr key={row.valueType}>
-                    <td>{row.valueType}</td>
-                    <td>{row.indexMeaning}</td>
-                    <td>{row.targetMeaning}</td>
-                    <td>
-                      <span className="codeInline">{row.typicalRuleCheck}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <IndexWatchRuleSemanticsTable rows={ruleSemanticsRows} />
         </article>
 
         <article className="card docsApiCard">

@@ -7,6 +7,8 @@ import { DocsBreadcrumbs } from '../../components/DocsBreadcrumbs';
 import { SyntaxCodeBlock } from '../../components/SyntaxCodeBlock';
 import { githubSourceHref } from '../../lib/github-source-links';
 
+import { ObservationMatrixTable } from './observation-matrix-table.client';
+
 export type AdvancedTopic =
   | 'observation'
   | 'async-operations'
@@ -754,45 +756,7 @@ export function renderAdvancedTopicPage(topic: AdvancedTopic) {
                   descriptors, and writes proxified property values back to
                   their raw (unproxified) value.
                 </p>
-                <div className="comparisonWrap advancedMatrixWrap">
-                  <table className="comparisonTable">
-                    <thead>
-                      <tr>
-                        <th>Value type</th>
-                        <th>Mechanism</th>
-                        <th>Async</th>
-                        <th>How change is detected</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {OBSERVATION_ROWS.map((row) => (
-                        <tr key={row.valueType}>
-                          <td>
-                            <Link href={row.href}>{row.valueType}</Link>
-                          </td>
-                          <td>{row.mechanism}</td>
-                          <td>
-                            <span
-                              className={`observationAsyncBadge ${row.isAsync ? 'isAsync' : 'isSync'}`}
-                              aria-label={
-                                row.isAsync ? 'Async: true' : 'Async: false'
-                              }
-                            >
-                              <span
-                                className="observationAsyncBadgeIcon"
-                                aria-hidden="true"
-                              >
-                                {row.isAsync ? '✓' : '✕'}
-                              </span>
-                              <span>{row.isAsync ? 'True' : 'False'}</span>
-                            </span>
-                          </td>
-                          <td>{row.detection}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <ObservationMatrixTable rows={OBSERVATION_ROWS} />
               </article>
             )}
 

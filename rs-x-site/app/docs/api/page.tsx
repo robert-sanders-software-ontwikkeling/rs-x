@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { ItemLinkCardContent } from '@rs-x/react-components';
+
 import { DocsBreadcrumbs } from '../../../components/DocsBreadcrumbs';
 import { DocsPageTemplate } from '../../../components/DocsPageTemplate';
 import { apiPackages } from '../api-packages';
@@ -34,16 +36,12 @@ export default function ApiPackagesPage() {
           {apiPackages.map((pkg) => (
             <li key={pkg.key}>
               <Link className="docsApiLinkItem" href={pkg.href}>
-                <span className="docsApiLinkTitle">{pkg.name}</span>
-                <span className="docsApiLinkMeta">
-                  {pkg.links.length} entries
-                </span>
-                <span className="cardText docsApiLinkDescription">
-                  {pkg.description}
-                </span>
-                <span className="docsApiLinkArrow" aria-hidden="true">
-                  →
-                </span>
+                <ItemLinkCardContent
+                  title={pkg.name}
+                  meta={`${pkg.links.length} entries`}
+                  description={pkg.description}
+                  descriptionClassName="cardText docsApiLinkDescription"
+                />
               </Link>
             </li>
           ))}

@@ -1,6 +1,10 @@
 import { coreApiItems } from '../app/docs/core-api/core-api.data';
+import { stateManagerApiItems } from '../app/docs/state-manager-api/state-manager-api.data';
 
 const CORE_API_SYMBOLS = new Set(coreApiItems.map((item) => item.symbol));
+const STATE_MANAGER_API_SYMBOLS = new Set(
+  stateManagerApiItems.map((item) => item.symbol),
+);
 
 const TYPE_DOC_LINKS: Record<string, string> = {
   AbstractExpression: '/docs/abstract-expression',
@@ -43,6 +47,9 @@ export function resolveSymbolDocumentationLink(
 
   if (CORE_API_SYMBOLS.has(symbol)) {
     return `/docs/core-api/${encodeURIComponent(symbol)}`;
+  }
+  if (STATE_MANAGER_API_SYMBOLS.has(symbol)) {
+    return `/docs/state-manager-api/${encodeURIComponent(symbol)}`;
   }
 
   return undefined;

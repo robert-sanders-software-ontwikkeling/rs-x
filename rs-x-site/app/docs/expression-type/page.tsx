@@ -6,6 +6,8 @@ import { DocsBreadcrumbs } from '../../../components/DocsBreadcrumbs';
 import { DocsPageTemplate } from '../../../components/DocsPageTemplate';
 import { SyntaxCodeBlock } from '../../../components/SyntaxCodeBlock';
 
+import { ExpressionTypeTable } from './expression-type-table.client';
+
 export const metadata = {
   title: 'ExpressionType',
   description: 'Enum of expression node kinds used by IExpression.type.',
@@ -310,10 +312,6 @@ const expressionTypeRows: Array<{
   },
 ];
 
-const sortedExpressionTypeRows = [...expressionTypeRows].sort((a, b) => {
-  return a.name.localeCompare(b.name);
-});
-
 export default function ExpressionTypeDocsPage() {
   return (
     <DocsPageTemplate>
@@ -371,32 +369,7 @@ export default function ExpressionTypeDocsPage() {
 
       <article className="card docsApiCard">
         <h2 className="cardTitle">Supported expression types</h2>
-        <div className="comparisonWrap">
-          <table className="comparisonTable">
-            <thead>
-              <tr>
-                <th>ExpressionType</th>
-                <th>Description</th>
-                <th>Example</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedExpressionTypeRows.map((item) => {
-                return (
-                  <tr key={item.name}>
-                    <td>
-                      <span className="codeInline">{item.name}</span>
-                    </td>
-                    <td>{item.description}</td>
-                    <td>
-                      <span className="codeInline">{item.example}</span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <ExpressionTypeTable rows={expressionTypeRows} />
       </article>
     </DocsPageTemplate>
   );

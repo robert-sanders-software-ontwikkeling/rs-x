@@ -1,0 +1,83 @@
+.rsxCodeViewer {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.rsxCodeViewerPre {
+  margin: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.rsxCodeViewerSyntax {
+  display: block;
+  color: var(--code-token-identifier, var(--text, #0b1324));
+}
+
+.rsxCodeViewerSyntax .tok-keyword {
+  color: var(--code-token-keyword, #365fff);
+}
+
+.rsxCodeViewerSyntax .tok-type {
+  color: var(--code-token-type, #8246e5);
+}
+
+.rsxCodeViewerSyntax .tok-literal {
+  color: var(--code-token-literal, #0e7a8e);
+}
+
+.rsxCodeViewerSyntax .tok-number {
+  color: var(--code-token-number, #0f9b60);
+}
+
+.rsxCodeViewerSyntax .tok-string {
+  color: var(--code-token-string, #b14d26);
+}
+
+.rsxCodeViewerSyntax .tok-comment {
+  color: var(--code-token-comment, rgba(19, 32, 61, 0.56));
+}
+
+.rsxCodeViewerSyntax .tok-operator {
+  color: var(--code-token-operator, #5f6a84);
+}
+
+.rsxCodeViewerSyntax .tok-identifier {
+  color: var(--code-token-identifier, var(--text, #0b1324));
+}
+
+.rsxCodeViewerActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.rsxCodeViewerToggle {
+  border: 1px solid var(--border-soft, rgba(10, 25, 55, 0.14));
+  border-radius: 9px;
+  background: var(--surface-solid, #ffffff);
+  color: var(--text, #0b1324);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 0.38rem 0.64rem;
+  cursor: pointer;
+  transition:
+    background var(--t-fast, 160ms) var(--ease, ease),
+    border-color var(--t-fast, 160ms) var(--ease, ease),
+    color var(--t-fast, 160ms) var(--ease, ease);
+}
+
+.rsxCodeViewerToggle:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--brand, #0b66ff) 30%,
+    var(--border-soft, rgba(10, 25, 55, 0.14))
+  );
+  background: color-mix(
+    in srgb,
+    var(--surface-solid, #ffffff) 90%,
+    var(--surface-2, rgba(255, 255, 255, 0.72))
+  );
+}

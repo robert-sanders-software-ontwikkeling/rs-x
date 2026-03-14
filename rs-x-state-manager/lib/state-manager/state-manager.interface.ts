@@ -43,7 +43,7 @@ export interface IStateManager {
     context: unknown,
     index: unknown,
     value: T,
-    ownerId: unknown,
+    ownerId?: unknown,
   ): void;
   clear(): void;
 }

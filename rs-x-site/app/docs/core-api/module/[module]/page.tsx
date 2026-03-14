@@ -2,10 +2,14 @@ import dedent from 'dedent';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { ItemLinkCardContent } from '@rs-x/react-components';
+
 import { DocsBreadcrumbs } from '../../../../../components/DocsBreadcrumbs';
 import { DocsPageTemplate } from '../../../../../components/DocsPageTemplate';
 import { SyntaxCodeBlock } from '../../../../../components/SyntaxCodeBlock';
 import { coreApiItems } from '../../core-api.data';
+
+import { TokenReferenceTable } from './token-reference-table.client';
 
 function slugify(value: string): string {
   return value.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
@@ -130,6 +134,15 @@ export default async function CoreApiModulePage({
     notFound();
   }
   const hasMultipleEntries = entry.items.length > 1;
+  const tokenReferenceRows = [...injectionTokenReferenceRows]
+    .sort((a, b) => a.token.localeCompare(b.token))
+    .map((row) => ({
+      token: row.token,
+      symbol: row.symbol,
+      responsibility: row.symbol
+        ? (apiDescriptionBySymbol.get(row.symbol) ?? '-')
+        : (row.description ?? '-'),
+    }));
 
   const deepCloneExtensionCode = dedent`
     import {
@@ -812,44 +825,7 @@ export default async function CoreApiModulePage({
               The table below maps each token key to the service it refers to
               and describes that service&apos;s responsibility.
             </p>
-            <div className="coreTokenTableWrap">
-              <table className="coreTokenTable">
-                <thead>
-                  <tr>
-                    <th>Token key</th>
-                    <th>Service reference</th>
-                    <th>Service responsibility</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...injectionTokenReferenceRows]
-                    .sort((a, b) => a.token.localeCompare(b.token))
-                    .map((row) => (
-                      <tr key={row.token}>
-                        <td>
-                          <span className="codeInline">{row.token}</span>
-                        </td>
-                        <td>
-                          {row.symbol ? (
-                            <Link
-                              href={`/docs/core-api/${encodeURIComponent(row.symbol)}`}
-                            >
-                              {row.symbol}
-                            </Link>
-                          ) : (
-                            <span className="codeInline">{row.token}</span>
-                          )}
-                        </td>
-                        <td className="cardText">
-                          {row.symbol
-                            ? (apiDescriptionBySymbol.get(row.symbol) ?? '-')
-                            : (row.description ?? '-')}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
+            <TokenReferenceTable rows={tokenReferenceRows} />
           </>
         )}
 
@@ -1298,14 +1274,12 @@ export default async function CoreApiModulePage({
                     className="docsApiLinkItem"
                     href={`/docs/core-api/${encodeURIComponent(item.symbol)}`}
                   >
-                    <span className="docsApiLinkTitle">{item.symbol}</span>
-                    <span className="docsApiLinkMeta">{item.kind}</span>
-                    <span className="cardText docsApiLinkDescription">
-                      {item.description}
-                    </span>
-                    <span className="docsApiLinkArrow" aria-hidden="true">
-                      →
-                    </span>
+                    <ItemLinkCardContent
+                      title={item.symbol}
+                      meta={item.kind}
+                      description={item.description}
+                      descriptionClassName="cardText docsApiLinkDescription"
+                    />
                   </Link>
                 </li>
               ))}

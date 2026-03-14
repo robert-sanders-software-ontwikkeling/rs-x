@@ -74,15 +74,16 @@ async function buildScriptQuery(script: string): Promise<string> {
   return params.toString();
 }
 
-function evaluateScript(scriptBody: string): EvalResult {
+async function evaluateScript(scriptBody: string): Promise<EvalResult> {
   const body = scriptBody.trim();
   if (!body) {
     return { ok: false, error: 'Empty script' };
   }
 
   try {
-    const result =
-      ScriptEvaluator.getInstance().evaluateScript<IExpression>(body);
+    const result = await ScriptEvaluator.getInstance().evaluateScript<IExpression>(
+      body,
+    );
 
     if (!result.success) {
       return {
@@ -474,7 +475,7 @@ export const Playground: React.FC = () => {
       await ensureExpressionParserBootstrapped();
       setIsBootstrapReady(true);
 
-      const result = evaluateScript(nextScript);
+      const result = await evaluateScript(nextScript);
       if (result.ok) {
         setErrors([]);
         setNewExpression(result.value);
@@ -523,6 +524,10 @@ export const Playground: React.FC = () => {
     }
 
     if (!isBootstrapReady) {
+      return;
+    }
+
+    if (didAutoCompileRef.current) {
       return;
     }
 

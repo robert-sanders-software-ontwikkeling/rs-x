@@ -21,332 +21,533 @@ const FRAMEWORKS: string[] = [
   'Preact Signals',
 ];
 
+const SOURCES = {
+  rsx: {
+    overview: '/docs',
+    primitive: '/docs/observation',
+    derived: '/docs/rsx-function',
+    tracking: '/docs/observation',
+    batching: '/docs/expression-change-transaction-manager',
+    async: '/docs/core-concepts/async-operations',
+    cleanup: '/docs/iexpression',
+    parsing: '/docs/rsx-function',
+    tooling: '/docs/expression-change-tracker-manager',
+  },
+  react: {
+    overview: 'https://react.dev/learn',
+    primitive: 'https://react.dev/reference/react/useState',
+    derived: 'https://react.dev/reference/react/useMemo',
+    tracking: 'https://react.dev/reference/react/useEffect',
+    rerender: 'https://react.dev/learn/render-and-commit',
+    batching: 'https://react.dev/learn/queueing-a-series-of-state-updates',
+    cleanup: 'https://react.dev/reference/react/useEffect',
+    parsing: 'https://react.dev/learn/writing-markup-with-jsx',
+    tooling: 'https://react.dev/learn/react-developer-tools',
+  },
+  vue: {
+    overview: 'https://vuejs.org/guide/introduction.html',
+    primitive: 'https://vuejs.org/api/reactivity-core.html',
+    derived: 'https://vuejs.org/guide/essentials/computed.html',
+    tracking: 'https://vuejs.org/guide/extras/reactivity-in-depth.html',
+    rerender: 'https://vuejs.org/guide/essentials/watchers.html',
+    batching: 'https://vuejs.org/api/general.html#nexttick',
+    cleanup: 'https://vuejs.org/guide/essentials/watchers.html',
+    parsing: 'https://vuejs.org/guide/essentials/template-syntax.html',
+    tooling: 'https://devtools.vuejs.org/',
+  },
+  angular: {
+    overview: 'https://angular.dev/overview',
+    primitive: 'https://angular.dev/guide/signals',
+    derived: 'https://angular.dev/guide/signals',
+    tracking: 'https://angular.dev/guide/signals',
+    rerender: 'https://angular.dev/guide/signals',
+    batching: 'https://angular.dev/guide/signals',
+    cleanup: 'https://angular.dev/guide/signals',
+    parsing: 'https://angular.dev/guide/templates/expression-syntax',
+    tooling: 'https://angular.dev/tools/devtools',
+  },
+  svelte: {
+    overview: 'https://svelte.dev/docs/svelte/what-are-runes',
+    primitive: 'https://svelte.dev/docs/svelte/$state',
+    derived: 'https://svelte.dev/docs/svelte/$derived',
+    tracking: 'https://svelte.dev/docs/svelte/$effect',
+    rerender: 'https://svelte.dev/docs/svelte/$effect',
+    batching: 'https://svelte.dev/docs/svelte#tick',
+    cleanup: 'https://svelte.dev/docs/svelte/$effect',
+    parsing: 'https://svelte.dev/docs/svelte/what-are-runes',
+    tooling: 'https://svelte.dev/docs/svelte/@debug',
+  },
+  solid: {
+    overview: 'https://docs.solidjs.com/concepts/intro-to-reactivity',
+    primitive: 'https://docs.solidjs.com/reference/basic-reactivity/create-signal',
+    derived: 'https://docs.solidjs.com/reference/basic-reactivity/create-memo',
+    tracking: 'https://docs.solidjs.com/reference/basic-reactivity/create-effect',
+    rerender: 'https://docs.solidjs.com/reference/basic-reactivity/create-effect',
+    batching: 'https://docs.solidjs.com/reference/reactive-utilities/batch',
+    cleanup: 'https://docs.solidjs.com/reference/lifecycle/on-cleanup',
+    parsing: 'https://docs.solidjs.com/concepts/intro-to-reactivity',
+    tooling: 'https://docs.solidjs.com/concepts/intro-to-reactivity',
+  },
+  mobx: {
+    overview: 'https://mobx.js.org/the-gist-of-mobx.html',
+    primitive: 'https://mobx.js.org/observable-state.html',
+    derived: 'https://mobx.js.org/computeds.html',
+    tracking: 'https://mobx.js.org/reactions.html',
+    rerender: 'https://mobx.js.org/reactions.html',
+    batching: 'https://mobx.js.org/actions.html',
+    cleanup: 'https://mobx.js.org/reactions.html',
+    parsing: 'https://mobx.js.org/the-gist-of-mobx.html',
+    tooling: 'https://mobx.js.org/analyzing-reactivity.html',
+  },
+  rxjs: {
+    overview: 'https://rxjs.dev/guide/overview',
+    primitive: 'https://rxjs.dev/guide/observable',
+    derived: 'https://rxjs.dev/guide/operators',
+    tracking: 'https://rxjs.dev/guide/observable',
+    rerender: 'https://rxjs.dev/guide/observable',
+    batching: 'https://rxjs.dev/guide/scheduler',
+    cleanup: 'https://rxjs.dev/guide/subscription',
+    parsing: 'https://rxjs.dev/guide/observable',
+    tooling:
+      'https://github.com/ReactiveX/rxjs/blob/master/apps/rxjs.dev/content/guide/testing/marble-testing.md',
+  },
+  preactSignals: {
+    overview: 'https://preactjs.com/guide/v10/signals/',
+    primitive: 'https://preactjs.com/guide/v10/signals/',
+    derived: 'https://preactjs.com/guide/v10/signals/',
+    tracking: 'https://preactjs.com/guide/v10/signals/',
+    rerender: 'https://preactjs.com/guide/v10/signals/',
+    batching:
+      'https://github.com/preactjs/signals/blob/main/packages/core/README.md',
+    cleanup:
+      'https://github.com/preactjs/signals/blob/main/packages/core/README.md',
+    parsing: 'https://preactjs.com/guide/v10/signals/',
+    tooling: 'https://preactjs.com/guide/v10/signals/',
+  },
+};
+
+const withRef = (
+  text: string,
+  href: string,
+): { text: string; docHref: string; docLabel: string } => ({
+  text,
+  docHref: href,
+  docLabel: 'docs',
+});
+
 const COMPARISON_ROWS: IComparisonRow[] = [
   {
-    dimension: 'Primary purpose',
+    dimension: 'What this is mainly for',
     values: {
-      'RS-X':
-        'Runtime-bound expression engine for fine-grained model reactivity',
-      'React (Hooks)': 'UI rendering library',
-      'Vue 3 Reactivity': 'UI reactivity system',
-      'Angular Signals': 'Fine-grained UI reactivity',
-      Svelte: 'Compile-time UI reactivity',
-      SolidJS: 'Fine-grained UI reactivity',
-      MobX: 'UI state management',
-      RxJS: 'General-purpose reactive streams',
-      'Preact Signals': 'Fine-grained UI reactivity',
+      'RS-X': withRef(
+        'A general reactive expression engine for models and rules (not only UI).',
+        SOURCES.rsx.overview,
+      ),
+      'React (Hooks)': withRef(
+        'A UI library where components re-render when state changes.',
+        SOURCES.react.overview,
+      ),
+      'Vue 3 Reactivity': withRef(
+        'A UI framework with a built-in runtime reactivity system.',
+        SOURCES.vue.overview,
+      ),
+      'Angular Signals': withRef(
+        'A full framework; signals are Angular\'s fine-grained reactive model.',
+        SOURCES.angular.overview,
+      ),
+      Svelte: withRef(
+        'A UI framework with compiler-assisted reactivity and runes.',
+        SOURCES.svelte.overview,
+      ),
+      SolidJS: withRef(
+        'A UI library focused on fine-grained reactive updates.',
+        SOURCES.solid.overview,
+      ),
+      MobX: withRef(
+        'A state management library based on observables, derivations, and reactions.',
+        SOURCES.mobx.overview,
+      ),
+      RxJS: withRef(
+        'A reactive streams library for async and event-based data flows.',
+        SOURCES.rxjs.overview,
+      ),
+      'Preact Signals': withRef(
+        'A signal-based reactive model typically used with Preact UI updates.',
+        SOURCES.preactSignals.overview,
+      ),
     },
   },
   {
-    dimension: 'Reactive primitive',
+    dimension: 'Main reactive building block',
     values: {
-      'RS-X':
-        'Identifier (field, map key, array element, etc.) registered in the StateManager by an expression',
-      'React (Hooks)': 'Component state value',
-      'Vue 3 Reactivity': 'Ref / Reactive object (Proxy)',
-      'Angular Signals': 'Signal',
-      Svelte: 'Reactive assignment (compiler-instrumented) / Store',
-      SolidJS: 'Signal',
-      MobX: 'Observable value (observable() / makeAutoObservable)',
-      RxJS: 'Observable stream',
-      'Preact Signals': 'Signal',
+      'RS-X': withRef(
+        'Identifiers read by an expression (field, key, index).',
+        SOURCES.rsx.primitive,
+      ),
+      'React (Hooks)': withRef(
+        'Hook state values (for example useState or useReducer).',
+        SOURCES.react.primitive,
+      ),
+      'Vue 3 Reactivity': withRef(
+        'ref(...) values and reactive(...) proxy properties.',
+        SOURCES.vue.primitive,
+      ),
+      'Angular Signals': withRef(
+        'signal(...) values (writable or computed).',
+        SOURCES.angular.primitive,
+      ),
+      Svelte: withRef(
+        '$state(...) values (or stores in store-based patterns).',
+        SOURCES.svelte.primitive,
+      ),
+      SolidJS: withRef('createSignal(...) values.', SOURCES.solid.primitive),
+      MobX: withRef(
+        'Observable state (objects, arrays, maps, primitives).',
+        SOURCES.mobx.primitive,
+      ),
+      RxJS: withRef('Observable streams.', SOURCES.rxjs.primitive),
+      'Preact Signals': withRef(
+        'signal(...) values.',
+        SOURCES.preactSignals.primitive,
+      ),
     },
   },
   {
-    dimension: 'Subscriber type',
+    dimension: 'How you define derived values',
     values: {
-      'RS-X': 'Bound IExpression instance',
-      'React (Hooks)': 'Component render (scheduled by state update)',
-      'Vue 3 Reactivity': 'Effect / Watcher',
-      'Angular Signals': 'Effect / Computed',
-      Svelte: 'Component update block',
-      SolidJS: 'Effect / Computed',
-      MobX: 'Reaction',
-      RxJS: 'Subscriber',
-      'Preact Signals': 'Effect',
+      'RS-X': withRef(
+        'Define expressions as strings and compose expression instances.',
+        SOURCES.rsx.derived,
+      ),
+      'React (Hooks)': withRef(
+        'Compute during render, or memoize with useMemo.',
+        SOURCES.react.derived,
+      ),
+      'Vue 3 Reactivity': withRef(
+        'Use computed(...) for cached derived values.',
+        SOURCES.vue.derived,
+      ),
+      'Angular Signals': withRef(
+        'Use computed(...) signals for derived state.',
+        SOURCES.angular.derived,
+      ),
+      Svelte: withRef('Use $derived(...) for derived values.', SOURCES.svelte.derived),
+      SolidJS: withRef('Use createMemo(...) for derived values.', SOURCES.solid.derived),
+      MobX: withRef('Use computed values for derived state.', SOURCES.mobx.derived),
+      RxJS: withRef(
+        'Compose streams with operators (map, combineLatest, etc.).',
+        SOURCES.rxjs.derived,
+      ),
+      'Preact Signals': withRef(
+        'Use computed(...) signals for derived values.',
+        SOURCES.preactSignals.derived,
+      ),
     },
   },
   {
-    dimension: 'Smallest reactive unit',
+    dimension: 'How dependencies are tracked',
     values: {
-      'RS-X': 'Identifier',
-      'React (Hooks)': 'Component state value',
-      'Vue 3 Reactivity': 'Ref value or reactive property',
-      'Angular Signals': 'Signal value',
-      Svelte: 'Instrumented assignment / store value',
-      SolidJS: 'Signal value',
-      MobX: 'Observable property/value',
-      RxJS: 'Stream emission',
-      'Preact Signals': 'Signal value',
+      'RS-X': withRef(
+        'The parser/runtime records which identifiers each expression reads.',
+        SOURCES.rsx.tracking,
+      ),
+      'React (Hooks)': withRef(
+        'Dependencies for effects/memos are listed explicitly in dependency arrays.',
+        SOURCES.react.tracking,
+      ),
+      'Vue 3 Reactivity': withRef(
+        'Reactive reads are tracked when effects/computed/watchers run.',
+        SOURCES.vue.tracking,
+      ),
+      'Angular Signals': withRef(
+        'Reading a signal inside computed/effect tracks that dependency.',
+        SOURCES.angular.tracking,
+      ),
+      Svelte: withRef(
+        'Runes and reactive code paths are tracked by Svelte\'s compile/runtime model.',
+        SOURCES.svelte.tracking,
+      ),
+      SolidJS: withRef(
+        'Signals read inside createEffect/createMemo become dependencies.',
+        SOURCES.solid.tracking,
+      ),
+      MobX: withRef(
+        'Reactions track observables read during tracked functions.',
+        SOURCES.mobx.tracking,
+      ),
+      RxJS: withRef(
+        'Dependencies are explicit in stream composition and subscription wiring.',
+        SOURCES.rxjs.tracking,
+      ),
+      'Preact Signals': withRef(
+        'Signals read in computed/effect/component render are tracked.',
+        SOURCES.preactSignals.tracking,
+      ),
     },
   },
   {
-    dimension: 'What registers dependencies',
+    dimension: 'Smallest tracked source unit',
     values: {
-      'RS-X':
-        'Binding the expression to a model registers all identifiers (fields/map keys/array indices) the expression depends on in the StateManager',
-      'React (Hooks)': 'Component render execution',
-      'Vue 3 Reactivity': 'Proxy property access during effect execution',
-      'Angular Signals': 'Signal read during computation',
-      Svelte: 'Compile-time assignment analysis',
-      SolidJS: 'Signal read during computation',
-      MobX: 'Proxy property access',
-      RxJS: 'Subscription to stream',
-      'Preact Signals': 'Signal read during computation',
+      'RS-X': withRef(
+        'Identifier level (field/key/index/member segment).',
+        SOURCES.rsx.primitive,
+      ),
+      'React (Hooks)': withRef('State value used by a component.', SOURCES.react.primitive),
+      'Vue 3 Reactivity': withRef(
+        'A ref value or one reactive object property.',
+        SOURCES.vue.primitive,
+      ),
+      'Angular Signals': withRef('A single signal value.', SOURCES.angular.primitive),
+      Svelte: withRef('A state rune value (or store value).', SOURCES.svelte.primitive),
+      SolidJS: withRef('A single signal value.', SOURCES.solid.primitive),
+      MobX: withRef('Observable property/value.', SOURCES.mobx.primitive),
+      RxJS: withRef('One emitted stream value.', SOURCES.rxjs.primitive),
+      'Preact Signals': withRef('A single signal value.', SOURCES.preactSignals.primitive),
     },
   },
   {
-    dimension: 'What becomes reactive',
+    dimension: 'What usually re-runs after a change',
     values: {
-      'RS-X': 'Only identifiers accessed by the bound expression',
-      'React (Hooks)': 'Entire component re-renders',
-      'Vue 3 Reactivity': 'Accessed properties',
-      'Angular Signals': 'Individual signals',
-      Svelte: 'Reactive assignments',
-      SolidJS: 'Individual signals',
-      MobX: 'Decorated properties',
-      RxJS: 'Entire stream',
-      'Preact Signals': 'Individual signals',
+      'RS-X': withRef(
+        'Only expressions that depend on changed paths re-evaluate, and they emit when committed.',
+        SOURCES.rsx.batching,
+      ),
+      'React (Hooks)': withRef('The component function re-runs (re-render).', SOURCES.react.rerender),
+      'Vue 3 Reactivity': withRef(
+        'Dependent computed, watchers, and component updates.',
+        SOURCES.vue.rerender,
+      ),
+      'Angular Signals': withRef(
+        'Dependent computed/effect logic and Angular views that read those signals.',
+        SOURCES.angular.rerender,
+      ),
+      Svelte: withRef(
+        'Reactive declarations/effects and affected DOM updates.',
+        SOURCES.svelte.rerender,
+      ),
+      SolidJS: withRef(
+        'Dependent effects/memos (and affected DOM bindings).',
+        SOURCES.solid.rerender,
+      ),
+      MobX: withRef(
+        'Reactions and observers that read changed observables.',
+        SOURCES.mobx.rerender,
+      ),
+      RxJS: withRef(
+        'Subscribers in the stream pipeline receive the next emission.',
+        SOURCES.rxjs.rerender,
+      ),
+      'Preact Signals': withRef(
+        'Effects and UI reads that depend on the signal.',
+        SOURCES.preactSignals.rerender,
+      ),
     },
   },
   {
-    dimension: 'How updates propagate',
+    dimension: 'Batching behavior',
     values: {
-      'RS-X': 'Identifier mutation → StateManager → dependent expressions',
-      'React (Hooks)': 'State setter → component re-render',
-      'Vue 3 Reactivity': 'Proxy mutation → effects',
-      'Angular Signals': 'Signal set → dependents notified',
-      Svelte: 'Assignment → update',
-      SolidJS: 'Signal set → dependents notified',
-      MobX: 'Property mutation → observers',
-      RxJS: 'Stream emits → subscribers',
-      'Preact Signals': 'Signal set → dependents',
+      'RS-X': withRef(
+        'Auto-batched by change cycle; explicit suspend()/continue() is available.',
+        SOURCES.rsx.batching,
+      ),
+      'React (Hooks)': withRef('State updates are batched before render commit.', SOURCES.react.batching),
+      'Vue 3 Reactivity': withRef(
+        'Updates are queued and flushed; nextTick waits for that flush.',
+        SOURCES.vue.batching,
+      ),
+      'Angular Signals': withRef(
+        'Signal effects run during Angular\'s change-detection cycle.',
+        SOURCES.angular.batching,
+      ),
+      Svelte: withRef(
+        'Updates are coalesced; tick() waits for the next DOM flush.',
+        SOURCES.svelte.batching,
+      ),
+      SolidJS: withRef('Synchronous by default, with explicit batch(...) support.', SOURCES.solid.batching),
+      MobX: withRef(
+        'Actions are transactional: reactions run after the action completes.',
+        SOURCES.mobx.batching,
+      ),
+      RxJS: withRef(
+        'Timing and batching are controlled via schedulers/operators.',
+        SOURCES.rxjs.batching,
+      ),
+      'Preact Signals': withRef('Signals support batch(...) to group updates.', SOURCES.preactSignals.batching),
     },
   },
   {
-    dimension: 'Reactivity granularity',
+    dimension: 'Explicit transaction / atomic update API',
     values: {
-      'RS-X': 'Per identifier',
-      'React (Hooks)': 'Per component',
-      'Vue 3 Reactivity': 'Per property',
-      'Angular Signals': 'Per signal',
-      Svelte: 'Per assignment',
-      SolidJS: 'Per signal',
-      MobX: 'Per property',
-      RxJS: 'Per stream',
-      'Preact Signals': 'Per signal',
+      'RS-X': withRef(
+        'Yes: IExpressionChangeTransactionManager can pause and resume emission.',
+        SOURCES.rsx.batching,
+      ),
+      'React (Hooks)': withRef(
+        'No general transaction API; batching is built into React updates.',
+        SOURCES.react.batching,
+      ),
+      'Vue 3 Reactivity': withRef(
+        'No dedicated transaction API; updates are batched by the scheduler.',
+        SOURCES.vue.batching,
+      ),
+      'Angular Signals': withRef(
+        'No separate transaction primitive in the public signal API.',
+        SOURCES.angular.batching,
+      ),
+      Svelte: withRef(
+        'No dedicated transaction API; updates are coalesced by the update cycle.',
+        SOURCES.svelte.batching,
+      ),
+      SolidJS: withRef('Yes: batch(...) groups multiple writes into one propagation step.', SOURCES.solid.batching),
+      MobX: withRef('Yes: actions / runInAction provide transactional updates.', SOURCES.mobx.batching),
+      RxJS: withRef(
+        'No built-in transaction primitive; model grouping with stream operators.',
+        SOURCES.rxjs.derived,
+      ),
+      'Preact Signals': withRef('Yes: batch(...) groups multiple signal updates.', SOURCES.preactSignals.batching),
     },
   },
   {
-    dimension: 'Reactive graph scope',
+    dimension: 'How async data fits in',
     values: {
-      'RS-X':
-        'Per expression instance (isolated reactive graph; identifiers shared via reference counting in StateManager)',
-      'React (Hooks)': 'Component tree (no implicit fine-grained graph)',
-      'Vue 3 Reactivity':
-        'Shared runtime graph; scoped by component instance/effect scope',
-      'Angular Signals':
-        'Shared runtime graph; scoped by injection/context + component lifecycle',
-      Svelte: 'Component scope (compiled updates) + store graphs',
-      SolidJS:
-        'Shared runtime graph; scoped by owner/root (component, createRoot)',
-      MobX: 'Shared runtime graph; scoped by reactions/derivations',
-      RxJS: 'Per stream chain',
-      'Preact Signals': 'Shared runtime graph; scoped by component/root',
+      'RS-X': withRef(
+        'Promises, Observables, and expression values can be mixed in one expression. They are handled transparently, so users do not need extra glue code.',
+        SOURCES.rsx.async,
+      ),
+      'React (Hooks)': withRef(
+        'Async work is done in user code (events/effects), then state is set.',
+        SOURCES.react.tracking,
+      ),
+      'Vue 3 Reactivity': withRef(
+        'Async work updates refs/reactive state; watchers/effects react afterward.',
+        SOURCES.vue.rerender,
+      ),
+      'Angular Signals': withRef(
+        'Async work updates signals/resources, then dependents update.',
+        SOURCES.angular.rerender,
+      ),
+      Svelte: withRef(
+        'Async work updates state; reactive declarations/effects then rerun.',
+        SOURCES.svelte.rerender,
+      ),
+      SolidJS: withRef(
+        'Async sources are commonly handled with createResource or user code.',
+        'https://docs.solidjs.com/reference/basic-reactivity/create-resource',
+      ),
+      MobX: withRef(
+        'Async steps usually update observables inside actions/runInAction.',
+        SOURCES.mobx.batching,
+      ),
+      RxJS: withRef('Async and time-based behavior is native to streams.', SOURCES.rxjs.primitive),
+      'Preact Signals': withRef(
+        'Async work updates signals when values resolve.',
+        SOURCES.preactSignals.overview,
+      ),
     },
   },
   {
-    dimension: 'Independent reactive graphs over same model',
+    dimension: 'Cleanup model',
     values: {
-      'RS-X':
-        'Yes. Each binding creates its own isolated reactive graph while sharing identifiers via reference counting.',
-      'React (Hooks)': 'No (render is unit; isolation via components only)',
-      'Vue 3 Reactivity': 'Yes. (separate component/effect scopes)',
-      'Angular Signals': 'Yes. (scoped via DI/context boundaries)',
-      Svelte: 'Yes. (per component/store)',
-      SolidJS: 'Yes (separate roots/owners)',
-      MobX: 'Yes (separate reactions/derivations; manual disposal)',
-      RxJS: 'Not implicit (streams must be modeled explicitly)',
-      'Preact Signals': 'Yes (separate roots/components; manual disposal)',
+      'RS-X': withRef(
+        'Dispose the expression to release watchers and subscriptions.',
+        SOURCES.rsx.cleanup,
+      ),
+      'React (Hooks)': withRef(
+        'Effects can return cleanup functions that run on re-run/unmount.',
+        SOURCES.react.cleanup,
+      ),
+      'Vue 3 Reactivity': withRef(
+        'Watchers can be stopped; component-scoped effects are cleaned up on unmount.',
+        SOURCES.vue.cleanup,
+      ),
+      'Angular Signals': withRef(
+        'Effects created in injection context are destroyed with that context.',
+        SOURCES.angular.cleanup,
+      ),
+      Svelte: withRef('$effect can return teardown cleanup logic.', SOURCES.svelte.cleanup),
+      SolidJS: withRef('Use onCleanup(...) to dispose side effects/subscriptions.', SOURCES.solid.cleanup),
+      MobX: withRef(
+        'Reactions return disposers and should be disposed when no longer needed.',
+        SOURCES.mobx.cleanup,
+      ),
+      RxJS: withRef(
+        'Subscriptions must be unsubscribed to stop emissions and cleanup work.',
+        SOURCES.rxjs.cleanup,
+      ),
+      'Preact Signals': withRef('effect(...) returns a disposer function.', SOURCES.preactSignals.cleanup),
     },
   },
   {
-    dimension: 'Automatic cleanup of bindings',
+    dimension: 'Runtime expression parsing from strings',
     values: {
-      'RS-X':
-        'Disposing an expression removes its bindings. When no expressions reference an identifier, the StateManager removes reactive patches/proxies (reference-counted).',
-      'React (Hooks)': 'N/A',
-      'Vue 3 Reactivity': 'Yes (component-scoped)',
-      'Angular Signals': 'Yes (lifecycle-scoped)',
-      Svelte: 'Yes (component-scoped)',
-      SolidJS: 'Yes (owner/root disposal)',
-      MobX: 'Requires disposal of reactions',
-      RxJS: 'Requires unsubscribe',
-      'Preact Signals': 'Yes (lifecycle-scoped)',
+      'RS-X': withRef(
+        'Yes. Expressions are parsed at runtime and bound to a model.',
+        SOURCES.rsx.parsing,
+      ),
+      'React (Hooks)': withRef(
+        'No built-in runtime parser for formula strings.',
+        SOURCES.react.parsing,
+      ),
+      'Vue 3 Reactivity': withRef(
+        'No built-in runtime parser for arbitrary formula strings.',
+        SOURCES.vue.parsing,
+      ),
+      'Angular Signals': withRef(
+        'No built-in runtime parser for arbitrary formula strings.',
+        SOURCES.angular.parsing,
+      ),
+      Svelte: withRef(
+        'No built-in runtime parser for arbitrary formula strings.',
+        SOURCES.svelte.parsing,
+      ),
+      SolidJS: withRef(
+        'No built-in runtime parser for arbitrary formula strings.',
+        SOURCES.solid.parsing,
+      ),
+      MobX: withRef(
+        'No built-in runtime parser for arbitrary formula strings.',
+        SOURCES.mobx.parsing,
+      ),
+      RxJS: withRef(
+        'No built-in runtime parser for formula strings; streams are composed in code.',
+        SOURCES.rxjs.parsing,
+      ),
+      'Preact Signals': withRef(
+        'No built-in runtime parser for arbitrary formula strings.',
+        SOURCES.preactSignals.parsing,
+      ),
     },
   },
   {
-    dimension: 'Built-in computation change tracking',
+    dimension: 'Debugging / tooling',
     values: {
-      'RS-X':
-        'Yes. Create change tracker via ExpressionChangeTrackerManager (emits change history stacks) or use expression.changeHook for custom tracking',
-      'React (Hooks)': 'No',
-      'Vue 3 Reactivity': 'No',
-      'Angular Signals': 'No',
-      Svelte: 'No',
-      SolidJS: 'No',
-      MobX: 'No',
-      RxJS: 'No',
-      'Preact Signals': 'No',
-    },
-  },
-  {
-    dimension: 'Expression parsing / compilation strategy',
-    values: {
-      'RS-X':
-        'Expressions parsed once into cached AST; multiple bindings reuse AST while creating isolated reactive graphs',
-      'React (Hooks)': 'N/A',
-      'Vue 3 Reactivity': 'N/A',
-      'Angular Signals': 'N/A',
-      Svelte: 'N/A',
-      SolidJS: 'N/A',
-      MobX: 'N/A',
-      RxJS: 'N/A',
-      'Preact Signals': 'N/A',
-    },
-  },
-  {
-    dimension: 'Expression modularity / composition',
-    values: {
-      'RS-X':
-        'Yes. Expressions are parsed independently and composable; cached AST reused; shared expressions evaluated once per dependency change',
-      'React (Hooks)': 'Component-based',
-      'Vue 3 Reactivity': 'Computed-based composition',
-      'Angular Signals': 'Manual composition',
-      Svelte: 'Reactive block composition',
-      SolidJS: 'Manual composition',
-      MobX: 'Computed-based',
-      RxJS: 'Operator-based composition',
-      'Preact Signals': 'Manual composition',
-    },
-  },
-  {
-    dimension: 'Adaptable identifier resolution strategy',
-    values: {
-      'RS-X':
-        'Yes. Identifier resolution is pluggable. By default, identifiers resolve against the bound model and global scope (for example, Math or Date). But if you want, you can also resolve via a DOM ancestor path or custom context by implementing a custom identifier resolver.',
-      'React (Hooks)': 'No',
-      'Vue 3 Reactivity': 'No',
-      'Angular Signals': 'No',
-      Svelte: 'No',
-      SolidJS: 'No',
-      MobX: 'No',
-      RxJS: 'N/A',
-      'Preact Signals': 'No',
-    },
-  },
-  {
-    dimension: 'Supports runtime expression parsing (string / AST input)',
-    values: {
-      'RS-X': 'Yes',
-      'React (Hooks)': 'No',
-      'Vue 3 Reactivity': 'No',
-      'Angular Signals': 'No',
-      Svelte: 'No',
-      SolidJS: 'No',
-      MobX: 'No',
-      RxJS: 'No',
-      'Preact Signals': 'No',
-    },
-  },
-  {
-    dimension: 'Primary architecture target: rule-based systems',
-    values: {
-      'RS-X':
-        'Designed for any data-driven system where behavior reacts to changing values. Examples: business rules (recompute eligibility/pricing when inputs change), UI derivations (update computed view state from model changes), workflow automation (trigger next step when conditions become true), validation engines (re-evaluate constraints on field updates), and monitoring/alerting (emit notifications when threshold expressions change).',
-      'React (Hooks)': 'No',
-      'Vue 3 Reactivity': 'No',
-      'Angular Signals': 'No',
-      Svelte: 'No',
-      SolidJS: 'No',
-      MobX: 'No',
-      RxJS: 'No',
-      'Preact Signals': 'No',
-    },
-  },
-  {
-    dimension: 'Designed primarily for UI state management',
-    values: {
-      'RS-X':
-        'Generic reactive engine that supports UI change detection but is not limited to UI frameworks.',
-      'React (Hooks)': 'Yes',
-      'Vue 3 Reactivity': 'Yes',
-      'Angular Signals': 'Yes',
-      Svelte: 'Yes',
-      SolidJS: 'Yes',
-      MobX: 'Yes',
-      RxJS: 'Secondary use case',
-      'Preact Signals': 'Yes',
-    },
-  },
-  {
-    dimension: 'Scheduling / batching model',
-    values: {
-      'RS-X':
-        'Changes are pushed directly to subscribers, so no scheduler is required by default. For batching, use IExpressionChangeTransactionManager to suspend() and continue() change emission.',
-      'React (Hooks)': 'Concurrent scheduler',
-      'Vue 3 Reactivity': 'Batched via job queue/nextTick',
-      'Angular Signals': 'Integrated with Angular change detection',
-      Svelte: 'Compiler-controlled',
-      SolidJS: 'Synchronous by default; optional batching',
-      MobX: 'Typically synchronous; configurable',
-      RxJS: 'Scheduler/operator dependent',
-      'Preact Signals': 'Typically synchronous',
-    },
-  },
-  {
-    dimension: 'Transaction / atomic update support',
-    values: {
-      'RS-X':
-        'Yes. Using IExpressionChangeTransactionManager allows suspending change emission and resuming it, enabling atomic mutation batches with a single consolidated change notification.',
-      'React (Hooks)': 'Yes (batched updates)',
-      'Vue 3 Reactivity': 'Yes (batched flush cycle)',
-      'Angular Signals': 'Limited / pattern-based',
-      Svelte: 'Yes (coalesced assignments)',
-      SolidJS: 'Batching patterns',
-      MobX: 'Yes (actions / runInAction)',
-      RxJS: 'Modeled via stream operators',
-      'Preact Signals': 'Limited / pattern-based',
-    },
-  },
-  {
-    dimension: 'Async boundary behavior',
-    values: {
-      'RS-X':
-        'No special async boundary in user code. Async and sync values are handled transparently, so you can mix them in the same expression (for example, a + b where a and b can each be async or sync) and updates propagate the same way.',
-      'React (Hooks)': 'Async schedules re-render',
-      'Vue 3 Reactivity': 'Async triggers reactive flush',
-      'Angular Signals': 'Async via zones/lifecycle',
-      Svelte: 'Async triggers update',
-      SolidJS: 'Async updates re-trigger signals',
-      MobX: 'Async notifies observers',
-      RxJS: 'First-class async',
-      'Preact Signals': 'Async notifies dependents',
-    },
-  },
-  {
-    dimension: 'Debuggability / devtools',
-    values: {
-      'RS-X':
-        'Change tracker history plus expression hooks for introspection and custom tooling.',
-      'React (Hooks)': 'React DevTools',
-      'Vue 3 Reactivity': 'Vue DevTools',
-      'Angular Signals': 'Angular DevTools',
-      Svelte: 'Svelte DevTools',
-      SolidJS: 'Solid DevTools',
-      MobX: 'MobX DevTools',
-      RxJS: 'Marble testing/logging',
-      'Preact Signals': 'Ecosystem tools',
+      'RS-X': withRef(
+        'Built-in change-tracking helpers and hooks for expression introspection.',
+        SOURCES.rsx.tooling,
+      ),
+      'React (Hooks)': withRef('React Developer Tools.', SOURCES.react.tooling),
+      'Vue 3 Reactivity': withRef('Vue DevTools.', SOURCES.vue.tooling),
+      'Angular Signals': withRef('Angular DevTools.', SOURCES.angular.tooling),
+      Svelte: withRef(
+        'Built-in debug primitives such as @debug (plus ecosystem tooling).',
+        SOURCES.svelte.tooling,
+      ),
+      SolidJS: withRef(
+        'Ecosystem tooling (for example devtools packages).',
+        SOURCES.solid.tooling,
+      ),
+      MobX: withRef(
+        'Runtime inspection helpers (for example tracing/spy APIs).',
+        SOURCES.mobx.tooling,
+      ),
+      RxJS: withRef(
+        'Debugging typically uses logging and marble-style testing.',
+        SOURCES.rxjs.tooling,
+      ),
+      'Preact Signals': withRef(
+        'Signals/Preact ecosystem tooling and debug patterns.',
+        SOURCES.preactSignals.tooling,
+      ),
     },
   },
 ];

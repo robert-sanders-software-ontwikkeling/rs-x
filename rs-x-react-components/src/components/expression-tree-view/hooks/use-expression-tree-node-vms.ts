@@ -23,6 +23,7 @@ export type NodeVm = {
   expressionText: string;
   typeText: string;
   valueText: string;
+  hasValue: boolean;
   isAsync: boolean;
 };
 
@@ -63,7 +64,8 @@ class NodeVmBuilder {
 
       const expressionText = n.expression.expressionString;
       const typeText = n.expression.type;
-      const valueText = formatValue(n.expression.value);
+      const hasValue = n.expression.value !== undefined;
+      const valueText = hasValue ? formatValue(n.expression.value) : '';
       const isAsync = !!n.expression.isAsync;
 
       const isSelected = selectedNodeIds.has(n.id);
@@ -81,6 +83,7 @@ class NodeVmBuilder {
         expressionText,
         typeText,
         valueText,
+        hasValue,
         isAsync,
       });
     }

@@ -49,9 +49,10 @@ export class MemberExpression extends AbstractExpression {
     for (let i = 0; i < this._childExpressions.length; i++) {
       const currentSegment = this._childExpressions[i];
       const isRoot = i === 0 || this.isCalculated(currentSegment);
-      currentSegment.bind(
-        isRoot ? settings : { ...settings, context: undefined, isRoot },
-      );
+      const bindSettings: IIdentifierBindConfiguration = isRoot
+        ? { ...settings, isRoot }
+        : { ...settings, context: undefined, isRoot };
+      currentSegment.bind(bindSettings);
     }
 
     return this;
@@ -186,6 +187,19 @@ export class MemberExpression extends AbstractExpression {
       return PENDING;
     }
 
+    if (this.isCalculated(pathSegment)) {
+      // Calculated index expressions are bound from lexical/root context,
+      // not from the previous path segment owner.
+      if (pathSegment.value === undefined) {
+        return PENDING;
+      }
+      return this.resolveCalculated(
+        pathSegment,
+        previousPathSegmentValue,
+        pathSegmentIndex,
+      );
+    }
+
     if (pathSegment.value === undefined) {
       this.bindPathSegement(pathSegment, {
         context: previousPathSegmentValue,
@@ -193,14 +207,6 @@ export class MemberExpression extends AbstractExpression {
         leafIndexWatchRule: this.leafIndexWatchRule,
       });
       return PENDING;
-    }
-
-    if (this.isCalculated(pathSegment)) {
-      return this.resolveCalculated(
-        pathSegment,
-        previousPathSegmentValue,
-        pathSegmentIndex,
-      );
     }
 
     if (pathSegment.value !== undefined) {
@@ -271,28 +277,27 @@ export class MemberExpression extends AbstractExpression {
       this._rebindingSlot = true;
     }
 
-    const staticIndexExpression = new IdentifierExpression(
-      '',
-      dynamicIndexExpression.value,
+    const staticIndexExpression = AbstractExpression.setHidden(
+      new IdentifierExpression('', dynamicIndexExpression.value),
     );
+
+    const bindSettings: IIdentifierBindConfiguration = {
+      context,
+      currentValue: value,
+      services: this.services,
+      leafIndexWatchRule: this.leafIndexWatchRule,
+    };
 
     this.bindPathSegement(
       staticIndexExpression,
-      {
-        context,
-        currentValue: value,
-        services: {
-          ...this.services,
-          transactionManager: Type.cast(undefined),
-        },
-        leafIndexWatchRule: this.leafIndexWatchRule,
-      },
+      bindSettings,
       () => {
+        staticIndexExpression.bind(bindSettings);
         let bound = false;
         const changeSubscription = staticIndexExpression.changed.subscribe(
           () => {
             if (bound) {
-              this.onSlotChanged(staticIndexExpression);
+              this.onSlotChanged(dynamicIndexExpression);
             }
             bound = true;
           },

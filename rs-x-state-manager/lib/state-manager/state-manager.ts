@@ -166,19 +166,30 @@ export class StateManager implements IStateManager {
     context: unknown,
     index: unknown,
     value: T,
-    ownerId: unknown,
+    ownerId?: unknown,
   ): void {
-    this.internalSetState(
-      context,
-      index,
-      value,
-      {
+    const isExternalSetState = ownerId === undefined;
+    if (isExternalSetState) {
+      this._startChangeCycle.next();
+    }
+
+    try {
+      this.internalSetState(
         context,
-        value: this.getState(context, index),
-        shouldEmitChange: truePredicate,
-      },
-      ownerId,
-    );
+        index,
+        value,
+        {
+          context,
+          value: this.getState(context, index),
+          shouldEmitChange: truePredicate,
+        },
+        ownerId,
+      );
+    } finally {
+      if (isExternalSetState) {
+        this._endChangeCycle.next();
+      }
+    }
   }
 
   private internalSetState(
@@ -526,11 +537,6 @@ export class StateManager implements IStateManager {
     }
 
     return this.getState(context, index);
-  }
-
-  private getOwnerId(context: unknown, index: unknown): unknown {
-    return this._objectStateManager.getFromId(context)?.getFromId(index)
-      ?.ownerId;
   }
 
   private onChange(

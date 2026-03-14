@@ -1,6 +1,8 @@
 import { type Monaco } from '@monaco-editor/react';
 import type * as MonacoTypes from 'monaco-editor';
 
+import { IndexWatchRule } from '@rs-x/state-manager';
+
 import { rxjsScope } from './rxjs-scope';
 
 export class ModelIntellisenseService {
@@ -21,7 +23,10 @@ export class ModelIntellisenseService {
 
   public static getInstance(): ModelIntellisenseService {
     if (!this._instance) {
-      this._instance = new ModelIntellisenseService({ rxjs: rxjsScope });
+      this._instance = new ModelIntellisenseService({
+        rxjs: rxjsScope,
+        IndexWatchRule,
+      });
     }
 
     return this._instance;

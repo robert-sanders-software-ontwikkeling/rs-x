@@ -1,10 +1,21 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+
+import {
+  DataTable,
+  type IDataTableColumn,
+} from '@rs-x/react-components';
+
+export interface IComparisonCell {
+  text: string;
+  docHref?: string;
+  docLabel?: string;
+}
 
 export interface IComparisonRow {
   dimension: string;
-  values: Record<string, string>;
+  values: Record<string, string | IComparisonCell>;
 }
 
 export interface IFeaturesComparisonProps {
@@ -12,6 +23,8 @@ export interface IFeaturesComparisonProps {
   rsxKey: string;
   rows: IComparisonRow[];
 }
+
+const FEATURES_COMPARE_STORAGE_KEY = 'rsx.features.compareWith';
 
 const AUTO_LINKS: Array<{ token: string; href: string; label?: string }> = [
   {
@@ -46,8 +59,9 @@ function cleanCell(value: string): string {
 function renderInlineText(value: string, keyPrefix: string): React.ReactNode {
   const cleaned = cleanCell(value);
   const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const hasMarkdownLinks = /\[[^\]]+\]\([^)]+\)/.test(cleaned);
 
-  if (!linkRegex.test(cleaned)) {
+  if (!hasMarkdownLinks) {
     return <>{renderTextWithAutoLinks(cleaned, keyPrefix)}</>;
   }
 
@@ -70,7 +84,12 @@ function renderInlineText(value: string, keyPrefix: string): React.ReactNode {
     }
 
     nodes.push(
-      <a key={`${keyPrefix}-${href}-${start}`} href={href}>
+      <a
+        key={`${keyPrefix}-${href}-${start}`}
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+      >
         {label}
       </a>,
     );
@@ -122,7 +141,12 @@ function renderTextWithAutoLinks(
 
     if (target) {
       nodes.push(
-        <a key={`${keyPrefix}-auto-${start}`} href={target.href}>
+        <a
+          key={`${keyPrefix}-auto-${start}`}
+          href={target.href}
+          target="_blank"
+          rel="noreferrer"
+        >
           {target.label ?? matchedToken}
         </a>,
       );
@@ -141,9 +165,29 @@ function renderTextWithAutoLinks(
   return nodes;
 }
 
-function renderCell(value: string): React.ReactNode {
-  const cleaned = cleanCell(value);
-  return renderInlineText(cleaned || '—', 'plain');
+function renderCell(
+  value: string | IComparisonCell,
+  keyPrefix: string,
+): React.ReactNode {
+  if (typeof value === 'string') {
+    const cleaned = cleanCell(value);
+    return renderInlineText(cleaned || '—', keyPrefix);
+  }
+
+  const cleaned = cleanCell(value.text);
+  return (
+    <>
+      {renderInlineText(cleaned || '—', `${keyPrefix}-text`)}
+      {value.docHref ? (
+        <>
+          {' '}
+          <a href={value.docHref} target="_blank" rel="noreferrer">
+            {value.docLabel ?? 'docs'}
+          </a>
+        </>
+      ) : null}
+    </>
+  );
 }
 
 export function FeaturesComparisonClient({
@@ -152,6 +196,36 @@ export function FeaturesComparisonClient({
   rows,
 }: IFeaturesComparisonProps) {
   const [selectedFramework, setSelectedFramework] = useState<string>('');
+  const [selectionLoaded, setSelectionLoaded] = useState(false);
+
+  useEffect(() => {
+    try {
+      const savedSelection = window.localStorage.getItem(
+        FEATURES_COMPARE_STORAGE_KEY,
+      );
+      if (savedSelection && frameworks.includes(savedSelection)) {
+        setSelectedFramework(savedSelection);
+      }
+    } finally {
+      setSelectionLoaded(true);
+    }
+  }, [frameworks]);
+
+  useEffect(() => {
+    if (!selectionLoaded) {
+      return;
+    }
+
+    if (selectedFramework && frameworks.includes(selectedFramework)) {
+      window.localStorage.setItem(
+        FEATURES_COMPARE_STORAGE_KEY,
+        selectedFramework,
+      );
+      return;
+    }
+
+    window.localStorage.removeItem(FEATURES_COMPARE_STORAGE_KEY);
+  }, [frameworks, selectedFramework, selectionLoaded]);
 
   const visibleColumns = useMemo(() => {
     if (!selectedFramework) {
@@ -160,6 +234,42 @@ export function FeaturesComparisonClient({
 
     return [rsxKey, selectedFramework];
   }, [rsxKey, selectedFramework]);
+
+  const columns = useMemo(() => {
+    const valueColumns: IDataTableColumn<IComparisonRow>[] = visibleColumns.map(
+      (column) => ({
+        id: column,
+        header: column,
+        renderCell: (row) =>
+          renderCell(
+            row.values[column] ?? '—',
+            `${row.dimension}-${column}`,
+          ),
+        sortAccessor: (row) => {
+          const value = row.values[column] ?? '—';
+          return cleanCell(typeof value === 'string' ? value : value.text) || '—';
+        },
+        filterAccessor: (row) => {
+          const value = row.values[column] ?? '—';
+          const base =
+            cleanCell(typeof value === 'string' ? value : value.text) || '—';
+          if (typeof value === 'string') {
+            return base;
+          }
+          return `${base} ${value.docLabel ?? ''} ${value.docHref ?? ''}`.trim();
+        },
+      }),
+    );
+
+    return [
+      {
+        id: 'dimension',
+        header: 'Dimension',
+        accessor: (row: IComparisonRow) => cleanCell(row.dimension),
+      },
+      ...valueColumns,
+    ] satisfies IDataTableColumn<IComparisonRow>[];
+  }, [visibleColumns]);
 
   return (
     <div className="featuresShell">
@@ -192,34 +302,25 @@ export function FeaturesComparisonClient({
         </div>
       </header>
 
-      <div className="comparisonWrap">
-        <table className="comparisonTable">
-          <thead>
-            <tr>
-              <th>Dimension</th>
-              {visibleColumns.map((column) => {
-                return <th key={column}>{column}</th>;
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => {
-              return (
-                <tr key={row.dimension}>
-                  <td>{cleanCell(row.dimension)}</td>
-                  {visibleColumns.map((column) => {
-                    return (
-                      <td key={`${row.dimension}-${column}`}>
-                        {renderCell(row.values[column] ?? '—')}
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        rows={rows}
+        columns={columns}
+        getRowKey={(row) => row.dimension}
+        initialSortColumnId="dimension"
+        initialSortDirection="asc"
+        enableFilter
+        filterLabel="Search"
+        hideFilterLabel
+        filterPlaceholder="Search dimensions and feature text"
+        emptyMessage="No feature rows match your search."
+        controlsClassName="comparisonSearchRow"
+        filterLabelClassName="comparisonSearchLabel"
+        filterInputClassName="comparisonSearchInput"
+        tableWrapClassName="comparisonWrap"
+        tableClassName="comparisonTable"
+        sortButtonClassName="comparisonSortButton"
+        sortMarkerClassName="comparisonSortMarker"
+      />
     </div>
   );
 }

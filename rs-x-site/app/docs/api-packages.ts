@@ -1,4 +1,9 @@
 import { coreApiItems } from './core-api/core-api.data';
+import {
+  stateManagerApiGroupEntries,
+  stateManagerApiItems,
+  stateManagerApiModuleEntries,
+} from './state-manager-api/state-manager-api.helpers';
 
 export type DocsLinkItem = {
   href: string;
@@ -14,6 +19,8 @@ export type ApiPackageConfig = {
   href: string;
   description: string;
   links: DocsLinkItem[];
+  moduleCount?: number;
+  apiEntryCount?: number;
 };
 
 function slugify(value: string): string {
@@ -81,11 +88,11 @@ const expressionParserLinks: DocsLinkItem[] = [
 ];
 
 const stateManagerLinks: DocsLinkItem[] = [
-  {
-    href: '/docs/index-watch-rule',
-    title: 'IIndexWatchRule',
-    meta: 'Leaf index watch rule',
-  },
+  ...stateManagerApiGroupEntries.map((group) => ({
+    href: group.href,
+    title: group.title,
+    meta: `${group.moduleCount} modules · ${group.apiEntryCount} API entries`,
+  })),
 ];
 
 export const apiPackages: ApiPackageConfig[] = [
@@ -96,13 +103,17 @@ export const apiPackages: ApiPackageConfig[] = [
     description:
       'Core DI, value access, cloning, metadata, and runtime utilities.',
     links: coreLinks,
+    moduleCount: coreLinks.length,
+    apiEntryCount: coreApiItems.length,
   },
   {
     key: 'state-manager',
     name: '@rs-x/state-manager',
-    href: '/docs/api/state-manager',
+    href: '/docs/state-manager-api',
     description: 'Observers, proxy pairs, and state change tracking services.',
     links: stateManagerLinks,
+    moduleCount: stateManagerApiModuleEntries.length,
+    apiEntryCount: stateManagerApiItems.length,
   },
   {
     key: 'expression-parser',

@@ -58,9 +58,9 @@ export default function AboutPage() {
                 help.
               </p>
               <p className="cardText">
-                The thing I care most about is building beautiful software for
-                communities. That is my long-term goal, and it is what gives me
-                energy.
+                The thing I care most about is building beautiful software that
+                adds value and makes people&apos;s lives easier. Then I am
+                happy.
               </p>
               <p className="cardText">
                 I am also very effective at using AI in day-to-day engineering.

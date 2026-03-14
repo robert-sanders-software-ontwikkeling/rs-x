@@ -41,6 +41,7 @@ import { GlobalIdentifierOwnerResolver } from './identifier-owner-resolver/globa
 import type { IIdentifierOwnerResolver } from './identifier-owner-resolver/identifier-owner-resolver.interface';
 import { MapKeyOwnerResolver } from './identifier-owner-resolver/map-key-owner-resolver';
 import { PropertyOwnerResolver } from './identifier-owner-resolver/property-owner-resolver';
+import { SetKeyOwnerResolver } from './identifier-owner-resolver/set-key-owner-resolver';
 import { ExpressionChangeTransactionManager } from './expresion-change-transaction-manager';
 import type { IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
 import { JsEspreeExpressionParser } from './js-espree-expression-parser';
@@ -131,6 +132,10 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
       {
         target: ArrayIndexOwnerResolver,
         token: RsXExpressionParserInjectionTokens.ArrayIndexOwnerResolver,
+      },
+      {
+        target: SetKeyOwnerResolver,
+        token: RsXExpressionParserInjectionTokens.SetKeyOwnerResolver,
       },
       {
         target: MapKeyOwnerResolver,
