@@ -1,0 +1,273 @@
+import { LeftAccentCard } from '@rs-x/react-components';
+import React from 'react';
+import { SyntaxCodeBlock } from '../../../components/SyntaxCodeBlock';
+import { renderTypeWithLinks } from './render-type-with-links';
+import { splitTopLevelCommaList } from './split-top-level-comma-list';
+
+type ApiMemberParameter = {
+    name: string;
+    type: string;
+    optional: boolean;
+    rest: boolean;
+};
+
+export type LeftAccentCardTone =
+    | 'brand'
+    | 'active'
+    | 'done'
+    | 'mostly'
+    | 'planned';
+
+
+type ApiMember = {
+    name: string;
+    kind: 'method' | 'property' | 'constructor' | 'index' | 'call';
+    signature: string;
+    parameters: ApiMemberParameter[];
+    returnType?: string;
+    optional: boolean;
+    readonly: boolean;
+    abstract: boolean;
+    access?: 'public' | 'protected';
+    description: string;
+};
+
+interface IMember {
+    kind: ApiMember['kind'];
+    title: string;
+    members: ApiMember[]
+}
+
+
+interface MemberItemProps {
+    member: ApiMember;
+    ownerName: string;
+}
+
+const MemberItem: React.FC<MemberItemProps> = ({ member,ownerName }) => {
+
+    const memberAccentTone = (kind: ApiMember['kind']): LeftAccentCardTone => {
+        if (kind === 'constructor') {
+            return 'done';
+        }
+        if (kind === 'method') {
+            return 'active';
+        }
+        if (kind === 'property') {
+            return 'mostly';
+        }
+        return 'brand';
+    }
+
+    const formatMemberSignatureForDisplay = (member: ApiMember): string => {
+        const signature = member.signature.trim();
+        if (!['method', 'constructor', 'call'].includes(member.kind)) {
+            return signature;
+        }
+
+        const openParen = signature.indexOf('(');
+        if (openParen < 0) {
+            return signature;
+        }
+
+        let closeParen = -1;
+        let depth = 0;
+
+        for (let i = openParen; i < signature.length; i += 1) {
+            const char = signature[i];
+            if (char === '(') {
+                depth += 1;
+            } else if (char === ')') {
+                depth -= 1;
+                if (depth === 0) {
+                    closeParen = i;
+                    break;
+                }
+            }
+        }
+
+        if (closeParen < 0) {
+            return signature;
+        }
+
+        const before = signature.slice(0, openParen).trimEnd();
+        const rawParams = signature.slice(openParen + 1, closeParen).trim();
+        const after = signature.slice(closeParen + 1).trim();
+        const parameters =
+            rawParams.length > 0 ? splitTopLevelCommaList(rawParams) : [];
+        const shouldMultiline = parameters.length > 1 || signature.length > 110;
+
+        if (!shouldMultiline) {
+            return signature;
+        }
+
+        if (parameters.length === 0) {
+            return `${before}()${after.length > 0 ? `${after.startsWith(':') ? '' : ' '}${after}` : ''}`;
+        }
+
+        const formattedParams = parameters
+            .map((parameter, index) => {
+                const suffix = index < parameters.length - 1 ? ',' : '';
+                return `  ${parameter}${suffix}`;
+            })
+            .join('\n');
+
+        return `${before}(\n${formattedParams}\n)${after.length > 0 ? `${after.startsWith(':') ? '' : ' '}${after}` : ''}`;
+    };
+
+
+
+    return (
+        <LeftAccentCard
+            key={`${member.name}-${member.signature}`}
+            as="article"
+            tone={memberAccentTone(member.kind)}
+            className="apiMemberItem"
+        >
+            <div className="apiMemberHead">
+                <span className="apiMemberName codeInline">
+                    {member.name}
+                </span>
+                <span className="apiMemberKind">{member.kind}</span>
+                {member.access && (
+                    <span className="apiMemberMeta">{member.access}</span>
+                )}
+                {member.abstract && (
+                    <span className="apiMemberMeta">abstract</span>
+                )}
+                {member.readonly && (
+                    <span className="apiMemberMeta">readonly</span>
+                )}
+                {member.optional && (
+                    <span className="apiMemberMeta">optional</span>
+                )}
+            </div>
+            <p className="apiMemberDescription">
+                {member.description}
+            </p>
+            <SyntaxCodeBlock
+                code={formatMemberSignatureForDisplay(member)}
+                className="apiMemberSignature"
+            />
+
+            {member.kind === 'property' && member.returnType && (
+                <div className="apiMemberSection apiMemberSectionInline">
+                    <p className="apiMemberSectionTitle">Type</p>
+                    <p className="apiMemberReturn">
+                        {renderTypeWithLinks(
+                            member.returnType,
+                            ownerName,
+                        )}
+                    </p>
+                </div>
+            )}
+
+            {member.parameters.length > 0 && (
+                <div className="apiMemberSection">
+                    <p className="apiMemberSectionTitle">Parameters</p>
+                    <dl
+                        className="apiMemberParamList"
+                        role="table"
+                        aria-label={`${member.name} parameters`}
+                    >
+                        <div className="apiMemberParamHeader" role="row">
+                            <dt role="columnheader">Name</dt>
+                            <dt role="columnheader">Type</dt>
+                            <dt role="columnheader">Required</dt>
+                        </div>
+                        {member.parameters.map((param) => (
+                            <div
+                                key={`${member.name}-${param.name}`}
+                                className="apiMemberParamItem"
+                            >
+                                <dt className="apiMemberParamName">
+                                    <span className="codeInline">
+                                        {param.name}
+                                        {param.optional ? '?' : ''}
+                                    </span>
+                                </dt>
+                                <dd className="apiMemberParamType">
+                                    {renderTypeWithLinks(
+                                        param.type,
+                                        ownerName,
+                                    )}
+                                </dd>
+                                <dd className="apiMemberParamRequirement">
+                                    {param.rest
+                                        ? 'variadic'
+                                        : param.optional
+                                            ? 'optional'
+                                            : 'required'}
+                                </dd>
+                            </div>
+                        ))}
+                    </dl>
+                </div>
+            )}
+
+            {(member.kind === 'method' ||
+                member.kind === 'constructor' ||
+                member.kind === 'call') &&
+                member.parameters.length === 0 && (
+                    <div className="apiMemberSection">
+                        <p className="apiMemberSectionTitle">Parameters</p>
+                        <p className="apiMemberReturn">No parameters.</p>
+                    </div>
+                )}
+
+            {member.returnType && member.kind !== 'property' && (
+                <div className="apiMemberSection apiMemberSectionInline">
+                    <p className="apiMemberSectionTitle">Returns</p>
+                    <p className="apiMemberReturn">
+                        {renderTypeWithLinks(
+                            member.returnType,
+                            ownerName,
+                        )}
+                    </p>
+                </div>
+            )}
+        </LeftAccentCard>
+
+    );
+}
+
+
+export interface IMembersCardProps {
+    memberCount: number;
+    members: IMember[];
+    ownerName: string;
+    type: string;
+}
+export const MembersCard: React.FC<IMembersCardProps> = ({ members, memberCount, type, ownerName }) => {
+    return (
+        <article id="members" className="card docsApiCard apiMembersCard">
+            <div className="docsApiSectionTop">
+                <div>
+                    <h2 className="cardTitle">Members</h2>
+                    <p className="cardText docsApiSectionNote">
+                        {memberCount} member{memberCount === 1 ? '' : 's'}{' '}
+                        in this {type}.
+                    </p>
+                </div>
+            </div>
+            {members.map((group) => (
+                <section
+                    key={group.kind}
+                    className="apiMemberGroup"
+                    id={`members-${group.kind}`}
+                >
+                    <h3 className="coreInlineCodeTitle apiMemberGroupTitle">
+                        {group.title}
+                    </h3>
+                    <div className="apiMemberList">
+                        {group.members.map((member) => (
+                            <MemberItem key={member.name} member={member} ownerName={ownerName}/>
+                        ))}
+                    </div>
+                </section>
+            ))}
+        </article>
+
+    );
+
+};
