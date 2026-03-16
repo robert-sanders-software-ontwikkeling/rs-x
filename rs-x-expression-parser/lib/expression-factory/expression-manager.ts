@@ -78,7 +78,9 @@ class ExpressionForContextManager
   }
 
   protected override releaseInstance(instance: IExpression): void {
-    instance.dispose();
+    if (!instance.isDisposed) {
+      instance.dispose();
+    }
   }
 }
 

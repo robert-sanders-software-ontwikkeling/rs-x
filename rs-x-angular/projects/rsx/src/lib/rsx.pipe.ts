@@ -81,13 +81,12 @@ export class RsxPipe implements PipeTransform, OnDestroy {
   }
 
   private disposeExpression(): void {
-    this._changedSubscription?.unsubscribe();
-    this._changedSubscription = undefined;
-
     if (this._ownsExpression) {
       this._expression?.dispose();
     }
     this._ownsExpression = false;
+    this._changedSubscription?.unsubscribe();
+    this._changedSubscription = undefined;
     this._expression = undefined;
   }
 }

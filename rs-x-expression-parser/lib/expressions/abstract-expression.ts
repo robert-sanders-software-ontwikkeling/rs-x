@@ -72,6 +72,10 @@ export abstract class AbstractExpression<
     return false;
   }
 
+  public get isDisposed(): boolean {
+    return this._isDisposed;
+  }
+
   public get changeHook(): ChangeHook | undefined {
     return this._changeHook;
   }
