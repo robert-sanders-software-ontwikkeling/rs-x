@@ -70,6 +70,14 @@ jobs:
       - name: Build Angular library
         run: pnpm -w run build:angular
 
+      # Build React components library
+      - name: Build React components
+        run: pnpm --filter @rs-x/react-components run build
+
+      # Build site (Next.js)
+      - name: Build site
+        run: pnpm --filter @rs-x/site run build
+
       # =====================================================
       # 4️⃣ TEST
       # =====================================================

@@ -1,13 +1,12 @@
 import dedent from 'dedent';
 
-import { DocsBreadcrumbItem } from '../../../../../components/DocsBreadcrumbs';
+import { type DocsBreadcrumbItem } from '../../../../../components/DocsBreadcrumbs';
 import { DocsPageTemplate } from '../../../../../components/DocsPageTemplate';
 import { SyntaxCodeBlock } from '../../../../../components/SyntaxCodeBlock';
 import { ApiDocHeader } from '../../../components/api-doc-header';
 import { Card } from '../../../components/card';
-
-import { formatModuleLabel, moduleBySlug } from '../module-page.helpers';
 import { ModuleApiEntries } from '../module-api-entries';
+import { formatModuleLabel, moduleBySlug } from '../module-page.helpers';
 
 const entry = moduleBySlug.get('index-value-accessor')!;
 
@@ -82,32 +81,34 @@ export default function CoreApiModuleIndexValueAccessorPage() {
     { label: 'Docs', href: '/docs' },
     { label: formatModuleLabel(entry.moduleName) },
   ];
-  const whatItDoes = hasMultipleEntries
-    ? (<>
+  const whatItDoes = hasMultipleEntries ? (
+    <>
       API entries in this module:{' '}
       <span className="codeInline">{entry.items.length}</span>
-
-    </>) : ''
+    </>
+  ) : (
+    ''
+  );
 
   return (
     <DocsPageTemplate>
       <ApiDocHeader
-        eyebrow='API Reference'
+        eyebrow="API Reference"
         name={formatModuleLabel(entry.moduleName)}
         whatItDoes={whatItDoes}
         breadcrumb={breadcrumb}
       />
 
-      <Card header='Current index-value-accessor implementation'>
+      <Card header="Current index-value-accessor implementation">
         <p className="cardText">
-          <span className="codeInline">IndexValueAccessor</span> is the
-          default <span className="codeInline">IIndexValueAccessor</span>{' '}
-          service. It receives all registered accessor strategies from{' '}
+          <span className="codeInline">IndexValueAccessor</span> is the default{' '}
+          <span className="codeInline">IIndexValueAccessor</span> service. It
+          receives all registered accessor strategies from{' '}
           <span className="codeInline">IIndexValueAccessorList</span>, sorts
-          them by <span className="codeInline">priority</span> (highest
-          first), and delegates each operation to the first strategy whose{' '}
-          <span className="codeInline">applies(context, index)</span>{' '}
-          returns true.
+          them by <span className="codeInline">priority</span> (highest first),
+          and delegates each operation to the first strategy whose{' '}
+          <span className="codeInline">applies(context, index)</span> returns
+          true.
         </p>
         <p className="cardText">
           In <span className="codeInline">RsXCoreModule</span>, the default
@@ -127,32 +128,31 @@ export default function CoreApiModuleIndexValueAccessorPage() {
           returns the raw Promise/Observable, while{' '}
           <span className="codeInline">getResolvedValue</span> returns the
           latest cached resolved/emitted value when available, otherwise{' '}
-          <span className="codeInline">PENDING</span>. If no accessor can
-          handle a context/index pair, the service throws{' '}
+          <span className="codeInline">PENDING</span>. If no accessor can handle
+          a context/index pair, the service throws{' '}
           <span className="codeInline">NoAccessorFoundExeception</span>.
         </p>
       </Card>
 
-      <Card header='Example: use IIndexValueAccessor'>
+      <Card header="Example: use IIndexValueAccessor">
         <SyntaxCodeBlock code={indexValueAccessorUsageCode} />
       </Card>
 
-      <Card header='How to extend or modify'>
+      <Card header="How to extend or modify">
         <p className="cardText">
           To customize behavior, override{' '}
-          <span className="codeInline">IIndexValueAccessorList</span> with
-          your own ordered strategy list. Put special-case accessors near
-          the top and generic catch-all accessors near the bottom, because
-          the first matching accessor is the one that gets used.
+          <span className="codeInline">IIndexValueAccessorList</span> with your
+          own ordered strategy list. Put special-case accessors near the top and
+          generic catch-all accessors near the bottom, because the first
+          matching accessor is the one that gets used.
         </p>
       </Card>
 
-      <Card header='Override accessor strategy list'>
+      <Card header="Override accessor strategy list">
         <SyntaxCodeBlock code={indexValueAccessorCustomizationCode} />
       </Card>
 
       <ModuleApiEntries items={entry.items} />
-
     </DocsPageTemplate>
   );
 }

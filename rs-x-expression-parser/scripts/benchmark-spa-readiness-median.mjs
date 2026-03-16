@@ -61,7 +61,9 @@ const buildCountMap = (section) =>
   new Map(section.map((entry) => [entry.count, entry.medianMs]));
 
 const aggregateSection = (runSections, selector, counts) => {
-  const selected = runSections.map((sections) => buildCountMap(selector(sections)));
+  const selected = runSections.map((sections) =>
+    buildCountMap(selector(sections)),
+  );
   return counts.map((count) => {
     const perRunMediansMs = selected.map((countMap) => countMap.get(count));
     return {
@@ -141,7 +143,11 @@ const outputPath = path.resolve(
   reportsDirectory,
   `benchmark-${dateStamp}-${runs}run-median.json`,
 );
-await fs.writeFile(outputPath, `${JSON.stringify(medianReport, null, 2)}\n`, 'utf-8');
+await fs.writeFile(
+  outputPath,
+  `${JSON.stringify(medianReport, null, 2)}\n`,
+  'utf-8',
+);
 
 const line = (value) => `${value.toFixed(3)}`;
 const markdown = [

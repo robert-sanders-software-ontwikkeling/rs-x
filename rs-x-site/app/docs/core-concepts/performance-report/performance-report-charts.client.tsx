@@ -144,7 +144,11 @@ export function PerformanceBarChart({
               x2={MARGIN_LEFT + plotWidth}
               y2={tick.y}
             />
-            <text className="docsPerfTickLabel" x={MARGIN_LEFT - 10} y={tick.y + 4}>
+            <text
+              className="docsPerfTickLabel"
+              x={MARGIN_LEFT - 10}
+              y={tick.y + 4}
+            >
               {formatValue(tick.value, valueUnit, decimals)}
             </text>
           </g>
@@ -191,7 +195,9 @@ export function PerformanceBarChart({
                 className="docsPerfTickLabel docsPerfTickLabelX"
                 x={labelX}
                 y={labelY}
-                transform={isEdge ? undefined : `rotate(-32 ${labelX} ${labelY})`}
+                transform={
+                  isEdge ? undefined : `rotate(-32 ${labelX} ${labelY})`
+                }
                 textAnchor={textAnchor}
               >
                 {row.label}

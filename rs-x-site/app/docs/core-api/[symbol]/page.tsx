@@ -1,11 +1,13 @@
-
-
 import dedent from 'dedent';
 import { notFound } from 'next/navigation';
-import { DocsApiPageTemplate } from '../../../../components/DocsApiPageTemplate';
-import { parseDeclarationMembers, readFullTypeDeclaration, SymbolDocumentation } from '../../components/api-member';
-import { coreApiBySymbol } from '../core-api.data';
 
+import { DocsApiPageTemplate } from '../../../../components/DocsApiPageTemplate';
+import {
+  parseDeclarationMembers,
+  readFullTypeDeclaration,
+  type SymbolDocumentation,
+} from '../../components/api-member';
+import { coreApiBySymbol } from '../core-api.data';
 
 const MODULE_DETAILS: Record<string, string> = {
   'deep-clone':
@@ -43,7 +45,6 @@ const MODULE_DETAILS: Record<string, string> = {
 
 const CORE_GITHUB_BASE =
   'https://github.com/robert-sanders-software-ontwikkeling/rs-x/blob/main/rs-x-core/lib';
-
 
 type SingletonServiceBinding = {
   token: string;
@@ -634,8 +635,7 @@ const MEMBER_DESCRIPTION_OVERRIDES: Record<string, Record<string, string>> = {
       'Returns true when the given property key on a target object is readonly (getter-only, no setter).',
     isPositiveIntegerString:
       'Returns true when value is a string representing a non-negative integer.',
-    isIterableCollection:
-      'Returns true when value is an Array, Map, or Set.',
+    isIterableCollection: 'Returns true when value is an Array, Map, or Set.',
     isPositiveInteger:
       'Returns true when value is a non-negative integer as a number or string.',
     walkObjectTopToBottom:
@@ -648,8 +648,7 @@ const MEMBER_DESCRIPTION_OVERRIDES: Record<string, Record<string, string>> = {
       'Returns true when value is a function without a prototype (arrow or bound function).',
     isArrowFunction:
       'Returns true when value is an arrow function (no prototype own-property).',
-    isString:
-      'Returns true when value is a string primitive or String object.',
+    isString: 'Returns true when value is a string primitive or String object.',
     isNullOrUndefined: 'Returns true when value is null or undefined.',
     isEmpty:
       'Returns true when value is null, undefined, an empty string, or an empty array.',
@@ -2290,22 +2289,26 @@ export default async function CoreApiSymbolPage({
     MODULE_DETAILS[entry.module] ??
     'Core runtime export used by @rs-x internals.';
   const override = SYMBOL_DOCS[entry.symbol];
- 
+
   const fullTypeSignature =
     !override?.fullSignature &&
-      ['interface', 'class', 'abstract class', 'type'].includes(entry.kind)
+    ['interface', 'class', 'abstract class', 'type'].includes(entry.kind)
       ? await readFullTypeDeclaration(
-        'rs-x-core',
-        entry.symbol,
-        entry.sourcePath,
-        entry.kind,
-      )
+          'rs-x-core',
+          entry.symbol,
+          entry.sourcePath,
+          entry.kind,
+        )
       : null;
   const apiSignature =
     override?.fullSignature ?? fullTypeSignature ?? entry.signature;
 
-  const memberDocs = parseDeclarationMembers(apiSignature, entry.symbol, MEMBER_DESCRIPTION_OVERRIDES);
- 
+  const memberDocs = parseDeclarationMembers(
+    apiSignature,
+    entry.symbol,
+    MEMBER_DESCRIPTION_OVERRIDES,
+  );
+
   return (
     <DocsApiPageTemplate
       entry={entry}
@@ -2313,12 +2316,11 @@ export default async function CoreApiSymbolPage({
       symbolDocs={SYMBOL_DOCS}
       related={related}
       moduleDetail={moduleDetail}
-      packageName='@rs-x/core'
+      packageName="@rs-x/core"
       fullTypeSignature={fullTypeSignature}
       defaultExample={defaultExample}
       defaultConstructorInjectionExample={defaultConstructorInjectionExample}
       gitBasePath={CORE_GITHUB_BASE}
-
     />
   );
 }

@@ -54,7 +54,10 @@ export default function SetKeyOwnerResolverDocsPage() {
           </div>
         </div>
         <div className="docsApiActions">
-          <Link className="btn btnGhost" href="/docs/iidentifier-owner-resolver">
+          <Link
+            className="btn btnGhost"
+            href="/docs/iidentifier-owner-resolver"
+          >
             IIdentifierOwnerResolver <span aria-hidden="true">→</span>
           </Link>
         </div>
@@ -64,10 +67,9 @@ export default function SetKeyOwnerResolverDocsPage() {
         <article className="card docsApiCard">
           <h2 className="cardTitle">Description</h2>
           <p className="cardText">
-            Checks that the context is a{' '}
-            <span className="codeInline">Set</span> and that{' '}
-            <span className="codeInline">set.has(index)</span> is true. Returns
-            the Set on match, or{' '}
+            Checks that the context is a <span className="codeInline">Set</span>{' '}
+            and that <span className="codeInline">set.has(index)</span> is true.
+            Returns the Set on match, or{' '}
             <span className="codeInline">null</span> to pass to the next
             resolver.
           </p>
@@ -79,7 +81,10 @@ export default function SetKeyOwnerResolverDocsPage() {
           </p>
         </article>
 
-        <aside className="qsCodeCard docsApiCode" aria-label="SetKeyOwnerResolver API">
+        <aside
+          className="qsCodeCard docsApiCode"
+          aria-label="SetKeyOwnerResolver API"
+        >
           <div className="qsCodeHeader">
             <div className="qsCodeTitle">API</div>
           </div>

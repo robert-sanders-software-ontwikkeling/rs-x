@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 
-import { CoreConceptPageLayout, type CoreConceptDoc } from '../_template/core-concept-page';
+import {
+  type CoreConceptDoc,
+  CoreConceptPageLayout,
+} from '../_template/core-concept-page';
 
 const doc: CoreConceptDoc = {
   title: 'Caching and identity',

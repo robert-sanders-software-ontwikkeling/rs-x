@@ -1,18 +1,25 @@
-import type { ReactNode } from 'react';
-import { ApiItem, ApiMember, createQuickFacts, plainMemberName, readFullTypeDeclaration } from '../app/docs/components/api-member';
-import { ApiDocHeader } from '../app/docs/components/api-doc-header';
-import { Card } from '../app/docs/components/card';
-import { WhenToUse } from '../app/docs/components/when-to-user';
-import { QuickFacts } from '../app/docs/components/quick-facts';
-import { SyntaxCodeBlock } from './SyntaxCodeBlock';
-import { DocsBreadcrumbItem } from './DocsBreadcrumbs';
-import Link from 'next/link';
-import { renderTextWithCoreLinks, resolveSymbolDocumentationLink } from '../lib/type-doc-links';
-import { ApiParameterItem, ApiParameterList } from './ApiParameterList';
-import { DisposeCard } from '../app/docs/components/dispose-card';
 import React from 'react';
+
+import { ApiDocHeader } from '../app/docs/components/api-doc-header';
+import {
+  type ApiItem,
+  type ApiMember,
+  createQuickFacts,
+  plainMemberName
+} from '../app/docs/components/api-member';
+import { Card } from '../app/docs/components/card';
+import { DisposeCard } from '../app/docs/components/dispose-card';
 import { MembersCard } from '../app/docs/components/members-card';
+import { QuickFacts } from '../app/docs/components/quick-facts';
+import { WhenToUse } from '../app/docs/components/when-to-user';
+import {
+  renderTextWithCoreLinks
+} from '../lib/type-doc-links';
+
+import { type ApiParameterItem, ApiParameterList } from './ApiParameterList';
+import { type DocsBreadcrumbItem } from './DocsBreadcrumbs';
 import { DocsPageTemplate } from './DocsPageTemplate';
+import { SyntaxCodeBlock } from './SyntaxCodeBlock';
 
 type SymbolDocumentation = {
   summary?: string;
@@ -23,13 +30,12 @@ type SymbolDocumentation = {
   constructorInjectionExampleCode?: string;
   fullSignature?: string;
   hideModuleDetail?: boolean;
-
 };
 
 type DocsPageTemplateProps = {
   gitBasePath: string;
   entry: ApiItem;
-  memberDocs: ApiMember[],
+  memberDocs: ApiMember[];
   symbolDocs: Record<string, SymbolDocumentation>;
   related: { href: string; label: string }[];
   moduleDetail: string;
@@ -39,8 +45,6 @@ type DocsPageTemplateProps = {
   defaultConstructorInjectionExample: (symbol: string, kind: string) => string;
 };
 
-
-
 function slugify(value: string): string {
   return value.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
 }
@@ -48,7 +52,6 @@ function slugify(value: string): string {
 function formatModuleLabel(moduleName: string): string {
   return moduleName.replace(/\.ts$/i, '').replace(/\./g, '-');
 }
-
 
 function isCallableTypeSignature(signature: string): boolean {
   return /^export type\s+\w+\s*=/.test(signature) && signature.includes('=>');
@@ -120,22 +123,19 @@ export const DocsApiPageTemplate: React.FC<DocsPageTemplateProps> = async ({
   packageName,
   fullTypeSignature,
   defaultExample,
-  defaultConstructorInjectionExample
+  defaultConstructorInjectionExample,
 }) => {
-
-
   const moduleLabel = formatModuleLabel(entry.module);
   const moduleHref = `/docs/core-api/module/${slugify(entry.module)}`;
   const breadcrumb: DocsBreadcrumbItem[] = [
     {
       label: 'Docs',
-      href: '/docs'
+      href: '/docs',
     },
     {
       label: moduleLabel,
-      href: moduleHref
+      href: moduleHref,
     },
-
   ];
 
   const override = symbolDocs[entry.symbol];
@@ -195,65 +195,67 @@ export const DocsApiPageTemplate: React.FC<DocsPageTemplateProps> = async ({
     Boolean(returnTypeDoc?.trim());
   const memberGroups = groupMembers(memberDocs);
 
-
-
   return (
-
     <DocsPageTemplate>
       <ApiDocHeader
         name={entry.symbol}
         type={entry.kind}
-        eyebrow='API Reference'
+        eyebrow="API Reference"
         breadcrumb={breadcrumb}
-
         whatItDoes={renderTextWithCoreLinks(whatItDoes, entry.symbol)}
       />
 
       <div className="docsApiGrid">
-        {showDescriptionCard &&
+        {showDescriptionCard && (
           <Card id="Overview" header="Overview">
             {renderTextWithCoreLinks(moduleDetail, entry.symbol)}
           </Card>
-        }
+        )}
 
-        {showWhenToUse &&
+        {showWhenToUse && (
           <WhenToUse
-            description={renderTextWithCoreLinks(usageNotes as string, entry.symbol)}
+            description={renderTextWithCoreLinks(
+              usageNotes as string,
+              entry.symbol,
+            )}
             related={related}
           />
-        }
+        )}
 
-        {classHasDisposeMethod && (<DisposeCard />)}
+        {classHasDisposeMethod && <DisposeCard />}
 
-
-        <QuickFacts items={createQuickFacts(
-          entry,
-          memberDocs,
-          apiSignature,
-          moduleHref,
-          moduleLabel,
-          gitBasePath
-        )} />
-
+        <QuickFacts
+          items={createQuickFacts(
+            entry,
+            memberDocs,
+            apiSignature,
+            moduleHref,
+            moduleLabel,
+            gitBasePath,
+          )}
+        />
 
         {showDeclaration && (
-          <Card id="declaration" header='Declaration'>
+          <Card id="declaration" header="Declaration">
             <SyntaxCodeBlock code={apiSignature} />
           </Card>
         )}
 
-        <Card id="import" header='Import'>
+        <Card id="import" header="Import">
           <SyntaxCodeBlock code={usageSnippet} />
         </Card>
 
         {showExample && (
-          <Card id="example" header='Example'>
+          <Card id="example" header="Example">
             <SyntaxCodeBlock code={usageExample} />
           </Card>
         )}
 
         {showConstructorInjectionExample && (
-          <Card id="constructor-injection-example" header='Constructor injection example'>
+          <Card
+            id="constructor-injection-example"
+            header="Constructor injection example"
+          >
             <SyntaxCodeBlock code={constructorInjectionExample} />
           </Card>
         )}
@@ -277,14 +279,15 @@ export const DocsApiPageTemplate: React.FC<DocsPageTemplateProps> = async ({
           </article>
         )}
 
-        {showMembersCard &&
+        {showMembersCard && (
           <MembersCard
             memberCount={memberDocs.length}
             members={memberGroups}
             ownerName={entry.symbol}
-            type={entry.kind} />
-        }
+            type={entry.kind}
+          />
+        )}
       </div>
     </DocsPageTemplate>
   );
-}
+};

@@ -371,7 +371,10 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       const expression = this.createExpression(e.expression);
       return e.computed ? new IndexExpression(expression) : expression;
     });
-    return new MemberExpression(this.getExpressionSource(expression), pathSegments);
+    return new MemberExpression(
+      this.getExpressionSource(expression),
+      pathSegments,
+    );
   };
 
   private createSequenceExpression = (

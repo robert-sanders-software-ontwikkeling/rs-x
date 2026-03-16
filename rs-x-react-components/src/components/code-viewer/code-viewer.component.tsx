@@ -226,7 +226,10 @@ function renderCodeLines(code: string): ReactNode[] {
   return lines.map((line, lineIndex) => {
     const lineTokens = tokenize(line);
     const rendered: ReactElement[] = lineTokens.map((token, tokenIndex) => (
-      <span key={`${lineIndex}-${tokenIndex}`} className={`tok tok-${token.kind}`}>
+      <span
+        key={`${lineIndex}-${tokenIndex}`}
+        className={`tok tok-${token.kind}`}
+      >
         {token.value}
       </span>
     ));
@@ -301,7 +304,9 @@ export const CodeViewer: React.FC<ICodeViewerProps> = ({
 
   const preElement = (
     <pre className={preClassName} style={style}>
-      <code className={resolvedCodeClassName}>{renderCodeLines(visibleCode)}</code>
+      <code className={resolvedCodeClassName}>
+        {renderCodeLines(visibleCode)}
+      </code>
     </pre>
   );
 

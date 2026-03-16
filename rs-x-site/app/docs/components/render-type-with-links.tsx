@@ -1,8 +1,12 @@
 import Link from 'next/link';
-import { ReactNode } from 'react';
+import { type ReactNode } from 'react';
+
 import { resolveSymbolDocumentationLink } from '../../../lib/type-doc-links';
 
-export function renderTypeWithLinks(type: string, currentSymbol?: string): ReactNode {
+export function renderTypeWithLinks(
+  type: string,
+  currentSymbol?: string,
+): ReactNode {
   const nodes: ReactNode[] = [];
   const identifierRe = /[A-Za-z_][A-Za-z0-9_]*/g;
   let lastIndex = 0;

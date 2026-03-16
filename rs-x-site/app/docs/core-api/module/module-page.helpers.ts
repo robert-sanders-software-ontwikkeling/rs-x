@@ -28,7 +28,9 @@ export const moduleEntries = Object.keys(groupedByModule)
     ),
   }));
 
-export const moduleBySlug = new Map(moduleEntries.map((entry) => [entry.slug, entry]));
+export const moduleBySlug = new Map(
+  moduleEntries.map((entry) => [entry.slug, entry]),
+);
 export const apiDescriptionBySymbol = new Map(
   coreApiItems.map((item) => [item.symbol, item.description] as const),
 );

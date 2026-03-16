@@ -1,13 +1,12 @@
 import dedent from 'dedent';
 
-import { DocsBreadcrumbItem } from '../../../../../components/DocsBreadcrumbs';
+import { type DocsBreadcrumbItem } from '../../../../../components/DocsBreadcrumbs';
 import { DocsPageTemplate } from '../../../../../components/DocsPageTemplate';
 import { SyntaxCodeBlock } from '../../../../../components/SyntaxCodeBlock';
 import { ApiDocHeader } from '../../../components/api-doc-header';
 import { Card } from '../../../components/card';
-
-import { formatModuleLabel, moduleBySlug } from '../module-page.helpers';
 import { ModuleApiEntries } from '../module-api-entries';
+import { formatModuleLabel, moduleBySlug } from '../module-page.helpers';
 
 const entry = moduleBySlug.get('value-metadata')!;
 
@@ -88,30 +87,32 @@ export default function CoreApiModuleValueMetadataPage() {
     { label: 'Docs', href: '/docs' },
     { label: formatModuleLabel(entry.moduleName) },
   ];
-  const whatItDoes = hasMultipleEntries
-    ? (<>
+  const whatItDoes = hasMultipleEntries ? (
+    <>
       API entries in this module:{' '}
       <span className="codeInline">{entry.items.length}</span>
-
-    </>) : ''
+    </>
+  ) : (
+    ''
+  );
 
   return (
     <DocsPageTemplate>
       <ApiDocHeader
-        eyebrow='API Reference'
+        eyebrow="API Reference"
         name={formatModuleLabel(entry.moduleName)}
         whatItDoes={whatItDoes}
         breadcrumb={breadcrumb}
       />
 
-      <Card header='Current value-metadata implementation'>
+      <Card header="Current value-metadata implementation">
         <p className="cardText">
           The <span className="codeInline">ValueMetadata</span> service provides
-          information about how rs-x should handle a value type at runtime, such as
-          whether it should be proxied and whether it is async. It retrieves providers
-          from <span className="codeInline">IValueMetadataList</span>, sorts them by{' '}
-          <span className="codeInline">priority</span> (highest first), and selects the
-          first provider for which{' '}
+          information about how rs-x should handle a value type at runtime, such
+          as whether it should be proxied and whether it is async. It retrieves
+          providers from <span className="codeInline">IValueMetadataList</span>,
+          sorts them by <span className="codeInline">priority</span> (highest
+          first), and selects the first provider for which{' '}
           <span className="codeInline">applies(value)</span> returns true.
         </p>
         <p className="cardText">
@@ -125,31 +126,30 @@ export default function CoreApiModuleValueMetadataPage() {
           <span className="codeInline">DummyMetadata (-1000)</span>.
         </p>
         <p className="cardText">
-          Rs-x use this metadata to decide whether a value is
-          async (<span className="codeInline">isAsync</span>) and whether it
-          should be proxied (<span className="codeInline">needsProxy</span>
+          Rs-x use this metadata to decide whether a value is async (
+          <span className="codeInline">isAsync</span>) and whether it should be
+          proxied (<span className="codeInline">needsProxy</span>
           ).
         </p>
       </Card>
 
-      <Card header='Example: use IValueMetadata'>
+      <Card header="Example: use IValueMetadata">
         <SyntaxCodeBlock code={valueMetadataUsageCode} />
       </Card>
 
-      <Card header='How to extend or modify'>
+      <Card header="How to extend or modify">
         <p className="cardText">
           Add your own metadata class and override{' '}
-          <span className="codeInline">IValueMetadataList</span> order so
-          your custom type is checked before generic handlers.
+          <span className="codeInline">IValueMetadataList</span> order so your
+          custom type is checked before generic handlers.
         </p>
       </Card>
 
-      <Card header='Override metadata strategy list'>
+      <Card header="Override metadata strategy list">
         <SyntaxCodeBlock code={valueMetadataCustomizationCode} />
       </Card>
 
       <ModuleApiEntries items={entry.items} />
-
     </DocsPageTemplate>
   );
 }

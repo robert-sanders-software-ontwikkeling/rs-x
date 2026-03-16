@@ -1,13 +1,12 @@
 import dedent from 'dedent';
 
-import { DocsBreadcrumbItem } from '../../../../../components/DocsBreadcrumbs';
+import { type DocsBreadcrumbItem } from '../../../../../components/DocsBreadcrumbs';
 import { DocsPageTemplate } from '../../../../../components/DocsPageTemplate';
 import { SyntaxCodeBlock } from '../../../../../components/SyntaxCodeBlock';
 import { ApiDocHeader } from '../../../components/api-doc-header';
 import { Card } from '../../../components/card';
-
-import { formatModuleLabel, moduleBySlug } from '../module-page.helpers';
 import { ModuleApiEntries } from '../module-api-entries';
+import { formatModuleLabel, moduleBySlug } from '../module-page.helpers';
 
 const entry = moduleBySlug.get('error-log')!;
 
@@ -95,32 +94,33 @@ export default function CoreApiModuleErrorLogPage() {
     { label: 'Docs', href: '/docs' },
     { label: formatModuleLabel(entry.moduleName) },
   ];
-  const whatItDoes = hasMultipleEntries
-    ? (<>
+  const whatItDoes = hasMultipleEntries ? (
+    <>
       API entries in this module:{' '}
       <span className="codeInline">{entry.items.length}</span>
-
-    </>) : ''
+    </>
+  ) : (
+    ''
+  );
 
   return (
     <DocsPageTemplate>
       <ApiDocHeader
-        eyebrow='API Reference'
+        eyebrow="API Reference"
         name={formatModuleLabel(entry.moduleName)}
         whatItDoes={whatItDoes}
         breadcrumb={breadcrumb}
       />
 
-      <Card header='Current error-log implementation'>
+      <Card header="Current error-log implementation">
         <p className="cardText">
-          In the default setup,{' '}
-          <span className="codeInline">IErrorLog</span> uses the{' '}
-          <span className="codeInline">ErrorLog</span> class as a shared
-          singleton service.
+          In the default setup, <span className="codeInline">IErrorLog</span>{' '}
+          uses the <span className="codeInline">ErrorLog</span> class as a
+          shared singleton service.
         </p>
         <p className="cardText">
-          <span className="codeInline">add(error)</span> logs the error to
-          the console and also emits it through the observable{' '}
+          <span className="codeInline">add(error)</span> logs the error to the
+          console and also emits it through the observable{' '}
           <span className="codeInline">error</span> stream.{' '}
           <span className="codeInline">clear()</span> clears the console.
         </p>
@@ -132,27 +132,24 @@ export default function CoreApiModuleErrorLogPage() {
         </p>
       </Card>
 
-      <Card header='Example: use IErrorLog service'>
+      <Card header="Example: use IErrorLog service">
         <SyntaxCodeBlock code={errorLogUsageCode} />
       </Card>
 
-      <Card header='How to extend or modify'>
+      <Card header="How to extend or modify">
         <p className="cardText">
           Create your own <span className="codeInline">IErrorLog</span>{' '}
           implementation (for example memory/remote logging) and rebind{' '}
-          <span className="codeInline">
-            RsXCoreInjectionTokens.IErrorLog
-          </span>{' '}
+          <span className="codeInline">RsXCoreInjectionTokens.IErrorLog</span>{' '}
           to that class in singleton scope.
         </p>
       </Card>
 
-      <Card header='Override error-log service'>
+      <Card header="Override error-log service">
         <SyntaxCodeBlock code={errorLogOverrideCode} />
       </Card>
 
       <ModuleApiEntries items={entry.items} />
-
     </DocsPageTemplate>
   );
 }

@@ -66,8 +66,8 @@
 }
 
 .apiMemberHeadMain {
-    display: flex;
-     align-items: center;
+  display: flex;
+  align-items: center;
 }
 
 .apiMemberName {
@@ -178,7 +178,8 @@
 
 .apiMemberParamHeader {
   background: color-mix(in srgb, var(--surface) 90%, var(--surface-solid));
-  border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 70%, transparent);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border-soft) 70%, transparent);
 }
 
 .apiMemberParamHeader dt {
@@ -192,7 +193,8 @@
 
 .apiMemberParamItem {
   background: transparent;
-  border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 48%, transparent);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border-soft) 48%, transparent);
 }
 
 .apiMemberParamItem:last-child {
@@ -225,9 +227,8 @@
 ========================================================= */
 
 .apiMemberReturnBlock {
-  display:  flex;
+  display: flex;
   align-items: center;
-
 }
 
 .apiMemberReturn {

@@ -250,8 +250,7 @@ const expressionTypeRows: ExpressionTypeInfo[] = [
     name: 'Spread',
     category: 'Literal / structure',
     syntax: '({ ...defaults, enabled: true })',
-    description:
-      'Spread expansion for objects, arrays, and call arguments.',
+    description: 'Spread expansion for objects, arrays, and call arguments.',
   },
   {
     name: 'StrictEquality',
@@ -305,8 +304,7 @@ const expressionTypeRows: ExpressionTypeInfo[] = [
 
 export const metadata = {
   title: 'Expression types',
-  description:
-    'Overview of supported expression node types.',
+  description: 'Overview of supported expression node types.',
 };
 
 export default function ExpressionTypesCoreConceptPage() {
@@ -331,8 +329,7 @@ export default function ExpressionTypesCoreConceptPage() {
         </div>
       </div>
       <p className="sectionLead docsApiLead">
-        Quick reference of the expression types you can use in rs-x
-        expressions.
+        Quick reference of the expression types you can use in rs-x expressions.
       </p>
 
       <div className="docsApiGrid">
@@ -355,15 +352,15 @@ export default function ExpressionTypesCoreConceptPage() {
             expression.
           </p>
           <p className="cardText">
-            If a result looks wrong, identify the node type first and then
-            check that part of the expression.
+            If a result looks wrong, identify the node type first and then check
+            that part of the expression.
           </p>
           <p className="cardText">
             Optional chaining (<span className="codeInline">?.</span>) is
             supported. It is not required in rs-x member-path evaluation,
             because member path evaluation already handles{' '}
-            <span className="codeInline">null</span>{' '}
-            and <span className="codeInline">undefined</span> safely.
+            <span className="codeInline">null</span> and{' '}
+            <span className="codeInline">undefined</span> safely.
           </p>
         </article>
       </div>

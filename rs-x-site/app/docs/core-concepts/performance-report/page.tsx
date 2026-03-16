@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { DocsBreadcrumbs } from '../../../../components/DocsBreadcrumbs';
 import { DocsPageTemplate } from '../../../../components/DocsPageTemplate';
 
-import { PerformanceBarChart } from './performance-report-charts.client';
 import { MemoryUsageTabs } from './memory-usage-tabs.client';
+import { PerformanceBarChart } from './performance-report-charts.client';
 import {
   type BindingPerformanceRow,
   BindingPerformanceTable,
@@ -30,7 +30,8 @@ const benchmarkMachine = {
   os: '24.6.0',
   node: 'v25.4.0',
   parseOperationsPerSample: 5000,
-  benchmarkScript: 'rs-x-expression-parser/scripts/benchmark-core-concepts-performance.mjs',
+  benchmarkScript:
+    'rs-x-expression-parser/scripts/benchmark-core-concepts-performance.mjs',
 };
 
 const parsePerformanceRows: ParsePerformanceRow[] = [
@@ -269,7 +270,6 @@ const updateChartRows = updatePerformanceRows.map((row) => ({
   },
 }));
 
-
 export default function PerformanceReportCoreConceptPage() {
   return (
     <DocsPageTemplate>
@@ -286,7 +286,10 @@ export default function PerformanceReportCoreConceptPage() {
           <h1 className="sectionTitle">Performance report</h1>
         </div>
         <div className="docsApiActions docsApiActionsTitle">
-          <Link className="btn btnGhost" href="/docs/core-concepts/performance-demo">
+          <Link
+            className="btn btnGhost"
+            href="/docs/core-concepts/performance-demo"
+          >
             Open live demo <span aria-hidden="true">→</span>
           </Link>
         </div>
@@ -315,34 +318,36 @@ export default function PerformanceReportCoreConceptPage() {
           </p>
           <p className="cardText">
             Benchmark script:{' '}
-            <span className="codeInline">{benchmarkMachine.benchmarkScript}</span>
+            <span className="codeInline">
+              {benchmarkMachine.benchmarkScript}
+            </span>
           </p>
         </article>
 
         <article className="card docsApiCard">
           <h2 className="cardTitle">What this report means</h2>
           <p className="cardText">
-            <strong>Parse</strong> measures how long rs-x takes to read an expression
-            string and build its internal node tree. Parse cost grows sub-linearly
-            with expression size — a 63-node expression takes about 8× longer than
-            a 1-node expression, not 63×.
+            <strong>Parse</strong> measures how long rs-x takes to read an
+            expression string and build its internal node tree. Parse cost grows
+            sub-linearly with expression size — a 63-node expression takes about
+            8× longer than a 1-node expression, not 63×.
           </p>
           <p className="cardText">
-            <strong>Parse cache</strong> measures expression creation cost in a real
-            app. The first time a string like{' '}
-            <span className="codeInline">a + b</span> is used, rs-x parses it and
-            caches a template tree. Every subsequent binding using that same string
-            skips parsing and only clones the cached tree — 3–8× faster depending
-            on expression size. In a table with 1,000 rows sharing the same
-            column expressions, only the first row parses; the rest clone.
+            <strong>Parse cache</strong> measures expression creation cost in a
+            real app. The first time a string like{' '}
+            <span className="codeInline">a + b</span> is used, rs-x parses it
+            and caches a template tree. Every subsequent binding using that same
+            string skips parsing and only clones the cached tree — 3–8× faster
+            depending on expression size. In a table with 1,000 rows sharing the
+            same column expressions, only the first row parses; the rest clone.
           </p>
           <p className="cardText">
             <strong>Binding</strong> measures first-time setup: rs-x attaches an
-            expression to a specific model object and computes its initial value.
-            This happens once per bound expression, not on every update.{' '}
-            <em>Bind unique</em> binds each expression to a different model object.{' '}
-            <em>Bind same expression</em> reuses the same parsed expression tree
-            cloned across all bindings.
+            expression to a specific model object and computes its initial
+            value. This happens once per bound expression, not on every update.{' '}
+            <em>Bind unique</em> binds each expression to a different model
+            object. <em>Bind same expression</em> reuses the same parsed
+            expression tree cloned across all bindings.
           </p>
           <p className="cardText">
             <strong>Single update</strong> changes one field on one model and
@@ -358,10 +363,10 @@ export default function PerformanceReportCoreConceptPage() {
             in one pass. In practice this path is taken on full data reloads.
           </p>
           <p className="cardText">
-            <strong>Memory</strong> shows median heap and peak RSS recorded while
-            each scenario runs. Heap is the JavaScript-managed memory; RSS
-            includes all process memory such as the V8 runtime and native buffers.
-            In all benchmark scenarios the expression is{' '}
+            <strong>Memory</strong> shows median heap and peak RSS recorded
+            while each scenario runs. Heap is the JavaScript-managed memory; RSS
+            includes all process memory such as the V8 runtime and native
+            buffers. In all benchmark scenarios the expression is{' '}
             <span className="codeInline">a + b</span>. More complex expressions
             with more nodes or async values will use proportionally more memory.
           </p>
@@ -370,22 +375,26 @@ export default function PerformanceReportCoreConceptPage() {
         <article className="card docsApiCard">
           <h2 className="cardTitle">Conclusion</h2>
           <p className="cardText">
-            <strong>Single updates are effectively free.</strong>{' '}
-            Regardless of how many bindings are active — 1,000 or 10,000 — a
-            single field change propagates in{' '}
-            <span className="codeInline">~0.09 ms</span>. rs-x only recalculates
-            the expressions that depend on the changed field; the rest of the
-            graph is not touched.
+            <strong>Single updates are effectively free.</strong> Regardless of
+            how many bindings are active — 1,000 or 10,000 — a single field
+            change propagates in <span className="codeInline">~0.09 ms</span>.
+            rs-x only recalculates the expressions that depend on the changed
+            field; the rest of the graph is not touched.
           </p>
           <p className="cardText">
-            <strong>Parse cache makes repeated expression strings nearly free.</strong>{' '}
-            Clone-only creation costs <span className="codeInline">0.64–27 µs</span>{' '}
-            versus <span className="codeInline">5.5–81 µs</span> for a full
-            parse, a 3–8× saving. In a table where every row uses the same
-            column expression, only the first row pays the parse cost.
+            <strong>
+              Parse cache makes repeated expression strings nearly free.
+            </strong>{' '}
+            Clone-only creation costs{' '}
+            <span className="codeInline">0.64–27 µs</span> versus{' '}
+            <span className="codeInline">5.5–81 µs</span> for a full parse, a
+            3–8× saving. In a table where every row uses the same column
+            expression, only the first row pays the parse cost.
           </p>
           <p className="cardText">
-            <strong>Binding setup is a one-time cost, not a recurring one.</strong>{' '}
+            <strong>
+              Binding setup is a one-time cost, not a recurring one.
+            </strong>{' '}
             At <span className="codeInline">1,000</span> bindings setup takes
             roughly <span className="codeInline">35 ms</span> — imperceptible
             during a page load. At <span className="codeInline">10,000</span>{' '}
@@ -393,15 +402,16 @@ export default function PerformanceReportCoreConceptPage() {
             still paid once, not on every render.
           </p>
           <p className="cardText">
-            <strong>Bulk update scales linearly and is predictable.</strong>{' '}
-            At 10,000 bindings a full recalculation of every expression takes{' '}
+            <strong>Bulk update scales linearly and is predictable.</strong> At
+            10,000 bindings a full recalculation of every expression takes{' '}
             <span className="codeInline">~146 ms</span>, which is roughly{' '}
             <span className="codeInline">14.6 µs</span> per expression. This
-            path only runs on a full data reload; incremental changes remain fast.
+            path only runs on a full data reload; incremental changes remain
+            fast.
           </p>
           <p className="cardText">
-            <strong>Memory is the practical limit at large scales.</strong>{' '}
-            At <span className="codeInline">1,000</span> bindings heap usage is
+            <strong>Memory is the practical limit at large scales.</strong> At{' '}
+            <span className="codeInline">1,000</span> bindings heap usage is
             around <span className="codeInline">125–230 MB</span>; at{' '}
             <span className="codeInline">10,000</span> it reaches roughly{' '}
             <span className="codeInline">2.4–3.3 GB</span>. Most real UIs stay
@@ -430,7 +440,11 @@ export default function PerformanceReportCoreConceptPage() {
           ariaLabel="Parse performance chart in microseconds per operation by node count"
           rows={parseChartRows}
           series={[
-            { key: 'usPerOperation', label: 'Parse us/op', barClassName: 'isPrimary' },
+            {
+              key: 'usPerOperation',
+              label: 'Parse us/op',
+              barClassName: 'isPrimary',
+            },
           ]}
           valueUnit="us"
           decimals={2}
@@ -441,7 +455,9 @@ export default function PerformanceReportCoreConceptPage() {
       </article>
 
       <article className="card docsApiCard">
-        <h2 className="cardTitle">Parse cache behavior (parse+clone vs clone-only)</h2>
+        <h2 className="cardTitle">
+          Parse cache behavior (parse+clone vs clone-only)
+        </h2>
         <PerformanceBarChart
           ariaLabel="Parse cache behavior chart comparing parse plus clone versus clone only"
           rows={parseCacheChartRows}
@@ -466,7 +482,9 @@ export default function PerformanceReportCoreConceptPage() {
       </article>
 
       <article className="card docsApiCard">
-        <h2 className="cardTitle">Binding performance (initial full evaluation)</h2>
+        <h2 className="cardTitle">
+          Binding performance (initial full evaluation)
+        </h2>
         <PerformanceBarChart
           ariaLabel="Binding performance chart comparing unique bind and same-expression bind"
           rows={bindingChartRows}

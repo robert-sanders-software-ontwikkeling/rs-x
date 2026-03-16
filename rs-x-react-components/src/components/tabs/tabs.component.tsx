@@ -27,7 +27,9 @@ export interface ITabsProps<T extends TabValue = string> {
   unstyled?: boolean;
 }
 
-function joinClassNames(classes: Array<string | undefined>): string | undefined {
+function joinClassNames(
+  classes: Array<string | undefined>,
+): string | undefined {
   const joined = classes.filter(Boolean).join(' ');
   return joined.length > 0 ? joined : undefined;
 }
@@ -210,7 +212,10 @@ export const Tabs = <T extends TabValue = string>({
     }
   };
 
-  const rootClassName = joinClassNames([unstyled ? undefined : 'rsxTabs', className]);
+  const rootClassName = joinClassNames([
+    unstyled ? undefined : 'rsxTabs',
+    className,
+  ]);
   const listClass = joinClassNames([
     unstyled ? undefined : 'rsxTabsList',
     listClassName,

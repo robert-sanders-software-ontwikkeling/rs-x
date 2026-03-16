@@ -788,10 +788,7 @@ export default function CollectionsDocsPage() {
       <div className="docsApiHeader">
         <div>
           <DocsBreadcrumbs
-            items={[
-              { label: 'Docs', href: '/docs' },
-              { label: 'Collections' },
-            ]}
+            items={[{ label: 'Docs', href: '/docs' }, { label: 'Collections' }]}
           />
           <p className="docsApiEyebrow">Guide</p>
           <h1 className="sectionTitle">Collections</h1>
@@ -809,8 +806,8 @@ export default function CollectionsDocsPage() {
           <h2 className="cardTitle">What this means in practice</h2>
           <p className="cardText">
             Collections can be watched at two levels: the full collection
-            expression (for example <span className="codeInline">cart</span>)
-            or a selected entry expression (for example{' '}
+            expression (for example <span className="codeInline">cart</span>) or
+            a selected entry expression (for example{' '}
             <span className="codeInline">cart[0]</span>).
           </p>
           <p className="cardText">
@@ -832,19 +829,19 @@ export default function CollectionsDocsPage() {
             </li>
             <li>
               Watch a map property (for example{' '}
-              <span className="codeInline">prices</span>) to react to
-              mutations like set/delete/clear.
+              <span className="codeInline">prices</span>) to react to mutations
+              like set/delete/clear.
             </li>
             <li>
               Watch a set property (for example{' '}
-              <span className="codeInline">tasks</span>) to react to
-              mutations like add/delete/clear.
+              <span className="codeInline">tasks</span>) to react to mutations
+              like add/delete/clear.
             </li>
             <li>
               Watch <span className="codeInline">items[0]</span>,{' '}
               <span className="codeInline">roles["admin"]</span>, or{' '}
-              <span className="codeInline">tasks[trackedTask]</span> to react
-              to one selected entry.
+              <span className="codeInline">tasks[trackedTask]</span> to react to
+              one selected entry.
             </li>
             <li>
               Use <span className="codeInline">IndexWatchRule</span> when you
@@ -866,8 +863,8 @@ export default function CollectionsDocsPage() {
             when your model is keyed by ids, names, or roles.
           </p>
           <p className="cardText">
-            <strong>Set:</strong> rs-x reacts to membership changes and can
-            also react to tracked member details. This is useful for selections,
+            <strong>Set:</strong> rs-x reacts to membership changes and can also
+            react to tracked member details. This is useful for selections,
             tags, and active item groups.
           </p>
         </article>
@@ -879,15 +876,15 @@ export default function CollectionsDocsPage() {
             mutations. Example: <span className="codeInline">cart</span> reacts
             to array operations like push/splice,{' '}
             <span className="codeInline">prices</span> reacts to map set/delete,
-            and <span className="codeInline">tasks</span> reacts to set add/delete.
+            and <span className="codeInline">tasks</span> reacts to set
+            add/delete.
           </p>
           <p className="cardText">
             Use an item/key/member expression when you need to observe one
             selected entry, not the whole collection. This keeps updates focused
             on the selected branch and avoids reacting to unrelated entries. Add
-            an{' '}
-            <span className="codeInline">IndexWatchRule</span> when the selected
-            entry must also react to nested fields (for example{' '}
+            an <span className="codeInline">IndexWatchRule</span> when the
+            selected entry must also react to nested fields (for example{' '}
             <span className="codeInline">done</span> or{' '}
             <span className="codeInline">qty</span>).
           </p>

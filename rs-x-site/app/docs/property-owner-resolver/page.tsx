@@ -56,7 +56,10 @@ export default function PropertyOwnerResolverDocsPage() {
           </div>
         </div>
         <div className="docsApiActions">
-          <Link className="btn btnGhost" href="/docs/iidentifier-owner-resolver">
+          <Link
+            className="btn btnGhost"
+            href="/docs/iidentifier-owner-resolver"
+          >
             IIdentifierOwnerResolver <span aria-hidden="true">→</span>
           </Link>
         </div>
@@ -68,11 +71,11 @@ export default function PropertyOwnerResolverDocsPage() {
           <p className="cardText">
             First resolver in the default{' '}
             <span className="codeInline">IIdentifierOwnerResolverList</span>.
-            Uses <span className="codeInline">Type.hasProperty(context, index)</span>{' '}
+            Uses{' '}
+            <span className="codeInline">Type.hasProperty(context, index)</span>{' '}
             to check if the identifier is a property or field of the context
-            object. Also handles{' '}
-            <span className="codeInline">Date</span> instances by checking
-            against the known date-property set (
+            object. Also handles <span className="codeInline">Date</span>{' '}
+            instances by checking against the known date-property set (
             <span className="codeInline">dataProperties</span> from{' '}
             <span className="codeInline">@rs-x/core</span>).
           </p>
@@ -83,7 +86,10 @@ export default function PropertyOwnerResolverDocsPage() {
           </p>
         </article>
 
-        <aside className="qsCodeCard docsApiCode" aria-label="PropertyOwnerResolver API">
+        <aside
+          className="qsCodeCard docsApiCode"
+          aria-label="PropertyOwnerResolver API"
+        >
           <div className="qsCodeHeader">
             <div className="qsCodeTitle">API</div>
           </div>

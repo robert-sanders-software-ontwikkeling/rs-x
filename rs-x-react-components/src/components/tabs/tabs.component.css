@@ -10,7 +10,8 @@
 }
 
 .rsxTabsTrigger {
-  border: 1px solid color-mix(in srgb, var(--border-soft, #d7dee8) 82%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--border-soft, #d7dee8) 82%, transparent);
   background: color-mix(
     in srgb,
     var(--surface-solid, #ffffff) 82%,
@@ -39,7 +40,11 @@
     var(--brand, #0b66ff) 10%,
     var(--surface-solid, #ffffff)
   );
-  border-color: color-mix(in srgb, var(--brand, #0b66ff) 26%, var(--border-soft, #d7dee8));
+  border-color: color-mix(
+    in srgb,
+    var(--brand, #0b66ff) 26%,
+    var(--border-soft, #d7dee8)
+  );
 }
 
 .rsxTabsTrigger:disabled {
@@ -52,7 +57,8 @@
   background: color-mix(in srgb, var(--brand, #0b66ff) 84%, #ffffff);
   color: #fff;
   border-color: color-mix(in srgb, var(--brand, #0b66ff) 84%, #ffffff);
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--brand, #0b66ff) 22%, transparent);
+  box-shadow: 0 8px 18px
+    color-mix(in srgb, var(--brand, #0b66ff) 22%, transparent);
   transform: translateY(-1px);
 }
 

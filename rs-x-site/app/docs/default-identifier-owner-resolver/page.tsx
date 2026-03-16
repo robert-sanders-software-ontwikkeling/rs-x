@@ -63,7 +63,10 @@ export default function DefaultIdentifierOwnerResolverDocsPage() {
           </div>
         </div>
         <div className="docsApiActions">
-          <Link className="btn btnGhost" href="/docs/iidentifier-owner-resolver">
+          <Link
+            className="btn btnGhost"
+            href="/docs/iidentifier-owner-resolver"
+          >
             IIdentifierOwnerResolver <span aria-hidden="true">→</span>
           </Link>
         </div>
@@ -84,11 +87,22 @@ export default function DefaultIdentifierOwnerResolverDocsPage() {
           </p>
           <p className="cardText">
             The default list contains (in order):{' '}
-            <Link href="/docs/property-owner-resolver">PropertyOwnerResolver</Link>,{' '}
-            <Link href="/docs/array-index-owner-resolver">ArrayIndexOwnerResolver</Link>,{' '}
-            <Link href="/docs/set-key-owner-resolver">SetKeyOwnerResolver</Link>,{' '}
-            <Link href="/docs/map-key-owner-resolver">MapKeyOwnerResolver</Link>,{' '}
-            <Link href="/docs/global-identifier-owner-resolver">GlobalIdentifierOwnerResolver</Link>.
+            <Link href="/docs/property-owner-resolver">
+              PropertyOwnerResolver
+            </Link>
+            ,{' '}
+            <Link href="/docs/array-index-owner-resolver">
+              ArrayIndexOwnerResolver
+            </Link>
+            ,{' '}
+            <Link href="/docs/set-key-owner-resolver">SetKeyOwnerResolver</Link>
+            ,{' '}
+            <Link href="/docs/map-key-owner-resolver">MapKeyOwnerResolver</Link>
+            ,{' '}
+            <Link href="/docs/global-identifier-owner-resolver">
+              GlobalIdentifierOwnerResolver
+            </Link>
+            .
           </p>
           <p className="cardText">
             Extend the list with{' '}
@@ -103,7 +117,10 @@ export default function DefaultIdentifierOwnerResolverDocsPage() {
           </p>
         </article>
 
-        <aside className="qsCodeCard docsApiCode" aria-label="DefaultIdentifierOwnerResolver API">
+        <aside
+          className="qsCodeCard docsApiCode"
+          aria-label="DefaultIdentifierOwnerResolver API"
+        >
           <div className="qsCodeHeader">
             <div className="qsCodeTitle">API</div>
           </div>

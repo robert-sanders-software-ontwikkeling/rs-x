@@ -1043,13 +1043,11 @@ html[data-theme='dark'] .headerGetStartedCta:hover {
   box-shadow: none;
 }
 
-
 .docsSearchPanelHeader {
   display: grid;
   gap: 0.15rem;
   justify-items: start;
 }
-
 
 .docsSearchLabel {
   margin: 0;
@@ -2027,8 +2025,14 @@ html[data-theme='dark'] .docsApiSection .docsApiPackageTabLabel {
   color: color-mix(in srgb, var(--text) 56%, var(--muted));
 }
 
-html[data-theme='dark'] .docsLandingSection .docsApiPackageTab.isActive .docsApiPackageTabLabel,
-html[data-theme='dark'] .docsApiSection .docsApiPackageTab.isActive .docsApiPackageTabLabel {
+html[data-theme='dark']
+  .docsLandingSection
+  .docsApiPackageTab.isActive
+  .docsApiPackageTabLabel,
+html[data-theme='dark']
+  .docsApiSection
+  .docsApiPackageTab.isActive
+  .docsApiPackageTabLabel {
   color: color-mix(in srgb, var(--text) 86%, var(--muted));
 }
 
@@ -2563,7 +2567,8 @@ html[data-theme='dark'] .comparisonTable tbody td a {
 }
 
 .expressionTypesTable thead th {
-  border-bottom: 1px solid color-mix(in srgb, var(--brand) 28%, var(--border-soft));
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--brand) 28%, var(--border-soft));
 }
 
 html:not([data-theme='dark']) .expressionTypesTable th {
@@ -2572,7 +2577,8 @@ html:not([data-theme='dark']) .expressionTypesTable th {
 }
 
 html:not([data-theme='dark']) .expressionTypesTable thead th {
-  border-bottom: 1px solid color-mix(in srgb, var(--brand) 28%, var(--border-soft));
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--brand) 28%, var(--border-soft));
 }
 
 .expressionTypesTable tbody tr:nth-child(even) td,
@@ -2647,7 +2653,8 @@ html[data-theme='dark'] .expressionTypesTable td {
 }
 
 html[data-theme='dark'] .expressionTypesTable thead th {
-  border-bottom: 1px solid color-mix(in srgb, var(--brand) 36%, var(--border-soft));
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--brand) 36%, var(--border-soft));
 }
 
 .observationAsyncBadge {
@@ -3002,8 +3009,6 @@ html[data-theme='dark'] .expressionTypesTable thead th {
   text-transform: none;
   letter-spacing: 0;
 }
-
-
 
 .docsApiSectionTop {
   display: flex;
@@ -3415,7 +3420,8 @@ html[data-theme='dark'] .docsApiSection .advancedTopicList {
   margin: 0;
   padding: 0.45rem 0.8rem;
   background: color-mix(in srgb, var(--surface-2) 80%, var(--surface-solid));
-  border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 64%, transparent);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border-soft) 64%, transparent);
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 700;
@@ -3462,7 +3468,8 @@ html[data-theme='dark'] .docsApiSection .advancedTopicList {
 
 .docsPerfDemoTh {
   padding: 0.38rem 0.65rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 70%, transparent);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border-soft) 70%, transparent);
   background: color-mix(in srgb, var(--surface-2) 80%, var(--surface-solid));
   color: var(--muted);
   font-weight: 700;
@@ -3484,7 +3491,8 @@ html[data-theme='dark'] .docsApiSection .advancedTopicList {
 
 .docsPerfDemoTd {
   padding: 0.3rem 0.65rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 40%, transparent);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border-soft) 40%, transparent);
   color: var(--docs-body);
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -4084,8 +4092,6 @@ html[data-theme='dark'] .docsApiSection .advancedTopicList {
     grid-template-columns: 1fr;
     gap: var(--sp-1);
   }
-
-
 
   .hero {
     padding: calc(var(--sp-8) + 0.75rem) 0 var(--sp-6);

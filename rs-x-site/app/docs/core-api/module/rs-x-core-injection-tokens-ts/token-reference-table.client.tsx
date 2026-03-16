@@ -2,10 +2,7 @@
 
 import Link from 'next/link';
 
-import {
-  DataTable,
-  type IDataTableColumn,
-} from '@rs-x/react-components';
+import { DataTable, type IDataTableColumn } from '@rs-x/react-components';
 
 export type TokenReferenceTableRow = {
   token: string;
@@ -45,9 +42,7 @@ const columns: IDataTableColumn<TokenReferenceTableRow>[] = [
   },
 ];
 
-export function TokenReferenceTable({
-  rows,
-}: TokenReferenceTableProps) {
+export function TokenReferenceTable({ rows }: TokenReferenceTableProps) {
   return (
     <DataTable
       rows={rows}

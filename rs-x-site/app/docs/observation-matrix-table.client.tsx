@@ -2,10 +2,7 @@
 
 import Link from 'next/link';
 
-import {
-  DataTable,
-  type IDataTableColumn,
-} from '@rs-x/react-components';
+import { DataTable, type IDataTableColumn } from '@rs-x/react-components';
 
 export type ObservationMatrixRow = {
   valueType: string;
@@ -56,9 +53,7 @@ const columns: IDataTableColumn<ObservationMatrixRow>[] = [
   },
 ];
 
-export function ObservationMatrixTable({
-  rows,
-}: ObservationMatrixTableProps) {
+export function ObservationMatrixTable({ rows }: ObservationMatrixTableProps) {
   return (
     <DataTable
       rows={rows}

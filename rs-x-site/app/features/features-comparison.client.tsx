@@ -2,10 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import {
-  DataTable,
-  type IDataTableColumn,
-} from '@rs-x/react-components';
+import { DataTable, type IDataTableColumn } from '@rs-x/react-components';
 
 export interface IComparisonCell {
   text: string;
@@ -241,13 +238,12 @@ export function FeaturesComparisonClient({
         id: column,
         header: column,
         renderCell: (row) =>
-          renderCell(
-            row.values[column] ?? '—',
-            `${row.dimension}-${column}`,
-          ),
+          renderCell(row.values[column] ?? '—', `${row.dimension}-${column}`),
         sortAccessor: (row) => {
           const value = row.values[column] ?? '—';
-          return cleanCell(typeof value === 'string' ? value : value.text) || '—';
+          return (
+            cleanCell(typeof value === 'string' ? value : value.text) || '—'
+          );
         },
         filterAccessor: (row) => {
           const value = row.values[column] ?? '—';

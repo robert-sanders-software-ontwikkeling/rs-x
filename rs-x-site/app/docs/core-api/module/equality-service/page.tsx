@@ -1,13 +1,12 @@
 import dedent from 'dedent';
 
-import { DocsBreadcrumbItem } from '../../../../../components/DocsBreadcrumbs';
+import { type DocsBreadcrumbItem } from '../../../../../components/DocsBreadcrumbs';
 import { DocsPageTemplate } from '../../../../../components/DocsPageTemplate';
 import { SyntaxCodeBlock } from '../../../../../components/SyntaxCodeBlock';
 import { ApiDocHeader } from '../../../components/api-doc-header';
 import { Card } from '../../../components/card';
-
-import { formatModuleLabel, moduleBySlug } from '../module-page.helpers';
 import { ModuleApiEntries } from '../module-api-entries';
+import { formatModuleLabel, moduleBySlug } from '../module-page.helpers';
 
 const entry = moduleBySlug.get('equality-service')!;
 
@@ -78,23 +77,25 @@ export default function CoreApiModuleEqualityServicePage() {
     { label: 'Docs', href: '/docs' },
     { label: formatModuleLabel(entry.moduleName) },
   ];
-  const whatItDoes = hasMultipleEntries
-    ? (<>
+  const whatItDoes = hasMultipleEntries ? (
+    <>
       API entries in this module:{' '}
       <span className="codeInline">{entry.items.length}</span>
-
-    </>) : ''
+    </>
+  ) : (
+    ''
+  );
 
   return (
     <DocsPageTemplate>
       <ApiDocHeader
-        eyebrow='API Reference'
+        eyebrow="API Reference"
         name={formatModuleLabel(entry.moduleName)}
         whatItDoes={whatItDoes}
         breadcrumb={breadcrumb}
       />
 
-      <Card header='Current equality-service implementation'>
+      <Card header="Current equality-service implementation">
         <p className="cardText">
           <span className="codeInline">IEqualityService</span> resolves to{' '}
           <span className="codeInline">EqualityService</span> in{' '}
@@ -121,35 +122,33 @@ export default function CoreApiModuleEqualityServicePage() {
           separate stream instances as equal by structure.
         </p>
         <p className="cardText">
-          This service is used by runtime change-detection decisions where
-          rs-x needs to know whether a value is materially changed before
-          propagating updates.
+          This service is used by runtime change-detection decisions where rs-x
+          needs to know whether a value is materially changed before propagating
+          updates.
         </p>
       </Card>
 
-      <Card header='Example: use IEqualityService'>
+      <Card header="Example: use IEqualityService">
         <SyntaxCodeBlock code={equalityUsageCode} />
       </Card>
 
-      <Card header='How to extend or modify'>
+      <Card header="How to extend or modify">
         <p className="cardText">
-          Provide your own{' '}
-          <span className="codeInline">IEqualityService</span>{' '}
+          Provide your own <span className="codeInline">IEqualityService</span>{' '}
           implementation and rebind{' '}
           <span className="codeInline">
             RsXCoreInjectionTokens.IEqualityService
           </span>{' '}
-          to your custom class. Keep singleton scope so all runtime
-          components share the same equality behavior.
+          to your custom class. Keep singleton scope so all runtime components
+          share the same equality behavior.
         </p>
       </Card>
 
-      <Card header='Override equality service'>
+      <Card header="Override equality service">
         <SyntaxCodeBlock code={equalityOverrideCode} />
       </Card>
 
       <ModuleApiEntries items={entry.items} />
-
     </DocsPageTemplate>
   );
 }

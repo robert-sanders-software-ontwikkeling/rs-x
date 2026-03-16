@@ -1,8 +1,8 @@
 import Link from 'next/link';
+import { type ReactNode } from 'react';
+
 import { coreApiItems } from '../app/docs/core-api/core-api.data';
 import { stateManagerApiItems } from '../app/docs/state-manager-api/state-manager-api.data';
-import { ReactNode } from 'react';
-
 
 const INVERSIFY_URL = 'https://inversify.io/';
 const CORE_API_SYMBOLS = new Set(coreApiItems.map((item) => item.symbol));
@@ -28,7 +28,7 @@ const TYPE_DOC_LINKS: Record<string, string> = {
   KeyedInstanceFactory: '/docs/core-api/KeyedInstanceFactory',
   rsx: '/docs/rsx-function',
   'read-only properties': '/docs/core-concepts/readonly-properties',
-  'state manager':'/docs/state-manager-api/StateManager',
+  'state manager': '/docs/state-manager-api/StateManager',
 };
 
 export function extractTypeCandidates(type: string): string[] {

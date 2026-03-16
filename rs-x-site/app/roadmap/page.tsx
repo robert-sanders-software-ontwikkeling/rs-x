@@ -240,7 +240,10 @@ export default function RoadmapPage() {
           <section className="getStartedLinear">
             <div className="roadmapCards">
               {roadmapItems.map((item) => (
-                <article key={item.title} className="card docsApiCard roadmapCard">
+                <article
+                  key={item.title}
+                  className="card docsApiCard roadmapCard"
+                >
                   <div className="roadmapCardHead">
                     <h2 className="cardTitle">{item.title}</h2>
                     <span

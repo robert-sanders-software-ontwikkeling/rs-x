@@ -7,3 +7,4 @@ export * from './rxjs-monaco-types-loader';
 export * from './rxjs-scope';
 export * from './script-evaluator';
 export * from './setup-script-models';
+export * from './zip-builder';

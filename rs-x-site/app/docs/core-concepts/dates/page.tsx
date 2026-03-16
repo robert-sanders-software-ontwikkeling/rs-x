@@ -253,12 +253,7 @@ function createDatePropertyExample(
 }
 
 const datePropertyExamples: DatePropertyExampleTab[] = [
-  createDatePropertyExample(
-    'year',
-    'setFullYear',
-    'randomInt(2025, 2028)',
-    '',
-  ),
+  createDatePropertyExample('year', 'setFullYear', 'randomInt(2025, 2028)', ''),
   createDatePropertyExample(
     'utcYear',
     'setUTCFullYear',
@@ -387,19 +382,18 @@ export default function DatesCoreConceptPage() {
               <span className="codeInline">DatePropertyAccessor</span>
             </Link>
             . The accessor maps each property key to the matching Date
-            getter/setter methods, so you read via keys in expressions and
-            write via Date setter methods.
+            getter/setter methods, so you read via keys in expressions and write
+            via Date setter methods.
           </p>
           <p className="cardText">
-            Example: use <span className="codeInline">invoiceDate.month</span>
-            , not <span className="codeInline">invoiceDate.getMonth</span>{' '}
-            inside the expression string.
+            Example: use <span className="codeInline">invoiceDate.month</span>,
+            not <span className="codeInline">invoiceDate.getMonth</span> inside
+            the expression string.
           </p>
           <p className="cardText">
             For mutations, use native setter methods such as{' '}
-            <span className="codeInline">setMonth</span>, not direct
-            assignment like{' '}
-            <span className="codeInline">invoiceDate.month = ...</span>.
+            <span className="codeInline">setMonth</span>, not direct assignment
+            like <span className="codeInline">invoiceDate.month = ...</span>.
           </p>
         </article>
 
@@ -415,9 +409,7 @@ export default function DatesCoreConceptPage() {
         <article className="card docsApiCard">
           <h2 className="cardTitle">Key points</h2>
           <ul className="advancedTopicLinks">
-            <li>
-              Use property keys (for example month) for expression reads.
-            </li>
+            <li>Use property keys (for example month) for expression reads.</li>
             <li>
               Use Date setter methods (for example setMonth) for mutations.
             </li>

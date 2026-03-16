@@ -301,6 +301,7 @@ export class TreeLayoutEngine {
     } else if (this.nextLeft(vir) && !this.nextLeft(vol)) {
       vol.thread = this.nextLeft(vir);
       vol.mod += sir - sol;
+      defaultAncestor = v;
     }
 
     return defaultAncestor;

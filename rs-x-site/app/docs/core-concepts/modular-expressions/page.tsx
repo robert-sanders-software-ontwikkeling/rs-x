@@ -1,8 +1,11 @@
 import dedent from 'dedent';
-import Link from 'next/link';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
-import { CoreConceptPageLayout, type CoreConceptDoc } from '../_template/core-concept-page';
+import {
+  type CoreConceptDoc,
+  CoreConceptPageLayout,
+} from '../_template/core-concept-page';
 
 const exampleCode = dedent`
   import { InjectionContainer } from '@rs-x/core';

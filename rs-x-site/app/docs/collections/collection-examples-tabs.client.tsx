@@ -61,7 +61,10 @@ export const CollectionExamplesTabs: React.FC<ICollectionExamplesTabsProps> = ({
         labelClassName="docsApiPackageTabLabel"
       />
 
-      <div key={activeTabValue} className="docsApiTabBody docsCollectionTabBody">
+      <div
+        key={activeTabValue}
+        className="docsApiTabBody docsCollectionTabBody"
+      >
         <h2 className="cardTitle">Examples</h2>
         {activeTab?.description ? (
           <p className="cardText">{activeTab.description}</p>

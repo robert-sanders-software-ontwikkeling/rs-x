@@ -1,6 +1,7 @@
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import { IndexWatchRule } from '@rs-x/state-manager';
 import { IndexWatchRuleMock } from '@rs-x/state-manager/testing';
+
 import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import { ArrayExpression } from '../../lib/expressions/array-expression';
 import {
@@ -218,7 +219,9 @@ describe('Array expression tests', () => {
     });
 
     const trackedTaskExpression = rsx('tasks[trackedTask]')(model, watchRule);
-    await new WaitForEvent(trackedTaskExpression, 'changed').wait(emptyFunction);
+    await new WaitForEvent(trackedTaskExpression, 'changed').wait(
+      emptyFunction,
+    );
 
     const trackedChange = await new WaitForEvent(
       trackedTaskExpression,
@@ -263,8 +266,8 @@ describe('Array expression tests', () => {
 
     const memberSegments = expression.childExpressions as IExpression[];
     const indexExpression = memberSegments[1] as IExpression;
-    const trackedTaskIdentifier =
-      indexExpression.childExpressions[0] as IExpression;
+    const trackedTaskIdentifier = indexExpression
+      .childExpressions[0] as IExpression;
 
     expect(trackedTaskIdentifier.expressionString).toBe('trackedTask');
     expect(trackedTaskIdentifier.value).toBe(taskA);

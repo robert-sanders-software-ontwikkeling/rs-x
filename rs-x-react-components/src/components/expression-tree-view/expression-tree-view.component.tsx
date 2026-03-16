@@ -334,9 +334,7 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
                       <div className="exprNodeBody">
                         {vm.hasValue ? (
                           <pre className="exprNodePre">{vm.valueText}</pre>
-                        ) : (
-                          null
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   );

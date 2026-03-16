@@ -19,10 +19,7 @@ export class Type {
     Map<PropertyKey, boolean>
   >();
 
-  public static isReadonlyProperty(
-    target: unknown,
-    key: unknown,
-  ): boolean {
+  public static isReadonlyProperty(target: unknown, key: unknown): boolean {
     if (
       (typeof target !== 'object' && typeof target !== 'function') ||
       target === null
@@ -64,7 +61,10 @@ export class Type {
     let current: object | null = prototype;
     let isReadonly = false;
     while (current && current !== Object.prototype) {
-      const descriptor = Object.getOwnPropertyDescriptor(current, normalizedKey);
+      const descriptor = Object.getOwnPropertyDescriptor(
+        current,
+        normalizedKey,
+      );
       if (descriptor) {
         isReadonly =
           Type.getPropertyDescriptorType(descriptor) ===

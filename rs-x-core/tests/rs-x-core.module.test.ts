@@ -245,7 +245,9 @@ describe('rs-x core module', () => {
   });
 
   it('can get instance of IFastDeepClone', () => {
-    const actual = InjectionContainer.get(RsXCoreInjectionTokens.IFastDeepClone);
+    const actual = InjectionContainer.get(
+      RsXCoreInjectionTokens.IFastDeepClone,
+    );
     expect(actual).toBeInstanceOf(FastDeepClone);
   });
 

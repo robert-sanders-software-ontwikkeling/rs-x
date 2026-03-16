@@ -288,29 +288,23 @@ export class MemberExpression extends AbstractExpression {
       leafIndexWatchRule: this.leafIndexWatchRule,
     };
 
-    this.bindPathSegement(
-      staticIndexExpression,
-      bindSettings,
-      () => {
-        staticIndexExpression.bind(bindSettings);
-        let bound = false;
-        const changeSubscription = staticIndexExpression.changed.subscribe(
-          () => {
-            if (bound) {
-              this.onSlotChanged(dynamicIndexExpression);
-            }
-            bound = true;
-          },
-        );
-        this._slotObservers.set(dynamicIndexExpression, {
-          staticIndexExpression,
-          changeSubscription,
-          index: dynamicIndexExpression.value,
-          pathSegmentIndex,
-        });
-        this._rebindingSlot = false;
-      },
-    );
+    this.bindPathSegement(staticIndexExpression, bindSettings, () => {
+      staticIndexExpression.bind(bindSettings);
+      let bound = false;
+      const changeSubscription = staticIndexExpression.changed.subscribe(() => {
+        if (bound) {
+          this.onSlotChanged(dynamicIndexExpression);
+        }
+        bound = true;
+      });
+      this._slotObservers.set(dynamicIndexExpression, {
+        staticIndexExpression,
+        changeSubscription,
+        index: dynamicIndexExpression.value,
+        pathSegmentIndex,
+      });
+      this._rebindingSlot = false;
+    });
   }
 
   private onSlotChanged(sender: AbstractExpression): void {

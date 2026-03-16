@@ -96,9 +96,9 @@ export default function ExpressionChangeTransactionManagerDocsPage() {
           </p>
           <p className="cardText">
             In practice, identifier updates call{' '}
-            <span className="codeInline">registerChange(...)</span>, the
-            manager groups these handlers in a per-root queue, and commit emits
-            a single committed-root signal after reevaluation stabilizes.
+            <span className="codeInline">registerChange(...)</span>, the manager
+            groups these handlers in a per-root queue, and commit emits a single
+            committed-root signal after reevaluation stabilizes.
           </p>
         </article>
 

@@ -1,10 +1,13 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { splitTopLevelCommaList } from './split-top-level-comma-list';
-import { ReactNode } from 'react';
+
 import Link from 'next/link';
+import { type ReactNode } from 'react';
+
+import { type ApiParameterItem } from '../../../components/ApiParameterList';
+
 import { renderTypeWithLinks } from './render-type-with-links';
-import { ApiParameterItem } from '../../../components/ApiParameterList';
+import { splitTopLevelCommaList } from './split-top-level-comma-list';
 
 export interface ApiItem {
   symbol: string;
@@ -47,8 +50,8 @@ export type ApiMember = {
 };
 
 export interface IQuickFact {
-  label: string,
-  fact: ReactNode | string
+  label: string;
+  fact: ReactNode | string;
 }
 
 function escapeRegex(value: string): string {
@@ -315,7 +318,6 @@ function splitClassStatements(body: string): string[] {
   return statements;
 }
 
-
 function splitTopLevelCsv(value: string): string[] {
   const parts: string[] = [];
   let current = '';
@@ -431,7 +433,6 @@ function normalizeSignature(value: string): string {
   return normalizeWhitespace(value).replace(/,\s*\)/g, ')');
 }
 
-
 function memberSortName(name: string): string {
   return name
     .replace(/^readonly\s+/i, '')
@@ -439,7 +440,6 @@ function memberSortName(name: string): string {
     .trim()
     .toLowerCase();
 }
-
 
 function formatMemberLabel(name: string): string {
   const normalized = plainMemberName(name).replace(/^_+/, '');
@@ -463,7 +463,6 @@ function joinParamNames(parameters: ApiMemberParameter[]): string {
   }
   return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`;
 }
-
 
 export function memberKindRank(kind: ApiMember['kind']): number {
   if (kind === 'constructor') {
@@ -490,7 +489,6 @@ export function memberAccessRank(access?: ApiMember['access']): number {
   }
   return 2;
 }
-
 
 export function parseMethodParameters(params: string): ApiMemberParameter[] {
   const cleaned = params.trim();
@@ -535,7 +533,6 @@ export function plainMemberName(name: string): string {
     .replace(/\?$/, '')
     .trim();
 }
-
 
 export function extractBaseClassName(
   kind: string,
@@ -614,14 +611,13 @@ export function buildMemberDescription(
   parameters: ApiMemberParameter[],
   optional: boolean,
   readonly: boolean,
-  MEMBER_DESCRIPTION_OVERRIDES: Record<string, Record<string, string>>
-
+  MEMBER_DESCRIPTION_OVERRIDES: Record<string, Record<string, string>>,
 ): string {
   const baseName = plainMemberName(name);
   const symbolOverrides = MEMBER_DESCRIPTION_OVERRIDES[symbolName];
   const override =
     symbolOverrides &&
-      Object.prototype.hasOwnProperty.call(symbolOverrides, baseName)
+    Object.prototype.hasOwnProperty.call(symbolOverrides, baseName)
       ? symbolOverrides[baseName]
       : undefined;
   if (override) {
@@ -710,11 +706,10 @@ export function buildMemberDescription(
     : 'This type can be called like a function.';
 }
 
-
 export function parseDeclarationMembers(
   declaration: string,
   symbolName: string,
-  memberDescriptionOverrides: Record<string, Record<string, string>>
+  memberDescriptionOverrides: Record<string, Record<string, string>>,
 ): ApiMember[] {
   const body = interfaceBody(declaration);
   if (!body) {
@@ -766,7 +761,7 @@ export function parseDeclarationMembers(
           [],
           false,
           false,
-          memberDescriptionOverrides
+          memberDescriptionOverrides,
         ),
       });
       continue;
@@ -805,7 +800,7 @@ export function parseDeclarationMembers(
           parseMethodParameters(params),
           optional,
           false,
-          memberDescriptionOverrides
+          memberDescriptionOverrides,
         ),
       });
       continue;
@@ -831,7 +826,7 @@ export function parseDeclarationMembers(
           parseMethodParameters(callSignatureMatch[1]),
           false,
           false,
-          memberDescriptionOverrides
+          memberDescriptionOverrides,
         ),
       });
       continue;
@@ -868,7 +863,7 @@ export function parseDeclarationMembers(
           [],
           optional,
           readonly,
-          memberDescriptionOverrides
+          memberDescriptionOverrides,
         ),
       });
     }
@@ -894,7 +889,11 @@ export async function readFullTypeDeclaration(
   sourcePath: string,
   kind: string,
 ): Promise<string | null> {
-  const filePath = path.resolve(process.cwd(), `../${packageName}/lib`, sourcePath);
+  const filePath = path.resolve(
+    process.cwd(),
+    `../${packageName}/lib`,
+    sourcePath,
+  );
   const fileContent = await fs.readFile(filePath, 'utf8');
 
   if (kind === 'type') {
@@ -1189,7 +1188,6 @@ export async function readFullTypeDeclaration(
   return fileContent.slice(start, closeBraceIndex + 1).trim();
 }
 
-
 function renderTypeListWithLinks(
   types: string[],
   currentSymbol?: string,
@@ -1208,14 +1206,13 @@ function renderTypeListWithLinks(
   });
 }
 
-
 export function createQuickFacts(
   entry: ApiItem,
   memberDocs: ApiMember[],
   apiSignature: string,
   moduleHref: string,
   moduleLabel: string,
-  CORE_GITHUB_BASE: string
+  CORE_GITHUB_BASE: string,
 ): IQuickFact[] {
   const baseClassName = extractBaseClassName(entry.kind, apiSignature);
   const extendedInterfaces = extractExtendedInterfaces(
@@ -1231,71 +1228,70 @@ export function createQuickFacts(
     entry.kind,
   );
 
-
-
   const quikFacts: IQuickFact[] = [
     {
       label: 'Kind',
-      fact: entry.kind
+      fact: entry.kind,
     },
     {
       label: 'Module',
-      fact: <Link href={moduleHref}>{moduleLabel}</Link>
-    }
-
+      fact: <Link href={moduleHref}>{moduleLabel}</Link>,
+    },
   ];
 
   if (baseClassName) {
     quikFacts.push({
       label: 'Base class',
-      fact: renderTypeWithLinks(baseClassName, entry.symbol)
-    })
-  };
+      fact: renderTypeWithLinks(baseClassName, entry.symbol),
+    });
+  }
 
   if (extendedInterfaces.length > 0) {
     quikFacts.push({
       label: 'Extends',
-      fact: renderTypeListWithLinks(extendedInterfaces, entry.symbol)
+      fact: renderTypeListWithLinks(extendedInterfaces, entry.symbol),
     });
   }
 
   if (implementedInterfaces.length > 0) {
     quikFacts.push({
       label: 'Implements',
-      fact: renderTypeListWithLinks(implementedInterfaces, entry.symbol)
+      fact: renderTypeListWithLinks(implementedInterfaces, entry.symbol),
     });
   }
 
   if (supportsMembers && memberDocs.length > 0) {
     quikFacts.push({
       label: 'Members',
-      fact: memberDocs.length
+      fact: memberDocs.length,
     });
   }
 
   quikFacts.push({
     label: 'Package',
-    fact: <Link
-      href="https://www.npmjs.com/package/@rs-x/core"
-      target="_blank"
-      rel="noreferrer"
-    >
-      @rs-x/core
-    </Link>
+    fact: (
+      <Link
+        href="https://www.npmjs.com/package/@rs-x/core"
+        target="_blank"
+        rel="noreferrer"
+      >
+        @rs-x/core
+      </Link>
+    ),
   });
-
-
 
   quikFacts.push({
     label: 'Source',
-    fact: <a href={ `${CORE_GITHUB_BASE}/${entry.sourcePath}`} target="_blank" rel="noreferrer">
-      {entry.sourcePath}
-    </a>
+    fact: (
+      <a
+        href={`${CORE_GITHUB_BASE}/${entry.sourcePath}`}
+        target="_blank"
+        rel="noreferrer"
+      >
+        {entry.sourcePath}
+      </a>
+    ),
   });
 
-
   return quikFacts;
-
 }
-
-

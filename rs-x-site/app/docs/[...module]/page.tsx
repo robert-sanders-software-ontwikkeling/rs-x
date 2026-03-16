@@ -56,7 +56,10 @@ export default async function StateManagerApiModulePage({
           <DocsBreadcrumbs
             items={[
               { label: 'Docs', href: '/docs' },
-              { label: '@rs-x/state-manager API', href: '/docs/state-manager-api' },
+              {
+                label: '@rs-x/state-manager API',
+                href: '/docs/state-manager-api',
+              },
               ...(groupEntry
                 ? [{ label: groupEntry.title, href: groupEntry.href }]
                 : []),
@@ -64,7 +67,9 @@ export default async function StateManagerApiModulePage({
             ]}
           />
           <p className="docsApiEyebrow">State manager module</p>
-          <h1 className="sectionTitle">{formatModuleLabel(entry.moduleName)}</h1>
+          <h1 className="sectionTitle">
+            {formatModuleLabel(entry.moduleName)}
+          </h1>
           <p className="sectionLead">
             API entries in this module:{' '}
             <span className="codeInline">{entry.items.length}</span>.

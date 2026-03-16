@@ -2,10 +2,11 @@ import dedent from 'dedent';
 import type { Metadata } from 'next';
 
 import {
+  type CoreConceptDoc,
   CoreConceptPageLayout,
   toPlaygroundHref,
-  type CoreConceptDoc,
 } from '../_template/core-concept-page';
+
 import { MemberExpressionExamplesTabs } from './member-expression-examples-tabs.client';
 
 const memberFunctionExampleCode = dedent`
@@ -669,7 +670,10 @@ const doc: CoreConceptDoc = {
 };
 
 function toExampleTabValue(title: string): string {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 export const metadata: Metadata = {
@@ -691,7 +695,9 @@ export default function Page() {
   return (
     <CoreConceptPageLayout
       doc={doc}
-      examplesSlot={<MemberExpressionExamplesTabs tabs={memberExpressionTabs} />}
+      examplesSlot={
+        <MemberExpressionExamplesTabs tabs={memberExpressionTabs} />
+      }
     />
   );
 }

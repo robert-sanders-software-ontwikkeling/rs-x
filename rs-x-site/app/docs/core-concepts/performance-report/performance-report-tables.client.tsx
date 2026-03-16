@@ -1,9 +1,6 @@
 'use client';
 
-import {
-  DataTable,
-  type IDataTableColumn,
-} from '@rs-x/react-components';
+import { DataTable, type IDataTableColumn } from '@rs-x/react-components';
 
 export type ParsePerformanceRow = {
   nodeCount: number;
@@ -70,7 +67,9 @@ const parseColumns: IDataTableColumn<ParsePerformanceRow>[] = [
     id: 'expressionShape',
     header: 'Expression shape',
     accessor: 'expressionShape',
-    renderCell: (row) => <span className="codeInline">{row.expressionShape}</span>,
+    renderCell: (row) => (
+      <span className="codeInline">{row.expressionShape}</span>
+    ),
     sortable: false,
   },
   {

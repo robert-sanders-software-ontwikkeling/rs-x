@@ -49,7 +49,10 @@ export default async function StateManagerApiGroupPage({
           <DocsBreadcrumbs
             items={[
               { label: 'Docs', href: '/docs' },
-              { label: '@rs-x/state-manager API', href: '/docs/state-manager-api' },
+              {
+                label: '@rs-x/state-manager API',
+                href: '/docs/state-manager-api',
+              },
               { label: entry.title },
             ]}
           />

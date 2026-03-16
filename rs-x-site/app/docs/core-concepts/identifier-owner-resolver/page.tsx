@@ -1,8 +1,11 @@
 import dedent from 'dedent';
-import Link from 'next/link';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
-import { CoreConceptPageLayout, type CoreConceptDoc } from '../_template/core-concept-page';
+import {
+  type CoreConceptDoc,
+  CoreConceptPageLayout,
+} from '../_template/core-concept-page';
 
 const exampleCode = dedent`
   import {
@@ -73,15 +76,15 @@ const doc: CoreConceptDoc = {
   whatItMeans: (
     <>
       <p>
-        When an expression like <code>a + b</code> is evaluated, each
-        identifier (<code>a</code>, <code>b</code>) must be resolved to an
-        owner — the object that contains it.{' '}
+        When an expression like <code>a + b</code> is evaluated, each identifier
+        (<code>a</code>, <code>b</code>) must be resolved to an owner — the
+        object that contains it.{' '}
         <Link href="/docs/iidentifier-owner-resolver">
           IIdentifierOwnerResolver
         </Link>{' '}
-        defines this contract:{' '}
-        <code>resolve(index, context)</code> returns the owning object or{' '}
-        <code>null</code> to pass to the next resolver in the list.
+        defines this contract: <code>resolve(index, context)</code> returns the
+        owning object or <code>null</code> to pass to the next resolver in the
+        list.
       </p>
       <p>
         <Link href="/docs/default-identifier-owner-resolver">
@@ -94,21 +97,26 @@ const doc: CoreConceptDoc = {
       <p>The default list, in priority order:</p>
       <ul>
         <li>
-          <Link href="/docs/property-owner-resolver">PropertyOwnerResolver</Link>{' '}
+          <Link href="/docs/property-owner-resolver">
+            PropertyOwnerResolver
+          </Link>{' '}
           — returns the context if it has the given property or field (including
           Date properties).
         </li>
         <li>
-          <Link href="/docs/array-index-owner-resolver">ArrayIndexOwnerResolver</Link>{' '}
-          — returns the array if the index is a valid numeric position within it.
+          <Link href="/docs/array-index-owner-resolver">
+            ArrayIndexOwnerResolver
+          </Link>{' '}
+          — returns the array if the index is a valid numeric position within
+          it.
         </li>
         <li>
-          <Link href="/docs/set-key-owner-resolver">SetKeyOwnerResolver</Link>{' '}
-          — returns the Set if it contains the given key.
+          <Link href="/docs/set-key-owner-resolver">SetKeyOwnerResolver</Link> —
+          returns the Set if it contains the given key.
         </li>
         <li>
-          <Link href="/docs/map-key-owner-resolver">MapKeyOwnerResolver</Link>{' '}
-          — returns the Map if it has the given key.
+          <Link href="/docs/map-key-owner-resolver">MapKeyOwnerResolver</Link> —
+          returns the Map if it has the given key.
         </li>
         <li>
           <Link href="/docs/global-identifier-owner-resolver">
@@ -125,8 +133,10 @@ const doc: CoreConceptDoc = {
     'RS-X is environment-agnostic. Adding a custom resolver lets you introduce new owner-lookup rules — for example, walking a component tree in a web-component framework — without changing core expression logic. Replace or reorder the default list with overrideMultiInjectServices.',
   keyPoints: [
     <>
-      <Link href="/docs/iidentifier-owner-resolver">IIdentifierOwnerResolver</Link>:{' '}
-      <code>resolve(index, context)</code> returns the owning{' '}
+      <Link href="/docs/iidentifier-owner-resolver">
+        IIdentifierOwnerResolver
+      </Link>
+      : <code>resolve(index, context)</code> returns the owning{' '}
       <code>object</code> or <code>null</code> to skip to the next resolver.
     </>,
     'DefaultIdentifierOwnerResolver iterates the list in registration order; the first non-null result wins.',

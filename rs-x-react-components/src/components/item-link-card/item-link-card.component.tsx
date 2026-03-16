@@ -25,7 +25,9 @@ export const ItemLinkCardContent: React.FC<IItemLinkCardContentProps> = ({
   return (
     <>
       <span className={titleClassName}>{title}</span>
-      {meta !== undefined ? <span className={metaClassName}>{meta}</span> : null}
+      {meta !== undefined ? (
+        <span className={metaClassName}>{meta}</span>
+      ) : null}
       {description !== undefined ? (
         <span className={descriptionClassName}>{description}</span>
       ) : null}
@@ -35,4 +37,3 @@ export const ItemLinkCardContent: React.FC<IItemLinkCardContentProps> = ({
     </>
   );
 };
-

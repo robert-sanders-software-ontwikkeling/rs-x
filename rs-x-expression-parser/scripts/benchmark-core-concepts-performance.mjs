@@ -173,14 +173,14 @@ const countNodes = (expression) => {
 
 const flushMicrotasks = async (rounds = 3) => {
   for (let i = 0; i < rounds; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
+     
     await Promise.resolve();
   }
 };
 
 const runTimer = async (runCount, warmupCount, action) => {
   for (let i = 0; i < warmupCount; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
+     
     await action();
   }
 
@@ -195,7 +195,7 @@ const runTimer = async (runCount, warmupCount, action) => {
     }
     const memoryBefore = process.memoryUsage();
     const started = performance.now();
-    // eslint-disable-next-line no-await-in-loop
+     
     await action();
     const ended = performance.now();
     await flushMicrotasks(1);
@@ -257,12 +257,12 @@ const results = {
     warmups,
     parseIterations,
     bindingRunOverrides: {
-      '5000': {
+      5000: {
         bind: 4,
         updateSingle: 20,
         updateBulk: 8,
       },
-      '10000': {
+      10000: {
         bind: 3,
         updateSingle: 12,
         updateBulk: 5,
@@ -318,15 +318,22 @@ for (const termCount of parseTermCounts) {
   await resetRuntimeState();
 
   let uniqueSeed = 0;
-  const parseAndCloneStats = await runTimer(runs.parse, warmups.parse, async () => {
-    for (let i = 0; i < parseIterations; i += 1) {
-      uniqueSeed += 1;
-      const uniqueExpression = makeExpressionForTermsWithSeed(termCount, uniqueSeed);
-      const result = expressionCache.create(uniqueExpression);
-      result.instance.dispose();
-      expressionCache.release(result.id);
-    }
-  });
+  const parseAndCloneStats = await runTimer(
+    runs.parse,
+    warmups.parse,
+    async () => {
+      for (let i = 0; i < parseIterations; i += 1) {
+        uniqueSeed += 1;
+        const uniqueExpression = makeExpressionForTermsWithSeed(
+          termCount,
+          uniqueSeed,
+        );
+        const result = expressionCache.create(uniqueExpression);
+        result.instance.dispose();
+        expressionCache.release(result.id);
+      }
+    },
+  );
 
   await resetRuntimeState();
 
@@ -387,7 +394,7 @@ for (const count of bindingCounts) {
       for (const expression of expressions) {
         expression.dispose();
       }
-    }
+    },
   );
 
   await resetRuntimeState();
@@ -403,7 +410,7 @@ for (const count of bindingCounts) {
       for (const expression of expressions) {
         expression.dispose();
       }
-    }
+    },
   );
 
   await resetRuntimeState();
@@ -469,7 +476,11 @@ const jsonOutputPath = path.resolve(
   reportsDirectory,
   `benchmark-${dateStamp}.json`,
 );
-await fs.writeFile(jsonOutputPath, `${JSON.stringify(results, null, 2)}\n`, 'utf-8');
+await fs.writeFile(
+  jsonOutputPath,
+  `${JSON.stringify(results, null, 2)}\n`,
+  'utf-8',
+);
 
 const markdownLines = [
   '# rs-x core concepts performance benchmark',

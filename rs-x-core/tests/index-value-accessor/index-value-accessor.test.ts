@@ -1,5 +1,5 @@
-import type { IIndexValueAccessor } from '../../lib/index-value-accessor/index-value-accessor.interface';
 import { IndexValueAccessor } from '../../lib/index-value-accessor/index-value-accessor';
+import type { IIndexValueAccessor } from '../../lib/index-value-accessor/index-value-accessor.interface';
 
 interface IAccessorMock extends IIndexValueAccessor<unknown, unknown> {
   applies: jest.Mock<boolean, [unknown, unknown]>;

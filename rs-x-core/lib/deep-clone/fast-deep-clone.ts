@@ -87,13 +87,11 @@ export class FastDeepClone implements IDeepClone {
       }
 
       const clonedBuffer = source.buffer.slice(0) as ArrayBufferLike;
-      return new (
-        source.constructor as new (
-          buffer: ArrayBufferLike,
-          byteOffset?: number,
-          length?: number,
-        ) => unknown
-      )(
+      return new (source.constructor as new (
+        buffer: ArrayBufferLike,
+        byteOffset?: number,
+        length?: number,
+      ) => unknown)(
         clonedBuffer,
         (source as { byteOffset: number }).byteOffset,
         (source as { length?: number }).length,

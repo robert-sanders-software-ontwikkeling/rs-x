@@ -1,9 +1,6 @@
 'use client';
 
-import {
-  DataTable,
-  type IDataTableColumn,
-} from '@rs-x/react-components';
+import { DataTable, type IDataTableColumn } from '@rs-x/react-components';
 
 export type DatePropertyTableRow = {
   property: string;

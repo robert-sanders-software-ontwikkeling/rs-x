@@ -154,8 +154,7 @@ export function ApiTabbedBrowser({
           {searchResults.length === 0 ? (
             <div className="docsSearchEmpty">
               <p className="cardText">
-                No results for{' '}
-                <span className="codeInline">{query}</span>.
+                No results for <span className="codeInline">{query}</span>.
               </p>
             </div>
           ) : (
@@ -233,9 +232,7 @@ export function ApiTabbedBrowser({
                     >
                       {section.heading && (
                         <h3 className="docsApiNamespaceTitle">
-                          <span className="codeInline">
-                            {section.heading}
-                          </span>
+                          <span className="codeInline">{section.heading}</span>
                           {section.entryCount !== undefined && (
                             <span className="docsApiModuleCount">
                               {section.entryCount} entries
@@ -246,10 +243,7 @@ export function ApiTabbedBrowser({
                       <ul className="docsApiLinkGrid">
                         {section.links.map((link) => (
                           <li key={link.href}>
-                            <Link
-                              className="docsApiLinkItem"
-                              href={link.href}
-                            >
+                            <Link className="docsApiLinkItem" href={link.href}>
                               <ItemLinkCardContent
                                 title={link.title}
                                 meta={link.meta}

@@ -1,7 +1,7 @@
-import { apiPackages } from './api-packages';
 import { coreApiItems } from './core-api/core-api.data';
-import { DocsPageClient } from './docs-page.client';
 import { stateManagerApiItems } from './state-manager-api/state-manager-api.data';
+import { apiPackages } from './api-packages';
+import { DocsPageClient } from './docs-page.client';
 
 export const metadata = {
   title: 'Docs',
@@ -28,6 +28,11 @@ const advancedLinks = [
     href: '/docs/modular-expressions',
     title: 'Modular expression internals',
     meta: 'Expression value-type extensions (same pattern as Promise/Observable support)',
+  },
+  {
+    href: '/docs/custom-data-types',
+    title: 'Custom data types',
+    meta: 'Teach rs-x to observe any class — observer, proxy, index accessor, DI wiring',
   },
 ];
 

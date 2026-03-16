@@ -23,8 +23,8 @@ import { StateChangeSubscriptionManager } from './state-change-subscription-mana
 import type { IObjectStateManager } from './object-state-manager.interface';
 import type {
   IContextChanged,
-  IStateEventListener,
   IStateChange,
+  IStateEventListener,
   IStateManager,
   IStateOptions,
 } from './state-manager.interface';
@@ -600,9 +600,8 @@ export class StateManager implements IStateManager {
     index: unknown,
     subscription: IStateEventSubscription,
   ): void {
-    let subscriptionsByIndex = this._stateEventSubscriptionsByContext.get(
-      context,
-    );
+    let subscriptionsByIndex =
+      this._stateEventSubscriptionsByContext.get(context);
     if (!subscriptionsByIndex) {
       subscriptionsByIndex = new Map();
       this._stateEventSubscriptionsByContext.set(context, subscriptionsByIndex);

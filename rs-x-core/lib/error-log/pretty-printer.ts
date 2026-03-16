@@ -141,9 +141,7 @@ export class PrettyPrinter {
               depth + 1,
               context,
             );
-            lines.push(
-              `${next}${this.formatKey(k)}: ${nested[0].trimStart()}`,
-            );
+            lines.push(`${next}${this.formatKey(k)}: ${nested[0].trimStart()}`);
             if (nested.length > 1) {
               lines.push(...nested.slice(1));
             }
@@ -317,7 +315,10 @@ export class PrettyPrinter {
     );
   }
 
-  private isMaxDepthReached(maxDepth: number | undefined, depth: number): boolean {
+  private isMaxDepthReached(
+    maxDepth: number | undefined,
+    depth: number,
+  ): boolean {
     return maxDepth !== undefined && depth > maxDepth;
   }
 

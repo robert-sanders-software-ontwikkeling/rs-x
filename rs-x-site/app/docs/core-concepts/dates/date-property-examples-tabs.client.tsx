@@ -155,7 +155,10 @@ export const DatePropertyExamplesTabs: React.FC<
         </button>
       </div>
 
-      <div key={activeTabValue} className="docsApiTabBody docsCollectionTabBody">
+      <div
+        key={activeTabValue}
+        className="docsApiTabBody docsCollectionTabBody"
+      >
         {activeTab.description ? (
           <p className="cardText">{activeTab.description}</p>
         ) : null}

@@ -71,6 +71,11 @@ const coreConceptLinks: DocsLinkItem[] = [
     meta: 'Supported node types, including internal-only nodes',
   },
   {
+    href: '/docs/core-concepts/functions',
+    title: 'Functions',
+    meta: 'Call methods and functions directly in expressions',
+  },
+  {
     href: '/docs/core-concepts/identifier-owner-resolver',
     title: 'Identifier owner resolver',
     meta: 'Pluggable strategy for resolving identifier owners',
@@ -94,6 +99,11 @@ const coreConceptLinks: DocsLinkItem[] = [
     href: '/docs/core-concepts/readonly-properties',
     title: 'Readonly properties',
     meta: 'Expose readonly values while updating them internally',
+  },
+  {
+    href: '/docs/core-concepts/side-effects',
+    title: 'Side effects',
+    meta: 'Run side-effect calls inline using the sequence expression',
   },
 ];
 
@@ -207,7 +217,10 @@ export function DocsPageClient({
                 {coreConceptLinks.map((link) => (
                   <li key={link.href}>
                     <Link className="docsApiLinkItem" href={link.href}>
-                      <ItemLinkCardContent title={link.title} meta={link.meta} />
+                      <ItemLinkCardContent
+                        title={link.title}
+                        meta={link.meta}
+                      />
                     </Link>
                   </li>
                 ))}
@@ -239,7 +252,10 @@ export function DocsPageClient({
                 {advancedLinks.map((link) => (
                   <li key={link.href}>
                     <Link className="docsApiLinkItem" href={link.href}>
-                      <ItemLinkCardContent title={link.title} meta={link.meta} />
+                      <ItemLinkCardContent
+                        title={link.title}
+                        meta={link.meta}
+                      />
                     </Link>
                   </li>
                 ))}

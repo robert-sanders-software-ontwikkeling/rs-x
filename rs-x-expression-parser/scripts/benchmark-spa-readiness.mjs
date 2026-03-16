@@ -84,14 +84,14 @@ function makeRowModels(count) {
 
 async function flushMicrotasks(rounds = 3) {
   for (let i = 0; i < rounds; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
+     
     await Promise.resolve();
   }
 }
 
 async function runTimer(runsCount, warmupCount, action) {
   for (let i = 0; i < warmupCount; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
+     
     await action();
   }
 
@@ -101,7 +101,7 @@ async function runTimer(runsCount, warmupCount, action) {
       global.gc();
     }
     const started = performance.now();
-    // eslint-disable-next-line no-await-in-loop
+     
     await action();
     const ended = performance.now();
     samples.push(ended - started);
@@ -272,8 +272,14 @@ const reportsDirectory = path.resolve(
 await fs.mkdir(reportsDirectory, { recursive: true });
 
 const dateStamp = new Date().toISOString().slice(0, 10);
-const resultsPath = path.resolve(reportsDirectory, `benchmark-${dateStamp}.json`);
-await fs.writeFile(resultsPath, `${JSON.stringify(results, null, 2)}\n`, 'utf-8');
+const resultsPath = path.resolve(
+  reportsDirectory,
+  `benchmark-${dateStamp}.json`,
+);
+await fs.writeFile(
+  resultsPath,
+  `${JSON.stringify(results, null, 2)}\n`,
+  'utf-8',
+);
 
 console.log(`\nSaved benchmark JSON to: ${resultsPath}`);
-

@@ -54,17 +54,17 @@ const groupedByModule = stateManagerApiItems.reduce<
 
 export const stateManagerApiModuleEntries: readonly StateManagerApiModuleEntry[] =
   Object.keys(groupedByModule)
-  .sort((a, b) => a.localeCompare(b))
-  .map((moduleName) => {
-    const items = [...groupedByModule[moduleName]].sort((a, b) =>
-      a.symbol.localeCompare(b.symbol),
-    );
-    return {
-      moduleName,
-      slug: slugify(moduleName),
-      items,
-    };
-  });
+    .sort((a, b) => a.localeCompare(b))
+    .map((moduleName) => {
+      const items = [...groupedByModule[moduleName]].sort((a, b) =>
+        a.symbol.localeCompare(b.symbol),
+      );
+      return {
+        moduleName,
+        slug: slugify(moduleName),
+        items,
+      };
+    });
 
 export const stateManagerApiModuleByPath = new Map(
   stateManagerApiModuleEntries.map((entry) => [entry.moduleName, entry]),
@@ -138,7 +138,9 @@ const unmatchedModules: string[] = [];
 
 for (const entry of stateManagerApiModuleEntries) {
   const moduleName = entry.moduleName;
-  const definition = groupDefinitions.find((group) => group.includes(moduleName));
+  const definition = groupDefinitions.find((group) =>
+    group.includes(moduleName),
+  );
   if (!definition) {
     unmatchedModules.push(moduleName);
     continue;

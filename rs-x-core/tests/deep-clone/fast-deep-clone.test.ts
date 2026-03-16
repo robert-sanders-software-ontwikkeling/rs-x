@@ -68,6 +68,8 @@ describe('FastDeepClone', () => {
     }
     const source = new Custom(10);
 
-    expect(() => createClone().clone(source)).toThrow('FastDeepCloneUnsupported');
+    expect(() => createClone().clone(source)).toThrow(
+      'FastDeepCloneUnsupported',
+    );
   });
 });

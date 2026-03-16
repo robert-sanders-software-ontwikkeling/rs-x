@@ -1,13 +1,12 @@
 import dedent from 'dedent';
 
-import { DocsBreadcrumbItem } from '../../../../../components/DocsBreadcrumbs';
+import { type DocsBreadcrumbItem } from '../../../../../components/DocsBreadcrumbs';
 import { DocsPageTemplate } from '../../../../../components/DocsPageTemplate';
 import { SyntaxCodeBlock } from '../../../../../components/SyntaxCodeBlock';
 import { ApiDocHeader } from '../../../components/api-doc-header';
 import { Card } from '../../../components/card';
-
-import { formatModuleLabel, moduleBySlug } from '../module-page.helpers';
 import { ModuleApiEntries } from '../module-api-entries';
+import { formatModuleLabel, moduleBySlug } from '../module-page.helpers';
 
 const entry = moduleBySlug.get('sequence-id')!;
 
@@ -77,35 +76,37 @@ export default function CoreApiModuleSequenceIdPage() {
     { label: 'Docs', href: '/docs' },
     { label: formatModuleLabel(entry.moduleName) },
   ];
-  const whatItDoes = hasMultipleEntries
-    ? (<>
+  const whatItDoes = hasMultipleEntries ? (
+    <>
       API entries in this module:{' '}
       <span className="codeInline">{entry.items.length}</span>
-
-    </>) : ''
+    </>
+  ) : (
+    ''
+  );
 
   return (
     <DocsPageTemplate>
       <ApiDocHeader
-        eyebrow='API Reference'
+        eyebrow="API Reference"
         name={formatModuleLabel(entry.moduleName)}
         whatItDoes={whatItDoes}
         breadcrumb={breadcrumb}
       />
 
-      <Card header='Current sequence-id implementation'>
+      <Card header="Current sequence-id implementation">
         <p className="cardText">
-          This module returns the same id for matching sequence payloads in
-          a specific context object. When the same context and sequence are
-          used again, rs-x reuses the same sequence-id handle.
+          This module returns the same id for matching sequence payloads in a
+          specific context object. When the same context and sequence are used
+          again, rs-x reuses the same sequence-id handle.
         </p>
         <p className="cardText">
-          <span className="codeInline">create(context, sequence)</span>{' '}
-          creates or reuses a handle.{' '}
-          <span className="codeInline">get(context, sequence)</span> only
-          reads an existing handle.{' '}
-          <span className="codeInline">release(context, id)</span> releases
-          one reference for that handle.
+          <span className="codeInline">create(context, sequence)</span> creates
+          or reuses a handle.{' '}
+          <span className="codeInline">get(context, sequence)</span> only reads
+          an existing handle.{' '}
+          <span className="codeInline">release(context, id)</span> releases one
+          reference for that handle.
         </p>
         <p className="cardText">
           The default singleton service is{' '}
@@ -115,22 +116,21 @@ export default function CoreApiModuleSequenceIdPage() {
             RsXCoreInjectionTokens.ISequenceIdFactory
           </span>
           . If you call <span className="codeInline">create</span>, call{' '}
-          <span className="codeInline">dispose()</span> on the returned
-          handle (or call <span className="codeInline">release</span>) when
-          finished to prevent memory leaks.
+          <span className="codeInline">dispose()</span> on the returned handle
+          (or call <span className="codeInline">release</span>) when finished to
+          prevent memory leaks.
         </p>
       </Card>
 
-      <Card header='Example: use ISequenceIdFactory'>
+      <Card header="Example: use ISequenceIdFactory">
         <SyntaxCodeBlock code={sequenceIdUsageCode} />
       </Card>
 
-      <Card header='Example: inject into constructor'>
+      <Card header="Example: inject into constructor">
         <SyntaxCodeBlock code={sequenceIdInjectionCode} />
       </Card>
 
       <ModuleApiEntries items={entry.items} />
-
     </DocsPageTemplate>
   );
 }

@@ -119,10 +119,14 @@ describe('StateManager tests', () => {
 
       const contextChanges: unknown[] = [];
       const stateChanges: IStateChange[] = [];
-      const unsubscribe = stateManager.subscribeStateEvents(model.nested, 'value', {
-        onStateChange: (change) => stateChanges.push(change),
-        onContextChanged: (change) => contextChanges.push(change.context),
-      });
+      const unsubscribe = stateManager.subscribeStateEvents(
+        model.nested,
+        'value',
+        {
+          onStateChange: (change) => stateChanges.push(change),
+          onContextChanged: (change) => contextChanges.push(change.context),
+        },
+      );
 
       const newNested = { value: 2 };
       stateManager.setState(model, 'nested', newNested, undefined);

@@ -20,13 +20,45 @@ const apiCode = dedent`
 `;
 
 const allowedGlobals = [
-  'Math', 'Date', 'Number', 'String', 'Boolean', 'BigInt', 'Symbol',
-  'Object', 'Array', 'RegExp', 'Map', 'Set', 'WeakMap', 'WeakSet',
-  'Promise', 'Error', 'TypeError', 'RangeError', 'ReferenceError',
-  'SyntaxError', 'URIError', 'AggregateError', 'JSON', 'Intl',
-  'Reflect', 'Proxy', 'parseInt', 'parseFloat', 'isNaN', 'isFinite',
-  'encodeURI', 'encodeURIComponent', 'decodeURI', 'decodeURIComponent',
-  'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'console',
+  'Math',
+  'Date',
+  'Number',
+  'String',
+  'Boolean',
+  'BigInt',
+  'Symbol',
+  'Object',
+  'Array',
+  'RegExp',
+  'Map',
+  'Set',
+  'WeakMap',
+  'WeakSet',
+  'Promise',
+  'Error',
+  'TypeError',
+  'RangeError',
+  'ReferenceError',
+  'SyntaxError',
+  'URIError',
+  'AggregateError',
+  'JSON',
+  'Intl',
+  'Reflect',
+  'Proxy',
+  'parseInt',
+  'parseFloat',
+  'isNaN',
+  'isFinite',
+  'encodeURI',
+  'encodeURIComponent',
+  'decodeURI',
+  'decodeURIComponent',
+  'setTimeout',
+  'clearTimeout',
+  'setInterval',
+  'clearInterval',
+  'console',
 ];
 
 const sourceHref = githubSourceHref(
@@ -69,7 +101,10 @@ export default function GlobalIdentifierOwnerResolverDocsPage() {
           </div>
         </div>
         <div className="docsApiActions">
-          <Link className="btn btnGhost" href="/docs/iidentifier-owner-resolver">
+          <Link
+            className="btn btnGhost"
+            href="/docs/iidentifier-owner-resolver"
+          >
             IIdentifierOwnerResolver <span aria-hidden="true">→</span>
           </Link>
         </div>
@@ -95,9 +130,7 @@ export default function GlobalIdentifierOwnerResolverDocsPage() {
 
         <article className="card docsApiCard">
           <h2 className="cardTitle">Allowed globals</h2>
-          <p className="cardText">
-            {allowedGlobals.join(', ')}
-          </p>
+          <p className="cardText">{allowedGlobals.join(', ')}</p>
           <p className="cardText">
             To allow additional globals, replace this resolver via{' '}
             <Link href="/docs/core-api/overrideMultiInjectServices">
@@ -107,7 +140,10 @@ export default function GlobalIdentifierOwnerResolverDocsPage() {
           </p>
         </article>
 
-        <aside className="qsCodeCard docsApiCode" aria-label="GlobalIdentifierOwnerResolver API">
+        <aside
+          className="qsCodeCard docsApiCode"
+          aria-label="GlobalIdentifierOwnerResolver API"
+        >
           <div className="qsCodeHeader">
             <div className="qsCodeTitle">API</div>
           </div>

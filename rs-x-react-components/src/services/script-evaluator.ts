@@ -1,8 +1,8 @@
 import { InjectionContainer, printValue, WaitForEvent } from '@rs-x/core';
 import {
   type IExpressionChangeTransactionManager,
-  RsXExpressionParserInjectionTokens,
   rsx,
+  RsXExpressionParserInjectionTokens,
 } from '@rs-x/expression-parser';
 import {
   IndexWatchRule,
@@ -58,9 +58,7 @@ export class ScriptEvaluator {
       // Evaluate function expression, then call it with api.
       // The expression is: (function(api){ ...user... })
       // We then immediately invoke it: (...) (api)
-      const factory = (0, eval)(wrapped) as (
-        a: typeof api,
-      ) => T | Promise<T>;
+      const factory = (0, eval)(wrapped) as (a: typeof api) => T | Promise<T>;
       const result = await factory(api);
 
       return {

@@ -149,11 +149,11 @@ xychart-beta
   bar [8.895, 27.063, 40.742]
 ```
 
-| Parses | Median ms | p95 ms | Ops/s |
-| --- | ---: | ---: | ---: |
-| 1,000 | 8.895 | 9.110 | 112,422 |
-| 5,000 | 27.063 | 32.112 | 184,754 |
-| 10,000 | 40.742 | 41.822 | 245,446 |
+| Parses | Median ms | p95 ms |   Ops/s |
+| ------ | --------: | -----: | ------: |
+| 1,000  |     8.895 |  9.110 | 112,422 |
+| 5,000  |    27.063 | 32.112 | 184,754 |
+| 10,000 |    40.742 | 41.822 | 245,446 |
 
 ### Bind (create + initial evaluate)
 
@@ -167,6 +167,7 @@ xychart-beta
 ```
 
 Legend:
+
 - line 1: unique expression per binding
 - line 2: cached expression string (`a + b`)
 
@@ -189,10 +190,10 @@ xychart-beta
 ```
 
 | Active bindings | Single update median ms | Single update p95 ms | Bulk update median ms |
-| --- | ---: | ---: | ---: |
-| 1,000 | 0.123 | 0.191 | 10.597 |
-| 3,000 | 0.092 | 0.131 | 32.773 |
-| 5,000 | 0.087 | 0.124 | 46.284 |
+| --------------- | ----------------------: | -------------------: | --------------------: |
+| 1,000           |                   0.123 |                0.191 |                10.597 |
+| 3,000           |                   0.092 |                0.131 |                32.773 |
+| 5,000           |                   0.087 |                0.124 |                46.284 |
 
 ## Before vs after (median ms)
 
@@ -229,12 +230,12 @@ xychart-beta
   line [10.597, 32.773, 46.284]
 ```
 
-| Metric | 1,000 | 3,000 | 5,000 |
-| --- | ---: | ---: | ---: |
-| Bind unique improvement | 59.8% | 80.1% | 86.5% |
-| Bind cached improvement | 66.3% | 79.4% | 85.7% |
+| Metric                    | 1,000 | 3,000 | 5,000 |
+| ------------------------- | ----: | ----: | ----: |
+| Bind unique improvement   | 59.8% | 80.1% | 86.5% |
+| Bind cached improvement   | 66.3% | 79.4% | 85.7% |
 | Single update improvement | 86.1% | 96.7% | 96.5% |
-| Bulk update improvement | 88.8% | 95.9% | 97.3% |
+| Bulk update improvement   | 88.8% | 95.9% | 97.3% |
 
 ## Parser pass delta (vs state+commit optimized run)
 
@@ -245,23 +246,23 @@ Comparison source:
 
 Positive `%` means faster (lower median ms).
 
-| Metric | Count | Before (ms) | After (ms) | Delta |
-| --- | ---: | ---: | ---: | ---: |
-| Parse | 1,000 | 10.131 | 8.613 | +15.0% |
-| Parse | 5,000 | 28.457 | 28.753 | -1.0% |
-| Parse | 10,000 | 44.399 | 39.179 | +11.8% |
-| Bind unique | 1,000 | 36.083 | 38.959 | -8.0% |
-| Bind unique | 3,000 | 122.775 | 137.400 | -11.9% |
-| Bind unique | 5,000 | 246.867 | 236.611 | +4.2% |
-| Bind cached | 1,000 | 28.126 | 28.873 | -2.7% |
-| Bind cached | 3,000 | 127.011 | 124.534 | +1.9% |
-| Bind cached | 5,000 | 233.404 | 221.921 | +4.9% |
-| Single update | 1,000 | 0.119 | 0.125 | -4.7% |
-| Single update | 3,000 | 0.093 | 0.103 | -11.3% |
-| Single update | 5,000 | 0.092 | 0.108 | -17.6% |
-| Bulk update | 1,000 | 8.902 | 9.953 | -11.8% |
-| Bulk update | 3,000 | 32.888 | 38.453 | -16.9% |
-| Bulk update | 5,000 | 47.161 | 56.738 | -20.3% |
+| Metric        |  Count | Before (ms) | After (ms) |  Delta |
+| ------------- | -----: | ----------: | ---------: | -----: |
+| Parse         |  1,000 |      10.131 |      8.613 | +15.0% |
+| Parse         |  5,000 |      28.457 |     28.753 |  -1.0% |
+| Parse         | 10,000 |      44.399 |     39.179 | +11.8% |
+| Bind unique   |  1,000 |      36.083 |     38.959 |  -8.0% |
+| Bind unique   |  3,000 |     122.775 |    137.400 | -11.9% |
+| Bind unique   |  5,000 |     246.867 |    236.611 |  +4.2% |
+| Bind cached   |  1,000 |      28.126 |     28.873 |  -2.7% |
+| Bind cached   |  3,000 |     127.011 |    124.534 |  +1.9% |
+| Bind cached   |  5,000 |     233.404 |    221.921 |  +4.9% |
+| Single update |  1,000 |       0.119 |      0.125 |  -4.7% |
+| Single update |  3,000 |       0.093 |      0.103 | -11.3% |
+| Single update |  5,000 |       0.092 |      0.108 | -17.6% |
+| Bulk update   |  1,000 |       8.902 |      9.953 | -11.8% |
+| Bulk update   |  3,000 |      32.888 |     38.453 | -16.9% |
+| Bulk update   |  5,000 |      47.161 |     56.738 | -20.3% |
 
 Interpretation:
 
@@ -278,14 +279,14 @@ Comparison source:
 
 Positive `%` in delta means latest is slower (higher median ms).
 
-| Metric | Count | Previous (ms) | Latest (ms) | Delta |
-| --- | ---: | ---: | ---: | ---: |
-| Single update | 1,000 | 0.122 | 0.123 | +1.0% |
-| Single update | 3,000 | 0.106 | 0.092 | -13.5% |
-| Single update | 5,000 | 0.104 | 0.087 | -16.2% |
-| Bulk update | 1,000 | 9.824 | 10.597 | +7.9% |
-| Bulk update | 3,000 | 34.549 | 32.773 | -5.1% |
-| Bulk update | 5,000 | 47.808 | 46.284 | -3.2% |
+| Metric        | Count | Previous (ms) | Latest (ms) |  Delta |
+| ------------- | ----: | ------------: | ----------: | -----: |
+| Single update | 1,000 |         0.122 |       0.123 |  +1.0% |
+| Single update | 3,000 |         0.106 |       0.092 | -13.5% |
+| Single update | 5,000 |         0.104 |       0.087 | -16.2% |
+| Bulk update   | 1,000 |         9.824 |      10.597 |  +7.9% |
+| Bulk update   | 3,000 |        34.549 |      32.773 |  -5.1% |
+| Bulk update   | 5,000 |        47.808 |      46.284 |  -3.2% |
 
 ## Conclusion for SPA framework viability
 
@@ -302,23 +303,23 @@ Comparison source:
 
 Positive `%` means latest is faster (lower median ms).
 
-| Metric | Count | Previous (ms) | Latest (ms) | Delta |
-| --- | ---: | ---: | ---: | ---: |
-| Parse | 1,000 | 8.820 | 8.808 | +0.1% |
-| Parse | 5,000 | 27.645 | 27.668 | -0.1% |
-| Parse | 10,000 | 42.084 | 38.589 | +8.3% |
-| Bind unique | 1,000 | 32.941 | 31.907 | +3.1% |
-| Bind unique | 3,000 | 113.485 | 109.663 | +3.4% |
-| Bind unique | 5,000 | 215.333 | 217.109 | -0.8% |
-| Bind cached | 1,000 | 26.500 | 24.769 | +6.5% |
-| Bind cached | 3,000 | 117.806 | 119.262 | -1.2% |
-| Bind cached | 5,000 | 212.290 | 212.993 | -0.3% |
-| Single update | 1,000 | 0.102 | 0.088 | +13.3% |
-| Single update | 3,000 | 0.076 | 0.065 | +15.5% |
-| Single update | 5,000 | 0.070 | 0.061 | +12.6% |
-| Bulk update | 1,000 | 8.557 | 8.098 | +5.4% |
-| Bulk update | 3,000 | 30.207 | 29.198 | +3.3% |
-| Bulk update | 5,000 | 45.312 | 42.457 | +6.3% |
+| Metric        |  Count | Previous (ms) | Latest (ms) |  Delta |
+| ------------- | -----: | ------------: | ----------: | -----: |
+| Parse         |  1,000 |         8.820 |       8.808 |  +0.1% |
+| Parse         |  5,000 |        27.645 |      27.668 |  -0.1% |
+| Parse         | 10,000 |        42.084 |      38.589 |  +8.3% |
+| Bind unique   |  1,000 |        32.941 |      31.907 |  +3.1% |
+| Bind unique   |  3,000 |       113.485 |     109.663 |  +3.4% |
+| Bind unique   |  5,000 |       215.333 |     217.109 |  -0.8% |
+| Bind cached   |  1,000 |        26.500 |      24.769 |  +6.5% |
+| Bind cached   |  3,000 |       117.806 |     119.262 |  -1.2% |
+| Bind cached   |  5,000 |       212.290 |     212.993 |  -0.3% |
+| Single update |  1,000 |         0.102 |       0.088 | +13.3% |
+| Single update |  3,000 |         0.076 |       0.065 | +15.5% |
+| Single update |  5,000 |         0.070 |       0.061 | +12.6% |
+| Bulk update   |  1,000 |         8.557 |       8.098 |  +5.4% |
+| Bulk update   |  3,000 |        30.207 |      29.198 |  +3.3% |
+| Bulk update   |  5,000 |        45.312 |      42.457 |  +6.3% |
 
 Interpretation:
 

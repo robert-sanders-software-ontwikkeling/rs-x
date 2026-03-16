@@ -1,14 +1,13 @@
 import dedent from 'dedent';
 import Link from 'next/link';
 
-import { DocsBreadcrumbItem } from '../../../../../components/DocsBreadcrumbs';
+import { type DocsBreadcrumbItem } from '../../../../../components/DocsBreadcrumbs';
 import { DocsPageTemplate } from '../../../../../components/DocsPageTemplate';
 import { SyntaxCodeBlock } from '../../../../../components/SyntaxCodeBlock';
 import { ApiDocHeader } from '../../../components/api-doc-header';
-
-import { formatModuleLabel, moduleBySlug } from '../module-page.helpers';
 import { Card } from '../../../components/card';
 import { ModuleApiEntries } from '../module-api-entries';
+import { formatModuleLabel, moduleBySlug } from '../module-page.helpers';
 
 const entry = moduleBySlug.get('deep-clone')!;
 
@@ -76,49 +75,49 @@ export default function CoreApiModuleDeepClonePage() {
     { label: 'Docs', href: '/docs' },
     { label: formatModuleLabel(entry.moduleName) },
   ];
-  const whatItDoes = hasMultipleEntries
-    ? (<>
+  const whatItDoes = hasMultipleEntries ? (
+    <>
       API entries in this module:{' '}
       <span className="codeInline">{entry.items.length}</span>
-
-    </>) : ''
+    </>
+  ) : (
+    ''
+  );
 
   return (
     <DocsPageTemplate>
       <ApiDocHeader
-        eyebrow='API Reference'
+        eyebrow="API Reference"
         name={formatModuleLabel(entry.moduleName)}
         whatItDoes={whatItDoes}
         breadcrumb={breadcrumb}
       />
 
-      <Card header='Current deep-clone implementation'>
+      <Card header="Current deep-clone implementation">
         <p className="cardText">
           <span className="codeInline">IDeepClone</span> resolves to{' '}
           <span className="codeInline">DefaultDeepClone</span>. It receives{' '}
-          <span className="codeInline">IDeepCloneList</span> via
-          multi-inject and tries each clone implementation in injected order
-          until one succeeds.
+          <span className="codeInline">IDeepCloneList</span> via multi-inject
+          and tries each clone implementation in injected order until one
+          succeeds.
         </p>
         <p className="cardText">
           In the default module configuration, list order is:
           <span className="codeInline"> StructuredDeepClone</span> then
-          <span className="codeInline"> LodashDeepClone</span>. If one
-          strategy throws, the next strategy is attempted.
+          <span className="codeInline"> LodashDeepClone</span>. If one strategy
+          throws, the next strategy is attempted.
         </p>
         <p className="cardText">
           <span className="codeInline">LodashDeepClone</span> unwraps
           proxy-wrapped values to their original targets using{' '}
-          <Link href="/docs/iproxy-registry">IProxyRegistry</Link>. During
-          clone traversal it also calls{' '}
+          <Link href="/docs/iproxy-registry">IProxyRegistry</Link>. During clone
+          traversal it also calls{' '}
           <span className="codeInline">IDeepCloneExcept</span> (default:
           <span className="codeInline"> DefaultDeepCloneExcept</span>) to
-          substitute special values, such as Promise/Observable with their
-          last resolved/emitted value.
+          substitute special values, such as Promise/Observable with their last
+          resolved/emitted value.
         </p>
-
       </Card>
-
 
       <Card header="Example: use IDeepClone service">
         <SyntaxCodeBlock code={deepCloneUsageCode} />
@@ -129,8 +128,8 @@ export default function CoreApiModuleDeepClonePage() {
           Register your own <span className="codeInline">IDeepClone</span>{' '}
           implementation and override{' '}
           <span className="codeInline">IDeepCloneList</span> order. Earlier
-          entries run first, so put domain-specific strategies before
-          generic fallbacks.
+          entries run first, so put domain-specific strategies before generic
+          fallbacks.
         </p>
       </Card>
 
@@ -139,7 +138,6 @@ export default function CoreApiModuleDeepClonePage() {
       </Card>
 
       <ModuleApiEntries items={entry.items} />
-
     </DocsPageTemplate>
   );
 }

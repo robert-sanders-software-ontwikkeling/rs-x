@@ -240,7 +240,13 @@ export class RxjsMonacoTypesLoader {
       export {};
     `;
 
-    ts.typescriptDefaults.addExtraLib(globalLib, RxjsMonacoTypesLoader.GLOBAL_LIB_URI);
-    ts.javascriptDefaults.addExtraLib(globalLib, RxjsMonacoTypesLoader.GLOBAL_LIB_URI);
+    ts.typescriptDefaults.addExtraLib(
+      globalLib,
+      RxjsMonacoTypesLoader.GLOBAL_LIB_URI,
+    );
+    ts.javascriptDefaults.addExtraLib(
+      globalLib,
+      RxjsMonacoTypesLoader.GLOBAL_LIB_URI,
+    );
   }
 }

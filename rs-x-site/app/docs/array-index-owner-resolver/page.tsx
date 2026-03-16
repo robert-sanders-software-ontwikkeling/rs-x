@@ -54,7 +54,10 @@ export default function ArrayIndexOwnerResolverDocsPage() {
           </div>
         </div>
         <div className="docsApiActions">
-          <Link className="btn btnGhost" href="/docs/iidentifier-owner-resolver">
+          <Link
+            className="btn btnGhost"
+            href="/docs/iidentifier-owner-resolver"
+          >
             IIdentifierOwnerResolver <span aria-hidden="true">→</span>
           </Link>
         </div>
@@ -79,7 +82,10 @@ export default function ArrayIndexOwnerResolverDocsPage() {
           </p>
         </article>
 
-        <aside className="qsCodeCard docsApiCode" aria-label="ArrayIndexOwnerResolver API">
+        <aside
+          className="qsCodeCard docsApiCode"
+          aria-label="ArrayIndexOwnerResolver API"
+        >
           <div className="qsCodeHeader">
             <div className="qsCodeTitle">API</div>
           </div>

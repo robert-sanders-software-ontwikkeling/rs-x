@@ -81,9 +81,8 @@ async function evaluateScript(scriptBody: string): Promise<EvalResult> {
   }
 
   try {
-    const result = await ScriptEvaluator.getInstance().evaluateScript<IExpression>(
-      body,
-    );
+    const result =
+      await ScriptEvaluator.getInstance().evaluateScript<IExpression>(body);
 
     if (!result.success) {
       return {

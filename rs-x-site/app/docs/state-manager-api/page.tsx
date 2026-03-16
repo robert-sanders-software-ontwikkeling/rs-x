@@ -1,6 +1,10 @@
+import {
+  ApiTabbedBrowser,
+  type ApiTabbedSymbol,
+  type ApiTabbedTab,
+} from '../../../components/ApiTabbedBrowser';
 import { DocsBreadcrumbs } from '../../../components/DocsBreadcrumbs';
 import { DocsPageTemplate } from '../../../components/DocsPageTemplate';
-import { ApiTabbedBrowser, type ApiTabbedSymbol, type ApiTabbedTab } from '../../../components/ApiTabbedBrowser';
 
 import {
   stateManagerApiGroupEntries,
@@ -32,7 +36,9 @@ export default function StateManagerApiDocsPage() {
 
   const symbols: ApiTabbedSymbol[] = stateManagerApiItems.map((item) => {
     const matchingGroup = stateManagerApiGroupEntries.find((g) =>
-      g.moduleEntries.some((mod) => mod.items.some((i) => i.symbol === item.symbol)),
+      g.moduleEntries.some((mod) =>
+        mod.items.some((i) => i.symbol === item.symbol),
+      ),
     );
     return {
       href: `/docs/state-manager-api/${item.symbol}`,

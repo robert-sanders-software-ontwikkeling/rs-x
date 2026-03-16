@@ -269,7 +269,9 @@ export const DataTable = <TData,>({
       ) : null}
 
       <div className={joinClassNames(['rsxDataTableWrap', tableWrapClassName])}>
-        <table className={joinClassNames(['rsxDataTableTable', tableClassName])}>
+        <table
+          className={joinClassNames(['rsxDataTableTable', tableClassName])}
+        >
           <thead>
             <tr>
               {columns.map((column) => {

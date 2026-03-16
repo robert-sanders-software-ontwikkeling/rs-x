@@ -67,8 +67,9 @@ export default function IIdentifierOwnerResolverDocsPage() {
         <article className="card docsApiCard">
           <h2 className="cardTitle">Description</h2>
           <p className="cardText">
-            Each identifier in an expression (e.g. <span className="codeInline">a</span>{' '}
-            in <span className="codeInline">a + b</span>) must be resolved to an
+            Each identifier in an expression (e.g.{' '}
+            <span className="codeInline">a</span> in{' '}
+            <span className="codeInline">a + b</span>) must be resolved to an
             owner — the object that holds it.{' '}
             <span className="codeInline">resolve(index, context)</span> returns
             that owner object, or <span className="codeInline">null</span> to
@@ -96,8 +97,9 @@ export default function IIdentifierOwnerResolverDocsPage() {
           </p>
           <p className="cardText">
             <strong>context</strong> — The object in which the identifier is
-            being looked up. May be <span className="codeInline">undefined</span>{' '}
-            when resolving root-level globals.
+            being looked up. May be{' '}
+            <span className="codeInline">undefined</span> when resolving
+            root-level globals.
           </p>
           <p className="cardText">
             Returns the owning <span className="codeInline">object</span> if
@@ -107,7 +109,10 @@ export default function IIdentifierOwnerResolverDocsPage() {
           </p>
         </article>
 
-        <aside className="qsCodeCard docsApiCode" aria-label="IIdentifierOwnerResolver API">
+        <aside
+          className="qsCodeCard docsApiCode"
+          aria-label="IIdentifierOwnerResolver API"
+        >
           <div className="qsCodeHeader">
             <div className="qsCodeTitle">API</div>
           </div>

@@ -92,7 +92,10 @@ export default function CoreApiDocsPage() {
                       className="docsApiLinkItem"
                       href={`/docs/core-api/${encodeURIComponent(item.symbol)}`}
                     >
-                      <ItemLinkCardContent title={item.symbol} meta={item.kind} />
+                      <ItemLinkCardContent
+                        title={item.symbol}
+                        meta={item.kind}
+                      />
                     </Link>
                   </li>
                 ))}

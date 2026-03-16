@@ -22,12 +22,7 @@ export interface IStateForObjectManager extends IKeyedInstanceFactory<
   IState,
   IValueKey
 > {
-  set(
-    key: unknown,
-    value: unknown,
-    watched: boolean,
-    ownerId: unknown,
-  ): void;
+  set(key: unknown, value: unknown, watched: boolean, ownerId: unknown): void;
 }
 
 export interface IObjectStateManager extends IKeyedInstanceFactory<

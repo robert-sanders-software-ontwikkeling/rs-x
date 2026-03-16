@@ -95,10 +95,7 @@ export abstract class AbstractExpression<
     if (!this._parent && this.transactionManager) {
       this._owner = settings.owner;
       this._releaseCommittedSubscription =
-        this.transactionManager.subscribeCommitted(
-          this,
-          this.onCommited,
-        );
+        this.transactionManager.subscribeCommitted(this, this.onCommited);
     }
 
     return this;

@@ -1,8 +1,11 @@
 import dedent from 'dedent';
-import Link from 'next/link';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
-import { CoreConceptPageLayout, type CoreConceptDoc } from '../_template/core-concept-page';
+import {
+  type CoreConceptDoc,
+  CoreConceptPageLayout,
+} from '../_template/core-concept-page';
 
 const asyncPromiseExampleCode = dedent`
   import { InjectionContainer } from '@rs-x/core';
@@ -351,7 +354,10 @@ export default function Page() {
       headerNote={
         <p className="cardText">
           For runtime internals, see the{' '}
-          <Link href="/docs/async-operations">advanced async operations page</Link>.
+          <Link href="/docs/async-operations">
+            advanced async operations page
+          </Link>
+          .
         </p>
       }
     />

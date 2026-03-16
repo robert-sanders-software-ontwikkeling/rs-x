@@ -355,6 +355,20 @@ describe('Statemanager demos', () => {
     ).toOutputAsync(expected);
   });
 
+  it('custom-data-types-expression.ts', async () => {
+    const expected = dedent`
+            Running demo: demo/src/rs-x-state-manager/custom-data-types-expression.ts
+            initial read: Chapter 1
+            before cell change: Welcome
+            after cell change: Once upon a time
+            before mutation: original text
+            after mutation: updated text
+        `;
+    await expect(() =>
+      runDemo('rs-x-state-manager/custom-data-types-expression.ts'),
+    ).toOutputAsync(expected);
+  });
+
   it('state-manager-customize.ts', async () => {
     const expected = dedent`
             Running demo: demo/src/rs-x-state-manager/state-manager-customize.ts

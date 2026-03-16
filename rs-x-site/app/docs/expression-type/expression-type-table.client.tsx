@@ -1,9 +1,6 @@
 'use client';
 
-import {
-  DataTable,
-  type IDataTableColumn,
-} from '@rs-x/react-components';
+import { DataTable, type IDataTableColumn } from '@rs-x/react-components';
 
 export type ExpressionTypeTableRow = {
   name: string;
@@ -35,9 +32,7 @@ const columns: IDataTableColumn<ExpressionTypeTableRow>[] = [
   },
 ];
 
-export function ExpressionTypeTable({
-  rows,
-}: ExpressionTypeTableProps) {
+export function ExpressionTypeTable({ rows }: ExpressionTypeTableProps) {
   return (
     <DataTable
       rows={rows}
