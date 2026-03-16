@@ -1,13 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
+
+import { ItemLinkCardContent } from '@rs-x/react-components';
 
 import {
-  type ITabItem,
-  ItemLinkCardContent,
-  Tabs,
-} from '@rs-x/react-components';
+  ApiTabbedBrowser,
+  type ApiTabbedSymbol,
+  type ApiTabbedTab,
+} from '../../components/ApiTabbedBrowser';
 
 type DocsLinkItem = {
   href: string;
@@ -69,6 +71,11 @@ const coreConceptLinks: DocsLinkItem[] = [
     meta: 'Supported node types, including internal-only nodes',
   },
   {
+    href: '/docs/core-concepts/identifier-owner-resolver',
+    title: 'Identifier owner resolver',
+    meta: 'Pluggable strategy for resolving identifier owners',
+  },
+  {
     href: '/docs/core-concepts/member-expressions',
     title: 'Member expressions',
     meta: 'Nested property and member access',
@@ -89,7 +96,6 @@ const coreConceptLinks: DocsLinkItem[] = [
     meta: 'Expose readonly values while updating them internally',
   },
 ];
-
 
 function namespaceMeta(name: string): {
   key: 'core' | 'state-manager' | 'expression-parser' | 'all';
@@ -137,93 +143,44 @@ function getApiEntryCount(links: DocsLinkItem[]): number | null {
   return counts.reduce((sum, current) => sum + current, 0);
 }
 
-function matches(link: DocsLinkItem, query: string): boolean {
-  const haystack = `${link.title} ${link.meta}`.toLowerCase();
-  return haystack.includes(query);
-}
-
-type SearchResult = {
-  href: string;
-  title: string;
-  meta: string;
-  category: string;
-};
-
 export function DocsPageClient({
   apiNamespaces,
   advancedLinks,
   apiSymbols,
 }: DocsPageClientProps) {
-  const [query, setQuery] = useState('');
-  const [selectedNamespace, setSelectedNamespace] = useState(
-    apiNamespaces[0]?.name ?? '',
+  const apiTabs = useMemo<ApiTabbedTab[]>(
+    () =>
+      apiNamespaces.map((namespace) => {
+        const meta = namespaceMeta(namespace.name);
+        return {
+          value: namespace.name,
+          label: meta.label,
+          packageName: meta.packageName,
+          npmUrl: meta.npmUrl,
+          moduleCount: namespace.moduleCount,
+          apiEntryCount:
+            namespace.apiEntryCount ??
+            getApiEntryCount(namespace.links) ??
+            namespace.links.length,
+          sections: [{ links: namespace.links }],
+        };
+      }),
+    [apiNamespaces],
   );
-  const normalized = query.trim().toLowerCase();
-  const isSearching = normalized.length > 0;
 
-  const allSearchResults = useMemo<SearchResult[]>(() => {
-    if (!normalized) return [];
-    const results: SearchResult[] = [];
-    for (const link of coreConceptLinks) {
-      if (matches(link, normalized)) {
-        results.push({ ...link, category: 'Core concepts' });
-      }
-    }
-    for (const namespace of apiNamespaces) {
-      for (const link of namespace.links) {
-        if (matches(link, normalized)) {
-          results.push({ ...link, category: namespaceMeta(namespace.name).label });
-        }
-      }
-    }
-    for (const symbol of apiSymbols) {
-      const haystack = `${symbol.title} ${symbol.description} ${symbol.kind}`.toLowerCase();
-      if (haystack.includes(normalized)) {
-        results.push({
-          href: symbol.href,
-          title: symbol.title,
-          meta: `${symbol.kind} · ${symbol.description}`,
-          category: symbol.category,
-        });
-      }
-    }
-    for (const link of advancedLinks) {
-      if (matches(link, normalized)) {
-        results.push({ ...link, category: 'Advanced' });
-      }
-    }
-    return results;
-  }, [apiNamespaces, advancedLinks, apiSymbols, normalized]);
-
-  const filteredApiNamespaces = useMemo(() => {
-    return apiNamespaces;
-  }, [apiNamespaces]);
-
-  const visibleNamespaces = filteredApiNamespaces.filter(
-    (namespace) => namespace.name === selectedNamespace,
+  const apiTabbedSymbols = useMemo<ApiTabbedSymbol[]>(
+    () =>
+      apiSymbols.map((sym) => ({
+        href: sym.href,
+        title: sym.title,
+        description: sym.description,
+        kind: sym.kind,
+        tabValue: apiNamespaces.find((ns) =>
+          ns.links.some((l) => l.href === sym.href),
+        )?.name,
+      })),
+    [apiSymbols, apiNamespaces],
   );
-  const activeNamespace = visibleNamespaces[0];
-  const activeNamespaceMeta = activeNamespace
-    ? namespaceMeta(activeNamespace.name)
-    : { key: 'all' as const, label: '', packageName: '' };
-  const activeModuleCount = activeNamespace
-    ? (activeNamespace.moduleCount ?? activeNamespace.links.length)
-    : 0;
-  const activeApiEntryCount = activeNamespace
-    ? (activeNamespace.apiEntryCount ??
-      getApiEntryCount(activeNamespace.links) ??
-      activeNamespace.links.length)
-    : null;
-  const apiPackageTabs = useMemo<ITabItem<string>[]>(() => {
-    return apiNamespaces.map((namespace) => {
-      const tabMeta = namespaceMeta(namespace.name);
-      return {
-        value: namespace.name,
-        label: tabMeta.label,
-        title: tabMeta.packageName,
-      };
-    });
-  }, [apiNamespaces]);
 
   return (
     <main id="content" className="main">
@@ -260,137 +217,14 @@ export function DocsPageClient({
             <article className="card">
               <p className="docsCardEyebrow docsCardEyebrowApi">API</p>
               <h2 className="cardTitle">API reference</h2>
-
-              <div className="docsSearchBar docsSearchBarInCard">
-                <div className="docsSearchPanelHeader">
-                  <label className="docsSearchLabel" htmlFor="docs-search">
-                    API search
-                  </label>
-                </div>
-                <input
-                  id="docs-search"
-                  className="docsSearchInput"
-                  type="search"
-                  placeholder="Type a symbol, module, or topic..."
-                  value={query}
-                  onChange={(event) => {
-                    setQuery(event.target.value);
-                  }}
-                />
-              </div>
-
-              {isSearching ? (
-                <div role="status" aria-live="polite">
-                  {allSearchResults.length === 0 ? (
-                    <div className="docsSearchEmpty">
-                      <p className="cardText">
-                        No results found for{' '}
-                        <span className="codeInline">{query}</span>.
-                      </p>
-                    </div>
-                  ) : (
-                    <ul className="docsApiLinkGrid" aria-label="Search results">
-                      {allSearchResults.map((result) => (
-                        <li key={result.href}>
-                          <Link className="docsApiLinkItem" href={result.href}>
-                            <ItemLinkCardContent
-                              title={result.title}
-                              meta={`${result.category} — ${result.meta}`}
-                            />
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ) : (
-                <div
-                  className="docsApiTabbedShell"
-                  data-api-package={activeNamespaceMeta.key}
-                >
-                  <Tabs
-                    unstyled
-                    ariaLabel="API package tabs"
-                    persistKey="docs.api-packages"
-                    items={apiPackageTabs}
-                    value={selectedNamespace}
-                    onValueChange={setSelectedNamespace}
-                    listClassName="docsApiPackageTabs"
-                    tabClassName="docsApiPackageTab"
-                    activeTabClassName="isActive"
-                    labelClassName="docsApiPackageTabLabel"
-                  />
-
-                  <div className="docsApiTabBody">
-                    {activeNamespace && (
-                      <div className="docsApiTabHeading">
-                        {activeNamespaceMeta.npmUrl ? (
-                          <a
-                            className="docsApiPackageMetaLink"
-                            href={activeNamespaceMeta.npmUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {activeNamespaceMeta.packageName}{' '}
-                            <span aria-hidden="true">↗</span>
-                          </a>
-                        ) : (
-                          <span className="docsApiPackageMetaText">
-                            {activeNamespaceMeta.packageName}
-                          </span>
-                        )}
-                        <div className="docsApiTabStats">
-                          <span className="docsApiStatChip">
-                            {activeModuleCount} modules
-                          </span>
-                          <span className="docsApiStatChip">
-                            {activeApiEntryCount === null
-                              ? `${activeNamespace.links.length} API entries`
-                              : `${activeApiEntryCount} API entries`}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="docsApiNamespaceList" aria-label="API docs">
-                      {visibleNamespaces.map((namespace) => (
-                        <section
-                          key={namespace.name}
-                          className="docsApiNamespace"
-                        >
-                          {!activeNamespace ||
-                          namespace.name !== activeNamespace.name ? (
-                            <h3 className="docsApiNamespaceTitle">
-                              {namespace.href ? (
-                                <Link href={namespace.href}>
-                                  {namespace.name}
-                                </Link>
-                              ) : (
-                                namespace.name
-                              )}
-                            </h3>
-                          ) : null}
-                          <ul className="docsApiLinkGrid">
-                            {namespace.links.map((link) => (
-                              <li key={link.href}>
-                                <Link
-                                  className="docsApiLinkItem"
-                                  href={link.href}
-                                >
-                                  <ItemLinkCardContent
-                                    title={link.title}
-                                    meta={link.meta}
-                                  />
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
-                        </section>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
+              <ApiTabbedBrowser
+                tabs={apiTabs}
+                symbols={apiTabbedSymbols}
+                searchId="docs-search"
+                searchPlaceholder="Type a symbol, module, or topic..."
+                persistKey="docs.api-packages"
+                ariaLabel="API package tabs"
+              />
             </article>
 
             <article className="card">

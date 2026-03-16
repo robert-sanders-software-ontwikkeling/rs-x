@@ -2,7 +2,6 @@ import { coreApiItems } from './core-api/core-api.data';
 import {
   stateManagerApiGroupEntries,
   stateManagerApiItems,
-  stateManagerApiModuleEntries,
 } from './state-manager-api/state-manager-api.helpers';
 
 export type DocsLinkItem = {
@@ -85,13 +84,48 @@ const expressionParserLinks: DocsLinkItem[] = [
     title: 'Tracker manager',
     meta: 'Track history streams',
   },
+  {
+    href: '/docs/iidentifier-owner-resolver',
+    title: 'IIdentifierOwnerResolver',
+    meta: 'Identifier owner resolver contract',
+  },
+  {
+    href: '/docs/default-identifier-owner-resolver',
+    title: 'DefaultIdentifierOwnerResolver',
+    meta: 'Default list-iterating owner resolver',
+  },
+  {
+    href: '/docs/property-owner-resolver',
+    title: 'PropertyOwnerResolver',
+    meta: 'Property / field owner lookup',
+  },
+  {
+    href: '/docs/array-index-owner-resolver',
+    title: 'ArrayIndexOwnerResolver',
+    meta: 'Array index owner lookup',
+  },
+  {
+    href: '/docs/set-key-owner-resolver',
+    title: 'SetKeyOwnerResolver',
+    meta: 'Set membership owner lookup',
+  },
+  {
+    href: '/docs/map-key-owner-resolver',
+    title: 'MapKeyOwnerResolver',
+    meta: 'Map key owner lookup',
+  },
+  {
+    href: '/docs/global-identifier-owner-resolver',
+    title: 'GlobalIdentifierOwnerResolver',
+    meta: 'Built-in globals (Math, Date, console…)',
+  },
 ];
 
 const stateManagerLinks: DocsLinkItem[] = [
   ...stateManagerApiGroupEntries.map((group) => ({
-    href: group.href,
+    href: `/docs/state-manager-api#${group.key}`,
     title: group.title,
-    meta: `${group.moduleCount} modules · ${group.apiEntryCount} API entries`,
+    meta: `${group.apiEntryCount} API entries`,
   })),
 ];
 
@@ -112,7 +146,6 @@ export const apiPackages: ApiPackageConfig[] = [
     href: '/docs/state-manager-api',
     description: 'Observers, proxy pairs, and state change tracking services.',
     links: stateManagerLinks,
-    moduleCount: stateManagerApiModuleEntries.length,
     apiEntryCount: stateManagerApiItems.length,
   },
   {

@@ -960,6 +960,8 @@ html[data-theme='dark'] .headerGetStartedCta:hover {
 }
 
 .docsLandingSection .docsApiPackageTabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   padding: 0.18rem;
   border-radius: 12px;
   background: color-mix(in srgb, var(--surface-2) 64%, var(--surface-solid));
@@ -1041,6 +1043,7 @@ html[data-theme='dark'] .headerGetStartedCta:hover {
   box-shadow: none;
 }
 
+
 .docsSearchPanelHeader {
   display: grid;
   gap: 0.15rem;
@@ -1053,7 +1056,7 @@ html[data-theme='dark'] .headerGetStartedCta:hover {
   color: var(--muted);
   font-size: var(--fs-0);
   font-weight: 800;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -1147,10 +1150,6 @@ html[data-theme='dark'] .docsLandingSection .docsCards .card {
   margin-top: var(--sp-5);
 }
 
-.docsApiTabBody .docsApiNamespaceList {
-  margin-top: var(--sp-2);
-}
-
 .docsApiTabBody .docsApiLinkGrid {
   margin-top: var(--sp-3);
 }
@@ -1183,8 +1182,10 @@ html[data-theme='dark'] .docsLandingSection .docsCards .card {
 }
 
 .docsApiPackageTabs {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
   gap: 0.38rem;
   padding: 0 0 var(--sp-2);
   border-bottom: 0;
@@ -1521,9 +1522,9 @@ html[data-theme='dark'] .docsLandingSection .docsCards .card {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.94rem;
-  font-weight: 700;
-  color: color-mix(in srgb, var(--text) 72%, var(--muted));
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--muted);
   text-decoration: none;
   letter-spacing: 0;
 }
@@ -1546,28 +1547,15 @@ html[data-theme='dark'] .docsLandingSection .docsCards .card {
   border-radius: 999px;
   border: 1px solid var(--border-soft);
   background: color-mix(in srgb, var(--surface-2) 82%, var(--surface-solid));
-  color: color-mix(in srgb, var(--text) 82%, var(--muted));
-  padding: 0.26rem 0.6rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
-.docsApiTabBody .docsApiNamespaceList {
-  margin-top: 0;
+  color: var(--muted);
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .docsApiTabBody .docsApiLinkItem {
-  border: 0;
-  background: transparent;
-  box-shadow: none;
   min-height: 70px;
   padding: 0.66rem 0.78rem;
-}
-
-.docsApiTabBody .docsApiLinkItem:hover {
-  background: transparent;
-  border: 0;
-  box-shadow: none;
 }
 
 .coreModuleSymbols {
@@ -2862,6 +2850,7 @@ html[data-theme='dark'] .expressionTypesTable thead th {
   font-size: clamp(2rem, 3.1vw, 2.75rem);
   line-height: 1.08;
   letter-spacing: -0.04em;
+  white-space: nowrap;
 }
 
 .docsApiInterface {
@@ -3004,6 +2993,14 @@ html[data-theme='dark'] .expressionTypesTable thead th {
 .docsApiCard > .cardTitle:not(:first-child),
 .docsApiCard > .coreInlineCodeTitle:not(:first-child) {
   margin-top: var(--sp-6);
+}
+
+.docsApiModuleCount {
+  font-size: 0.6rem;
+  font-weight: 400;
+  color: color-mix(in srgb, var(--muted) 50%, transparent);
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 
@@ -3908,7 +3905,7 @@ html[data-theme='dark'] .docsApiSection .advancedTopicList {
     grid-template-columns: 1fr;
   }
 
-  .docsApiPackageTabs {
+  .docsLandingSection .docsApiPackageTabs {
     grid-template-columns: 1fr;
   }
 

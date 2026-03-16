@@ -38,7 +38,6 @@ export default function CoreApiDocsPage() {
           <DocsBreadcrumbs
             items={[
               { label: 'Docs', href: '/docs' },
-              { label: 'API reference', href: '/docs/api' },
               { label: '@rs-x/core API' },
             ]}
           />

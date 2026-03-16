@@ -1,23 +1,48 @@
-import Link from 'next/link';
-
-import { ItemLinkCardContent } from '@rs-x/react-components';
-
 import { DocsBreadcrumbs } from '../../../components/DocsBreadcrumbs';
 import { DocsPageTemplate } from '../../../components/DocsPageTemplate';
+import { ApiTabbedBrowser, type ApiTabbedSymbol, type ApiTabbedTab } from '../../../components/ApiTabbedBrowser';
 
 import {
   stateManagerApiGroupEntries,
   stateManagerApiItems,
-  stateManagerApiModuleEntries,
 } from './state-manager-api.helpers';
 
 export const metadata = {
-  title: '@rs-x/state-manager API',
+  title: 'State-manager API',
   description:
     'Complete exported API inventory for @rs-x/state-manager grouped by capability.',
 };
 
 export default function StateManagerApiDocsPage() {
+  const tabs: ApiTabbedTab[] = stateManagerApiGroupEntries.map((group) => ({
+    value: group.key,
+    label: group.title,
+    sections: [
+      {
+        links: group.moduleEntries.flatMap((mod) =>
+          mod.items.map((item) => ({
+            href: `/docs/state-manager-api/${item.symbol}`,
+            title: item.symbol,
+            meta: item.kind,
+          })),
+        ),
+      },
+    ],
+  }));
+
+  const symbols: ApiTabbedSymbol[] = stateManagerApiItems.map((item) => {
+    const matchingGroup = stateManagerApiGroupEntries.find((g) =>
+      g.moduleEntries.some((mod) => mod.items.some((i) => i.symbol === item.symbol)),
+    );
+    return {
+      href: `/docs/state-manager-api/${item.symbol}`,
+      title: item.symbol,
+      description: item.description,
+      kind: item.kind,
+      tabValue: matchingGroup?.key,
+    };
+  });
+
   return (
     <DocsPageTemplate>
       <div className="docsApiHeader">
@@ -25,54 +50,27 @@ export default function StateManagerApiDocsPage() {
           <DocsBreadcrumbs
             items={[
               { label: 'Docs', href: '/docs' },
-              { label: 'API reference', href: '/docs/api' },
-              { label: '@rs-x/state-manager API' },
+              { label: 'State-manager API' },
             ]}
           />
           <p className="docsApiEyebrow">API Reference</p>
-          <h1 className="sectionTitle">@rs-x/state-manager API</h1>
+          <h1 className="sectionTitle">State-manager API</h1>
           <p className="sectionLead">
             Browse exported API entries from{' '}
-            <span className="codeInline">@rs-x/state-manager</span>, grouped by
-            capability area.
+            <span className="codeInline">@rs-x/state-manager</span>.
           </p>
-        </div>
-        <div className="docsApiActions">
-          <Link className="btn btnGhost" href="/docs/core-api">
-            @rs-x/core <span aria-hidden="true">→</span>
-          </Link>
-          <Link className="btn btnGhost" href="/docs/api/expression-parser">
-            @rs-x/expression-parser <span aria-hidden="true">→</span>
-          </Link>
-          <Link className="btn btnGhost" href="/docs/index-watch-rule">
-            IndexWatchRule docs <span aria-hidden="true">→</span>
-          </Link>
         </div>
       </div>
 
       <article className="card docsApiCard">
-        <h2 className="cardTitle">Module groups</h2>
-        <p className="cardText">
-          Total API entries: <span className="codeInline">{stateManagerApiItems.length}</span>. Modules:{' '}
-          <span className="codeInline">{stateManagerApiModuleEntries.length}</span>. Groups:{' '}
-          <span className="codeInline">{stateManagerApiGroupEntries.length}</span>.
-        </p>
-        <ul className="docsApiLinkGrid">
-          {stateManagerApiGroupEntries.map((entry) => (
-            <li key={entry.key}>
-              <Link
-                className="docsApiLinkItem"
-                href={entry.href}
-              >
-                <ItemLinkCardContent
-                  title={entry.title}
-                  meta={`${entry.moduleCount} modules · ${entry.apiEntryCount} API entries`}
-                  description={entry.description}
-                />
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <ApiTabbedBrowser
+          tabs={tabs}
+          symbols={symbols}
+          searchId="state-manager-search"
+          searchPlaceholder="Type a symbol, kind, or module..."
+          persistKey="state-manager-api.groups"
+          ariaLabel="State manager group tabs"
+        />
       </article>
     </DocsPageTemplate>
   );
