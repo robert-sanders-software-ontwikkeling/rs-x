@@ -1,5 +1,7 @@
 import { apiPackages } from './api-packages';
+import { coreApiItems } from './core-api/core-api.data';
 import { DocsPageClient } from './docs-page.client';
+import { stateManagerApiItems } from './state-manager-api/state-manager-api.data';
 
 export const metadata = {
   title: 'Docs',
@@ -29,8 +31,29 @@ const advancedLinks = [
   },
 ];
 
+const apiSymbols = [
+  ...coreApiItems.map((item) => ({
+    href: `/docs/core-api/${item.symbol}`,
+    title: item.symbol,
+    description: item.description,
+    kind: item.kind,
+    category: 'Core API',
+  })),
+  ...stateManagerApiItems.map((item) => ({
+    href: `/docs/state-manager-api/${item.symbol}`,
+    title: item.symbol,
+    description: item.description,
+    kind: item.kind,
+    category: 'State Manager',
+  })),
+];
+
 export default function DocsPage() {
   return (
-    <DocsPageClient apiNamespaces={apiPackages} advancedLinks={advancedLinks} />
+    <DocsPageClient
+      apiNamespaces={apiPackages}
+      advancedLinks={advancedLinks}
+      apiSymbols={apiSymbols}
+    />
   );
 }

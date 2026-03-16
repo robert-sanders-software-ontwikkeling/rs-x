@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { InjectionContainer } from '@rs-x/core';
-import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
+import { rsx, RsXExpressionParserInjectionTokens, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 type DemoResult = {
   rows: number;
@@ -18,10 +18,12 @@ type DemoResult = {
 let loadModulePromise: Promise<void> | undefined;
 
 function ensureExpressionModuleLoaded(): Promise<void> {
+
+  if(InjectionContainer.isBound(RsXExpressionParserInjectionTokens.IExpressionParser)) {
+    return Promise.resolve()
+  }
   if (!loadModulePromise) {
-    loadModulePromise = InjectionContainer.load(RsXExpressionParserModule).then(
-      () => undefined,
-    );
+    loadModulePromise = InjectionContainer.load(RsXExpressionParserModule);
   }
   return loadModulePromise;
 }
