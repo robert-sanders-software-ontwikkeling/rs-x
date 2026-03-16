@@ -84,14 +84,12 @@ function makeRowModels(count) {
 
 async function flushMicrotasks(rounds = 3) {
   for (let i = 0; i < rounds; i += 1) {
-     
     await Promise.resolve();
   }
 }
 
 async function runTimer(runsCount, warmupCount, action) {
   for (let i = 0; i < warmupCount; i += 1) {
-     
     await action();
   }
 
@@ -101,7 +99,7 @@ async function runTimer(runsCount, warmupCount, action) {
       global.gc();
     }
     const started = performance.now();
-     
+
     await action();
     const ended = performance.now();
     samples.push(ended - started);

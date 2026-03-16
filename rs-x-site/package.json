@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "copy:monaco-dts": "node ../scripts/copy-monaco-dts.mjs rs-x-site",
+    "prod": "pnpm run build && next start",
     "dev": "pnpm run copy:monaco-dts && next dev",
     "build": "pnpm run copy:monaco-dts && next build",
     "start": "next start",

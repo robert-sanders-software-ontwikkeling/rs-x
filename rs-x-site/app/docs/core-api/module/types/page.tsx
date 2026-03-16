@@ -24,6 +24,7 @@ export default function CoreApiModuleTypesPage() {
       <ApiDocHeader
         eyebrow="API Reference"
         name={formatModuleLabel(entry.moduleName)}
+        whatItDoes="Shared type definitions used across the core package."
         breadcrumb={breadcrumb}
       />
       <ModuleApiEntries items={entry.items} />

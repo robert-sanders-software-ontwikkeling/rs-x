@@ -24,6 +24,7 @@ export default function CoreApiModuleRsXCoreModulePage() {
       <ApiDocHeader
         eyebrow="API Reference"
         name={formatModuleLabel(entry.moduleName)}
+        whatItDoes="DI module that registers all core services and factories."
         breadcrumb={breadcrumb}
       />
       <ModuleApiEntries items={entry.items} />

@@ -173,14 +173,12 @@ const countNodes = (expression) => {
 
 const flushMicrotasks = async (rounds = 3) => {
   for (let i = 0; i < rounds; i += 1) {
-     
     await Promise.resolve();
   }
 };
 
 const runTimer = async (runCount, warmupCount, action) => {
   for (let i = 0; i < warmupCount; i += 1) {
-     
     await action();
   }
 
@@ -195,7 +193,7 @@ const runTimer = async (runCount, warmupCount, action) => {
     }
     const memoryBefore = process.memoryUsage();
     const started = performance.now();
-     
+
     await action();
     const ended = performance.now();
     await flushMicrotasks(1);

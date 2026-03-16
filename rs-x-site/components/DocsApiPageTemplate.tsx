@@ -5,16 +5,14 @@ import {
   type ApiItem,
   type ApiMember,
   createQuickFacts,
-  plainMemberName
+  plainMemberName,
 } from '../app/docs/components/api-member';
 import { Card } from '../app/docs/components/card';
 import { DisposeCard } from '../app/docs/components/dispose-card';
 import { MembersCard } from '../app/docs/components/members-card';
 import { QuickFacts } from '../app/docs/components/quick-facts';
 import { WhenToUse } from '../app/docs/components/when-to-user';
-import {
-  renderTextWithCoreLinks
-} from '../lib/type-doc-links';
+import { renderTextWithCoreLinks } from '../lib/type-doc-links';
 
 import { type ApiParameterItem, ApiParameterList } from './ApiParameterList';
 import { type DocsBreadcrumbItem } from './DocsBreadcrumbs';

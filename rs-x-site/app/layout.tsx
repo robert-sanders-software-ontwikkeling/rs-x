@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 
 import { SiteFooter } from '../components/Footer';
 import { NavigationHistoryTracker } from '../components/NavigationHistoryTracker';
@@ -43,7 +44,9 @@ export default function RootLayout({
         </a>
 
         <div className="appShell">
-          <NavigationHistoryTracker />
+          <Suspense>
+            <NavigationHistoryTracker />
+          </Suspense>
           <SiteHeader />
           {children}
           <SiteFooter />

@@ -24,6 +24,7 @@ export default function CoreApiModuleGuidPage() {
       <ApiDocHeader
         eyebrow="API Reference"
         name={formatModuleLabel(entry.moduleName)}
+        whatItDoes="GUID factory for generating unique identifiers."
         breadcrumb={breadcrumb}
       />
       <ModuleApiEntries items={entry.items} />
