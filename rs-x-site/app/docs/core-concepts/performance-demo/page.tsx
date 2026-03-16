@@ -43,14 +43,28 @@ export default function PerformanceDemoPage() {
         <article className="card docsApiCard">
           <h2 className="cardTitle">How this demo works</h2>
           <p className="cardText">
-            Each column has one expression string. rs-x parses each unique
-            column expression once, then clones it for each row binding.
+            Each column uses the expression{' '}
+            <span className="codeInline">v[i] + v[i+1]</span>: column 0
+            computes <span className="codeInline">v0 + v1</span>, column 1
+            computes <span className="codeInline">v1 + v2</span>, and so on.
+            Each row model holds numeric fields{' '}
+            <span className="codeInline">v0</span> through{' '}
+            <span className="codeInline">v[columns]</span>.
           </p>
           <p className="cardText">
-            Measured phases: parse ({' '}
-            <span className="codeInline">y</span> expressions), bind ({' '}
-            <span className="codeInline">x * y</span> bindings), single-row
-            update, and bulk update.
+            rs-x parses each unique column expression once, caches the tree,
+            then clones it for every row binding. So parsing is{' '}
+            <span className="codeInline">columns</span> operations regardless
+            of row count, and binding is{' '}
+            <span className="codeInline">rows × columns</span> operations.
+          </p>
+          <p className="cardText">
+            Rows and columns change in steps ({' '}
+            <span className="codeInline">+100</span> rows,{' '}
+            <span className="codeInline">+5</span> columns) up to{' '}
+            <span className="codeInline">2,000 rows × 20 columns</span>.
+            After the run all rows of computed expression values are shown in a
+            scrollable table so you can verify the bindings are live.
           </p>
         </article>
 

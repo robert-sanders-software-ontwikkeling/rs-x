@@ -5,6 +5,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { InjectionContainer } from '@rs-x/core';
 import { rsx, RsXExpressionParserInjectionTokens, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
+const MAX_ROWS = 2000;
+const MAX_COLUMNS = 20;
+const ROW_STEP = 100;
+const COL_STEP = 5;
+
+type CellValue = number | null;
+
 type DemoResult = {
   rows: number;
   columns: number;
@@ -13,14 +20,15 @@ type DemoResult = {
   bindMs: number;
   singleUpdateMs: number;
   bulkUpdateMs: number;
+  tablePreview: CellValue[][];
+  columnExpressions: string[];
 };
 
 let loadModulePromise: Promise<void> | undefined;
 
 function ensureExpressionModuleLoaded(): Promise<void> {
-
-  if(InjectionContainer.isBound(RsXExpressionParserInjectionTokens.IExpressionParser)) {
-    return Promise.resolve()
+  if (InjectionContainer.isBound(RsXExpressionParserInjectionTokens.IExpressionParser)) {
+    return Promise.resolve();
   }
   if (!loadModulePromise) {
     loadModulePromise = InjectionContainer.load(RsXExpressionParserModule);
@@ -52,6 +60,10 @@ function createExpressions(fieldNames: string[], columns: number): string[] {
   });
 }
 
+function makeColumnExpressions(columns: number): string[] {
+  return Array.from({ length: columns }, (_, i) => `v${i} + v${i + 1}`);
+}
+
 function createRows(rowCount: number, fieldNames: string[]): Array<Record<string, number>> {
   return Array.from({ length: rowCount }, (_, rowIndex) => {
     const row: Record<string, number> = {};
@@ -63,7 +75,7 @@ function createRows(rowCount: number, fieldNames: string[]): Array<Record<string
 }
 
 export function PerformanceDemoClient() {
-  const [rows, setRows] = useState(1000);
+  const [rows, setRows] = useState(500);
   const [columns, setColumns] = useState(10);
   const [isReady, setIsReady] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -72,9 +84,7 @@ export function PerformanceDemoClient() {
 
   useEffect(() => {
     void ensureExpressionModuleLoaded()
-      .then(() => {
-        setIsReady(true);
-      })
+      .then(() => setIsReady(true))
       .catch((exception) => {
         setError(
           exception instanceof Error
@@ -86,6 +96,13 @@ export function PerformanceDemoClient() {
 
   const bindings = useMemo(() => rows * columns, [rows, columns]);
 
+  const safeSetRows = (value: number) => {
+    setRows(Math.max(ROW_STEP, Math.min(MAX_ROWS, Math.round(value / ROW_STEP) * ROW_STEP)));
+  };
+  const safeSetColumns = (value: number) => {
+    setColumns(Math.max(COL_STEP, Math.min(MAX_COLUMNS, Math.round(value / COL_STEP) * COL_STEP)));
+  };
+
   const runDemo = async (): Promise<void> => {
     setError(null);
     setIsRunning(true);
@@ -93,8 +110,8 @@ export function PerformanceDemoClient() {
     try {
       await ensureExpressionModuleLoaded();
 
-      const safeRows = Math.max(1, Math.floor(rows));
-      const safeColumns = Math.max(1, Math.floor(columns));
+      const safeRows = Math.max(1, Math.min(MAX_ROWS, Math.floor(rows)));
+      const safeColumns = Math.max(1, Math.min(MAX_COLUMNS, Math.floor(columns)));
 
       const runToken = toRunToken();
       const fieldNames = createFieldNames(safeColumns, runToken);
@@ -105,17 +122,28 @@ export function PerformanceDemoClient() {
       const binders = expressionStrings.map((expressionString) => rsx<number>(expressionString));
       const parseMs = performance.now() - parseStarted;
 
-      const boundExpressions: Array<{ dispose?: () => void }> = [];
+      const boundExpressions: Array<{ value?: number; dispose?: () => void }> = [];
       const bindStarted = performance.now();
       for (let rowIndex = 0; rowIndex < modelRows.length; rowIndex += 1) {
         const rowModel = modelRows[rowIndex];
         for (let columnIndex = 0; columnIndex < binders.length; columnIndex += 1) {
-          boundExpressions.push(binders[columnIndex](rowModel) as { dispose?: () => void });
+          boundExpressions.push(
+            binders[columnIndex](rowModel) as { value?: number; dispose?: () => void },
+          );
         }
       }
       const bindMs = performance.now() - bindStarted;
 
       await flushMicrotasks();
+
+      // Capture all rows' bound expression values before disposing
+      const tablePreview: CellValue[][] = Array.from({ length: safeRows }, (_, rowIndex) =>
+        Array.from({ length: safeColumns }, (_, colIndex) => {
+          const expr = boundExpressions[rowIndex * safeColumns + colIndex];
+          const v = expr?.value;
+          return typeof v === 'number' ? v : null;
+        }),
+      );
 
       const updatedField = fieldNames[0];
       const singleRow = modelRows[Math.floor(modelRows.length / 2)];
@@ -143,6 +171,8 @@ export function PerformanceDemoClient() {
         bindMs,
         singleUpdateMs,
         bulkUpdateMs,
+        tablePreview,
+        columnExpressions: makeColumnExpressions(safeColumns),
       });
     } catch (exception) {
       setError(
@@ -153,51 +183,84 @@ export function PerformanceDemoClient() {
     }
   };
 
+  const codePreview = useMemo(() => {
+    const exprs = makeColumnExpressions(columns);
+    const lines = [
+      `// ${columns} column expression${columns !== 1 ? 's' : ''} (field names are namespaced per run)`,
+      ...exprs.map((e, i) => `col ${i}: ${e}`),
+      ``,
+      `// Each row model has fields v0..v${columns}`,
+      `// Row 0: { v0: 0, v1: 1, ..., v${columns}: ${columns} }`,
+      `// Row 1: { v0: 1, v1: 2, ..., v${columns}: ${columns + 1} }`,
+    ];
+    return lines.join('\n');
+  }, [columns]);
+
   return (
     <div className="docsPerfDemo">
       <div className="docsPerfDemoControls">
-        <label className="docsPerfDemoField">
-          <span className="docsPerfDemoLabel">Rows (x)</span>
-          <input
-            className="docsPerfDemoInput"
-            type="number"
-            min={1}
-            step={1}
-            value={rows}
-            onChange={(event) => {
-              setRows(Number(event.target.value));
-            }}
-          />
-        </label>
-        <label className="docsPerfDemoField">
-          <span className="docsPerfDemoLabel">Columns (y)</span>
-          <input
-            className="docsPerfDemoInput"
-            type="number"
-            min={1}
-            step={1}
-            value={columns}
-            onChange={(event) => {
-              setColumns(Number(event.target.value));
-            }}
-          />
-        </label>
+        <div className="docsPerfDemoField">
+          <span className="docsPerfDemoLabel">
+            Rows (max {MAX_ROWS.toLocaleString()}, step {ROW_STEP})
+          </span>
+          <div className="docsPerfDemoStepper">
+            <button
+              className="btn btnGhost docsPerfDemoStep"
+              type="button"
+              disabled={rows <= ROW_STEP}
+              onClick={() => safeSetRows(rows - ROW_STEP)}
+            >−</button>
+            <span className="docsPerfDemoStepValue">{rows.toLocaleString()}</span>
+            <button
+              className="btn btnGhost docsPerfDemoStep"
+              type="button"
+              disabled={rows >= MAX_ROWS}
+              onClick={() => safeSetRows(rows + ROW_STEP)}
+            >+</button>
+          </div>
+        </div>
+
+        <div className="docsPerfDemoField">
+          <span className="docsPerfDemoLabel">
+            Columns (max {MAX_COLUMNS}, step {COL_STEP})
+          </span>
+          <div className="docsPerfDemoStepper">
+            <button
+              className="btn btnGhost docsPerfDemoStep"
+              type="button"
+              disabled={columns <= COL_STEP}
+              onClick={() => safeSetColumns(columns - COL_STEP)}
+            >−</button>
+            <span className="docsPerfDemoStepValue">{columns}</span>
+            <button
+              className="btn btnGhost docsPerfDemoStep"
+              type="button"
+              disabled={columns >= MAX_COLUMNS}
+              onClick={() => safeSetColumns(columns + COL_STEP)}
+            >+</button>
+          </div>
+        </div>
+
         <div className="docsPerfDemoField docsPerfDemoFieldGrow">
-          <span className="docsPerfDemoLabel">Estimated active bindings</span>
+          <span className="docsPerfDemoLabel">Active bindings</span>
           <p className="docsPerfDemoBindings">{bindings.toLocaleString()}</p>
         </div>
+
         <div className="docsPerfDemoActions">
           <button
             className="btn btnPrimary"
             type="button"
             disabled={!isReady || isRunning}
-            onClick={() => {
-              void runDemo();
-            }}
+            onClick={() => { void runDemo(); }}
           >
             {isRunning ? 'Running…' : 'Run live benchmark'}
           </button>
         </div>
+      </div>
+
+      <div className="docsPerfDemoCode">
+        <p className="docsPerfDemoCodeLabel">Expression pattern</p>
+        <pre className="docsPerfDemoCodeBlock">{codePreview}</pre>
       </div>
 
       {error ? (
@@ -232,10 +295,46 @@ export function PerformanceDemoClient() {
               <span className="codeInline">{toFixed(result.bulkUpdateMs)} ms</span>
             </li>
           </ul>
+
+          {result.tablePreview.length > 0 && (
+            <div className="docsPerfDemoTableWrap">
+              <p className="docsPerfDemoTableCaption">
+                {result.rows.toLocaleString()} rows × {result.columns} columns — bound expression values
+                (each cell is <span className="codeInline">v[i] + v[i+1]</span>)
+              </p>
+              <div className="docsPerfDemoTableScroll">
+                <table className="docsPerfDemoTable">
+                  <thead>
+                    <tr>
+                      <th className="docsPerfDemoTh docsPerfDemoThRow">row</th>
+                      {result.columnExpressions.map((expr, i) => (
+                        <th key={i} className="docsPerfDemoTh">
+                          col {i}<br />
+                          <span className="docsPerfDemoThExpr">{expr}</span>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {result.tablePreview.map((rowValues, rowIndex) => (
+                      <tr key={rowIndex}>
+                        <td className="docsPerfDemoTd docsPerfDemoTdRow">{rowIndex}</td>
+                        {rowValues.map((value, colIndex) => (
+                          <td key={colIndex} className="docsPerfDemoTd">
+                            {value !== null ? value : '—'}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <p className="cardText">
-          Run the benchmark to see live numbers in your browser.
+          Run the benchmark to see live numbers and a table preview in your browser.
         </p>
       )}
     </div>
