@@ -144,7 +144,7 @@ export const coreApiItems: ApiItem[] = [
     description: 'Default ordered deep-clone implementation list.',
     sourcePath: 'rs-x-core.module.ts',
     signature:
-      'export const defaultDeepCloneList: readonly IMultiInjectService[] = [',
+      'export const defaultDeepCloneList: readonly IMultiInjectService[] = [\n  { target: FastDeepClone, token: RsXCoreInjectionTokens.IFastDeepClone },\n  { target: StructuredDeepClone, token: RsXCoreInjectionTokens.IStructuredDeepClone },\n  { target: LodashDeepClone, token: RsXCoreInjectionTokens.ILodashDeepClone },\n];',
   },
   {
     symbol: 'DefaultDeepClone',
@@ -162,7 +162,7 @@ export const coreApiItems: ApiItem[] = [
     description: 'Default ordered index-value-accessor implementation list.',
     sourcePath: 'rs-x-core.module.ts',
     signature:
-      'export const defaultIndexValueAccessorList: readonly IMultiInjectService[] = [',
+      'export const defaultIndexValueAccessorList: readonly IMultiInjectService[] = [\n  { target: PropertyValueAccessor, token: RsXCoreInjectionTokens.IPropertyValueAccessor },\n  { target: MethodAccessor, token: RsXCoreInjectionTokens.IMethodAccessor },\n  { target: ArrayIndexAccessor, token: RsXCoreInjectionTokens.IArrayIndexAccessor },\n  { target: MapKeyAccessor, token: RsXCoreInjectionTokens.IMapKeyAccessor },\n  { target: SetKeyAccessor, token: RsXCoreInjectionTokens.ISetKeyAccessor },\n  { target: ObservableAccessor, token: RsXCoreInjectionTokens.IObservableAccessor },\n  { target: PromiseAccessor, token: RsXCoreInjectionTokens.IPromiseAccessor },\n  { target: DatePropertyAccessor, token: RsXCoreInjectionTokens.IDatePropertyAccessor },\n  { target: GlobalIndexAccessor, token: RsXCoreInjectionTokens.IGlobalIndexAccessor },\n];',
   },
   {
     symbol: 'defaultValueMetadataList',
@@ -172,7 +172,7 @@ export const coreApiItems: ApiItem[] = [
       'Default value-metadata registration list used to wire metadata services into `IValueMetadataList`.',
     sourcePath: 'rs-x-core.module.ts',
     signature:
-      'export const defaultValueMetadataList: readonly IMultiInjectService[] = [',
+      'export const defaultValueMetadataList: readonly IMultiInjectService[] = [\n  { target: ArrayMetadata, token: RsXCoreInjectionTokens.ArrayMetadata },\n  { target: DateMetadata, token: RsXCoreInjectionTokens.DateMetadata },\n  { target: DummyMetadata, token: RsXCoreInjectionTokens.DummyMetadata },\n  { target: MapMetadata, token: RsXCoreInjectionTokens.MapMetadata },\n  { target: ObservableMetadata, token: RsXCoreInjectionTokens.ObservableMetadata },\n  { target: PromiseMetadata, token: RsXCoreInjectionTokens.PromiseMetadata },\n  { target: SetMetadata, token: RsXCoreInjectionTokens.SetMetadata },\n];',
   },
   {
     symbol: 'DummyMetadata',

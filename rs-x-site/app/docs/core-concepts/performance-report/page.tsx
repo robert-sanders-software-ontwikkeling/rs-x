@@ -4,11 +4,11 @@ import { DocsBreadcrumbs } from '../../../../components/DocsBreadcrumbs';
 import { DocsPageTemplate } from '../../../../components/DocsPageTemplate';
 
 import { PerformanceBarChart } from './performance-report-charts.client';
+import { MemoryUsageTabs } from './memory-usage-tabs.client';
 import {
   type BindingPerformanceRow,
   BindingPerformanceTable,
   type MemoryUsageRow,
-  MemoryUsageTable,
   type ParseCachePerformanceRow,
   ParseCachePerformanceTable,
   type ParsePerformanceRow,
@@ -269,12 +269,6 @@ const updateChartRows = updatePerformanceRows.map((row) => ({
   },
 }));
 
-const memoryChartRows = memoryUsageRows.map((row) => ({
-  label: row.scenario,
-  values: {
-    peakRssMb: row.peakRssMb,
-  },
-}));
 
 export default function PerformanceReportCoreConceptPage() {
   return (
@@ -328,62 +322,104 @@ export default function PerformanceReportCoreConceptPage() {
         <article className="card docsApiCard">
           <h2 className="cardTitle">What this report means</h2>
           <p className="cardText">
-            Parse performance shows how long rs-x needs to read an expression
-            string and build its internal tree.
+            <strong>Parse</strong> measures how long rs-x takes to read an expression
+            string and build its internal node tree. Parse cost grows sub-linearly
+            with expression size — a 63-node expression takes about 8× longer than
+            a 1-node expression, not 63×.
           </p>
           <p className="cardText">
-            Parse cache behavior explains expression creation: the first time an
-            expression string is used, rs-x parses and caches a template tree.
-            Next time that same string is used, rs-x reuses the cached template
-            and only clones it instead of parsing again.
+            <strong>Parse cache</strong> measures expression creation cost in a real
+            app. The first time a string like{' '}
+            <span className="codeInline">a + b</span> is used, rs-x parses it and
+            caches a template tree. Every subsequent binding using that same string
+            skips parsing and only clones the cached tree — 3–8× faster depending
+            on expression size. In a table with 1,000 rows sharing the same
+            column expressions, only the first row parses; the rest clone.
           </p>
           <p className="cardText">
-            Binding performance shows first-time setup cost: rs-x attaches an
-            expression to a model and computes the first value.
+            <strong>Binding</strong> measures first-time setup: rs-x attaches an
+            expression to a specific model object and computes its initial value.
+            This happens once per bound expression, not on every update.{' '}
+            <em>Bind unique</em> binds each expression to a different model object.{' '}
+            <em>Bind same expression</em> reuses the same parsed expression tree
+            cloned across all bindings.
           </p>
           <p className="cardText">
-            Update performance shows what happens after setup when data changes.
-            rs-x recomputes only expressions affected by that change.
-            Unaffected expressions are not recalculated.
+            <strong>Single update</strong> changes one field on one model and
+            measures how long rs-x takes to propagate that change. Only the
+            expressions that actually read the changed field are recalculated —
+            all other bindings in the graph are untouched. This is the common
+            case when a user edits one cell in a table.
           </p>
           <p className="cardText">
-            In this benchmark, each row expression is{' '}
-            <span className="codeInline">a + b</span>.
-            For a single update, only one bound expression is recalculated.
-            For a bulk update, every bound expression is recalculated once.
+            <strong>Bulk update</strong> changes a field on every model at once
+            and measures total recalculation time across all bindings. This is
+            the worst-case scenario: every bound expression must be recalculated
+            in one pass. In practice this path is taken on full data reloads.
           </p>
           <p className="cardText">
-            Memory usage shows typical heap usage and highest process memory
-            (RSS) while these scenarios run.
+            <strong>Memory</strong> shows median heap and peak RSS recorded while
+            each scenario runs. Heap is the JavaScript-managed memory; RSS
+            includes all process memory such as the V8 runtime and native buffers.
+            In all benchmark scenarios the expression is{' '}
+            <span className="codeInline">a + b</span>. More complex expressions
+            with more nodes or async values will use proportionally more memory.
           </p>
         </article>
 
         <article className="card docsApiCard">
           <h2 className="cardTitle">Conclusion</h2>
           <p className="cardText">
-            Performance is good for normal app sizes. In practice, many pages
-            stay in the low hundreds to low thousands of active bindings at the
-            same time.
+            <strong>Single updates are effectively free.</strong>{' '}
+            Regardless of how many bindings are active — 1,000 or 10,000 — a
+            single field change propagates in{' '}
+            <span className="codeInline">~0.09 ms</span>. rs-x only recalculates
+            the expressions that depend on the changed field; the rest of the
+            graph is not touched.
           </p>
           <p className="cardText">
-            Table model: with <span className="codeInline">x</span> rows and{' '}
+            <strong>Parse cache makes repeated expression strings nearly free.</strong>{' '}
+            Clone-only creation costs <span className="codeInline">0.64–27 µs</span>{' '}
+            versus <span className="codeInline">5.5–81 µs</span> for a full
+            parse, a 3–8× saving. In a table where every row uses the same
+            column expression, only the first row pays the parse cost.
+          </p>
+          <p className="cardText">
+            <strong>Binding setup is a one-time cost, not a recurring one.</strong>{' '}
+            At <span className="codeInline">1,000</span> bindings setup takes
+            roughly <span className="codeInline">35 ms</span> — imperceptible
+            during a page load. At <span className="codeInline">10,000</span>{' '}
+            bindings it is about <span className="codeInline">0.5–0.6 s</span>,
+            still paid once, not on every render.
+          </p>
+          <p className="cardText">
+            <strong>Bulk update scales linearly and is predictable.</strong>{' '}
+            At 10,000 bindings a full recalculation of every expression takes{' '}
+            <span className="codeInline">~146 ms</span>, which is roughly{' '}
+            <span className="codeInline">14.6 µs</span> per expression. This
+            path only runs on a full data reload; incremental changes remain fast.
+          </p>
+          <p className="cardText">
+            <strong>Memory is the practical limit at large scales.</strong>{' '}
+            At <span className="codeInline">1,000</span> bindings heap usage is
+            around <span className="codeInline">125–230 MB</span>; at{' '}
+            <span className="codeInline">10,000</span> it reaches roughly{' '}
+            <span className="codeInline">2.4–3.3 GB</span>. Most real UIs stay
+            well below 5,000 simultaneously active bindings. For large tables,
+            mount only visible rows and dispose bindings when they leave the
+            viewport — this keeps memory flat regardless of dataset size.
+          </p>
+          <p className="cardText">
+            <strong>Table model example.</strong> With{' '}
+            <span className="codeInline">x</span> rows and{' '}
             <span className="codeInline">y</span> column expressions, active
-            bindings are about{' '}
-            <span className="codeInline">x * y</span>.
-            Parsing is usually close to{' '}
-            <span className="codeInline">y</span>, because each expression
-            string is parsed once and then cloned from cache for other rows.
-          </p>
-          <p className="cardText">
-            Example: <span className="codeInline">1,000</span> rows ×{' '}
-            <span className="codeInline">10</span> columns gives about{' '}
-            <span className="codeInline">10,000</span> active bindings. In this
-            benchmark, setup is roughly 0.5-0.7s once, single-row updates are
-            still very fast, and full bulk updates are the expensive path.
-          </p>
-          <p className="cardText">
-            Main limit at very large graphs is memory, not parsing. Keep only
-            visible rows mounted and dispose inactive expressions.
+            bindings are <span className="codeInline">x × y</span> and parse
+            operations are roughly <span className="codeInline">y</span> (each
+            column expression is parsed once, then cloned). A table of{' '}
+            <span className="codeInline">1,000</span> rows ×{' '}
+            <span className="codeInline">10</span> columns produces{' '}
+            <span className="codeInline">10,000</span> active bindings: setup
+            ~0.5 s once, single-cell updates ~0.09 ms, full bulk reload ~146 ms.
           </p>
         </article>
       </div>
@@ -489,18 +525,7 @@ export default function PerformanceReportCoreConceptPage() {
 
       <article className="card docsApiCard">
         <h2 className="cardTitle">Memory usage</h2>
-        <PerformanceBarChart
-          ariaLabel="Memory usage chart showing peak RSS per scenario"
-          rows={memoryChartRows}
-          series={[
-            { key: 'peakRssMb', label: 'Peak RSS MB', barClassName: 'isSecondary' },
-          ]}
-          valueUnit="mb"
-          decimals={1}
-          xAxisLabel="Scenario"
-          yAxisLabel="Peak RSS (MB)"
-        />
-        <MemoryUsageTable rows={memoryUsageRows} />
+        <MemoryUsageTabs rows={memoryUsageRows} />
       </article>
     </DocsPageTemplate>
   );

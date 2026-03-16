@@ -629,6 +629,45 @@ const MEMBER_DESCRIPTION_OVERRIDES: Record<string, Record<string, string>> = {
   IGuidFactory: {
     create: 'Creates a new unique identifier string.',
   },
+  Type: {
+    isReadonlyProperty:
+      'Returns true when the given property key on a target object is readonly (getter-only, no setter).',
+    isPositiveIntegerString:
+      'Returns true when value is a string representing a non-negative integer.',
+    isIterableCollection:
+      'Returns true when value is an Array, Map, or Set.',
+    isPositiveInteger:
+      'Returns true when value is a non-negative integer as a number or string.',
+    walkObjectTopToBottom:
+      'Visits each enumerable key/value pair top-to-bottom, optionally recursing into nested objects.',
+    walkObjectBottomToTop:
+      'Visits each enumerable key/value pair bottom-to-top, optionally recursing into nested objects.',
+    cast: 'Casts instance to type T without any runtime checks.',
+    isFunction: 'Returns true when value is a function.',
+    isMethod:
+      'Returns true when value is a function without a prototype (arrow or bound function).',
+    isArrowFunction:
+      'Returns true when value is an arrow function (no prototype own-property).',
+    isString:
+      'Returns true when value is a string primitive or String object.',
+    isNullOrUndefined: 'Returns true when value is null or undefined.',
+    isEmpty:
+      'Returns true when value is null, undefined, an empty string, or an empty array.',
+    isPlainObject:
+      'Returns true when value is a plain object whose prototype is Object.prototype or null.',
+    hasProperty:
+      'Returns true when root has the named property anywhere in its prototype chain.',
+    hasOwnPropertyInPrototypeChain:
+      'Returns true when any prototype in the chain owns the given key.',
+    getPropertyDescriptorType:
+      'Classifies a PropertyDescriptor as Property, ReadonlyProperty, Function, or Field.',
+    getPropertyDescriptor:
+      'Walks the prototype chain and returns the descriptor for the named key, throwing if not found.',
+    toObject:
+      'Returns context cast as a Record when it is an object or function, or undefined otherwise.',
+    getConstructorName:
+      "Returns the constructor name of value, or 'unknown' if value is not an object.",
+  },
 };
 
 const SYMBOL_DOCS: Record<string, SymbolDocumentation> = {
