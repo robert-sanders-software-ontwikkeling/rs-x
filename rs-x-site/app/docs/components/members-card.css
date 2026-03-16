@@ -1,0 +1,283 @@
+/* =========================================================
+   API Members Card
+========================================================= */
+
+.apiMembersCard {
+  padding: var(--sp-5);
+  background: transparent;
+}
+
+.apiMembersCard::before {
+  content: none;
+}
+
+/* =========================================================
+   Member Groups
+========================================================= */
+
+.apiMemberGroup + .apiMemberGroup {
+  margin-top: var(--sp-2);
+  border-top: 1px solid color-mix(in srgb, var(--border-soft) 78%, transparent);
+}
+
+.apiMemberGroupTitle {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-2);
+  font-weight: 780;
+  letter-spacing: -0.015em;
+}
+
+/* =========================================================
+   Member List
+========================================================= */
+
+.apiMemberList {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+/* =========================================================
+   Member Item
+========================================================= */
+
+.apiMemberItem {
+  --rsx-left-accent-offset-top: var(--sp-5);
+  --rsx-left-accent-offset-bottom: var(--sp-3);
+  --rsx-left-accent-width: 3px;
+
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-4) var(--sp-4) var(--sp-4);
+  border: 1px solid color-mix(in srgb, var(--border-soft) 58%, transparent);
+  border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--surface-solid) 94%, var(--surface));
+  box-shadow: none;
+}
+
+/* =========================================================
+   Member Header
+========================================================= */
+
+.apiMemberHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.apiMemberHeadMain {
+    display: flex;
+     align-items: center;
+}
+
+.apiMemberName {
+  font-size: calc(var(--fs-5));
+  font-weight: bold;
+  letter-spacing: -0.015em;
+}
+
+.apiMemberKind,
+.apiMemberMeta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.35rem;
+  padding: 0 var(--sp-2);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 72%, transparent);
+}
+
+.apiMemberKind {
+  background: color-mix(in srgb, var(--code-bg) 84%, var(--surface-solid));
+  color: var(--docs-table-header);
+  text-transform: uppercase;
+}
+
+.apiMemberMeta {
+  background: transparent;
+  color: var(--docs-subtle);
+  text-transform: lowercase;
+}
+
+/* =========================================================
+   Description
+========================================================= */
+
+.apiMemberDescription {
+  margin: 0;
+  max-width: 76ch;
+  color: var(--docs-body);
+  font-size: var(--fs-1);
+  line-height: 1.58;
+}
+
+/* =========================================================
+   Signature
+========================================================= */
+
+.apiMemberSignature {
+  margin: 0;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid color-mix(in srgb, var(--code-border) 82%, transparent);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--code-bg) 88%, var(--surface-solid));
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   Meta Sections
+========================================================= */
+
+.apiMemberMetaGrid {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.apiMemberMetaBlock {
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.apiMemberSectionTitle {
+  margin: 0;
+  color: var(--docs-subtle);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* =========================================================
+   Parameter Table
+========================================================= */
+
+.apiMemberParamList {
+  display: grid;
+  width: min(100%, 44rem);
+  margin: 0;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 62%, transparent);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--surface-solid) 96%, var(--surface));
+}
+
+.apiMemberParamHeader,
+.apiMemberParamItem {
+  display: grid;
+  grid-template-columns: minmax(8rem, 12rem) minmax(10rem, 1fr) max-content;
+  gap: var(--sp-3);
+  align-items: center;
+  padding: 0.68rem var(--sp-4);
+}
+
+.apiMemberParamHeader {
+  background: color-mix(in srgb, var(--surface) 90%, var(--surface-solid));
+  border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 70%, transparent);
+}
+
+.apiMemberParamHeader dt {
+  margin: 0;
+  color: var(--docs-subtle);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.apiMemberParamItem {
+  background: transparent;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 48%, transparent);
+}
+
+.apiMemberParamItem:last-child {
+  border-bottom: 0;
+}
+
+.apiMemberParamName,
+.apiMemberParamType,
+.apiMemberParamRequirement {
+  margin: 0;
+}
+
+.apiMemberParamName {
+  font-size: var(--fs-1);
+}
+
+.apiMemberParamType {
+  color: var(--code-token-identifier);
+  font-size: var(--fs-1);
+}
+
+.apiMemberParamRequirement {
+  color: var(--docs-subtle);
+  font-size: var(--fs-0);
+  text-align: right;
+}
+
+/* =========================================================
+   Return Type
+========================================================= */
+
+.apiMemberReturnBlock {
+  display:  flex;
+  align-items: center;
+
+}
+
+.apiMemberReturn {
+  margin: 0;
+  color: var(--code-token-identifier);
+  font-size: var(--fs-1);
+  line-height: var(--lh-1);
+}
+
+/* =========================================================
+   Small presentation refinements
+========================================================= */
+
+.apiMemberItem .apiMemberMetaGrid + .apiMemberMetaGrid {
+  margin-top: calc(var(--sp-2) * -0.5);
+}
+
+.apiMemberItem .apiMemberSectionTitle + .apiMemberParamList,
+.apiMemberItem .apiMemberSectionTitle + .apiMemberReturn {
+  margin-top: 0;
+}
+
+.apiMemberItem .codeInline {
+  white-space: nowrap;
+}
+
+/* =========================================================
+   Responsive
+========================================================= */
+
+@media (max-width: 720px) {
+  .apiMemberItem {
+    padding: var(--sp-3);
+  }
+
+  .apiMemberHead {
+    align-items: flex-start;
+  }
+
+  .apiMemberParamList {
+    width: 100%;
+  }
+
+  .apiMemberParamHeader,
+  .apiMemberParamItem {
+    grid-template-columns: 1fr;
+    gap: var(--sp-1);
+  }
+
+  .apiMemberParamRequirement {
+    text-align: left;
+  }
+}

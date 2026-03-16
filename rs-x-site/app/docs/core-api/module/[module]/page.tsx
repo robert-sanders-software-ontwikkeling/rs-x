@@ -4,12 +4,13 @@ import { notFound } from 'next/navigation';
 
 import { ItemLinkCardContent } from '@rs-x/react-components';
 
-import { DocsBreadcrumbs } from '../../../../../components/DocsBreadcrumbs';
+import { DocsBreadcrumbItem, DocsBreadcrumbs } from '../../../../../components/DocsBreadcrumbs';
 import { DocsPageTemplate } from '../../../../../components/DocsPageTemplate';
 import { SyntaxCodeBlock } from '../../../../../components/SyntaxCodeBlock';
 import { coreApiItems } from '../../core-api.data';
 
 import { TokenReferenceTable } from './token-reference-table.client';
+import { ApiDocHeader } from '../../../components/api-doc-header';
 
 function slugify(value: string): string {
   return value.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
@@ -681,29 +682,25 @@ export default async function CoreApiModulePage({
     );
   `;
 
+  const breadcrumb: DocsBreadcrumbItem[] = [
+    { label: 'Docs', href: '/docs' },
+    { label: formatModuleLabel(entry.moduleName) },
+  ];
+  const whatItDoes = hasMultipleEntries
+    ? (<>
+      API entries in this module:{' '}
+      <span className="codeInline">{entry.items.length}</span>
+
+    </>) : ''
+
   return (
     <DocsPageTemplate>
-      <div className="docsApiHeader">
-        <div>
-          <DocsBreadcrumbs
-            items={[
-              { label: 'Docs', href: '/docs' },
-              { label: '@rs-x/core API', href: '/docs/core-api' },
-              { label: formatModuleLabel(entry.moduleName) },
-            ]}
-          />
-          <p className="docsApiEyebrow">API Reference</p>
-          <h1 className="sectionTitle">
-            {formatModuleLabel(entry.moduleName)}
-          </h1>
-          {hasMultipleEntries && (
-            <p className="sectionLead">
-              API entries in this module:{' '}
-              <span className="codeInline">{entry.items.length}</span>
-            </p>
-          )}
-        </div>
-      </div>
+      <ApiDocHeader
+        eyebrow='API Reference'
+        name={formatModuleLabel(entry.moduleName)}
+        whatItDoes={whatItDoes}
+        breadcrumb={breadcrumb}
+      />
 
       <article className="card docsApiCard coreModuleCard">
         {entry.moduleName === 'deep-clone' && (
@@ -1190,17 +1187,16 @@ export default async function CoreApiModulePage({
           <>
             <h2 className="cardTitle">Current value-metadata implementation</h2>
             <p className="cardText">
-              The <span className="codeInline">ValueMetadata</span> service
-              provides information about how rs-x should handle a value type at
-              runtime: whether it should be proxied and whether it is async. It
-              receives handlers from{' '}
-              <span className="codeInline">IValueMetadataList</span>, sorts them
-              by <span className="codeInline">priority</span> (highest first),
-              and uses the first handler where{' '}
+              The <span className="codeInline">ValueMetadata</span> service provides
+              information about how rs-x should handle a value type at runtime, such as
+              whether it should be proxied and whether it is async. It retrieves providers
+              from <span className="codeInline">IValueMetadataList</span>, sorts them by{' '}
+              <span className="codeInline">priority</span> (highest first), and selects the
+              first provider for which{' '}
               <span className="codeInline">applies(value)</span> returns true.
             </p>
             <p className="cardText">
-              Default handlers are:{' '}
+              Default providers are:{' '}
               <span className="codeInline">ArrayMetadata (8)</span>,{' '}
               <span className="codeInline">DateMetadata (7)</span>,{' '}
               <span className="codeInline">MapMetadata (6)</span>,{' '}
@@ -1210,7 +1206,7 @@ export default async function CoreApiModulePage({
               <span className="codeInline">DummyMetadata (-1000)</span>.
             </p>
             <p className="cardText">
-              Runtime services use this metadata to decide whether a value is
+              Rs-x use this metadata to decide whether a value is
               async (<span className="codeInline">isAsync</span>) and whether it
               should be proxied (<span className="codeInline">needsProxy</span>
               ).
@@ -1233,7 +1229,7 @@ export default async function CoreApiModulePage({
 
         {entry.moduleName === 'wait-for-event' && (
           <>
-            <h2 className="cardTitle">Current wait-for-event implementation</h2>
+            <h2 className="cardTitle">Overview</h2>
             <p className="cardText">
               <span className="codeInline">WaitForEvent</span> helps you trigger
               an action and then wait for emissions from an Observable event

@@ -70,6 +70,11 @@ const coreConceptLinks: DocsLinkItem[] = [
     meta: 'Compose reusable expression parts',
   },
   {
+    href: '/docs/core-concepts/performance-report',
+    title: 'Performance report',
+    meta: 'Parse, bind, update, and memory benchmarks',
+  },
+  {
     href: '/docs/core-concepts/readonly-properties',
     title: 'Readonly properties',
     meta: 'Expose readonly values while updating them internally',
@@ -229,9 +234,6 @@ export function DocsPageClient({
                   <label className="docsSearchLabel" htmlFor="docs-search">
                     API search
                   </label>
-                  <p className="docsSearchHint">
-                    Filters the API entries below
-                  </p>
                 </div>
                 <input
                   id="docs-search"

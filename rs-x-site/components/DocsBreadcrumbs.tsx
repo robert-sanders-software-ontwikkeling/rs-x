@@ -1,11 +1,11 @@
 import Link from 'next/link';
 
-type DocsBreadcrumbItem = {
+export type DocsBreadcrumbItem = {
   label: string;
   href?: string;
 };
 
-type DocsBreadcrumbsProps = {
+export type DocsBreadcrumbsProps = {
   items: DocsBreadcrumbItem[];
 };
 

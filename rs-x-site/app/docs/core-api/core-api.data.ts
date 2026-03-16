@@ -1,13 +1,7 @@
-export interface CoreApiItem {
-  symbol: string;
-  kind: string;
-  module: string;
-  description: string;
-  sourcePath: string;
-  signature: string;
-}
+import { ApiItem } from '../components/api-member';
 
-export const coreApiItems: CoreApiItem[] = [
+
+export const coreApiItems: ApiItem[] = [
   {
     symbol: 'AnyFunction',
     kind: 'type',
@@ -101,7 +95,7 @@ export const coreApiItems: CoreApiItem[] = [
     kind: 'const',
     module: 'index-value-accessor',
     description:
-      'List of supported Date property keys handled by DatePropertyAccessor.',
+      'List of supported Date property keys used by DatePropertyAccessor.',
     sourcePath: 'index-value-accessor/date-property-accessor.interface.ts',
     signature: 'export const dataProperties: readonly DateProperty[] = [',
   },
@@ -1065,7 +1059,7 @@ export const coreApiItems: CoreApiItem[] = [
     kind: 'class',
     module: 'value-metadata',
     description:
-      'Composite metadata service that resolves the first matching metadata handler from `IValueMetadataList` (sorted by priority) and delegates `isAsync`, `needsProxy`, and `applies` checks.',
+      'Composite metadata service that resolves the first matching metadata provider from `IValueMetadataList` (sorted by priority) and delegates `isAsync`, `needsProxy`, and `applies` checks.',
     sourcePath: 'value-metadata/value-metadata.ts',
     signature: 'export class ValueMetadata implements IValueMetadata {',
   },

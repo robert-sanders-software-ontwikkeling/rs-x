@@ -9,6 +9,7 @@ import { DocsPageTemplate } from '../../../../components/DocsPageTemplate';
 import { SyntaxCodeBlock } from '../../../../components/SyntaxCodeBlock';
 
 import { MemberExpressionExamplesTabs } from './member-expression-examples-tabs.client';
+import { renderTextWithCoreLinks } from '../../../../lib/type-doc-links';
 
 type RelatedLink = {
   href: string;
@@ -1848,7 +1849,7 @@ const CORE_CONCEPT_DOCS: CoreConceptDoc[] = [
     title: 'Readonly properties',
     lead: 'Expose a readonly property while still keeping it reactive through explicit state updates.',
     whatItMeans:
-      'A readonly property should not be written from the outside, but it can still change when underlying writable fields change. In this pattern, you store the readonly value in StateManager under an internal id, then read it through a getter.',
+      'A readonly property should not be written from the outside, but it can still change when underlying writable fields change. In this pattern, you store the readonly value in `state manager` under an internal id, then read it through a getter.',
     whyItMatters:
       'This keeps your model API safe and clear: consumers can read `aPlusB`, but only model logic can update it. You get immutable-looking API boundaries without losing reactive updates and change events.',
     keyPoints: [
@@ -2104,13 +2105,13 @@ export default async function CoreConceptTopicPage({ params }: PageProps) {
               .
             </p>
           ) : (
-            <p className="cardText">{item.whatItMeans}</p>
+            <p className="cardText">{renderTextWithCoreLinks(item.whatItMeans)}</p>
           )}
         </article>
 
         <article className="card docsApiCard">
           <h2 className="cardTitle">Practical value</h2>
-          <p className="cardText">{item.whyItMatters}</p>
+          <p className="cardText">{renderTextWithCoreLinks(item.whyItMatters)}</p>
         </article>
 
         <article className="card docsApiCard">
