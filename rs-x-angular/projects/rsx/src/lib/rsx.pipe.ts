@@ -23,6 +23,7 @@ export class RsxPipe implements PipeTransform, OnDestroy {
   private _changedSubscription?: Subscription;
   private _lastExpressionString?: string;
   private _lastContext?: object;
+  private _ownsExpression = false;
   private _value: unknown;
 
   public transform<T>(
@@ -53,10 +54,12 @@ export class RsxPipe implements PipeTransform, OnDestroy {
     if (expression instanceof AbstractExpression) {
       this._lastExpressionString = undefined;
       this._expression = expression;
+      this._ownsExpression = false;
     } else if (Type.isString(expression)) {
       this._lastExpressionString = expression;
       if (context) {
         this._expression = this._expressionFactory.create(context, expression);
+        this._ownsExpression = true;
       }
     } else if (!Type.isNullOrUndefined(expression)) {
       throw new UnsupportedException(`string or IExpression expected`);
@@ -78,12 +81,12 @@ export class RsxPipe implements PipeTransform, OnDestroy {
   }
 
   private disposeExpression(): void {
-    this._changedSubscription?.unsubscribe();
-    this._changedSubscription = undefined;
-
-    if (this._lastExpressionString) {
+    if (this._ownsExpression) {
       this._expression?.dispose();
     }
+    this._ownsExpression = false;
+    this._changedSubscription?.unsubscribe();
+    this._changedSubscription = undefined;
     this._expression = undefined;
   }
 }

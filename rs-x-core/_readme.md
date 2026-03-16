@@ -7,7 +7,7 @@ Provides shared core functionality for the RS-X project:
 - [Deep Equality](#deep-equality)
 - [Guid Factory](#guid-factory)
 - [Index Value Accessor](#index-value-accessor)
-- [Singleton factory](#singleton-factory)
+- [Keyed instance factory](#keyed-instance-factory)
 - [Error Log](#error-log)
 - [WaitForEvent](#waitforevent)
 
@@ -99,66 +99,17 @@ Overrides an existing multi-inject list, removing any previous bindings for the 
 - Uses [structuredClone](https://developer.mozilla.org/en-US/docs/Web/API/Window/structuredClone) by default
 - Falls back to [Lodash `cloneDeepWith`](https://lodash.com/docs/4.17.15#cloneDeepWith) for unsupported types
 
-### Get an instance of the Deep clone service
-
-The deep clone service is registered as a **singleton service**.  
-You must load the core module into the injection container if you want
-to use it.
-
-```ts
-import { InjectionContainer, RsXCoreModule } from '@rs-x/core';
-
-InjectionContainer.load(RsXCoreModule);
-```
-
-There are two ways to get an instance:
-
-1. Using the injection container
-
-   ```ts
-   import {
-     IDeepClone,
-     InjectionContainer,
-     RsXCoreInjectionTokens,
-   } from '@rs-x/core';
-
-   const deepClone: IDeepClone = InjectionContainer.get(
-     RsXCoreInjectionTokens.IDeepClone,
-   );
-   ```
-
-2. Using the `@Inject` decorator
-
-   ```ts
-   import { IDeepClone, Inject, RsXCoreInjectionTokens } from '@rs-x/core';
-
-   export class MyClass {
-     constructor(
-       @Inject(RsXCoreInjectionTokens.IDeepClone)
-       private readonly _deepClone: IDeepClone,
-     ) {}
-   }
-   ```
-
-The following example shows how to use deep clone service:
-
-```ts
-{% include_relative ../demo/src/rs-x-core/deep-clone.ts %}
-```
-
-**Output:**
-
-```console
 Running demo: demo/src/rs-x-core/deep-clone.ts
 Clone is a copy of the cloned object: true
 Cloned object
 {
-    a: 10
-    nested: {
-        b: 20
-    }
+a: 10
+nested: {
+b: 20
 }
-```
+}
+
+````
 
 ## Deep Equality
 
@@ -166,7 +117,7 @@ Uses [fast-equals](https://github.com/planttheidea/fast-equals) for deep equalit
 
 ### Get an instance of the Equality Service
 
-The equality service is registered as a **singleton service**.  
+The equality service is registered as a **singleton service**.
 You must load the core module into the injection container if you want
 to use it.
 
@@ -174,7 +125,7 @@ to use it.
 import { InjectionContainer, RsXCoreModule } from '@rs-x/core';
 
 InjectionContainer.load(RsXCoreModule);
-```
+````
 
 There are two ways to get an instance:
 
@@ -510,20 +461,20 @@ You can customize the index value accessor list by overriding it:
     {% include_relative ../demo/src/rs-x-core/redefine-custom-index-value-accessor-list.ts %}
     ```
 
-## Singleton factory
+## Keyed instance factory
 
 Besides static singleton services registered via the dependency injection framework, we sometimes want to be able to create **dynamic singleton services**. These are services that are created based on dynamic data.
 
-For example, suppose we have a service that patches a property on an object so it can emit an event whenever the property value changes. In this scenario, we want to ensure that the property is patched **only once**. The example below shows how we can use `SingletonFactory` to implement this:
+For example, suppose we have a service that patches a property on an object so it can emit an event whenever the property value changes. In this scenario, we want to ensure that the property is patched **only once**. The example below shows how we can use `KeyedInstanceFactory` to implement this:
 
 ```ts
-{% include_relative ../demo/src/rs-x-core/implementation-of-singleton-factory.ts %}
+{% include_relative ../demo/src/rs-x-core/implementation-of-keyed-instance-factory.ts %}
 ```
 
 **Output:**
 
 ```console
- Running demo: demo/src/rs-x-core/implementation-of-singleton-factory.ts
+ Running demo: demo/src/rs-x-core/implementation-of-keyed-instance-factory.ts
 You can observe the same property multiple times but only one observer will be create:
 true
 Changing value to 20:
@@ -533,12 +484,12 @@ Observer 2:
 20
 ```
 
-In this example, we have derived two classes from `SingletonFactory`:
+In this example, we have derived two classes from `KeyedInstanceFactory`:
 
 - **`PropertyObserverManager`** – ensures that only one `PropertyObserver` is created per property.
 - **`ObjectPropertyObserverManager`** – ensures that only one `PropertyObserverManager` is created per object.
 
-It is good practice **not to expose classes derived from `SingletonFactory`** directly, but to use them internally to keep the interface simple.
+It is good practice **not to expose classes derived from `KeyedInstanceFactory`** directly, but to use them internally to keep the interface simple.
 
 For example, we have created a class **`PropertyObserverFactory`** that internally uses `ObjectPropertyObserverManager`.
 

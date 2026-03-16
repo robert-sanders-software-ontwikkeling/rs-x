@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 
+import { PrettyPrinter } from '@rs-x/core';
 import type {
   IExpression,
   IExpressionChangeHistory,
@@ -13,7 +14,6 @@ import { useHighlightAnimation } from './hooks/use-highlight-animation';
 import { useResizeObserverSize } from './hooks/use-resize-observer-size';
 import { TreeLayoutEngine } from './layout/tree-layout-engine';
 import { ExpressionIndex } from './expression-index';
-import { ValueFormatter } from './value-formatter';
 
 import './expression-tree-view.component.css';
 
@@ -152,9 +152,17 @@ export const ExpressionTree: React.FC<IExpressionTreeProps> = (props) => {
       return formatValue;
     }
 
-    const valueFormatter = new ValueFormatter(valueMaxDepth, valueMaxChars);
+    const prettyPrinter = new PrettyPrinter(2);
     return (v: unknown) => {
-      return valueFormatter.format(v);
+      try {
+        return prettyPrinter.toString(v, true, {
+          maxDepth: valueMaxDepth,
+          maxChars: valueMaxChars,
+          sortObjectKeys: true,
+        });
+      } catch {
+        return String(v);
+      }
     };
   }, [formatValue, valueMaxDepth, valueMaxChars]);
 

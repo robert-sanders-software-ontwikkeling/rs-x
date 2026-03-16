@@ -1,5 +1,6 @@
 import { type Observable, ReplaySubject, type Subscription } from 'rxjs';
 
+import { Type } from '@rs-x/core';
 import {
   type IContextChanged,
   type IIndexWatchRule,
@@ -15,10 +16,10 @@ import type { IExpressionBindConfiguration } from './expression-bind-configurati
 import { ExpressionType } from './expression-parser.interface';
 
 export class IndexValueObserver {
-  private readonly _changeSubscription: Subscription;
-  private readonly _contextChangeSubscription: Subscription;
+  private readonly _unsubscribeFromStateEvents: () => void;
   private readonly _changed = new ReplaySubject<IStateChange>(1);
   private _isDisposed = false;
+  private _isWatchingState = false;
 
   constructor(
     private _context: unknown,
@@ -28,19 +29,21 @@ export class IndexValueObserver {
     private readonly setContext: (context: unknown) => void,
     ownerId: unknown,
   ) {
-    this._changeSubscription = this._stateManager.changed.subscribe(
-      this.emitChange,
+    this._unsubscribeFromStateEvents = this._stateManager.subscribeStateEvents(
+      this._context,
+      this._index,
+      {
+        onStateChange: (change) => this._changed.next(change),
+        onContextChanged: this.onContextChanged,
+      },
     );
 
-    this._contextChangeSubscription =
-      this._stateManager.contextChanged.subscribe(this.onContextCHanged);
-    const value = this._stateManager.watchState(this._context, this._index, {
-      indexWatchRule: this._indexWatchRule,
-      ownerId,
-    });
+    const value = Type.isReadonlyProperty(this._context, this._index)
+      ? this._stateManager.getState(this._context, this._index)
+      : this.watchState(ownerId);
 
     if (value !== undefined) {
-      this.emitChange({
+      this._changed.next({
         index: this._index,
         context: this._context,
         oldContext: this._context,
@@ -58,13 +61,14 @@ export class IndexValueObserver {
     if (this._isDisposed) {
       return;
     }
-    this._changeSubscription.unsubscribe();
-    this._contextChangeSubscription.unsubscribe();
-    this._stateManager.releaseState(
-      this._context,
-      this._index,
-      this._indexWatchRule,
-    );
+    this._unsubscribeFromStateEvents();
+    if (this._isWatchingState) {
+      this._stateManager.releaseState(
+        this._context,
+        this._index,
+        this._indexWatchRule,
+      );
+    }
     this._isDisposed = true;
   }
 
@@ -72,18 +76,18 @@ export class IndexValueObserver {
     return this._stateManager.getState(context, key);
   }
 
-  private onContextCHanged = (change: IContextChanged) => {
-    if (this._context === change.oldContext && change.index === this._index) {
-      this._context = change.context;
-      this.setContext(this._context);
-    }
+  private onContextChanged = (change: IContextChanged) => {
+    this._context = change.context;
+    this.setContext(this._context);
   };
 
-  private emitChange = (change: IStateChange) => {
-    if (this._context === change.context && change.index === this._index) {
-      this._changed.next(change);
-    }
-  };
+  private watchState(ownerId: unknown): unknown {
+    this._isWatchingState = true;
+    return this._stateManager.watchState(this._context, this._index, {
+      indexWatchRule: this._indexWatchRule,
+      ownerId,
+    });
+  }
 }
 
 export type IIdentifierBindConfiguration = IExpressionBindConfiguration & {
@@ -153,18 +157,33 @@ export class IdentifierExpression extends AbstractExpression {
     );
     this._commitAfterInitialized = !settings.isRoot;
 
-    this._indexWatchRule = new IndexWatchRule(
-      this._context,
-      this.shouldWatchIndex,
-    );
+    if (this._indexWatchRule) {
+      this._indexWatchRule.context = this._context;
+    } else {
+      this._indexWatchRule = new IndexWatchRule(
+        this._context,
+        this.shouldWatchIndex,
+      );
+    }
 
     if (!this._indexValueObserver) {
       this.observeChange();
     } else {
-      const newValue = this._indexValueObserver.getValue(
-        this._context,
-        this.index,
-      );
+      let newValue = settings.currentValue;
+      if (newValue === undefined) {
+        newValue = this._indexValueObserver.getValue(this._context, this.index);
+      }
+      if (newValue === undefined) {
+        try {
+          newValue = this.indexValueAccessor.getResolvedValue(
+            this._context,
+            this.index,
+          );
+        } catch {
+          // Keep undefined for unresolved paths.
+        }
+      }
+
       this.onValueChanged({
         index: this.index,
         context: this._context,

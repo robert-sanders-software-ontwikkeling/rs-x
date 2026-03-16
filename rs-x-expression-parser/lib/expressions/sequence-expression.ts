@@ -1,3 +1,5 @@
+import { type IExpressionChangeCommitHandler } from '../expresion-change-transaction-manager.interface';
+
 import { AbstractExpression } from './abstract-expression';
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 import { ExpressionType } from './expression-parser.interface';
@@ -26,6 +28,19 @@ export class SequenceExpression extends AbstractExpression {
     );
 
     return this;
+  }
+
+  protected override prepareReevaluation(
+    sender: AbstractExpression,
+    root: AbstractExpression,
+    pendingCommits: Set<IExpressionChangeCommitHandler>,
+  ): boolean {
+    // Bubble child changes as if they originated from this sequence segment.
+    // MemberExpression path resolution expects direct segment senders.
+    if (this._childExpressions.includes(sender)) {
+      return super.prepareReevaluation(this, root, pendingCommits);
+    }
+    return super.prepareReevaluation(sender, root, pendingCommits);
   }
 
   protected override evaluate(): unknown {

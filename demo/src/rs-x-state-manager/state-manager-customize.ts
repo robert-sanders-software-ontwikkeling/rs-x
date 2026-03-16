@@ -13,9 +13,9 @@ import {
   type IPropertyChange,
   type IProxyRegistry,
   type IValueMetadata,
+  KeyedInstanceFactory,
   overrideMultiInjectServices,
   RsXCoreInjectionTokens,
-  SingletonFactory,
   Type,
 } from '@rs-x/core';
 import {
@@ -48,7 +48,7 @@ const MyInjectTokens = {
   ),
 };
 
-class IndexForTextDocumentxObserverManager extends SingletonFactory<
+class IndexForTextDocumentxObserverManager extends KeyedInstanceFactory<
   number,
   IIndexObserverInfo<ITextDocumentIndex>,
   TextDocumentIndexObserver
@@ -106,7 +106,7 @@ class IndexForTextDocumentxObserverManager extends SingletonFactory<
 
 // We want to ensure that for the same TextDocument we always have the same observer
 @Injectable()
-class TextDocumentObserverManager extends SingletonFactory<
+class TextDocumentObserverManager extends KeyedInstanceFactory<
   TextDocument,
   TextDocument,
   TextDocumentObserver
@@ -139,7 +139,7 @@ class TextDocumentObserverManager extends SingletonFactory<
 
 // We want to ensure we create only one index-manager per TextDocument
 @Injectable()
-export class TextDocumenIndexObserverManager extends SingletonFactory<
+export class TextDocumenIndexObserverManager extends KeyedInstanceFactory<
   TextDocument,
   TextDocument,
   IndexForTextDocumentxObserverManager

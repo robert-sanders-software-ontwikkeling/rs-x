@@ -1,8 +1,8 @@
+import { type IDisposableOwner } from '../keyed-instance-factory';
 import {
   type IISequenceWithIdData,
   type ISequenceWithId,
 } from '../sequence-id';
-import { type IDisposableOwner } from '../singleton-factory';
 
 import { type IDisposableFunctionCallIndex } from './function-call-index.interface';
 

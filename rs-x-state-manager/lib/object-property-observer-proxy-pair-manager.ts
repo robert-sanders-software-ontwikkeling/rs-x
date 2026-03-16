@@ -1,11 +1,11 @@
 import {
+  GuidKeyedInstanceFactory,
   type IGuidFactory,
   Inject,
   Injectable,
+  KeyedInstanceFactory,
   MultiInject,
   RsXCoreInjectionTokens,
-  SingletonFactory,
-  SingletonFactoryWithGuid,
   Type,
   UnsupportedException,
 } from '@rs-x/core';
@@ -22,7 +22,7 @@ import type {
 import { RsXStateManagerInjectionTokens } from './rs-x-state-manager-injection-tokens';
 
 class PropertyObserverProxyPairManager
-  extends SingletonFactoryWithGuid<
+  extends GuidKeyedInstanceFactory<
     IPropertyInfo,
     IObserverProxyPair,
     IIndexInfo
@@ -92,7 +92,11 @@ class PropertyObserverProxyPairManager
 
 @Injectable()
 export class ObjectPropertyObserverProxyPairManager
-  extends SingletonFactory<unknown, unknown, IPropertyObserverProxyPairManager>
+  extends KeyedInstanceFactory<
+    unknown,
+    unknown,
+    IPropertyObserverProxyPairManager
+  >
   implements IObjectPropertyObserverProxyPairManager
 {
   constructor(

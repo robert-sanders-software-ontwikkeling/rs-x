@@ -1,4 +1,4 @@
-import { type IDisposableOwner, type ISingletonFactory } from '@rs-x/core';
+import { type IDisposableOwner, type IKeyedInstanceFactory } from '@rs-x/core';
 
 import { type IObserverProxyPair } from '../../object-property-observer-proxy-pair-manager.type';
 
@@ -10,7 +10,7 @@ export interface ISetProxifyData extends ISetProxifyIdData {
 }
 
 export type ISetObserverProxyPair = IObserverProxyPair<Set<unknown>>;
-export type ISetProxyFactory = ISingletonFactory<
+export type ISetProxyFactory = IKeyedInstanceFactory<
   Set<unknown>,
   ISetProxifyData,
   ISetObserverProxyPair,

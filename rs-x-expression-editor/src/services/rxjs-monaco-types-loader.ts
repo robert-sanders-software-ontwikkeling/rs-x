@@ -110,11 +110,40 @@ export class RxjsMonacoTypesLoader {
         }
 
         interface IExpression<TReturn = unknown> {
-          value: TReturn;
+          readonly changed: Core.Observable<IExpression<TReturn>>;
+          readonly value: TReturn | undefined;
+          dispose(): void;
+        }
+
+        interface IWaitForEventOptions<
+          TTarget extends { [K in TEventName]: Core.Observable<TValue> },
+          TEventName extends keyof TTarget,
+          TValue,
+        > {
+          count?: number;
+          timeout?: number;
+          ignoreInitialValue?: boolean;
+        }
+
+        class WaitForEvent<
+          TTarget extends { [K in TEventName]: Core.Observable<TValue> },
+          TEventName extends keyof TTarget,
+          TValue,
+        > {
+          constructor(
+            target: TTarget,
+            eventName: TEventName,
+            options?: IWaitForEventOptions<TTarget, TEventName, TValue>,
+          );
+
+          wait(
+            trigger: () => void | Promise<unknown> | Core.Observable<unknown>,
+          ): Promise<TValue | null>;
         }
 
         const api: {
           rxjs: typeof Core & typeof Ops;
+          WaitForEvent: typeof WaitForEvent;
 
           rsx: <TReturn, TModel extends object = object>(
             expressionString: string,

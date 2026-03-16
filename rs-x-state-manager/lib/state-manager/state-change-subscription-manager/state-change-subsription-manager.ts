@@ -2,7 +2,7 @@ import {
   type IErrorLog,
   type IGuidFactory,
   type IInstanceGroupInfo,
-  SingletonFactory,
+  KeyedInstanceFactory,
 } from '@rs-x/core';
 
 import { GroupedChangeSubscriptionsForContextManager } from '../../grouped-change-subscriptions-for-context-manager';
@@ -68,7 +68,7 @@ class StateChangeSubscriptionsForContextManager
 }
 
 export class StateChangeSubscriptionManager
-  extends SingletonFactory<
+  extends KeyedInstanceFactory<
     unknown,
     unknown,
     IStateChangeSubscriptionsForContextManager

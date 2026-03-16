@@ -1,12 +1,12 @@
 import { Inject, Injectable } from '../dependency-injection';
 import { ArgumentException } from '../exceptions';
+import { KeyedInstanceFactory } from '../keyed-instance-factory/keyed-instance.factory';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
 import type {
   IISequenceWithIdData,
   ISequenceIdFactory,
   ISequenceWithId,
 } from '../sequence-id/sequence-id-factory.interface';
-import { SingletonFactory } from '../singleton-factory/singleton.factory';
 
 import { FunctionCallIndex } from './function-call-index';
 import type {
@@ -15,7 +15,7 @@ import type {
 } from './function-call-index.interface';
 
 @Injectable()
-export class FunctionCallIndexFactory extends SingletonFactory<
+export class FunctionCallIndexFactory extends KeyedInstanceFactory<
   IISequenceWithIdData,
   IFunctionCallIndexData,
   IDisposableFunctionCallIndex

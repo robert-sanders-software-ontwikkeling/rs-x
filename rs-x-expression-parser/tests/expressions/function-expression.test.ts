@@ -218,4 +218,23 @@ describe('FunctionExpression tests', () => {
     expect(actual.value).toEqual(20);
     expect(actual).toBe(expression);
   });
+
+  it('hides argument expression for zero-argument function calls', async () => {
+    const model = {
+      a: 1,
+      initializeA() {
+        this.a = 2;
+      },
+    };
+
+    expression = rsx('initializeA()')(model);
+    await new WaitForEvent(expression, 'changed').wait(() => {});
+
+    const argumentExpression = expression.childExpressions.find(
+      (childExpression) => childExpression.type === ExpressionType.Array,
+    );
+
+    expect(argumentExpression).toBeDefined();
+    expect(argumentExpression?.hidden).toBe(true);
+  });
 });

@@ -1,15 +1,15 @@
-import { FunctionCallResultCacheFactory } from '../../lib/function-call-result-cache/function-call-result-cache.factory';
-import { type IFunctionCallResult } from '../../lib/function-call-result-cache/function-call-result-cache.factory.interface';
+import { FunctionCallResultCache } from '../../lib/function-call-result-cache/function-call-result-cache';
+import { type IFunctionCallResult } from '../../lib/function-call-result-cache/function-call-result-cache.interface';
 import { DisposableFunctionCallIndexMock } from '../../lib/testing/disposable-function-call-index.mock';
 import { FunctionCallIndexFactoryMock } from '../../lib/testing/function-call-index.factory.mock';
 
 describe('FunctionCallIndexFactory tests', () => {
   let functionCallIndexFactory: FunctionCallIndexFactoryMock;
-  let functionCallResultCacheFactory: FunctionCallResultCacheFactory;
+  let functionCallResultCacheFactory: FunctionCallResultCache;
 
   beforeEach(() => {
     functionCallIndexFactory = new FunctionCallIndexFactoryMock();
-    functionCallResultCacheFactory = new FunctionCallResultCacheFactory(
+    functionCallResultCacheFactory = new FunctionCallResultCache(
       functionCallIndexFactory,
     );
   });

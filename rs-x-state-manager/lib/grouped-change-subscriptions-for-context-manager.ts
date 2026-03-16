@@ -1,11 +1,11 @@
 import { type Subscription } from 'rxjs';
 
 import {
+  GuidKeyedInstanceFactory,
   type IErrorLog,
   type IGuidFactory,
+  type IKeyedInstanceFactory,
   type IPropertyChange,
-  type ISingletonFactory,
-  SingletonFactoryWithGuid,
 } from '@rs-x/core';
 
 import { type IObserver } from './observer.interface';
@@ -24,7 +24,7 @@ export interface IGroupedChangeSubscriptionsForContextManager<
   TSubsriptionData,
   TData,
   TIdData = TData,
-> extends ISingletonFactory<string, TData, IObserver, TIdData> {
+> extends IKeyedInstanceFactory<string, TData, IObserver, TIdData> {
   getSubsriptionData(id: string): TSubsriptionData | undefined;
 }
 
@@ -33,7 +33,7 @@ export abstract class GroupedChangeSubscriptionsForContextManager<
   TData extends TIdData & IChangeSubscriptionsCreateMethods,
   TIdData = TData,
 >
-  extends SingletonFactoryWithGuid<TData, IObserver>
+  extends GuidKeyedInstanceFactory<TData, IObserver>
   implements
     IGroupedChangeSubscriptionsForContextManager<
       TSubsriptionData,

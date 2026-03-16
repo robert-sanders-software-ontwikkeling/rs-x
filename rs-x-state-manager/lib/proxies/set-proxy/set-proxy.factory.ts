@@ -3,8 +3,8 @@ import {
   Inject,
   Injectable,
   type IProxyRegistry,
+  KeyedInstanceFactory,
   RsXCoreInjectionTokens,
-  SingletonFactory,
   Type,
 } from '@rs-x/core';
 
@@ -107,7 +107,7 @@ export class SetProxy extends AbstractObserver<
 
 @Injectable()
 export class SetProxyFactory
-  extends SingletonFactory<
+  extends KeyedInstanceFactory<
     Set<unknown>,
     ISetProxifyData,
     ISetObserverProxyPair,

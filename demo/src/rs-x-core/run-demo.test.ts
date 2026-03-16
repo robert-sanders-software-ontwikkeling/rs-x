@@ -84,9 +84,9 @@ describe('Core  demos', () => {
     ).toOutputAsync(expected);
   });
 
-  it('implementation-of-singleton-factory.ts', async () => {
+  it('implementation-of-keyed-instance-factory.ts', async () => {
     const expected = dedent`
-            Running demo: demo/src/rs-x-core/implementation-of-singleton-factory.ts
+            Running demo: demo/src/rs-x-core/implementation-of-keyed-instance-factory.ts
             You can observe the same property multiple times but only one observer will be create:
             true
             Changing value to 20:
@@ -97,7 +97,7 @@ describe('Core  demos', () => {
         `;
 
     await expect(() =>
-      runDemo('rs-x-core/implementation-of-singleton-factory.ts'),
+      runDemo('rs-x-core/implementation-of-keyed-instance-factory.ts'),
     ).toOutputAsync(expected);
   });
 

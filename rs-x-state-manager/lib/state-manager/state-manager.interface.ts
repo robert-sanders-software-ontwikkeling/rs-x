@@ -18,6 +18,11 @@ export interface IStateOptions {
   ownerId?: unknown;
 }
 
+export interface IStateEventListener {
+  onStateChange: (change: IStateChange) => void;
+  onContextChanged: (change: IContextChanged) => void;
+}
+
 export interface IStateManager {
   readonly changed: Observable<IStateChange>;
   readonly contextChanged: Observable<IContextChanged>;
@@ -33,6 +38,11 @@ export interface IStateManager {
     index: unknown,
     options?: IStateOptions,
   ): unknown;
+  subscribeStateEvents(
+    context: unknown,
+    index: unknown,
+    listener: IStateEventListener,
+  ): () => void;
   releaseState(
     oontext: unknown,
     index: unknown,
@@ -43,7 +53,7 @@ export interface IStateManager {
     context: unknown,
     index: unknown,
     value: T,
-    ownerId: unknown,
+    ownerId?: unknown,
   ): void;
   clear(): void;
 }

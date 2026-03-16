@@ -41,7 +41,7 @@ function buildScriptQuery(script: string): string {
   return params.toString();
 }
 
-function evaluateScript(scriptBody: string): EvalResult {
+async function evaluateScript(scriptBody: string): Promise<EvalResult> {
   const body = scriptBody.trim();
   if (!body) {
     return { ok: false, error: 'Empty script' };
@@ -49,7 +49,7 @@ function evaluateScript(scriptBody: string): EvalResult {
 
   try {
     const result =
-      ScriptEvaluator.getInstance().evaluateScript<IExpression>(body);
+      await ScriptEvaluator.getInstance().evaluateScript<IExpression>(body);
 
     if (!result.success) {
       return {
@@ -187,18 +187,19 @@ const DemoPageClient: React.FC = () => {
   };
 
   const compileScript = (nextScript: string) => {
-    const result = evaluateScript(nextScript);
-
     setScript(nextScript);
 
-    if (result.ok) {
-      setErrors([]);
-      setNewExpression(result.value);
-      return;
-    }
+    void (async () => {
+      const result = await evaluateScript(nextScript);
+      if (result.ok) {
+        setErrors([]);
+        setNewExpression(result.value);
+        return;
+      }
 
-    setErrors([result.error]);
-    setNewExpression(undefined);
+      setErrors([result.error]);
+      setNewExpression(undefined);
+    })();
   };
 
   // auto compile once

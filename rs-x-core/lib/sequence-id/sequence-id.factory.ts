@@ -1,7 +1,10 @@
 import { Inject, Injectable, PreDestroy } from '../dependency-injection';
 import type { IGuidFactory } from '../guid/guid.factory.interface';
+import {
+  type IDisposableOwner,
+  KeyedInstanceFactory,
+} from '../keyed-instance-factory';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
-import { type IDisposableOwner, SingletonFactory } from '../singleton-factory';
 
 import type {
   ISequenceIdFactory,
@@ -108,7 +111,7 @@ class ValueSequenceIdRegistry {
   }
 }
 
-class ValueSequenceIdsForContext extends SingletonFactory<
+class ValueSequenceIdsForContext extends KeyedInstanceFactory<
   string,
   unknown[],
   ISequenceWithId
@@ -153,7 +156,7 @@ class ValueSequenceIdsForContext extends SingletonFactory<
   }
 }
 
-class ValueSequenceIdRegistryManager extends SingletonFactory<
+class ValueSequenceIdRegistryManager extends KeyedInstanceFactory<
   unknown,
   unknown,
   ValueSequenceIdsForContext

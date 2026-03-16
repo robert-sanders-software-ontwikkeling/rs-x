@@ -1,4 +1,4 @@
-import { type IDisposableOwner, type ISingletonFactory } from '@rs-x/core';
+import { type IDisposableOwner, type IKeyedInstanceFactory } from '@rs-x/core';
 
 import type { IIndexWatchRule } from './index-watch-rule-registry/index-watch-rule.interface';
 import { type IObserver } from './observer.interface';
@@ -21,14 +21,14 @@ export interface IPropertyInfo extends IIndexInfo {
   initializeManually?: boolean;
 }
 
-export type IPropertyObserverProxyPairManager = ISingletonFactory<
+export type IPropertyObserverProxyPairManager = IKeyedInstanceFactory<
   unknown,
   IPropertyInfo,
   IObserverProxyPair,
   IIndexInfo
 >;
 
-export type IObjectPropertyObserverProxyPairManager = ISingletonFactory<
+export type IObjectPropertyObserverProxyPairManager = IKeyedInstanceFactory<
   unknown,
   unknown,
   IPropertyObserverProxyPairManager

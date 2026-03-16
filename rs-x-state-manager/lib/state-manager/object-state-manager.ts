@@ -2,8 +2,8 @@ import {
   type IDeepClone,
   Inject,
   Injectable,
+  KeyedInstanceFactory,
   RsXCoreInjectionTokens,
-  SingletonFactory,
   UnsupportedException,
 } from '@rs-x/core';
 
@@ -16,7 +16,7 @@ import type {
 } from './object-state-manager.interface';
 
 export class StateForObjectManager
-  extends SingletonFactory<unknown, IValueWithKey, IState, IValueKey>
+  extends KeyedInstanceFactory<unknown, IValueWithKey, IState, IValueKey>
   implements IStateForObjectManager
 {
   constructor(
@@ -41,6 +41,8 @@ export class StateForObjectManager
     if (state) {
       state.valueCopy = this.deepClone(key, value);
       state.value = value;
+      state.watched = watched;
+      state.ownerId = ownerId;
     } else {
       this.create({ key, value, watched, ownerId });
     }
@@ -51,6 +53,13 @@ export class StateForObjectManager
   }
 
   private deepClone(key: unknown, data: unknown): unknown {
+    if (
+      data === null ||
+      (typeof data !== 'object' && typeof data !== 'function')
+    ) {
+      return data;
+    }
+
     try {
       return this._deepClone.clone(data);
     } catch (e) {
@@ -76,7 +85,7 @@ export class StateForObjectManager
 
 @Injectable()
 export class ObjectStateManager
-  extends SingletonFactory<unknown, unknown, IStateForObjectManager>
+  extends KeyedInstanceFactory<unknown, unknown, IStateForObjectManager>
   implements IObjectStateManager
 {
   constructor(

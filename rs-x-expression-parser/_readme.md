@@ -584,7 +584,7 @@ All non-assignment JavaScript expressions are supported. These expressions can b
 ### Template string expression
 
 ```ts
-{% include_relative ../demo/src/rs-x-expression-parser/template-string-expression.ts %}
+{% include_relative ../demo/src/rs-x-expression-parser/template-literal-expression.ts %}
 ```
 
 ### Typeof expression

@@ -374,6 +374,66 @@ describe('Member expression tests', () => {
     });
   });
 
+  describe('member expression with date property', () => {
+    it('Emits a changed value for a member expression with a date property when the date is mutated via native setter', async () => {
+      const model = {
+        invoiceDate: new Date('2026-03-13T08:15:20.250Z'),
+      };
+
+      expression = rsx('invoiceDate.year')(model);
+
+      await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+      const actual = (await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.invoiceDate.setFullYear(2027);
+      })) as IExpression;
+
+      expect(actual).toBe(expression);
+      expect(actual.value).toEqual(2027);
+    });
+
+    it('Emits a changed value when mutating model.invoiceDate through the current model reference', async () => {
+      const model = {
+        invoiceDate: new Date('2026-03-13T08:15:20.250Z'),
+      };
+
+      expression = rsx('invoiceDate.year')(model);
+
+      await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+      const actual = (await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.invoiceDate.setFullYear(2028);
+      })) as IExpression;
+
+      expect(actual).toBe(expression);
+      expect(actual.value).toEqual(2028);
+    });
+
+    it('Emits a changed value when mutating a captured date reference after initial binding', async () => {
+      const model = {
+        invoiceDate: new Date('2026-03-13T08:15:20.250Z'),
+      };
+
+      expression = rsx('invoiceDate.year')(model);
+
+      await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+      const invoiceDate = model.invoiceDate;
+
+      const actual = (await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        invoiceDate.setFullYear(2029);
+      })) as IExpression;
+
+      expect(actual).toBe(expression);
+      expect(actual.value).toEqual(2029);
+    });
+  });
+
   describe('member expression with observable', () => {
     it('will emit initial value', async () => {
       const model = {
@@ -883,6 +943,40 @@ describe('Member expression tests', () => {
       })) as IExpression;
 
       expect(actual.value).toEqual('message: hi, subject: Message');
+    });
+  });
+
+  describe('member expression with sequence', () => {
+    it('Emits initial and changed values for (initializeA(), a).b', async () => {
+      const model: {
+        a: { b: number } | undefined;
+        initializeA(): void;
+      } = {
+        a: undefined,
+        initializeA() {
+          if (!this.a) {
+            this.a = { b: 1 };
+          }
+        },
+      };
+
+      expression = rsx('(initializeA(), a).b')(model);
+
+      const initial = (await new WaitForEvent(expression, 'changed').wait(
+        emptyFunction,
+      )) as IExpression;
+
+      expect(initial.value).toEqual(1);
+      expect(initial).toBe(expression);
+
+      const changed = (await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.a = { b: 10 };
+      })) as IExpression;
+
+      expect(changed.value).toEqual(10);
+      expect(changed).toBe(expression);
     });
   });
 

@@ -9,6 +9,7 @@
       "@rs-x/expression-parser",
       "@rs-x/angular",
       "@rs-x/react",
+      "@rs-x/react-components",
       "@rs-x/dev-tools"
     ]
   ],

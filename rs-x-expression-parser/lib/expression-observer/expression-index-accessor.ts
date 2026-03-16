@@ -9,14 +9,6 @@ import type { IExpressionIndexAccessor } from './expression-index-accessor.type'
 export class ExpressionIndexAccessor implements IExpressionIndexAccessor {
   public readonly priority!: 300;
 
-  public isAsync(): boolean {
-    return true;
-  }
-
-  public needsProxy(): boolean {
-    return true;
-  }
-
   public getResolvedValue(context: unknown, index: string): unknown {
     return Type.cast<IExpression>((Type.toObject(context) ?? {})[index])?.value;
   }

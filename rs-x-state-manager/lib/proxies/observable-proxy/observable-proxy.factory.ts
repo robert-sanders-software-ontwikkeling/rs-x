@@ -6,8 +6,8 @@ import {
   Injectable,
   type IObservableAccessor,
   type IPropertyChange,
+  KeyedInstanceFactory,
   RsXCoreInjectionTokens,
-  SingletonFactory,
 } from '@rs-x/core';
 
 import { AbstractObserver } from '../../abstract-observer';
@@ -70,7 +70,7 @@ class ObservableProxy extends AbstractObserver<
 
 @Injectable()
 export class ObservableProxyFactory
-  extends SingletonFactory<
+  extends KeyedInstanceFactory<
     Observable<unknown>,
     IObservableProxyData,
     IObservableObserverProxyPair

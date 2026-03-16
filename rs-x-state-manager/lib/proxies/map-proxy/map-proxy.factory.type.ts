@@ -1,4 +1,4 @@
-import { type IDisposableOwner, type ISingletonFactory } from '@rs-x/core';
+import { type IDisposableOwner, type IKeyedInstanceFactory } from '@rs-x/core';
 
 import { type IObserverProxyPair } from '../../object-property-observer-proxy-pair-manager.type';
 
@@ -11,7 +11,7 @@ export interface IMapProxifyData extends IMapProxifyIdData {
 }
 
 export type IMapObserverProxyPair = IObserverProxyPair<Map<unknown, unknown>>;
-export type IMapProxyFactory = ISingletonFactory<
+export type IMapProxyFactory = IKeyedInstanceFactory<
   Map<unknown, unknown>,
   IMapProxifyData,
   IMapObserverProxyPair

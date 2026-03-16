@@ -1,0 +1,64 @@
+.rsxLeftAccentCard {
+  position: relative;
+  min-width: 0;
+  --rsx-left-accent-offset-top: 0.625rem;
+  --rsx-left-accent-offset-bottom: 0.625rem;
+  --rsx-left-accent-offset-y: 0.625rem;
+  --rsx-left-accent-width: 4px;
+  --rsx-left-accent: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--brand, #0b66ff) 62%, transparent),
+    color-mix(in srgb, var(--brand-2, #2bb6a9) 56%, transparent)
+  );
+}
+
+.rsxLeftAccentCard::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--rsx-left-accent-offset-top, var(--rsx-left-accent-offset-y));
+  bottom: var(--rsx-left-accent-offset-bottom, var(--rsx-left-accent-offset-y));
+  width: var(--rsx-left-accent-width);
+  border-radius: 999px;
+  background: var(--rsx-left-accent);
+}
+
+.rsxLeftAccentCard--brand {
+  --rsx-left-accent: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--brand, #0b66ff) 62%, transparent),
+    color-mix(in srgb, var(--brand-2, #2bb6a9) 56%, transparent)
+  );
+}
+
+.rsxLeftAccentCard--active {
+  --rsx-left-accent: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--brand, #0b66ff) 70%, transparent),
+    color-mix(in srgb, var(--brand, #0b66ff) 45%, transparent)
+  );
+}
+
+.rsxLeftAccentCard--done {
+  --rsx-left-accent: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--brand-2, #2bb6a9) 72%, transparent),
+    color-mix(in srgb, #39d353 55%, transparent)
+  );
+}
+
+.rsxLeftAccentCard--mostly {
+  --rsx-left-accent: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--brand-2, #2bb6a9) 55%, transparent),
+    color-mix(in srgb, var(--brand, #0b66ff) 48%, transparent)
+  );
+}
+
+.rsxLeftAccentCard--planned {
+  --rsx-left-accent: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--muted, #6b7280) 60%, transparent),
+    color-mix(in srgb, var(--muted, #6b7280) 44%, transparent)
+  );
+}

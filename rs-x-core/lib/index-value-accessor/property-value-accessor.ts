@@ -18,8 +18,8 @@ export class PropertyValueAccessor implements IPropertyValueAccessor {
   }
 
   public hasValue(context: unknown, index: string): boolean {
-    const val = this.getValue(context, index);
-    return val !== undefined;
+    const obj = Type.toObject(context);
+    return !!obj && Type.hasProperty(obj, index);
   }
 
   public getResolvedValue(context: unknown, index: string): unknown {

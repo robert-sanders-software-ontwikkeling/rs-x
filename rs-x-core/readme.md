@@ -7,7 +7,7 @@ Provides shared core functionality for the RS-X project:
 - [Deep Equality](#deep-equality)
 - [Guid Factory](#guid-factory)
 - [Index Value Accessor](#index-value-accessor)
-- [Singleton factory](#singleton-factory)
+- [Keyed instance factory](#keyed-instance-factory)
 - [Error Log](#error-log)
 - [WaitForEvent](#waitforevent)
 
@@ -643,11 +643,11 @@ You can customize the index value accessor list by overriding it:
 
     ```
 
-## Singleton factory
+## Keyed instance factory
 
 Besides static singleton services registered via the dependency injection framework, we sometimes want to be able to create **dynamic singleton services**. These are services that are created based on dynamic data.
 
-For example, suppose we have a service that patches a property on an object so it can emit an event whenever the property value changes. In this scenario, we want to ensure that the property is patched **only once**. The example below shows how we can use `SingletonFactory` to implement this:
+For example, suppose we have a service that patches a property on an object so it can emit an event whenever the property value changes. In this scenario, we want to ensure that the property is patched **only once**. The example below shows how we can use `KeyedInstanceFactory` to implement this:
 
 ```ts
 import { type Observable, Subject } from 'rxjs';
@@ -659,7 +659,7 @@ import {
   type IPropertyChange,
   type IPropertyDescriptor,
   PropertyDescriptorType,
-  SingletonFactory,
+  KeyedInstanceFactory,
   Type,
   UnsupportedException,
 } from '@rs-x/core';
@@ -789,7 +789,7 @@ class PropertObserver implements IObserver {
   }
 }
 
-class PropertyObserverManager extends SingletonFactory<
+class PropertyObserverManager extends KeyedInstanceFactory<
   string,
   string,
   IObserver,
@@ -833,7 +833,7 @@ class PropertyObserverManager extends SingletonFactory<
   }
 }
 
-class ObjectPropertyObserverManager extends SingletonFactory<
+class ObjectPropertyObserverManager extends KeyedInstanceFactory<
   object,
   object,
   PropertyObserverManager
@@ -910,7 +910,7 @@ export const run = (() => {
 **Output:**
 
 ```console
- Running demo: demo/src/rs-x-core/implementation-of-singleton-factory.ts
+ Running demo: demo/src/rs-x-core/implementation-of-keyed-instance-factory.ts
 You can observe the same property multiple times but only one observer will be create:
 true
 Changing value to 20:
@@ -920,12 +920,12 @@ Observer 2:
 20
 ```
 
-In this example, we have derived two classes from `SingletonFactory`:
+In this example, we have derived two classes from `KeyedInstanceFactory`:
 
 - **`PropertyObserverManager`** – ensures that only one `PropertyObserver` is created per property.
 - **`ObjectPropertyObserverManager`** – ensures that only one `PropertyObserverManager` is created per object.
 
-It is good practice **not to expose classes derived from `SingletonFactory`** directly, but to use them internally to keep the interface simple.
+It is good practice **not to expose classes derived from `KeyedInstanceFactory`** directly, but to use them internally to keep the interface simple.
 
 For example, we have created a class **`PropertyObserverFactory`** that internally uses `ObjectPropertyObserverManager`.
 

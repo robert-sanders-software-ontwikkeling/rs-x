@@ -1,4 +1,4 @@
-import { type IDisposableOwner, type ISingletonFactory } from '@rs-x/core';
+import { type IDisposableOwner, type IKeyedInstanceFactory } from '@rs-x/core';
 
 import { type IObserverProxyPair } from '../../object-property-observer-proxy-pair-manager.type';
 
@@ -8,7 +8,7 @@ export interface IPromiseProxyData {
 }
 
 export type IPromiseObserverProxyPair = IObserverProxyPair<Promise<unknown>>;
-export type IPromiseProxyFactory = ISingletonFactory<
+export type IPromiseProxyFactory = IKeyedInstanceFactory<
   Promise<unknown>,
   IPromiseProxyData,
   IPromiseObserverProxyPair

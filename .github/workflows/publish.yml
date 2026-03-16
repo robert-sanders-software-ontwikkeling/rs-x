@@ -65,6 +65,9 @@ jobs:
       - name: Build Angular package
         run: pnpm run build:angular
 
+      - name: Build React components
+        run: pnpm --filter @rs-x/react-components run build
+
       # ---------------- ROLLBACK GUARD ----------------
       - name: Abort if versions already exist on npm
         run: node scripts/check-npm-versions.mjs
@@ -76,7 +79,7 @@ jobs:
         run: |
           set -e
           echo "Checking npm for existing versions..."
-          for pkg in @rs-x/core @rs-x/state-manager @rs-x/expression-parser; do
+          for pkg in @rs-x/core @rs-x/state-manager @rs-x/expression-parser @rs-x/react-components; do
             if pnpm info $pkg &> /dev/null; then
               echo "$pkg exists on npm → will publish with OIDC & provenance"
             else

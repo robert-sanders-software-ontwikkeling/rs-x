@@ -1,5 +1,9 @@
-import type { ISingletonFactory } from '@rs-x/core';
+import type { IKeyedInstanceFactory } from '@rs-x/core';
 
 import type { IExpression } from '../expressions/expression-parser.interface';
 
-export type IExpressionCache = ISingletonFactory<string, string, IExpression>;
+export type IExpressionCache = IKeyedInstanceFactory<
+  string,
+  string,
+  IExpression
+>;

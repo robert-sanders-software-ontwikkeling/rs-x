@@ -8,8 +8,8 @@ import {
   Inject,
   Injectable,
   type IPropertyChange,
+  KeyedInstanceFactory,
   RsXCoreInjectionTokens,
-  SingletonFactory,
 } from '@rs-x/core';
 
 import { AbstractObserver } from '../../../abstract-observer';
@@ -74,7 +74,7 @@ class DatePropertyObserver extends AbstractObserver<Date> {
 }
 
 class ProperForDataObserverManager
-  extends SingletonFactory<
+  extends KeyedInstanceFactory<
     DateProperty,
     IDatePropertyObserverInfo,
     IObserver,
@@ -136,7 +136,7 @@ class ProperForDataObserverManager
 
 @Injectable()
 export class DatePropertyObserverManager
-  extends SingletonFactory<Date, Date, IProperForDataObserverManager>
+  extends KeyedInstanceFactory<Date, Date, IProperForDataObserverManager>
   implements IDatePropertyObserverManager
 {
   constructor(

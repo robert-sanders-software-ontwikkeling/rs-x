@@ -1,4 +1,4 @@
-import { type ISingletonFactory } from '@rs-x/core';
+import { type IKeyedInstanceFactory } from '@rs-x/core';
 
 import { type IObserver } from '../../../observer.interface';
 import {
@@ -9,12 +9,12 @@ import {
 export type IPropertyObserverIdInfo = IIndexObserverIdInfo<string>;
 
 export type IPropertyObserverInfo = IIndexObserverInfo<string>;
-export type IPropertyObserverManager = ISingletonFactory<
+export type IPropertyObserverManager = IKeyedInstanceFactory<
   string,
   IPropertyObserverInfo,
   IObserver
 >;
-export type IObjectPropertyObserverManager = ISingletonFactory<
+export type IObjectPropertyObserverManager = IKeyedInstanceFactory<
   object,
   object,
   IPropertyObserverManager

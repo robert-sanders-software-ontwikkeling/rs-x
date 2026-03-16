@@ -1,0 +1,96 @@
+.rsxDataTable {
+  min-width: 0;
+}
+
+.rsxDataTableControls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.rsxDataTableFilterLabel {
+  color: var(--muted, rgba(16, 24, 40, 0.68));
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.rsxDataTableFilterLabelSrOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.rsxDataTableFilterInput {
+  width: min(100%, 360px);
+  border: 1px solid var(--border-soft, rgba(10, 25, 55, 0.1));
+  border-radius: 10px;
+  padding: 0.42rem 0.62rem;
+  background: var(--surface-solid, #ffffff);
+  color: var(--text, #0b1324);
+  font: inherit;
+}
+
+.rsxDataTableFilterInput::placeholder {
+  color: var(--muted, rgba(16, 24, 40, 0.68));
+}
+
+.rsxDataTableWrap {
+  width: 100%;
+  overflow: auto;
+}
+
+.rsxDataTableTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+.rsxDataTableTable th,
+.rsxDataTableTable td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.75rem 0.9rem;
+  border-bottom: 1px solid var(--border-soft, rgba(10, 25, 55, 0.1));
+}
+
+.rsxDataTableTable th {
+  background: var(--surface-2, rgba(255, 255, 255, 0.72));
+  color: var(--text, #0b1324);
+  font-weight: 800;
+}
+
+.rsxDataTableSortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: none;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  cursor: pointer;
+}
+
+.rsxDataTableSortMarker {
+  color: var(--muted, rgba(16, 24, 40, 0.68));
+  font-size: 0.82em;
+  line-height: 1;
+  min-width: 0.72em;
+  opacity: 0.35;
+}
+
+.rsxDataTableSortButton.isActive .rsxDataTableSortMarker {
+  opacity: 0.9;
+}
+
+.rsxDataTableEmptyCell {
+  color: var(--muted, rgba(16, 24, 40, 0.68));
+}

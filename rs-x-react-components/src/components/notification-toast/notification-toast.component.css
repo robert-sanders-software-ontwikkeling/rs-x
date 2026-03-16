@@ -1,0 +1,41 @@
+@import '../../styles/component-shell.css';
+
+.notificationToastHost {
+  position: fixed;
+  top: var(--sp-6);
+  right: var(--sp-6);
+  z-index: 1400;
+  pointer-events: none;
+}
+
+.notificationToast {
+  min-width: 260px;
+  max-width: min(92vw, 460px);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-solid);
+  color: var(--text);
+  box-shadow: var(--shadow-1);
+  padding: var(--sp-4) var(--sp-5);
+  pointer-events: auto;
+}
+
+.notificationToastTitle {
+  font-weight: 800;
+  margin-bottom: var(--sp-1);
+}
+
+.notificationToastMessage {
+  line-height: 1.45;
+  color: var(--muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.notificationToast--success {
+  border-color: color-mix(in srgb, var(--brand-2) 45%, var(--border));
+}
+
+.notificationToast--error {
+  border-color: color-mix(in srgb, #ef4444 45%, var(--border));
+}

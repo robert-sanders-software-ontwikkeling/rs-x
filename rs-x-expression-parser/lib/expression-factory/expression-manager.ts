@@ -1,4 +1,4 @@
-import { Inject, Injectable, SingletonFactory } from '@rs-x/core';
+import { Inject, Injectable, KeyedInstanceFactory } from '@rs-x/core';
 
 import type { IExpressionCache } from '../expression-cache';
 import type { IExpressionServices } from '../expression-services/expression-services.interface';
@@ -13,7 +13,7 @@ import type {
 } from './expression-manager.type';
 
 class ExpressionForContextManager
-  extends SingletonFactory<
+  extends KeyedInstanceFactory<
     string,
     IExpressionData,
     IExpression,
@@ -76,11 +76,17 @@ class ExpressionForContextManager
     return this._expressionCache.create(expressionData.expressionString)
       .instance;
   }
+
+  protected override releaseInstance(instance: IExpression): void {
+    if (!instance.isDisposed) {
+      instance.dispose();
+    }
+  }
 }
 
 @Injectable()
 export class ExpressionManager
-  extends SingletonFactory<object, object, IExpressionForContextManager>
+  extends KeyedInstanceFactory<object, object, IExpressionForContextManager>
   implements IExpressionManager
 {
   public override getId(context: object): object {
@@ -108,5 +114,11 @@ export class ExpressionManager
       context,
       () => this.release(id),
     );
+  }
+
+  protected override releaseInstance(
+    instance: IExpressionForContextManager,
+  ): void {
+    instance.dispose();
   }
 }

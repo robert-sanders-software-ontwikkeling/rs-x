@@ -1,6 +1,6 @@
 import { Observable, ReplaySubject, Subscription } from 'rxjs';
 
-import { IDisposableOwner, Injectable, SingletonFactory } from '@rs-x/core';
+import { IDisposableOwner, Injectable, KeyedInstanceFactory } from '@rs-x/core';
 
 import { IExpression } from '../expressions/expression-parser.interface';
 
@@ -125,7 +125,11 @@ export class ExpressionChangeTracker implements IExpressionChangeTracker {
 }
 @Injectable()
 export class ExpressionChangeTrackerManager
-  extends SingletonFactory<IExpression, IExpression, IExpressionChangeTracker>
+  extends KeyedInstanceFactory<
+    IExpression,
+    IExpression,
+    IExpressionChangeTracker
+  >
   implements IExpressionChangeTrackerManager
 {
   constructor() {

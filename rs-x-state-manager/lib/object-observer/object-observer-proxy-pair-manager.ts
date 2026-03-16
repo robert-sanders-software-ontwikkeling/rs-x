@@ -1,11 +1,11 @@
 import {
+  GuidKeyedInstanceFactory,
   type IGuidFactory,
   Inject,
   Injectable,
   InvalidOperationException,
   type IProxyRegistry,
   RsXCoreInjectionTokens,
-  SingletonFactoryWithGuid,
   Type,
 } from '@rs-x/core';
 
@@ -21,7 +21,7 @@ import type {
 
 @Injectable()
 export class ObjectObserverProxyPairManager
-  extends SingletonFactoryWithGuid<IProxyTarget<unknown>, IObserverProxyPair>
+  extends GuidKeyedInstanceFactory<IProxyTarget<unknown>, IObserverProxyPair>
   implements IObjectObserverProxyPairManager
 {
   constructor(

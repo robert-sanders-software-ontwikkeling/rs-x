@@ -1,6 +1,6 @@
 {
   "name": "@rs-x/expression-parser",
-  "version": "0.4.22",
+  "version": "1.0.0",
   "description": "Reactive JavaScript expression parser with observable AST integration for RS-X",
   "type": "module",
   "main": "./dist/index.js",
@@ -30,7 +30,10 @@
   },
   "scripts": {
     "build": "tsup lib/index.ts --format esm --dts --tsconfig ../tsconfig.build.json",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "bench:spa-readiness": "node --expose-gc --max-old-space-size=4096 ./scripts/benchmark-spa-readiness.mjs",
+    "bench:spa-readiness:median": "node ./scripts/benchmark-spa-readiness-median.mjs",
+    "bench:core-concepts-performance": "node --expose-gc --max-old-space-size=4096 ./scripts/benchmark-core-concepts-performance.mjs"
   },
   "peerDependencies": {
     "rxjs": "^7.8.0"

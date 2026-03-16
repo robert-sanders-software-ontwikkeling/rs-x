@@ -274,6 +274,46 @@ describe('Type tests', () => {
     const instance = new Derived();
     expect(Type.hasProperty(instance, 'x')).toEqual(false);
   });
+
+  describe('isReadonlyProperty', () => {
+    it('returns true for getter-only property', () => {
+      const instance = {
+        get total() {
+          return 10;
+        },
+      };
+
+      expect(Type.isReadonlyProperty(instance, 'total')).toBe(true);
+    });
+
+    it('returns true for inherited getter-only property', () => {
+      const instance = new Derived();
+
+      expect(Type.isReadonlyProperty(instance, 'baseReadonlyProperty')).toBe(
+        true,
+      );
+      expect(Type.isReadonlyProperty(instance, 'derivedReadonlyProperty')).toBe(
+        true,
+      );
+    });
+
+    it('returns false for writable property and fields', () => {
+      const instance = {
+        _value: 10,
+        get total() {
+          return this._value;
+        },
+        set total(value: number) {
+          this._value = value;
+        },
+      };
+
+      expect(Type.isReadonlyProperty(instance, 'total')).toBe(false);
+      expect(Type.isReadonlyProperty(instance, '_value')).toBe(false);
+      expect(Type.isReadonlyProperty(instance, 'missing')).toBe(false);
+      expect(Type.isReadonlyProperty(null, 'value')).toBe(false);
+    });
+  });
 });
 
 class Base {

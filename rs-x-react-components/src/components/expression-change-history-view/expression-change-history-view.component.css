@@ -1,0 +1,394 @@
+@import '../../styles/theme-tokens.css';
+
+/* =========================================================
+   Root
+========================================================= */
+
+.changeHistoryRoot {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.changeHistoryEmpty {
+  opacity: 0.7;
+  font-style: italic;
+  padding: var(--sp-5);
+  color: var(--muted);
+}
+
+/* =========================================================
+   Accordion Container (devtool panel)
+========================================================= */
+
+.changeHistoryAccordion {
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background-color: var(--surface-solid);
+  overflow: hidden;
+  min-height: 0;
+  min-width: 0;
+  box-shadow: var(--shadow-1);
+}
+
+.changeHistoryAccordionScroll {
+  max-height: 100%;
+  overflow: auto;
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* =========================================================
+   Change Set (flat list item + subtle active state)
+========================================================= */
+
+.changeSet {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  transition:
+    background-color var(--t-med) var(--ease),
+    border-color var(--t-med) var(--ease),
+    box-shadow var(--t-med) var(--ease);
+}
+
+.changeSet.isActive {
+  border-color: var(--chg-active-border);
+  background-color: var(--chg-active-bg);
+  box-shadow: var(--chg-active-shadow);
+}
+
+@supports not (background-color: color-mix(in srgb, black 50%, white 50%)) {
+  .changeSet.isActive {
+    background-color: var(--surface-2);
+  }
+}
+
+/* =========================================================
+   Header (clear separation from body)
+========================================================= */
+
+.changeSetHeader {
+  width: 100%;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+
+  background-color: var(--surface-2);
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-6);
+
+  padding: var(--sp-5) var(--sp-6);
+  position: relative;
+  text-align: left;
+
+  transition:
+    background-color var(--t-med) var(--ease),
+    box-shadow var(--t-med) var(--ease);
+}
+
+.changeSetHeader:hover {
+  background-color: var(--surface-2);
+}
+
+.changeSetHeader:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/* left accent for active selection */
+.changeSet.isActive .changeSetHeader::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--sp-3);
+  bottom: var(--sp-3);
+  width: 3px;
+  border-radius: 999px;
+  background-color: var(--chg-active-rail);
+}
+
+.changeSet.nonClickable {
+  pointer-events: none;
+}
+
+.changeSetHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.changeSetBadge {
+  font-weight: 800;
+  font-size: 14px;
+  padding: 3px 8px;
+  border-radius: 999px;
+
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+
+  flex: 0 0 auto;
+}
+
+.changeSetHeaderMeta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+/* Expression label color: theme-aligned, subtle accent */
+.changeSetExpr {
+  font-weight: 800;
+  font-size: 13px;
+
+  color: var(--chg-expr-color);
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  max-width: 100%;
+}
+
+@supports not (color: color-mix(in srgb, black 50%, white 50%)) {
+  .changeSetExpr {
+    color: var(--text);
+    opacity: 0.9;
+  }
+}
+
+.changeSetSteps {
+  font-size: 12px;
+  color: var(--muted-2);
+  flex: 0 0 auto;
+}
+
+/* Right side alignment (fixed column width for alignment) */
+.changeSetHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  flex: 0 0 260px;
+  justify-content: flex-end;
+}
+
+/* Chevron */
+.changeSetChevron {
+  display: inline-flex;
+  justify-content: center;
+  width: 20px;
+  color: var(--muted-2);
+  transition: transform var(--t-med) var(--ease);
+}
+
+.changeSetChevron.isOpen {
+  transform: rotate(90deg);
+}
+
+/* =========================================================
+   Expanded Body
+========================================================= */
+
+.changeSetBody {
+  padding: var(--sp-3) var(--sp-6) var(--sp-4) var(--sp-6);
+  border-top: 1px solid var(--border-soft);
+  background-color: var(--chg-body-bg);
+}
+
+@supports not (background-color: color-mix(in srgb, black 50%, white 50%)) {
+  .changeSetBody {
+    background-color: var(--surface-solid);
+  }
+}
+
+/* =========================================================
+   Value Diff (COMPACT: no stretching)
+========================================================= */
+
+.valueDiff {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.valueDiff.isHeader {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.valueDiff.isRow {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.valueDiffOld,
+.valueDiffNew {
+  text-align: right;
+}
+
+.valueDiffArrow {
+  text-align: center;
+  color: var(--muted-2);
+}
+
+/* Use your semantic tokens */
+.valueDiffOld {
+  color: var(--chg-diff-old);
+}
+
+.valueDiffNew {
+  color: var(--chg-diff-new);
+}
+
+@supports not (color: color-mix(in srgb, black 50%, white 50%)) {
+  .valueDiffOld,
+  .valueDiffNew {
+    color: var(--text);
+    opacity: 0.9;
+  }
+}
+
+.valueDiffOld.isUnset,
+.valueDiffNew.isUnset {
+  opacity: 0.55;
+  font-style: italic;
+  color: var(--muted-2);
+}
+
+/* =========================================================
+   Timeline + Steps (structural rail + flat rows)
+========================================================= */
+
+.changePath {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* each step is a row with a rail column */
+.changeStep {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: var(--sp-4);
+  min-width: 0;
+
+  padding: var(--sp-4) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.changeStep:last-child {
+  border-bottom: none;
+}
+
+.changeStepRail {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.changeStepDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+
+  background-color: var(--surface-2);
+  border: 2px solid var(--border-soft);
+
+  margin-top: 6px;
+}
+
+.changeStepDot.isTrigger {
+  background-color: var(--chg-step-dot-trigger-bg);
+  box-shadow: var(--chg-step-dot-trigger-ring);
+  border-color: var(--chg-step-dot-trigger-border);
+}
+
+.changeStepLine {
+  position: absolute;
+  top: 18px;
+  bottom: -8px;
+  width: 2px;
+  background-color: var(--border-soft);
+}
+
+/* =========================================================
+   Step Content (no card, just a row)
+========================================================= */
+
+.changeStepCard {
+  border: none;
+  background: transparent;
+  border-radius: 0;
+  min-width: 0;
+}
+
+.changeStepHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+.changeStepHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.changeStepExpr {
+  font-weight: 800;
+  font-size: 13px;
+
+  color: var(--chg-expr-color);
+
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@supports not (color: color-mix(in srgb, black 50%, white 50%)) {
+  .changeStepExpr {
+    color: var(--text);
+    opacity: 0.9;
+  }
+}
+
+.changeStepTag {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 999px;
+
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+
+  flex: 0 0 auto;
+}
+
+.changeStepTag.derived {
+  opacity: 0.85;
+}
+
+.changeStepHeaderRight {
+  flex: 0 0 260px;
+  display: flex;
+  justify-content: flex-end;
+}

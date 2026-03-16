@@ -67,4 +67,20 @@ describe('ExpressionManager', () => {
     expression2.dispose();
     expect(expressionCache.getReferenceCount('a +1 * (2 + 3)')).toEqual(0);
   });
+
+  it('dispose releases active expressions and cache references', () => {
+    const expressionCache: IExpressionCache = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionCache,
+    );
+    const context = { a: 1 };
+    const expressionString = 'a + 1';
+
+    expressionManager.create(context).instance.create({ expressionString });
+
+    expect(expressionCache.getReferenceCount(expressionString)).toEqual(1);
+
+    expressionManager.dispose();
+
+    expect(expressionCache.getReferenceCount(expressionString)).toEqual(0);
+  });
 });

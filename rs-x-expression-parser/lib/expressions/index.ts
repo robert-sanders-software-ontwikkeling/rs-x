@@ -49,7 +49,7 @@ export * from './spread-expression';
 export * from './strict-equality-expression';
 export * from './strict-inequality-expression';
 export * from './substraction-expression';
-export * from './template-string-expression';
+export * from './template-literal-expression';
 export * from './typeof-expression';
 export * from './unary-negation-expression';
 export * from './unary-plus-expression';

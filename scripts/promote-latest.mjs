@@ -12,6 +12,7 @@ const PACKAGES = [
   '@rs-x/expression-parser',
   '@rs-x/angular',
   '@rs-x/react',
+  '@rs-x/react-components',
 ];
 
 function run(cmd) {

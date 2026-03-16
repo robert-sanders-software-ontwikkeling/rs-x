@@ -8,6 +8,9 @@ import type { IIndexValueAccessor } from './index-value-accessor.interface';
 export class IndexValueAccessor implements IIndexValueAccessor {
   public readonly priority = 0;
   private readonly _accessors: readonly IIndexValueAccessor[];
+  private _lastContext: unknown;
+  private _lastIndex: unknown;
+  private _lastAccessor: IIndexValueAccessor<unknown, unknown> | undefined;
 
   constructor(
     @MultiInject(RsXCoreInjectionTokens.IIndexValueAccessorList)
@@ -43,21 +46,46 @@ export class IndexValueAccessor implements IIndexValueAccessor {
   }
 
   public applies(context: unknown, index: unknown): boolean {
-    return this.getIndexAccessor(context, index).applies(context, index);
+    return this.findIndexAccessor(context, index) !== undefined;
   }
 
   private getIndexAccessor(
     context: unknown,
     index: unknown,
   ): IIndexValueAccessor<unknown, unknown> {
-    const accessor = this._accessors.find((accessor) =>
-      accessor.applies(context, index),
-    );
+    const accessor = this.findIndexAccessor(context, index);
 
     if (!accessor) {
       throw new NoAccessorFoundExeception(context, index);
     }
 
     return accessor;
+  }
+
+  private findIndexAccessor(
+    context: unknown,
+    index: unknown,
+  ): IIndexValueAccessor<unknown, unknown> | undefined {
+    const lastAccessor = this._lastAccessor;
+    if (
+      lastAccessor &&
+      this._lastContext === context &&
+      this._lastIndex === index &&
+      lastAccessor.applies(context, index)
+    ) {
+      return lastAccessor;
+    }
+
+    const accessors = this._accessors;
+    for (let i = 0; i < accessors.length; i++) {
+      const accessor = accessors[i];
+      if (accessor.applies(context, index)) {
+        this._lastContext = context;
+        this._lastIndex = index;
+        this._lastAccessor = accessor;
+        return accessor;
+      }
+    }
+    return undefined;
   }
 }
