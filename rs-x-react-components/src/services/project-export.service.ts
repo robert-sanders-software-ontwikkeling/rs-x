@@ -72,7 +72,22 @@ function buildProjectSource(script: string): ProjectSource {
       rxjsImportBlock = `import * as rxjs from 'rxjs';\nconst $ = rxjs;\n`;
     }
   } else {
-    const directMembers = new Set<string>();
+    const destructuredMembers = new Set<string>();
+
+    // Strip `const { interval, map } = api.rxjs;` lines, collecting member names
+    normalized = normalized.replace(
+      /^\s*(?:const|let|var)\s+\{([^}]+)\}\s*=\s*api\.rxjs\s*;?\s*$/gm,
+      (_full, members: string) => {
+        members
+          .split(',')
+          .map((m) => m.trim())
+          .filter(Boolean)
+          .forEach((m) => destructuredMembers.add(m));
+        return '';
+      },
+    );
+
+    const directMembers = new Set<string>(destructuredMembers);
 
     normalized = normalized.replace(
       /api\.rxjs\.([A-Za-z_$][\w$]*)/g,
@@ -211,7 +226,7 @@ function toTsConfig(): string {
         target: 'ES2022',
         module: 'NodeNext',
         moduleResolution: 'NodeNext',
-        strict: true,
+        noImplicitAny: false,
         outDir: 'dist',
         skipLibCheck: true,
       },
@@ -225,15 +240,52 @@ function toTsConfig(): string {
 function toReadme(): string {
   return `# rs-x Playground Export
 
-Generated from the rs-x playground.
+This project was exported from the [rs-x playground](https://rsxjs.com/docs/playground).
+It contains a self-contained TypeScript demo that you can run locally with Node.js.
 
-## Run
+## Prerequisites
+
+- [Node.js](https://nodejs.org/) v18 or later
+- [pnpm](https://pnpm.io/) — install with \`npm install -g pnpm\`
+
+## Getting started
+
+**1. Install dependencies**
 
 \`\`\`bash
 pnpm install
+\`\`\`
+
+**2. Build the project**
+
+Compiles \`src/main.ts\` to JavaScript in the \`dist/\` folder.
+
+\`\`\`bash
 pnpm build
+\`\`\`
+
+**3. Run the demo**
+
+Executes the compiled output and prints the expression's initial value and any
+subsequent changes to the console.
+
+\`\`\`bash
 pnpm start
 \`\`\`
+
+## Project structure
+
+\`\`\`
+src/
+  main.ts        # Expression definition and entry point
+package.json     # Dependencies and scripts
+tsconfig.json    # TypeScript compiler settings
+\`\`\`
+
+## Learn more
+
+- [rs-x documentation](https://rsxjs.com/docs)
+- [Expression parser API](https://rsxjs.com/docs/core-api/module/expression-parser)
 `;
 }
 

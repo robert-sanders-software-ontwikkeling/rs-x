@@ -106,19 +106,25 @@ jobs:
           set -e
           node scripts/publish-packages.mjs
 
-      - name: Configure Git remote with token
-        run: |
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-
       # ---------------- COMMIT VERSION BUMP ----------------
-      - name: Commit version bump after successful publish
+      - name: Open PR for version bump
         if: success()
-        run: |
-          git config user.name "CI Bot"
-          git config user.email "ci@example.com"
-          git add .
-          git commit -m "chore: release [ci skip]" || echo "No changes to commit"
-          git push origin HEAD:${{ github.ref_name }}
+        id: create-pr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: release [ci skip]'
+          branch: chore/release-version-bump
+          delete-branch: true
+          title: 'chore: release version bump'
+          body: 'Automated version bump from publish workflow.'
+          base: main
+
+      - name: Auto-merge version bump PR
+        if: success() && steps.create-pr.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge ${{ steps.create-pr.outputs.pull-request-number }} --auto --squash --repo ${{ github.repository }}
 
       # ---------------- CREATE RELEASE ----------------
       - name: Create GitHub Release
