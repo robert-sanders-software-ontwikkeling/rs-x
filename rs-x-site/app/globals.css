@@ -52,6 +52,7 @@
   --docs-tag-guide: #1f9d8b;
   --docs-tag-api: #2f6dff;
   --docs-tag-architecture: #b9782e;
+  --docs-tag-frameworks: #7c3aed;
   --docs-title-strong: color-mix(in srgb, var(--text) 92%, var(--muted));
   --docs-title: color-mix(in srgb, var(--text) 84%, var(--muted));
   --docs-lead: color-mix(in srgb, var(--text) 62%, var(--muted));
@@ -164,6 +165,7 @@ html[data-theme='dark'] {
   --docs-tag-guide: #63d7c3;
   --docs-tag-api: #9abaff;
   --docs-tag-architecture: #efb46d;
+  --docs-tag-frameworks: #c4b5fd;
   --docs-title-strong: color-mix(in srgb, var(--text) 90%, var(--muted));
   --docs-title: color-mix(in srgb, var(--text) 82%, var(--muted));
   --docs-lead: color-mix(in srgb, var(--text) 56%, var(--muted));
@@ -1109,6 +1111,11 @@ html[data-theme='dark'] .headerGetStartedCta:hover {
 
 .docsLandingSection .docsCardEyebrowArchitecture {
   color: var(--docs-tag-architecture);
+  font-weight: 760;
+}
+
+.docsLandingSection .docsCardEyebrowFrameworks {
+  color: var(--docs-tag-frameworks);
   font-weight: 760;
 }
 
@@ -2099,6 +2106,10 @@ html[data-theme='dark'] .docsLandingSection .docsCardEyebrowArchitecture {
   color: var(--docs-tag-architecture);
 }
 
+html[data-theme='dark'] .docsLandingSection .docsCardEyebrowFrameworks {
+  color: var(--docs-tag-frameworks);
+}
+
 html[data-theme='dark'] .docsLandingSection .cardTitle {
   color: color-mix(in srgb, var(--text) 76%, var(--muted));
   font-weight: 720;
@@ -2147,9 +2158,7 @@ html[data-theme='dark'] .docsLandingSection .docsSearchHint {
   line-height: 1.58;
   border: 0;
   border-radius: 12px;
-  white-space: pre-wrap;
-  overflow-wrap: normal;
-  word-break: normal;
+  white-space: pre;
   max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
@@ -3540,6 +3549,7 @@ html[data-theme='dark'] .docsApiSection .advancedTopicList {
 }
 
 .getStartedSplit {
+  min-width: 0;
   display: grid;
   grid-template-columns: 1.2fr 1fr;
   gap: var(--sp-5);
@@ -4149,6 +4159,9 @@ html[data-theme='dark'] .docsApiSection .advancedTopicList {
 
   .quickstartShell {
     padding: var(--sp-6);
+  }
+  .getStartedHeroActions {
+    padding-bottom: var(--sp-6);
   }
 
   .qsCodeHeader,

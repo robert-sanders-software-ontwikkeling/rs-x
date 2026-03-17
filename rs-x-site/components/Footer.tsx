@@ -111,7 +111,7 @@ export function SiteFooter() {
                 </li>
                 <li>
                   <a
-                    href="https://www.npmjs.com/"
+                    href="https://www.npmjs.com/settings/rs-x/packages"
                     rel="noreferrer"
                     target="_blank"
                   >

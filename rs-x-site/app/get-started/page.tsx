@@ -2,6 +2,7 @@ import dedent from 'dedent';
 import Link from 'next/link';
 
 import { SyntaxCodeBlock } from '../../components/SyntaxCodeBlock';
+import { Card } from '../docs/components/card';
 
 export const metadata = {
   title: 'Get started',
@@ -211,9 +212,7 @@ export default function GetStartedPage() {
           </div>
 
           <section className="getStartedLinear">
-            {/* ── what is rs-x ── */}
-            <article className="card docsApiCard">
-              <h2 className="cardTitle">What is rs-x?</h2>
+            <Card header="What is rs-x?">
               <p className="cardText">
                 rs-x is a reactive expression library for TypeScript. You write
                 a plain string expression — such as{' '}
@@ -240,11 +239,33 @@ export default function GetStartedPage() {
                 incrementally — only the nodes affected by a mutation are
                 re-evaluated.
               </p>
-            </article>
+            </Card>
 
-            {/* ── quick flow ── */}
-            <article className="card docsApiCard">
-              <h2 className="cardTitle">Quick flow</h2>
+            <Card header="Framework integration">
+              <p className="cardText">
+                rs-x works with any JavaScript framework. Official integration
+                guides are available for:
+              </p>
+              <ul className="advancedTopicList">
+                <li>
+                  <Link href="/docs/frameworks/react">React</Link> — bind
+                  expressions to component state and re-render on{' '}
+                  <span className="codeInline">changed</span> using a custom
+                  hook.
+                </li>
+                <li>
+                  <Link href="/docs/frameworks/angular">Angular</Link> —
+                  integrate with Angular&apos;s change detection by triggering{' '}
+                  <span className="codeInline">
+                    ChangeDetectorRef.markForCheck
+                  </span>{' '}
+                  inside a <span className="codeInline">changed</span>{' '}
+                  subscription.
+                </li>
+              </ul>
+            </Card>
+
+            <Card header="Quick flow">
               <ol className="getStartedFlowList">
                 <li>
                   <span className="codeInline">Install</span>: add{' '}
@@ -271,11 +292,8 @@ export default function GetStartedPage() {
                   the expression is no longer needed.
                 </li>
               </ol>
-            </article>
-
-            {/* ── packages ── */}
-            <article className="card docsApiCard">
-              <h2 className="cardTitle">What each package provides</h2>
+            </Card>
+            <Card header="What each package provides">
               <p className="cardText">
                 rs-x is split into three focused packages so you can take only
                 what you need:
@@ -318,53 +336,35 @@ export default function GetStartedPage() {
                   <span className="codeInline">Observable</span>.
                 </li>
               </ul>
-            </article>
+            </Card>
 
-            {/* ── install + tsconfig ── */}
-            <div className="getStartedSplit">
-              <article className="qsCodeCard docsApiCode">
-                <div className="qsCodeHeader">
-                  <div className="qsCodeTitle">Install commands</div>
-                  <div className="qsCodeSubtitle">npm / pnpm / yarn / bun</div>
-                </div>
-                <SyntaxCodeBlock code={installCommandCode} />
-                <div className="qsCodeHeader">
-                  <div className="qsCodeTitle">package.json (example)</div>
-                </div>
-                <SyntaxCodeBlock code={packageJsonCode} />
-              </article>
-
-              <div>
-                <article className="qsCodeCard docsApiCode">
-                  <div className="qsCodeHeader">
-                    <div className="qsCodeTitle">Bootstrap once (startup)</div>
-                    <div className="qsCodeSubtitle">
-                      Run once before creating expressions
-                    </div>
-                  </div>
-                  <SyntaxCodeBlock code={bootstrapCode} />
-                </article>
-
-                <article
-                  className="qsCodeCard docsApiCode"
-                  style={{ marginTop: '1rem' }}
-                >
-                  <div className="qsCodeHeader">
-                    <div className="qsCodeTitle">
-                      tsconfig.json (recommended)
-                    </div>
-                    <div className="qsCodeSubtitle">
-                      ES2022 + NodeNext module resolution
-                    </div>
-                  </div>
-                  <SyntaxCodeBlock code={tsConfigCode} />
-                </article>
+            <Card header="Install commands">
+              <div className="qsCodeHeader">
+                <div className="qsCodeSubtitle">npm / pnpm / yarn / bun</div>
               </div>
-            </div>
+              <SyntaxCodeBlock code={installCommandCode} />
+              <div className="qsCodeHeader">
+                <div className="qsCodeTitle">package.json (example)</div>
+              </div>
+              <SyntaxCodeBlock code={packageJsonCode} />
+            </Card>
+            <Card header="Bootstrap once (startup)">
+              <div className="qsCodeSubtitle">
+                Run once before creating expressions
+              </div>
 
-            {/* ── expression lifecycle ── */}
-            <article className="card docsApiCard">
-              <h2 className="cardTitle">Expression lifecycle</h2>
+              <SyntaxCodeBlock code={bootstrapCode} />
+            </Card>
+
+            <Card header="tsconfig.json (recommended)">
+              <div className="qsCodeSubtitle">
+                ES2022 + NodeNext module resolution
+              </div>
+
+              <SyntaxCodeBlock code={tsConfigCode} />
+            </Card>
+
+            <Card header="Expression lifecycle">
               <p className="cardText">
                 Every expression goes through three phases:
               </p>
@@ -400,7 +400,7 @@ export default function GetStartedPage() {
                 </li>
               </ul>
               <SyntaxCodeBlock code={lifecycleCode} />
-            </article>
+            </Card>
 
             {/* ── first working example ── */}
             <aside
