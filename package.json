@@ -35,8 +35,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --ext .ts",
-    "lint:fix": "eslint . --ext .ts --fix",
-    "readme": "pnpm ts-node demo/update-readmes.ts"
+    "lint:fix": "eslint . --ext .ts --fix"
   },
   "devDependencies": {
     "@angular/common": "^21.1.5",
