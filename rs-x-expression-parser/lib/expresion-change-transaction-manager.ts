@@ -84,7 +84,7 @@ export class ExpressionChangeTransactionManager implements IExpressionChangeTran
   }
 
   public commit(): void {
-    if (this._changes.size === 0) {
+    if (this._suspended || this._changes.size === 0) {
       return;
     }
 

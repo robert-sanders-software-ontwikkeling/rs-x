@@ -49,6 +49,7 @@ class ExpressionForContextManager
   } {
     const result = super.create(expressionData);
 
+    this._services.transactionManager.suspend();
     result.instance.bind({
       context: this._context,
       services: this._services,
@@ -61,7 +62,7 @@ class ExpressionForContextManager
       },
       leafIndexWatchRule: expressionData.leafIndexWatchRule,
     });
-    this._services.transactionManager.commit();
+    this._services.transactionManager.continue();
 
     return result;
   }
