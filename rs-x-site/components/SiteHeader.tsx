@@ -33,7 +33,7 @@ const communityNavItems: ExternalNavItem[] = [
   },
   {
     label: 'npm',
-    href: 'https://www.npmjs.com/',
+    href: 'https://www.npmjs.com/settings/rs-x/packages',
   },
 ];
 
