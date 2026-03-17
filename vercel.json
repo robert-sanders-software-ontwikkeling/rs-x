@@ -1,4 +1,7 @@
 {
+  "env": {
+    "COREPACK_ENABLE_STRICT": "0"
+  },
   "installCommand": "rm -f pnpm-lock.yaml && pnpm install",
   "buildCommand": "pnpm run build:libs && pnpm --filter @rs-x/react-components run build && pnpm --filter @rs-x/site run build",
   "outputDirectory": "rs-x-site/.next",
