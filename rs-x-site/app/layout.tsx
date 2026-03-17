@@ -15,9 +15,6 @@ export const metadata: Metadata = {
   description:
     'rs-x is a JavaScript/TypeScript library for declarative reactivity: bind expressions to a model and updates propagate automatically — no compilation step required.',
   metadataBase: new URL('https://rsxjs.com'),
-  alternates: {
-    canonical: '/',
-  },
   openGraph: {
     title: 'rs-x — Declarative reactivity for JavaScript & TypeScript',
     description:
@@ -28,7 +25,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/rsx-logo.svg',
+        url: '/opengraph-image.png',
         width: 1200,
         height: 630,
         alt: 'rs-x — Declarative reactivity for JavaScript & TypeScript',
@@ -40,7 +37,7 @@ export const metadata: Metadata = {
     title: 'rs-x — Declarative reactivity for JavaScript & TypeScript',
     description:
       'Bind expressions to a model. rs-x builds fine-grained dependencies and propagates updates automatically.',
-    images: ['/rsx-logo.svg'],
+    images: ['/opengraph-image.png'],
   },
   robots: {
     index: true,
@@ -79,7 +76,9 @@ export default function RootLayout({
                   name: 'rs-x',
                   url: 'https://rsxjs.com',
                   logo: 'https://rsxjs.com/rsx-logo.svg',
-                  sameAs: ['https://github.com/robert-sanders-software-ontwikkeling/rs-x'],
+                  sameAs: [
+                    'https://github.com/robert-sanders-software-ontwikkeling/rs-x',
+                  ],
                 },
                 {
                   '@type': 'SoftwareApplication',
@@ -90,7 +89,11 @@ export default function RootLayout({
                   url: 'https://rsxjs.com',
                   description:
                     'A JavaScript/TypeScript library for declarative reactivity: bind expressions to a model and updates propagate automatically — no compilation step required.',
-                  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+                  offers: {
+                    '@type': 'Offer',
+                    price: '0',
+                    priceCurrency: 'USD',
+                  },
                   publisher: { '@id': 'https://rsxjs.com/#organization' },
                 },
                 {
