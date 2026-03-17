@@ -305,6 +305,7 @@ a:hover {
 
 .main {
   flex: 1;
+  min-width: 0;
 }
 
 .container {
