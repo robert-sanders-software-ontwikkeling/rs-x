@@ -4,7 +4,7 @@ interface WaitState<R> {
   results: R[];
   pending?: boolean;
   subscription?: Subscription;
-  timerId: number;
+  timerId: ReturnType<typeof setTimeout> | undefined;
 }
 
 export interface IWaitForEventOptions<
@@ -43,11 +43,11 @@ export class WaitForEvent<
       results: [],
       pending: this._options.ignoreInitialValue,
       subscription: null!,
-      timerId: 0,
+      timerId: undefined,
     };
 
     return new Promise<TValue | null>((resolve, reject) => {
-      state.timerId = window.setTimeout(() => {
+      state.timerId = setTimeout(() => {
         this.unsubscribeEvent(state);
         resolve(null); // timeout reached, no events
       }, this._options.timeout);
@@ -118,7 +118,7 @@ export class WaitForEvent<
   }
 
   private cleanup(state: WaitState<TValue>) {
-    window.clearTimeout(state.timerId);
+    clearTimeout(state.timerId);
     this.unsubscribeEvent(state);
   }
 
