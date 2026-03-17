@@ -8,19 +8,47 @@ import { SiteHeader } from '../components/SiteHeader';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'rs-x — Declarative reactivity for JavaScript/TypeScript',
+  title: {
+    default: 'rs-x — Declarative reactivity for JavaScript & TypeScript',
+    template: '%s | rs-x',
+  },
   description:
-    'rs-x is a JavaScript/TypeScript framework for declarative reactivity: bind expressions to a model and updates propagate automatically.',
-  metadataBase: new URL('https://example.com'),
+    'rs-x is a JavaScript/TypeScript library for declarative reactivity: bind expressions to a model and updates propagate automatically — no compilation step required.',
+  metadataBase: new URL('https://rsxjs.com'),
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
-    title: 'rs-x — Declarative reactivity',
+    title: 'rs-x — Declarative reactivity for JavaScript & TypeScript',
     description:
-      'Bind expressions to a model. rs-x builds fine-grained dependencies and updates automatically.',
+      'Bind expressions to a model. rs-x builds fine-grained dependencies and propagates updates automatically — no compilation step required.',
+    url: 'https://rsxjs.com',
+    siteName: 'rs-x',
+    locale: 'en_US',
     type: 'website',
+    images: [
+      {
+        url: '/rsx-logo.svg',
+        width: 1200,
+        height: 630,
+        alt: 'rs-x — Declarative reactivity for JavaScript & TypeScript',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'rs-x — Declarative reactivity for JavaScript & TypeScript',
+    description:
+      'Bind expressions to a model. rs-x builds fine-grained dependencies and propagates updates automatically.',
+    images: ['/rsx-logo.svg'],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
   },
 };
 
@@ -39,6 +67,43 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@graph': [
+                {
+                  '@type': 'Organization',
+                  '@id': 'https://rsxjs.com/#organization',
+                  name: 'rs-x',
+                  url: 'https://rsxjs.com',
+                  logo: 'https://rsxjs.com/rsx-logo.svg',
+                  sameAs: ['https://github.com/robert-sanders-software-ontwikkeling/rs-x'],
+                },
+                {
+                  '@type': 'SoftwareApplication',
+                  '@id': 'https://rsxjs.com/#software',
+                  name: 'rs-x',
+                  applicationCategory: 'DeveloperApplication',
+                  operatingSystem: 'Any',
+                  url: 'https://rsxjs.com',
+                  description:
+                    'A JavaScript/TypeScript library for declarative reactivity: bind expressions to a model and updates propagate automatically — no compilation step required.',
+                  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+                  publisher: { '@id': 'https://rsxjs.com/#organization' },
+                },
+                {
+                  '@type': 'WebSite',
+                  '@id': 'https://rsxjs.com/#website',
+                  url: 'https://rsxjs.com',
+                  name: 'rs-x',
+                  publisher: { '@id': 'https://rsxjs.com/#organization' },
+                },
+              ],
+            }),
+          }}
+        />
         <a className="skipLink" href="#content">
           Skip to content
         </a>
