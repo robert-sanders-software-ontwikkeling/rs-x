@@ -1,5 +1,12 @@
 # @rs-x/core
 
+## 1.0.2
+
+### Patch Changes
+
+- f3bc0ce: React rs-x extension
+- 082e52c: Fix to many call when initializing sequence expression
+
 ## 0.4.12
 
 ### Patch Changes
