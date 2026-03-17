@@ -1,17 +1,14 @@
 # rs-x-site
 
-A Next.js App Router marketing/docs site scaffold for **rs-x** (JS/TS declarative reactivity).
+Documentation website for rs-x — [rsxjs.com](https://rsxjs.com)
 
-## Run
+Built with Next.js App Router.
+
+## Development
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm --filter @rs-x/site run dev
 ```
 
-Open http://localhost:3000
-
-## Theme
-
-- Theme is controlled by `data-theme` on `<html>` (`light` / `dark`)
-- Toggle saves to `localStorage` key `rsx-theme`
+Open [http://localhost:3000](http://localhost:3000)
