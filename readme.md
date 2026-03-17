@@ -10,17 +10,17 @@ rs-x binds plain JavaScript expressions to a data model and propagates updates a
 
 ## Project Structure
 
-| Package | Description |
-|---|---|
-| `rs-x-core` | Shared core utilities |
-| `rs-x-state-manager` | Reactive state management with fine-grained change detection |
-| `rs-x-expression-parser` | JavaScript expression parser → observable expression tree |
-| `rs-x-angular` | Angular pipe integration (`rsx` pipe) |
-| `rs-x-react` | React hooks integration |
-| `rs-x-react-components` | React UI components |
-| `rs-x-expression-editor` | Expression editor component |
-| `rs-x-dev-tools` | Developer tools |
-| `rs-x-site` | Documentation website (Next.js) |
+| Package                  | Description                                                  |
+| ------------------------ | ------------------------------------------------------------ |
+| `rs-x-core`              | Shared core utilities                                        |
+| `rs-x-state-manager`     | Reactive state management with fine-grained change detection |
+| `rs-x-expression-parser` | JavaScript expression parser → observable expression tree    |
+| `rs-x-angular`           | Angular pipe integration (`rsx` pipe)                        |
+| `rs-x-react`             | React hooks integration                                      |
+| `rs-x-react-components`  | React UI components                                          |
+| `rs-x-expression-editor` | Expression editor component                                  |
+| `rs-x-dev-tools`         | Developer tools                                              |
+| `rs-x-site`              | Documentation website (Next.js)                              |
 
 ---
 

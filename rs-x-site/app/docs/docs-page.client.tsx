@@ -39,6 +39,19 @@ type DocsPageClientProps = {
   apiSymbols: ApiSymbolEntry[];
 };
 
+const frameworkLinks: DocsLinkItem[] = [
+  {
+    href: '/docs/frameworks/react',
+    title: 'React',
+    meta: 'useRsxExpression and useRsxModel hooks for reactive components',
+  },
+  {
+    href: '/docs/frameworks/angular',
+    title: 'Angular',
+    meta: 'RsxPipe and providexRsx() for reactive Angular templates',
+  },
+];
+
 const coreConceptLinks: DocsLinkItem[] = [
   {
     href: '/docs/core-concepts/async-operations',
@@ -215,6 +228,32 @@ export function DocsPageClient({
                 aria-label="Core concept topics"
               >
                 {coreConceptLinks.map((link) => (
+                  <li key={link.href}>
+                    <Link className="docsApiLinkItem" href={link.href}>
+                      <ItemLinkCardContent
+                        title={link.title}
+                        meta={link.meta}
+                      />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </article>
+
+            <article className="card">
+              <p className="docsCardEyebrow docsCardEyebrowFrameworks">
+                Frameworks
+              </p>
+              <h2 className="cardTitle">Framework integrations</h2>
+              <p className="cardText">
+                Drop-in integrations for React and Angular — bind expressions
+                directly to your components and templates with zero boilerplate.
+              </p>
+              <ul
+                className="docsApiLinkGrid docsConceptLinkGrid"
+                aria-label="Framework integrations"
+              >
+                {frameworkLinks.map((link) => (
                   <li key={link.href}>
                     <Link className="docsApiLinkItem" href={link.href}>
                       <ItemLinkCardContent
