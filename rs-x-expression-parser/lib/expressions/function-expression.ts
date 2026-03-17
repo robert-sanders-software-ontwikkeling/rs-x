@@ -90,10 +90,21 @@ export class FunctionExpression extends AbstractExpression {
     }
 
     this._argumentsExpression.bind(settings);
-    this.transactionManager.registerChange(
-      this.evaluationRoot,
-      this._commitHandler,
-    );
+
+    // Only register a self-commit handler when there are no reactive children
+    // (arguments or object expression). When reactive children exist, their
+    // path-based handlers already propagate through this FunctionExpression
+    // and evaluate it — registering a separate handler here would cause the
+    // function to be called twice per commit cycle.
+    const hasReactiveChildren =
+      this._argumentsExpression.childExpressions.length > 0 ||
+      !!this._objectExpression;
+    if (!hasReactiveChildren) {
+      this.transactionManager.registerChange(
+        this.evaluationRoot,
+        this._commitHandler,
+      );
+    }
 
     return this;
   }

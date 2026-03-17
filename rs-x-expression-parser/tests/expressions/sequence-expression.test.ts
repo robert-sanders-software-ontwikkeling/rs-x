@@ -116,4 +116,83 @@ describe('SequenceExpression tests', () => {
     expect(actual.value).toEqual(200);
     expect(actual).toBe(expression);
   });
+
+  it('side-effect functions are called once during initialization', async () => {
+    const trackPrice = jest.fn();
+    const trackQty = jest.fn();
+
+    const model = {
+      price: 100,
+      quantity: 3,
+      trackPrice(v: number) {
+        trackPrice(v);
+      },
+      trackQty(v: number) {
+        trackQty(v);
+      },
+    };
+
+    expression = rsx<number>(
+      '(trackPrice(price), trackQty(quantity), price * quantity)',
+    )(model);
+
+    await new WaitForEvent(expression, 'changed').wait(() => {});
+
+    expect(expression.value).toEqual(300);
+    expect(trackPrice).toHaveBeenCalledTimes(1);
+    expect(trackPrice).toHaveBeenCalledWith(100);
+    expect(trackQty).toHaveBeenCalledTimes(1);
+    expect(trackQty).toHaveBeenCalledWith(3);
+  });
+
+  it('only the side-effect depending on the changed field is re-called on update', async () => {
+    const trackPrice = jest.fn();
+    const trackQty = jest.fn();
+
+    const model = {
+      price: 100,
+      quantity: 3,
+      trackPrice(v: number) {
+        trackPrice(v);
+      },
+      trackQty(v: number) {
+        trackQty(v);
+      },
+    };
+
+    expression = rsx<number>(
+      '(trackPrice(price), trackQty(quantity), price * quantity)',
+    )(model);
+
+    await new WaitForEvent(expression, 'changed').wait(() => {});
+
+    trackPrice.mockClear();
+    trackQty.mockClear();
+
+    // Only price changes — only trackPrice(price) path is re-evaluated
+    await new WaitForEvent(expression, 'changed', {
+      ignoreInitialValue: true,
+    }).wait(() => {
+      model.price = 200;
+    });
+
+    expect(expression.value).toEqual(600);
+    expect(trackPrice).toHaveBeenCalledTimes(1);
+    expect(trackPrice).toHaveBeenCalledWith(200);
+    expect(trackQty).not.toHaveBeenCalled();
+
+    trackPrice.mockClear();
+
+    // Only quantity changes — only trackQty(quantity) path is re-evaluated
+    await new WaitForEvent(expression, 'changed', {
+      ignoreInitialValue: true,
+    }).wait(() => {
+      model.quantity = 5;
+    });
+
+    expect(expression.value).toEqual(1000);
+    expect(trackQty).toHaveBeenCalledTimes(1);
+    expect(trackQty).toHaveBeenCalledWith(5);
+    expect(trackPrice).not.toHaveBeenCalled();
+  });
 });
