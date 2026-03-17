@@ -1,0 +1,6 @@
+{
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm run build:libs && pnpm --filter @rs-x/react-components run build && pnpm --filter @rs-x/site run build",
+  "outputDirectory": "rs-x-site/.next",
+  "framework": "nextjs"
+}
