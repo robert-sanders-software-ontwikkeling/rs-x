@@ -3,6 +3,7 @@ import {
   defaultIndexValueAccessorList,
   defaultValueMetadataList,
   type IDeepCloneExcept,
+  IMultiInjectService,
   InjectionContainer,
   overrideMultiInjectServices,
   registerMultiInjectServices,
@@ -42,10 +43,36 @@ import type { IIdentifierOwnerResolver } from './identifier-owner-resolver/ident
 import { MapKeyOwnerResolver } from './identifier-owner-resolver/map-key-owner-resolver';
 import { PropertyOwnerResolver } from './identifier-owner-resolver/property-owner-resolver';
 import { SetKeyOwnerResolver } from './identifier-owner-resolver/set-key-owner-resolver';
+import { ExpressionChangeSubscriptionManager } from './expression-change-subscription/expression-change-subscription-manager';
+import type { IExpressionChangeSubscriptionManager } from './expression-change-subscription/expression-change-subscription-manager.interface';
 import { ExpressionChangeTransactionManager } from './expresion-change-transaction-manager';
 import type { IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
 import { JsEspreeExpressionParser } from './js-espree-expression-parser';
 import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
+
+
+export const defaultIdentifierOwnerResolverList: readonly IMultiInjectService[] = [
+  {
+    target: PropertyOwnerResolver,
+    token: RsXExpressionParserInjectionTokens.PropertyOwnerResolver,
+  },
+  {
+    target: ArrayIndexOwnerResolver,
+    token: RsXExpressionParserInjectionTokens.ArrayIndexOwnerResolver,
+  },
+  {
+    target: SetKeyOwnerResolver,
+    token: RsXExpressionParserInjectionTokens.SetKeyOwnerResolver,
+  },
+  {
+    target: MapKeyOwnerResolver,
+    token: RsXExpressionParserInjectionTokens.MapKeyOwnerResolver,
+  },
+  {
+    target: GlobalIdentifierOwnerResolver,
+    token: RsXExpressionParserInjectionTokens.GlobalIdentifierOwnerResolver,
+  },
+];
 
 InjectionContainer.load(RsXStateManagerModule);
 
@@ -121,31 +148,17 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
     .to(ExpressionIdProvider)
     .inSingletonScope();
 
+  options
+    .bind<IExpressionChangeSubscriptionManager>(
+      RsXExpressionParserInjectionTokens.IExpressionChangeSubscriptionManager,
+    )
+    .to(ExpressionChangeSubscriptionManager)
+    .inSingletonScope();
+
   registerMultiInjectServices(
     options,
     RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList,
-    [
-      {
-        target: PropertyOwnerResolver,
-        token: RsXExpressionParserInjectionTokens.PropertyOwnerResolver,
-      },
-      {
-        target: ArrayIndexOwnerResolver,
-        token: RsXExpressionParserInjectionTokens.ArrayIndexOwnerResolver,
-      },
-      {
-        target: SetKeyOwnerResolver,
-        token: RsXExpressionParserInjectionTokens.SetKeyOwnerResolver,
-      },
-      {
-        target: MapKeyOwnerResolver,
-        token: RsXExpressionParserInjectionTokens.MapKeyOwnerResolver,
-      },
-      {
-        target: GlobalIdentifierOwnerResolver,
-        token: RsXExpressionParserInjectionTokens.GlobalIdentifierOwnerResolver,
-      },
-    ],
+    defaultIdentifierOwnerResolverList
   );
 
   overrideMultiInjectServices(

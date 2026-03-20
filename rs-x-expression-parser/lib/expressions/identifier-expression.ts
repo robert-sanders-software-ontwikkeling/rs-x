@@ -13,7 +13,8 @@ import { type IExpressionChangeCommitHandler } from '../expresion-change-transac
 
 import { AbstractExpression } from './abstract-expression';
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
-import { ExpressionType } from './expression-parser.interface';
+import { ExpressionType, IExpression } from './expression-parser.interface';
+import { IIdentifierExpression } from './identifier-expresssion.interface';
 
 export class IndexValueObserver {
   private readonly _unsubscribeFromStateEvents: () => void;
@@ -95,7 +96,8 @@ export type IIdentifierBindConfiguration = IExpressionBindConfiguration & {
   isRoot?: boolean;
 };
 
-export class IdentifierExpression extends AbstractExpression {
+
+export class IdentifierExpression extends AbstractExpression implements IIdentifierExpression {
   private _changeSubscription: Subscription | undefined;
   private _isBound = false;
   private _indexValueObserver: IndexValueObserver | undefined;
@@ -187,7 +189,7 @@ export class IdentifierExpression extends AbstractExpression {
       this.onValueChanged({
         index: this.index,
         context: this._context,
-        oldValue: this._value,
+        oldValue: this._oldValue,
         newValue,
         oldContext: this._context,
       });

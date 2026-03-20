@@ -63,13 +63,12 @@ export default function HomePage() {
             <div className="heroLeft">
               <h1 className="hTitle">rs-x</h1>
 
-              <div className="hSubhead">Reactively Simple</div>
-              <div className="hSubhead">TypeScript Reactive Engine</div>
+              <div className="hSubhead">Reactive TypeScript Expression Engine</div>
 
               <p className="hSub">
-                Declarative reactivity for runtime-bound expressions. Bind an
+                Declarative reactivity for TypeScript and JavaScript. Bind an
                 expression to a model and rs-x tracks fine-grained dependencies
-                automatically.
+                automatically — no compilation step required.
               </p>
 
               <div className="heroActions">

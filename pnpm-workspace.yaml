@@ -8,3 +8,4 @@ packages:
   - 'rs-x-angular/projects/*'
   - 'rs-x-expression-editor'
   - 'rs-x-site'
+  - 'rs-x-ui'

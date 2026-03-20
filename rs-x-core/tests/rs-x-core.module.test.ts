@@ -409,6 +409,18 @@ describe('rs-x core module', () => {
     expect(a1).toBe(a2);
   });
 
+
+  it('can get instance of ISystemTimer', () => {
+    const actual = InjectionContainer.get(RsXCoreInjectionTokens.ISystemTimer);
+    expect(actual).toBe(global);
+  });
+
+  it('ISystemTimer instance is a singleton', () => {
+    const a1 = InjectionContainer.get(RsXCoreInjectionTokens.ISystemTimer);
+    const a2 = InjectionContainer.get(RsXCoreInjectionTokens.ISystemTimer);
+    expect(a1).toBe(a2);
+  });
+
   it('can get instance of IObjectStorage', () => {
     const actual = InjectionContainer.get(
       RsXCoreInjectionTokens.IObjectStorage,

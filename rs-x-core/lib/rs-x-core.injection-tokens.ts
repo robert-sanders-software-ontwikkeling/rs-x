@@ -37,4 +37,6 @@ export const RsXCoreInjectionTokens = {
   IDBFactory: Symbol('IDBFactory'),
   IObjectStorage: Symbol('IObjectStorage'),
   IProxyRegistry: Symbol('IProxyRegistry'),
+  IDomElementFactory: Symbol('IDomElementFactory'),
+  ISystemTimer: Symbol('ISystemTimer')
 };

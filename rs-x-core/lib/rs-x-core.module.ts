@@ -51,6 +51,7 @@ import {
   registerMultiInjectServices,
 } from './dependency-injection';
 import { RsXCoreInjectionTokens } from './rs-x-core.injection-tokens';
+import { ISystemTimer } from './timer/system-timer.interface';
 
 export const defaultIndexValueAccessorList: readonly IMultiInjectService[] = [
   {
@@ -168,6 +169,10 @@ export const RsXCoreModule = new ContainerModule((options) => {
       }
       return window.indexedDB;
     });
+
+  options
+    .bind<ISystemTimer>(RsXCoreInjectionTokens.ISystemTimer)
+    .toConstantValue(global);
 
   options
     .bind<IObjectStorage>(RsXCoreInjectionTokens.IObjectStorage)

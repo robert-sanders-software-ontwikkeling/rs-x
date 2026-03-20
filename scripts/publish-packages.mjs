@@ -14,6 +14,7 @@ const nodeLibFolders = [
   'rs-x-expression-parser',
   'rs-x-react',
   'rs-x-react-components',
+  'rs-x-ui',
 ];
 const nodePackageFolders = [...nodeLibFolders, angularDist];
 const changelogFolders = [...nodeLibFolders, 'rs-x-angular/projects/rsx'];

@@ -1,0 +1,58 @@
+{
+  "name": "@rs-x/ui",
+  "version": "1.0.2",
+  "description": "Reactive state management layer for the RS-X framework with fine-grained change tracking",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x"
+  },
+  "homepage": "https://rsxjs.com",
+  "bugs": {
+    "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsup lib/index.ts --format esm --dts --tsconfig ../tsconfig.build.json --define:__DEV__=false",
+    "build:dev": "tsup lib/index.ts --format esm --dts --tsconfig ../tsconfig.build.json --define:__DEV__=true",
+    "clean": "rimraf dist"
+  },
+  "peerDependencies": {
+    "rxjs": "^7.8.0"
+  },
+  "dependencies": {
+    "@rs-x/expression-parser": "workspace:*"
+  },
+  "devDependencies": {
+    "globals": "^17.3.0",
+    "rimraf": "^6.1.2",
+    "tsup": "^8.5.1"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "keywords": [
+    "rs-x",
+    "ui",
+    "reactive",
+    "observable",
+    "fine-grained",
+    "typescript"
+  ]
+}

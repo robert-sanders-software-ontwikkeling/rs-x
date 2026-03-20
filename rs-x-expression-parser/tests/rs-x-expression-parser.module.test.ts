@@ -22,6 +22,7 @@ import {
   SetObserverProxyPairFactory,
 } from '@rs-x/state-manager';
 
+import { ExpressionChangeSubscriptionManager } from '../lib/expression-change-subscription/expression-change-subscription-manager';
 import { ExpressionChangeTransactionManager } from '../lib/expresion-change-transaction-manager';
 import { ExpressionCache } from '../lib/expression-cache/expression-cache';
 import { ExpressionChangePlayback } from '../lib/expression-change-playback/expression-change-playback';
@@ -387,6 +388,23 @@ describe('RsXExpressionParserModule tests', () => {
     );
     const a2 = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionIdProvider,
+    );
+    expect(a1).toBe(a2);
+  });
+
+  it('can get instance of IExpressionChangeSubscriptionManager', () => {
+    const actual = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionChangeSubscriptionManager,
+    );
+    expect(actual).toBeInstanceOf(ExpressionChangeSubscriptionManager);
+  });
+
+  it('IExpressionChangeSubscriptionManager instance is a singleton', () => {
+    const a1 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionChangeSubscriptionManager,
+    );
+    const a2 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionChangeSubscriptionManager,
     );
     expect(a1).toBe(a2);
   });

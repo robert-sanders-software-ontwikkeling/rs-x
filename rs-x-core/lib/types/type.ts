@@ -8,16 +8,22 @@ export type GetFunction<T> = () => T;
 export type SetFunction<T> = (value: T) => void;
 export const emptyValue = Symbol('empty');
 export type AnyFunction = (...args: unknown[]) => unknown;
-export const emptyFunction = () => {};
+export const emptyFunction = () => { };
 export const truePredicate = () => true;
 export const echo = <T = unknown>(value: T) => value;
 type PlainObject = Record<string, unknown>;
+export type ValueType = string | number | Date | boolean;
+export type ConvertValueTypeToString = (value: unknown) => string;
 
 export class Type {
   private static readonly _readonlyPropertyByPrototype = new WeakMap<
     object,
     Map<PropertyKey, boolean>
   >();
+
+  public static isEmptyObject(object: object): boolean {
+    return Object.keys(object).length === 0 && object.constructor === Object;
+  }
 
   public static isReadonlyProperty(target: unknown, key: unknown): boolean {
     if (
@@ -181,7 +187,7 @@ export class Type {
     return value === null || value === undefined;
   }
 
-  public static isEmpty(value: unknown): boolean {
+  public static isEmpty(value: unknown): value is null | undefined | '' | [] {
     return (
       Type.isNullOrUndefined(value) ||
       (Type.isString(value) && value.length === 0) ||

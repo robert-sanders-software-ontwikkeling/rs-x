@@ -11,6 +11,7 @@ const packageMap = {
   '@rs-x/angular': 'rs-x-angular/projects/rsx',
   '@rs-x/react': 'rs-x-react',
   '@rs-x/react-components': 'rs-x-react-components',
+  '@rs-x/ui': 'rs-x-ui',
 };
 
 const basePath = './';

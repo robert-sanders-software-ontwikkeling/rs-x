@@ -29,7 +29,8 @@
       "@rs-x/state-manager/testing": [
         "rs-x-state-manager/lib/testing/index.ts"
       ],
-      "@rs-x/expression-parser": ["rs-x-expression-parser/lib/index.ts"]
+      "@rs-x/expression-parser": ["rs-x-expression-parser/lib/index.ts"],
+      "@rs-x/expression-parser/testing": ["rs-x-expression-parser/lib/testing/index.ts"]
     },
     "allowJs": true,
     "typeRoots": ["node_modules/@types", "./types"],

@@ -1,3 +1,4 @@
+export * from './expression-change-subscription';
 export * from './expresion-change-transaction-manager';
 export * from './expresion-change-transaction-manager.interface';
 export * from './expression-cache';

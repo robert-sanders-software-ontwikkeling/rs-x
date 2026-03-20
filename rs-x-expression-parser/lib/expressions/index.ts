@@ -27,6 +27,7 @@ export * from './function-expression';
 export * from './greater-than-expression';
 export * from './greater-than-or-equal-expression';
 export * from './identifier-expression';
+export * from './identifier-expresssion.interface';
 export * from './in-expression';
 export * from './index-expression';
 export * from './inequality-expression';

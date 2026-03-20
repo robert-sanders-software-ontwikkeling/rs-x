@@ -1,0 +1,308 @@
+RS-X Compiler & IntelliSense Spec
+
+--------------------------------------------------
+GLOBAL CONTEXT
+--------------------------------------------------
+
+RS-X is a declarative reactive system where expressions are written as strings:
+
+    rsx('a + b.method().result')(model)
+
+or:
+
+    expressionFactory.create(model, 'a + b.method().result')
+
+At runtime, these expressions are:
+- parsed into an AST
+- evaluated reactively
+- tracked for fine-grained dependency updates
+
+GOAL OF THIS PROJECT:
+
+Move expression parsing and validation from runtime to compile time.
+
+This enables:
+- IntelliSense inside expressions
+- early error detection (before runtime)
+- elimination of runtime parsing cost
+- direct AST reuse via ExpressionCache
+
+--------------------------------------------------
+CORE IDEA
+--------------------------------------------------
+
+Expressions are:
+- NOT full JavaScript
+- A constrained DSL (subset of JS expressions)
+
+Defined by:
+rs-x-expression-parser/lib/expressions/expression-parser.interface.ts
+
+We must:
+- parse this DSL at compile time
+- validate it against TypeScript types
+- cache the AST for runtime reuse
+
+--------------------------------------------------
+WHAT WE ARE BUILDING
+--------------------------------------------------
+
+A new project:
+
+    rs-x-compiler
+
+Which provides:
+
+1. Compile-time support
+   - detect RS-X expressions
+   - parse them
+   - validate them
+   - emit diagnostics
+   - register AST in ExpressionCache
+
+2. VS Code support
+   - IntelliSense inside expressions
+   - error highlighting
+   - completions based on model type
+
+--------------------------------------------------
+SUPPORTED ENTRY POINTS
+--------------------------------------------------
+
+1. rsx('...')(model)
+
+2. expressionFactory.create(model, '...')
+   where factory implements IExpressionFactory
+
+IMPORTANT:
+- Support must be type-based, not name-based
+- Must work for:
+    factory.create(...)
+    getFactory().create(...)
+    any IExpressionFactory implementation
+
+--------------------------------------------------
+SCOPE (v1)
+--------------------------------------------------
+
+SUPPORTED:
+- string literal expressions only
+
+NOT SUPPORTED:
+- dynamic expressions
+- template strings
+- full JavaScript
+- statements (if, class, loops, etc.)
+
+--------------------------------------------------
+ERROR MODEL
+--------------------------------------------------
+
+We distinguish 3 types of errors:
+
+1. Semantic errors (TypeScript-based)
+
+Example:
+    rsx('a + b.method().uh')(model)
+
+Error:
+    Property 'uh' does not exist on value returned by 'b.method()'
+
+2. Syntax errors (valid DSL but invalid syntax)
+
+Example:
+    rsx('a + ')
+
+Error:
+    '+' operator expects a right-hand operand
+
+3. Unsupported expressions
+
+Example:
+    rsx('if (a) b.c else 0')
+
+Error:
+    'if' is not supported in RS-X expressions
+
+--------------------------------------------------
+ARCHITECTURAL PRINCIPLES
+--------------------------------------------------
+
+
+- Do NOT duplicate grammar
+- Use TypeScript type checker for semantic validation
+- Keep runtime behavior unchanged
+- ExpressionCache must be extended (not replaced)
+
+
+- All code should have been unit tested (100% coverage)
+- Write integration test in order we are sure it working when installion the extension in vs code
+
+--------------------------------------------------
+MAIN PIPELINE
+--------------------------------------------------
+
+At compile time:
+
+1. Detect expression
+2. Resolve model type
+3. Parse expression → AST
+4. Validate AST against model type
+5. Emit diagnostics if needed
+6. Register AST in ExpressionCache
+
+--------------------------------------------------
+PHASE 0 — Project Setup
+--------------------------------------------------
+
+Step 0.1:
+Create project `rs-x-compiler`
+
+- TypeScript setup
+- build + test scripts
+- folder structure:
+  compiler / transformer / diagnostics / language-service / tests
+
+--------------------------------------------------
+PHASE 1 — Detection
+--------------------------------------------------
+
+Step 1.1:
+Detect rsx('...')
+
+Step 1.2:
+Detect expressionFactory.create(model, '...')
+
+- must resolve IExpressionFactory via type system
+
+--------------------------------------------------
+PHASE 2 — Parsing
+--------------------------------------------------
+
+Step 2.1:
+Parse expression string using RS-X parser
+
+Step 2.2:
+Normalize parser output:
+- success
+- syntax error
+- unsupported
+
+--------------------------------------------------
+PHASE 3 — Model Type Resolution
+--------------------------------------------------
+
+Step 3.1:
+Resolve model type for rsx(...)
+
+Step 3.2:
+Resolve model type for factory.create(...)
+
+--------------------------------------------------
+PHASE 4 — Semantic Validation
+--------------------------------------------------
+
+Step 4.1:
+Validate identifiers
+
+Step 4.2:
+Validate member access
+
+Step 4.3:
+Validate method calls
+
+--------------------------------------------------
+PHASE 5 — Diagnostics
+--------------------------------------------------
+
+Step 5.1:
+Syntax errors
+
+Step 5.2:
+Unsupported expressions
+
+Step 5.3:
+Semantic errors
+
+--------------------------------------------------
+PHASE 6 — ExpressionCache Extension
+--------------------------------------------------
+
+Step 6.1:
+Analyze ExpressionCache
+
+Step 6.2:
+Add direct AST insertion support
+
+--------------------------------------------------
+PHASE 7 — AST Registration
+--------------------------------------------------
+
+Step 7.1:
+Register AST for rsx(...)
+
+Step 7.2:
+Register AST for factory.create(...)
+
+--------------------------------------------------
+PHASE 8 — Transformer Integration
+--------------------------------------------------
+
+Step 8.1:
+Create transformer
+
+Step 8.2:
+Integrate full pipeline
+
+--------------------------------------------------
+PHASE 9 — VS Code Support
+--------------------------------------------------
+
+Step 9.1:
+Detect expression regions
+
+Step 9.2:
+Completions
+
+Step 9.3:
+Diagnostics
+
+Step 9.4:
+Hover 
+
+--------------------------------------------------
+PHASE 10 — Tests
+--------------------------------------------------
+
+- valid expressions
+- semantic errors
+- syntax errors
+- unsupported expressions
+- cache integration
+
+--------------------------------------------------
+SUCCESS CRITERIA
+--------------------------------------------------
+
+- Expressions validated at compile time
+- No runtime parsing when AST is cached
+- IntelliSense works inside expressions
+- Both entry points supported
+
+--------------------------------------------------
+PROMPT TEMPLATE
+--------------------------------------------------
+
+You are a senior TypeScript compiler engineer.
+
+Task:
+[ONE step only]
+
+Constraints:
+- do not implement future phases
+- only support string literals
+- keep implementation minimal
+
+Output:
+- working code
+- short explanation

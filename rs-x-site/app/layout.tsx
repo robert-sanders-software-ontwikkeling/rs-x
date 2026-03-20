@@ -9,16 +9,30 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: 'rs-x — Declarative reactivity for JavaScript & TypeScript',
+    default: 'rs-x — Reactive TypeScript Expression Engine',
     template: '%s | rs-x',
   },
   description:
-    'rs-x is a JavaScript/TypeScript library for declarative reactivity: bind expressions to a model and updates propagate automatically — no compilation step required.',
+    'rs-x is a reactive TypeScript library for declarative expression binding. Bind an expression to a model and fine-grained dependency tracking updates it automatically — no compilation step required.',
+  keywords: [
+    'reactive TypeScript',
+    'reactive JavaScript',
+    'TypeScript reactive library',
+    'reactive state management TypeScript',
+    'declarative reactivity TypeScript',
+    'expression binding TypeScript',
+    'reactive expressions',
+    'fine-grained reactivity',
+    'TypeScript state management',
+    'reactive programming TypeScript',
+    'rs-x',
+    'rsxjs',
+  ],
   metadataBase: new URL('https://rsxjs.com'),
   openGraph: {
-    title: 'rs-x — Declarative reactivity for JavaScript & TypeScript',
+    title: 'rs-x — Reactive TypeScript Expression Engine',
     description:
-      'Bind expressions to a model. rs-x builds fine-grained dependencies and propagates updates automatically — no compilation step required.',
+      'Reactive TypeScript library for declarative expression binding. rs-x builds fine-grained dependencies and propagates updates automatically — no compilation step required.',
     url: 'https://rsxjs.com',
     siteName: 'rs-x',
     locale: 'en_US',
@@ -34,9 +48,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'rs-x — Declarative reactivity for JavaScript & TypeScript',
+    title: 'rs-x — Reactive TypeScript Expression Engine',
     description:
-      'Bind expressions to a model. rs-x builds fine-grained dependencies and propagates updates automatically.',
+      'Reactive TypeScript library for declarative expression binding. rs-x builds fine-grained dependencies and propagates updates automatically.',
     images: ['/opengraph-image.png'],
   },
   robots: {
@@ -88,7 +102,7 @@ export default function RootLayout({
                   operatingSystem: 'Any',
                   url: 'https://rsxjs.com',
                   description:
-                    'A JavaScript/TypeScript library for declarative reactivity: bind expressions to a model and updates propagate automatically — no compilation step required.',
+                    'A reactive TypeScript library for declarative expression binding: bind expressions to a model and fine-grained dependency tracking updates them automatically — no compilation step required.',
                   offers: {
                     '@type': 'Offer',
                     price: '0',

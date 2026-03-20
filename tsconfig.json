@@ -13,7 +13,10 @@
     "sourceMap": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "lib": ["ES2022", "dom"],
+    "lib": [
+      "ES2022",
+      "dom"
+    ],
     "noImplicitAny": false,
     "allowSyntheticDefaultImports": true,
     "downlevelIteration": true,
@@ -28,25 +31,56 @@
     "inlineSources": true,
     "noImplicitOverride": true,
     "paths": {
-      "@rs-x/core": ["rs-x-core/lib/index.ts"],
-      "@rs-x/core/testing": ["rs-x-core/lib/testing/index.ts"],
-      "@rs-x/state-manager": ["rs-x-state-manager/lib/index.ts"],
+      "@rs-x/core": [
+        "rs-x-core/lib/index.ts"
+      ],
+      "@rs-x/core/testing": [
+        "rs-x-core/lib/testing/index.ts"
+      ],
+      "@rs-x/state-manager": [
+        "rs-x-state-manager/lib/index.ts"
+      ],
       "@rs-x/state-manager/testing": [
         "rs-x-state-manager/lib/testing/index.ts"
       ],
-      "@rs-x/expression-parser": ["rs-x-expression-parser/lib/index.ts"],
-      "@rs-x/react": ["rs-x-react/src/index.ts"],
-      "@rs-x/react-components": ["rs-x-react-components/src/index.ts"]
+      "@rs-x/expression-parser": [
+        "rs-x-expression-parser/lib/index.ts"
+      ],
+      "@rs-x/expression-parser/testing": [
+        "rs-x-expression-parser/lib/testing/index.ts"
+      ],
+      "@rs-x/react": [
+        "rs-x-react/src/index.ts"
+      ],
+      "@rs-x/react-components": [
+        "rs-x-react-components/src/index.ts"
+      ],
+      "@rs-x/ui": [
+        "rs-x-ui/lib/index.ts"
+      ]
     },
     "allowJs": true,
-    "typeRoots": ["node_modules/@types", "./types"],
-    "types": ["jest", "node"]
+    "typeRoots": [
+      "node_modules/@types",
+      "./types"
+    ],
+    "types": [
+      "jest",
+      "node"
+    ]
   },
   "ts-node": {
     "compilerOptions": {
       "module": "CommonJS"
     }
   },
-  "include": ["./types/declarations.d.ts", "**/*"],
-  "exclude": ["node_modules", "**/dist", "**/dist/**"]
+  "include": [
+    "./types/declarations.d.ts",
+    "**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/dist",
+    "**/dist/**"
+  ]
 }

@@ -13,6 +13,7 @@ const PACKAGES = [
   '@rs-x/angular',
   '@rs-x/react',
   '@rs-x/react-components',
+  '@rs-x/ui'
 ];
 
 function run(cmd) {

@@ -2,11 +2,23 @@ import { type AnyFunction, Type } from '../types/type';
 
 import { AssertionError } from './assert-exception';
 import { InvalidCastException } from './invalid-cast-exception';
+import { LargerThanException } from './larger-than-exception';
 import { NullOrEmptyException } from './null-or-empty-exception';
 import { NullOrUndefinedException } from './null-or-undefined-exception';
 
 export class Assertion {
   private constructor() {}
+
+
+   public static assertLargerThan(
+      value: number,
+      minValue: number,
+      argumentName: string
+   ): void {
+      if (value < minValue) {
+         throw new LargerThanException(argumentName, value);
+      }
+   }
 
   public static assertIsFunction(
     value: unknown,
@@ -27,19 +39,19 @@ export class Assertion {
     }
   }
 
-  public static assertNotNullOrUndefined(
-    value: unknown,
+  public static assertNotNullOrUndefined<T>(
+    value: T,
     argumentName: string,
-  ): void {
+  ): asserts value is NonNullable<T> {
     if (Type.isNullOrUndefined(value)) {
       throw new NullOrUndefinedException(argumentName);
     }
   }
 
-  public static assertNotNullOrEmpty(
-    value: unknown,
+  public static assertNotNullOrEmpty<T>(
+    value: T,
     argumentName: string,
-  ): void {
+  ): asserts value is NonNullable<T> {
     if (Type.isEmpty(value)) {
       throw new NullOrEmptyException(argumentName);
     }
