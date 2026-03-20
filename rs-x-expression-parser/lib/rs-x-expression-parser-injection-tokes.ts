@@ -11,6 +11,7 @@ export const RsXExpressionParserInjectionTokens = {
     'IExpressionChangeTransactionManager',
   ),
   IExpressionParser: Symbol('IExpressionParser'),
+  IExpressionCodegenParser: Symbol('IExpressionCodegenParser'),
   IExpressionFactory: Symbol('IExpressionFactory'),
   IExpressionObserverProxyPairFactory: Symbol(
     'IExpressionObserverProxyPairFactory',
@@ -25,4 +26,3 @@ export const RsXExpressionParserInjectionTokens = {
   IExpressionIdProvider: Symbol('IExpressionIdProvider'),
   IExpressionChangeSubscriptionManager: Symbol('IExpressionChangeSubscriptionManager'),
 };
-

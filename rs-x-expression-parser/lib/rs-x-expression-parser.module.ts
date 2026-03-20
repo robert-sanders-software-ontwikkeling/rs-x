@@ -35,7 +35,10 @@ import { ExpressionObserverProxyPairFactory } from './expression-observer/expres
 import type { IExpressionObserverFactory } from './expression-observer/expression-proxy.factory.type';
 import { ExpressionServices } from './expression-services/expression-services';
 import type { IExpressionServices } from './expression-services/expression-services.interface';
-import type { IExpressionParser } from './expressions/expression-parser.interface';
+import type {
+  IExpressionCodegenParser,
+  IExpressionParser,
+} from './expressions/expression-parser.interface';
 import { ArrayIndexOwnerResolver } from './identifier-owner-resolver/array-index-owner-resolver';
 import { DefaultIdentifierOwnerResolver } from './identifier-owner-resolver/default-identifier-owner-resolver';
 import { GlobalIdentifierOwnerResolver } from './identifier-owner-resolver/global-identifier-owner-resolver';
@@ -48,6 +51,7 @@ import type { IExpressionChangeSubscriptionManager } from './expression-change-s
 import { ExpressionChangeTransactionManager } from './expresion-change-transaction-manager';
 import type { IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
 import { JsEspreeExpressionParser } from './js-espree-expression-parser';
+import { JsEspreeExpressionCodegenParser } from './js-espree-expression-codegen-parser';
 import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
 
 
@@ -93,6 +97,12 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
       RsXExpressionParserInjectionTokens.IExpressionParser,
     )
     .to(JsEspreeExpressionParser)
+    .inSingletonScope();
+  options
+    .bind<IExpressionCodegenParser>(
+      RsXExpressionParserInjectionTokens.IExpressionCodegenParser,
+    )
+    .to(JsEspreeExpressionCodegenParser)
     .inSingletonScope();
   options
     .bind<IExpressionManager>(

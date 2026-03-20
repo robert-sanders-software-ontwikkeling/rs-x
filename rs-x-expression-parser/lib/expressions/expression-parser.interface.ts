@@ -89,3 +89,7 @@ export enum ExpressionType {
 export interface IExpressionParser {
   parse(expression: string): AbstractExpression;
 }
+
+export interface IExpressionCodegenParser {
+  parse(expression: string): string;
+}

@@ -1,45 +1,6 @@
-import { generate as astToString } from 'astring';
-import * as espree from 'espree';
-import type {
-  ArrayExpression as EstreeArrayExpression,
-  AssignmentExpression as EstreeAssignmentExpression,
-  BinaryExpression,
-  BinaryOperator,
-  CallExpression,
-  ChainExpression,
-  ConditionalExpression as EstreeConditionalExpression,
-  Expression,
-  ExpressionStatement,
-  Identifier,
-  Literal,
-  LogicalExpression,
-  LogicalOperator,
-  MemberExpression as EstreeMemberExpression,
-  NewExpression as EstreeNewExpression,
-  Node,
-  ObjectExpression as EstreeObjectExpression,
-  Pattern,
-  PrivateIdentifier,
-  Program,
-  Property,
-  RegExpLiteral,
-  SequenceExpression as EstreeSequenceExpression,
-  SpreadElement,
-  Super,
-  TaggedTemplateExpression as EstreeTaggedTemplateExpression,
-  TemplateLiteral,
-  UnaryExpression,
-  UnaryOperator,
-} from 'estree';
+import { Injectable, Type } from '@rs-x/core';
 
-import {
-  type AnyFunction,
-  Injectable,
-  ParserException,
-  Type,
-  UnsupportedException,
-} from '@rs-x/core';
-
+import { AbstractJsEspreeExpressionParser } from './abstract-js-espree-expression-parser';
 import { AbstractExpression } from './expressions/abstract-expression';
 import { AdditionExpression } from './expressions/addition-expression';
 import { ArrayExpression } from './expressions/array-expression';
@@ -60,16 +21,13 @@ import { ConstantStringExpression } from './expressions/constant-string-expressi
 import { DivisionExpression } from './expressions/division-expression';
 import { EqualityExpression } from './expressions/equality-expression';
 import { ExponentiationExpression } from './expressions/exponentiation-expression';
-import {
-  ExpressionType,
-  type IExpression,
-  type IExpressionParser,
-} from './expressions/expression-parser.interface';
+import { type IExpression, type IExpressionParser } from './expressions/expression-parser.interface';
 import { FunctionExpression } from './expressions/function-expression';
 import { GreaterThanExpression } from './expressions/greater-than-expression';
 import { GreaterThanOrEqualExpression } from './expressions/greater-than-or-equal-expression';
 import { IdentifierExpression } from './expressions/identifier-expression';
 import { InExpression } from './expressions/in-expression';
+import { IndexExpression } from './expressions/index-expression';
 import { InequalityExpression } from './expressions/inequality-expression';
 import { InstanceofExpression } from './expressions/instanceof-expression';
 import { LessThanExpression } from './expressions/less-than-expression';
@@ -93,888 +51,401 @@ import { TemplateLiteralExpression } from './expressions/template-literal-expres
 import { TypeofExpression } from './expressions/typeof-expression';
 import { UnaryNegationExpression } from './expressions/unary-negation-expression';
 import { UnaryPlusExpression } from './expressions/unary-plus-expression';
-import { IndexExpression } from './expressions';
-
-enum EspreeExpressionType {
-  UnaryExpression = 'UnaryExpression',
-  BinaryExpression = 'BinaryExpression',
-  AssignmentExpression = 'AssignmentExpression',
-  ConditionalExpression = 'ConditionalExpression',
-  LogicalExpression = 'LogicalExpression',
-  ChainExpression = 'ChainExpression',
-  MemberExpression = 'MemberExpression',
-  Identifier = 'Identifier',
-  Literal = 'Literal',
-  NewExpression = 'NewExpression',
-  CallExpression = 'CallExpression',
-  TemplateLiteral = 'TemplateLiteral',
-  SpreadElement = 'SpreadElement',
-  TaggedTemplateExpression = 'TaggedTemplateExpression',
-  SequenceExpression = 'SequenceExpression',
-  ArrayExpression = 'ArrayExpression',
-  ObjectExpression = 'ObjectExpression',
-  Property = 'Property',
-}
-
-type MemberExpressionSegmentType = Expression | PrivateIdentifier | Super;
-
-type ExpressionFactory<T extends Expression | SpreadElement | Property> = (
-  expression: T,
-) => AbstractExpression;
-
-type KnownExpressionType =
-  keyof (typeof JsEspreeExpressionParser.prototype)['expressionFactories'];
-
-interface IPathSehment {
-  expression: MemberExpressionSegmentType;
-  computed: boolean;
-}
-
-type INormalizedMemberProperty = Pick<IPathSehment, 'expression' | 'computed'>;
 
 @Injectable()
-export class JsEspreeExpressionParser implements IExpressionParser {
-  public static readonly instance: IExpressionParser;
-  private static readonly _parseOptions = {
-    ecmaVersion: 2022,
-    range: true,
-  } as const;
-  private _currentExpressionSource: string | undefined;
-  private readonly createConstantExpression = {
-    string: (literal: Literal) =>
-      new ConstantStringExpression(literal.value as string),
-    number: (literal: Literal) =>
-      new ConstantNumberExpression(Number(literal.value)),
-    boolean: (literal: Literal) =>
-      new ConstantBooleanExpression(Boolean(literal.value)),
-    bigint: (literal: Literal) =>
-      new ConstantBigIntExpression(BigInt(literal.value as string)),
-  };
-  private readonly expressionFactories: {
-    [EspreeExpressionType.UnaryExpression]: ExpressionFactory<UnaryExpression>;
-    [EspreeExpressionType.BinaryExpression]: ExpressionFactory<BinaryExpression>;
-    [EspreeExpressionType.AssignmentExpression]: ExpressionFactory<EstreeAssignmentExpression>;
-    [EspreeExpressionType.Literal]: ExpressionFactory<Literal>;
-    [EspreeExpressionType.ConditionalExpression]: ExpressionFactory<EstreeConditionalExpression>;
-    [EspreeExpressionType.LogicalExpression]: ExpressionFactory<LogicalExpression>;
-    [EspreeExpressionType.ChainExpression]: ExpressionFactory<ChainExpression>;
-    [EspreeExpressionType.MemberExpression]: ExpressionFactory<EstreeMemberExpression>;
-    [EspreeExpressionType.Identifier]: ExpressionFactory<Identifier>;
-    [EspreeExpressionType.NewExpression]: ExpressionFactory<EstreeNewExpression>;
-    [EspreeExpressionType.CallExpression]: ExpressionFactory<CallExpression>;
-    [EspreeExpressionType.TemplateLiteral]: ExpressionFactory<TemplateLiteral>;
-    [EspreeExpressionType.SpreadElement]: ExpressionFactory<SpreadElement>;
-    [EspreeExpressionType.SequenceExpression]: ExpressionFactory<EstreeSequenceExpression>;
-    [EspreeExpressionType.TaggedTemplateExpression]: ExpressionFactory<EstreeTaggedTemplateExpression>;
-    [EspreeExpressionType.ArrayExpression]: ExpressionFactory<EstreeArrayExpression>;
-    [EspreeExpressionType.ObjectExpression]: ExpressionFactory<EstreeObjectExpression>;
-    [EspreeExpressionType.Property]: ExpressionFactory<Property>;
-  };
-  private readonly unaryExpressionFactories: Record<
-    UnaryOperator,
-    (expression: UnaryExpression) => AbstractExpression
-  >;
-  private readonly binaryExpressionFactories: Record<
-    BinaryOperator,
-    (expression: BinaryExpression) => AbstractExpression
-  >;
-  private readonly logicalExpressionFactories: Record<
-    LogicalOperator,
-    (expression: LogicalExpression) => AbstractExpression
-  >;
-
-  constructor() {
-    this.expressionFactories = {
-      [EspreeExpressionType.UnaryExpression]: this.createUnaryExpression,
-      [EspreeExpressionType.BinaryExpression]: this.createBinaryExpression,
-      [EspreeExpressionType.AssignmentExpression]:
-        this.createAssignmentExpression,
-      [EspreeExpressionType.Literal]: this.createLiteralExpression,
-      [EspreeExpressionType.ConditionalExpression]:
-        this.createConditionalExpression,
-      [EspreeExpressionType.LogicalExpression]: this.createLogicalExpression,
-      [EspreeExpressionType.ChainExpression]: this.createChainExpression,
-      [EspreeExpressionType.MemberExpression]: this.createMemberExpression,
-      [EspreeExpressionType.Identifier]: this.createIdentifier,
-      [EspreeExpressionType.NewExpression]: this.createNewExpression,
-      [EspreeExpressionType.CallExpression]: this.createCallExpression,
-      [EspreeExpressionType.TemplateLiteral]:
-        this.createTemplateLiteralExpression,
-      [EspreeExpressionType.SpreadElement]: this.createSpreadExpression,
-      [EspreeExpressionType.SequenceExpression]: this.createSequenceExpression,
-      [EspreeExpressionType.TaggedTemplateExpression]:
-        this.createTaggedTemplateExpression,
-      [EspreeExpressionType.ArrayExpression]: this.createArrayExpression,
-      [EspreeExpressionType.ObjectExpression]: this.createObjectExpression,
-      [EspreeExpressionType.Property]: this.createPropertyExpression,
-    };
-
-    this.unaryExpressionFactories = {
-      '+': this.createUnaryPlusExpression,
-      '-': this.createUnaryMinusExpression,
-      '!': this.createLogicalNotExpression,
-      '~': this.createBitwiseNotExpression,
-      typeof: this.createTypeofExpression,
-      delete: this.createDeleteExpression,
-      void: () => {
-        throw new UnsupportedException(`void expression is not supported`);
-      },
-    };
-
-    this.binaryExpressionFactories = {
-      '==': this.createEqualToExpression,
-      '!=': this.createNotEqualToExpression,
-      '===': this.createStrictEqualToExpression,
-      '!==': this.createStrictNotEqualToExpression,
-      '<': this.createLessThanExpression,
-      '<=': this.createLessThanOrEqualToExpression,
-      '>': this.createGreaterThanExpression,
-      '>=': this.createGreaterThanOrEqualToExpression,
-      '<<': this.createLeftShiftExpression,
-      '>>': this.createRightShiftExpression,
-      '>>>': this.createUnsignedRightShiftExpression,
-      '+': this.createAdditionExpression,
-      '-': this.createSubstractionExpression,
-      '*': this.createMultiplicationExpression,
-      '/': this.createDivisionExpression,
-      '%': this.createModulusExpression,
-      '**': this.createExponentiationExpression,
-      '|': this.createBitwiseOrExpression,
-      '^': this.createBitwiseXOrExpression,
-      '&': this.createBitwiseAndExpression,
-      in: this.createInExpression,
-      instanceof: this.createInstanceOfExpression,
-    };
-
-    this.logicalExpressionFactories = {
-      '||': this.createLogicalOrExpression,
-      '&&': this.createLogicalAndExpression,
-      '??': this.createNullishCoalescingExpression,
-    };
-  }
-
-  public parse(expressionString: string): AbstractExpression {
-    this._currentExpressionSource = expressionString;
-    try {
-      const espreeExpression = this.tryParse(expressionString);
-      return this.createExpression(espreeExpression);
-    } catch (e) {
-      if (e instanceof Error) {
-        throw new ParserException(expressionString, e.message);
-      }
-
-      throw new ParserException(expressionString, String(e));
-    } finally {
-      this._currentExpressionSource = undefined;
-    }
-  }
-
-  private tryParse(expressionString: string): Expression {
-    return this.parseExpression(expressionString).expression;
-  }
-
-  private createExpression(
-    expression:
-      | Expression
-      | Super
-      | PrivateIdentifier
-      | SpreadElement
-      | Property
-      | Pattern,
+export class JsEspreeExpressionParser
+  extends AbstractJsEspreeExpressionParser<AbstractExpression>
+  implements IExpressionParser
+{
+  protected override createConstantStringExpression(
+    value: string,
   ): AbstractExpression {
-    if (!(expression.type in this.expressionFactories)) {
-      throw new UnsupportedException(
-        `Unsupported expression type ${expression.type}`,
-      );
-    }
-
-    const factory =
-      this.expressionFactories[expression.type as KnownExpressionType];
-
-    return factory(Type.cast(expression));
+    return new ConstantStringExpression(value);
   }
 
-  private createLiteralExpression = (
-    expression: Literal,
-  ): AbstractExpression => {
-    // RegExp literal
-    if ((expression as RegExpLiteral).regex) {
-      const regExpLiteral = expression as RegExpLiteral;
-      return new ConstantRegExpExpression(
-        this.getExpressionSource(expression),
-        new RegExp(regExpLiteral.regex.pattern, regExpLiteral.regex.flags),
-      );
-    }
+  protected override createConstantNumberExpression(
+    value: number,
+  ): AbstractExpression {
+    return new ConstantNumberExpression(value);
+  }
 
-    // null literal
-    if (expression.value === null) {
-      return new ConstantNullExpression();
-    }
+  protected override createConstantBooleanExpression(
+    value: boolean,
+  ): AbstractExpression {
+    return new ConstantBooleanExpression(value);
+  }
 
-    // Only allowed types
-    const valueType = typeof expression.value;
-    if (
-      valueType === 'string' ||
-      valueType === 'number' ||
-      valueType === 'boolean' ||
-      valueType === 'bigint'
-    ) {
-      return this.createConstantExpression[valueType](expression);
-    }
+  protected override createConstantBigIntExpression(
+    value: bigint,
+  ): AbstractExpression {
+    return new ConstantBigIntExpression(value);
+  }
 
-    throw new UnsupportedException(`Unsupported literal type: ${valueType}`);
-  };
+  protected override createConstantNullExpression(): AbstractExpression {
+    return new ConstantNullExpression();
+  }
 
-  private createBinaryExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
-    return this.binaryExpressionFactories[expression.operator](expression);
-  };
+  protected override createConstantRegExpExpression(
+    source: string,
+    value: RegExp,
+  ): AbstractExpression {
+    return new ConstantRegExpExpression(source, value);
+  }
 
-  private createAssignmentExpression = (): AbstractExpression => {
-    throw new UnsupportedException('Assignment expressions are not supported');
-  };
-
-  private createUnaryExpression = (
-    expression: UnaryExpression,
-  ): AbstractExpression => {
-    return this.unaryExpressionFactories[expression.operator](expression);
-  };
-
-  private createConditionalExpression = (
-    expression: EstreeConditionalExpression,
-  ): AbstractExpression => {
+  protected override createConditionalNode(
+    source: string,
+    testExpression: AbstractExpression,
+    consequentExpression: AbstractExpression,
+    alternateExpression: AbstractExpression,
+  ): AbstractExpression {
     return new ConditionalExpression(
-      this.getExpressionSource(expression),
-      this.createExpression(expression.test),
-      this.createExpression(expression.consequent),
-      this.createExpression(expression.alternate),
+      source,
+      testExpression,
+      consequentExpression,
+      alternateExpression,
     );
-  };
+  }
 
-  private createLogicalExpression = (
-    expression: LogicalExpression,
-  ): AbstractExpression => {
-    return this.logicalExpressionFactories[expression.operator](expression);
-  };
+  protected override createMemberNode(
+    source: string,
+    pathSegments: AbstractExpression[],
+  ): AbstractExpression {
+    return new MemberExpression(source, pathSegments);
+  }
 
-  private createChainExpression = (
-    expression: ChainExpression,
-  ): AbstractExpression => {
-    return this.createExpression(expression.expression);
-  };
+  protected override createIndexExpression(
+    expression: AbstractExpression,
+  ): AbstractExpression {
+    return new IndexExpression(expression);
+  }
 
-  private createMemberExpression = (
-    expression: EstreeMemberExpression,
-  ): AbstractExpression => {
-    const pathSegments = this.flattenMemberExpression(expression).map((e) => {
-      const expression = this.createExpression(e.expression);
-      return e.computed ? new IndexExpression(expression) : expression;
-    });
-    return new MemberExpression(
-      this.getExpressionSource(expression),
-      pathSegments,
-    );
-  };
+  protected override createSequenceNode(
+    source: string,
+    expressions: AbstractExpression[],
+  ): AbstractExpression {
+    return new SequenceExpression(source, expressions);
+  }
 
-  private createSequenceExpression = (
-    expression: EstreeSequenceExpression,
-  ): AbstractExpression => {
-    return new SequenceExpression(
-      this.getExpressionSource(expression, { preferGenerator: true }),
-      expression.expressions.map((expression) =>
-        this.createExpression(expression),
-      ),
-    );
-  };
+  protected override createIdentifierExpression(name: string): AbstractExpression {
+    return new IdentifierExpression(name);
+  }
 
-  private createIdentifier = (expression: Identifier): AbstractExpression => {
-    return new IdentifierExpression(expression.name);
-  };
+  protected override createArrayNode(expressions: AbstractExpression[]): AbstractExpression {
+    return new ArrayExpression(expressions);
+  }
 
-  private createArrayExpression = (
-    expression: EstreeArrayExpression,
-  ): AbstractExpression => {
-    return new ArrayExpression(
-      expression.elements.map((element) =>
-        this.createExpression(Type.cast(element)),
-      ),
-    );
-  };
+  protected override createSpreadNode(expression: AbstractExpression): AbstractExpression {
+    return new SpreadExpression(Type.cast(expression));
+  }
 
-  private createSpreadExpression = (
-    expression: SpreadElement,
-  ): AbstractExpression => {
-    return new SpreadExpression(
-      this.createExpression(expression.argument) as
-        | ArrayExpression
-        | ObjectExpression,
-    );
-  };
+  protected override createNewNode(
+    source: string,
+    constructorExpression: AbstractExpression,
+    argumentExpressions: AbstractExpression[],
+  ): AbstractExpression {
+    return new NewExpression(source, Type.cast(constructorExpression), argumentExpressions);
+  }
 
-  private createNewExpression = (
-    expression: EstreeNewExpression,
-  ): AbstractExpression => {
-    const constructorExpression = this.createExpression(expression.callee);
-    const argumentExpressions = expression.arguments.map(
-      (argumentExpressions) => this.createExpression(argumentExpressions),
-    );
-    return new NewExpression(
-      this.getExpressionSource(expression),
-      Type.cast(constructorExpression),
-      argumentExpressions,
-    );
-  };
-
-  private createCallExpression = (
-    expression: CallExpression,
-  ): AbstractExpression => {
-    let objectExpression: IExpression<object> | null = null;
-    let functionExpression: IExpression;
-    let computed = false;
-    let optional = false;
-
-    if (expression.callee.type === EspreeExpressionType.MemberExpression) {
-      objectExpression = this.createExpression(
-        expression.callee.object,
-      ) as IExpression<object>;
-      const normalizedProperty = this.normalizeMemberProperty(
-        expression.callee.property,
-        expression.callee.computed,
-      );
-      functionExpression = this.createExpression(normalizedProperty.expression);
-      computed = normalizedProperty.computed;
-      optional = expression.callee.optional;
-    } else {
-      functionExpression = this.createExpression(expression.callee);
-    }
-
-    const argumentExpressions = expression.arguments.map((argumentExpression) =>
-      this.createExpression(argumentExpression),
-    );
-
+  protected override createFunctionNode(
+    source: string,
+    functionExpression: AbstractExpression,
+    objectExpression: AbstractExpression | null,
+    argumentExpressions: AbstractExpression,
+    computed: boolean,
+    optional: boolean,
+  ): AbstractExpression {
     return new FunctionExpression(
-      this.getExpressionSource(expression),
+      source,
       Type.cast(functionExpression),
-      Type.cast(objectExpression),
-      new ArrayExpression(argumentExpressions),
+      Type.cast(objectExpression as IExpression<object> | null),
+      Type.cast(argumentExpressions),
       computed,
       optional,
     );
-  };
-
-  private createTemplateLiteralExpression = (
-    templateLiteral: TemplateLiteral,
-  ): AbstractExpression => {
-    const { quasis, parameters } =
-      this.createTemplateElementExpression(templateLiteral);
-
-    const expressions = quasis.flatMap((quasi, index) => {
-      return [quasi, parameters[index]].filter((a) => a);
-    });
-
-    if (
-      expressions.length === 1 &&
-      expressions[0].type === ExpressionType.String
-    ) {
-      return expressions[0];
-    }
-
-    return new TemplateLiteralExpression(
-      this.getExpressionSource(templateLiteral),
-      expressions,
-    );
-  };
-
-  private createTaggedTemplateExpression = (
-    expression: EstreeTaggedTemplateExpression,
-  ): AbstractExpression => {
-    const { quasis, parameters } = this.createTemplateElementExpression(
-      expression.quasi,
-    );
-
-    let objectExpression: IExpression<object> | null = null;
-    let functionExpression: IExpression<AnyFunction | string | number>;
-
-    if (expression.tag.type === EspreeExpressionType.MemberExpression) {
-      objectExpression = this.createExpression(
-        expression.tag.object,
-      ) as IExpression<object>;
-      const normalizedProperty = this.normalizeMemberProperty(
-        expression.tag.property,
-        expression.tag.computed,
-      );
-      functionExpression = this.createExpression(
-        normalizedProperty.expression,
-      ) as IExpression<AnyFunction | string | number>;
-    } else {
-      functionExpression = this.createExpression(expression.tag) as IExpression<
-        AnyFunction | string | number
-      >;
-    }
-
-    return new FunctionExpression(
-      this.getExpressionSource(expression),
-      Type.cast(functionExpression),
-      Type.cast(objectExpression),
-      new ArrayExpression([
-        new ArrayExpression(quasis),
-        new SpreadExpression(new ArrayExpression(parameters)),
-      ]),
-      false,
-      false,
-    );
-  };
-
-  private createTemplateElementExpression(templateLiteral: TemplateLiteral): {
-    quasis: AbstractExpression[];
-    parameters: AbstractExpression[];
-  } {
-    return {
-      quasis: templateLiteral.quasis.map(
-        (quasi) => new ConstantStringExpression(quasi.value.raw),
-      ),
-      parameters: templateLiteral.expressions.map((expression) =>
-        this.createExpression(expression),
-      ),
-    };
   }
 
-  private createUnaryPlusExpression = (
-    expression: UnaryExpression,
-  ): AbstractExpression => {
-    return new UnaryPlusExpression(
-      this.getExpressionSource(expression),
-      this.createExpression(expression.argument),
-    );
-  };
+  protected override createTemplateLiteralNode(
+    source: string,
+    expressions: AbstractExpression[],
+  ): AbstractExpression {
+    return new TemplateLiteralExpression(source, expressions);
+  }
 
-  private createUnaryMinusExpression = (
-    expression: UnaryExpression,
-  ): AbstractExpression => {
-    return new UnaryNegationExpression(
-      this.getExpressionSource(expression),
-      Type.cast(this.createExpression(expression.argument)),
-    );
-  };
+  protected override createUnaryPlusNode(
+    source: string,
+    argumentExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new UnaryPlusExpression(source, argumentExpression);
+  }
 
-  private createLogicalNotExpression = (
-    expression: UnaryExpression,
-  ): AbstractExpression => {
-    return new LogicalNotExpression(
-      this.getExpressionSource(expression),
-      this.createExpression(expression.argument),
-    );
-  };
+  protected override createUnaryMinusNode(
+    source: string,
+    argumentExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new UnaryNegationExpression(source, Type.cast(argumentExpression));
+  }
 
-  private createTypeofExpression = (
-    expression: UnaryExpression,
-  ): AbstractExpression => {
-    return new TypeofExpression(
-      this.getExpressionSource(expression),
-      this.createExpression(expression.argument),
-    );
-  };
+  protected override createLogicalNotNode(
+    source: string,
+    argumentExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new LogicalNotExpression(source, argumentExpression);
+  }
 
-  private createDeleteExpression = (): AbstractExpression => {
-    throw new UnsupportedException('Delete operator is not supported');
-  };
+  protected override createTypeofNode(
+    source: string,
+    argumentExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new TypeofExpression(source, argumentExpression);
+  }
 
-  private createEqualToExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
-    return new EqualityExpression(
-      this.getExpressionSource(expression),
-      this.createExpression(expression.left),
-      this.createExpression(expression.right),
-    );
-  };
+  protected override createEqualToNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new EqualityExpression(source, leftExpression, rightExpression);
+  }
 
-  private createNotEqualToExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
-    return new InequalityExpression(
-      this.getExpressionSource(expression),
-      this.createExpression(expression.left),
-      this.createExpression(expression.right),
-    );
-  };
+  protected override createNotEqualToNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new InequalityExpression(source, leftExpression, rightExpression);
+  }
 
-  private createStrictEqualToExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
-    return new StrictEqualityExpression(
-      this.getExpressionSource(expression),
-      this.createExpression(expression.left),
-      this.createExpression(expression.right),
-    );
-  };
+  protected override createStrictEqualToNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new StrictEqualityExpression(source, leftExpression, rightExpression);
+  }
 
-  private createStrictNotEqualToExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
-    return new StrictInequalityExpression(
-      this.getExpressionSource(expression),
-      this.createExpression(expression.left),
-      this.createExpression(expression.right),
-    );
-  };
+  protected override createStrictNotEqualToNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new StrictInequalityExpression(source, leftExpression, rightExpression);
+  }
 
-  private createLessThanExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
-    return new LessThanExpression(
-      this.getExpressionSource(expression),
-      Type.cast(this.createExpression(expression.left)),
-      Type.cast(this.createExpression(expression.right)),
-    );
-  };
-  private createLessThanOrEqualToExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
+  protected override createLessThanNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new LessThanExpression(source, Type.cast(leftExpression), Type.cast(rightExpression));
+  }
+
+  protected override createLessThanOrEqualToNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
     return new LessThanOrEqualExpression(
-      this.getExpressionSource(expression),
-      Type.cast(this.createExpression(expression.left)),
-      Type.cast(this.createExpression(expression.right)),
+      source,
+      Type.cast(leftExpression),
+      Type.cast(rightExpression),
     );
-  };
+  }
 
-  private createGreaterThanExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
-    return new GreaterThanExpression(
-      this.getExpressionSource(expression),
-      this.createExpression(expression.left),
-      this.createExpression(expression.right),
-    );
-  };
+  protected override createGreaterThanNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new GreaterThanExpression(source, leftExpression, rightExpression);
+  }
 
-  private createGreaterThanOrEqualToExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
-    return new GreaterThanOrEqualExpression(
-      this.getExpressionSource(expression),
-      this.createExpression(expression.left),
-      this.createExpression(expression.right),
-    );
-  };
+  protected override createGreaterThanOrEqualToNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new GreaterThanOrEqualExpression(source, leftExpression, rightExpression);
+  }
 
-  private createBitwiseNotExpression = (
-    expression: UnaryExpression,
-  ): AbstractExpression => {
-    return new BitwiseNotExpression(
-      this.getExpressionSource(expression),
-      Type.cast(this.createExpression(expression.argument)),
-    );
-  };
+  protected override createBitwiseNotNode(
+    source: string,
+    argumentExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new BitwiseNotExpression(source, Type.cast(argumentExpression));
+  }
 
-  private createLeftShiftExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
+  protected override createLeftShiftNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
     return new BitwiseLeftShiftExpression(
-      this.getExpressionSource(expression),
-      Type.cast(this.createExpression(expression.left)),
-      Type.cast(this.createExpression(expression.right)),
+      source,
+      Type.cast(leftExpression),
+      Type.cast(rightExpression),
     );
-  };
+  }
 
-  private createRightShiftExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
+  protected override createRightShiftNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
     return new BitwiseRightShiftExpression(
-      this.getExpressionSource(expression),
-      Type.cast(this.createExpression(expression.left)),
-      Type.cast(this.createExpression(expression.right)),
+      source,
+      Type.cast(leftExpression),
+      Type.cast(rightExpression),
     );
-  };
+  }
 
-  private createUnsignedRightShiftExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
+  protected override createUnsignedRightShiftNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
     return new BitwiseUnsignedRightShiftExpression(
-      this.getExpressionSource(expression),
-      Type.cast(this.createExpression(expression.left)),
-      Type.cast(this.createExpression(expression.right)),
+      source,
+      Type.cast(leftExpression),
+      Type.cast(rightExpression),
     );
-  };
+  }
 
-  private createBitwiseOrExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
-    return new BitwiseOrExpression(
-      this.getExpressionSource(expression),
-      Type.cast(this.createExpression(expression.left)),
-      Type.cast(this.createExpression(expression.right)),
-    );
-  };
+  protected override createBitwiseOrNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new BitwiseOrExpression(source, Type.cast(leftExpression), Type.cast(rightExpression));
+  }
 
-  private createBitwiseXOrExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
-    return new BitwiseXorExpression(
-      this.getExpressionSource(expression),
-      Type.cast(this.createExpression(expression.left)),
-      Type.cast(this.createExpression(expression.right)),
-    );
-  };
+  protected override createBitwiseXOrNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new BitwiseXorExpression(source, Type.cast(leftExpression), Type.cast(rightExpression));
+  }
 
-  private createBitwiseAndExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
-    return new BitwiseAndExpression(
-      this.getExpressionSource(expression),
-      Type.cast(this.createExpression(expression.left)),
-      Type.cast(this.createExpression(expression.right)),
-    );
-  };
+  protected override createBitwiseAndNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new BitwiseAndExpression(source, Type.cast(leftExpression), Type.cast(rightExpression));
+  }
 
-  private createAdditionExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
-    return new AdditionExpression(
-      this.getExpressionSource(expression),
-      Type.cast(this.createExpression(expression.left)),
-      Type.cast(this.createExpression(expression.right)),
-    );
-  };
+  protected override createAdditionNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new AdditionExpression(source, Type.cast(leftExpression), Type.cast(rightExpression));
+  }
 
-  private createSubstractionExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
-    return new SubstractionExpression(
-      this.getExpressionSource(expression),
-      Type.cast(this.createExpression(expression.left)),
-      Type.cast(this.createExpression(expression.right)),
-    );
-  };
+  protected override createSubstractionNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new SubstractionExpression(source, Type.cast(leftExpression), Type.cast(rightExpression));
+  }
 
-  private createMultiplicationExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
+  protected override createMultiplicationNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
     return new MultiplicationExpression(
-      this.getExpressionSource(expression),
-      Type.cast(this.createExpression(expression.left)),
-      Type.cast(this.createExpression(expression.right)),
+      source,
+      Type.cast(leftExpression),
+      Type.cast(rightExpression),
     );
-  };
+  }
 
-  private createDivisionExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
-    return new DivisionExpression(
-      this.getExpressionSource(expression),
-      Type.cast(this.createExpression(expression.left)),
-      Type.cast(this.createExpression(expression.right)),
-    );
-  };
+  protected override createDivisionNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new DivisionExpression(source, Type.cast(leftExpression), Type.cast(rightExpression));
+  }
 
-  private createModulusExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
-    return new RemainderExpression(
-      this.getExpressionSource(expression),
-      Type.cast(this.createExpression(expression.left)),
-      Type.cast(this.createExpression(expression.right)),
-    );
-  };
+  protected override createModulusNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new RemainderExpression(source, Type.cast(leftExpression), Type.cast(rightExpression));
+  }
 
-  private createExponentiationExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
+  protected override createExponentiationNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
     return new ExponentiationExpression(
-      this.getExpressionSource(expression),
-      Type.cast(this.createExpression(expression.left)),
-      Type.cast(this.createExpression(expression.right)),
+      source,
+      Type.cast(leftExpression),
+      Type.cast(rightExpression),
     );
-  };
+  }
 
-  private createInstanceOfExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
-    return new InstanceofExpression(
-      this.getExpressionSource(expression),
-      this.createExpression(expression.left),
-      Type.cast(this.createExpression(expression.right)),
-    );
-  };
+  protected override createInstanceOfNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new InstanceofExpression(source, leftExpression, Type.cast(rightExpression));
+  }
 
-  private createInExpression = (
-    expression: BinaryExpression,
-  ): AbstractExpression => {
-    return new InExpression(
-      this.getExpressionSource(expression, { preferGenerator: true }),
-      this.createExpression(expression.left),
-      this.createExpression(expression.right),
-    );
-  };
+  protected override createInNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new InExpression(source, leftExpression, rightExpression);
+  }
 
-  private createLogicalOrExpression = (
-    expression: LogicalExpression,
-  ): AbstractExpression => {
-    return new LogicalOrExpression(
-      this.getExpressionSource(expression),
-      this.createExpression(expression.left),
-      this.createExpression(expression.right),
-    );
-  };
+  protected override createLogicalOrNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new LogicalOrExpression(source, leftExpression, rightExpression);
+  }
 
-  private createLogicalAndExpression = (
-    expression: LogicalExpression,
-  ): AbstractExpression => {
-    return new LogicalAndExpression(
-      this.getExpressionSource(expression),
-      this.createExpression(expression.left),
-      this.createExpression(expression.right),
-    );
-  };
+  protected override createLogicalAndNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new LogicalAndExpression(source, leftExpression, rightExpression);
+  }
 
-  private createNullishCoalescingExpression = (
-    expression: LogicalExpression,
-  ): AbstractExpression => {
-    return new NullishCoalescingExpression(
-      this.getExpressionSource(expression),
-      this.createExpression(expression.left),
-      this.createExpression(expression.right),
-    );
-  };
+  protected override createNullishCoalescingNode(
+    source: string,
+    leftExpression: AbstractExpression,
+    rightExpression: AbstractExpression,
+  ): AbstractExpression {
+    return new NullishCoalescingExpression(source, leftExpression, rightExpression);
+  }
 
-  private createObjectExpression = (
-    objectExpression: EstreeObjectExpression,
-  ): AbstractExpression => {
-    const propertyExpressions = objectExpression.properties.map(
-      (property) =>
-        this.createExpression(property) as
-          | PropertyExpression
-          | SpreadExpression,
-    );
-    return new ObjectExpression(
-      this.getExpressionSource(objectExpression, { preferGenerator: true }),
-      propertyExpressions,
-    );
-  };
+  protected override createObjectNode(
+    source: string,
+    propertyExpressions: AbstractExpression[],
+  ): AbstractExpression {
+    return new ObjectExpression(source, Type.cast(propertyExpressions));
+  }
 
-  private createPropertyExpression = (
-    propertyExpression: Property,
-  ): AbstractExpression => {
-    const keyExpression =
-      propertyExpression.key.type === EspreeExpressionType.Identifier
-        ? new ConstantStringExpression(
-            Type.cast<Identifier>(propertyExpression.key).name,
-          )
-        : this.createExpression(propertyExpression.key);
-
+  protected override createPropertyNode(
+    source: string,
+    keyExpression: AbstractExpression,
+    valueExpression: AbstractExpression,
+  ): AbstractExpression {
     return new PropertyExpression(
-      this.getExpressionSource(propertyExpression, { preferGenerator: true }),
-      keyExpression as AbstractExpression<PropertyKey, unknown>,
-      this.createExpression(propertyExpression.value),
+      source,
+      Type.cast(keyExpression as AbstractExpression<PropertyKey, unknown>),
+      valueExpression,
     );
-  };
-
-  private parseExpression(expression: string): ExpressionStatement {
-    const program = espree.parse(
-      expression,
-      JsEspreeExpressionParser._parseOptions,
-    ) as Program;
-
-    if (program.body.length === 0) {
-      throw new ParserException(expression, 'Empty expression', 0);
-    }
-
-    if (program.body.length > 1) {
-      throw new ParserException(
-        expression,
-        `Multiple expression are not supported`,
-        0,
-      );
-    }
-
-    if (program.body[0].type !== 'ExpressionStatement') {
-      throw new ParserException(
-        expression,
-        `Unsupported expression type ${program.body[0].type}`,
-        0,
-      );
-    }
-
-    return program.body[0];
-  }
-
-  private getExpressionSource(
-    expression: Node | PrivateIdentifier | Super,
-    options?: { preferGenerator?: boolean },
-  ): string {
-    if (options?.preferGenerator) {
-      return astToString(Type.cast<Node>(expression));
-    }
-
-    const range = Type.cast<{ range?: [number, number] }>(expression).range;
-    if (this._currentExpressionSource && range !== undefined) {
-      return this._currentExpressionSource.slice(range[0], range[1]);
-    }
-
-    return astToString(Type.cast<Node>(expression));
-  }
-
-  private normalizeMemberProperty(
-    expression: MemberExpressionSegmentType,
-    computed: boolean,
-  ): INormalizedMemberProperty {
-    if (computed && expression.type === EspreeExpressionType.Literal) {
-      const property = expression as Literal;
-      if (
-        typeof property.value === 'string' ||
-        typeof property.value === 'number'
-      ) {
-        return {
-          expression: {
-            type: EspreeExpressionType.Identifier,
-            name: property.value,
-          } as Identifier,
-          computed: false,
-        };
-      }
-    }
-
-    return {
-      expression,
-      computed,
-    };
-  }
-
-  private flattenMemberExpression(
-    expr: MemberExpressionSegmentType,
-  ): IPathSehment[] {
-    const result: IPathSehment[] = [];
-
-    const walk = (node: MemberExpressionSegmentType): void => {
-      switch (node.type) {
-        case EspreeExpressionType.MemberExpression:
-          // first resolve the object
-          walk(node.object as MemberExpressionSegmentType);
-
-          // then push the property
-          result.push(
-            this.normalizeMemberProperty(node.property, node.computed),
-          );
-          break;
-
-        case EspreeExpressionType.CallExpression:
-          // CallExpression is a single semantic segment
-          result.push({
-            expression: node,
-            computed: false,
-          });
-          break;
-
-        default:
-          result.push({
-            expression: node,
-            computed: false,
-          });
-      }
-    };
-
-    walk(expr);
-    return result;
   }
 }

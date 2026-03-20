@@ -42,6 +42,7 @@ import { MapKeyOwnerResolver } from '../lib/identifier-owner-resolver/map-key-ow
 import { PropertyOwnerResolver } from '../lib/identifier-owner-resolver/property-owner-resolver';
 import { SetKeyOwnerResolver } from '../lib/identifier-owner-resolver/set-key-owner-resolver';
 import { JsEspreeExpressionParser } from '../lib/js-espree-expression-parser';
+import { JsEspreeExpressionCodegenParser } from '../lib/js-espree-expression-codegen-parser';
 import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
@@ -121,6 +122,23 @@ describe('RsXExpressionParserModule tests', () => {
     );
     const a2 = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionParser,
+    );
+    expect(a1).toBe(a2);
+  });
+
+  it('can get instance of IExpressionCodegenParser', () => {
+    const actual = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionCodegenParser,
+    );
+    expect(actual).toBeInstanceOf(JsEspreeExpressionCodegenParser);
+  });
+
+  it('IExpressionCodegenParser instance is a singleton', () => {
+    const a1 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionCodegenParser,
+    );
+    const a2 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionCodegenParser,
     );
     expect(a1).toBe(a2);
   });
