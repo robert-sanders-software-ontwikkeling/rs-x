@@ -49,6 +49,9 @@
       "@rs-x/expression-parser/testing": [
         "rs-x-expression-parser/lib/testing/index.ts"
       ],
+      "@rs-x/compiler": [
+        "rs-x-compiler/lib/index.ts"
+      ],
       "@rs-x/react": [
         "rs-x-react/src/index.ts"
       ],

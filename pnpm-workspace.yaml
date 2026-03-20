@@ -2,6 +2,7 @@ packages:
   - 'rs-x-core'
   - 'rs-x-state-manager'
   - 'rs-x-expression-parser'
+  - 'rs-x-compiler'
   - 'rs-x-react'
   - 'rs-x-react-components'
   - 'rs-x-dev-tools'
