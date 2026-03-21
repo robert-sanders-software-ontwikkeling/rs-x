@@ -1,0 +1,76 @@
+{
+  "name": "rs-x-vscode-extension",
+  "displayName": "RS-X Compiler Support",
+  "description": "VS Code extension that enables RS-X expression IntelliSense and diagnostics",
+  "icon": "icon.png",
+  "version": "0.1.0",
+  "publisher": "rs-x",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:typescript",
+    "onLanguage:typescriptreact",
+    "onLanguage:javascript",
+    "onLanguage:javascriptreact"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "grammars": [
+      {
+        "scopeName": "rsx.expression.injection",
+        "path": "./syntaxes/rsx-expression.injection.json",
+        "injectTo": [
+          "source.ts",
+          "source.tsx",
+          "source.js",
+          "source.jsx"
+        ],
+        "embeddedLanguages": {
+          "meta.embedded.inline.rsx": "typescript"
+        }
+      }
+    ],
+    "typescriptServerPlugins": [
+      {
+        "name": "@rs-x/typescript-plugin",
+        "enableForWorkspaceTypeScriptVersions": true,
+        "languages": [
+          "typescript",
+          "typescriptreact",
+          "javascript",
+          "javascriptreact"
+        ]
+      }
+    ]
+  },
+  "scripts": {
+    "build": "tsup lib/extension.ts --format cjs --dts --tsconfig ../tsconfig.build.json --out-dir dist",
+    "clean": "rimraf dist",
+    "prepare:plugin": "node ./scripts/prepare-plugin.cjs",
+    "vscode:prepublish": "pnpm --filter @rs-x/expression-parser run build && pnpm --filter @rs-x/compiler run build && pnpm --filter @rs-x/typescript-plugin run build && pnpm run build",
+    "package": "pnpm run vscode:prepublish && pnpm run prepare:plugin && node ./scripts/package-vsix.cjs"
+  },
+  "dependencies": {
+    "@rs-x/typescript-plugin": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.6.2",
+    "rimraf": "^6.1.2",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  },
+  "files": [
+    "dist",
+    "syntaxes",
+    "node_modules/@rs-x/typescript-plugin/dist",
+    "node_modules/@rs-x/typescript-plugin/package.json",
+    "icon.png",
+    "package.json",
+    "README.md"
+  ]
+}

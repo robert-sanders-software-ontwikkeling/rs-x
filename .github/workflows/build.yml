@@ -62,6 +62,22 @@ jobs:
       - name: Build Node libraries
         run: pnpm -w run build:libs
 
+      # Build compiler package
+      - name: Build compiler
+        run: pnpm -w run build:compiler
+
+      # Build TypeScript plugin
+      - name: Build TypeScript plugin
+        run: pnpm -w run build:ts-plugin
+
+      # Build VS Code extension
+      - name: Build VS Code extension
+        run: pnpm -w run build:vscode-extension
+
+      # Build CLI package
+      - name: Build CLI
+        run: pnpm --filter @rs-x/cli run build
+
       # Build expression editor
       - name: Build expression-editor
         run: pnpm -w run build:expression-editor

@@ -13,11 +13,20 @@ export class ExpressionCache
   extends KeyedInstanceFactory<string, string, IExpression>
   implements IExpressionCache
 {
+  private readonly _precompiledExpressions = new Map<string, IExpression>();
+
   constructor(
     @Inject(RsXExpressionParserInjectionTokens.IExpressionParser)
     private readonly _expressionParser: IExpressionParser,
   ) {
     super();
+  }
+
+  public registerExpressionTree(
+    expressionString: string,
+    expressionTree: IExpression,
+  ): void {
+    this._precompiledExpressions.set(expressionString, expressionTree);
   }
 
   public override getId(expressionString: string): string | undefined {
@@ -41,6 +50,11 @@ export class ExpressionCache
   protected override createInstance(
     expressionString: string,
   ): IExpression<unknown, unknown> {
+    const precompiledExpression = this._precompiledExpressions.get(expressionString);
+    if (precompiledExpression) {
+      return precompiledExpression;
+    }
+
     return this._expressionParser.parse(expressionString);
   }
 }

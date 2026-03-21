@@ -30,7 +30,9 @@ describe('AdditionExpression tests', () => {
   });
 
   it('type', () => {
-    const model = { a: 1, b: 2 };
+    const model = { a:1, b: 2 };
+
+    const x = model.a + model.b;
 
     expression = rsx('a + b')(model);
 

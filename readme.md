@@ -43,9 +43,25 @@ rs-x binds plain JavaScript expressions to a data model and propagates updates a
 - `pnpm build:react` : builds **rs-x-react** project
 - `pnpm build:devtools` : builds **rs-x-dev-tools** project
 - `pnpm build:expression-editor` : builds **rs-x-expression-editor** project
+- `pnpm install:vscode-extension` : package + install local RS-X VS Code extension (includes TS plugin)
+- `pnpm install:compiler-tooling` : install `@rs-x/compiler` + `@rs-x/typescript-plugin`
+- `pnpm init:rsx` : init project (packages + async RS-X bootstrap wiring + VS Code extension)
+- `pnpm setup:developer-tooling` : install compiler tooling + local VS Code extension
 - `pnpm test` : run all tests
 - `pnpm lint` : run ESLint without auto-fixing
 - `pnpm lint:fix` : run ESLint and auto-fix errors
+
+### RS-X CLI
+
+You can also use the CLI directly:
+
+- `npx @rs-x/cli doctor`
+- `npx @rs-x/cli init`
+- `npx @rs-x/cli install compiler`
+- `npx @rs-x/cli install vscode`
+- `npx @rs-x/cli setup`
+
+For local monorepo development (use local VSIX build): `npx @rs-x/cli install vscode --local`
 
 ---
 

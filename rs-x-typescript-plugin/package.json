@@ -1,0 +1,30 @@
+{
+  "name": "@rs-x/typescript-plugin",
+  "version": "0.1.0",
+  "description": "TypeScript server plugin that adds RS-X IntelliSense inside expression strings",
+  "main": "./dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup lib/index.ts --format cjs --tsconfig ../tsconfig.build.json",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@rs-x/compiler": "workspace:*"
+  },
+  "devDependencies": {
+    "rimraf": "^6.1.2",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "typescript",
+    "tsserver",
+    "plugin",
+    "rs-x"
+  ]
+}

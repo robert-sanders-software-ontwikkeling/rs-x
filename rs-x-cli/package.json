@@ -1,0 +1,25 @@
+{
+  "name": "@rs-x/cli",
+  "version": "0.1.0",
+  "description": "CLI for installing RS-X compiler tooling and VS Code integration",
+  "bin": {
+    "rsx": "./bin/rsx.cjs"
+  },
+  "files": [
+    "bin",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node -e \"console.log('No build step required for @rs-x/cli')\""
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "rs-x",
+    "cli",
+    "compiler",
+    "vscode",
+    "typescript"
+  ]
+}

@@ -35,6 +35,7 @@
         "rs-x-state-manager/lib/testing/index.ts"
       ],
       "@rs-x/expression-parser": ["rs-x-expression-parser/lib/index.ts"],
+      "@rs-x/expression-parser/testing": ["rs-x-expression-parse/lib/testing/index.ts"],
       "@rs-x/react": ["rs-x-react/src/index.ts"],
       "@rs-x/react-components": ["rs-x-react-components/src/index.ts"]
     },
