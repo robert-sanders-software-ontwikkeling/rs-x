@@ -1,0 +1,22 @@
+{
+  "name": "rsx-manual-test-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "Realistic RS-X manual testing project",
+  "scripts": {
+    "build": "rsx build --project tsconfig.json",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@rs-x/core": "file:../rs-x-core",
+    "@rs-x/state-manager": "file:../rs-x-state-manager",
+    "@rs-x/expression-parser": "file:../rs-x-expression-parser"
+  },
+  "devDependencies": {
+    "@rs-x/compiler": "file:../rs-x-compiler",
+    "@rs-x/typescript-plugin": "file:../rs-x-typescript-plugin",
+    "@rs-x/cli": "file:../rs-x-cli",
+    "typescript": "^5.9.3"
+  }
+}

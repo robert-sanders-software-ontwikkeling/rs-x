@@ -13,10 +13,12 @@ declare const model: Model;
 declare const dynamicExpression: string;
 
 rsx('a + b.method().result')(model);
+rsx(`a + b.method().result`)(model);
 rsx(dynamicExpression)(model);
 
 declare const expressionFactory: IExpressionFactory;
 expressionFactory.create(model, 'a + 1');
+expressionFactory.create(model, `a + 1`);
 expressionFactory.create(model, dynamicExpression);
 
 declare function getFactory(): IExpressionFactory;

@@ -35,6 +35,8 @@
     "build:vscode-extension": "pnpm --filter rs-x-vscode-extension run build",
     "package:vscode-extension": "pnpm --filter rs-x-vscode-extension run package",
     "install:vscode-extension": "node ./rs-x-cli/bin/rsx.cjs install vscode --local",
+    "install:local-cli-global": "./scripts/install-local-cli.sh",
+    "install:local-cli-global:dry-run": "./scripts/install-local-cli.sh --dry-run",
     "install:compiler-tooling": "node ./rs-x-cli/bin/rsx.cjs install compiler",
     "init:rsx": "node ./rs-x-cli/bin/rsx.cjs init --local",
     "setup:developer-tooling": "node ./rs-x-cli/bin/rsx.cjs setup --local",

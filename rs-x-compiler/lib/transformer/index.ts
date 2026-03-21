@@ -9,5 +9,3 @@ export function createTransformerScaffold(): ITransformerScaffold {
     enabled: false,
   };
 }
-
-export * from './expression-cache-preload-transformer';

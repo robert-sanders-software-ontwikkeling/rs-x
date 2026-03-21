@@ -1,6 +1,7 @@
 import ts from 'typescript';
 
 import { JsEspreeExpressionParser } from '@rs-x/expression-parser';
+import { GlobalIdentifierOwnerResolver } from '@rs-x/expression-parser';
 
 import type { AbstractExpression } from '@rs-x/expression-parser';
 import { ExpressionType } from '@rs-x/expression-parser';
@@ -23,6 +24,8 @@ interface IResolvedType {
   readonly tsType?: ts.Type;
   readonly primitive?: 'string' | 'number' | 'boolean' | 'bigint' | 'null';
 }
+
+const globalIdentifierOwnerResolver = new GlobalIdentifierOwnerResolver();
 
 export function validateExpressionSites(
   program: ts.Program,
@@ -138,7 +141,67 @@ function resolveExpressionType(
       return { primitive: 'null' };
 
     case ExpressionType.Multiplication:
-      return resolveMultiplicationType(
+      return resolveNumericBinaryType(
+        expression,
+        currentContextType,
+        rootModelType,
+        checker,
+        diagnostics,
+        '*',
+      );
+
+    case ExpressionType.Subtraction:
+      return resolveNumericBinaryType(
+        expression,
+        currentContextType,
+        rootModelType,
+        checker,
+        diagnostics,
+        '-',
+      );
+
+    case ExpressionType.Division:
+      return resolveNumericBinaryType(
+        expression,
+        currentContextType,
+        rootModelType,
+        checker,
+        diagnostics,
+        '/',
+      );
+
+    case ExpressionType.Remainder:
+      return resolveNumericBinaryType(
+        expression,
+        currentContextType,
+        rootModelType,
+        checker,
+        diagnostics,
+        '%',
+      );
+
+    case ExpressionType.Exponentiation:
+      return resolveNumericBinaryType(
+        expression,
+        currentContextType,
+        rootModelType,
+        checker,
+        diagnostics,
+        '**',
+      );
+
+    case ExpressionType.Addition:
+      return resolveAdditionType(
+        expression,
+        currentContextType,
+        rootModelType,
+        checker,
+        diagnostics,
+      );
+
+    case ExpressionType.UnaryPlus:
+    case ExpressionType.UnaryNegation:
+      return resolveNumericUnaryType(
         expression,
         currentContextType,
         rootModelType,
@@ -147,17 +210,13 @@ function resolveExpressionType(
       );
 
     default:
-      expression.childExpressions.forEach((childExpression) => {
-        resolveExpressionType(
-          childExpression as AbstractExpression,
-          currentContextType,
-          rootModelType,
-          checker,
-          diagnostics,
-        );
-      });
-
-      return {};
+      return resolveNestedExpressionType(
+        expression,
+        currentContextType,
+        rootModelType,
+        checker,
+        diagnostics,
+      );
   }
 }
 
@@ -169,6 +228,10 @@ function resolveIdentifierType(
 ): IResolvedType {
   const property = contextType.getProperty(identifier);
   if (!property) {
+    if (isAllowedGlobalIdentifier(identifier)) {
+      return {};
+    }
+
     diagnostics.push({
       category: 'semantic',
       message: `Identifier '${identifier}' does not exist on model type.`,
@@ -182,8 +245,15 @@ function resolveIdentifierType(
   }
 
   return {
-    tsType: checker.getTypeOfSymbolAtLocation(property, declaration),
+    tsType: unwrapRsxExpressionType(
+      checker.getTypeOfSymbolAtLocation(property, declaration),
+      checker,
+    ),
   };
+}
+
+function isAllowedGlobalIdentifier(identifier: string): boolean {
+  return globalIdentifierOwnerResolver.resolve(identifier) !== null;
 }
 
 function resolveMemberType(
@@ -212,11 +282,12 @@ function resolveMemberType(
     if (!currentType.tsType) {
       return {};
     }
+    const currentTsType = unwrapRsxExpressionType(currentType.tsType, checker);
 
     if (segment.type === ExpressionType.Identifier) {
       currentType = resolveIdentifierType(
         segment.expressionString,
-        currentType.tsType,
+        currentTsType,
         checker,
         diagnostics,
       );
@@ -233,7 +304,7 @@ function resolveMemberType(
         diagnostics,
       );
       currentType = resolveIndexedType(
-        currentType.tsType,
+        currentTsType,
         resolvedIndexType,
         checker,
         diagnostics,
@@ -244,7 +315,7 @@ function resolveMemberType(
     if (segment.type === ExpressionType.Function) {
       currentType = resolveFunctionTypeFromKnownContext(
         segment,
-        currentType.tsType,
+        currentTsType,
         rootModelType,
         checker,
         diagnostics,
@@ -254,7 +325,7 @@ function resolveMemberType(
 
     currentType = resolveExpressionType(
       segment,
-      currentType.tsType,
+      currentTsType,
       rootModelType,
       checker,
       diagnostics,
@@ -270,6 +341,7 @@ function resolveIndexedType(
   checker: ts.TypeChecker,
   diagnostics: ICompilerDiagnostic[],
 ): IResolvedType {
+  targetType = unwrapRsxExpressionType(targetType, checker);
   if (indexType.primitive === 'string') {
     return {};
   }
@@ -342,6 +414,7 @@ function resolveFunctionTypeFromKnownContext(
   diagnostics: ICompilerDiagnostic[],
   functionNameExpression?: AbstractExpression,
 ): IResolvedType {
+  objectType = unwrapRsxExpressionType(objectType, checker);
   const fnExpression =
     functionNameExpression ??
     (functionExpression.childExpressions[1] as AbstractExpression);
@@ -449,7 +522,10 @@ function isAssignableToParameter(
   checker: ts.TypeChecker,
 ): boolean {
   if (argumentType.tsType) {
-    return checker.isTypeAssignableTo(argumentType.tsType, parameterType);
+    return checker.isTypeAssignableTo(
+      unwrapRsxExpressionType(argumentType.tsType, checker),
+      parameterType,
+    );
   }
 
   if (!argumentType.primitive) {
@@ -489,7 +565,44 @@ function isPrimitiveAssignable(
   }
 }
 
-function resolveMultiplicationType(
+function resolveNumericBinaryType(
+  expression: AbstractExpression,
+  contextType: ts.Type,
+  rootModelType: ts.Type,
+  checker: ts.TypeChecker,
+  diagnostics: ICompilerDiagnostic[],
+  operator: '*' | '-' | '/' | '%' | '**',
+): IResolvedType {
+  const leftExpression = expression.childExpressions[0] as AbstractExpression;
+  const rightExpression = expression.childExpressions[1] as AbstractExpression;
+
+  const leftType = resolveExpressionType(
+    leftExpression,
+    contextType,
+    rootModelType,
+    checker,
+    diagnostics,
+  );
+  const rightType = resolveExpressionType(
+    rightExpression,
+    contextType,
+    rootModelType,
+    checker,
+    diagnostics,
+  );
+
+  if (!isNumberLike(leftType, checker) || !isNumberLike(rightType, checker)) {
+    diagnostics.push({
+      category: 'semantic',
+      message:
+        `Operator "${operator}" requires both left and right operands to be number-compatible.`,
+    });
+  }
+
+  return { primitive: 'number' };
+}
+
+function resolveAdditionType(
   expression: AbstractExpression,
   contextType: ts.Type,
   rootModelType: ts.Type,
@@ -514,23 +627,146 @@ function resolveMultiplicationType(
     diagnostics,
   );
 
-  if (!isNumberLike(leftType) || !isNumberLike(rightType)) {
+  if (isStringLike(leftType, checker) || isStringLike(rightType, checker)) {
+    return { primitive: 'string' };
+  }
+
+  if (isNumberLike(leftType, checker) && isNumberLike(rightType, checker)) {
+    return { primitive: 'number' };
+  }
+
+  diagnostics.push({
+    category: 'semantic',
+    message:
+      'Operator "+" requires compatible operands (both number-like or at least one string-like).',
+  });
+
+  return {};
+}
+
+function resolveNumericUnaryType(
+  expression: AbstractExpression,
+  contextType: ts.Type,
+  rootModelType: ts.Type,
+  checker: ts.TypeChecker,
+  diagnostics: ICompilerDiagnostic[],
+): IResolvedType {
+  const operandExpression = expression.childExpressions[0] as AbstractExpression;
+  const operandType = resolveExpressionType(
+    operandExpression,
+    contextType,
+    rootModelType,
+    checker,
+    diagnostics,
+  );
+
+  if (!isNumberLike(operandType, checker)) {
     diagnostics.push({
       category: 'semantic',
       message:
-        'Operator "*" requires both left and right operands to be number-compatible.',
+        'Unary numeric operator requires a number-compatible operand.',
     });
   }
 
   return { primitive: 'number' };
 }
 
-function isNumberLike(type: IResolvedType): boolean {
+function isNumberLike(type: IResolvedType, checker: ts.TypeChecker): boolean {
   if (type.primitive === 'number') {
     return true;
   }
   if (!type.tsType) {
     return false;
   }
-  return (type.tsType.flags & ts.TypeFlags.NumberLike) !== 0;
+  return tsTypeMatches(type.tsType, ts.TypeFlags.NumberLike, checker);
+}
+
+function isStringLike(type: IResolvedType, checker: ts.TypeChecker): boolean {
+  if (type.primitive === 'string') {
+    return true;
+  }
+  if (!type.tsType) {
+    return false;
+  }
+  return tsTypeMatches(type.tsType, ts.TypeFlags.StringLike, checker);
+}
+
+function resolveNestedExpressionType(
+  expression: AbstractExpression,
+  currentContextType: ts.Type,
+  rootModelType: ts.Type,
+  checker: ts.TypeChecker,
+  diagnostics: ICompilerDiagnostic[],
+): IResolvedType {
+  const childExpressions = expression.childExpressions as AbstractExpression[];
+  if (childExpressions.length === 0) {
+    return {};
+  }
+
+  const resolvedChildren = childExpressions.map((childExpression) =>
+    resolveExpressionType(
+      childExpression,
+      currentContextType,
+      rootModelType,
+      checker,
+      diagnostics,
+    ),
+  );
+
+  if (resolvedChildren.length === 1) {
+    return resolvedChildren[0] ?? {};
+  }
+
+  return {};
+}
+
+function tsTypeMatches(
+  type: ts.Type,
+  mask: ts.TypeFlags,
+  checker: ts.TypeChecker,
+): boolean {
+  type = unwrapRsxExpressionType(type, checker);
+  if ((type.flags & mask) !== 0) {
+    return true;
+  }
+
+  if (type.isUnionOrIntersection()) {
+    return type.types.some((memberType) =>
+      tsTypeMatches(memberType, mask, checker),
+    );
+  }
+
+  return false;
+}
+
+function unwrapRsxExpressionType(
+  type: ts.Type,
+  checker: ts.TypeChecker,
+): ts.Type {
+  const symbol = type.aliasSymbol ?? type.getSymbol();
+  if (symbol?.getName() === 'IExpression') {
+    const typeArguments = checker.getTypeArguments(type as ts.TypeReference);
+    if (typeArguments.length > 0) {
+      return typeArguments[0];
+    }
+  }
+
+  // Fallback for concrete expression implementations where generic args are erased.
+  const hasExpressionShape =
+    type.getProperty('value') &&
+    type.getProperty('expressionString') &&
+    type.getProperty('childExpressions') &&
+    type.getProperty('changed');
+  if (!hasExpressionShape) {
+    return type;
+  }
+
+  const valueProperty = type.getProperty('value');
+  const declaration =
+    valueProperty?.valueDeclaration ?? valueProperty?.declarations?.[0];
+  if (!valueProperty || !declaration) {
+    return type;
+  }
+
+  return checker.getTypeOfSymbolAtLocation(valueProperty, declaration);
 }

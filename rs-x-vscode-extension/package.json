@@ -4,12 +4,24 @@
   "description": "VS Code extension that enables RS-X expression IntelliSense and diagnostics",
   "icon": "icon.png",
   "version": "1.0.2",
-  "publisher": "rs-x",
+  "publisher": "RobertSanders",
   "engines": {
     "vscode": "^1.90.0"
   },
   "categories": [
     "Programming Languages"
+  ],
+  "keywords": [
+    "rs-x",
+    "rsx",
+    "reactive",
+    "angular",
+    "react",
+    "typescript",
+    "javascript",
+    "intellisense",
+    "diagnostics",
+    "expressions"
   ],
   "activationEvents": [
     "onLanguage:typescript",
@@ -52,7 +64,8 @@
     "clean": "rimraf dist",
     "prepare:plugin": "node ./scripts/prepare-plugin.cjs",
     "vscode:prepublish": "pnpm --filter @rs-x/expression-parser run build && pnpm --filter @rs-x/compiler run build && pnpm --filter @rs-x/typescript-plugin run build && pnpm run build",
-    "package": "pnpm run vscode:prepublish && pnpm run prepare:plugin && node ./scripts/package-vsix.cjs"
+    "package": "pnpm run vscode:prepublish && pnpm run prepare:plugin && node ./scripts/package-vsix.cjs",
+    "publish:marketplace": "pnpm run vscode:prepublish && pnpm run prepare:plugin && pnpm exec vsce publish"
   },
   "dependencies": {
     "@rs-x/typescript-plugin": "workspace:*"
@@ -71,6 +84,7 @@
     "node_modules/@rs-x/typescript-plugin/package.json",
     "icon.png",
     "package.json",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ]
 }

@@ -2,9 +2,11 @@ import type tsModule from 'typescript/lib/tsserverlibrary';
 
 import {
   detectExpressionSitesInSourceFile,
+  findRsxExpressionRegionAtPosition,
   getRsxCompletionsAtPosition,
   getRsxDiagnosticsForFile,
   getRsxHoverAtPosition,
+  getRsxSignatureHelpAtPosition,
 } from '@rs-x/compiler';
 
 interface ITypescriptPluginInit {
@@ -40,37 +42,31 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
         return baseCompletions;
       }
 
-      const rsxCompletions = getRsxCompletionsAtPosition(program, fileName, position);
-      if (rsxCompletions.length === 0) {
+      const rsxRegion = findRsxExpressionRegionAtPosition(program, fileName, position);
+      if (!rsxRegion) {
         return baseCompletions;
       }
 
-      const baseEntries = baseCompletions?.entries ?? [];
-      const seenNames = new Set(baseEntries.map((entry) => entry.name));
+      const rsxCompletions = getRsxCompletionsAtPosition(program, fileName, position);
       const pluginEntries = rsxCompletions
-        .filter((completion) => !seenNames.has(completion.name))
         .map((completion): tsModule.CompletionEntry => ({
           name: completion.name,
           kind:
             completion.kind === 'method'
               ? ts.ScriptElementKind.memberFunctionElement
+              : completion.kind === 'constructor'
+                ? ts.ScriptElementKind.classElement
               : ts.ScriptElementKind.memberVariableElement,
           kindModifiers: '',
           sortText: '0',
         }));
-
-      if (!baseCompletions) {
-        return {
-          entries: pluginEntries,
-          isGlobalCompletion: false,
-          isMemberCompletion: true,
-          isNewIdentifierLocation: false,
-        };
-      }
+      const uniquePluginEntries = dedupeCompletionEntries(pluginEntries);
 
       return {
-        ...baseCompletions,
-        entries: [...baseCompletions.entries, ...pluginEntries],
+        entries: uniquePluginEntries,
+        isGlobalCompletion: false,
+        isMemberCompletion: true,
+        isNewIdentifierLocation: false,
       };
     };
 
@@ -94,7 +90,7 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
 
       return {
         // Use a neutral symbol kind and an explicit label to avoid duplicated
-        // type-only renderings such as "number number" in VS Code tooltips.
+        // type-only renderings in VS Code tooltips.
         kind: ts.ScriptElementKind.unknown,
         kindModifiers: '',
         textSpan: {
@@ -103,6 +99,59 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
         },
         displayParts: [{ kind: 'text', text: hoverLabel }],
         documentation: [],
+      };
+    };
+
+    proxy.getSignatureHelpItems = (fileName, position, options) => {
+      const baseSignatureHelp = languageService.getSignatureHelpItems(
+        fileName,
+        position,
+        options,
+      );
+      const program = languageService.getProgram?.();
+      if (!program) {
+        return baseSignatureHelp;
+      }
+
+      const rsxRegion = findRsxExpressionRegionAtPosition(program, fileName, position);
+      if (!rsxRegion) {
+        return baseSignatureHelp;
+      }
+
+      const rsxSignatureHelp = getRsxSignatureHelpAtPosition(program, fileName, position);
+      if (!rsxSignatureHelp) {
+        return undefined;
+      }
+
+      const signatureItems: tsModule.SignatureHelpItem[] = rsxSignatureHelp.items.map((item) => ({
+        isVariadic: item.parameters.some((parameter) => parameter.isRest),
+        prefixDisplayParts: [{ kind: 'punctuation', text: '(' }],
+        suffixDisplayParts: [{ kind: 'text', text: `): ${item.returnTypeText}` }],
+        separatorDisplayParts: [{ kind: 'punctuation', text: ', ' }],
+        parameters: item.parameters.map((parameter) => ({
+          name: parameter.name,
+          isOptional: parameter.isOptional,
+          isRest: parameter.isRest,
+          documentation: [],
+          displayParts: [
+            { kind: 'parameterName', text: parameter.name },
+            { kind: 'text', text: ': ' },
+            { kind: 'text', text: parameter.typeText },
+          ],
+        })),
+        documentation: [],
+        tags: [],
+      }));
+
+      return {
+        items: signatureItems,
+        applicableSpan: {
+          start: rsxSignatureHelp.applicableStart,
+          length: Math.max(1, rsxSignatureHelp.applicableEnd - rsxSignatureHelp.applicableStart),
+        },
+        selectedItemIndex: 0,
+        argumentIndex: rsxSignatureHelp.argumentIndex,
+        argumentCount: rsxSignatureHelp.argumentCount,
       };
     };
 
@@ -168,6 +217,20 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
   }
 
   return { create };
+}
+
+function dedupeCompletionEntries(
+  entries: readonly tsModule.CompletionEntry[],
+): tsModule.CompletionEntry[] {
+  const seen = new Set<string>();
+  return entries.filter((entry) => {
+    if (seen.has(entry.name)) {
+      return false;
+    }
+
+    seen.add(entry.name);
+    return true;
+  });
 }
 
 type RsxTokenKind =

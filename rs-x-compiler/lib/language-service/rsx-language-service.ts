@@ -12,7 +12,7 @@ export interface IRsxExpressionRegion {
 
 export interface IRsxCompletionItem {
   readonly name: string;
-  readonly kind: 'property' | 'method';
+  readonly kind: 'property' | 'method' | 'constructor';
 }
 
 export interface IRsxDiagnostic {
@@ -26,6 +26,26 @@ export interface IRsxHoverInfo {
   readonly text: string;
   readonly start: number;
   readonly end: number;
+}
+
+export interface IRsxSignatureParameter {
+  readonly name: string;
+  readonly typeText: string;
+  readonly isOptional: boolean;
+  readonly isRest: boolean;
+}
+
+export interface IRsxSignatureHelpItem {
+  readonly parameters: readonly IRsxSignatureParameter[];
+  readonly returnTypeText: string;
+}
+
+export interface IRsxSignatureHelp {
+  readonly items: readonly IRsxSignatureHelpItem[];
+  readonly argumentIndex: number;
+  readonly argumentCount: number;
+  readonly applicableStart: number;
+  readonly applicableEnd: number;
 }
 
 interface IRsxExpressionContext {
@@ -66,6 +86,11 @@ export function getRsxCompletionsAtPosition(
 
   const expressionOffset = position - context.expressionStart;
   const prefixSource = context.expression.slice(0, expressionOffset);
+  const constructorPrefix = resolveConstructorCompletionPrefix(prefixSource);
+  if (constructorPrefix !== null) {
+    return resolveConstructorCompletions(context, constructorPrefix);
+  }
+
   const completionTarget = resolveCompletionTarget(prefixSource);
   const targetType = completionTarget.chain.length
     ? resolveChainType(context.modelType, completionTarget.chain, context.checker)
@@ -79,6 +104,7 @@ export function getRsxCompletionsAtPosition(
     .getProperties()
     .map((propertySymbol) => propertySymbol.getName())
     .filter((name) => name.startsWith(completionTarget.prefix))
+    .filter((name, index, collection) => collection.indexOf(name) === index)
     .sort();
 
   return names.map((name) => ({
@@ -143,6 +169,81 @@ export function getRsxHoverAtPosition(
     text: context.checker.typeToString(resolvedType),
     start: context.expressionStart + tokenRange.start,
     end: context.expressionStart + tokenRange.end,
+  };
+}
+
+export function getRsxSignatureHelpAtPosition(
+  program: ts.Program,
+  fileName: string,
+  position: number,
+): IRsxSignatureHelp | null {
+  const context = resolveExpressionContext(program, fileName, position);
+  if (!context) {
+    return null;
+  }
+
+  const expressionOffset = position - context.expressionStart;
+  const prefixSource = context.expression.slice(0, expressionOffset);
+  const activeCall = resolveActiveCallContext(prefixSource);
+  if (!activeCall) {
+    return null;
+  }
+
+  const callableType = resolveCallableType(
+    context.modelType,
+    activeCall.chain,
+    context.sourceFile,
+    context.checker,
+    activeCall.isConstructorCall,
+  );
+  if (!callableType) {
+    return null;
+  }
+
+  const signatures = activeCall.isConstructorCall
+    ? callableType.getConstructSignatures()
+    : callableType.getCallSignatures();
+  if (signatures.length === 0) {
+    return null;
+  }
+
+  const items: IRsxSignatureHelpItem[] = signatures.map((signature) => {
+    const parameters = signature.getParameters().map((parameter): IRsxSignatureParameter => {
+      const declaration = parameter.valueDeclaration ?? parameter.declarations?.[0];
+      const typeText = declaration
+        ? context.checker.typeToString(context.checker.getTypeOfSymbolAtLocation(parameter, declaration))
+        : 'unknown';
+      const declarations = parameter.declarations ?? [];
+      const isOptionalByDeclaration = declarations.some(
+        (node) =>
+          ts.isParameter(node) &&
+          (Boolean(node.questionToken) || Boolean(node.initializer)),
+      );
+      const isRest = declarations.some(
+        (node) => ts.isParameter(node) && Boolean(node.dotDotDotToken),
+      );
+
+      return {
+        name: parameter.getName(),
+        typeText,
+        isOptional:
+          (parameter.flags & ts.SymbolFlags.Optional) !== 0 || isOptionalByDeclaration,
+        isRest,
+      };
+    });
+
+    return {
+      parameters,
+      returnTypeText: context.checker.typeToString(signature.getReturnType()),
+    };
+  });
+
+  return {
+    items,
+    argumentIndex: activeCall.argumentIndex,
+    argumentCount: activeCall.argumentCount,
+    applicableStart: context.expressionStart + activeCall.applicableStartOffset,
+    applicableEnd: context.expressionStart + activeCall.applicableEndOffset,
   };
 }
 
@@ -281,6 +382,7 @@ function resolveChainType(
     if (!currentType) {
       return null;
     }
+    currentType = unwrapRsxExpressionType(currentType, checker);
 
     const isMethodCall = segment.endsWith('()');
     const name = isMethodCall ? segment.slice(0, -2) : segment;
@@ -296,7 +398,7 @@ function resolveChainType(
 
     const propertyType = checker.getTypeOfSymbolAtLocation(property, declaration);
     if (!isMethodCall) {
-      currentType = propertyType;
+      currentType = unwrapRsxExpressionType(propertyType, checker);
       continue;
     }
 
@@ -305,10 +407,280 @@ function resolveChainType(
       return null;
     }
 
-    currentType = signatures[0].getReturnType();
+    currentType = unwrapRsxExpressionType(signatures[0].getReturnType(), checker);
   }
 
   return currentType;
+}
+
+function resolveCallableType(
+  modelType: ts.Type,
+  chain: readonly string[],
+  sourceFile: ts.SourceFile,
+  checker: ts.TypeChecker,
+  isConstructorCall: boolean,
+): ts.Type | null {
+  if (chain.length === 0) {
+    return null;
+  }
+
+  if (isConstructorCall) {
+    return resolveConstructorType(chain, sourceFile, checker);
+  }
+
+  const containerChain = chain.slice(0, -1);
+  const callableName = chain[chain.length - 1];
+  if (!callableName || callableName.endsWith('()')) {
+    return null;
+  }
+
+  const containerType = containerChain.length
+    ? resolveChainType(modelType, containerChain, checker)
+    : modelType;
+  if (!containerType) {
+    return null;
+  }
+
+  const callableProperty = containerType.getProperty(callableName);
+  if (!callableProperty) {
+    return null;
+  }
+
+  const declaration =
+    callableProperty.valueDeclaration ?? callableProperty.declarations?.[0];
+  if (!declaration) {
+    return null;
+  }
+
+  return unwrapRsxExpressionType(
+    checker.getTypeOfSymbolAtLocation(callableProperty, declaration),
+    checker,
+  );
+}
+
+function resolveActiveCallContext(prefixSource: string): {
+  chain: string[];
+  isConstructorCall: boolean;
+  argumentIndex: number;
+  argumentCount: number;
+  applicableStartOffset: number;
+  applicableEndOffset: number;
+} | null {
+  const callStack: Array<{ openOffset: number; commaCount: number }> = [];
+  let inSingleQuote = false;
+  let inDoubleQuote = false;
+  let inTemplate = false;
+  let escaped = false;
+
+  for (let index = 0; index < prefixSource.length; index += 1) {
+    const char = prefixSource[index];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+
+    if (inSingleQuote) {
+      if (char === '\\') {
+        escaped = true;
+      } else if (char === "'") {
+        inSingleQuote = false;
+      }
+      continue;
+    }
+
+    if (inDoubleQuote) {
+      if (char === '\\') {
+        escaped = true;
+      } else if (char === '"') {
+        inDoubleQuote = false;
+      }
+      continue;
+    }
+
+    if (inTemplate) {
+      if (char === '\\') {
+        escaped = true;
+      } else if (char === '`') {
+        inTemplate = false;
+      }
+      continue;
+    }
+
+    if (char === "'") {
+      inSingleQuote = true;
+      continue;
+    }
+
+    if (char === '"') {
+      inDoubleQuote = true;
+      continue;
+    }
+
+    if (char === '`') {
+      inTemplate = true;
+      continue;
+    }
+
+    if (char === '(') {
+      callStack.push({ openOffset: index, commaCount: 0 });
+      continue;
+    }
+
+    if (char === ')') {
+      if (callStack.length > 0) {
+        callStack.pop();
+      }
+      continue;
+    }
+
+    if (char === ',' && callStack.length > 0) {
+      const activeCall = callStack[callStack.length - 1];
+      activeCall.commaCount += 1;
+    }
+  }
+
+  if (callStack.length === 0) {
+    return null;
+  }
+
+  const activeCall = callStack[callStack.length - 1];
+  const callTargetSource = prefixSource.slice(0, activeCall.openOffset).trimEnd();
+  const chainMatch = callTargetSource.match(
+    /([A-Za-z_$][\w$]*(?:\(\))?(?:\.[A-Za-z_$][\w$]*(?:\(\))?)*)$/u,
+  );
+  if (!chainMatch) {
+    return null;
+  }
+
+  const chain = splitChain(chainMatch[1]);
+  const constructorMatch = callTargetSource.match(
+    /(?:^|[^\w$])new\s+([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)$/u,
+  );
+  const hasArgumentText =
+    prefixSource.slice(activeCall.openOffset + 1).trim().length > 0;
+
+  return {
+    chain,
+    isConstructorCall:
+      Boolean(constructorMatch) && constructorMatch?.[1] === chainMatch[1],
+    argumentIndex: activeCall.commaCount,
+    argumentCount: hasArgumentText ? activeCall.commaCount + 1 : 0,
+    applicableStartOffset: activeCall.openOffset + 1,
+    applicableEndOffset: prefixSource.length,
+  };
+}
+
+function resolveConstructorCompletionPrefix(prefixSource: string): string | null {
+  const constructorPrefixMatch = prefixSource.match(
+    /(?:^|[^\w$])new\s+([A-Za-z_$][\w$]*)?$/u,
+  );
+  if (!constructorPrefixMatch) {
+    return null;
+  }
+
+  return constructorPrefixMatch[1] ?? '';
+}
+
+function resolveConstructorCompletions(
+  context: IRsxExpressionContext,
+  prefix: string,
+): IRsxCompletionItem[] {
+  const constructableNames = context.checker
+    .getSymbolsInScope(
+      context.sourceFile,
+      ts.SymbolFlags.Value |
+        ts.SymbolFlags.Type |
+        ts.SymbolFlags.Namespace |
+        ts.SymbolFlags.Alias,
+    )
+    .filter((symbol) => !symbol.getName().startsWith('__'))
+    .filter((symbol) => symbol.getName().startsWith(prefix))
+    .filter((symbol) =>
+      resolveConstructableTypeFromSymbol(symbol, context.sourceFile, context.checker) !== null,
+    )
+    .map((symbol) => symbol.getName())
+    .filter((name, index, collection) => collection.indexOf(name) === index)
+    .sort();
+
+  return constructableNames.map((name) => ({
+    name,
+    kind: 'constructor',
+  }));
+}
+
+function resolveConstructorType(
+  chain: readonly string[],
+  sourceFile: ts.SourceFile,
+  checker: ts.TypeChecker,
+): ts.Type | null {
+  const [rootName, ...rest] = chain;
+  if (!rootName) {
+    return null;
+  }
+
+  const rootSymbol = checker
+    .getSymbolsInScope(
+      sourceFile,
+      ts.SymbolFlags.Value |
+        ts.SymbolFlags.Type |
+        ts.SymbolFlags.Namespace |
+        ts.SymbolFlags.Alias,
+    )
+    .find((symbol) => symbol.getName() === rootName);
+  if (!rootSymbol) {
+    return null;
+  }
+
+  const rootType = resolveConstructableTypeFromSymbol(rootSymbol, sourceFile, checker);
+  if (!rootType) {
+    return null;
+  }
+
+  if (rest.length === 0) {
+    return rootType;
+  }
+
+  let currentType: ts.Type | null = rootType;
+  for (const segment of rest) {
+    if (!currentType) {
+      return null;
+    }
+
+    const property = currentType.getProperty(segment);
+    if (!property) {
+      return null;
+    }
+
+    const declaration = property.valueDeclaration ?? property.declarations?.[0];
+    if (!declaration) {
+      return null;
+    }
+
+    currentType = checker.getTypeOfSymbolAtLocation(property, declaration);
+  }
+
+  return currentType;
+}
+
+function resolveConstructableTypeFromSymbol(
+  symbol: ts.Symbol,
+  sourceFile: ts.SourceFile,
+  checker: ts.TypeChecker,
+): ts.Type | null {
+  const resolvedSymbol =
+    symbol.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
+  const declaration =
+    resolvedSymbol.valueDeclaration ??
+    resolvedSymbol.declarations?.[0] ??
+    symbol.valueDeclaration ??
+    symbol.declarations?.[0] ??
+    sourceFile;
+  const symbolType = checker.getTypeOfSymbolAtLocation(resolvedSymbol, declaration);
+  if (symbolType.getConstructSignatures().length > 0) {
+    return symbolType;
+  }
+
+  return null;
 }
 
 function isCallableProperty(
@@ -326,6 +698,40 @@ function isCallableProperty(
     return false;
   }
 
-  const propertyType = checker.getTypeOfSymbolAtLocation(property, declaration);
+  const propertyType = unwrapRsxExpressionType(
+    checker.getTypeOfSymbolAtLocation(property, declaration),
+    checker,
+  );
   return propertyType.getCallSignatures().length > 0;
+}
+
+function unwrapRsxExpressionType(
+  type: ts.Type,
+  checker: ts.TypeChecker,
+): ts.Type {
+  const symbol = type.aliasSymbol ?? type.getSymbol();
+  if (symbol?.getName() === 'IExpression') {
+    const typeArguments = checker.getTypeArguments(type as ts.TypeReference);
+    if (typeArguments.length > 0) {
+      return typeArguments[0];
+    }
+  }
+
+  const hasExpressionShape =
+    type.getProperty('value') &&
+    type.getProperty('expressionString') &&
+    type.getProperty('childExpressions') &&
+    type.getProperty('changed');
+  if (!hasExpressionShape) {
+    return type;
+  }
+
+  const valueProperty = type.getProperty('value');
+  const declaration =
+    valueProperty?.valueDeclaration ?? valueProperty?.declarations?.[0];
+  if (!valueProperty || !declaration) {
+    return type;
+  }
+
+  return checker.getTypeOfSymbolAtLocation(valueProperty, declaration);
 }

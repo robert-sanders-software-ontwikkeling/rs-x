@@ -46,11 +46,35 @@ describe('expression-site validation', () => {
         messages: [],
       },
       {
+        expression: '(count + 2) * 3',
+        messages: [],
+      },
+      {
+        expression: 'user.name + "!"',
+        messages: [],
+      },
+      {
         expression: 'user.multiplier(2).total',
         messages: [],
       },
       {
+        expression: 'items[1]',
+        messages: [],
+      },
+      {
+        expression: 'lookup["a"]',
+        messages: [],
+      },
+      {
         expression: 'multiply(count, 2)',
+        messages: [],
+      },
+      {
+        expression: 'x1 * 3',
+        messages: [],
+      },
+      {
+        expression: 'xObj.total * 2',
         messages: [],
       },
       {
@@ -74,8 +98,36 @@ describe('expression-site validation', () => {
         ],
       },
       {
+        expression: 'count + true',
+        messages: [
+          'Operator "+" requires compatible operands (both number-like or at least one string-like).',
+        ],
+      },
+      {
+        expression: '+user.name',
+        messages: [
+          'Unary numeric operator requires a number-compatible operand.',
+        ],
+      },
+      {
+        expression: 'count - user.name',
+        messages: [
+          'Operator "-" requires both left and right operands to be number-compatible.',
+        ],
+      },
+      {
+        expression: 'x2 * 3',
+        messages: [
+          'Operator "*" requires both left and right operands to be number-compatible.',
+        ],
+      },
+      {
         expression: 'user.multiplier(2).missingTotal',
         messages: ["Identifier 'missingTotal' does not exist on model type."],
+      },
+      {
+        expression: 'new Date()',
+        messages: [],
       },
     ]);
   });

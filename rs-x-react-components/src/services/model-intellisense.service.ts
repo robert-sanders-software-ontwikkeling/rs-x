@@ -10,6 +10,7 @@ export class ModelIntellisenseService {
 
   public model: object = {};
   public monaco?: Monaco;
+  private completionProviderDisposable?: MonacoTypes.IDisposable;
 
   private readonly scopes: Record<string, unknown>;
 
@@ -43,7 +44,9 @@ export class ModelIntellisenseService {
   public register(monacoInstance: Monaco): void {
     this.monaco = monacoInstance;
 
-    monacoInstance.languages.registerCompletionItemProvider('typescript', {
+    this.completionProviderDisposable?.dispose();
+    this.completionProviderDisposable =
+      monacoInstance.languages.registerCompletionItemProvider('typescript', {
       triggerCharacters:
         '_$abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.'.split(
           '',

@@ -1,43 +1,33 @@
 # RS-X VS Code Extension
 
-This extension enables RS-X expression IntelliSense and diagnostics inside:
+RS-X Compiler Support helps you write RS-X expressions faster and safer in VS Code.
+
+Website: [https://www.rsxjs.com/](https://www.rsxjs.com/)
+
+## What It Does
+
+- Adds RS-X-aware IntelliSense while you type expressions
+- Highlights and reports invalid expressions directly in the editor
+- Helps you catch expression issues early, before runtime
+- Supports JavaScript and TypeScript projects (`.js`, `.jsx`, `.ts`, `.tsx`)
+
+## Where It Works
+
+The extension is designed for common RS-X patterns, including:
 
 - `rsx('...')(model)`
 - `expressionFactory.create(model, '...')`
 
-## Build
+## Why Use It
 
-```bash
-pnpm --filter @rs-x/compiler run build
-pnpm --filter @rs-x/typescript-plugin run build
-pnpm --filter @rs-x/vscode-extension run build
-```
+- Faster authoring with editor hints
+- Better confidence with inline diagnostics
+- Smoother day-to-day RS-X development in VS Code
 
-## Package as VSIX
+## Requirements
 
-```bash
-pnpm --filter @rs-x/vscode-extension run package
-```
+- VS Code `1.90.0` or newer
 
-## One-command local install (recommended)
+## Learn More
 
-From the monorepo root:
-
-```bash
-pnpm run install:vscode-extension
-```
-
-This packages and installs `rs-x-vscode-extension` (which already bundles `@rs-x/typescript-plugin`).
-
-You can run the same flow through the CLI:
-
-```bash
-npx @rs-x/cli install vscode --local
-```
-
-Then install the generated `.vsix` in VS Code:
-
-1. Open Extensions panel.
-2. Click `...` menu.
-3. Choose `Install from VSIX...`.
-4. Select the generated file.
+For full RS-X docs, guides, and API references, visit [https://www.rsxjs.com/](https://www.rsxjs.com/).

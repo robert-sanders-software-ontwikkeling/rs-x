@@ -32,7 +32,7 @@ function createProgram(entryFile: string): ts.Program {
 }
 
 describe('expression-site detection', () => {
-  it('detects rsx(...) and IExpressionFactory.create(...) with string literals', () => {
+  it('detects rsx(...) and IExpressionFactory.create(...) with static string literals', () => {
     const fixturePath = path.resolve(__dirname, './fixtures/expression-detection.fixture.ts');
 
     const program = createProgram(fixturePath);
@@ -52,6 +52,14 @@ describe('expression-site detection', () => {
       {
         kind: 'rsx',
         expression: 'a + b.method().result',
+      },
+      {
+        kind: 'rsx',
+        expression: 'a + b.method().result',
+      },
+      {
+        kind: 'factory-create',
+        expression: 'a + 1',
       },
       {
         kind: 'factory-create',
@@ -98,6 +106,14 @@ describe('expression-site detection', () => {
       {
         kind: 'rsx',
         expression: 'a + b.method().result',
+      },
+      {
+        kind: 'rsx',
+        expression: 'a + b.method().result',
+      },
+      {
+        kind: 'factory-create',
+        expression: 'a + 1',
       },
       {
         kind: 'factory-create',

@@ -32,6 +32,8 @@ esbuild.buildSync({
   platform: 'node',
   format: 'cjs',
   target: 'node20',
+  minify: true,
+  external: ['typescript'],
 });
 
 const pluginManifest = JSON.parse(fs.readFileSync(sourcePackageJson, 'utf8'));

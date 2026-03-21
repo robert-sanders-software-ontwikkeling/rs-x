@@ -59,6 +59,7 @@ fs.mkdirSync(stageRoot, { recursive: true });
 copyRecursive(path.join(extensionRoot, 'dist'), path.join(stageRoot, 'dist'));
 copyRecursive(path.join(extensionRoot, 'syntaxes'), path.join(stageRoot, 'syntaxes'));
 copyRecursive(path.join(extensionRoot, 'README.md'), path.join(stageRoot, 'README.md'));
+copyRecursive(path.join(extensionRoot, 'LICENSE'), path.join(stageRoot, 'LICENSE'));
 copyRecursive(path.join(extensionRoot, 'icon.png'), path.join(stageRoot, 'icon.png'));
 copyRecursive(
   path.join(
@@ -93,6 +94,7 @@ const stagedManifest = {
     'icon.png',
     'package.json',
     'README.md',
+    'LICENSE',
   ],
 };
 

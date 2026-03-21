@@ -5,6 +5,7 @@ Command line installer for RS-X developer tooling.
 ## Commands
 
 - `rsx doctor`
+- `rsx add` (aliases: `rsx -a`, `rsx -add`)
 - `rsx install vscode [--force] [--local] [--dry-run]`
 - `rsx install compiler [--pm <pnpm|npm|yarn|bun>] [--dry-run]`
 - `rsx setup [--pm <pnpm|npm|yarn|bun>] [--force] [--local] [--dry-run]`

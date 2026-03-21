@@ -3,8 +3,8 @@
   "displayName": "RS-X Compiler Support",
   "description": "VS Code extension that enables RS-X expression IntelliSense and diagnostics",
   "icon": "icon.png",
-  "version": "0.1.0",
-  "publisher": "rs-x",
+  "version": "1.0.2",
+  "publisher": "RobertSanders",
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -48,7 +48,7 @@
     ]
   },
   "dependencies": {
-    "@rs-x/typescript-plugin": "0.1.0"
+    "@rs-x/typescript-plugin": "1.0.2"
   },
   "files": [
     "dist",
@@ -57,6 +57,7 @@
     "node_modules/@rs-x/typescript-plugin/package.json",
     "icon.png",
     "package.json",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ]
 }

@@ -5,7 +5,7 @@ export type ExpressionEntryPointKind = 'rsx' | 'factory-create';
 export interface IExpressionSiteDetection {
   readonly kind: ExpressionEntryPointKind;
   readonly expression: string;
-  readonly expressionLiteral: ts.StringLiteral;
+  readonly expressionLiteral: ts.StringLiteralLike;
   readonly callExpression: ts.CallExpression;
   readonly sourceFile: ts.SourceFile;
 }
@@ -66,8 +66,8 @@ function tryDetectRsxEntryPoint(
     return null;
   }
 
-  const expressionLiteral = rsxInvocation.arguments[0];
-  if (!ts.isStringLiteral(expressionLiteral)) {
+  const expressionLiteral = resolveStaticExpressionLiteral(rsxInvocation.arguments[0]);
+  if (!expressionLiteral) {
     return null;
   }
 
@@ -93,6 +93,10 @@ function isRsxCallee(
     return false;
   }
 
+  if (isAliasImportedFromExpressionParser(symbol)) {
+    return true;
+  }
+
   const resolvedSymbol =
     symbol.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
   if (resolvedSymbol.getName() !== 'rsx') {
@@ -100,11 +104,41 @@ function isRsxCallee(
   }
 
   const declarations = resolvedSymbol.declarations ?? [];
-  return declarations.some((declaration) =>
-    declaration
-      .getSourceFile()
-      .fileName.includes('/rs-x-expression-parser/'),
-  );
+  return declarations.some((declaration) => {
+    const sourcePath = declaration.getSourceFile().fileName.replace(/\\/gu, '/');
+    return (
+      sourcePath.includes('/rs-x-expression-parser/') ||
+      sourcePath.includes('/@rs-x/expression-parser/')
+    );
+  });
+}
+
+function isAliasImportedFromExpressionParser(symbol: ts.Symbol): boolean {
+  if ((symbol.flags & ts.SymbolFlags.Alias) === 0) {
+    return false;
+  }
+
+  const declarations = symbol.declarations ?? [];
+  return declarations.some((declaration) => {
+    if (!ts.isImportSpecifier(declaration)) {
+      return false;
+    }
+
+    let current: ts.Node | undefined = declaration;
+    while (current && !ts.isImportDeclaration(current)) {
+      current = current.parent;
+    }
+    if (!current) {
+      return false;
+    }
+
+    const moduleSpecifier = current.moduleSpecifier;
+    if (!ts.isStringLiteral(moduleSpecifier)) {
+      return false;
+    }
+
+    return moduleSpecifier.text === '@rs-x/expression-parser';
+  });
 }
 
 function tryDetectFactoryEntryPoint(
@@ -123,8 +157,8 @@ function tryDetectFactoryEntryPoint(
     return null;
   }
 
-  const expressionLiteral = callExpression.arguments[1];
-  if (!ts.isStringLiteral(expressionLiteral)) {
+  const expressionLiteral = resolveStaticExpressionLiteral(callExpression.arguments[1]);
+  if (!expressionLiteral) {
     return null;
   }
 
@@ -140,6 +174,14 @@ function tryDetectFactoryEntryPoint(
     callExpression,
     sourceFile: callExpression.getSourceFile(),
   };
+}
+
+function resolveStaticExpressionLiteral(node: ts.Expression): ts.StringLiteralLike | null {
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+    return node;
+  }
+
+  return null;
 }
 
 function isExpressionFactoryType(

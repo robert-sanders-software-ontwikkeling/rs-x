@@ -2,6 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const readline = require('node:readline/promises');
 const { spawnSync } = require('node:child_process');
 
 const CLI_VERSION = '0.2.0';
@@ -12,6 +13,83 @@ const RUNTIME_PACKAGES = [
   '@rs-x/expression-parser',
 ];
 const COMPILER_PACKAGES = ['@rs-x/compiler', '@rs-x/typescript-plugin'];
+const RSX_PACKAGE_VERSION = '^1.0.2';
+const TS_RESERVED_WORDS = new Set([
+  'abstract',
+  'any',
+  'as',
+  'asserts',
+  'async',
+  'await',
+  'bigint',
+  'boolean',
+  'break',
+  'case',
+  'catch',
+  'class',
+  'const',
+  'continue',
+  'debugger',
+  'declare',
+  'default',
+  'delete',
+  'do',
+  'else',
+  'enum',
+  'export',
+  'extends',
+  'false',
+  'finally',
+  'for',
+  'from',
+  'function',
+  'get',
+  'if',
+  'implements',
+  'import',
+  'in',
+  'infer',
+  'instanceof',
+  'interface',
+  'is',
+  'keyof',
+  'let',
+  'module',
+  'namespace',
+  'never',
+  'new',
+  'null',
+  'number',
+  'object',
+  'of',
+  'package',
+  'private',
+  'protected',
+  'public',
+  'readonly',
+  'return',
+  'satisfies',
+  'set',
+  'static',
+  'string',
+  'super',
+  'switch',
+  'symbol',
+  'this',
+  'throw',
+  'true',
+  'try',
+  'type',
+  'typeof',
+  'undefined',
+  'unique',
+  'unknown',
+  'var',
+  'void',
+  'while',
+  'with',
+  'yield',
+]);
 
 function parseArgs(argv) {
   const raw = argv.slice(2);
@@ -252,6 +330,548 @@ function runDoctor() {
     const tag = check.ok ? '[OK]' : '[WARN]';
     console.log(`${tag} ${check.name} - ${check.details}`);
   }
+}
+
+function isValidTsIdentifier(input) {
+  if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/u.test(input)) {
+    return false;
+  }
+
+  return !TS_RESERVED_WORDS.has(input);
+}
+
+function toKebabCase(input) {
+  return input
+    .replace(/([a-z0-9])([A-Z])/gu, '$1-$2')
+    .replace(/[_\s]+/gu, '-')
+    .replace(/[^a-zA-Z0-9-]/gu, '-')
+    .replace(/-+/gu, '-')
+    .replace(/^-|-$/gu, '')
+    .toLowerCase();
+}
+
+function ensureTsExtension(fileName) {
+  if (/\.[cm]?[jt]sx?$/u.test(fileName)) {
+    return fileName;
+  }
+
+  return `${fileName}.ts`;
+}
+
+async function askUntilNonEmpty(rl, prompt) {
+  while (true) {
+    const answer = (await rl.question(prompt)).trim();
+    if (answer.length > 0) {
+      return answer;
+    }
+    logWarn('Value is required.');
+  }
+}
+
+async function askUntilValidIdentifier(rl) {
+  while (true) {
+    const answer = (await rl.question('Expression export name (TS identifier): ')).trim();
+    if (!answer) {
+      logWarn('Name is required.');
+      continue;
+    }
+
+    if (isValidTsIdentifier(answer)) {
+      return answer;
+    }
+
+    logWarn(`"${answer}" is not a valid TypeScript identifier.`);
+  }
+}
+
+function normalizeYesNo(answer, defaultValue) {
+  const normalized = answer.trim().toLowerCase();
+  if (!normalized) {
+    return defaultValue;
+  }
+
+  if (normalized === 'y' || normalized === 'yes') {
+    return true;
+  }
+
+  if (normalized === 'n' || normalized === 'no') {
+    return false;
+  }
+
+  return defaultValue;
+}
+
+function stripTsLikeExtension(fileName) {
+  return fileName.replace(/\.[cm]?[jt]sx?$/u, '');
+}
+
+function createModelTemplate() {
+  return `export const model = {
+  a: 1,
+};
+`;
+}
+
+function createExpressionTemplate(
+  expressionName,
+  modelImportPath,
+  modelExportName,
+) {
+  return `import { rsx } from '@rs-x/expression-parser';
+import { ${modelExportName} } from '${modelImportPath}';
+
+export const ${expressionName} = rsx('a')(${modelExportName});
+`;
+}
+
+async function askForIdentifierWithDefault(rl, prompt, defaultValue) {
+  while (true) {
+    const answer = (await rl.question(prompt)).trim();
+    if (!answer) {
+      return defaultValue;
+    }
+
+    if (isValidTsIdentifier(answer)) {
+      return answer;
+    }
+
+    logWarn(`"${answer}" is not a valid TypeScript identifier.`);
+  }
+}
+
+async function runAdd() {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  try {
+    const expressionName = await askUntilValidIdentifier(rl);
+
+    const kebabAnswer = await rl.question(
+      'Use kebab-case file name? [Y/n]: ',
+    );
+    const useKebabCase = normalizeYesNo(kebabAnswer, true);
+
+    const directoryInput = await askUntilNonEmpty(
+      rl,
+      'Directory path (relative or absolute): ',
+    );
+    const resolvedDirectory = path.isAbsolute(directoryInput)
+      ? directoryInput
+      : path.resolve(process.cwd(), directoryInput);
+
+    const baseFileName = useKebabCase
+      ? toKebabCase(expressionName)
+      : expressionName;
+    const expressionFileName = ensureTsExtension(baseFileName);
+    const expressionFileBase = stripTsLikeExtension(expressionFileName);
+    const modelFileName = `${expressionFileBase}.model.ts`;
+    const expressionPath = path.join(resolvedDirectory, expressionFileName);
+    const modelPath = path.join(resolvedDirectory, modelFileName);
+    const useExistingModelAnswer = await rl.question(
+      'Use existing model file? [y/N]: ',
+    );
+    const useExistingModel = normalizeYesNo(useExistingModelAnswer, false);
+
+    if (
+      fs.existsSync(expressionPath) ||
+      (!useExistingModel && fs.existsSync(modelPath))
+    ) {
+      const overwriteAnswer = await rl.question(
+        `One or more target files already exist. Overwrite? [y/N]: `,
+      );
+      const shouldOverwrite = normalizeYesNo(overwriteAnswer, false);
+      if (!shouldOverwrite) {
+        logInfo('Cancelled. Existing file was not modified.');
+        return;
+      }
+    }
+
+    fs.mkdirSync(resolvedDirectory, { recursive: true });
+    let modelImportPath = `./${expressionFileBase}.model`;
+    let modelExportName = 'model';
+
+    if (useExistingModel) {
+      const existingModelPathInput = await askUntilNonEmpty(
+        rl,
+        'Existing model file path (relative to output dir or absolute): ',
+      );
+      const resolvedExistingModelPath = path.isAbsolute(existingModelPathInput)
+        ? existingModelPathInput
+        : path.resolve(resolvedDirectory, existingModelPathInput);
+
+      if (!fs.existsSync(resolvedExistingModelPath)) {
+        logError(`Model file not found: ${resolvedExistingModelPath}`);
+        return;
+      }
+
+      modelImportPath = toModuleImportPath(
+        expressionPath,
+        resolvedExistingModelPath,
+      );
+      modelExportName = await askForIdentifierWithDefault(
+        rl,
+        'Model export name [model]: ',
+        'model',
+      );
+    } else {
+      fs.writeFileSync(modelPath, createModelTemplate(), 'utf8');
+      logOk(`Created ${modelPath}`);
+    }
+
+    fs.writeFileSync(
+      expressionPath,
+      createExpressionTemplate(
+        expressionName,
+        modelImportPath,
+        modelExportName,
+      ),
+      'utf8',
+    );
+
+    logOk(`Created ${expressionPath}`);
+  } finally {
+    rl.close();
+  }
+}
+
+function writeFileWithDryRun(filePath, content, dryRun) {
+  if (dryRun) {
+    logInfo(`[dry-run] create ${filePath}`);
+    return;
+  }
+
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, content, 'utf8');
+}
+
+function toFileDependencySpec(fromDir, targetPath) {
+  const relative = path.relative(fromDir, targetPath).replace(/\\/gu, '/');
+  const normalized = relative.startsWith('.') ? relative : `./${relative}`;
+  return `file:${normalized}`;
+}
+
+function findLatestTarball(packageDir, packageSlug) {
+  if (!fs.existsSync(packageDir)) {
+    return null;
+  }
+
+  const candidates = [];
+  const stack = [packageDir];
+
+  while (stack.length > 0) {
+    const currentDir = stack.pop();
+    const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(currentDir, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+        continue;
+      }
+
+      if (
+        entry.isFile() &&
+        entry.name.startsWith(`${packageSlug}-`) &&
+        entry.name.endsWith('.tgz')
+      ) {
+        candidates.push(fullPath);
+      }
+    }
+  }
+
+  candidates.sort();
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  return candidates[candidates.length - 1];
+}
+
+function resolveProjectRsxSpecs(projectRoot, workspaceRoot, tarballsDir) {
+  const defaults = {
+    '@rs-x/core': RSX_PACKAGE_VERSION,
+    '@rs-x/state-manager': RSX_PACKAGE_VERSION,
+    '@rs-x/expression-parser': RSX_PACKAGE_VERSION,
+    '@rs-x/compiler': RSX_PACKAGE_VERSION,
+    '@rs-x/typescript-plugin': RSX_PACKAGE_VERSION,
+    '@rs-x/cli': null,
+  };
+
+  const tarballSlugs = {
+    '@rs-x/core': 'rs-x-core',
+    '@rs-x/state-manager': 'rs-x-state-manager',
+    '@rs-x/expression-parser': 'rs-x-expression-parser',
+    '@rs-x/compiler': 'rs-x-compiler',
+    '@rs-x/typescript-plugin': 'rs-x-typescript-plugin',
+    '@rs-x/cli': 'rs-x-cli',
+  };
+
+  if (tarballsDir) {
+    const specs = { ...defaults };
+    const packageDirBySlug = {
+      'rs-x-core': path.join(tarballsDir, 'rs-x-core'),
+      'rs-x-state-manager': path.join(tarballsDir, 'rs-x-state-manager'),
+      'rs-x-expression-parser': path.join(tarballsDir, 'rs-x-expression-parser'),
+      'rs-x-compiler': path.join(tarballsDir, 'rs-x-compiler'),
+      'rs-x-typescript-plugin': path.join(tarballsDir, 'rs-x-typescript-plugin'),
+      'rs-x-cli': path.join(tarballsDir, 'rs-x-cli'),
+    };
+
+    for (const packageName of Object.keys(tarballSlugs)) {
+      const slug = tarballSlugs[packageName];
+      const tarball = findLatestTarball(tarballsDir, slug);
+      if (tarball) {
+        specs[packageName] = toFileDependencySpec(projectRoot, tarball);
+        continue;
+      }
+
+      const packageDir = packageDirBySlug[slug];
+      if (packageDir && fs.existsSync(packageDir)) {
+        specs[packageName] = toFileDependencySpec(projectRoot, packageDir);
+      }
+    }
+    return specs;
+  }
+
+  if (!workspaceRoot) {
+    return defaults;
+  }
+
+  const packageDirs = {
+    '@rs-x/core': path.join(workspaceRoot, 'rs-x-core'),
+    '@rs-x/state-manager': path.join(workspaceRoot, 'rs-x-state-manager'),
+    '@rs-x/expression-parser': path.join(workspaceRoot, 'rs-x-expression-parser'),
+    '@rs-x/compiler': path.join(workspaceRoot, 'rs-x-compiler'),
+    '@rs-x/typescript-plugin': path.join(workspaceRoot, 'rs-x-typescript-plugin'),
+    '@rs-x/cli': path.join(workspaceRoot, 'rs-x-cli'),
+  };
+
+  const specs = { ...defaults };
+  for (const packageName of Object.keys(packageDirs)) {
+    const packageDir = packageDirs[packageName];
+    if (!fs.existsSync(packageDir)) {
+      continue;
+    }
+
+    if (packageName === '@rs-x/cli') {
+      const tarball = findLatestTarball(packageDir, 'rs-x-cli');
+      if (tarball) {
+        specs[packageName] = toFileDependencySpec(projectRoot, tarball);
+        continue;
+      }
+    }
+
+    specs[packageName] = toFileDependencySpec(projectRoot, packageDir);
+  }
+
+  return specs;
+}
+
+function createProjectPackageJson(projectName, rsxSpecs) {
+  const devDependencies = {
+    '@rs-x/compiler': rsxSpecs['@rs-x/compiler'],
+    '@rs-x/typescript-plugin': rsxSpecs['@rs-x/typescript-plugin'],
+    typescript: '^5.9.3',
+  };
+
+  return JSON.stringify(
+    {
+      name: projectName,
+      version: '0.1.0',
+      private: true,
+      type: 'commonjs',
+      scripts: {
+        build: 'rsx build --project tsconfig.json',
+        start: 'node dist/main.js',
+      },
+      dependencies: {
+        '@rs-x/core': rsxSpecs['@rs-x/core'],
+        '@rs-x/state-manager': rsxSpecs['@rs-x/state-manager'],
+        '@rs-x/expression-parser': rsxSpecs['@rs-x/expression-parser'],
+      },
+      devDependencies: {
+        ...devDependencies,
+      },
+    },
+    null,
+    2,
+  ) + '\n';
+}
+
+function createProjectTsConfig() {
+  return JSON.stringify(
+    {
+      compilerOptions: {
+        target: 'ES2022',
+        module: 'CommonJS',
+        moduleResolution: 'Node',
+        strict: true,
+        esModuleInterop: true,
+        skipLibCheck: true,
+        experimentalDecorators: true,
+        emitDecoratorMetadata: true,
+        outDir: 'dist',
+        rootDir: 'src',
+        plugins: [
+          {
+            name: '@rs-x/typescript-plugin',
+          },
+        ],
+      },
+      include: ['src/**/*.ts'],
+    },
+    null,
+    2,
+  ) + '\n';
+}
+
+async function runProject(flags) {
+  const dryRun = Boolean(flags['dry-run']);
+  const skipInstall = Boolean(flags['skip-install']);
+  const pm = detectPackageManager(flags.pm);
+  let projectName =
+    typeof flags.name === 'string' ? flags.name.trim() : '';
+
+  if (!projectName) {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+    try {
+      projectName = await askUntilNonEmpty(rl, 'Project name: ');
+    } finally {
+      rl.close();
+    }
+  }
+
+  const projectRoot = path.resolve(process.cwd(), projectName);
+  const tarballsDir =
+    typeof flags['tarballs-dir'] === 'string'
+      ? path.resolve(process.cwd(), flags['tarballs-dir'])
+      : typeof process.env.RSX_TARBALLS_DIR === 'string' &&
+          process.env.RSX_TARBALLS_DIR.trim().length > 0
+        ? path.resolve(process.cwd(), process.env.RSX_TARBALLS_DIR)
+        : null;
+  const workspaceRoot = findRepoRoot(process.cwd());
+  const rsxSpecs = resolveProjectRsxSpecs(projectRoot, workspaceRoot, tarballsDir);
+  if (fs.existsSync(projectRoot) && fs.readdirSync(projectRoot).length > 0) {
+    logError(`Target directory is not empty: ${projectRoot}`);
+    process.exit(1);
+  }
+
+  if (!dryRun) {
+    fs.mkdirSync(projectRoot, { recursive: true });
+  } else {
+    logInfo(`[dry-run] create directory ${projectRoot}`);
+  }
+
+  writeFileWithDryRun(
+    path.join(projectRoot, 'package.json'),
+    createProjectPackageJson(projectName, rsxSpecs),
+    dryRun,
+  );
+  writeFileWithDryRun(
+    path.join(projectRoot, 'tsconfig.json'),
+    createProjectTsConfig(),
+    dryRun,
+  );
+  writeFileWithDryRun(
+    path.join(projectRoot, '.gitignore'),
+    'node_modules\ndist\n',
+    dryRun,
+  );
+  writeFileWithDryRun(
+    path.join(projectRoot, '.vscode/extensions.json'),
+    JSON.stringify(
+      { recommendations: [VS_CODE_EXTENSION_ID] },
+      null,
+      2,
+    ) + '\n',
+    dryRun,
+  );
+
+  writeFileWithDryRun(
+    path.join(projectRoot, 'src/rsx-bootstrap.ts'),
+    `import { InjectionContainer } from '@rs-x/core';
+import { RsXExpressionParserModule } from '@rs-x/expression-parser';
+
+export async function initRsx(): Promise<void> {
+  await InjectionContainer.load(RsXExpressionParserModule);
+}
+`,
+    dryRun,
+  );
+
+  writeFileWithDryRun(
+    path.join(projectRoot, 'src/model.ts'),
+    `export interface IModel {
+  a: number;
+  b: number;
+}
+
+export const model: IModel = {
+  a: 2,
+  b: 3,
+};
+`,
+    dryRun,
+  );
+
+  writeFileWithDryRun(
+    path.join(projectRoot, 'src/expressions/sample.expression.ts'),
+    `import { rsx } from '@rs-x/expression-parser';
+
+import { model } from '../model';
+
+export const sampleExpression = rsx('a + b')(model);
+`,
+    dryRun,
+  );
+
+  writeFileWithDryRun(
+    path.join(projectRoot, 'src/main.ts'),
+    `import { sampleExpression } from './expressions/sample.expression';
+import { initRsx } from './rsx-bootstrap';
+
+async function main(): Promise<void> {
+  await initRsx();
+  console.log('RS-X sample expression initialized:', Boolean(sampleExpression));
+}
+
+void main();
+`,
+    dryRun,
+  );
+
+  if (!skipInstall) {
+    const installArgsByPm = {
+      pnpm: ['install'],
+      npm: ['install'],
+      yarn: ['install'],
+      bun: ['install'],
+    };
+    const installArgs = installArgsByPm[pm];
+    if (!installArgs) {
+      logError(`Unsupported package manager: ${pm}`);
+      process.exit(1);
+    }
+
+    logInfo(`Installing dependencies with ${pm}...`);
+    run(pm, installArgs, { dryRun, cwd: projectRoot });
+    logOk('Dependencies installed.');
+  } else {
+    logInfo('Skipping dependency install (--skip-install).');
+  }
+
+  logOk(`Created RS-X project: ${projectRoot}`);
+  logInfo('Next steps:');
+  console.log(`  cd ${projectName}`);
+  if (skipInstall) {
+    console.log('  npm install');
+  }
+  console.log('  npm run build');
+  console.log('  npm run start');
 }
 
 function detectProjectContext(projectRoot) {
@@ -746,15 +1366,851 @@ function runInit(flags) {
   logOk('RS-X init completed.');
 }
 
+function upsertScriptInPackageJson(projectRoot, scriptName, scriptValue, dryRun) {
+  const packageJsonPath = path.join(projectRoot, 'package.json');
+  if (!fs.existsSync(packageJsonPath)) {
+    return false;
+  }
+
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  const scripts = packageJson.scripts ?? {};
+  if (scripts[scriptName] === scriptValue) {
+    return true;
+  }
+
+  scripts[scriptName] = scriptValue;
+  packageJson.scripts = scripts;
+
+  if (dryRun) {
+    logInfo(`[dry-run] patch ${packageJsonPath} (scripts.${scriptName})`);
+    return true;
+  }
+
+  fs.writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf8');
+  logOk(`Patched ${packageJsonPath} (scripts.${scriptName})`);
+  return true;
+}
+
+function createRsxWebpackLoaderFile(projectRoot, dryRun) {
+  const loaderPath = path.join(projectRoot, 'rsx-webpack-loader.cjs');
+  const loaderSource = `const path = require('node:path');
+const ts = require('typescript');
+const { createExpressionCachePreloadTransformer } = require('@rs-x/compiler');
+
+function normalizeFileName(fileName) {
+  return path.resolve(fileName).replace(/\\\\/gu, '/');
+}
+
+function buildTransformedSourceMap(tsconfigPath) {
+  const configFile = ts.readConfigFile(tsconfigPath, ts.sys.readFile);
+  if (configFile.error) {
+    return new Map();
+  }
+
+  const parsed = ts.parseJsonConfigFileContent(
+    configFile.config,
+    ts.sys,
+    path.dirname(tsconfigPath),
+    undefined,
+    tsconfigPath,
+  );
+  if (parsed.errors.length > 0) {
+    return new Map();
+  }
+
+  const program = ts.createProgram({
+    rootNames: parsed.fileNames,
+    options: parsed.options,
+  });
+  const transformer = createExpressionCachePreloadTransformer(program);
+  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
+  const transformedByFile = new Map();
+
+  for (const sourceFile of program.getSourceFiles()) {
+    if (sourceFile.isDeclarationFile) {
+      continue;
+    }
+
+    if (sourceFile.fileName.includes('/node_modules/')) {
+      continue;
+    }
+
+    const transformed = ts.transform(sourceFile, [transformer]);
+    const transformedSource = transformed.transformed[0];
+    const transformedText = printer.printFile(transformedSource);
+    transformed.dispose();
+
+    transformedByFile.set(normalizeFileName(sourceFile.fileName), transformedText);
+  }
+
+  return transformedByFile;
+}
+
+module.exports = function rsxWebpackLoader(source) {
+  const callback = this.async();
+  const tsconfigPath = normalizeFileName(
+    path.resolve(this.rootContext || process.cwd(), 'tsconfig.json'),
+  );
+  const transformedByFile = buildTransformedSourceMap(tsconfigPath);
+  const transformed = transformedByFile.get(normalizeFileName(this.resourcePath));
+  callback(null, transformed ?? source);
+};
+`;
+
+  if (dryRun) {
+    logInfo(`[dry-run] create ${loaderPath}`);
+  } else {
+    fs.writeFileSync(loaderPath, loaderSource, 'utf8');
+    logOk(`Created ${loaderPath}`);
+  }
+
+  return loaderPath;
+}
+
+function wireRsxVitePlugin(projectRoot, dryRun) {
+  const pluginFile = path.join(projectRoot, 'rsx-vite-plugin.mjs');
+  const pluginSource = `import path from 'node:path';
+
+import ts from 'typescript';
+
+import { createExpressionCachePreloadTransformer } from '@rs-x/compiler';
+
+function normalizeFileName(fileName) {
+  return path.resolve(fileName).replace(/\\\\/gu, '/');
+}
+
+function buildTransformedSourceMap(tsconfigPath) {
+  const configFile = ts.readConfigFile(tsconfigPath, ts.sys.readFile);
+  if (configFile.error) {
+    return new Map();
+  }
+
+  const parsed = ts.parseJsonConfigFileContent(
+    configFile.config,
+    ts.sys,
+    path.dirname(tsconfigPath),
+    undefined,
+    tsconfigPath,
+  );
+  if (parsed.errors.length > 0) {
+    return new Map();
+  }
+
+  const program = ts.createProgram({
+    rootNames: parsed.fileNames,
+    options: parsed.options,
+  });
+  const transformer = createExpressionCachePreloadTransformer(program);
+  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
+  const transformedByFile = new Map();
+
+  for (const sourceFile of program.getSourceFiles()) {
+    if (sourceFile.isDeclarationFile) {
+      continue;
+    }
+
+    if (sourceFile.fileName.includes('/node_modules/')) {
+      continue;
+    }
+
+    const transformed = ts.transform(sourceFile, [transformer]);
+    const transformedSource = transformed.transformed[0];
+    const transformedText = printer.printFile(transformedSource);
+    transformed.dispose();
+
+    transformedByFile.set(normalizeFileName(sourceFile.fileName), transformedText);
+  }
+
+  return transformedByFile;
+}
+
+export function rsxVitePlugin(tsconfigPath = 'tsconfig.json') {
+  let transformedByFile = new Map();
+  let resolvedTsConfigPath = '';
+
+  const refresh = () => {
+    transformedByFile = buildTransformedSourceMap(resolvedTsConfigPath);
+  };
+
+  return {
+    name: 'rsx-vite-transform',
+    enforce: 'pre',
+    configResolved(config) {
+      resolvedTsConfigPath = normalizeFileName(path.resolve(config.root, tsconfigPath));
+      refresh();
+    },
+    buildStart() {
+      if (!resolvedTsConfigPath) {
+        resolvedTsConfigPath = normalizeFileName(path.resolve(process.cwd(), tsconfigPath));
+      }
+      refresh();
+    },
+    handleHotUpdate() {
+      refresh();
+    },
+    transform(_code, id) {
+      const normalizedId = normalizeFileName(id.split('?')[0]);
+      const transformed = transformedByFile.get(normalizedId);
+      if (!transformed) {
+        return null;
+      }
+
+      return {
+        code: transformed,
+        map: null,
+      };
+    },
+  };
+}
+`;
+
+  if (dryRun) {
+    logInfo(`[dry-run] create ${pluginFile}`);
+  } else {
+    fs.writeFileSync(pluginFile, pluginSource, 'utf8');
+    logOk(`Created ${pluginFile}`);
+  }
+
+  const viteConfigCandidates = [
+    'vite.config.ts',
+    'vite.config.mts',
+    'vite.config.js',
+    'vite.config.mjs',
+  ].map((fileName) => path.join(projectRoot, fileName));
+  const viteConfigPath = viteConfigCandidates.find((candidate) => fs.existsSync(candidate));
+  if (!viteConfigPath) {
+    logWarn('No vite.config.[ts|mts|js|mjs] found. RS-X Vite plugin file was created, but config patch was skipped.');
+    logInfo("Add it manually: import { rsxVitePlugin } from './rsx-vite-plugin.mjs' and include rsxVitePlugin() in plugins.");
+    return;
+  }
+
+  const original = fs.readFileSync(viteConfigPath, 'utf8');
+  if (original.includes('rsxVitePlugin(')) {
+    logInfo(`Vite config already includes RS-X plugin: ${viteConfigPath}`);
+    return;
+  }
+
+  let updated = original;
+  const importStatement = "import { rsxVitePlugin } from './rsx-vite-plugin.mjs';";
+  if (!updated.includes(importStatement)) {
+    const lines = updated.split('\n');
+    let insertAt = 0;
+    while (insertAt < lines.length && lines[insertAt].trim().startsWith('import ')) {
+      insertAt += 1;
+    }
+    lines.splice(insertAt, 0, importStatement);
+    updated = lines.join('\n');
+  }
+
+  if (/plugins\s*:\s*\[/u.test(updated)) {
+    updated = updated.replace(/plugins\s*:\s*\[/u, 'plugins: [rsxVitePlugin(), ');
+  } else if (/defineConfig\s*\(\s*\{/u.test(updated)) {
+    updated = updated.replace(/defineConfig\s*\(\s*\{/u, 'defineConfig({\n  plugins: [rsxVitePlugin()],');
+  } else {
+    logWarn(`Could not patch Vite config automatically: ${viteConfigPath}`);
+    logInfo('Add `rsxVitePlugin()` to your Vite plugins manually.');
+    return;
+  }
+
+  if (dryRun) {
+    logInfo(`[dry-run] patch ${viteConfigPath}`);
+    return;
+  }
+
+  fs.writeFileSync(viteConfigPath, updated, 'utf8');
+  logOk(`Patched ${viteConfigPath} with RS-X Vite plugin.`);
+}
+
+function wireRsxNextWebpack(projectRoot, dryRun) {
+  const loaderPath = createRsxWebpackLoaderFile(projectRoot, dryRun);
+  const nextConfigJs = path.join(projectRoot, 'next.config.js');
+  const nextConfigMjs = path.join(projectRoot, 'next.config.mjs');
+  const nextConfigTs = path.join(projectRoot, 'next.config.ts');
+
+  if (fs.existsSync(nextConfigMjs) || fs.existsSync(nextConfigTs)) {
+    logWarn('Detected next.config.mjs/ts. Automatic RS-X patch currently supports next.config.js only.');
+    logInfo(`Add webpack rule manually with loader: ${loaderPath}`);
+    return;
+  }
+
+  const patchBlock = `
+const __rsxWebpackLoaderPath = require('node:path').resolve(__dirname, './rsx-webpack-loader.cjs');
+const __rsxApply = (nextConfigOrFactory) => {
+  if (typeof nextConfigOrFactory === 'function') {
+    return (...args) => __rsxApply(nextConfigOrFactory(...args));
+  }
+
+  const nextConfig = nextConfigOrFactory ?? {};
+  const previousWebpack = nextConfig.webpack;
+  return {
+    ...nextConfig,
+    webpack(config, options) {
+      config.module.rules.unshift({
+        test: /\\.[jt]sx?$/u,
+        exclude: /node_modules/u,
+        use: [
+          {
+            loader: __rsxWebpackLoaderPath,
+          },
+        ],
+      });
+
+      if (typeof previousWebpack === 'function') {
+        return previousWebpack(config, options);
+      }
+
+      return config;
+    },
+  };
+};
+
+module.exports = __rsxApply(module.exports);
+`;
+
+  if (!fs.existsSync(nextConfigJs)) {
+    const source = `/** @type {import('next').NextConfig} */
+module.exports = {};
+${patchBlock}
+`;
+    if (dryRun) {
+      logInfo(`[dry-run] create ${nextConfigJs}`);
+    } else {
+      fs.writeFileSync(nextConfigJs, source, 'utf8');
+      logOk(`Created ${nextConfigJs}`);
+    }
+    return;
+  }
+
+  const original = fs.readFileSync(nextConfigJs, 'utf8');
+  if (original.includes('__rsxWebpackLoaderPath')) {
+    logInfo(`Next config already includes RS-X webpack loader: ${nextConfigJs}`);
+    return;
+  }
+
+  if (dryRun) {
+    logInfo(`[dry-run] patch ${nextConfigJs}`);
+    return;
+  }
+
+  fs.writeFileSync(nextConfigJs, `${original}\n${patchBlock}\n`, 'utf8');
+  logOk(`Patched ${nextConfigJs} with RS-X webpack loader.`);
+}
+
+function wireRsxAngularWebpack(projectRoot, dryRun) {
+  const angularJsonPath = path.join(projectRoot, 'angular.json');
+  if (!fs.existsSync(angularJsonPath)) {
+    logWarn('angular.json not found. Skipping Angular build integration.');
+    return;
+  }
+
+  createRsxWebpackLoaderFile(projectRoot, dryRun);
+
+  const webpackConfigPath = path.join(projectRoot, 'rsx-angular-webpack.cjs');
+  const webpackConfigSource = `const path = require('node:path');
+
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\\.[jt]sx?$/u,
+        exclude: /node_modules/u,
+        use: [
+          {
+            loader: path.resolve(__dirname, './rsx-webpack-loader.cjs'),
+          },
+        ],
+      },
+    ],
+  },
+};
+`;
+
+  if (dryRun) {
+    logInfo(`[dry-run] create ${webpackConfigPath}`);
+  } else {
+    fs.writeFileSync(webpackConfigPath, webpackConfigSource, 'utf8');
+    logOk(`Created ${webpackConfigPath}`);
+  }
+
+  const angularJson = JSON.parse(fs.readFileSync(angularJsonPath, 'utf8'));
+  const projects = angularJson.projects ?? {};
+  const projectNames = Object.keys(projects);
+  if (projectNames.length === 0) {
+    logWarn('No Angular projects found in angular.json.');
+    return;
+  }
+
+  const patchPath = 'rsx-angular-webpack.cjs';
+  for (const projectName of projectNames) {
+    const project = projects[projectName];
+    const architect = project.architect ?? project.targets;
+    if (!architect?.build) {
+      continue;
+    }
+
+    const build = architect.build;
+    if (build.builder !== '@angular-builders/custom-webpack:browser') {
+      build.builder = '@angular-builders/custom-webpack:browser';
+    }
+    build.options = build.options ?? {};
+    build.options.customWebpackConfig = build.options.customWebpackConfig ?? {};
+    build.options.customWebpackConfig.path = patchPath;
+
+    if (architect.serve) {
+      const serve = architect.serve;
+      if (serve.builder !== '@angular-builders/custom-webpack:dev-server') {
+        serve.builder = '@angular-builders/custom-webpack:dev-server';
+      }
+      serve.options = serve.options ?? {};
+      serve.options.buildTarget = serve.options.buildTarget ?? `${projectName}:build`;
+      serve.options.browserTarget = serve.options.browserTarget ?? `${projectName}:build`;
+    }
+  }
+
+  if (dryRun) {
+    logInfo(`[dry-run] patch ${angularJsonPath}`);
+  } else {
+    fs.writeFileSync(angularJsonPath, `${JSON.stringify(angularJson, null, 2)}\n`, 'utf8');
+    logOk(`Patched ${angularJsonPath} for RS-X Angular webpack integration.`);
+  }
+}
+
+function runSetupReact(flags) {
+  const dryRun = Boolean(flags['dry-run']);
+  const projectRoot = process.cwd();
+  const packageJsonPath = path.join(projectRoot, 'package.json');
+  if (!fs.existsSync(packageJsonPath)) {
+    logError(`package.json not found in ${projectRoot}`);
+    process.exit(1);
+  }
+
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  const allDependencies = {
+    ...(packageJson.dependencies ?? {}),
+    ...(packageJson.devDependencies ?? {}),
+  };
+  if (!allDependencies.react) {
+    logWarn('React dependency not detected in package.json; continuing anyway.');
+  }
+
+  runInit({
+    ...flags,
+    'skip-vscode': true,
+  });
+  wireRsxVitePlugin(projectRoot, dryRun);
+  if (!Boolean(flags['skip-vscode'])) {
+    installVsCodeExtension(flags);
+  }
+  logOk('RS-X React setup completed.');
+}
+
+function runSetupNext(flags) {
+  const dryRun = Boolean(flags['dry-run']);
+  runInit({
+    ...flags,
+    'skip-vscode': true,
+  });
+  wireRsxNextWebpack(process.cwd(), dryRun);
+  if (!Boolean(flags['skip-vscode'])) {
+    installVsCodeExtension(flags);
+  }
+  logOk('RS-X Next.js setup completed.');
+}
+
+function runSetupAngular(flags) {
+  const dryRun = Boolean(flags['dry-run']);
+  const pm = detectPackageManager(flags.pm);
+
+  runInit({
+    ...flags,
+    'skip-vscode': true,
+  });
+
+  if (!Boolean(flags['skip-install'])) {
+    installPackages(pm, ['@angular-builders/custom-webpack'], {
+      dev: true,
+      dryRun,
+      label: 'Angular custom webpack builder',
+    });
+  } else {
+    logInfo('Skipping Angular custom webpack builder install (--skip-install).');
+  }
+
+  wireRsxAngularWebpack(process.cwd(), dryRun);
+  upsertScriptInPackageJson(process.cwd(), 'build:rsx', 'rsx build --project tsconfig.json', dryRun);
+
+  if (!Boolean(flags['skip-vscode'])) {
+    installVsCodeExtension(flags);
+  }
+  logOk('RS-X Angular setup completed.');
+}
+
+function resolveProjectModule(projectRoot, moduleName) {
+  try {
+    const resolvedPath = require.resolve(moduleName, { paths: [projectRoot] });
+    return require(resolvedPath);
+  } catch {
+    return null;
+  }
+}
+
+function runBuild(flags) {
+  const invocationRoot = process.cwd();
+  const dryRun = Boolean(flags['dry-run']);
+  const projectArg = typeof flags.project === 'string' ? flags.project : 'tsconfig.json';
+  const configPath = path.resolve(invocationRoot, projectArg);
+  const projectRoot = path.dirname(configPath);
+
+  if (!fs.existsSync(configPath)) {
+    logError(`TypeScript config not found: ${configPath}`);
+    process.exit(1);
+  }
+
+  const ts = resolveProjectModule(projectRoot, 'typescript');
+  if (!ts) {
+    logError('Missing `typescript` in this project.');
+    logInfo('Install it with: npm i -D typescript');
+    process.exit(1);
+  }
+
+  const readConfig = ts.readConfigFile(configPath, ts.sys.readFile);
+  if (readConfig.error) {
+    const formatted = ts.formatDiagnosticsWithColorAndContext([readConfig.error], {
+      getCanonicalFileName: (name) => name,
+      getCurrentDirectory: () => projectRoot,
+      getNewLine: () => '\n',
+    });
+    console.error(formatted);
+    process.exit(1);
+  }
+
+  const parsedConfig = ts.parseJsonConfigFileContent(
+    readConfig.config,
+    ts.sys,
+    path.dirname(configPath),
+    undefined,
+    configPath,
+  );
+  if (parsedConfig.errors.length > 0) {
+    const formatted = ts.formatDiagnosticsWithColorAndContext(parsedConfig.errors, {
+      getCanonicalFileName: (name) => name,
+      getCurrentDirectory: () => projectRoot,
+      getNewLine: () => '\n',
+    });
+    console.error(formatted);
+    process.exit(1);
+  }
+
+  const outDirOverride =
+    typeof flags['out-dir'] === 'string' ? path.resolve(projectRoot, flags['out-dir']) : null;
+  const outDir = outDirOverride ?? parsedConfig.options.outDir ?? path.join(projectRoot, 'dist');
+  const compilerOptions = {
+    ...parsedConfig.options,
+    outDir,
+  };
+
+  const program = ts.createProgram({
+    rootNames: parsedConfig.fileNames,
+    options: compilerOptions,
+  });
+
+  const preEmitDiagnostics = ts.getPreEmitDiagnostics(program);
+  const blockingDiagnostics = preEmitDiagnostics.filter(
+    (diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
+  );
+  if (blockingDiagnostics.length > 0) {
+    const formatted = ts.formatDiagnosticsWithColorAndContext(blockingDiagnostics, {
+      getCanonicalFileName: (name) => name,
+      getCurrentDirectory: () => projectRoot,
+      getNewLine: () => '\n',
+    });
+    console.error(formatted);
+    process.exit(1);
+  }
+
+  if (dryRun) {
+    logInfo(`[dry-run] rsx build using ${configPath}`);
+    logInfo(`[dry-run] source files: ${parsedConfig.fileNames.length}`);
+    logInfo(`[dry-run] outDir: ${outDir}`);
+    return;
+  }
+
+  try {
+    const emitResult = program.emit();
+    if (emitResult.emitSkipped) {
+      logError('Build failed: TypeScript emit skipped.');
+      process.exit(1);
+    }
+
+    logOk(`Build completed. Output: ${outDir}`);
+    return;
+  } catch (error) {
+    logWarn('TypeScript emit failed; falling back to transpile pipeline.');
+    if (error instanceof Error) {
+      logWarn(error.message);
+    }
+  }
+
+  fs.rmSync(outDir, { recursive: true, force: true });
+  fs.mkdirSync(outDir, { recursive: true });
+
+  const commonSourceDirectory =
+    compilerOptions.rootDir ?? program.getCommonSourceDirectory() ?? projectRoot;
+  const sourceFiles = program
+    .getSourceFiles()
+    .filter((sourceFile) => !sourceFile.isDeclarationFile)
+    .filter((sourceFile) => parsedConfig.fileNames.includes(sourceFile.fileName));
+
+  for (const sourceFile of sourceFiles) {
+    const sourceText = ts
+      .createPrinter({ newLine: ts.NewLineKind.LineFeed })
+      .printFile(sourceFile);
+
+    const transpiled = ts.transpileModule(sourceText, {
+      compilerOptions,
+      fileName: sourceFile.fileName,
+    });
+
+    const relativePath = path.relative(commonSourceDirectory, sourceFile.fileName);
+    const outputPath = path
+      .join(outDir, relativePath)
+      .replace(/\.[cm]?[jt]sx?$/u, '.js');
+
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    fs.writeFileSync(outputPath, transpiled.outputText, 'utf8');
+  }
+
+  logOk(`Build completed via transpile fallback. Output: ${outDir}`);
+}
+
 function printHelp() {
+  printGeneralHelp();
+}
+
+function printGeneralHelp() {
   console.log(`rsx v${CLI_VERSION}`);
   console.log('');
+  console.log('Usage:');
+  console.log('  rsx <command> [options]');
+  console.log('  rsx help [command]');
+  console.log('');
   console.log('Commands:');
+  console.log('  doctor                  Run environment checks');
+  console.log('  add | -a | -add         Interactive expression scaffolder');
+  console.log('  install vscode          Install VS Code extension');
+  console.log('  install compiler        Install compiler tooling packages');
+  console.log('  setup                   Install RS-X tooling (or setup framework integration)');
+  console.log('  init                    Setup packages and bootstrap wiring');
+  console.log('  project                 Create a full RS-X starter project');
+  console.log('  build                   Build project with RS-X transform');
+  console.log('  version | -v            Print CLI version');
+  console.log('');
+  console.log('Help Aliases:');
+  console.log('  rsx -h');
+  console.log('  rsx -help');
+  console.log('  rsx --help');
+  console.log('');
+  console.log('Examples:');
+  console.log('  rsx help init');
+  console.log('  rsx help project');
+  console.log('  rsx install vscode --help');
+  console.log('  rsx add');
+}
+
+function printDoctorHelp() {
+  console.log('Usage:');
   console.log('  rsx doctor');
+  console.log('');
+  console.log('Checks:');
+  console.log('  - Node.js >= 20');
+  console.log('  - VS Code CLI (code)');
+  console.log('  - Package manager (pnpm/npm/yarn/bun)');
+}
+
+function printAddHelp() {
+  console.log('Usage:');
+  console.log('  rsx add');
+  console.log('  rsx -a');
+  console.log('  rsx -add');
+  console.log('');
+  console.log('What it does:');
+  console.log('  - Prompts for expression export name (must be valid TS identifier)');
+  console.log('  - Prompts whether file name should be kebab-case (default: yes)');
+  console.log('  - Prompts for output directory (relative or absolute)');
+  console.log('  - Prompts whether to reuse an existing model file');
+  console.log('  - Creates <name>.ts and optionally creates <name>.model.ts');
+  console.log('  - Expression file imports selected model and exports rsx expression');
+}
+
+function printInstallHelp(target) {
+  if (target === 'vscode') {
+    console.log('Usage:');
+    console.log('  rsx install vscode [--force] [--local] [--dry-run]');
+    console.log('');
+    console.log('Options:');
+    console.log('  --force     Reinstall extension if already installed');
+    console.log('  --local     Build/install local VSIX from repo workspace');
+    console.log('  --dry-run   Print commands without executing them');
+    return;
+  }
+
+  if (target === 'compiler') {
+    console.log('Usage:');
+    console.log('  rsx install compiler [--pm <pnpm|npm|yarn|bun>] [--dry-run]');
+    console.log('');
+    console.log('Options:');
+    console.log('  --pm        Explicit package manager');
+    console.log('  --dry-run   Print commands without executing them');
+    return;
+  }
+
+  console.log('Usage:');
   console.log('  rsx install vscode [--force] [--local] [--dry-run]');
   console.log('  rsx install compiler [--pm <pnpm|npm|yarn|bun>] [--dry-run]');
+}
+
+function printSetupHelp() {
+  console.log('Usage:');
   console.log('  rsx setup [--pm <pnpm|npm|yarn|bun>] [--force] [--local] [--dry-run]');
+  console.log('  rsx setup react [--pm <pnpm|npm|yarn|bun>] [--entry <path>] [--skip-install] [--skip-vscode] [--force] [--local] [--dry-run]');
+  console.log('  rsx setup next [--pm <pnpm|npm|yarn|bun>] [--entry <path>] [--skip-install] [--skip-vscode] [--force] [--local] [--dry-run]');
+  console.log('  rsx setup angular [--pm <pnpm|npm|yarn|bun>] [--entry <path>] [--skip-install] [--skip-vscode] [--force] [--local] [--dry-run]');
+  console.log('');
+  console.log('What it does:');
+  console.log('  - Installs runtime packages');
+  console.log('  - Installs compiler tooling packages');
+  console.log('  - Installs VS Code extension');
+  console.log('  - For `setup react`: also wires RS-X transform into Vite build');
+  console.log('  - For `setup next`: also wires RS-X transform into Next webpack build');
+  console.log('  - For `setup angular`: also wires RS-X transform via Angular custom-webpack builder');
+  console.log('');
+  console.log('Options:');
+  console.log('  --pm        Explicit package manager');
+  console.log('  --force     Reinstall extension if already installed');
+  console.log('  --local     Build/install local VSIX from repo workspace');
+  console.log('  --dry-run   Print commands without executing them');
+}
+
+function printInitHelp() {
+  console.log('Usage:');
   console.log('  rsx init [--pm <pnpm|npm|yarn|bun>] [--entry <path>] [--skip-install] [--skip-vscode] [--force] [--local] [--dry-run]');
+  console.log('');
+  console.log('What it does:');
+  console.log('  - Installs runtime and compiler tooling (unless --skip-install)');
+  console.log('  - Detects project context and wires RS-X bootstrap in entry file');
+  console.log('  - Installs VS Code extension (unless --skip-vscode)');
+  console.log('');
+  console.log('Options:');
+  console.log('  --pm            Explicit package manager');
+  console.log('  --entry         Explicit application entry file');
+  console.log('  --skip-install  Skip npm/pnpm/yarn/bun package installation');
+  console.log('  --skip-vscode   Skip VS Code extension installation');
+  console.log('  --force         Reinstall extension if already installed');
+  console.log('  --local         Build/install local VSIX from repo workspace');
+  console.log('  --dry-run       Print commands without executing them');
+}
+
+function printProjectHelp() {
+  console.log('Usage:');
+  console.log('  rsx project [--name <project-name>] [--pm <pnpm|npm|yarn|bun>] [--tarballs-dir <path>] [--skip-install] [--dry-run]');
+  console.log('');
+  console.log('What it does:');
+  console.log('  - Creates a new project folder');
+  console.log('  - Writes package.json with RS-X dependencies');
+  console.log('  - Adds tsconfig + TypeScript plugin config for editor support');
+  console.log('  - Creates rsx bootstrap and one sample expression');
+  console.log('  - Installs dependencies (unless --skip-install)');
+  console.log('');
+  console.log('Options:');
+  console.log('  --name          Project folder/package name');
+  console.log('  --pm            Explicit package manager');
+  console.log('  --tarballs-dir  Directory containing local RS-X package tarballs (*.tgz)');
+  console.log('                  (or set RSX_TARBALLS_DIR env var)');
+  console.log('  --skip-install  Skip dependency installation');
+  console.log('  --dry-run       Print actions without writing files');
+}
+
+function printBuildHelp() {
+  console.log('Usage:');
+  console.log('  rsx build [--project <path-to-tsconfig>] [--out-dir <path>] [--dry-run]');
+  console.log('');
+  console.log('What it does:');
+  console.log('  - Loads your TypeScript project config');
+  console.log('  - Applies RS-X expression cache preload transform during compilation');
+  console.log('  - Emits JavaScript output to tsconfig outDir (or --out-dir)');
+  console.log('');
+  console.log('Options:');
+  console.log('  --project   Path to tsconfig file (default: tsconfig.json)');
+  console.log('  --out-dir   Override output directory');
+  console.log('  --dry-run   Print build plan without emitting');
+}
+
+function printVersionHelp() {
+  console.log('Usage:');
+  console.log('  rsx version');
+  console.log('  rsx -v');
+  console.log('  rsx -version');
+  console.log('  rsx --version');
+}
+
+function printHelpFor(command, target) {
+  if (
+    !command ||
+    command === 'help' ||
+    command === '--help' ||
+    command === '-help' ||
+    command === '-h'
+  ) {
+    printGeneralHelp();
+    return;
+  }
+
+  if (command === 'doctor') {
+    printDoctorHelp();
+    return;
+  }
+
+  if (command === 'add' || command === '-a' || command === '-add') {
+    printAddHelp();
+    return;
+  }
+
+  if (command === 'install') {
+    printInstallHelp(target);
+    return;
+  }
+
+  if (command === 'setup') {
+    printSetupHelp();
+    return;
+  }
+
+  if (command === 'init') {
+    printInitHelp();
+    return;
+  }
+
+  if (command === 'project') {
+    printProjectHelp();
+    return;
+  }
+
+  if (command === 'build') {
+    printBuildHelp();
+    return;
+  }
+
+  if (
+    command === 'version' ||
+    command === '-v' ||
+    command === '--version' ||
+    command === '-version'
+  ) {
+    printVersionHelp();
+    return;
+  }
+
+  printGeneralHelp();
 }
 
 function logInfo(message) {
@@ -776,24 +2232,50 @@ function logError(message) {
 function main() {
   const { positionals, flags } = parseArgs(process.argv);
   const [command, target] = positionals;
-
-  if (
+  const wantsVersion =
+    command === '--version' ||
+    command === '-version' ||
+    command === '-v' ||
+    command === 'version' ||
+    flags.version === true;
+  const wantsGeneralHelp =
     !command ||
     command === 'help' ||
     command === '--help' ||
-    command === '-h'
-  ) {
-    printHelp();
+    command === '-help' ||
+    command === '-h';
+  const wantsCommandHelp = flags.help === true;
+
+  if (command === 'help') {
+    printHelpFor(target, positionals[2]);
     return;
   }
 
-  if (command === '--version' || command === '-v' || command === 'version') {
+  if (wantsGeneralHelp) {
+    printHelpFor(command, target);
+    return;
+  }
+
+  if (wantsCommandHelp) {
+    printHelpFor(command, target);
+    return;
+  }
+
+  if (wantsVersion) {
     console.log(CLI_VERSION);
     return;
   }
 
   if (command === 'doctor') {
     runDoctor();
+    return;
+  }
+
+  if (command === 'add' || command === '-a' || command === '-add') {
+    runAdd().catch((error) => {
+      logError(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    });
     return;
   }
 
@@ -808,6 +2290,21 @@ function main() {
     return;
   }
 
+  if (command === 'setup' && target === 'react') {
+    runSetupReact(flags);
+    return;
+  }
+
+  if (command === 'setup' && target === 'next') {
+    runSetupNext(flags);
+    return;
+  }
+
+  if (command === 'setup' && target === 'angular') {
+    runSetupAngular(flags);
+    return;
+  }
+
   if (command === 'setup') {
     const pm = detectPackageManager(flags.pm);
     installRuntimePackages(pm, Boolean(flags['dry-run']));
@@ -818,6 +2315,19 @@ function main() {
 
   if (command === 'init') {
     runInit(flags);
+    return;
+  }
+
+  if (command === 'project') {
+    runProject(flags).catch((error) => {
+      logError(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    });
+    return;
+  }
+
+  if (command === 'build') {
+    runBuild(flags);
     return;
   }
 

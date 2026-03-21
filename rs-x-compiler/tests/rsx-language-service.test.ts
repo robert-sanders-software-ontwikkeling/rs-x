@@ -7,6 +7,7 @@ import {
   getRsxCompletionsAtPosition,
   getRsxDiagnosticsForFile,
   getRsxHoverAtPosition,
+  getRsxSignatureHelpAtPosition,
 } from '../lib/language-service';
 
 const workspaceRoot = path.resolve(__dirname, '../..');
@@ -62,6 +63,26 @@ describe('rsx language service', () => {
     });
   });
 
+  it('finds expression region at position for no-substitution template literals', () => {
+    const fixturePath = path.resolve(__dirname, './fixtures/language-service.fixture.ts');
+    const program = createProgram(fixturePath);
+    const sourceFile = program.getSourceFile(fixturePath)!;
+    const position = findPosition(sourceFile, 'rsx(`user.na`)(model);') + 'rsx(`user'.length;
+
+    const region = findRsxExpressionRegionAtPosition(
+      program,
+      fixturePath,
+      position,
+    );
+
+    const literalStart = findPosition(sourceFile, '`user.na`');
+    expect(region).toEqual({
+      expression: 'user.na',
+      start: literalStart + 1,
+      end: literalStart + '`user.na`'.length - 1,
+    });
+  });
+
   it('returns completions from model type for member access and function return type', () => {
     const fixturePath = path.resolve(__dirname, './fixtures/language-service.fixture.ts');
     const program = createProgram(fixturePath);
@@ -77,6 +98,24 @@ describe('rsx language service', () => {
     expect(memberCompletions).toEqual([
       { kind: 'property', name: 'name' },
     ]);
+    expect(new Set(memberCompletions.map((completion) => completion.name)).size).toBe(
+      memberCompletions.length,
+    );
+
+    const modularMemberPosition =
+      findPosition(sourceFile, 'exprUser.na') + 'exprUser.na'.length;
+    const modularMemberCompletions = getRsxCompletionsAtPosition(
+      program,
+      fixturePath,
+      modularMemberPosition,
+    );
+
+    expect(modularMemberCompletions).toEqual([
+      { kind: 'property', name: 'name' },
+    ]);
+    expect(
+      new Set(modularMemberCompletions.map((completion) => completion.name)).size,
+    ).toBe(modularMemberCompletions.length);
 
     const functionPosition =
       findPosition(sourceFile, 'user.stats().to') + 'user.stats().to'.length;
@@ -89,6 +128,39 @@ describe('rsx language service', () => {
     expect(functionCompletions).toEqual([
       { kind: 'property', name: 'total' },
     ]);
+    expect(new Set(functionCompletions.map((completion) => completion.name)).size).toBe(
+      functionCompletions.length,
+    );
+
+    const ternaryElsePosition =
+      findPosition(sourceFile, 'a > 10 ? b.c : b.d') + 'a > 10 ? b.c : b.'.length;
+    const ternaryElseCompletions = getRsxCompletionsAtPosition(
+      program,
+      fixturePath,
+      ternaryElsePosition,
+    );
+
+    expect(ternaryElseCompletions).toEqual([
+      { kind: 'property', name: 'c' },
+      { kind: 'property', name: 'd' },
+    ]);
+    expect(new Set(ternaryElseCompletions.map((completion) => completion.name)).size).toBe(
+      ternaryElseCompletions.length,
+    );
+
+    const constructorPosition =
+      findPosition(sourceFile, 'a > 10 ? test(20) : new Date()') +
+      'a > 10 ? test(20) : new Da'.length;
+    const constructorCompletions = getRsxCompletionsAtPosition(
+      program,
+      fixturePath,
+      constructorPosition,
+    );
+
+    expect(constructorCompletions).toContainEqual({
+      kind: 'constructor',
+      name: 'Date',
+    });
   });
 
   it('returns diagnostics for syntax and semantic issues', () => {
@@ -108,11 +180,19 @@ describe('rsx language service', () => {
       },
       {
         category: 'semantic',
+        message: "Identifier 'na' does not exist on model type.",
+      },
+      {
+        category: 'semantic',
         message: "Identifier 'to' does not exist on model type.",
       },
       {
         category: 'syntax',
         message: "Missing right operand for 'count +'.",
+      },
+      {
+        category: 'semantic',
+        message: "Identifier 'na' does not exist on model type.",
       },
     ]);
   });
@@ -130,5 +210,90 @@ describe('rsx language service', () => {
       start: findPosition(sourceFile, "'user.name'") + 1 + 'user.'.length,
       end: findPosition(sourceFile, "'user.name'") + 1 + 'user.name'.length,
     });
+
+    const modularHoverPosition =
+      findPosition(sourceFile, 'exprCount + 1') + 'expr'.length;
+    const modularHover = getRsxHoverAtPosition(
+      program,
+      fixturePath,
+      modularHoverPosition,
+    );
+
+    expect(modularHover).toEqual({
+      text: 'number',
+      start: findPosition(sourceFile, "'exprCount + 1'") + 1,
+      end: findPosition(sourceFile, "'exprCount + 1'") + 1 + 'exprCount'.length,
+    });
+  });
+
+  it('returns signature help for model functions inside rsx expression strings', () => {
+    const fixturePath = path.resolve(__dirname, './fixtures/language-service.fixture.ts');
+    const program = createProgram(fixturePath);
+    const sourceFile = program.getSourceFile(fixturePath)!;
+
+    const firstArgPosition =
+      findPosition(sourceFile, 'a > 10 ? test(20) : b.c') + 'a > 10 ? test('.length;
+    const firstArgHelp = getRsxSignatureHelpAtPosition(
+      program,
+      fixturePath,
+      firstArgPosition,
+    );
+
+    expect(firstArgHelp).toEqual(
+      expect.objectContaining({
+        argumentIndex: 0,
+        argumentCount: 0,
+      }),
+    );
+    expect(firstArgHelp?.items[0]).toEqual(
+      expect.objectContaining({
+        returnTypeText: 'Date',
+        parameters: [
+          {
+            name: 'input',
+            typeText: 'number',
+            isOptional: false,
+            isRest: false,
+          },
+          {
+            name: 'label',
+            typeText: 'string | undefined',
+            isOptional: true,
+            isRest: false,
+          },
+        ],
+      }),
+    );
+
+    const secondArgPosition =
+      findPosition(sourceFile, 'a > 10 ? test(20, "x") : b.c') + 'a > 10 ? test(20, '.length;
+    const secondArgHelp = getRsxSignatureHelpAtPosition(
+      program,
+      fixturePath,
+      secondArgPosition,
+    );
+
+    expect(secondArgHelp).toEqual(
+      expect.objectContaining({
+        argumentIndex: 1,
+        argumentCount: 2,
+      }),
+    );
+
+    const constructorArgPosition =
+      findPosition(sourceFile, 'a > 10 ? test(20) : new Date()') +
+      'a > 10 ? test(20) : new Date('.length;
+    const constructorArgHelp = getRsxSignatureHelpAtPosition(
+      program,
+      fixturePath,
+      constructorArgPosition,
+    );
+
+    expect(constructorArgHelp).toEqual(
+      expect.objectContaining({
+        argumentIndex: 0,
+      }),
+    );
+    expect(constructorArgHelp?.items.length).toBeGreaterThan(0);
   });
 });
