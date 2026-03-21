@@ -1,6 +1,6 @@
 {
   "name": "@rs-x/typescript-plugin",
-  "version": "0.1.0",
+  "version": "1.0.2",
   "description": "TypeScript server plugin that adds RS-X IntelliSense inside expression strings",
   "main": "./dist/index.js",
   "files": [

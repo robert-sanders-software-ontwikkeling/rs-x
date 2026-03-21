@@ -1,6 +1,6 @@
 {
   "name": "@rs-x/cli",
-  "version": "0.1.0",
+  "version": "1.0.2",
   "description": "CLI for installing RS-X compiler tooling and VS Code integration",
   "bin": {
     "rsx": "./bin/rsx.cjs"

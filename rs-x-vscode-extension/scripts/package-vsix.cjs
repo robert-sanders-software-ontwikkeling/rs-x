@@ -4,7 +4,13 @@ const { spawnSync } = require('node:child_process');
 
 const extensionRoot = path.resolve(__dirname, '..');
 const stageRoot = path.join(extensionRoot, '.vsix-stage');
-const outputPath = path.join(extensionRoot, 'rs-x-vscode-extension-0.1.0.vsix');
+const baseManifest = JSON.parse(
+  fs.readFileSync(path.join(extensionRoot, 'package.json'), 'utf8'),
+);
+const outputPath = path.join(
+  extensionRoot,
+  `rs-x-vscode-extension-${baseManifest.version}.vsix`,
+);
 const vsceCliPath = require.resolve('@vscode/vsce/vsce');
 
 function copyRecursive(sourcePath, targetPath) {
@@ -64,9 +70,6 @@ copyRecursive(
   path.join(stageRoot, 'node_modules', '@rs-x', 'typescript-plugin'),
 );
 
-const baseManifest = JSON.parse(
-  fs.readFileSync(path.join(extensionRoot, 'package.json'), 'utf8'),
-);
 const stagedManifest = {
   name: baseManifest.name,
   displayName: baseManifest.displayName,
@@ -80,7 +83,7 @@ const stagedManifest = {
   main: baseManifest.main,
   contributes: baseManifest.contributes,
   dependencies: {
-    '@rs-x/typescript-plugin': '0.1.0',
+    '@rs-x/typescript-plugin': baseManifest.version,
   },
   files: [
     'dist',
