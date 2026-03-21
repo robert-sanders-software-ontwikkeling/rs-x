@@ -3,11 +3,31 @@ import {
   type IExpression,
   type IExpressionFactory,
 } from '@rs-x/expression-parser';
+import type { BehaviorSubject, Observable } from 'rxjs';
 
 interface Model {
   count: number;
+  index: number;
+  key: string;
   items: number[];
   lookup: Record<string, number>;
+  map: Map<string, number>;
+  nestedA: {
+    map: Record<string, number>;
+  };
+  invoiceDate: Date;
+  x: Observable<{
+    y: {
+      z: number;
+    };
+  }>;
+  a: {
+    b: BehaviorSubject<{
+      c: BehaviorSubject<{
+        d: number;
+      }>;
+    }>;
+  };
   user: {
     name: string;
     multiplier(value: number): {
@@ -32,6 +52,14 @@ rsx('user.name + "!"')(model);
 rsx('user.multiplier(2).total')(model);
 rsx('items[1]')(model);
 rsx('lookup["a"]')(model);
+rsx('items[index]')(model);
+rsx('lookup[key]')(model);
+rsx('nestedA.map[key]')(model);
+rsx('map["b"]')(model);
+rsx('map[key]')(model);
+rsx('invoiceDate.year')(model);
+rsx('x.y.z')(model);
+rsx('a.b.c.d')(model);
 expressionFactory.create(model, 'multiply(count, 2)');
 rsx('x1 * 3')(modularModel);
 rsx('xObj.total * 2')(modularModel);

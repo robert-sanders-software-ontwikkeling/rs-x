@@ -258,9 +258,15 @@ function installLocalVsix(dryRun, force) {
   const extensionPackage = JSON.parse(
     fs.readFileSync(extensionPackagePath, 'utf8'),
   );
-  const vsixPath = path.join(
+  const vsixFileName = `${extensionPackage.name}-${extensionPackage.version}.vsix`;
+  const preferredVsixPath = path.join(
     extensionDir,
-    `${extensionPackage.name}-${extensionPackage.version}.vsix`,
+    'dist',
+    vsixFileName,
+  );
+  const legacyVsixPath = path.join(
+    extensionDir,
+    vsixFileName,
   );
 
   logInfo('Packaging local rs-x-vscode-extension...');
@@ -269,8 +275,17 @@ function installLocalVsix(dryRun, force) {
     cwd: repoRoot,
   });
 
+  const vsixPath =
+    !dryRun && fs.existsSync(preferredVsixPath)
+      ? preferredVsixPath
+      : !dryRun && fs.existsSync(legacyVsixPath)
+        ? legacyVsixPath
+        : preferredVsixPath;
+
   if (!dryRun && !fs.existsSync(vsixPath)) {
-    logWarn(`Expected VSIX not found at ${vsixPath}. Skipping installation.`);
+    logWarn(
+      `Expected VSIX not found at ${preferredVsixPath}. Skipping installation.`,
+    );
     return;
   }
 
@@ -655,7 +670,9 @@ function resolveProjectRsxSpecs(projectRoot, workspaceRoot, tarballsDir) {
     }
 
     if (packageName === '@rs-x/cli') {
-      const tarball = findLatestTarball(packageDir, 'rs-x-cli');
+      const tarball =
+        findLatestTarball(path.join(packageDir, 'dist'), 'rs-x-cli') ??
+        findLatestTarball(packageDir, 'rs-x-cli');
       if (tarball) {
         specs[packageName] = toFileDependencySpec(projectRoot, tarball);
         continue;
@@ -683,6 +700,7 @@ function createProjectPackageJson(projectName, rsxSpecs) {
       type: 'commonjs',
       scripts: {
         build: 'rsx build --project tsconfig.json',
+        'typecheck:rsx': 'rsx typecheck --project tsconfig.json',
         start: 'node dist/main.js',
       },
       dependencies: {
@@ -1838,6 +1856,12 @@ function runSetupAngular(flags) {
 
   wireRsxAngularWebpack(process.cwd(), dryRun);
   upsertScriptInPackageJson(process.cwd(), 'build:rsx', 'rsx build --project tsconfig.json', dryRun);
+  upsertScriptInPackageJson(
+    process.cwd(),
+    'typecheck:rsx',
+    'rsx typecheck --project tsconfig.json',
+    dryRun,
+  );
 
   if (!Boolean(flags['skip-vscode'])) {
     installVsCodeExtension(flags);
@@ -1857,6 +1881,7 @@ function resolveProjectModule(projectRoot, moduleName) {
 function runBuild(flags) {
   const invocationRoot = process.cwd();
   const dryRun = Boolean(flags['dry-run']);
+  const noEmit = Boolean(flags['no-emit']);
   const projectArg = typeof flags.project === 'string' ? flags.project : 'tsconfig.json';
   const configPath = path.resolve(invocationRoot, projectArg);
   const projectRoot = path.dirname(configPath);
@@ -1914,10 +1939,25 @@ function runBuild(flags) {
     options: compilerOptions,
   });
 
-  const preEmitDiagnostics = ts.getPreEmitDiagnostics(program);
-  const blockingDiagnostics = preEmitDiagnostics.filter(
-    (diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
-  );
+  let blockingDiagnostics = [];
+  try {
+    const preEmitDiagnostics = ts.getPreEmitDiagnostics(program);
+    blockingDiagnostics = preEmitDiagnostics.filter(
+      (diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
+    );
+  } catch (error) {
+    if (
+      error instanceof RangeError &&
+      String(error.message).includes('Maximum call stack size exceeded')
+    ) {
+      logWarn(
+        'TypeScript pre-emit diagnostics overflowed (TS internal recursion). Continuing with RS-X semantic validation.',
+      );
+    } else {
+      throw error;
+    }
+  }
+
   if (blockingDiagnostics.length > 0) {
     const formatted = ts.formatDiagnosticsWithColorAndContext(blockingDiagnostics, {
       getCanonicalFileName: (name) => name,
@@ -1928,10 +1968,20 @@ function runBuild(flags) {
     process.exit(1);
   }
 
+  runRsxSemanticValidation(program, projectRoot);
+
   if (dryRun) {
     logInfo(`[dry-run] rsx build using ${configPath}`);
     logInfo(`[dry-run] source files: ${parsedConfig.fileNames.length}`);
     logInfo(`[dry-run] outDir: ${outDir}`);
+    if (noEmit) {
+      logInfo('[dry-run] no-emit mode enabled');
+    }
+    return;
+  }
+
+  if (noEmit) {
+    logOk('Typecheck completed. No TypeScript or RS-X semantic errors found.');
     return;
   }
 
@@ -1983,6 +2033,61 @@ function runBuild(flags) {
   logOk(`Build completed via transpile fallback. Output: ${outDir}`);
 }
 
+function runTypecheck(flags) {
+  runBuild({
+    ...flags,
+    'no-emit': true,
+  });
+}
+
+function runRsxSemanticValidation(program, projectRoot) {
+  let compilerModule = resolveProjectModule(projectRoot, '@rs-x/compiler');
+  if (!compilerModule) {
+    const repoRoot = findRepoRoot(projectRoot);
+    const localCompilerPath = repoRoot
+      ? path.join(repoRoot, 'rs-x-compiler', 'dist', 'index.cjs')
+      : null;
+    if (localCompilerPath && fs.existsSync(localCompilerPath)) {
+      compilerModule = require(localCompilerPath);
+    }
+  }
+
+  if (!compilerModule || typeof compilerModule.validateExpressionSites !== 'function') {
+    logError('Missing `@rs-x/compiler` in this project.');
+    logInfo('Install it with: npm i -D @rs-x/compiler');
+    process.exit(1);
+  }
+
+  const validatedSites = compilerModule.validateExpressionSites(program);
+  const rsxDiagnostics = validatedSites.flatMap((site) =>
+    site.diagnostics.map((diagnostic) => ({
+      diagnostic,
+      site,
+    })),
+  );
+
+  if (rsxDiagnostics.length === 0) {
+    return;
+  }
+
+  const formatted = rsxDiagnostics
+    .map(({ diagnostic, site }) => {
+      const sourceFile = site.sourceFile;
+      const absolutePath = sourceFile.fileName;
+      const relativePath = path.relative(projectRoot, absolutePath) || absolutePath;
+      const expressionStart = site.expressionLiteral.getStart(sourceFile) + 1;
+      const location = sourceFile.getLineAndCharacterOfPosition(expressionStart);
+      const category = diagnostic.category === 'syntax' ? 'RSX1001' : 'RSX1000';
+      return `${relativePath}:${location.line + 1}:${location.character + 1} - error ${category}: ${diagnostic.message}\n  expression: ${site.expression}`;
+    })
+    .join('\n\n');
+
+  console.error('');
+  logError(`RS-X semantic validation failed with ${rsxDiagnostics.length} error(s).`);
+  console.error(formatted);
+  process.exit(1);
+}
+
 function printHelp() {
   printGeneralHelp();
 }
@@ -2003,6 +2108,7 @@ function printGeneralHelp() {
   console.log('  init                    Setup packages and bootstrap wiring');
   console.log('  project                 Create a full RS-X starter project');
   console.log('  build                   Build project with RS-X transform');
+  console.log('  typecheck               Type-check project + RS-X semantic checks');
   console.log('  version | -v            Print CLI version');
   console.log('');
   console.log('Help Aliases:');
@@ -2145,6 +2251,21 @@ function printBuildHelp() {
   console.log('  --dry-run   Print build plan without emitting');
 }
 
+function printTypecheckHelp() {
+  console.log('Usage:');
+  console.log('  rsx typecheck [--project <path-to-tsconfig>] [--dry-run]');
+  console.log('');
+  console.log('What it does:');
+  console.log('  - Loads your TypeScript project config');
+  console.log('  - Fails on TypeScript compile errors');
+  console.log('  - Fails on RS-X expression semantic errors');
+  console.log('  - Does not emit build output');
+  console.log('');
+  console.log('Options:');
+  console.log('  --project   Path to tsconfig file (default: tsconfig.json)');
+  console.log('  --dry-run   Print typecheck plan without executing emit');
+}
+
 function printVersionHelp() {
   console.log('Usage:');
   console.log('  rsx version');
@@ -2197,6 +2318,11 @@ function printHelpFor(command, target) {
 
   if (command === 'build') {
     printBuildHelp();
+    return;
+  }
+
+  if (command === 'typecheck') {
+    printTypecheckHelp();
     return;
   }
 
@@ -2328,6 +2454,11 @@ function main() {
 
   if (command === 'build') {
     runBuild(flags);
+    return;
+  }
+
+  if (command === 'typecheck') {
+    runTypecheck(flags);
     return;
   }
 

@@ -26,6 +26,23 @@ interface IResolvedType {
 }
 
 const globalIdentifierOwnerResolver = new GlobalIdentifierOwnerResolver();
+const supportedDateProperties = new Set<string>([
+  'year',
+  'utcYear',
+  'month',
+  'utcMonth',
+  'date',
+  'utcDate',
+  'hours',
+  'utcHours',
+  'minutes',
+  'utcMinutes',
+  'seconds',
+  'utcSeconds',
+  'milliseconds',
+  'utcMilliseconds',
+  'time',
+]);
 
 export function validateExpressionSites(
   program: ts.Program,
@@ -226,15 +243,38 @@ function resolveIdentifierType(
   checker: ts.TypeChecker,
   diagnostics: ICompilerDiagnostic[],
 ): IResolvedType {
-  const property = contextType.getProperty(identifier);
+  const normalizedIdentifier = String(identifier);
+  contextType = unwrapRsxExpressionType(contextType, checker);
+  const property = contextType.getProperty(normalizedIdentifier);
   if (!property) {
-    if (isAllowedGlobalIdentifier(identifier)) {
+    const mapValueType = resolveMapValueType(contextType, checker);
+    if (mapValueType) {
+      return mapValueType;
+    }
+
+    if (
+      supportedDateProperties.has(normalizedIdentifier) &&
+      isDateLikeType(contextType, checker)
+    ) {
+      return { primitive: 'number' };
+    }
+
+    const indexedType = resolveIdentifierAsIndexedAccess(
+      normalizedIdentifier,
+      contextType,
+      checker,
+    );
+    if (indexedType) {
+      return indexedType;
+    }
+
+    if (isAllowedGlobalIdentifier(normalizedIdentifier)) {
       return {};
     }
 
     diagnostics.push({
       category: 'semantic',
-      message: `Identifier '${identifier}' does not exist on model type.`,
+      message: `Identifier '${normalizedIdentifier}' does not exist on model type.`,
     });
     return {};
   }
@@ -252,8 +292,77 @@ function resolveIdentifierType(
   };
 }
 
+function resolveIdentifierAsIndexedAccess(
+  identifier: string,
+  contextType: ts.Type,
+  checker: ts.TypeChecker,
+): IResolvedType | null {
+  const numericIdentifier = Number(identifier);
+  const isCanonicalNumberIdentifier =
+    Number.isInteger(numericIdentifier) && String(numericIdentifier) === identifier;
+  if (isCanonicalNumberIdentifier) {
+    const numberIndexType = contextType.getNumberIndexType();
+    if (numberIndexType) {
+      return { tsType: unwrapRsxExpressionType(numberIndexType, checker) };
+    }
+  }
+
+  const stringIndexType = contextType.getStringIndexType();
+  if (stringIndexType) {
+    return { tsType: unwrapRsxExpressionType(stringIndexType, checker) };
+  }
+
+  return null;
+}
+
 function isAllowedGlobalIdentifier(identifier: string): boolean {
   return globalIdentifierOwnerResolver.resolve(identifier) !== null;
+}
+
+function isDateLikeType(type: ts.Type, checker: ts.TypeChecker): boolean {
+  type = unwrapRsxExpressionType(type, checker);
+
+  if (type.isUnionOrIntersection()) {
+    return type.types.some((memberType) => isDateLikeType(memberType, checker));
+  }
+
+  // Runtime DatePropertyAccessor applies to Date instances. We approximate that
+  // contract by checking for core Date getters/setters on the static type.
+  return Boolean(
+    type.getProperty('getFullYear') &&
+      type.getProperty('setFullYear') &&
+      type.getProperty('getTime') &&
+      type.getProperty('setTime'),
+  );
+}
+
+function resolveMapValueType(
+  type: ts.Type,
+  checker: ts.TypeChecker,
+): IResolvedType | null {
+  type = unwrapRsxExpressionType(type, checker);
+
+  if (type.isUnionOrIntersection()) {
+    for (const memberType of type.types) {
+      const memberMapValueType = resolveMapValueType(memberType, checker);
+      if (memberMapValueType) {
+        return memberMapValueType;
+      }
+    }
+    return null;
+  }
+
+  const symbolName = (type.aliasSymbol ?? type.getSymbol())?.getName();
+  if (symbolName !== 'Map') {
+    return null;
+  }
+
+  const typeArguments = checker.getTypeArguments(type as ts.TypeReference);
+  if (typeArguments.length < 2) {
+    return {};
+  }
+
+  return { tsType: unwrapRsxExpressionType(typeArguments[1], checker) };
 }
 
 function resolveMemberType(
@@ -342,11 +451,18 @@ function resolveIndexedType(
   diagnostics: ICompilerDiagnostic[],
 ): IResolvedType {
   targetType = unwrapRsxExpressionType(targetType, checker);
-  if (indexType.primitive === 'string') {
-    return {};
+  const mapValueType = resolveMapValueType(targetType, checker);
+  if (mapValueType) {
+    return mapValueType;
   }
 
-  if (indexType.primitive === 'number') {
+  const isNumberIndexType =
+    indexType.primitive === 'number' ||
+    (indexType.tsType
+      ? tsTypeMatches(indexType.tsType, ts.TypeFlags.NumberLike, checker)
+      : false);
+
+  if (isNumberIndexType) {
     const numberIndexType = targetType.getNumberIndexType();
     if (!numberIndexType) {
       diagnostics.push({
@@ -356,6 +472,10 @@ function resolveIndexedType(
       return {};
     }
     return { tsType: numberIndexType };
+  }
+
+  if (indexType.primitive === 'string') {
+    return {};
   }
 
   const stringIndexType = targetType.getStringIndexType();
@@ -743,12 +863,34 @@ function unwrapRsxExpressionType(
   type: ts.Type,
   checker: ts.TypeChecker,
 ): ts.Type {
-  const symbol = type.aliasSymbol ?? type.getSymbol();
-  if (symbol?.getName() === 'IExpression') {
-    const typeArguments = checker.getTypeArguments(type as ts.TypeReference);
-    if (typeArguments.length > 0) {
-      return typeArguments[0];
+  let currentType = type;
+  while (true) {
+    const unwrappedType = tryUnwrapRsxExpressionType(currentType, checker);
+    if (!unwrappedType || unwrappedType === currentType) {
+      break;
     }
+    currentType = unwrappedType;
+  }
+
+  return currentType;
+}
+
+function tryUnwrapRsxExpressionType(
+  type: ts.Type,
+  checker: ts.TypeChecker,
+): ts.Type | null {
+  const symbol = type.aliasSymbol ?? type.getSymbol();
+  const symbolName = symbol?.getName();
+  const typeArguments = checker.getTypeArguments(type as ts.TypeReference);
+  if (
+    (symbolName === 'IExpression' ||
+      symbolName === 'Promise' ||
+      symbolName === 'Observable' ||
+      symbolName === 'Subject' ||
+      symbolName === 'BehaviorSubject') &&
+    typeArguments.length > 0
+  ) {
+    return typeArguments[0];
   }
 
   // Fallback for concrete expression implementations where generic args are erased.
@@ -758,14 +900,14 @@ function unwrapRsxExpressionType(
     type.getProperty('childExpressions') &&
     type.getProperty('changed');
   if (!hasExpressionShape) {
-    return type;
+    return null;
   }
 
   const valueProperty = type.getProperty('value');
   const declaration =
     valueProperty?.valueDeclaration ?? valueProperty?.declarations?.[0];
   if (!valueProperty || !declaration) {
-    return type;
+    return null;
   }
 
   return checker.getTypeOfSymbolAtLocation(valueProperty, declaration);

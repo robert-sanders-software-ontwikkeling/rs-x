@@ -152,6 +152,8 @@ describe('Member expression tests', () => {
         },
       };
 
+    
+
       expression = rsx('nestedA.nestedB.array[a + 1]')(model);
 
       // Wait till the expression has been initialized before changing value

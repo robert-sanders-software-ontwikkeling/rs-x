@@ -29,6 +29,13 @@ fi
 echo "Using CLI directory: $cli_dir"
 
 cd "$cli_dir"
+pack_dir="$cli_dir/dist"
+
+if [[ "$dry_run" == "true" ]]; then
+  echo "[dry-run] mkdir -p \"$pack_dir\""
+else
+  mkdir -p "$pack_dir"
+fi
 
 echo "Running CLI build..."
 if [[ "$dry_run" == "true" ]]; then
@@ -39,13 +46,13 @@ fi
 
 echo "Creating npm tarball..."
 if [[ "$dry_run" == "true" ]]; then
-  echo "[dry-run] npm pack"
+  echo "[dry-run] npm pack --pack-destination \"$pack_dir\""
   tarball_name="$(node -p "const p=require('./package.json'); const safeName=p.name.replace(/^@/, '').replace('/', '-'); \`\${safeName}-\${p.version}.tgz\`")"
 else
-  tarball_name="$(npm pack --silent)"
+  tarball_name="$(npm pack --silent --pack-destination "$pack_dir")"
 fi
 
-tarball_path="$cli_dir/$tarball_name"
+tarball_path="$pack_dir/$tarball_name"
 echo "Tarball: $tarball_path"
 
 echo "Installing tarball globally..."

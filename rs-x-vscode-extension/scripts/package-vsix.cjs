@@ -7,8 +7,9 @@ const stageRoot = path.join(extensionRoot, '.vsix-stage');
 const baseManifest = JSON.parse(
   fs.readFileSync(path.join(extensionRoot, 'package.json'), 'utf8'),
 );
+const outputDir = path.join(extensionRoot, 'dist');
 const outputPath = path.join(
-  extensionRoot,
+  outputDir,
   `rs-x-vscode-extension-${baseManifest.version}.vsix`,
 );
 const vsceCliPath = require.resolve('@vscode/vsce/vsce');
@@ -55,6 +56,7 @@ if (
 
 fs.rmSync(stageRoot, { recursive: true, force: true });
 fs.mkdirSync(stageRoot, { recursive: true });
+fs.mkdirSync(outputDir, { recursive: true });
 
 copyRecursive(path.join(extensionRoot, 'dist'), path.join(stageRoot, 'dist'));
 copyRecursive(path.join(extensionRoot, 'syntaxes'), path.join(stageRoot, 'syntaxes'));

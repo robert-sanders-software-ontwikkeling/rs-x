@@ -6,8 +6,11 @@ import { validateExpressionSites } from '../lib/compiler/expression-site-validat
 
 const workspaceRoot = path.resolve(__dirname, '../..');
 
-function createProgram(entryFile: string): ts.Program {
-  return ts.createProgram({
+function createProgram(
+  entryFile: string,
+  additionalTypes: readonly string[] = [],
+): ts.Program {
+  const program = ts.createProgram({
     rootNames: [entryFile],
     options: {
       target: ts.ScriptTarget.ES2022,
@@ -18,7 +21,7 @@ function createProgram(entryFile: string): ts.Program {
       esModuleInterop: true,
       allowSyntheticDefaultImports: true,
       baseUrl: workspaceRoot,
-      types: ['node'],
+      types: ['node', ...additionalTypes],
       paths: {
         '@rs-x/core': ['rs-x-core/lib/index.ts'],
         '@rs-x/state-manager': ['rs-x-state-manager/lib/index.ts'],
@@ -26,6 +29,33 @@ function createProgram(entryFile: string): ts.Program {
       },
     },
   });
+
+  assertNoTypeScriptDiagnostics(program, entryFile);
+  return program;
+}
+
+function assertNoTypeScriptDiagnostics(
+  program: ts.Program,
+  entryFile: string,
+): void {
+  const diagnostics = [
+    ...program.getOptionsDiagnostics(),
+    ...program.getGlobalDiagnostics(),
+    ...program.getSyntacticDiagnostics(),
+    ...program.getSemanticDiagnostics(),
+  ].filter((diagnostic) => !diagnostic.file || diagnostic.file.fileName === entryFile);
+
+  if (diagnostics.length === 0) {
+    return;
+  }
+
+  const formatHost: ts.FormatDiagnosticsHost = {
+    getCanonicalFileName: (fileName) => fileName,
+    getCurrentDirectory: () => workspaceRoot,
+    getNewLine: () => '\n',
+  };
+
+  throw new Error(ts.formatDiagnosticsWithColorAndContext(diagnostics, formatHost));
 }
 
 describe('expression-site validation', () => {
@@ -63,6 +93,38 @@ describe('expression-site validation', () => {
       },
       {
         expression: 'lookup["a"]',
+        messages: [],
+      },
+      {
+        expression: 'items[index]',
+        messages: [],
+      },
+      {
+        expression: 'lookup[key]',
+        messages: [],
+      },
+      {
+        expression: 'nestedA.map[key]',
+        messages: [],
+      },
+      {
+        expression: 'map["b"]',
+        messages: [],
+      },
+      {
+        expression: 'map[key]',
+        messages: [],
+      },
+      {
+        expression: 'invoiceDate.year',
+        messages: [],
+      },
+      {
+        expression: 'x.y.z',
+        messages: [],
+      },
+      {
+        expression: 'a.b.c.d',
         messages: [],
       },
       {
@@ -131,4 +193,38 @@ describe('expression-site validation', () => {
       },
     ]);
   });
+
+  it('accepts all DatePropertyAccessor properties on Date model fields', () => {
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/date-properties-validation.fixture.ts',
+    );
+
+    const program = createProgram(fixturePath);
+    const results = validateExpressionSites(program)
+      .filter((site) => site.sourceFile.fileName === fixturePath)
+      .map((site) => ({
+        expression: site.expression,
+        messages: site.diagnostics.map((diagnostic) => diagnostic.message),
+      }));
+
+    expect(results).toEqual([
+      { expression: 'invoiceDate.year', messages: [] },
+      { expression: 'invoiceDate.utcYear', messages: [] },
+      { expression: 'invoiceDate.month', messages: [] },
+      { expression: 'invoiceDate.utcMonth', messages: [] },
+      { expression: 'invoiceDate.date', messages: [] },
+      { expression: 'invoiceDate.utcDate', messages: [] },
+      { expression: 'invoiceDate.hours', messages: [] },
+      { expression: 'invoiceDate.utcHours', messages: [] },
+      { expression: 'invoiceDate.minutes', messages: [] },
+      { expression: 'invoiceDate.utcMinutes', messages: [] },
+      { expression: 'invoiceDate.seconds', messages: [] },
+      { expression: 'invoiceDate.utcSeconds', messages: [] },
+      { expression: 'invoiceDate.milliseconds', messages: [] },
+      { expression: 'invoiceDate.utcMilliseconds', messages: [] },
+      { expression: 'invoiceDate.time', messages: [] },
+    ]);
+  });
+
 });
