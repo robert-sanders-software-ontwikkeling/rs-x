@@ -1,4 +1,5 @@
 import { afterEach } from 'node:test';
+import { BehaviorSubject } from 'rxjs';
 
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import { type IObserver } from '@rs-x/state-manager';
@@ -9,6 +10,8 @@ import {
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { rsx } from '../../lib/rsx';
+import { ExpressionType } from '../../lib/expressions/expression-parser.interface';
+import { ExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager';
 
 describe('Expression observer tests', () => {
   let observer: IObserver | undefined;
@@ -72,5 +75,279 @@ describe('Expression observer tests', () => {
     });
 
     expect(largerThanExpression.value).toEqual(true);
+  });
+
+  it('propagates one change per bound expression for a single model mutation', async () => {
+    const model = { a: 1 };
+    const expressions = Array.from({ length: 10 }, (_, index) =>
+      rsx(`a + ${index}`)(model),
+    );
+
+    try {
+      await Promise.all(
+        expressions.map((expression) =>
+          new WaitForEvent(expression, 'changed').wait(emptyFunction),
+        ),
+      );
+
+      const postInitialChangeCounts = new Array(expressions.length).fill(0);
+      const replaySeen = new Array(expressions.length).fill(false);
+      const subscriptions = expressions.map((expression, index) =>
+        expression.changed.subscribe(() => {
+          if (replaySeen[index]) {
+            postInitialChangeCounts[index] += 1;
+          } else {
+            replaySeen[index] = true;
+          }
+        }),
+      );
+
+      const firstChangePerExpression = Promise.all(
+        expressions.map((expression) =>
+          new WaitForEvent(expression, 'changed', {
+            ignoreInitialValue: true,
+          }).wait(emptyFunction),
+        ),
+      );
+
+      model.a = 2;
+      await firstChangePerExpression;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(postInitialChangeCounts).toEqual(new Array(expressions.length).fill(1));
+      subscriptions.forEach((subscription) => subscription.unsubscribe());
+    } finally {
+      expressions.forEach((expression) => expression.dispose());
+    }
+  });
+
+  it('scales linearly as expression count grows (raw replay vs mutation events)', async () => {
+    const sizes = [1, 2, 5, 10, 20, 50, 100];
+
+    for (const size of sizes) {
+      const model = { a: 1 };
+      const expressions = Array.from({ length: size }, (_, index) =>
+        rsx(`a + ${index}`)(model),
+      );
+
+      try {
+        await Promise.all(
+          expressions.map((expression) =>
+            new WaitForEvent(expression, 'changed').wait(emptyFunction),
+          ),
+        );
+
+        const rawCounts = new Array(size).fill(0);
+        const mutationOnlyCounts = new Array(size).fill(0);
+        const replaySeen = new Array(size).fill(false);
+
+        const subscriptions = expressions.map((expression, index) =>
+          expression.changed.subscribe(() => {
+            rawCounts[index] += 1;
+
+            // changed is ReplaySubject(1): first delivery after subscribe is replay.
+            if (replaySeen[index]) {
+              mutationOnlyCounts[index] += 1;
+            } else {
+              replaySeen[index] = true;
+            }
+          }),
+        );
+
+        const firstChangePerExpression = Promise.all(
+          expressions.map((expression) =>
+            new WaitForEvent(expression, 'changed', {
+              ignoreInitialValue: true,
+            }).wait(emptyFunction),
+          ),
+        );
+
+        model.a = 2;
+        await firstChangePerExpression;
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        const rawTotal = rawCounts.reduce((sum, count) => sum + count, 0);
+        const mutationOnlyTotal = mutationOnlyCounts.reduce(
+          (sum, count) => sum + count,
+          0,
+        );
+
+        expect(rawTotal).toBe(size * 2);
+        expect(mutationOnlyTotal).toBe(size);
+
+        subscriptions.forEach((subscription) => subscription.unsubscribe());
+      } finally {
+        expressions.forEach((expression) => expression.dispose());
+      }
+    }
+  });
+
+  it('identifier notifications scale linearly with expression count', async () => {
+    const registerChangeSpy = jest.spyOn(
+      ExpressionChangeTransactionManager.prototype,
+      'registerChange',
+    );
+
+    try {
+      const sizes = [1, 2, 5, 10, 20, 50, 100];
+
+      for (const size of sizes) {
+        const model = { a: 1 };
+        const expressions = Array.from({ length: size }, (_, index) =>
+          rsx(`a + ${index}`)(model),
+        );
+
+        try {
+          await Promise.all(
+            expressions.map((expression) =>
+              new WaitForEvent(expression, 'changed').wait(emptyFunction),
+            ),
+          );
+
+          registerChangeSpy.mockClear();
+
+          const firstChangePerExpression = Promise.all(
+            expressions.map((expression) =>
+              new WaitForEvent(expression, 'changed', {
+                ignoreInitialValue: true,
+              }).wait(emptyFunction),
+            ),
+          );
+
+          model.a = 2;
+          await firstChangePerExpression;
+          await new Promise((resolve) => setTimeout(resolve, 0));
+
+          const identifierNotifications = registerChangeSpy.mock.calls.filter(
+            ([, commitHandler]) =>
+              commitHandler.owner.type === ExpressionType.Identifier,
+          ).length;
+
+          expect(identifierNotifications).toBe(size);
+        } finally {
+          expressions.forEach((expression) => expression.dispose());
+        }
+      }
+    } finally {
+      registerChangeSpy.mockRestore();
+    }
+  });
+
+  it('identifier notifications for a.b.c.d example scenario do not grow superlinearly', async () => {
+    const registerChangeSpy = jest.spyOn(
+      ExpressionChangeTransactionManager.prototype,
+      'registerChange',
+    );
+
+    try {
+      const sizes = [1, 2, 5, 10, 20, 50];
+      const replaceATotals: Array<{
+        size: number;
+        identifierNotifications: number;
+      }> = [];
+      const nestedNextTotals: Array<{
+        size: number;
+        identifierNotifications: number;
+      }> = [];
+
+      for (const size of sizes) {
+        const nestedObservable = new BehaviorSubject({ d: 200 });
+        const rootObservable = new BehaviorSubject({ c: nestedObservable });
+        const model = {
+          a: {
+            b: new BehaviorSubject({
+              c: new BehaviorSubject({ d: 20 }),
+            }),
+          },
+        };
+
+        const expressions = Array.from({ length: size }, () =>
+          rsx('a.b.c.d')(model),
+        );
+
+        try {
+          await Promise.all(
+            expressions.map((expression) =>
+              new WaitForEvent(expression, 'changed').wait(emptyFunction),
+            ),
+          );
+
+          registerChangeSpy.mockClear();
+
+          const firstChangePerExpression = Promise.all(
+            expressions.map((expression) =>
+              new WaitForEvent(expression, 'changed', {
+                ignoreInitialValue: true,
+              }).wait(emptyFunction),
+            ),
+          );
+
+          model.a = { b: rootObservable };
+          await firstChangePerExpression;
+          await new Promise((resolve) => setTimeout(resolve, 0));
+
+          replaceATotals.push({
+            size,
+            identifierNotifications: registerChangeSpy.mock.calls.filter(
+              ([, commitHandler]) =>
+                commitHandler.owner.type === ExpressionType.Identifier,
+            ).length,
+          });
+
+          registerChangeSpy.mockClear();
+
+          const secondChangePerExpression = Promise.all(
+            expressions.map((expression) =>
+              new WaitForEvent(expression, 'changed', {
+                ignoreInitialValue: true,
+              }).wait(emptyFunction),
+            ),
+          );
+
+          nestedObservable.next({ d: 300 });
+          await secondChangePerExpression;
+          await new Promise((resolve) => setTimeout(resolve, 0));
+
+          nestedNextTotals.push({
+            size,
+            identifierNotifications: registerChangeSpy.mock.calls.filter(
+              ([, commitHandler]) =>
+                commitHandler.owner.type === ExpressionType.Identifier,
+            ).length,
+          });
+        } finally {
+          expressions.forEach((expression) => expression.dispose());
+        }
+      }
+
+      const assertNoSuperlinearGrowth = (
+        totals: Array<{ size: number; identifierNotifications: number }>,
+      ) => {
+        const baselinePerExpression =
+          totals[0]!.identifierNotifications / totals[0]!.size;
+        for (const row of totals) {
+          // Allow some fixed overhead, but block n^2-style growth.
+          expect(row.identifierNotifications).toBeLessThanOrEqual(
+            row.size * baselinePerExpression + baselinePerExpression,
+          );
+        }
+      };
+
+      assertNoSuperlinearGrowth(replaceATotals);
+      assertNoSuperlinearGrowth(nestedNextTotals);
+
+      for (let i = 1; i < replaceATotals.length; i += 1) {
+        expect(replaceATotals[i]!.identifierNotifications).toBeLessThanOrEqual(
+          replaceATotals[i - 1]!.identifierNotifications,
+        );
+      }
+      for (let i = 1; i < nestedNextTotals.length; i += 1) {
+        expect(nestedNextTotals[i]!.identifierNotifications).toBeLessThanOrEqual(
+          nestedNextTotals[i - 1]!.identifierNotifications,
+        );
+      }
+    } finally {
+      registerChangeSpy.mockRestore();
+    }
   });
 });
