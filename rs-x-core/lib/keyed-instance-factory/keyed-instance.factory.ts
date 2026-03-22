@@ -67,6 +67,10 @@ export abstract class KeyedInstanceFactory<
     return `${this.constructor.name}`;
   }
 
+  public get size(): number {
+    return this._instances.size;
+  }
+
   public get isEmpty(): boolean {
     return this._instances.size === 0;
   }

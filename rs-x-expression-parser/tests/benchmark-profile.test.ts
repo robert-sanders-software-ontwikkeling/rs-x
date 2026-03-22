@@ -1,6 +1,4 @@
-import { readFileSync } from 'node:fs';
 import inspector from 'node:inspector';
-import { resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 
 import { InjectionContainer, WaitForEvent, emptyFunction } from '@rs-x/core';
@@ -1014,12 +1012,12 @@ export const benchmarkExpressionFactories: Array<() => IExpression> = [
   () => rsx("(((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((x + y) + ((x + y) + 1000)) - 24) * 54) / ((x + y) + 1003)) + 17) - 47) * ((x + y) + 1006)) / 10) + 40) - ((x + y) + 1009)) * 3) / 33) + ((x + y) + 1012)) - 93) * 26) / ((x + y) + 1015)) + 86) - 19) * ((x + y) + 1018)) / 79) + 12) - ((x + y) + 1021)) * 72) / 5) + ((x + y) + 1024)) - 65) * 95) / ((x + y) + 1027)) + 58) - 88) * ((x + y) + 1030)) / 51) + 81) - ((x + y) + 1033)) * 44) / 74) + ((x + y) + 1036)) - 37) * 67) / ((x + y) + 1039)) + 30) - 60) * ((x + y) + 1042)) / 23) + 53) - ((x + y) + 1045)) * 16) / 46) + ((x + y) + 1048)) - 9) * 39) / ((x + y) + 1051)) + 2) - 32) * ((x + y) + 1054)) / 92) + 25) - ((x + y) + 1057)) * 85) / 18)")(model),
 ];
 
+import { IExpression } from '../lib/expressions/expression-parser.interface';
 import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
 } from '../lib/rs-x-expression-parser.module';
 import { rsx } from '../lib/rsx';
-import { IExpression } from '../lib/expressions/expression-parser.interface';
 
 type CpuEntry = {
   hits: number;

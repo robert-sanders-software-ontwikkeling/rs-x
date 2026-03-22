@@ -7,6 +7,7 @@ export interface IKeyedInstanceFactory<
   TIdData = TData,
 > extends IDisposable {
   readonly isEmpty: boolean;
+  readonly size: number;
   create(data: TData): {
     referenceCount: number;
     instance: TInstance;
