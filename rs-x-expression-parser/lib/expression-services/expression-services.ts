@@ -12,9 +12,9 @@ import {
 } from '@rs-x/state-manager';
 
 import {
-  type ExpressionEvaluateManager,
+  type IExpressionEvaluateManager,
   type IExpressionEvaluateUnitFactory,
-} from '../expression-evaluate-manager/expression-evaluate-manager';
+} from '../expression-evaluate-manager';
 import type { IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
 import type { IExpressionIdProvider } from '../expression-id/expression-id-provider.interface';
 import type { IIdentifierOwnerResolver } from '../identifier-owner-resolver/identifier-owner-resolver.interface';
@@ -30,7 +30,7 @@ export class ExpressionServices implements IExpressionServices {
     )
     public readonly transactionManager: IExpressionChangeTransactionManager,
     @Inject(RsXExpressionParserInjectionTokens.IExpressionEvaluateManager)
-    public readonly expressionEvaluateManager: ExpressionEvaluateManager,
+    public readonly expressionEvaluateManager: IExpressionEvaluateManager,
     @Inject(RsXExpressionParserInjectionTokens.IExpressionEvaluateUnitFactory)
     public readonly expressionEvaluateUnitFactory: IExpressionEvaluateUnitFactory,
     @Inject(RsXStateManagerInjectionTokens.IStateManager)

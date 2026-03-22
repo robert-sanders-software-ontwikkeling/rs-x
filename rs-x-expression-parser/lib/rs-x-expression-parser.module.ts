@@ -21,10 +21,11 @@ import { type IExpressionChangePlayback } from './expression-change-playback/exp
 import { ExpressionChangeTrackerManager } from './expression-change-tracker/expression-change-tracker-manager';
 import { type IExpressionChangeTrackerManager } from './expression-change-tracker/expression-change-tracker-manager.interface';
 import {
+  type IExpressionEvaluateManager,
   type IExpressionEvaluateUnitFactory,
   ExpressionEvaluateManager,
   ExpressionEvaluateUnitFactory,
-} from './expression-evaluate-manager/expression-evaluate-manager';
+} from './expression-evaluate-manager';
 import { ExpressionFactory } from './expression-factory/expression-factory';
 import type { IExpressionFactory } from './expression-factory/expression-factory.interface';
 import { ExpressionManager } from './expression-factory/expression-manager';
@@ -107,7 +108,7 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
     .to(ExpressionServices)
     .inSingletonScope();
   options
-    .bind<ExpressionEvaluateManager>(
+    .bind<IExpressionEvaluateManager>(
       RsXExpressionParserInjectionTokens.IExpressionEvaluateManager,
     )
     .to(ExpressionEvaluateManager)

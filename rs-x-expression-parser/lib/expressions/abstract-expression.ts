@@ -22,6 +22,8 @@ import {
   type ExpressionType,
   type IExpression,
 } from './expression-parser.interface';
+import { IExpressionEvaluateManager } from '../expression-evaluate-manager/expression-evaluate-manager.interface';
+
 
 export abstract class AbstractExpression<
   T = unknown,
@@ -167,6 +169,10 @@ export abstract class AbstractExpression<
 
   protected get transactionManager(): IExpressionChangeTransactionManager {
     return this._services?.transactionManager;
+  }
+
+  protected get expressionEvaluateManager(): IExpressionEvaluateManager {
+    return this._services?.expressionEvaluateManager;
   }
 
   protected get valueMetadata(): IValueMetadata {

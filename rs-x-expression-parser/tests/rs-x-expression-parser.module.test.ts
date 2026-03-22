@@ -29,7 +29,7 @@ import { ExpressionChangeTrackerManager } from '../lib/expression-change-tracker
 import {
   ExpressionEvaluateManager,
   ExpressionEvaluateUnitFactory,
-} from '../lib/expression-evaluate-manager/expression-evaluate-manager';
+} from '../lib/expression-evaluate-manager';
 import { ExpressionFactory } from '../lib/expression-factory/expression-factory';
 import { ExpressionManager } from '../lib/expression-factory/expression-manager';
 import { ExpressionIdProvider } from '../lib/expression-id/expression-id-provider';
