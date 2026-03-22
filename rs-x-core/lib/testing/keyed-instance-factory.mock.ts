@@ -7,6 +7,7 @@ export class KeyedInstanceFactoryMock<
   TIdData = TData,
 > implements IKeyedInstanceFactory<TId, TData, TInstance, TIdData> {
   public isEmpty: boolean = false;
+  public readonly size: number = 0;
   public readonly ids = jest.fn();
   public readonly has = jest.fn();
   public readonly getId = jest.fn();

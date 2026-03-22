@@ -32,11 +32,16 @@ const jestConfig: Config.InitialOptions = {
   extensionsToTreatAsEsm: ['.ts'],
 
   // Exclude Angular and React package entirely
-  testPathIgnorePatterns: ['<rootDir>/rs-x-angular/', '<rootDir>/rs-x-react/'],
+  testPathIgnorePatterns: [
+    '<rootDir>/rs-x-angular/',
+    '<rootDir>/rs-x-react/',
+    '<rootDir>/rs-x-vscode-extension/.vsix-stage/',
+  ],
 
   modulePathIgnorePatterns: [
     '<rootDir>/rs-x-angular/',
     '<rootDir>/rs-x-react/',
+    '<rootDir>/rs-x-vscode-extension/.vsix-stage/',
   ],
 
   // Transforms

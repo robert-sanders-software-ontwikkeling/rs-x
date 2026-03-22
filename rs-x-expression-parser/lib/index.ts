@@ -3,6 +3,7 @@ export * from './expresion-change-transaction-manager.interface';
 export * from './expression-cache';
 export * from './expression-change-playback';
 export * from './expression-change-tracker';
+export * from './expression-evaluate-manager';
 export * from './expression-factory';
 export * from './expression-id';
 export * from './expression-node-id-index';

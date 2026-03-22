@@ -1,26 +1,298 @@
-import { GuidKeyedInstanceFactory, IGuidFactory, KeyedInstanceFactory } from '@rs-x/core';
-import { IStateChange, IStateManager } from '@rs-x/state-manager';
+import {
+    IDisposable,
+    Inject,
+    Injectable,
+    KeyedInstanceFactory,
+} from '@rs-x/core';
+import {
+    IIndexWatchRule,
+    IStateChange,
+    IStateManager,
+    RsXStateManagerInjectionTokens,
+} from '@rs-x/state-manager';
 import { Subscription } from 'rxjs';
+import type { IExpressionChangeTransactionManager } from '../expresion-change-transaction-manager.interface';
+import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
 
+export enum ValueChange {
+    NotApplicable,
+    Initialized,
+    Changed,
+    Unchanged,
+    Unintialized
+}
 
-interface IExpressionEvaluateParameterId {
-    index: unknown;
+export interface IExpressionEvaluateUnit extends IDisposable {
+    readonly index: unknown;
     context: unknown;
+    setValue(value: unknown, context: unknown, index: unknown): ValueChange;
+    commit(): void;
+    readonly value: unknown
 }
 
-interface IExpressionEvaluateParameter extends IExpressionEvaluateParameterId {
-    reevaluate?: () => void;
-    resolved?: boolean;
+export interface IFunctionExpressionEvaluateUnitOptions {
+    readonly index: unknown;
+    readonly context: unknown;
+    readonly objectExpressionUnit?: IExpressionEvaluateUnit;
+    readonly functionExpressionUnit?: IExpressionEvaluateUnit;
+    readonly argumentsExpressionUnit?: IExpressionEvaluateUnit;
+    readonly commit: (value: unknown) => void;
+}
+
+export interface IExpressionEvaluateUnitFactory {
+    createIdentifier(
+        index: unknown,
+        context: unknown,
+        commit: (value: unknown) => void,
+        indexWatchRule?: IIndexWatchRule,
+    ): IExpressionEvaluateUnit;
+    createMember(
+        index: unknown,
+        segments: IExpressionEvaluateUnit[],
+    ): IExpressionEvaluateUnit;
+    createFunction(options: IFunctionExpressionEvaluateUnitOptions): IExpressionEvaluateUnit;
 }
 
 
-class EvaluateManagerForExpression
-    extends GuidKeyedInstanceFactory<IExpressionEvaluateParameter, Map<() => void, () => void>, IExpressionEvaluateParameterId>
-{
+export class IdentifierExpressionEvaluateUnit implements IExpressionEvaluateUnit {
+    private _value: unknown;
+    private _context: unknown;
 
+    constructor(
+        public readonly index: unknown,
+        context: unknown,
+        private readonly _stateManager: IStateManager,
+        private _commit: (value: unknown) => void,
+        private readonly _indexWatchRule?: IIndexWatchRule,) {
+
+        this.context = context;
+
+    }
+
+    public get context(): unknown {
+        return this._context;
+    }
+
+    public get value(): unknown {
+        return this._value;
+    }
+
+    public set context(value: unknown) {
+        if (this._context === value) {
+            return;
+        }
+
+        if (this._context) {
+            this.releasState();
+        }
+
+        this._context = value;
+
+        if (this._context) {
+            this._stateManager.watchState(this.context, this.index, { indexWatchRule: this._indexWatchRule });
+        }
+
+    }
+
+    public dispose(): void {
+        this.releasState();
+    }
+
+
+    public setValue(value: unknown, context: unknown, index: unknown): ValueChange {
+        if (context !== this.context || this.index !== index) {
+            return ValueChange.NotApplicable;
+        }
+
+        if (value === this._value) {
+            return ValueChange.Unchanged;
+        }
+
+        const status = this._value === undefined ? ValueChange.Initialized : value === undefined ? ValueChange.Unintialized : ValueChange.Changed;
+
+        this.context = context;
+        this._value = value;
+
+        return status
+
+    }
+    public commit(): void {
+        if (this._value === undefined) {
+            return
+        }
+        this._commit(this._value);
+    }
+
+    private releasState(): void {
+        this._stateManager.releaseState(this.context, this.index, this._indexWatchRule);
+    }
+}
+
+
+export class MemberExpressionEvaluateUnit implements IExpressionEvaluateUnit {
+    constructor(
+        public index: unknown,
+        private readonly _segments: IExpressionEvaluateUnit[]) {
+    }
+
+    public dispose(): void {
+        this._segments.forEach(segement => segement.dispose());
+    }
+
+    public get value(): unknown {
+        return this._segments[this._segments.length - 1].value;
+    }
+
+    public get context(): unknown {
+        return this._segments[0]?.context;
+    }
+
+    public setValue(value: unknown, context: unknown, index: unknown): ValueChange {
+        const segmentIndex = this._segments.findIndex(segement => segement.context === context && segement.index === index);
+        if (segmentIndex === -1) {
+            return ValueChange.NotApplicable
+        }
+
+        this._segments[segmentIndex].setValue(value, context, index);
+
+        const prevValue = this.value
+
+        const nextSegmentIndex = segmentIndex + 1;
+        if (nextSegmentIndex < this._segments.length) {
+            this._segments[nextSegmentIndex].context = value;
+        }
+
+        const currentValue = this.value;
+
+        return prevValue == currentValue ? ValueChange.Unchanged : prevValue === undefined ? ValueChange.Initialized : currentValue === undefined ? ValueChange.Unintialized : ValueChange.Changed;
+
+    }
+
+    public commit(): void {
+        if (this.value !== undefined) {
+            this._segments.forEach(segment => segment.commit())
+        }
+
+    }
+}
+
+export class FunctionExpressionEvaluateUnit implements IExpressionEvaluateUnit {
+    private _context: unknown;
+
+    constructor(
+        public readonly index: unknown,
+        context: unknown,
+        private readonly _objectExpressionUnit: IExpressionEvaluateUnit | undefined,
+        private readonly _functionExpressionUnit: IExpressionEvaluateUnit | undefined,
+        private readonly _argumentsExpressionUnit: IExpressionEvaluateUnit | undefined,
+        private readonly _commit: (value: unknown) => void,
+    ) {
+        this._context = context;
+    }
+
+    public get context(): unknown {
+        return this._context;
+    }
+
+    public set context(value: unknown) {
+        this._context = value;
+    }
+
+    public get value(): unknown {
+        return undefined;
+    }
+
+    public dispose(): void {
+        this._objectExpressionUnit?.dispose();
+        this._functionExpressionUnit?.dispose();
+        this._argumentsExpressionUnit?.dispose();
+    }
+
+    public setValue(value: unknown, context: unknown, index: unknown): ValueChange {
+        const statuses: ValueChange[] = [];
+
+        if (this._objectExpressionUnit) {
+            statuses.push(this._objectExpressionUnit.setValue(value, context, index));
+        }
+
+        if (this._functionExpressionUnit) {
+            statuses.push(this._functionExpressionUnit.setValue(value, context, index));
+        }
+
+        if (this._argumentsExpressionUnit) {
+            statuses.push(this._argumentsExpressionUnit.setValue(value, context, index));
+        }
+
+        if (statuses.length === 0 || statuses.every((status) => status === ValueChange.NotApplicable)) {
+            return ValueChange.NotApplicable;
+        }
+
+        if (statuses.some((status) => status === ValueChange.Changed)) {
+            return ValueChange.Changed;
+        }
+
+        if (statuses.some((status) => status === ValueChange.Initialized)) {
+            return ValueChange.Initialized;
+        }
+
+        if (statuses.some((status) => status === ValueChange.Unintialized)) {
+            return ValueChange.Unintialized;
+        }
+
+        return ValueChange.Unchanged;
+    }
+
+    public commit(): void {
+        this._commit(undefined);
+    }
+}
+
+@Injectable()
+export class ExpressionEvaluateUnitFactory implements IExpressionEvaluateUnitFactory {
+    constructor(
+        @Inject(RsXStateManagerInjectionTokens.IStateManager)
+        private readonly _stateManager: IStateManager,
+    ) {
+    }
+
+    public createIdentifier(
+        index: unknown,
+        context: unknown,
+        commit: (value: unknown) => void,
+        indexWatchRule?: IIndexWatchRule,
+    ): IExpressionEvaluateUnit {
+        return new IdentifierExpressionEvaluateUnit(
+            index,
+            context,
+            this._stateManager,
+            commit,
+            indexWatchRule,
+        );
+    }
+
+    public createMember(
+        index: unknown,
+        segments: IExpressionEvaluateUnit[],
+    ): IExpressionEvaluateUnit {
+        return new MemberExpressionEvaluateUnit(index, segments);
+    }
+
+    public createFunction(options: IFunctionExpressionEvaluateUnitOptions): IExpressionEvaluateUnit {
+        return new FunctionExpressionEvaluateUnit(
+            options.index,
+            options.context,
+            options.objectExpressionUnit,
+            options.functionExpressionUnit,
+            options.argumentsExpressionUnit,
+            options.commit,
+        );
+    }
+}
+
+
+class EvaluateManagerForExpression implements IDisposable {
+    private readonly _evaluateUnits: IExpressionEvaluateUnit[] = [];
     private readonly _onChangedSubscription: Subscription;
-    private readonly _resolvedById = new Map<string, boolean>();
-    private readonly _pendingReevaluateIds = new Set<string>();
     private _unresolvedCount = 0;
     private _initialized = false;
     private _bootstrapScheduled = false;
@@ -28,129 +300,70 @@ class EvaluateManagerForExpression
 
     constructor(
         private readonly _stateManager: IStateManager,
-        guidFactory: IGuidFactory,
-        private readonly evaluate: () => void) {
+        private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
+        private readonly evaluate: () => void,
 
-        super(guidFactory);
-
+    ) {
         this._onChangedSubscription = this._stateManager.changed.subscribe(this.onChange);
 
     }
 
-    protected override onDispose(): void {
+    public dispose(): void {
         this._onChangedSubscription.unsubscribe();
-        this._resolvedById.clear();
-        this._pendingReevaluateIds.clear();
+
+        this._evaluateUnits.forEach(evaluateUnit => evaluateUnit.dispose());
         this._unresolvedCount = 0;
         this._initialized = false;
         this._bootstrapScheduled = false;
-        this._reevaluateScheduled = false;
-        super.onDispose();
+        this._reevaluateScheduled = false;;
     }
 
 
-    public override create(data: IExpressionEvaluateParameter): { referenceCount: number; instance: Map<() => void, () => void>; id: string; } {
-        const result = super.create(data);
-        const reevaluate = data.reevaluate ?? data.reevaluate;
-        if (reevaluate) {
-            result.instance.set(reevaluate, reevaluate);
-        }
+    public register(evaluateUnit: IExpressionEvaluateUnit): void {
+        this._evaluateUnits.push(evaluateUnit);
+    }
 
-        if (result.referenceCount === 1) {
-            const resolved = data.resolved ?? this.isResolved(data.context, data.index);
-            this._resolvedById.set(result.id, resolved);
-            if (!resolved) {
-                this._unresolvedCount++;
+
+    private readonly onChange = (change: IStateChange) => {
+        const changed: IExpressionEvaluateUnit[] = []
+        for (let i = 0; i < this._evaluateUnits.length; i++) {
+
+            const status = this._evaluateUnits[i].setValue(change.newValue, change.context, change.index);
+
+            if (status === ValueChange.Changed || status === ValueChange.Initialized) {
+                changed.push(this._evaluateUnits[i])
             }
         }
 
-        if (!this._initialized && this._unresolvedCount === 0) {
-            this.scheduleEvaluate();
-        }
-
-        return result;
-    }
-
-
-    protected override getGroupId(data: IExpressionEvaluateParameterId): unknown {
-        return data.context;
-    }
-
-    protected override getGroupMemberId(data: IExpressionEvaluateParameterId): unknown {
-        return data.index
-    }
-
-    protected override createInstance(data: IExpressionEvaluateParameter, id: unknown): Map<() => void, () => void> {
-        return new Map();
-    }
-
-    protected override releaseInstance(instance: Map<() => void, () => void>, id: string): void {
-        const wasResolved = this._resolvedById.get(id);
-        if (wasResolved === false && this._unresolvedCount > 0) {
-            this._unresolvedCount--;
-        }
-
-        this._resolvedById.delete(id);
-        this._pendingReevaluateIds.delete(id);
-        instance.clear();
-        super.releaseInstance(instance, id);
-    }
-
-    private readonly onChange = (change: IStateChange) => {
-        let id = this.getId({ context: change.oldContext, index: change.index });
-        if (!id && change.context !== change.oldContext) {
-            id = this.getId({ context: change.context, index: change.index });
-        }
-
-        if (!id) {
-            return;
-        }
-
-        if (change.context !== change.oldContext) {
-            this.replaceGroupId(change.oldContext, change.context);
-        }
-
-        const resolved = change.newValue !== undefined;
-        const changed = this.updateResolvedState(id, resolved);
-        if (!changed) {
-            return;
-        }
-
-        if (!this._initialized) {
+        if (!this._initialized && changed.length === this._evaluateUnits.length) {
             if (this._unresolvedCount === 0) {
                 this.scheduleEvaluate();
             }
             return;
         }
 
-        if (!resolved) {
-            this._initialized = false;
-            return;
+        if (this._initialized && changed.length > 0) {
+            this.scheduleReevaluate(changed);
         }
-
-        this.scheduleReevaluate(id);
     }
 
-    private scheduleReevaluate(id: string) {
-        this._pendingReevaluateIds.add(id);
-        if (this._reevaluateScheduled) return;
+    private scheduleReevaluate(changed: IExpressionEvaluateUnit[]) {
+        if (this._reevaluateScheduled) {
+            return;
+        }
 
         this._reevaluateScheduled = true;
 
         queueMicrotask(() => {
             this._reevaluateScheduled = false;
-            const pendingIds = Array.from(this._pendingReevaluateIds);
-            this._pendingReevaluateIds.clear();
 
-            for (const pendingId of pendingIds) {
-                const reevaluates = this.getFromId(pendingId);
-                if (!reevaluates) {
-                    continue;
-                }
-                for (const reevaluate of reevaluates.values()) {
-                    reevaluate();
-                }
+            this._expressionChangeTransactionManager.suspend();
+
+            for (let i = 0; i < changed.length; i++) {
+                changed[i].commit();
             }
+
+            this._expressionChangeTransactionManager.continue();
         });
 
     }
@@ -171,43 +384,16 @@ class EvaluateManagerForExpression
             this._initialized = true;
         });
     }
-
-    private updateResolvedState(id: string, resolved: boolean): boolean {
-        const previous = this._resolvedById.get(id);
-        if (previous === resolved) {
-            return false;
-        }
-
-        if (previous === undefined) {
-            this._resolvedById.set(id, resolved);
-            if (!resolved) {
-                this._unresolvedCount++;
-            }
-            return true;
-        }
-
-        this._resolvedById.set(id, resolved);
-
-        if (previous && !resolved) {
-            this._unresolvedCount++;
-        } else if (!previous && resolved && this._unresolvedCount > 0) {
-            this._unresolvedCount--;
-        }
-
-        return true;
-    }
-
-    private isResolved(context: unknown, index: unknown): boolean {
-        return this._stateManager.getState(context, index) !== undefined;
-    }
-
 }
 
+@Injectable()
 export class ExpressionEvaluateManager extends KeyedInstanceFactory<() => void, () => void, EvaluateManagerForExpression> {
 
     constructor(
+        @Inject(RsXStateManagerInjectionTokens.IStateManager)
         private readonly _stateManager: IStateManager,
-        private readonly _guidFactory: IGuidFactory) {
+        @Inject(RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager)
+        private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager) {
 
         super();
     }
@@ -218,13 +404,18 @@ export class ExpressionEvaluateManager extends KeyedInstanceFactory<() => void, 
 
     protected override createInstance(evaluate: () => void, id: () => void): EvaluateManagerForExpression {
         return new EvaluateManagerForExpression(
-            this._stateManager, 
-            this._guidFactory, 
+            this._stateManager,
+            this._expressionChangeTransactionManager,
             evaluate);
 
     }
     protected override createId(evaluate: () => void): () => void {
         return evaluate;
+    }
+
+
+    protected override releaseInstance(instance: EvaluateManagerForExpression, _id: () => void): void {
+        instance.dispose();
     }
 
 }

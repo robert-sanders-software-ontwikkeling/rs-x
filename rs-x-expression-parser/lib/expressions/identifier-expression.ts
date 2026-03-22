@@ -91,8 +91,9 @@ export class IndexValueObserver {
 }
 
 export type IIdentifierBindConfiguration = IExpressionBindConfiguration & {
-  currentValue?: unknown;
-  isRoot?: boolean;
+  readonly currentValue?: unknown;
+  readonly context: unknown,
+  readonly isRoot?: boolean;
 };
 
 export class IdentifierExpression extends AbstractExpression {
