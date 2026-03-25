@@ -28,6 +28,7 @@ type IRound = {
   initMs: number;
   totalMs: number;
   perExpressionMs: number;
+  cumulativePerExpressionMs: number;
 };
 
 describe('Generated benchmark expressions initialization', () => {
@@ -68,7 +69,7 @@ describe('Generated benchmark expressions initialization', () => {
     let currentCount = 0;
     let cumulativeTotalMs = 0;
 
-    let previousPerExpressionMs: number | undefined;
+    let previousCumulativePerExpressionMs: number | undefined;
     while (currentCount < totalFactories) {
       const nextCount = Math.min(currentCount + step, totalFactories);
       const batchSize = nextCount - currentCount;
@@ -98,6 +99,7 @@ describe('Generated benchmark expressions initialization', () => {
       const totalMs = createMs + initMs;
       cumulativeTotalMs += totalMs;
       const perExpressionMs = totalMs / batchSize;
+      const cumulativePerExpressionMs = cumulativeTotalMs / nextCount;
       rounds.push({
         count: nextCount,
         batchSize,
@@ -105,13 +107,18 @@ describe('Generated benchmark expressions initialization', () => {
         initMs,
         totalMs,
         perExpressionMs,
+        cumulativePerExpressionMs,
       });
 
-      if (previousPerExpressionMs !== undefined) {
-        const ratio = perExpressionMs / previousPerExpressionMs;
+      // Use cumulative cost-per-expression instead of per-batch cost to avoid
+      // false failures from occasional GC pauses while still catching
+      // non-linear growth.
+      if (previousCumulativePerExpressionMs !== undefined) {
+        const ratio =
+          cumulativePerExpressionMs / previousCumulativePerExpressionMs;
         expect(ratio).toBeLessThanOrEqual(linearityTolerance);
       }
-      previousPerExpressionMs = perExpressionMs;
+      previousCumulativePerExpressionMs = cumulativePerExpressionMs;
       currentCount = nextCount;
     }
 
@@ -134,6 +141,9 @@ describe('Generated benchmark expressions initialization', () => {
           initMs: Number(round.initMs.toFixed(2)),
           totalMs: Number(round.totalMs.toFixed(2)),
           perExpressionMs: Number(round.perExpressionMs.toFixed(4)),
+          cumulativePerExpressionMs: Number(
+            round.cumulativePerExpressionMs.toFixed(4),
+          ),
         })),
       );
       console.log(

@@ -367,10 +367,15 @@ export class JsEspreeExpressionParser implements IExpressionParser {
   private createMemberExpression = (
     expression: EstreeMemberExpression,
   ): AbstractExpression => {
-    const pathSegments = this.flattenMemberExpression(expression).map((e) => {
-      const expression = this.createExpression(e.expression);
-      return e.computed ? new ComputedIndexExpression(expression) : expression;
-    });
+    const flattenedSegments = this.flattenMemberExpression(expression);
+    const pathSegments = new Array<AbstractExpression>(flattenedSegments.length);
+    for (let i = 0; i < flattenedSegments.length; i += 1) {
+      const segment = flattenedSegments[i];
+      const segmentExpression = this.createExpression(segment.expression);
+      pathSegments[i] = segment.computed
+        ? new ComputedIndexExpression(segmentExpression)
+        : segmentExpression;
+    }
     return new MemberExpression(
       this.getExpressionSource(expression),
       pathSegments,
@@ -380,11 +385,14 @@ export class JsEspreeExpressionParser implements IExpressionParser {
   private createSequenceExpression = (
     expression: EstreeSequenceExpression,
   ): AbstractExpression => {
+    const expressionCount = expression.expressions.length;
+    const expressions = new Array<AbstractExpression>(expressionCount);
+    for (let i = 0; i < expressionCount; i += 1) {
+      expressions[i] = this.createExpression(expression.expressions[i]);
+    }
     return new SequenceExpression(
       this.getExpressionSource(expression, { preferGenerator: true }),
-      expression.expressions.map((expression) =>
-        this.createExpression(expression),
-      ),
+      expressions,
     );
   };
 
@@ -395,11 +403,12 @@ export class JsEspreeExpressionParser implements IExpressionParser {
   private createArrayExpression = (
     expression: EstreeArrayExpression,
   ): AbstractExpression => {
-    return new ArrayExpression(
-      expression.elements.map((element) =>
-        this.createExpression(Type.cast(element)),
-      ),
-    );
+    const elements = expression.elements;
+    const expressions = new Array<AbstractExpression>(elements.length);
+    for (let i = 0; i < elements.length; i += 1) {
+      expressions[i] = this.createExpression(Type.cast(elements[i]));
+    }
+    return new ArrayExpression(expressions);
   };
 
   private createSpreadExpression = (
@@ -416,9 +425,11 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     expression: EstreeNewExpression,
   ): AbstractExpression => {
     const constructorExpression = this.createExpression(expression.callee);
-    const argumentExpressions = expression.arguments.map(
-      (argumentExpressions) => this.createExpression(argumentExpressions),
-    );
+    const args = expression.arguments;
+    const argumentExpressions = new Array<AbstractExpression>(args.length);
+    for (let i = 0; i < args.length; i += 1) {
+      argumentExpressions[i] = this.createExpression(args[i]);
+    }
     return new NewExpression(
       this.getExpressionSource(expression),
       Type.cast(constructorExpression),
@@ -449,9 +460,11 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       functionExpression = this.createExpression(expression.callee);
     }
 
-    const argumentExpressions = expression.arguments.map((argumentExpression) =>
-      this.createExpression(argumentExpression),
-    );
+    const args = expression.arguments;
+    const argumentExpressions = new Array<AbstractExpression>(args.length);
+    for (let i = 0; i < args.length; i += 1) {
+      argumentExpressions[i] = this.createExpression(args[i]);
+    }
 
     return new FunctionExpression(
       this.getExpressionSource(expression),
@@ -469,9 +482,13 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     const { quasis, parameters } =
       this.createTemplateElementExpression(templateLiteral);
 
-    const expressions = quasis.flatMap((quasi, index) => {
-      return [quasi, parameters[index]].filter((a) => a);
-    });
+    const expressions: AbstractExpression[] = [];
+    for (let i = 0; i < quasis.length; i += 1) {
+      expressions.push(quasis[i]);
+      if (i < parameters.length) {
+        expressions.push(parameters[i]);
+      }
+    }
 
     if (
       expressions.length === 1 &&
@@ -530,13 +547,21 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     quasis: AbstractExpression[];
     parameters: AbstractExpression[];
   } {
+    const quasis = new Array<AbstractExpression>(templateLiteral.quasis.length);
+    for (let i = 0; i < templateLiteral.quasis.length; i += 1) {
+      quasis[i] = new ConstantStringExpression(templateLiteral.quasis[i].value.raw);
+    }
+
+    const parameters = new Array<AbstractExpression>(
+      templateLiteral.expressions.length,
+    );
+    for (let i = 0; i < templateLiteral.expressions.length; i += 1) {
+      parameters[i] = this.createExpression(templateLiteral.expressions[i]);
+    }
+
     return {
-      quasis: templateLiteral.quasis.map(
-        (quasi) => new ConstantStringExpression(quasi.value.raw),
-      ),
-      parameters: templateLiteral.expressions.map((expression) =>
-        this.createExpression(expression),
-      ),
+      quasis,
+      parameters,
     };
   }
 
@@ -841,12 +866,15 @@ export class JsEspreeExpressionParser implements IExpressionParser {
   private createObjectExpression = (
     objectExpression: EstreeObjectExpression,
   ): AbstractExpression => {
-    const propertyExpressions = objectExpression.properties.map(
-      (property) =>
-        this.createExpression(property) as
-          | PropertyExpression
-          | SpreadExpression,
+    const properties = objectExpression.properties;
+    const propertyExpressions = new Array<PropertyExpression | SpreadExpression>(
+      properties.length,
     );
+    for (let i = 0; i < properties.length; i += 1) {
+      propertyExpressions[i] = this.createExpression(properties[i]) as
+        | PropertyExpression
+        | SpreadExpression;
+    }
     return new ObjectExpression(
       this.getExpressionSource(objectExpression, { preferGenerator: true }),
       propertyExpressions,

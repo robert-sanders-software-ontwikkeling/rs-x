@@ -43,7 +43,18 @@ export class ExpressionCache
     id: string;
   } {
     const result = super.create(data);
-    result.instance = result.instance.clone();
+
+    // Keep precompiled trees immutable by always returning a clone.
+    // For parser-produced trees, the first consumer can reuse the template
+    // directly; additional concurrent consumers still get clones.
+    const isPrecompiledExpression =
+      this._precompiledExpressions.get(data) === result.instance;
+    const shouldClone = isPrecompiledExpression || result.referenceCount > 1;
+
+    if (shouldClone) {
+      result.instance = result.instance.clone();
+    }
+
     return result;
   }
 

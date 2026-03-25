@@ -51,16 +51,12 @@ describe('ExpressionCache', () => {
       expressionString: 'a * b',
       type: ExpressionType.Multiplication,
     });
-    const cloneB = new ExpressionMock({
-      expressionString: 'a * b',
-      type: ExpressionType.Multiplication,
-    });
 
     let cloneCount = 0;
     (parsedExpression as unknown as { clone: jest.Mock }).clone = jest.fn(
       () => {
         cloneCount += 1;
-        return cloneCount === 1 ? cloneA : cloneB;
+        return cloneA;
       },
     );
 
@@ -73,8 +69,8 @@ describe('ExpressionCache', () => {
     const second = cache.create('a * b');
 
     expect(parser.parse).toHaveBeenCalledTimes(1);
-    expect(parsedExpression.clone).toHaveBeenCalledTimes(2);
-    expect(first.instance).toBe(cloneA);
-    expect(second.instance).toBe(cloneB);
+    expect(parsedExpression.clone).toHaveBeenCalledTimes(1);
+    expect(first.instance).toBe(parsedExpression);
+    expect(second.instance).toBe(cloneA);
   });
 });
