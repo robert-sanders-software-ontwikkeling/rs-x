@@ -29,7 +29,8 @@ export abstract class AbstractExpression<
   PT = unknown,
 > implements IExpression<T> {
   private _releaseCommittedSubscription: (() => void) | undefined;
-  private readonly _changed = new ReplaySubject<IExpression>(1);
+  private _changed: ReplaySubject<IExpression> | undefined;
+  private _lastChangedValue: IExpression | undefined;
   private _parent: AbstractExpression<PT> | undefined;
   private _id!: string;
   private _isDisposed = false;
@@ -100,23 +101,29 @@ export abstract class AbstractExpression<
   protected set value(value: T | undefined) {
     this._oldValue = this._value;
     this._value = value;
-    const currentValueIsObject =
-      this._value !== null && typeof this._value === 'object';
-    const oldValueIsObject =
-      this._oldValue !== null && typeof this._oldValue === 'object';
+    let isChanged = !Object.is(this._oldValue, this._value);
+    if (!isChanged) {
+      const currentValueIsObject =
+        this._value !== null && typeof this._value === 'object';
+      const oldValueIsObject =
+        this._oldValue !== null && typeof this._oldValue === 'object';
+      isChanged = currentValueIsObject && oldValueIsObject;
+    }
 
-    const isChanged =
-      !Object.is(this._oldValue, this._value) ||
-      (currentValueIsObject && oldValueIsObject);
-
-    this._isDirty = this.isRoot && (this._isDirty || isChanged);
+    this._isDirty = !this._parent && (this._isDirty || isChanged);
   }
 
   public get isRoot(): boolean {
-    return !this.parent;
+    return !this._parent;
   }
 
   public get changed(): Observable<IExpression> {
+    if (!this._changed) {
+      this._changed = new ReplaySubject<IExpression>(1);
+      if (this._lastChangedValue) {
+        this._changed.next(this._lastChangedValue);
+      }
+    }
     return this._changed;
   }
 
@@ -165,7 +172,7 @@ export abstract class AbstractExpression<
   }
 
   protected get root(): AbstractExpression {
-    return this.parent ? this.parent.root : this;
+    return this._parent ? this._parent.root : this;
   }
 
   protected get services(): IExpressionServices {
@@ -201,7 +208,7 @@ export abstract class AbstractExpression<
   }
 
   protected get absoluteRoot(): AbstractExpression {
-    return this.parent ? this.parent.absoluteRoot : this;
+    return this._parent ? this._parent.absoluteRoot : this;
   }
 
   protected get isEvaluationBoundary(): boolean {
@@ -342,7 +349,8 @@ export abstract class AbstractExpression<
   private tryEmitChanged = () => {
     if (this._isDirty) {
       this._isDirty = false;
-      this._changed.next(this);
+      this._lastChangedValue = this;
+      this._changed?.next(this);
     }
   };
 

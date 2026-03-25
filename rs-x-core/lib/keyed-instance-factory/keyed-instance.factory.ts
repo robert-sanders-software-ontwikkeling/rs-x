@@ -107,9 +107,10 @@ export abstract class KeyedInstanceFactory<
   }
 
   public getOrCreate(data: TData): TInstance {
-    let instance = this.getFromId(this.getOrCreateId(data));
+    const id = this.getOrCreateId(data);
+    let instance = this.getFromId(id);
     if (instance === undefined) {
-      instance = this.create(data).instance;
+      instance = this.createWithId(data, id).instance;
     }
     return instance;
   }
@@ -120,18 +121,7 @@ export abstract class KeyedInstanceFactory<
     id: TId;
   } {
     const id = this.getOrCreateId(data);
-    const instance = this.getOrCreateInstance(id, data);
-    const result = {
-      id,
-      instance,
-      referenceCount: this.updateReferenceCount(id, 1, instance),
-    };
-
-    if (result.referenceCount === 1) {
-      this.onInstanceCreated(result.instance, data);
-    }
-
-    return result;
+    return this.createWithId(data, id);
   }
 
   public release(
@@ -225,5 +215,23 @@ export abstract class KeyedInstanceFactory<
     this._instances.set(id, instance);
 
     return instance;
+  }
+
+  private createWithId(
+    data: TData,
+    id: TId,
+  ): { referenceCount: number; instance: TInstance; id: TId } {
+    const instance = this.getOrCreateInstance(id, data);
+    const result = {
+      id,
+      instance,
+      referenceCount: this.updateReferenceCount(id, 1, instance),
+    };
+
+    if (result.referenceCount === 1) {
+      this.onInstanceCreated(result.instance, data);
+    }
+
+    return result;
   }
 }

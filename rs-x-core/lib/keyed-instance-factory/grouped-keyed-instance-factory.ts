@@ -20,6 +20,8 @@ export abstract class GroupedKeyedInstanceFactory<
     TId,
     { groupId: unknown; groupMemberId: unknown }
   >();
+  private _lastGroupId: unknown;
+  private _lastDataGroup: Map<unknown, TId> | undefined;
 
   public *instanceGroupInfoEntries(): IterableIterator<
     IInstanceGroupInfo<TId, TInstance>
@@ -64,6 +66,10 @@ export abstract class GroupedKeyedInstanceFactory<
     this._groupedData.delete(oldGroupId);
 
     this._groupedData.set(newGroupId, groupMembers);
+    if (Object.is(this._lastGroupId, oldGroupId)) {
+      this._lastGroupId = newGroupId;
+      this._lastDataGroup = groupMembers;
+    }
   }
 
   protected get groupIds(): MapIterator<unknown> {
@@ -76,11 +82,7 @@ export abstract class GroupedKeyedInstanceFactory<
 
   protected override getOrCreateId(data: TIdData): TId {
     const groupId = this.getGroupId(data);
-    let dataGroup = this._groupedData.get(groupId);
-    if (!dataGroup) {
-      dataGroup = new Map<unknown, TId>();
-      this._groupedData.set(groupId, dataGroup);
-    }
+    const dataGroup = this.getOrCreateDataGroup(groupId);
 
     const groupMemberId = this.getGroupMemberId(data);
     const existingId = dataGroup.get(groupMemberId);
@@ -99,12 +101,7 @@ export abstract class GroupedKeyedInstanceFactory<
 
   protected createId(data: TData): TId {
     const groupId = this.getGroupId(data);
-    let dataGroup = this._groupedData.get(groupId);
-
-    if (!dataGroup) {
-      dataGroup = new Map<unknown, TId>();
-      this._groupedData.set(groupId, dataGroup);
-    }
+    const dataGroup = this.getOrCreateDataGroup(groupId);
 
     let groupMemberId = this.getGroupMemberId(data);
     let groupMember = dataGroup.get(groupMemberId);
@@ -136,10 +133,36 @@ export abstract class GroupedKeyedInstanceFactory<
     dataGroup.delete(groupMember.groupMemberId);
     if (dataGroup.size === 0) {
       this._groupedData.delete(groupMember.groupId);
+      if (Object.is(this._lastGroupId, groupMember.groupId)) {
+        this._lastGroupId = undefined;
+        this._lastDataGroup = undefined;
+      }
     }
   }
 
   protected override onDispose(): void {
     this._groupMemberById.clear();
+    this._lastGroupId = undefined;
+    this._lastDataGroup = undefined;
+  }
+
+  private getOrCreateDataGroup(groupId: unknown): Map<unknown, TId> {
+    if (
+      this._lastDataGroup &&
+      Object.is(this._lastGroupId, groupId) &&
+      this._groupedData.get(groupId) === this._lastDataGroup
+    ) {
+      return this._lastDataGroup;
+    }
+
+    let dataGroup = this._groupedData.get(groupId);
+    if (!dataGroup) {
+      dataGroup = new Map<unknown, TId>();
+      this._groupedData.set(groupId, dataGroup);
+    }
+
+    this._lastGroupId = groupId;
+    this._lastDataGroup = dataGroup;
+    return dataGroup;
   }
 }
