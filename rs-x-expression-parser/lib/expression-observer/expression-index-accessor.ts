@@ -10,18 +10,24 @@ export class ExpressionIndexAccessor implements IExpressionIndexAccessor {
   public readonly priority!: 300;
 
   public getResolvedValue(context: unknown, index: string): unknown {
-    return Type.cast<IExpression>((Type.toObject(context) ?? {})[index])?.value;
+    const target = Type.toObject(context);
+    if (!target) {
+      return undefined;
+    }
+    return Type.cast<IExpression>(target[index])?.value;
   }
 
   public hasValue(context: unknown, index: string): boolean {
-    return (
-      Type.cast<IExpression>((Type.toObject(context) ?? {})[index])?.value !==
-      undefined
-    );
+    const target = Type.toObject(context);
+    if (!target) {
+      return false;
+    }
+    return Type.cast<IExpression>(target[index])?.value !== undefined;
   }
 
   public getValue(context: unknown, index: string): unknown {
-    return (Type.toObject(context) ?? {})[index];
+    const target = Type.toObject(context);
+    return target ? target[index] : undefined;
   }
 
   public setValue(): void {
@@ -35,6 +41,11 @@ export class ExpressionIndexAccessor implements IExpressionIndexAccessor {
   }
 
   public applies(context: unknown, index: string): boolean {
-    return (Type.toObject(context) ?? {})[index] instanceof AbstractExpression;
+    const target = Type.toObject(context);
+    if (!target) {
+      return false;
+    }
+
+    return target[index] instanceof AbstractExpression;
   }
 }

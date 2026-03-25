@@ -71,7 +71,7 @@ describe('IdentifierExpression internals', () => {
     ).toHaveBeenNthCalledWith(2, { fallback: true }, 'a', 456);
   });
 
-  it('treats expression-reference values as watchable for non-leaf non-member segments', () => {
+  it('falls back to parent-shape when bind-time flags are unavailable', () => {
     const expression = createExpression();
     const context = { owner: true };
     expression._expressionEvaluateUnit = { context };

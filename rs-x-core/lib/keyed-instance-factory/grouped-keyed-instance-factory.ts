@@ -66,7 +66,7 @@ export abstract class GroupedKeyedInstanceFactory<
     this._groupedData.delete(oldGroupId);
 
     this._groupedData.set(newGroupId, groupMembers);
-    if (Object.is(this._lastGroupId, oldGroupId)) {
+    if (this._lastGroupId === oldGroupId) {
       this._lastGroupId = newGroupId;
       this._lastDataGroup = groupMembers;
     }
@@ -133,7 +133,7 @@ export abstract class GroupedKeyedInstanceFactory<
     dataGroup.delete(groupMember.groupMemberId);
     if (dataGroup.size === 0) {
       this._groupedData.delete(groupMember.groupId);
-      if (Object.is(this._lastGroupId, groupMember.groupId)) {
+      if (this._lastGroupId === groupMember.groupId) {
         this._lastGroupId = undefined;
         this._lastDataGroup = undefined;
       }
@@ -147,11 +147,7 @@ export abstract class GroupedKeyedInstanceFactory<
   }
 
   private getOrCreateDataGroup(groupId: unknown): Map<unknown, TId> {
-    if (
-      this._lastDataGroup &&
-      Object.is(this._lastGroupId, groupId) &&
-      this._groupedData.get(groupId) === this._lastDataGroup
-    ) {
+    if (this._lastDataGroup && this._lastGroupId === groupId) {
       return this._lastDataGroup;
     }
 

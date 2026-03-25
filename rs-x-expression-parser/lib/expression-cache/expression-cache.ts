@@ -14,6 +14,7 @@ export class ExpressionCache
   implements IExpressionCache
 {
   private readonly _precompiledExpressions = new Map<string, IExpression>();
+  private _hasPrecompiledExpressions = false;
 
   constructor(
     @Inject(RsXExpressionParserInjectionTokens.IExpressionParser)
@@ -27,6 +28,7 @@ export class ExpressionCache
     expressionTree: IExpression,
   ): void {
     this._precompiledExpressions.set(expressionString, expressionTree);
+    this._hasPrecompiledExpressions = true;
   }
 
   public override getId(expressionString: string): string | undefined {
@@ -44,10 +46,17 @@ export class ExpressionCache
   } {
     const result = super.create(data);
 
+    // Hot path for runtime-only parsed expressions: first consumer can reuse
+    // the cached template without any extra lookups/cloning.
+    if (!this._hasPrecompiledExpressions && result.referenceCount === 1) {
+      return result;
+    }
+
     // Keep precompiled trees immutable by always returning a clone.
     // For parser-produced trees, the first consumer can reuse the template
     // directly; additional concurrent consumers still get clones.
     const isPrecompiledExpression =
+      this._hasPrecompiledExpressions &&
       this._precompiledExpressions.get(data) === result.instance;
     const shouldClone = isPrecompiledExpression || result.referenceCount > 1;
 

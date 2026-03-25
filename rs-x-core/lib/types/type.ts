@@ -202,12 +202,8 @@ export class Type {
       return false;
     }
 
-    if (Object.prototype.hasOwnProperty.call(root, name)) {
-      return true;
-    }
-
     for (
-      let current = Object.getPrototypeOf(root);
+      let current: object | null = root as object;
       current && current !== Object.prototype;
       current = Object.getPrototypeOf(current)
     ) {

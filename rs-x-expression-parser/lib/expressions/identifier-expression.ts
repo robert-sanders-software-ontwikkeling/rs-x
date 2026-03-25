@@ -18,6 +18,8 @@ export class IdentifierExpression extends AbstractExpression {
   private _indexWatchRule!: IIndexWatchRule | undefined;
   private _isAsync: boolean | undefined;
   private _expressionEvaluateUnit!: IExpressionEvaluateUnit;
+  private _isLeafExpression = true;
+  private _isMemberSegment = false;
 
   constructor(expressionString: string) {
     super(ExpressionType.Identifier, expressionString);
@@ -59,6 +61,11 @@ export class IdentifierExpression extends AbstractExpression {
       super.onBind(settings);
       return;
     }
+    const parent = this.parent;
+    this._isMemberSegment = parent?.type === ExpressionType.Member;
+    this._isLeafExpression =
+      !parent || parent.childExpressions[parent.childExpressions.length - 1] === this;
+
     this._context = this.identifierOwnerResolver.resolve(
       this.index,
       settings.context,
@@ -73,17 +80,16 @@ export class IdentifierExpression extends AbstractExpression {
       );
     }
 
-    const isMemberSegment = this.parent?.type === ExpressionType.Member;
     this._expressionEvaluateUnit = new IdentifierExpressionEvaluateUnit(
       this.index,
-      isMemberSegment ? undefined : this._context,
+      this._isMemberSegment ? undefined : this._context,
       this.stateManager,
       this.commitValue,
       this.root,
       this._indexWatchRule,
     );
 
-    if (!isMemberSegment && !settings.skipEvaluateUnitRegistration) {
+    if (!this._isMemberSegment && !settings.skipEvaluateUnitRegistration) {
       this.evaluateManagerForExpression.register(this._expressionEvaluateUnit);
     }
 
@@ -105,49 +111,44 @@ export class IdentifierExpression extends AbstractExpression {
     );
   }
 
-  private get isLeaf(): boolean {
-    return (
-      !this.parent ||
-      this.parent.childExpressions[this.parent.childExpressions.length - 1] ===
-        this
-    );
-  }
-
-  private get isMemberExpressionSegment(): boolean {
-    return (
-      this.parent?.type === ExpressionType.Member &&
-      this.parent.childExpressions.includes(this)
-    );
-  }
-
   private shouldWatchIndex = (
     targetIndex: unknown,
     target: unknown,
   ): boolean => {
+    const parent = this.parent;
+    const isBound = !!this._indexWatchRule;
+    const isMemberSegment = isBound
+      ? this._isMemberSegment
+      : parent?.type === ExpressionType.Member;
+    const isLeafExpression = isBound
+      ? this._isLeafExpression
+      : !parent ||
+        parent.childExpressions[parent.childExpressions.length - 1] === this;
+
     const index = this.index;
+    const leafIndexWatchRule = this.leafIndexWatchRule;
+    const isSameTarget =
+      index === targetIndex && this.expressionEvaluateUnit.context === target;
 
     // Fast reject: rule-based watching only
-    if (
-      index !== targetIndex ||
-      this.expressionEvaluateUnit.context !== target
-    ) {
-      return !!this.leafIndexWatchRule?.test(targetIndex, target);
+    if (!isSameTarget) {
+      return !!leafIndexWatchRule?.test(targetIndex, target);
     }
 
     const value = this.indexValueAccessor.getValue(target, index);
 
-    if (!this.isLeaf && this.isMemberExpressionSegment) {
-      return this.valueMetadata.needsProxy(value);
+    if (!isLeafExpression && isMemberSegment) {
+      return this.needsProxyFast(value);
     }
 
-    if (!this.isLeaf && this.isExpressionReferenceValue(value)) {
+    if (!isLeafExpression && this.isExpressionReferenceValue(value)) {
       return true;
     }
 
-    if (this.isLeaf) {
+    if (isLeafExpression) {
       return (
-        this.valueMetadata.needsProxy(value) ||
-        !!this.leafIndexWatchRule?.test(targetIndex, target)
+        this.needsProxyFast(value) ||
+        !!leafIndexWatchRule?.test(targetIndex, target)
       );
     }
 
@@ -166,5 +167,18 @@ export class IdentifierExpression extends AbstractExpression {
       'changed' in candidate &&
       'value' in candidate
     );
+  }
+
+  private needsProxyFast(value: unknown): boolean {
+    if (value === null) {
+      return false;
+    }
+
+    const valueType = typeof value;
+    if (valueType !== 'object' && valueType !== 'function') {
+      return false;
+    }
+
+    return this.valueMetadata.needsProxy(value);
   }
 }
