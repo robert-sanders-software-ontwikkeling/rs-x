@@ -15,3 +15,4 @@ export * from './js-espree-expression-parser';
 export * from './rs-x-expression-parser.module';
 export * from './rs-x-expression-parser-injection-tokes';
 export * from './rsx';
+export * from './testing';

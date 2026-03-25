@@ -4,7 +4,10 @@ const ts = require('typescript');
 module.exports = function rsxWebpackLoader(source) {
   const callback = this.async();
   try {
-    if (!this.resourcePath.endsWith('.ts') && !this.resourcePath.endsWith('.tsx')) {
+    if (
+      !this.resourcePath.endsWith('.ts') &&
+      !this.resourcePath.endsWith('.tsx')
+    ) {
       callback(null, source);
       return;
     }

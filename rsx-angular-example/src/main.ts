@@ -1,5 +1,5 @@
 import { InjectionContainer } from '@rs-x/core';
-import { rsx, type IExpression } from '@rs-x/expression-parser';
+import { type IExpression, rsx } from '@rs-x/expression-parser';
 import { RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 type BenchmarkResult = {
@@ -33,9 +33,17 @@ function buildBenchmarkDefinition(): BenchmarkDefinition {
   const sharedModel: Record<string, number> = {};
   const factories: Array<() => IExpression> = [];
 
-  for (let expressionIndex = 0; expressionIndex < BENCHMARK_EXPRESSION_COUNT; expressionIndex += 1) {
+  for (
+    let expressionIndex = 0;
+    expressionIndex < BENCHMARK_EXPRESSION_COUNT;
+    expressionIndex += 1
+  ) {
     const terms: string[] = [];
-    for (let termIndex = 0; termIndex < BENCHMARK_TERMS_PER_EXPRESSION; termIndex += 1) {
+    for (
+      let termIndex = 0;
+      termIndex < BENCHMARK_TERMS_PER_EXPRESSION;
+      termIndex += 1
+    ) {
       const key = `v_${expressionIndex}_${termIndex}`;
       sharedModel[key] = expressionIndex + termIndex;
       terms.push(key);
@@ -82,7 +90,9 @@ async function createExpressionsInBatches(
 }
 
 function createExpressionsStrict(): IExpression[] {
-  return benchmarkExpressionFactories.map((createExpression) => createExpression());
+  return benchmarkExpressionFactories.map((createExpression) =>
+    createExpression(),
+  );
 }
 
 function disposeExpressionsStrict(expressions: readonly IExpression[]): void {
@@ -91,7 +101,9 @@ function disposeExpressionsStrict(expressions: readonly IExpression[]): void {
   }
 }
 
-async function disposeExpressionsInBatches(expressions: readonly IExpression[]): Promise<void> {
+async function disposeExpressionsInBatches(
+  expressions: readonly IExpression[],
+): Promise<void> {
   for (let index = 0; index < expressions.length; index += DISPOSE_BATCH_SIZE) {
     const batchEnd = Math.min(index + DISPOSE_BATCH_SIZE, expressions.length);
     for (let cursor = index; cursor < batchEnd; cursor += 1) {
@@ -111,7 +123,9 @@ async function runBenchmark(
       ? createExpressionsStrict()
       : await createExpressionsInBatches(onProgress);
   const createEnd = performance.now();
-  const resolvedCount = expressions.filter((expression) => expression.value !== undefined).length;
+  const resolvedCount = expressions.filter(
+    (expression) => expression.value !== undefined,
+  ).length;
   const sampleValue = expressions[0]?.value;
 
   const cleanupStart = performance.now();
@@ -153,8 +167,12 @@ function renderApp(): void {
     </main>
   `;
 
-  const button = document.getElementById('run-benchmark') as HTMLButtonElement | null;
-  const strictModeCheckbox = document.getElementById('strict-mode') as HTMLInputElement | null;
+  const button = document.getElementById(
+    'run-benchmark',
+  ) as HTMLButtonElement | null;
+  const strictModeCheckbox = document.getElementById(
+    'strict-mode',
+  ) as HTMLInputElement | null;
   const results = document.getElementById('results');
   if (!button || !results || !strictModeCheckbox) {
     return;
@@ -167,7 +185,9 @@ function renderApp(): void {
     button.disabled = true;
     strictModeCheckbox.disabled = true;
     button.textContent =
-      mode === 'strict' ? 'Running strict benchmark...' : 'Running benchmark...';
+      mode === 'strict'
+        ? 'Running strict benchmark...'
+        : 'Running benchmark...';
     results.textContent = '';
 
     try {

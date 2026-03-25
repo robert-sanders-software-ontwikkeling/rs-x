@@ -45,7 +45,10 @@ function findPosition(sourceFile: ts.SourceFile, needle: string): number {
 
 describe('rsx language service', () => {
   it('finds expression region at position', () => {
-    const fixturePath = path.resolve(__dirname, './fixtures/language-service.fixture.ts');
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/language-service.fixture.ts',
+    );
     const program = createProgram(fixturePath);
     const sourceFile = program.getSourceFile(fixturePath)!;
     const position = findPosition(sourceFile, 'user.na') + 2;
@@ -64,10 +67,14 @@ describe('rsx language service', () => {
   });
 
   it('finds expression region at position for no-substitution template literals', () => {
-    const fixturePath = path.resolve(__dirname, './fixtures/language-service.fixture.ts');
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/language-service.fixture.ts',
+    );
     const program = createProgram(fixturePath);
     const sourceFile = program.getSourceFile(fixturePath)!;
-    const position = findPosition(sourceFile, 'rsx(`user.na`)(model);') + 'rsx(`user'.length;
+    const position =
+      findPosition(sourceFile, 'rsx(`user.na`)(model);') + 'rsx(`user'.length;
 
     const region = findRsxExpressionRegionAtPosition(
       program,
@@ -84,23 +91,25 @@ describe('rsx language service', () => {
   });
 
   it('returns completions from model type for member access and function return type', () => {
-    const fixturePath = path.resolve(__dirname, './fixtures/language-service.fixture.ts');
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/language-service.fixture.ts',
+    );
     const program = createProgram(fixturePath);
     const sourceFile = program.getSourceFile(fixturePath)!;
 
-    const memberPosition = findPosition(sourceFile, 'user.na') + 'user.na'.length;
+    const memberPosition =
+      findPosition(sourceFile, 'user.na') + 'user.na'.length;
     const memberCompletions = getRsxCompletionsAtPosition(
       program,
       fixturePath,
       memberPosition,
     );
 
-    expect(memberCompletions).toEqual([
-      { kind: 'property', name: 'name' },
-    ]);
-    expect(new Set(memberCompletions.map((completion) => completion.name)).size).toBe(
-      memberCompletions.length,
-    );
+    expect(memberCompletions).toEqual([{ kind: 'property', name: 'name' }]);
+    expect(
+      new Set(memberCompletions.map((completion) => completion.name)).size,
+    ).toBe(memberCompletions.length);
 
     const modularMemberPosition =
       findPosition(sourceFile, 'exprUser.na') + 'exprUser.na'.length;
@@ -114,7 +123,8 @@ describe('rsx language service', () => {
       { kind: 'property', name: 'name' },
     ]);
     expect(
-      new Set(modularMemberCompletions.map((completion) => completion.name)).size,
+      new Set(modularMemberCompletions.map((completion) => completion.name))
+        .size,
     ).toBe(modularMemberCompletions.length);
 
     const functionPosition =
@@ -125,15 +135,14 @@ describe('rsx language service', () => {
       functionPosition,
     );
 
-    expect(functionCompletions).toEqual([
-      { kind: 'property', name: 'total' },
-    ]);
-    expect(new Set(functionCompletions.map((completion) => completion.name)).size).toBe(
-      functionCompletions.length,
-    );
+    expect(functionCompletions).toEqual([{ kind: 'property', name: 'total' }]);
+    expect(
+      new Set(functionCompletions.map((completion) => completion.name)).size,
+    ).toBe(functionCompletions.length);
 
     const ternaryElsePosition =
-      findPosition(sourceFile, 'a > 10 ? b.c : b.d') + 'a > 10 ? b.c : b.'.length;
+      findPosition(sourceFile, 'a > 10 ? b.c : b.d') +
+      'a > 10 ? b.c : b.'.length;
     const ternaryElseCompletions = getRsxCompletionsAtPosition(
       program,
       fixturePath,
@@ -144,9 +153,9 @@ describe('rsx language service', () => {
       { kind: 'property', name: 'c' },
       { kind: 'property', name: 'd' },
     ]);
-    expect(new Set(ternaryElseCompletions.map((completion) => completion.name)).size).toBe(
-      ternaryElseCompletions.length,
-    );
+    expect(
+      new Set(ternaryElseCompletions.map((completion) => completion.name)).size,
+    ).toBe(ternaryElseCompletions.length);
 
     const constructorPosition =
       findPosition(sourceFile, 'a > 10 ? test(20) : new Date()') +
@@ -164,7 +173,10 @@ describe('rsx language service', () => {
   });
 
   it('returns diagnostics for syntax and semantic issues', () => {
-    const fixturePath = path.resolve(__dirname, './fixtures/language-service.fixture.ts');
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/language-service.fixture.ts',
+    );
     const program = createProgram(fixturePath);
     const diagnostics = getRsxDiagnosticsForFile(program, fixturePath);
 
@@ -198,10 +210,14 @@ describe('rsx language service', () => {
   });
 
   it('returns hover type info for identifiers inside rsx expression strings', () => {
-    const fixturePath = path.resolve(__dirname, './fixtures/language-service.fixture.ts');
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/language-service.fixture.ts',
+    );
     const program = createProgram(fixturePath);
     const sourceFile = program.getSourceFile(fixturePath)!;
-    const hoverPosition = findPosition(sourceFile, 'user.name') + 'user.'.length;
+    const hoverPosition =
+      findPosition(sourceFile, 'user.name') + 'user.'.length;
 
     const hover = getRsxHoverAtPosition(program, fixturePath, hoverPosition);
 
@@ -227,12 +243,16 @@ describe('rsx language service', () => {
   });
 
   it('returns signature help for model functions inside rsx expression strings', () => {
-    const fixturePath = path.resolve(__dirname, './fixtures/language-service.fixture.ts');
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/language-service.fixture.ts',
+    );
     const program = createProgram(fixturePath);
     const sourceFile = program.getSourceFile(fixturePath)!;
 
     const firstArgPosition =
-      findPosition(sourceFile, 'a > 10 ? test(20) : b.c') + 'a > 10 ? test('.length;
+      findPosition(sourceFile, 'a > 10 ? test(20) : b.c') +
+      'a > 10 ? test('.length;
     const firstArgHelp = getRsxSignatureHelpAtPosition(
       program,
       fixturePath,
@@ -266,7 +286,8 @@ describe('rsx language service', () => {
     );
 
     const secondArgPosition =
-      findPosition(sourceFile, 'a > 10 ? test(20, "x") : b.c') + 'a > 10 ? test(20, '.length;
+      findPosition(sourceFile, 'a > 10 ? test(20, "x") : b.c') +
+      'a > 10 ? test(20, '.length;
     const secondArgHelp = getRsxSignatureHelpAtPosition(
       program,
       fixturePath,

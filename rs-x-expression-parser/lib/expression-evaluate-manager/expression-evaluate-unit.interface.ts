@@ -1,11 +1,20 @@
 import type { IDisposable } from '@rs-x/core';
-
-import type { ValueChange } from './value-change.enum';
+import { type IIndexWatchRule } from '@rs-x/state-manager';
 
 export interface IExpressionEvaluateUnit extends IDisposable {
+  readonly count: number;
   readonly index: unknown;
-  context: unknown;
-  setValue(value: unknown, context: unknown, index: unknown): ValueChange;
-  commit(): void;
   readonly value: unknown;
+  context: unknown;
+  isCommitReady(): boolean;
+  setValue(
+    value: unknown,
+    context: unknown,
+    index: unknown,
+    initialized: boolean,
+  ): IExpressionEvaluateUnit | null;
+  setContext(context: unknown, oldContext: unknown, index: unknown): void;
+  commitChange(): void;
+  watch(indexWatchRule?: IIndexWatchRule): unknown;
+  clear(): void;
 }

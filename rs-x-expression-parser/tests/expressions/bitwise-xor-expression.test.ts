@@ -55,8 +55,6 @@ describe('BitwiseXorExpression tests', () => {
           context: model,
           services,
         });
-
-        services.transactionManager.commit();
       });
       expect(clonedExpression.value).toEqual(6);
     } finally {

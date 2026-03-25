@@ -41,8 +41,6 @@ export abstract class GroupedKeyedInstanceFactory<
     }
   }
 
-
-
   public getId(data: TIdData): TId | undefined {
     const groupId = this.getGroupId(data);
     const groupMemberId = this.getGroupMemberId(data);
@@ -57,18 +55,15 @@ export abstract class GroupedKeyedInstanceFactory<
   protected abstract getGroupMemberId(data: TIdData): unknown;
   protected abstract createUniqueId(data: TIdData): TId;
 
-
   protected replaceGroupId(oldGroupId: unknown, newGroupId: unknown): void {
-
     const groupMembers = this._groupedData.get(oldGroupId);
-    if(!groupMembers) {
+    if (!groupMembers) {
       return;
     }
 
     this._groupedData.delete(oldGroupId);
 
-      this._groupedData.set(newGroupId, groupMembers);
-
+    this._groupedData.set(newGroupId, groupMembers);
   }
 
   protected get groupIds(): MapIterator<unknown> {

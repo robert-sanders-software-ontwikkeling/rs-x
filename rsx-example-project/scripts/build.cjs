@@ -95,9 +95,7 @@ for (const filePath of rootNames) {
   });
 
   const relativePath = path.relative(sourceRoot, filePath);
-  const outputPath = path
-    .join(outDir, relativePath)
-    .replace(/\.ts$/u, '.js');
+  const outputPath = path.join(outDir, relativePath).replace(/\.ts$/u, '.js');
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, transpiled.outputText, 'utf8');
 }
@@ -109,7 +107,9 @@ if (!fs.existsSync(bootstrapJsPath)) {
 }
 
 const bootstrapJs = fs.readFileSync(bootstrapJsPath, 'utf8');
-const rsxLines = bootstrapJs.split('\n').filter((line) => line.includes('rsx('));
+const rsxLines = bootstrapJs
+  .split('\n')
+  .filter((line) => line.includes('rsx('));
 
 console.log(`Build succeeded: ${outDir}`);
 console.log(`rsx(...) calls in bootstrap.js: ${rsxLines.length}`);

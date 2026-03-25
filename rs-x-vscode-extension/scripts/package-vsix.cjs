@@ -35,7 +35,9 @@ function run(command, args, options = {}) {
 }
 
 if (!fs.existsSync(path.join(extensionRoot, 'dist', 'extension.js'))) {
-  throw new Error('Extension build output is missing. Run `pnpm run build` first.');
+  throw new Error(
+    'Extension build output is missing. Run `pnpm run build` first.',
+  );
 }
 if (
   !fs.existsSync(
@@ -59,17 +61,24 @@ fs.mkdirSync(stageRoot, { recursive: true });
 fs.mkdirSync(outputDir, { recursive: true });
 
 copyRecursive(path.join(extensionRoot, 'dist'), path.join(stageRoot, 'dist'));
-copyRecursive(path.join(extensionRoot, 'syntaxes'), path.join(stageRoot, 'syntaxes'));
-copyRecursive(path.join(extensionRoot, 'README.md'), path.join(stageRoot, 'README.md'));
-copyRecursive(path.join(extensionRoot, 'LICENSE'), path.join(stageRoot, 'LICENSE'));
-copyRecursive(path.join(extensionRoot, 'icon.png'), path.join(stageRoot, 'icon.png'));
 copyRecursive(
-  path.join(
-    extensionRoot,
-    'node_modules',
-    '@rs-x',
-    'typescript-plugin',
-  ),
+  path.join(extensionRoot, 'syntaxes'),
+  path.join(stageRoot, 'syntaxes'),
+);
+copyRecursive(
+  path.join(extensionRoot, 'README.md'),
+  path.join(stageRoot, 'README.md'),
+);
+copyRecursive(
+  path.join(extensionRoot, 'LICENSE'),
+  path.join(stageRoot, 'LICENSE'),
+);
+copyRecursive(
+  path.join(extensionRoot, 'icon.png'),
+  path.join(stageRoot, 'icon.png'),
+);
+copyRecursive(
+  path.join(extensionRoot, 'node_modules', '@rs-x', 'typescript-plugin'),
   path.join(stageRoot, 'node_modules', '@rs-x', 'typescript-plugin'),
 );
 

@@ -1,18 +1,30 @@
-import type { IExpressionEvaluateUnit } from './expression-evaluate-unit.interface';
-import { ValueChange } from './value-change.enum';
+import { PENDING } from '@rs-x/core';
+
+import { type IExpressionEvaluateUnit } from './expression-evaluate-unit.interface';
 
 export class FunctionExpressionEvaluateUnit implements IExpressionEvaluateUnit {
+  public readonly count = 1;
+  private _value: unknown;
   private _context: unknown;
 
   constructor(
     public readonly index: unknown,
     context: unknown,
-    private readonly _objectExpressionUnit: IExpressionEvaluateUnit | undefined,
-    private readonly _functionExpressionUnit: IExpressionEvaluateUnit | undefined,
-    private readonly _argumentsExpressionUnit: IExpressionEvaluateUnit | undefined,
+    private readonly _dependencyUnits: readonly IExpressionEvaluateUnit[],
+    private readonly _evaluate: () => unknown,
     private readonly _commit: (value: unknown) => void,
+    private readonly _evaluateOnWatch = true,
+    private readonly _eagerEvaluateOnSetValue = false,
   ) {
     this._context = context;
+  }
+
+  public get value(): unknown {
+    return this._value;
+  }
+
+  public setValueDirectly(value: unknown): void {
+    this._value = value;
   }
 
   public get context(): unknown {
@@ -23,54 +35,91 @@ export class FunctionExpressionEvaluateUnit implements IExpressionEvaluateUnit {
     this._context = value;
   }
 
-  public get value(): unknown {
+  public watch(): unknown {
+    for (let i = 0; i < this._dependencyUnits.length; i++) {
+      this._dependencyUnits[i].watch();
+    }
+
+    if (!this._evaluateOnWatch) {
+      return this._value;
+    }
+
+    const value = this._evaluate();
+    if (value !== PENDING && value !== undefined) {
+      this._value = value;
+      return value;
+    }
+
     return undefined;
   }
 
   public dispose(): void {
-    this._objectExpressionUnit?.dispose();
-    this._functionExpressionUnit?.dispose();
-    this._argumentsExpressionUnit?.dispose();
+    for (let i = 0; i < this._dependencyUnits.length; i++) {
+      this._dependencyUnits[i].dispose();
+    }
   }
 
-  public setValue(value: unknown, context: unknown, index: unknown): ValueChange {
-    const statuses: ValueChange[] = [];
+  public clear(): void {
+    this._value = undefined;
+    for (let i = 0; i < this._dependencyUnits.length; i++) {
+      this._dependencyUnits[i].clear();
+    }
+  }
 
-    if (this._objectExpressionUnit) {
-      statuses.push(this._objectExpressionUnit.setValue(value, context, index));
+  public setContext(
+    context: unknown,
+    oldContext: unknown,
+    index: unknown,
+  ): void {
+    for (let i = 0; i < this._dependencyUnits.length; i++) {
+      this._dependencyUnits[i].setContext(context, oldContext, index);
+    }
+  }
+
+  public isCommitReady(): boolean {
+    return true;
+  }
+
+  public setValue(
+    value: unknown,
+    context: unknown,
+    index: unknown,
+    initialized: boolean,
+  ): IExpressionEvaluateUnit | null {
+    let matched = false;
+
+    if (this.context === context && this.index === index) {
+      this._value = value;
+      matched = true;
     }
 
-    if (this._functionExpressionUnit) {
-      statuses.push(this._functionExpressionUnit.setValue(value, context, index));
+    for (let i = 0; i < this._dependencyUnits.length; i++) {
+      const dependencyMatch = this._dependencyUnits[i].setValue(
+        value,
+        context,
+        index,
+        initialized,
+      );
+      if (dependencyMatch !== null) {
+        matched = true;
+      }
     }
 
-    if (this._argumentsExpressionUnit) {
-      statuses.push(this._argumentsExpressionUnit.setValue(value, context, index));
+    if (!matched) {
+      return null;
     }
 
     if (
-      statuses.length === 0 ||
-      statuses.every((status) => status === ValueChange.NotApplicable)
+      this._eagerEvaluateOnSetValue &&
+      !(this.context === context && this.index === index)
     ) {
-      return ValueChange.NotApplicable;
+      this._value = this._evaluate();
     }
 
-    if (statuses.some((status) => status === ValueChange.Changed)) {
-      return ValueChange.Changed;
-    }
-
-    if (statuses.some((status) => status === ValueChange.Initialized)) {
-      return ValueChange.Initialized;
-    }
-
-    if (statuses.some((status) => status === ValueChange.Unintialized)) {
-      return ValueChange.Unintialized;
-    }
-
-    return ValueChange.Unchanged;
+    return this;
   }
 
-  public commit(): void {
-    this._commit(undefined);
+  public commitChange(): void {
+    this._commit(this._value);
   }
 }

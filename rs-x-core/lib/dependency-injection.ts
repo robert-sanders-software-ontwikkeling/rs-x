@@ -91,7 +91,6 @@ export function registerMultiInjectService(
   container.bind(options.multiInjectToken).toService(target);
 }
 
-
 export function registerMultiInjectServices(
   container: Container | ContainerModuleLoadOptions,
   multiInjectToken: symbol,

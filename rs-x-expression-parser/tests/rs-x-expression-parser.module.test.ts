@@ -26,10 +26,7 @@ import { ExpressionChangeTransactionManager } from '../lib/expresion-change-tran
 import { ExpressionCache } from '../lib/expression-cache/expression-cache';
 import { ExpressionChangePlayback } from '../lib/expression-change-playback/expression-change-playback';
 import { ExpressionChangeTrackerManager } from '../lib/expression-change-tracker/expression-change-tracker-manager';
-import {
-  ExpressionEvaluateManager,
-  ExpressionEvaluateUnitFactory,
-} from '../lib/expression-evaluate-manager';
+import { ExpressionEvaluateManager } from '../lib/expression-evaluate-manager';
 import { ExpressionFactory } from '../lib/expression-factory/expression-factory';
 import { ExpressionManager } from '../lib/expression-factory/expression-manager';
 import { ExpressionIdProvider } from '../lib/expression-id/expression-id-provider';
@@ -357,23 +354,6 @@ describe('RsXExpressionParserModule tests', () => {
     );
     const a2 = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionEvaluateManager,
-    );
-    expect(a1).toBe(a2);
-  });
-
-  it('can get instance of IExpressionEvaluateUnitFactory', () => {
-    const actual = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionEvaluateUnitFactory,
-    );
-    expect(actual).toBeInstanceOf(ExpressionEvaluateUnitFactory);
-  });
-
-  it('IExpressionEvaluateUnitFactory instance is a singleton', () => {
-    const a1 = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionEvaluateUnitFactory,
-    );
-    const a2 = InjectionContainer.get(
-      RsXExpressionParserInjectionTokens.IExpressionEvaluateUnitFactory,
     );
     expect(a1).toBe(a2);
   });

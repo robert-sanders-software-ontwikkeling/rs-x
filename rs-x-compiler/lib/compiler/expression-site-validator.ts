@@ -1,19 +1,20 @@
 import ts from 'typescript';
 
-import { JsEspreeExpressionParser } from '@rs-x/expression-parser';
-import { GlobalIdentifierOwnerResolver } from '@rs-x/expression-parser';
-
 import type { AbstractExpression } from '@rs-x/expression-parser';
-import { ExpressionType } from '@rs-x/expression-parser';
+import {
+  ExpressionType,
+  GlobalIdentifierOwnerResolver,
+  JsEspreeExpressionParser,
+} from '@rs-x/expression-parser';
 
 import {
-  type ICompilerDiagnostic,
   classifyParserError,
+  type ICompilerDiagnostic,
 } from '../diagnostics/expression-diagnostics';
 
 import {
-  type IExpressionSiteDetection,
   detectExpressionSites,
+  type IExpressionSiteDetection,
 } from './expression-site-detector';
 
 export interface IValidatedExpressionSite extends IExpressionSiteDetection {
@@ -89,7 +90,13 @@ export function validateExpressionSite(
     };
   }
 
-  resolveExpressionType(parsedExpression, modelType, modelType, checker, diagnostics);
+  resolveExpressionType(
+    parsedExpression,
+    modelType,
+    modelType,
+    checker,
+    diagnostics,
+  );
 
   return {
     ...site,
@@ -299,7 +306,8 @@ function resolveIdentifierAsIndexedAccess(
 ): IResolvedType | null {
   const numericIdentifier = Number(identifier);
   const isCanonicalNumberIdentifier =
-    Number.isInteger(numericIdentifier) && String(numericIdentifier) === identifier;
+    Number.isInteger(numericIdentifier) &&
+    String(numericIdentifier) === identifier;
   if (isCanonicalNumberIdentifier) {
     const numberIndexType = contextType.getNumberIndexType();
     if (numberIndexType) {
@@ -330,9 +338,9 @@ function isDateLikeType(type: ts.Type, checker: ts.TypeChecker): boolean {
   // contract by checking for core Date getters/setters on the static type.
   return Boolean(
     type.getProperty('getFullYear') &&
-      type.getProperty('setFullYear') &&
-      type.getProperty('getTime') &&
-      type.getProperty('setTime'),
+    type.getProperty('setFullYear') &&
+    type.getProperty('getTime') &&
+    type.getProperty('setTime'),
   );
 }
 
@@ -403,7 +411,7 @@ function resolveMemberType(
       continue;
     }
 
-    if (segment.type === ExpressionType.Index) {
+    if (segment.type === ExpressionType.ComputedIndex) {
       const indexExpression = segment.childExpressions[0] as AbstractExpression;
       const resolvedIndexType = resolveExpressionType(
         indexExpression,
@@ -497,9 +505,10 @@ function resolveFunctionType(
   checker: ts.TypeChecker,
   diagnostics: ICompilerDiagnostic[],
 ): IResolvedType {
-  const objectExpression = functionExpression.childExpressions[0] as AbstractExpression;
-  const functionNameExpression =
-    functionExpression.childExpressions[1] as AbstractExpression;
+  const objectExpression = functionExpression
+    .childExpressions[0] as AbstractExpression;
+  const functionNameExpression = functionExpression
+    .childExpressions[1] as AbstractExpression;
 
   const objectType =
     objectExpression.type === ExpressionType.Null
@@ -538,7 +547,8 @@ function resolveFunctionTypeFromKnownContext(
   const fnExpression =
     functionNameExpression ??
     (functionExpression.childExpressions[1] as AbstractExpression);
-  const argsContainer = functionExpression.childExpressions[2] as AbstractExpression;
+  const argsContainer = functionExpression
+    .childExpressions[2] as AbstractExpression;
   const argumentExpressions = (argsContainer?.childExpressions ??
     []) as AbstractExpression[];
 
@@ -558,7 +568,10 @@ function resolveFunctionTypeFromKnownContext(
     return {};
   }
 
-  const functionType = checker.getTypeOfSymbolAtLocation(functionProperty, declaration);
+  const functionType = checker.getTypeOfSymbolAtLocation(
+    functionProperty,
+    declaration,
+  );
   const signatures = functionType.getCallSignatures();
   if (signatures.length === 0) {
     diagnostics.push({
@@ -614,12 +627,18 @@ function doesArgumentListMatchSignature(
     if (!parameter) {
       return false;
     }
-    const declaration = parameter.valueDeclaration ?? parameter.declarations?.[0];
+    const declaration =
+      parameter.valueDeclaration ?? parameter.declarations?.[0];
     if (!declaration) {
       return false;
     }
-    const parameterType = checker.getTypeOfSymbolAtLocation(parameter, declaration);
-    if (!isAssignableToParameter(resolvedArguments[i], parameterType, checker)) {
+    const parameterType = checker.getTypeOfSymbolAtLocation(
+      parameter,
+      declaration,
+    );
+    if (
+      !isAssignableToParameter(resolvedArguments[i], parameterType, checker)
+    ) {
       return false;
     }
   }
@@ -714,8 +733,7 @@ function resolveNumericBinaryType(
   if (!isNumberLike(leftType, checker) || !isNumberLike(rightType, checker)) {
     diagnostics.push({
       category: 'semantic',
-      message:
-        `Operator "${operator}" requires both left and right operands to be number-compatible.`,
+      message: `Operator "${operator}" requires both left and right operands to be number-compatible.`,
     });
   }
 
@@ -771,7 +789,8 @@ function resolveNumericUnaryType(
   checker: ts.TypeChecker,
   diagnostics: ICompilerDiagnostic[],
 ): IResolvedType {
-  const operandExpression = expression.childExpressions[0] as AbstractExpression;
+  const operandExpression = expression
+    .childExpressions[0] as AbstractExpression;
   const operandType = resolveExpressionType(
     operandExpression,
     contextType,
@@ -783,8 +802,7 @@ function resolveNumericUnaryType(
   if (!isNumberLike(operandType, checker)) {
     diagnostics.push({
       category: 'semantic',
-      message:
-        'Unary numeric operator requires a number-compatible operand.',
+      message: 'Unary numeric operator requires a number-compatible operand.',
     });
   }
 

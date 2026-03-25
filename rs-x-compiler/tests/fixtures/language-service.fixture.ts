@@ -1,7 +1,7 @@
 import {
-  rsx,
   type IExpression,
   type IExpressionFactory,
+  rsx,
 } from '@rs-x/expression-parser';
 
 interface IUserStats {

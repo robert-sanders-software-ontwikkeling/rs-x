@@ -1,5 +1,3 @@
 {
-  "recommendations": [
-    "rs-x.rs-x-vscode-extension"
-  ]
+  "recommendations": ["rs-x.rs-x-vscode-extension"]
 }

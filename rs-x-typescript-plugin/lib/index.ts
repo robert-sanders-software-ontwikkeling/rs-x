@@ -16,13 +16,18 @@ interface ITypescriptPluginInit {
 function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
   const ts = modules.typescript;
 
-  function create(info: tsModule.server.PluginCreateInfo): tsModule.LanguageService {
+  function create(
+    info: tsModule.server.PluginCreateInfo,
+  ): tsModule.LanguageService {
     const languageService = info.languageService;
     const proxy: tsModule.LanguageService = Object.create(null);
 
-    for (const key of Object.keys(languageService) as Array<keyof tsModule.LanguageService>) {
+    for (const key of Object.keys(languageService) as Array<
+      keyof tsModule.LanguageService
+    >) {
       const value = languageService[key];
-      (proxy[key] as unknown) = typeof value === 'function' ? value.bind(languageService) : value;
+      (proxy[key] as unknown) =
+        typeof value === 'function' ? value.bind(languageService) : value;
     }
 
     proxy.getCompletionsAtPosition = (
@@ -42,24 +47,33 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
         return baseCompletions;
       }
 
-      const rsxRegion = findRsxExpressionRegionAtPosition(program, fileName, position);
+      const rsxRegion = findRsxExpressionRegionAtPosition(
+        program,
+        fileName,
+        position,
+      );
       if (!rsxRegion) {
         return baseCompletions;
       }
 
-      const rsxCompletions = getRsxCompletionsAtPosition(program, fileName, position);
-      const pluginEntries = rsxCompletions
-        .map((completion): tsModule.CompletionEntry => ({
+      const rsxCompletions = getRsxCompletionsAtPosition(
+        program,
+        fileName,
+        position,
+      );
+      const pluginEntries = rsxCompletions.map(
+        (completion): tsModule.CompletionEntry => ({
           name: completion.name,
           kind:
             completion.kind === 'method'
               ? ts.ScriptElementKind.memberFunctionElement
               : completion.kind === 'constructor'
                 ? ts.ScriptElementKind.classElement
-              : ts.ScriptElementKind.memberVariableElement,
+                : ts.ScriptElementKind.memberVariableElement,
           kindModifiers: '',
           sortText: '0',
-        }));
+        }),
+      );
       const uniquePluginEntries = dedupeCompletionEntries(pluginEntries);
 
       return {
@@ -82,7 +96,8 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
       }
 
       const sourceFile = program.getSourceFile(fileName);
-      const hoveredIdentifier = sourceFile?.text.slice(hover.start, hover.end) ?? '';
+      const hoveredIdentifier =
+        sourceFile?.text.slice(hover.start, hover.end) ?? '';
       const hoverLabel =
         hoveredIdentifier && !hover.text.startsWith(`${hoveredIdentifier}:`)
           ? `${hoveredIdentifier}: ${hover.text}`
@@ -113,41 +128,55 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
         return baseSignatureHelp;
       }
 
-      const rsxRegion = findRsxExpressionRegionAtPosition(program, fileName, position);
+      const rsxRegion = findRsxExpressionRegionAtPosition(
+        program,
+        fileName,
+        position,
+      );
       if (!rsxRegion) {
         return baseSignatureHelp;
       }
 
-      const rsxSignatureHelp = getRsxSignatureHelpAtPosition(program, fileName, position);
+      const rsxSignatureHelp = getRsxSignatureHelpAtPosition(
+        program,
+        fileName,
+        position,
+      );
       if (!rsxSignatureHelp) {
         return undefined;
       }
 
-      const signatureItems: tsModule.SignatureHelpItem[] = rsxSignatureHelp.items.map((item) => ({
-        isVariadic: item.parameters.some((parameter) => parameter.isRest),
-        prefixDisplayParts: [{ kind: 'punctuation', text: '(' }],
-        suffixDisplayParts: [{ kind: 'text', text: `): ${item.returnTypeText}` }],
-        separatorDisplayParts: [{ kind: 'punctuation', text: ', ' }],
-        parameters: item.parameters.map((parameter) => ({
-          name: parameter.name,
-          isOptional: parameter.isOptional,
-          isRest: parameter.isRest,
-          documentation: [],
-          displayParts: [
-            { kind: 'parameterName', text: parameter.name },
-            { kind: 'text', text: ': ' },
-            { kind: 'text', text: parameter.typeText },
+      const signatureItems: tsModule.SignatureHelpItem[] =
+        rsxSignatureHelp.items.map((item) => ({
+          isVariadic: item.parameters.some((parameter) => parameter.isRest),
+          prefixDisplayParts: [{ kind: 'punctuation', text: '(' }],
+          suffixDisplayParts: [
+            { kind: 'text', text: `): ${item.returnTypeText}` },
           ],
-        })),
-        documentation: [],
-        tags: [],
-      }));
+          separatorDisplayParts: [{ kind: 'punctuation', text: ', ' }],
+          parameters: item.parameters.map((parameter) => ({
+            name: parameter.name,
+            isOptional: parameter.isOptional,
+            isRest: parameter.isRest,
+            documentation: [],
+            displayParts: [
+              { kind: 'parameterName', text: parameter.name },
+              { kind: 'text', text: ': ' },
+              { kind: 'text', text: parameter.typeText },
+            ],
+          })),
+          documentation: [],
+          tags: [],
+        }));
 
       return {
         items: signatureItems,
         applicableSpan: {
           start: rsxSignatureHelp.applicableStart,
-          length: Math.max(1, rsxSignatureHelp.applicableEnd - rsxSignatureHelp.applicableStart),
+          length: Math.max(
+            1,
+            rsxSignatureHelp.applicableEnd - rsxSignatureHelp.applicableStart,
+          ),
         },
         selectedItemIndex: 0,
         argumentIndex: rsxSignatureHelp.argumentIndex,
@@ -156,12 +185,11 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
     };
 
     proxy.getEncodedSemanticClassifications = (fileName, span, format) => {
-      const base =
-        languageService.getEncodedSemanticClassifications(
-          fileName,
-          span,
-          format,
-        ) ?? { spans: [], endOfLineState: ts.EndOfLineState.None };
+      const base = languageService.getEncodedSemanticClassifications(
+        fileName,
+        span,
+        format,
+      ) ?? { spans: [], endOfLineState: ts.EndOfLineState.None };
 
       const program = languageService.getProgram?.();
       if (!program) {
@@ -341,7 +369,10 @@ function getRsxEncodedClassifications(args: {
       continue;
     }
 
-    const expressionText = sourceFile.text.slice(expressionStart, expressionEnd);
+    const expressionText = sourceFile.text.slice(
+      expressionStart,
+      expressionEnd,
+    );
     const tokens = tokenizeRsxExpression(expressionText);
     if (tokens.length === 0) {
       continue;
@@ -393,7 +424,10 @@ function encodeClassification(args: {
   }
 
   if (format === ts.SemanticClassificationFormat.TwentyTwenty) {
-    const semanticTokenType = resolveSemanticTokenTypeForIdentifier(text, token);
+    const semanticTokenType = resolveSemanticTokenTypeForIdentifier(
+      text,
+      token,
+    );
     return (semanticTokenType + 1) << 8;
   }
 
@@ -419,10 +453,7 @@ function resolveSemanticTokenTypeForIdentifier(
   return 7; // variable
 }
 
-function previousNonWhitespaceChar(
-  text: string,
-  from: number,
-): string | null {
+function previousNonWhitespaceChar(text: string, from: number): string | null {
   for (let i = from; i >= 0; i--) {
     if (!isWhitespace(text[i])) {
       return text[i];
@@ -597,7 +628,7 @@ function consumeNumber(text: string, start: number): number {
 }
 
 function isQuote(char: string): boolean {
-  return char === '\'' || char === '"' || char === '`';
+  return char === "'" || char === '"' || char === '`';
 }
 
 function consumeQuoted(text: string, start: number, quote: string): number {
@@ -639,7 +670,9 @@ function toTsDiagnosticCategory(
   }
 }
 
-function diagnosticCode(category: 'semantic' | 'syntax' | 'unsupported'): number {
+function diagnosticCode(
+  category: 'semantic' | 'syntax' | 'unsupported',
+): number {
   switch (category) {
     case 'syntax':
       return 97001;

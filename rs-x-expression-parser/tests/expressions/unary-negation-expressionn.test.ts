@@ -56,8 +56,6 @@ describe('UnaryNegationExpression tests', () => {
           context: model,
           services,
         });
-
-        services.transactionManager.commit();
       });
       expect(clonedExpression.value).toEqual(-1);
     } finally {

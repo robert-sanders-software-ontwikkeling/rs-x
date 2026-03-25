@@ -30,9 +30,7 @@ describe('AdditionExpression tests', () => {
   });
 
   it('type', () => {
-    const model = { a:1, b: 2 };
-
-    const x = model.a + model.b;
+    const model = { a: 1, b: 2 };
 
     expression = rsx('a + b')(model);
 
@@ -58,7 +56,6 @@ describe('AdditionExpression tests', () => {
           context: model,
           services,
         });
-        services.transactionManager.commit();
       });
       expect(clonedExpression.value).toEqual(3);
     } finally {

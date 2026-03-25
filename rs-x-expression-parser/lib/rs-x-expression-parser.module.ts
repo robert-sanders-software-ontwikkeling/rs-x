@@ -20,12 +20,6 @@ import { ExpressionChangePlayback } from './expression-change-playback/expressio
 import { type IExpressionChangePlayback } from './expression-change-playback/expression-change-playback.interface';
 import { ExpressionChangeTrackerManager } from './expression-change-tracker/expression-change-tracker-manager';
 import { type IExpressionChangeTrackerManager } from './expression-change-tracker/expression-change-tracker-manager.interface';
-import {
-  type IExpressionEvaluateManager,
-  type IExpressionEvaluateUnitFactory,
-  ExpressionEvaluateManager,
-  ExpressionEvaluateUnitFactory,
-} from './expression-evaluate-manager';
 import { ExpressionFactory } from './expression-factory/expression-factory';
 import type { IExpressionFactory } from './expression-factory/expression-factory.interface';
 import { ExpressionManager } from './expression-factory/expression-manager';
@@ -50,6 +44,10 @@ import { PropertyOwnerResolver } from './identifier-owner-resolver/property-owne
 import { SetKeyOwnerResolver } from './identifier-owner-resolver/set-key-owner-resolver';
 import { ExpressionChangeTransactionManager } from './expresion-change-transaction-manager';
 import type { IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
+import {
+  ExpressionEvaluateManager,
+  type IExpressionEvaluateManager,
+} from './expression-evaluate-manager';
 import { JsEspreeExpressionParser } from './js-espree-expression-parser';
 import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
 
@@ -112,12 +110,6 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
       RsXExpressionParserInjectionTokens.IExpressionEvaluateManager,
     )
     .to(ExpressionEvaluateManager)
-    .inSingletonScope();
-  options
-    .bind<IExpressionEvaluateUnitFactory>(
-      RsXExpressionParserInjectionTokens.IExpressionEvaluateUnitFactory,
-    )
-    .to(ExpressionEvaluateUnitFactory)
     .inSingletonScope();
   options
     .bind<IExpressionChangePlayback>(

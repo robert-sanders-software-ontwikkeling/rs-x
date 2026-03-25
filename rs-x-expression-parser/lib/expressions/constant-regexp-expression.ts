@@ -10,6 +10,6 @@ export class ConstantRegExpExpression extends ConstantExpression<RegExp> {
     return new (this.constructor as new (
       expressionString: string,
       value: RegExp,
-    ) => this)(this.expressionString, this._value as RegExp);
+    ) => this)(this.expressionString, this.constValue);
   }
 }

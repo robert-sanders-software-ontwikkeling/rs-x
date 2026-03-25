@@ -1,5 +1,4 @@
 import { AbstractExpression } from './abstract-expression';
-import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 import { type ExpressionType } from './expression-parser.interface';
 
 export abstract class ParameterizedExpression<
@@ -14,21 +13,11 @@ export abstract class ParameterizedExpression<
     super(type, expressionString, ...childExpressions);
   }
 
-  public override bind(
-    settings: IExpressionBindConfiguration,
-  ): AbstractExpression {
-    super.bind(settings);
-    this._childExpressions.forEach((childExpression) => {
-      childExpression.bind(settings);
-    });
-    return this;
-  }
-
   protected abstract evaluateExpression(...args: unknown[]): T;
 
-  protected override prepareReevaluation(): boolean {
-    const args = this._childExpressions.map(
-      (childExpression) => childExpression.value,
+  protected override canEvaluate(): boolean {
+    const args = this._childExpressions.map((childExpression) =>
+      this.readArg(childExpression),
     );
 
     if (args.some((arg) => arg === undefined)) {
@@ -39,9 +28,36 @@ export abstract class ParameterizedExpression<
   }
 
   protected override evaluate(): T {
-    const args = this._childExpressions.map(
-      (childExpression) => childExpression.value,
+    const args = this._childExpressions.map((childExpression) =>
+      this.readArg(childExpression),
     );
     return this.evaluateExpression(...args);
+  }
+
+  private readArg(childExpression: AbstractExpression): unknown {
+    const value =
+      childExpression.value === undefined
+        ? AbstractExpression.evaluateExpression(childExpression)
+        : childExpression.value;
+
+    if (this.isExpressionReferenceValue(value)) {
+      return (value as { value: unknown }).value;
+    }
+
+    return value;
+  }
+
+  private isExpressionReferenceValue(value: unknown): boolean {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+
+    const candidate = value as Record<string, unknown>;
+    return (
+      typeof candidate.bind === 'function' &&
+      typeof candidate.dispose === 'function' &&
+      'changed' in candidate &&
+      'value' in candidate
+    );
   }
 }

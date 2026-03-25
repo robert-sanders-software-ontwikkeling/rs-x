@@ -1,9 +1,10 @@
+import type { BehaviorSubject, Observable } from 'rxjs';
+
 import {
-  rsx,
   type IExpression,
   type IExpressionFactory,
+  rsx,
 } from '@rs-x/expression-parser';
-import type { BehaviorSubject, Observable } from 'rxjs';
 
 interface Model {
   count: number;

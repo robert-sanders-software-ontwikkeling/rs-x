@@ -276,7 +276,7 @@ describe('Expression string tests', () => {
         ExpressionType.Object,
         ExpressionType.Property,
         ExpressionType.Member,
-        ExpressionType.Index,
+        ExpressionType.ComputedIndex,
         ExpressionType.Array,
         ExpressionType.Spread,
         ExpressionType.TemplateLiteral,

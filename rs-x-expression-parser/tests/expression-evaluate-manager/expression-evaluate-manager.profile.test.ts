@@ -1,6 +1,4 @@
 import { performance } from 'node:perf_hooks';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 
 import { InjectionContainer } from '@rs-x/core';
 import {
@@ -8,13 +6,10 @@ import {
   RsXStateManagerInjectionTokens,
 } from '@rs-x/state-manager';
 
+import { RsXExpressionParserInjectionTokens } from '../../lib';
 import {
-  type IExpressionChangeTransactionManager,
-  RsXExpressionParserInjectionTokens,
-} from '../../lib';
-import {
-  type IExpressionEvaluateManager,
   IdentifierExpressionEvaluateUnit,
+  type IExpressionEvaluateManager,
 } from '../../lib/expression-evaluate-manager';
 import {
   RsXExpressionParserModule,
@@ -32,16 +27,12 @@ describe('ExpressionEvaluateManager profile', () => {
   };
 
   let stateManager: IStateManager;
-  let transactionManager: IExpressionChangeTransactionManager;
   let evaluateManager: IExpressionEvaluateManager;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
     stateManager = InjectionContainer.get<IStateManager>(
       RsXStateManagerInjectionTokens.IStateManager,
-    );
-    transactionManager = InjectionContainer.get<IExpressionChangeTransactionManager>(
-      RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager,
     );
     evaluateManager = InjectionContainer.get<IExpressionEvaluateManager>(
       RsXExpressionParserInjectionTokens.IExpressionEvaluateManager,
@@ -74,23 +65,21 @@ describe('ExpressionEvaluateManager profile', () => {
           () => {
             totalCommits++;
           },
+          evaluate,
         );
 
-        evaluateManager.create(evaluate).instance.register(unit)
-
+        evaluateManager.create(evaluate).instance.register(unit);
       }
-
     }
 
     await flushMicrotasks();
 
     let durationMs = performance.now() - start;
-     console.info(
+    console.info(
       `[ExpressionEvaluateManager profile]  intialize units=${unitCount}, durationMs=${durationMs.toFixed(
         2,
       )}, totalCommits=${totalCommits}`,
     );
-
 
     start = performance.now();
 
@@ -111,6 +100,5 @@ describe('ExpressionEvaluateManager profile', () => {
         2,
       )}`,
     );
-
   });
 });

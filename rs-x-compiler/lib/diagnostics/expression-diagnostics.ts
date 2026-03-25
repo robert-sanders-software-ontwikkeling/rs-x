@@ -72,9 +72,8 @@ export function classifyParserError(
     };
   }
 
-  const unterminatedLiteral = tryCreateUnterminatedLiteralMessage(
-    normalizedExpression,
-  );
+  const unterminatedLiteral =
+    tryCreateUnterminatedLiteralMessage(normalizedExpression);
   if (unterminatedLiteral) {
     return {
       category: 'syntax',
@@ -82,9 +81,8 @@ export function classifyParserError(
     };
   }
 
-  const missingRightOperand = tryCreateMissingRightOperandMessage(
-    normalizedExpression,
-  );
+  const missingRightOperand =
+    tryCreateMissingRightOperandMessage(normalizedExpression);
   if (missingRightOperand) {
     return {
       category: 'syntax',
@@ -194,7 +192,10 @@ function hasUnterminatedQuotedLiteral(
   return countUnescapedCharacter(expression, quoteCharacter) % 2 !== 0;
 }
 
-function countUnescapedCharacter(expression: string, character: string): number {
+function countUnescapedCharacter(
+  expression: string,
+  character: string,
+): number {
   let count = 0;
 
   for (let index = 0; index < expression.length; index += 1) {

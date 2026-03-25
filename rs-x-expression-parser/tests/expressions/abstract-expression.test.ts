@@ -25,14 +25,29 @@ describe('AbstractExpression tests', () => {
     expression = undefined;
   });
 
-  it('evaluate with constant expression', async () => {
+  it('evaluate with only constant expression', async () => {
     const expression = rsx<number>('1 + 2')({});
 
-    const actual = (await new WaitForEvent(expression, 'changed').wait(
-      () => {},
-    )) as IExpression;
+    const actual = await new WaitForEvent(expression, 'changed').wait(
+      emptyFunction,
+    );
 
-    expect(actual.value).toEqual(3);
+    expect(actual).toBe(expression);
+    expect(expression.value).toEqual(3);
+  });
+
+  it('evaluate with constant expression', async () => {
+    const model = {
+      a: 10,
+    };
+    const expression = rsx<number>('a + 2')(model);
+
+    const actual = await new WaitForEvent(expression, 'changed').wait(
+      emptyFunction,
+    );
+
+    expect(actual).toBe(expression);
+    expect(expression.value).toEqual(12);
   });
 
   it('evaluate with identifier', async () => {
@@ -42,11 +57,12 @@ describe('AbstractExpression tests', () => {
     };
     const expression = rsx<number>('a + b')(model);
 
-    const actual = (await new WaitForEvent(expression, 'changed').wait(
-      () => {},
-    )) as IExpression;
+    const actual = await new WaitForEvent(expression, 'changed').wait(
+      emptyFunction,
+    );
 
-    expect(actual.value).toEqual(30);
+    expect(actual).toBe(expression);
+    expect(expression.value).toEqual(30);
   });
 
   it('expression with observable', async () => {
@@ -55,12 +71,12 @@ describe('AbstractExpression tests', () => {
     };
     const expression = rsx<number>('observable + 1')(model);
 
-    const actual = (await new WaitForEvent(expression, 'changed').wait(
-      () => {},
-    )) as IExpression;
+    const actual = await new WaitForEvent(expression, 'changed').wait(
+      emptyFunction,
+    );
 
-    expect(actual.value).toEqual(51);
     expect(actual).toBe(expression);
+    expect(expression.value).toEqual(51);
   });
 
   it('expression with promise', async () => {
@@ -69,12 +85,12 @@ describe('AbstractExpression tests', () => {
     };
     const expression = rsx<number>('promise + 1')(model);
 
-    const actual = (await new WaitForEvent(expression, 'changed').wait(
-      () => {},
-    )) as IExpression;
+    const actual = await new WaitForEvent(expression, 'changed').wait(
+      emptyFunction,
+    );
 
-    expect(actual.value).toEqual(101);
     expect(actual).toBe(expression);
+    expect(expression.value).toEqual(101);
   });
 
   it('expression with map index', async () => {
@@ -87,12 +103,12 @@ describe('AbstractExpression tests', () => {
     };
     const expression = rsx<number>('map["three"]')(model);
 
-    const actual = (await new WaitForEvent(expression, 'changed').wait(
-      () => {},
-    )) as IExpression;
+    const actual = await new WaitForEvent(expression, 'changed').wait(
+      emptyFunction,
+    );
 
-    expect(actual.value).toEqual(3);
     expect(actual).toBe(expression);
+    expect(expression.value).toEqual(3);
   });
 
   it('expression with array index', async () => {
@@ -101,12 +117,12 @@ describe('AbstractExpression tests', () => {
     };
     const expression = rsx<number>('array[1]')(model);
 
-    const actual = (await new WaitForEvent(expression, 'changed').wait(
-      () => {},
-    )) as IExpression;
+    const actual = await new WaitForEvent(expression, 'changed').wait(
+      emptyFunction,
+    );
 
-    expect(actual.value).toEqual(21);
     expect(actual).toBe(expression);
+    expect(expression.value).toEqual(21);
   });
 
   it('will emit change event after changing identifier', async () => {
@@ -117,16 +133,16 @@ describe('AbstractExpression tests', () => {
     const expression = rsx<number>('a + b')(model);
 
     // Wait till the expression has been initialized before changing value
-    await new WaitForEvent(expression, 'changed').wait(() => {});
+    await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-    const actual = (await new WaitForEvent(expression, 'changed', {
+    const actual = await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
       model.a = 200;
-    })) as IExpression;
+    });
 
-    expect(actual.value).toEqual(220);
     expect(actual).toBe(expression);
+    expect(expression.value).toEqual(220);
   });
 
   it('will emit change event after changing promise', async () => {
@@ -140,16 +156,16 @@ describe('AbstractExpression tests', () => {
 
     await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
-    }).wait(() => {});
+    }).wait(emptyFunction);
 
-    const actual = (await new WaitForEvent(expression, 'changed', {
+    const actual = await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
       model.promise = Promise.resolve(200);
-    })) as IExpression;
+    });
 
-    expect(actual.value).toEqual(201);
     expect(actual).toBe(expression);
+    expect(expression.value).toEqual(201);
   });
 
   it('will emit change event after changing observable', async () => {
@@ -159,16 +175,16 @@ describe('AbstractExpression tests', () => {
     const expression = rsx<number>('observable + 1')(model);
 
     // Wait till the expression has been initialized before changing value
-    await new WaitForEvent(expression, 'changed').wait(() => {});
+    await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-    const actual = (await new WaitForEvent(expression, 'changed', {
+    const actual = await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
       model.observable.next(200);
-    })) as IExpression;
+    });
 
-    expect(actual.value).toEqual(201);
     expect(actual).toBe(expression);
+    expect(expression.value).toEqual(201);
   });
 
   it('will emit change event after replacing observable', async () => {
@@ -178,16 +194,16 @@ describe('AbstractExpression tests', () => {
     const expression = rsx<number>('observable + 1')(model);
 
     // Wait till the expression has been initialized before changing value
-    await new WaitForEvent(expression, 'changed').wait(() => {});
+    await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-    const actual = (await new WaitForEvent(expression, 'changed', {
+    const actual = await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
       model.observable = new BehaviorSubject(300);
-    })) as IExpression;
+    });
 
-    expect(actual.value).toEqual(301);
     expect(actual).toBe(expression);
+    expect(expression.value).toEqual(301);
   });
 
   it('will emit change event when changing array', async () => {
@@ -199,14 +215,14 @@ describe('AbstractExpression tests', () => {
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
-    const actual = (await new WaitForEvent(expression, 'changed', {
+    const actual = await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
       model.array.push(61);
-    })) as IExpression;
+    });
 
-    expect(actual.value).toEqual([11, 21, 31, 41, 51, 61]);
     expect(actual).toBe(expression);
+    expect(expression.value).toEqual([11, 21, 31, 41, 51, 61]);
   });
 
   it('will emit change event when changing map', async () => {
@@ -222,13 +238,14 @@ describe('AbstractExpression tests', () => {
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
-    const actual = (await new WaitForEvent(expression, 'changed', {
+    const actual = await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
       model.map.set('four', 4);
-    })) as IExpression;
+    });
 
-    expect(actual.value).toDeepEqualCircular(
+    expect(actual).toBe(expression);
+    expect(expression.value).toDeepEqualCircular(
       new Map<string, number>([
         ['one', 1],
         ['two', 2],
@@ -236,8 +253,6 @@ describe('AbstractExpression tests', () => {
         ['four', 4],
       ]),
     );
-
-    expect(actual).toBe(expression);
   });
 
   it('will emit change event when promise changes', async () => {
@@ -253,14 +268,14 @@ describe('AbstractExpression tests', () => {
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
-    const actual = (await new WaitForEvent(expression, 'changed', {
+    const actual = await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
       model.a.b = Promise.resolve(4);
-    })) as IExpression;
+    });
 
-    expect(actual.value).toEqual(6);
     expect(actual).toBe(expression);
+    expect(expression.value).toEqual(6);
   });
 
   it('will emit change event when observable changes', async () => {
@@ -275,14 +290,14 @@ describe('AbstractExpression tests', () => {
     // Wait till the expression has been initialized before changing value
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
-    const actual = (await new WaitForEvent(expression, 'changed', {
+    const actual = await new WaitForEvent(expression, 'changed', {
       ignoreInitialValue: true,
     }).wait(() => {
       model.a.b.next(4);
-    })) as IExpression;
+    });
 
-    expect(actual.value).toEqual(6);
     expect(actual).toBe(expression);
+    expect(expression.value).toEqual(6);
   });
 
   it('does not update unrelated expressions when state references are replaced', async () => {

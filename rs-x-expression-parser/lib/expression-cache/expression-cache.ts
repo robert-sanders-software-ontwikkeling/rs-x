@@ -50,7 +50,8 @@ export class ExpressionCache
   protected override createInstance(
     expressionString: string,
   ): IExpression<unknown, unknown> {
-    const precompiledExpression = this._precompiledExpressions.get(expressionString);
+    const precompiledExpression =
+      this._precompiledExpressions.get(expressionString);
     if (precompiledExpression) {
       return precompiledExpression;
     }

@@ -1,5 +1,5 @@
-import { ExpressionType, type IExpressionParser } from '../../lib/expressions';
 import { ExpressionCache } from '../../lib/expression-cache';
+import { ExpressionType, type IExpressionParser } from '../../lib/expressions';
 import { ExpressionMock } from '../../lib/testing';
 
 describe('ExpressionCache', () => {
@@ -57,10 +57,12 @@ describe('ExpressionCache', () => {
     });
 
     let cloneCount = 0;
-    (parsedExpression as unknown as { clone: jest.Mock }).clone = jest.fn(() => {
-      cloneCount += 1;
-      return cloneCount === 1 ? cloneA : cloneB;
-    });
+    (parsedExpression as unknown as { clone: jest.Mock }).clone = jest.fn(
+      () => {
+        cloneCount += 1;
+        return cloneCount === 1 ? cloneA : cloneB;
+      },
+    );
 
     const parser = {
       parse: jest.fn(() => parsedExpression),

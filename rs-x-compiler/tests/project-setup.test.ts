@@ -3,7 +3,6 @@ import { createDiagnosticsScaffold } from '../lib/diagnostics';
 import { createLanguageServiceScaffold } from '../lib/language-service';
 import { createTransformerScaffold } from '../lib/transformer';
 
-
 describe('rs-x-compiler phase 0 project setup', () => {
   it('creates compiler scaffold metadata', () => {
     expect(createCompilerScaffold()).toEqual({

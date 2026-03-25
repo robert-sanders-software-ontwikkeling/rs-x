@@ -63,8 +63,6 @@ describe('Member expression tests', () => {
           context: model,
           services,
         });
-
-        services.transactionManager.commit();
       });
       expect(clonedExpression.value).toEqual(1);
     } finally {
@@ -151,8 +149,6 @@ describe('Member expression tests', () => {
           },
         },
       };
-
-    
 
       expression = rsx('nestedA.nestedB.array[a + 1]')(model);
 
@@ -597,31 +593,12 @@ describe('Member expression tests', () => {
 
       expression = rsx('x.y.z')(model);
 
-      const actual = (await new WaitForEvent(expression, 'changed').wait(
-        () => {},
-      )) as IExpression;
+      const actual = await new WaitForEvent(expression, 'changed').wait(
+        emptyFunction,
+      );
 
-      expect(actual.value).toEqual(100);
       expect(actual).toBe(expression);
-    });
-
-    it('resolves nested promised', async () => {
-      const model = {
-        x: Promise.resolve({
-          y: {
-            z: Promise.resolve(100),
-          },
-        }),
-      };
-
-      expression = rsx('x.y.z')(model);
-
-      const actual = (await new WaitForEvent(expression, 'changed').wait(
-        () => {},
-      )) as IExpression;
-
-      expect(actual.value).toEqual(100);
-      expect(actual).toBe(expression);
+      expect(expression.value).toEqual(100);
     });
 
     it('will emit change event when changing promise', async () => {
@@ -638,16 +615,16 @@ describe('Member expression tests', () => {
       // Wait till the expression has been initialized before changing value
       await new WaitForEvent(expression, 'changed').wait(() => {});
 
-      const actual = (await new WaitForEvent(expression, 'changed', {
+      const actual = await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
         model.x = Promise.resolve({
           y: { z: Promise.resolve(200) },
         });
-      })) as IExpression;
+      });
 
-      expect(actual.value).toEqual(200);
       expect(actual).toBe(expression);
+      expect(expression.value).toEqual(200);
     });
 
     it('will emit change event when changing object with nested promise', async () => {
@@ -663,9 +640,9 @@ describe('Member expression tests', () => {
       expression = rsx('a.b.c.d')(model);
 
       // Wait till the expression has been initialized before changing value
-      await new WaitForEvent(expression, 'changed').wait(() => {});
+      await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-      const actual = (await new WaitForEvent(expression, 'changed', {
+      const actual = await new WaitForEvent(expression, 'changed', {
         ignoreInitialValue: true,
       }).wait(() => {
         model.a = {
@@ -675,10 +652,10 @@ describe('Member expression tests', () => {
             }),
           }),
         };
-      })) as IExpression;
+      });
 
-      expect(actual.value).toEqual(200);
       expect(actual).toBe(expression);
+      expect(expression.value).toEqual(200);
     });
   });
 
@@ -914,11 +891,12 @@ describe('Member expression tests', () => {
 
       expression = rsx('a.b.mail(message, subject).messageWithSubject')(model);
 
-      const actual = (await new WaitForEvent(expression, 'changed').wait(
+      const actual = await new WaitForEvent(expression, 'changed').wait(
         emptyFunction,
-      )) as IExpression;
+      );
 
-      expect(actual.value).toEqual('message: Hello, subject: Message');
+      expect(actual).toBe(expression);
+      expect(expression.value).toEqual('message: Hello, subject: Message');
     });
 
     it(`will emit change for 'a.b.mail(message, subject).messageWithSubject' when setting 'message'`, async () => {

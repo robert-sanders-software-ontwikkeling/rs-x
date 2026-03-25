@@ -55,8 +55,6 @@ describe('ExponentiationExpression tests', () => {
           context: model,
           services,
         });
-
-        services.transactionManager.commit();
       });
       expect(clonedExpression.value).toEqual(8);
     } finally {

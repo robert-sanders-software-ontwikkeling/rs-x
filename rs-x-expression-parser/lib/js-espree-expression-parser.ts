@@ -50,6 +50,7 @@ import { BitwiseOrExpression } from './expressions/bitwise-or-expression';
 import { BitwiseRightShiftExpression } from './expressions/bitwise-right-shift-expression';
 import { BitwiseUnsignedRightShiftExpression } from './expressions/bitwise-unsigned-right-shift-expression';
 import { BitwiseXorExpression } from './expressions/bitwise-xor-expression';
+import { ComputedIndexExpression } from './expressions/computed-index-expression';
 import { ConditionalExpression } from './expressions/conditional-expression';
 import { ConstantBigIntExpression } from './expressions/constant-bigint-expression';
 import { ConstantBooleanExpression } from './expressions/constant-boolean-expression';
@@ -93,7 +94,6 @@ import { TemplateLiteralExpression } from './expressions/template-literal-expres
 import { TypeofExpression } from './expressions/typeof-expression';
 import { UnaryNegationExpression } from './expressions/unary-negation-expression';
 import { UnaryPlusExpression } from './expressions/unary-plus-expression';
-import { IndexExpression } from './expressions';
 
 enum EspreeExpressionType {
   UnaryExpression = 'UnaryExpression',
@@ -369,7 +369,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
   ): AbstractExpression => {
     const pathSegments = this.flattenMemberExpression(expression).map((e) => {
       const expression = this.createExpression(e.expression);
-      return e.computed ? new IndexExpression(expression) : expression;
+      return e.computed ? new ComputedIndexExpression(expression) : expression;
     });
     return new MemberExpression(
       this.getExpressionSource(expression),

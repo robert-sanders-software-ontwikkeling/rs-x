@@ -1,4 +1,8 @@
-import { rsx, type IExpression, type IExpressionFactory } from '@rs-x/expression-parser';
+import {
+  type IExpression,
+  type IExpressionFactory,
+  rsx,
+} from '@rs-x/expression-parser';
 
 interface Model {
   a: number;
@@ -25,7 +29,7 @@ declare function getFactory(): IExpressionFactory;
 getFactory().create(model, 'b.method().result');
 
 class CustomFactory implements IExpressionFactory {
-  public create<T>(context: object, expression: string): IExpression<T> {
+  public create<T>(_context: object, _expression: string): IExpression<T> {
     return null as unknown as IExpression<T>;
   }
 }
@@ -34,7 +38,7 @@ const customFactory = new CustomFactory();
 customFactory.create(model, 'a');
 
 const notAFactory = {
-  create(context: object, expression: string): number {
+  create(_context: object, _expression: string): number {
     return 1;
   },
 };

@@ -1,6 +1,9 @@
 import { type AnyFunction, Assertion, PENDING, Type } from '@rs-x/core';
 
-import { type IExpressionChangeCommitHandler } from '../expresion-change-transaction-manager.interface';
+import {
+  FunctionExpressionEvaluateUnit,
+  type IExpressionEvaluateUnit,
+} from '../expression-evaluate-manager';
 
 import { AbstractExpression } from './abstract-expression';
 import type { ArrayExpression } from './array-expression';
@@ -12,7 +15,17 @@ export class FunctionExpression extends AbstractExpression {
   private _context: unknown;
   private _functionContext: unknown;
   private _functionId!: string;
-  private readonly _commitHandler: IExpressionChangeCommitHandler;
+  private _functionExpressionEvaluateUnit:
+    | FunctionExpressionEvaluateUnit
+    | undefined;
+  private _lastInvocation:
+    | {
+        context: unknown;
+        functionName: string;
+        args: unknown[];
+        result: unknown;
+      }
+    | undefined;
 
   constructor(
     expressionString: string,
@@ -37,10 +50,6 @@ export class FunctionExpression extends AbstractExpression {
       _functionExpression,
       argumentsExpression,
     );
-    this._commitHandler = {
-      owner: this,
-      commit: this.commit,
-    };
   }
 
   public override clone(): this {
@@ -61,78 +70,103 @@ export class FunctionExpression extends AbstractExpression {
     );
   }
 
-  public override bind(
+  protected override bindChildren(
     settings: IExpressionBindConfiguration,
-  ): AbstractExpression {
-    super.bind(settings);
+  ): void {
     this._functionId = this.guidFactory.create();
     this._context = settings.context;
+    const childBindSettings = {
+      ...settings,
+      skipEvaluateUnitRegistration: true,
+    };
+
     if (this._objectExpression) {
-      this._objectExpression.bind(settings);
-
-      this._functionExpression.bind(
-        this._computed ? settings : { ...settings, context: undefined },
-      );
-
       if (this._computed) {
-        this._functionExpression.bind(settings);
+        this._objectExpression.bind(childBindSettings);
+        this._functionExpression.bind(childBindSettings);
       } else {
+        this._objectExpression.bind(childBindSettings);
         AbstractExpression.setHidden(this._functionExpression);
+        this._functionExpression.bind({
+          ...childBindSettings,
+          context: undefined,
+        });
       }
     } else {
-      this._childExpressions[0].bind(settings);
+      this._childExpressions[0].bind(childBindSettings);
       AbstractExpression.setHidden(this._functionExpression);
       this._functionExpression.bind(
         this._functionExpression.type == ExpressionType.Identifier
-          ? { ...settings, context: undefined }
-          : settings,
+          ? { ...childBindSettings, context: undefined }
+          : childBindSettings,
       );
     }
 
-    this._argumentsExpression.bind(settings);
+    this._argumentsExpression.bind(childBindSettings);
 
-    // Only register a self-commit handler when there are no reactive children
-    // (arguments or object expression). When reactive children exist, their
-    // path-based handlers already propagate through this FunctionExpression
-    // and evaluate it — registering a separate handler here would cause the
-    // function to be called twice per commit cycle.
-    const hasReactiveChildren =
-      this._argumentsExpression.childExpressions.length > 0 ||
-      !!this._objectExpression;
-    if (!hasReactiveChildren) {
-      this.transactionManager.registerChange(
-        this.evaluationRoot,
-        this._commitHandler,
-      );
+    const dependencyUnits: IExpressionEvaluateUnit[] = [];
+    const objectExpressionUnit = this._objectExpression
+      ? AbstractExpression.getExpressionEvaluateUnit(this._objectExpression)
+      : undefined;
+    if (objectExpressionUnit) {
+      dependencyUnits.push(objectExpressionUnit);
     }
 
-    return this;
+    const functionExpressionUnit = AbstractExpression.getExpressionEvaluateUnit(
+      this._functionExpression,
+    );
+    if (functionExpressionUnit) {
+      dependencyUnits.push(functionExpressionUnit);
+    }
+
+    for (
+      let i = 0;
+      i < this._argumentsExpression.childExpressions.length;
+      i++
+    ) {
+      const argumentUnit = AbstractExpression.getExpressionEvaluateUnit(
+        this._argumentsExpression.childExpressions[i] as AbstractExpression,
+      );
+      if (argumentUnit) {
+        dependencyUnits.push(argumentUnit);
+      }
+    }
+
+    this._functionExpressionEvaluateUnit = new FunctionExpressionEvaluateUnit(
+      this._functionId,
+      undefined,
+      dependencyUnits,
+      () => this.evaluate(),
+      this.commitValue,
+      this.parent?.type === ExpressionType.Member,
+      this.parent?.type === ExpressionType.Member,
+    );
+
+    if (!settings.skipEvaluateUnitRegistration) {
+      this.evaluateManagerForExpression.register(
+        this._functionExpressionEvaluateUnit,
+      );
+    }
+  }
+
+  protected override get expressionEvaluateUnit():
+    | FunctionExpressionEvaluateUnit
+    | undefined {
+    return this._functionExpressionEvaluateUnit;
   }
 
   protected override internalDispose(): void {
     this.releaseResult();
-  }
-
-  protected override prepareReevaluation(
-    sender: AbstractExpression,
-    root: AbstractExpression,
-    pendingCommits: Set<IExpressionChangeCommitHandler>,
-  ): boolean {
-    if (
-      sender === this._functionExpression ||
-      sender === this._objectExpression ||
-      sender === this._argumentsExpression
-    ) {
-      super.prepareReevaluation(this, root, pendingCommits);
-      return true;
-    }
-
-    return super.prepareReevaluation(sender, root, pendingCommits);
+    this._functionExpressionEvaluateUnit?.dispose();
+    super.internalDispose();
   }
 
   protected override evaluate(): unknown {
+    this.syncObjectExpressionCache();
+    this.syncArgumentsExpressionCache();
+
     const functionContext = Type.toObject(
-      this._objectExpression ? this._objectExpression?.value : this._context,
+      this._objectExpression ? this._objectExpression.value : this._context,
     );
     if (!functionContext) {
       return PENDING;
@@ -140,6 +174,9 @@ export class FunctionExpression extends AbstractExpression {
 
     if (this._functionContext !== functionContext) {
       this._functionContext = functionContext;
+      if (this._functionExpressionEvaluateUnit) {
+        this._functionExpressionEvaluateUnit.context = this._functionContext;
+      }
     }
 
     const { functionName } = this;
@@ -157,12 +194,35 @@ export class FunctionExpression extends AbstractExpression {
     const func = Type.cast<Function>(functionContext[functionName]);
     Assertion.assertIsFunction(func, func.name);
 
-    return this.registerResult(func.call(functionContext, ...args));
+    if (
+      this._lastInvocation &&
+      this._lastInvocation.context === functionContext &&
+      this._lastInvocation.functionName === functionName &&
+      this.argsEqual(this._lastInvocation.args, args as unknown[])
+    ) {
+      return this._lastInvocation.result;
+    }
+
+    const result = this.registerResult(
+      func.call(functionContext, ...(args as unknown[])),
+    );
+    this._lastInvocation = {
+      context: functionContext,
+      functionName,
+      args: [...(args as unknown[])],
+      result,
+    };
+    if (result !== PENDING && this._functionExpressionEvaluateUnit) {
+      this._functionExpressionEvaluateUnit.setValueDirectly(result);
+    }
+    return result;
   }
 
   private get functionName(): string {
     return this._computed
-      ? (this._functionExpression.value as string)
+      ? (AbstractExpression.evaluateExpression(
+          this._functionExpression,
+        ) as string)
       : this._functionExpression.expressionString;
   }
 
@@ -186,8 +246,55 @@ export class FunctionExpression extends AbstractExpression {
     return result;
   }
 
-  private commit = (
-    root: AbstractExpression,
-    pendingCommits: Set<IExpressionChangeCommitHandler>,
-  ) => this.reevaluated(this, root, pendingCommits);
+  private syncObjectExpressionCache(): void {
+    if (!this._objectExpression) {
+      return;
+    }
+
+    const value = AbstractExpression.evaluateExpression(this._objectExpression);
+    if (value === undefined) {
+      AbstractExpression.clearValue(this._objectExpression);
+      return;
+    }
+
+    AbstractExpression.setValue(this._objectExpression, () => value);
+  }
+
+  private syncArgumentsExpressionCache(): void {
+    if (this._argumentsExpression.childExpressions.length === 0) {
+      AbstractExpression.setValue(this._argumentsExpression, () => []);
+      return;
+    }
+
+    const args = this._argumentsExpression.childExpressions.map(
+      (childExpression) =>
+        AbstractExpression.evaluateExpression(
+          childExpression as AbstractExpression,
+        ),
+    );
+    if (args.some((arg) => arg === undefined)) {
+      AbstractExpression.clearValue(this._argumentsExpression);
+      return;
+    }
+
+    AbstractExpression.setValue(this._argumentsExpression, () => args);
+  }
+
+  private readonly commitValue = (_value: unknown) => {
+    this.evaluateBottomToTop();
+  };
+
+  private argsEqual(previous: unknown[], next: unknown[]): boolean {
+    if (previous.length !== next.length) {
+      return false;
+    }
+
+    for (let i = 0; i < previous.length; i++) {
+      if (!Object.is(previous[i], next[i])) {
+        return false;
+      }
+    }
+
+    return true;
+  }
 }

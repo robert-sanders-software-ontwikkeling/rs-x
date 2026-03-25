@@ -43,7 +43,9 @@ function assertNoTypeScriptDiagnostics(
     ...program.getGlobalDiagnostics(),
     ...program.getSyntacticDiagnostics(),
     ...program.getSemanticDiagnostics(),
-  ].filter((diagnostic) => !diagnostic.file || diagnostic.file.fileName === entryFile);
+  ].filter(
+    (diagnostic) => !diagnostic.file || diagnostic.file.fileName === entryFile,
+  );
 
   if (diagnostics.length === 0) {
     return;
@@ -55,12 +57,17 @@ function assertNoTypeScriptDiagnostics(
     getNewLine: () => '\n',
   };
 
-  throw new Error(ts.formatDiagnosticsWithColorAndContext(diagnostics, formatHost));
+  throw new Error(
+    ts.formatDiagnosticsWithColorAndContext(diagnostics, formatHost),
+  );
 }
 
 describe('expression-site validation', () => {
   it('validates identifier/member/function/operator semantics against model type', () => {
-    const fixturePath = path.resolve(__dirname, './fixtures/semantic-validation.fixture.ts');
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/semantic-validation.fixture.ts',
+    );
 
     const program = createProgram(fixturePath);
     const results = validateExpressionSites(program)
@@ -226,5 +233,4 @@ describe('expression-site validation', () => {
       { expression: 'invoiceDate.time', messages: [] },
     ]);
   });
-
 });

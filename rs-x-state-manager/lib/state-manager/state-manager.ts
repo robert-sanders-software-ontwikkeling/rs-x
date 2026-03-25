@@ -10,6 +10,7 @@ import {
   Inject,
   Injectable,
   type IPropertyChange,
+  IProxyRegistry,
   PENDING,
   RsXCoreInjectionTokens,
   truePredicate,
@@ -76,6 +77,9 @@ export class StateManager implements IStateManager {
     private readonly _indexValueAccessor: IIndexValueAccessor,
     @Inject(RsXCoreInjectionTokens.IEqualityService)
     private readonly _equalityService: IEqualityService,
+
+    @Inject(RsXCoreInjectionTokens.IProxyRegistry)
+    private readonly _proxyRegistry: IProxyRegistry,
   ) {
     this._stateChangeSubscriptionManager = new StateChangeSubscriptionManager(
       objectObserverManager,
@@ -280,6 +284,26 @@ export class StateManager implements IStateManager {
     observer.dispose();
   }
 
+  private hasChanged(newValue: unknown, oldValue: unknown): boolean {
+    // Fast path: strict equality OR both NaN
+    if (Object.is(newValue, oldValue)) {
+      return false;
+    }
+
+    const isObjectLike = (v: unknown) =>
+      v !== null && (typeof v === 'object' || typeof v === 'function');
+
+    // Deep equality for objects/functions
+    if (
+      (isObjectLike(newValue) || isObjectLike(oldValue)) &&
+      this._equalityService.isEqual(newValue, oldValue)
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
   private internalUnregister(
     context: unknown,
     index: unknown,
@@ -297,27 +321,9 @@ export class StateManager implements IStateManager {
     oldValue: unknown,
     oldContext?: unknown,
   ): void {
-    if (
-      newValue === oldValue ||
-      (newValue !== newValue && oldValue !== oldValue)
-    ) {
+    if (!this.hasChanged(newValue, oldValue)) {
       return;
     }
-
-    const newValueIsObjectLike =
-      newValue !== null &&
-      (typeof newValue === 'object' || typeof newValue === 'function');
-    const oldValueIsObjectLike =
-      oldValue !== null &&
-      (typeof oldValue === 'object' || typeof oldValue === 'function');
-
-    if (
-      (newValueIsObjectLike || oldValueIsObjectLike) &&
-      this._equalityService.isEqual(newValue, oldValue)
-    ) {
-      return;
-    }
-
     const stateChange: IStateChange = {
       oldContext: oldContext ?? context,
       context,
@@ -400,7 +406,9 @@ export class StateManager implements IStateManager {
 
   private getValue(context: unknown, key: unknown): unknown {
     try {
-      return this._indexValueAccessor.getResolvedValue(context, key);
+      const value = this._indexValueAccessor.getResolvedValue(context, key);
+
+      return this._proxyRegistry.getProxyTarget(value) ?? value;
     } catch {
       return this.getState(context, key);
     }

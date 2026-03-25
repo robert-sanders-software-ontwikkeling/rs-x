@@ -7,6 +7,7 @@ export interface IBindConfigurationBase {
   readonly services: IExpressionServices;
   readonly owner?: IDisposableOwner;
   readonly leafIndexWatchRule?: IIndexWatchRule;
+  readonly skipEvaluateUnitRegistration?: boolean;
 }
 
 export type IExpressionBindConfigurationExtra = {

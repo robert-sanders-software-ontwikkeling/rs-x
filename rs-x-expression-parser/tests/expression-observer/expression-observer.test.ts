@@ -1,17 +1,17 @@
 import { afterEach } from 'node:test';
+
 import { BehaviorSubject } from 'rxjs';
 
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import { type IObserver } from '@rs-x/state-manager';
 
+import { IdentifierExpressionEvaluateUnit } from '../../lib/expression-evaluate-manager/identifier-expression-evaluate-unit';
 import { type IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
 import { rsx } from '../../lib/rsx';
-import { ExpressionType } from '../../lib/expressions/expression-parser.interface';
-import { ExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager';
 
 describe('Expression observer tests', () => {
   let observer: IObserver | undefined;
@@ -114,7 +114,9 @@ describe('Expression observer tests', () => {
       await firstChangePerExpression;
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(postInitialChangeCounts).toEqual(new Array(expressions.length).fill(1));
+      expect(postInitialChangeCounts).toEqual(
+        new Array(expressions.length).fill(1),
+      );
       subscriptions.forEach((subscription) => subscription.unsubscribe());
     } finally {
       expressions.forEach((expression) => expression.dispose());
@@ -183,9 +185,9 @@ describe('Expression observer tests', () => {
   });
 
   it('identifier notifications scale linearly with expression count', async () => {
-    const registerChangeSpy = jest.spyOn(
-      ExpressionChangeTransactionManager.prototype,
-      'registerChange',
+    const identifierCommitSpy = jest.spyOn(
+      IdentifierExpressionEvaluateUnit.prototype,
+      'commitChange',
     );
 
     try {
@@ -204,7 +206,7 @@ describe('Expression observer tests', () => {
             ),
           );
 
-          registerChangeSpy.mockClear();
+          identifierCommitSpy.mockClear();
 
           const firstChangePerExpression = Promise.all(
             expressions.map((expression) =>
@@ -218,10 +220,7 @@ describe('Expression observer tests', () => {
           await firstChangePerExpression;
           await new Promise((resolve) => setTimeout(resolve, 0));
 
-          const identifierNotifications = registerChangeSpy.mock.calls.filter(
-            ([, commitHandler]) =>
-              commitHandler.owner.type === ExpressionType.Identifier,
-          ).length;
+          const identifierNotifications = identifierCommitSpy.mock.calls.length;
 
           expect(identifierNotifications).toBe(size);
         } finally {
@@ -229,14 +228,14 @@ describe('Expression observer tests', () => {
         }
       }
     } finally {
-      registerChangeSpy.mockRestore();
+      identifierCommitSpy.mockRestore();
     }
   });
 
   it('identifier notifications for a.b.c.d example scenario do not grow superlinearly', async () => {
-    const registerChangeSpy = jest.spyOn(
-      ExpressionChangeTransactionManager.prototype,
-      'registerChange',
+    const identifierCommitSpy = jest.spyOn(
+      IdentifierExpressionEvaluateUnit.prototype,
+      'commitChange',
     );
 
     try {
@@ -272,7 +271,7 @@ describe('Expression observer tests', () => {
             ),
           );
 
-          registerChangeSpy.mockClear();
+          identifierCommitSpy.mockClear();
 
           const firstChangePerExpression = Promise.all(
             expressions.map((expression) =>
@@ -288,13 +287,10 @@ describe('Expression observer tests', () => {
 
           replaceATotals.push({
             size,
-            identifierNotifications: registerChangeSpy.mock.calls.filter(
-              ([, commitHandler]) =>
-                commitHandler.owner.type === ExpressionType.Identifier,
-            ).length,
+            identifierNotifications: identifierCommitSpy.mock.calls.length,
           });
 
-          registerChangeSpy.mockClear();
+          identifierCommitSpy.mockClear();
 
           const secondChangePerExpression = Promise.all(
             expressions.map((expression) =>
@@ -310,10 +306,7 @@ describe('Expression observer tests', () => {
 
           nestedNextTotals.push({
             size,
-            identifierNotifications: registerChangeSpy.mock.calls.filter(
-              ([, commitHandler]) =>
-                commitHandler.owner.type === ExpressionType.Identifier,
-            ).length,
+            identifierNotifications: identifierCommitSpy.mock.calls.length,
           });
         } finally {
           expressions.forEach((expression) => expression.dispose());
@@ -342,12 +335,12 @@ describe('Expression observer tests', () => {
         );
       }
       for (let i = 1; i < nestedNextTotals.length; i += 1) {
-        expect(nestedNextTotals[i]!.identifierNotifications).toBeLessThanOrEqual(
-          nestedNextTotals[i - 1]!.identifierNotifications,
-        );
+        expect(
+          nestedNextTotals[i]!.identifierNotifications,
+        ).toBeLessThanOrEqual(nestedNextTotals[i - 1]!.identifierNotifications);
       }
     } finally {
-      registerChangeSpy.mockRestore();
+      identifierCommitSpy.mockRestore();
     }
   });
 });

@@ -42,36 +42,36 @@ export class ModelIntellisenseService {
     this.completionProviderDisposable?.dispose();
     this.completionProviderDisposable =
       monacoInstance.languages.registerCompletionItemProvider('typescript', {
-      triggerCharacters:
-        '_$abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.'.split(
-          '',
-        ),
+        triggerCharacters:
+          '_$abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.'.split(
+            '',
+          ),
 
-      provideCompletionItems: (
-        editorModel: MonacoTypes.editor.ITextModel,
-        position: MonacoTypes.Position,
-      ): MonacoTypes.languages.ProviderResult<MonacoTypes.languages.CompletionList> => {
-        if (!this.monaco) {
-          return { suggestions: [] };
-        }
+        provideCompletionItems: (
+          editorModel: MonacoTypes.editor.ITextModel,
+          position: MonacoTypes.Position,
+        ): MonacoTypes.languages.ProviderResult<MonacoTypes.languages.CompletionList> => {
+          if (!this.monaco) {
+            return { suggestions: [] };
+          }
 
-        const range = this.getWordRangeAtPosition(editorModel, position);
+          const range = this.getWordRangeAtPosition(editorModel, position);
 
-        const textBeforeCursor = editorModel.getValueInRange({
-          startLineNumber: 1,
-          startColumn: 1,
-          endLineNumber: position.lineNumber,
-          endColumn: position.column,
-        });
+          const textBeforeCursor = editorModel.getValueInRange({
+            startLineNumber: 1,
+            startColumn: 1,
+            endLineNumber: position.lineNumber,
+            endColumn: position.column,
+          });
 
-        const memberExpression =
-          this.getCurrentMemberExpression(textBeforeCursor);
+          const memberExpression =
+            this.getCurrentMemberExpression(textBeforeCursor);
 
-        const suggestions = this.getSuggestions(memberExpression, range);
+          const suggestions = this.getSuggestions(memberExpression, range);
 
-        return { suggestions };
-      },
-    });
+          return { suggestions };
+        },
+      });
   }
 
   // --------------------------------------------

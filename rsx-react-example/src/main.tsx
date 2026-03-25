@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import { initRsx } from './rsx-bootstrap';
 import { type IExpression } from '@rs-x/expression-parser';
+
 import { benchmarkExpressionFactories } from './expressions/generated-benchmark-expressions';
+import { initRsx } from './rsx-bootstrap';
 
 type BenchmarkResult = {
   createMs: number;
@@ -14,7 +15,9 @@ type BenchmarkResult = {
   sampleValue: unknown;
 };
 
-function waitForAllResolved(expressions: readonly IExpression[]): Promise<void> {
+function waitForAllResolved(
+  expressions: readonly IExpression[],
+): Promise<void> {
   if (expressions.every((expression) => expression.value !== undefined)) {
     return Promise.resolve();
   }
@@ -33,13 +36,17 @@ function waitForAllResolved(expressions: readonly IExpression[]): Promise<void> 
 
 async function runBenchmark(): Promise<BenchmarkResult> {
   const createStart = performance.now();
-  const expressions: IExpression[] = benchmarkExpressionFactories.map((createExpression) => createExpression());
+  const expressions: IExpression[] = benchmarkExpressionFactories.map(
+    (createExpression) => createExpression(),
+  );
 
   const createEnd = performance.now();
   const resolveStart = performance.now();
   await waitForAllResolved(expressions);
   const resolveEnd = performance.now();
-  const resolvedCount = expressions.filter((expression) => expression.value !== undefined).length;
+  const resolvedCount = expressions.filter(
+    (expression) => expression.value !== undefined,
+  ).length;
 
   return {
     createMs: createEnd - createStart,
@@ -54,7 +61,10 @@ async function runBenchmark(): Promise<BenchmarkResult> {
 function App() {
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<BenchmarkResult | null>(null);
-  const expressionCount = useMemo(() => benchmarkExpressionFactories.length, []);
+  const expressionCount = useMemo(
+    () => benchmarkExpressionFactories.length,
+    [],
+  );
 
   const onRun = async () => {
     setRunning(true);
@@ -68,14 +78,26 @@ function App() {
   };
 
   return (
-    <main style={{ fontFamily: 'sans-serif', maxWidth: 920, margin: '2rem auto', lineHeight: 1.5 }}>
+    <main
+      style={{
+        fontFamily: 'sans-serif',
+        maxWidth: 920,
+        margin: '2rem auto',
+        lineHeight: 1.5,
+      }}
+    >
       <h1>RS-X React Benchmark</h1>
       <p>
-        This benchmark creates <strong>{expressionCount} unique</strong> expressions with about{' '}
-        <strong>60 nodes</strong> each using static <code>rsx(&apos;...&apos;)(model)</code> call sites, then
-        measures creation + resolution time.
+        This benchmark creates <strong>{expressionCount} unique</strong>{' '}
+        expressions with about <strong>60 nodes</strong> each using static{' '}
+        <code>rsx(&apos;...&apos;)(model)</code> call sites, then measures
+        creation + resolution time.
       </p>
-      <button onClick={onRun} disabled={running} style={{ padding: '0.5rem 1rem' }}>
+      <button
+        onClick={onRun}
+        disabled={running}
+        style={{ padding: '0.5rem 1rem' }}
+      >
         {running ? 'Running benchmark...' : 'Run 1000-expression benchmark'}
       </button>
       {result ? (

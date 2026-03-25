@@ -53,8 +53,6 @@ describe('ConstantNumberExpression tests', () => {
           context: {},
           services,
         });
-
-        services.transactionManager.commit();
       });
       expect(clonedExpression.value).toEqual(100);
     } finally {

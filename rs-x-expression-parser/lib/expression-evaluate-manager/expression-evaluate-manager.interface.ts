@@ -1,15 +1,16 @@
-import type { IKeyedInstanceFactory } from '@rs-x/core';
+import type { IDisposable, IKeyedInstanceFactory } from '@rs-x/core';
 
 import type { IExpressionEvaluateUnit } from './expression-evaluate-unit.interface';
 
-export interface IEvaluateManagerForExpression {
+export interface IEvaluateManagerForExpression extends IDisposable {
   register(evaluateUnit: IExpressionEvaluateUnit): void;
-  dispose(): void;
+  initialize(): void;
 }
 
-export interface IExpressionEvaluateManager
-  extends IKeyedInstanceFactory<
-    () => void,
-    () => void,
-    IEvaluateManagerForExpression
-  > {}
+export type CommitHandler = (initialized: boolean) => void;
+
+export interface IExpressionEvaluateManager extends IKeyedInstanceFactory<
+  CommitHandler,
+  CommitHandler,
+  IEvaluateManagerForExpression
+> {}

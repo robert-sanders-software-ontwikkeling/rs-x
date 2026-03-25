@@ -66,7 +66,9 @@ function tryDetectRsxEntryPoint(
     return null;
   }
 
-  const expressionLiteral = resolveStaticExpressionLiteral(rsxInvocation.arguments[0]);
+  const expressionLiteral = resolveStaticExpressionLiteral(
+    rsxInvocation.arguments[0],
+  );
   if (!expressionLiteral) {
     return null;
   }
@@ -98,14 +100,18 @@ function isRsxCallee(
   }
 
   const resolvedSymbol =
-    symbol.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
+    symbol.flags & ts.SymbolFlags.Alias
+      ? checker.getAliasedSymbol(symbol)
+      : symbol;
   if (resolvedSymbol.getName() !== 'rsx') {
     return false;
   }
 
   const declarations = resolvedSymbol.declarations ?? [];
   return declarations.some((declaration) => {
-    const sourcePath = declaration.getSourceFile().fileName.replace(/\\/gu, '/');
+    const sourcePath = declaration
+      .getSourceFile()
+      .fileName.replace(/\\/gu, '/');
     return (
       sourcePath.includes('/rs-x-expression-parser/') ||
       sourcePath.includes('/@rs-x/expression-parser/')
@@ -157,12 +163,16 @@ function tryDetectFactoryEntryPoint(
     return null;
   }
 
-  const expressionLiteral = resolveStaticExpressionLiteral(callExpression.arguments[1]);
+  const expressionLiteral = resolveStaticExpressionLiteral(
+    callExpression.arguments[1],
+  );
   if (!expressionLiteral) {
     return null;
   }
 
-  const factoryType = checker.getTypeAtLocation(callExpression.expression.expression);
+  const factoryType = checker.getTypeAtLocation(
+    callExpression.expression.expression,
+  );
   if (!isExpressionFactoryType(factoryType, checker, new Set())) {
     return null;
   }
@@ -176,7 +186,9 @@ function tryDetectFactoryEntryPoint(
   };
 }
 
-function resolveStaticExpressionLiteral(node: ts.Expression): ts.StringLiteralLike | null {
+function resolveStaticExpressionLiteral(
+  node: ts.Expression,
+): ts.StringLiteralLike | null {
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
     return node;
   }
@@ -239,7 +251,10 @@ function isExpressionFactoryByCreateSignature(
     return false;
   }
 
-  const createType = checker.getTypeOfSymbolAtLocation(createProperty, declaration);
+  const createType = checker.getTypeOfSymbolAtLocation(
+    createProperty,
+    declaration,
+  );
   const signatures = createType.getCallSignatures();
   if (signatures.length === 0) {
     return false;

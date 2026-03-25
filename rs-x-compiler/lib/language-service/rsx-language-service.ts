@@ -1,8 +1,8 @@
 import ts from 'typescript';
 
-import type { CompilerDiagnosticCategory } from '../diagnostics';
 import { detectExpressionSitesInSourceFile } from '../compiler/expression-site-detector';
 import { validateExpressionSite } from '../compiler/expression-site-validator';
+import type { CompilerDiagnosticCategory } from '../diagnostics';
 
 export interface IRsxExpressionRegion {
   readonly expression: string;
@@ -93,7 +93,11 @@ export function getRsxCompletionsAtPosition(
 
   const completionTarget = resolveCompletionTarget(prefixSource);
   const targetType = completionTarget.chain.length
-    ? resolveChainType(context.modelType, completionTarget.chain, context.checker)
+    ? resolveChainType(
+        context.modelType,
+        completionTarget.chain,
+        context.checker,
+      )
     : context.modelType;
 
   if (!targetType) {
@@ -109,7 +113,9 @@ export function getRsxCompletionsAtPosition(
 
   return names.map((name) => ({
     name,
-    kind: isCallableProperty(targetType, name, context.checker) ? 'method' : 'property',
+    kind: isCallableProperty(targetType, name, context.checker)
+      ? 'method'
+      : 'property',
   }));
 }
 
@@ -149,7 +155,10 @@ export function getRsxHoverAtPosition(
   }
 
   const expressionOffset = position - context.expressionStart;
-  const tokenRange = resolveIdentifierTokenRange(context.expression, expressionOffset);
+  const tokenRange = resolveIdentifierTokenRange(
+    context.expression,
+    expressionOffset,
+  );
   if (!tokenRange) {
     return null;
   }
@@ -160,7 +169,11 @@ export function getRsxHoverAtPosition(
     return null;
   }
 
-  const resolvedType = resolveChainType(context.modelType, chain, context.checker);
+  const resolvedType = resolveChainType(
+    context.modelType,
+    chain,
+    context.checker,
+  );
   if (!resolvedType) {
     return null;
   }
@@ -208,29 +221,35 @@ export function getRsxSignatureHelpAtPosition(
   }
 
   const items: IRsxSignatureHelpItem[] = signatures.map((signature) => {
-    const parameters = signature.getParameters().map((parameter): IRsxSignatureParameter => {
-      const declaration = parameter.valueDeclaration ?? parameter.declarations?.[0];
-      const typeText = declaration
-        ? context.checker.typeToString(context.checker.getTypeOfSymbolAtLocation(parameter, declaration))
-        : 'unknown';
-      const declarations = parameter.declarations ?? [];
-      const isOptionalByDeclaration = declarations.some(
-        (node) =>
-          ts.isParameter(node) &&
-          (Boolean(node.questionToken) || Boolean(node.initializer)),
-      );
-      const isRest = declarations.some(
-        (node) => ts.isParameter(node) && Boolean(node.dotDotDotToken),
-      );
+    const parameters = signature
+      .getParameters()
+      .map((parameter): IRsxSignatureParameter => {
+        const declaration =
+          parameter.valueDeclaration ?? parameter.declarations?.[0];
+        const typeText = declaration
+          ? context.checker.typeToString(
+              context.checker.getTypeOfSymbolAtLocation(parameter, declaration),
+            )
+          : 'unknown';
+        const declarations = parameter.declarations ?? [];
+        const isOptionalByDeclaration = declarations.some(
+          (node) =>
+            ts.isParameter(node) &&
+            (Boolean(node.questionToken) || Boolean(node.initializer)),
+        );
+        const isRest = declarations.some(
+          (node) => ts.isParameter(node) && Boolean(node.dotDotDotToken),
+        );
 
-      return {
-        name: parameter.getName(),
-        typeText,
-        isOptional:
-          (parameter.flags & ts.SymbolFlags.Optional) !== 0 || isOptionalByDeclaration,
-        isRest,
-      };
-    });
+        return {
+          name: parameter.getName(),
+          typeText,
+          isOptional:
+            (parameter.flags & ts.SymbolFlags.Optional) !== 0 ||
+            isOptionalByDeclaration,
+          isRest,
+        };
+      });
 
     return {
       parameters,
@@ -330,16 +349,10 @@ function resolveIdentifierTokenRange(
   let start = offset;
   let end = offset;
 
-  if (
-    offset < expression.length &&
-    isIdentifierChar(expression[offset])
-  ) {
+  if (offset < expression.length && isIdentifierChar(expression[offset])) {
     start = offset;
     end = offset + 1;
-  } else if (
-    offset > 0 &&
-    isIdentifierChar(expression[offset - 1])
-  ) {
+  } else if (offset > 0 && isIdentifierChar(expression[offset - 1])) {
     start = offset - 1;
     end = offset;
   } else {
@@ -396,7 +409,10 @@ function resolveChainType(
       return null;
     }
 
-    const propertyType = checker.getTypeOfSymbolAtLocation(property, declaration);
+    const propertyType = checker.getTypeOfSymbolAtLocation(
+      property,
+      declaration,
+    );
     if (!isMethodCall) {
       currentType = unwrapRsxExpressionType(propertyType, checker);
       continue;
@@ -407,7 +423,10 @@ function resolveChainType(
       return null;
     }
 
-    currentType = unwrapRsxExpressionType(signatures[0].getReturnType(), checker);
+    currentType = unwrapRsxExpressionType(
+      signatures[0].getReturnType(),
+      checker,
+    );
   }
 
   return currentType;
@@ -544,7 +563,9 @@ function resolveActiveCallContext(prefixSource: string): {
   }
 
   const activeCall = callStack[callStack.length - 1];
-  const callTargetSource = prefixSource.slice(0, activeCall.openOffset).trimEnd();
+  const callTargetSource = prefixSource
+    .slice(0, activeCall.openOffset)
+    .trimEnd();
   const chainMatch = callTargetSource.match(
     /([A-Za-z_$][\w$]*(?:\(\))?(?:\.[A-Za-z_$][\w$]*(?:\(\))?)*)$/u,
   );
@@ -570,7 +591,9 @@ function resolveActiveCallContext(prefixSource: string): {
   };
 }
 
-function resolveConstructorCompletionPrefix(prefixSource: string): string | null {
+function resolveConstructorCompletionPrefix(
+  prefixSource: string,
+): string | null {
   const constructorPrefixMatch = prefixSource.match(
     /(?:^|[^\w$])new\s+([A-Za-z_$][\w$]*)?$/u,
   );
@@ -595,8 +618,13 @@ function resolveConstructorCompletions(
     )
     .filter((symbol) => !symbol.getName().startsWith('__'))
     .filter((symbol) => symbol.getName().startsWith(prefix))
-    .filter((symbol) =>
-      resolveConstructableTypeFromSymbol(symbol, context.sourceFile, context.checker) !== null,
+    .filter(
+      (symbol) =>
+        resolveConstructableTypeFromSymbol(
+          symbol,
+          context.sourceFile,
+          context.checker,
+        ) !== null,
     )
     .map((symbol) => symbol.getName())
     .filter((name, index, collection) => collection.indexOf(name) === index)
@@ -631,7 +659,11 @@ function resolveConstructorType(
     return null;
   }
 
-  const rootType = resolveConstructableTypeFromSymbol(rootSymbol, sourceFile, checker);
+  const rootType = resolveConstructableTypeFromSymbol(
+    rootSymbol,
+    sourceFile,
+    checker,
+  );
   if (!rootType) {
     return null;
   }
@@ -668,14 +700,19 @@ function resolveConstructableTypeFromSymbol(
   checker: ts.TypeChecker,
 ): ts.Type | null {
   const resolvedSymbol =
-    symbol.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
+    symbol.flags & ts.SymbolFlags.Alias
+      ? checker.getAliasedSymbol(symbol)
+      : symbol;
   const declaration =
     resolvedSymbol.valueDeclaration ??
     resolvedSymbol.declarations?.[0] ??
     symbol.valueDeclaration ??
     symbol.declarations?.[0] ??
     sourceFile;
-  const symbolType = checker.getTypeOfSymbolAtLocation(resolvedSymbol, declaration);
+  const symbolType = checker.getTypeOfSymbolAtLocation(
+    resolvedSymbol,
+    declaration,
+  );
   if (symbolType.getConstructSignatures().length > 0) {
     return symbolType;
   }

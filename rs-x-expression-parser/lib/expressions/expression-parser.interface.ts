@@ -57,7 +57,7 @@ export enum ExpressionType {
   GreaterThanOrEqual = 'Greater than or equal',
   Identifier = 'identifier',
   In = 'in',
-  Index = 'Index',
+  ComputedIndex = 'Computed index',
   Inequality = 'inequality',
   Instanceof = 'instanceof',
   LessThan = 'less than',

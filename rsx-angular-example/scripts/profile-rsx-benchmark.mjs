@@ -22,15 +22,19 @@ function getArgValue(name) {
 
 function parseConfig() {
   const source = getArgValue('source') ?? 'runtime';
-  const countValue = Number(getArgValue('count') ?? DEFAULT_BENCHMARK_EXPRESSION_COUNT);
+  const countValue = Number(
+    getArgValue('count') ?? DEFAULT_BENCHMARK_EXPRESSION_COUNT,
+  );
   const waitTimeoutValue = Number(getArgValue('wait-timeout-ms') ?? 15000);
   const json = (getArgValue('json') ?? 'false') === 'true';
-  const count = Number.isFinite(countValue) && countValue > 0
-    ? Math.floor(countValue)
-    : DEFAULT_BENCHMARK_EXPRESSION_COUNT;
-  const waitTimeoutMs = Number.isFinite(waitTimeoutValue) && waitTimeoutValue > 0
-    ? Math.floor(waitTimeoutValue)
-    : 15000;
+  const count =
+    Number.isFinite(countValue) && countValue > 0
+      ? Math.floor(countValue)
+      : DEFAULT_BENCHMARK_EXPRESSION_COUNT;
+  const waitTimeoutMs =
+    Number.isFinite(waitTimeoutValue) && waitTimeoutValue > 0
+      ? Math.floor(waitTimeoutValue)
+      : 15000;
   return { source, count, waitTimeoutMs, json };
 }
 
@@ -199,7 +203,8 @@ async function run() {
   const initStart = performance.now();
   const initializedCount = await waitAllWithTimeout(
     expressions.map((expression) =>
-      new WaitForEvent(expression, 'changed').wait(emptyFunction)),
+      new WaitForEvent(expression, 'changed').wait(emptyFunction),
+    ),
     waitTimeoutMs,
   );
   phase.initialResolutionMs = performance.now() - initStart;

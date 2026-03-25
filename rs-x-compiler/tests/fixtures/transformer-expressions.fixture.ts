@@ -1,4 +1,4 @@
-import { rsx, type IExpressionFactory } from '@rs-x/expression-parser';
+import { type IExpressionFactory, rsx } from '@rs-x/expression-parser';
 
 interface IModel {
   a: number;

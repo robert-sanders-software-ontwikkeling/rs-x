@@ -51,7 +51,9 @@ async function createExpressionsInBatches(
   return expressions;
 }
 
-async function disposeExpressionsInBatches(expressions: readonly IExpression[]): Promise<void> {
+async function disposeExpressionsInBatches(
+  expressions: readonly IExpression[],
+): Promise<void> {
   for (let index = 0; index < expressions.length; index += DISPOSE_BATCH_SIZE) {
     const batchEnd = Math.min(index + DISPOSE_BATCH_SIZE, expressions.length);
     for (let cursor = index; cursor < batchEnd; cursor += 1) {
@@ -70,7 +72,9 @@ async function runBenchmark(
   const createStart = performance.now();
   const expressions = await createExpressionsInBatches(onProgress);
   const createEnd = performance.now();
-  const resolvedCount = expressions.filter((expression) => expression.value !== undefined).length;
+  const resolvedCount = expressions.filter(
+    (expression) => expression.value !== undefined,
+  ).length;
   const cleanupStart = performance.now();
   await disposeExpressionsInBatches(expressions);
   const cleanupEnd = performance.now();
@@ -110,19 +114,35 @@ export default function Page() {
   };
 
   return (
-    <main style={{ maxWidth: 920, margin: '2rem auto', fontFamily: 'sans-serif', lineHeight: 1.5 }}>
+    <main
+      style={{
+        maxWidth: 920,
+        margin: '2rem auto',
+        fontFamily: 'sans-serif',
+        lineHeight: 1.5,
+      }}
+    >
       <h1>RS-X Next Benchmark</h1>
       <p>
-        Runs {benchmarkExpressionFactories.length} unique static <code>rsx(&apos;...&apos;)(model)</code>{' '}
-        expressions with about 60 nodes per expression.
+        Runs {benchmarkExpressionFactories.length} unique static{' '}
+        <code>rsx(&apos;...&apos;)(model)</code> expressions with about 60 nodes
+        per expression.
       </p>
-      <button onClick={onRun} disabled={running} style={{ padding: '0.5rem 1rem' }}>
-        {running ? progressLabel || 'Running benchmark...' : 'Run 1000-expression benchmark'}
+      <button
+        onClick={onRun}
+        disabled={running}
+        style={{ padding: '0.5rem 1rem' }}
+      >
+        {running
+          ? progressLabel || 'Running benchmark...'
+          : 'Run 1000-expression benchmark'}
       </button>
       {result ? (
         <section style={{ marginTop: '1rem' }}>
           <p>Created expressions: {result.createdCount}</p>
-          <p>Resolved expressions (immediate snapshot): {result.resolvedCount}</p>
+          <p>
+            Resolved expressions (immediate snapshot): {result.resolvedCount}
+          </p>
           <p>Create time: {result.createMs.toFixed(2)} ms</p>
           <p>Resolve time: {result.resolveMs.toFixed(2)} ms (not awaited)</p>
           <p>Total time: {result.totalMs.toFixed(2)} ms</p>

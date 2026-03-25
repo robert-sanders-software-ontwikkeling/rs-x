@@ -33,7 +33,10 @@ function createProgram(entryFile: string): ts.Program {
 
 describe('expression-site detection', () => {
   it('detects rsx(...) and IExpressionFactory.create(...) with static string literals', () => {
-    const fixturePath = path.resolve(__dirname, './fixtures/expression-detection.fixture.ts');
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/expression-detection.fixture.ts',
+    );
 
     const program = createProgram(fixturePath);
     const checker = program.getTypeChecker();
@@ -41,12 +44,13 @@ describe('expression-site detection', () => {
 
     expect(sourceFile).toBeDefined();
 
-    const detections = detectExpressionSitesInSourceFile(sourceFile!, checker).map(
-      (detection) => ({
-        kind: detection.kind,
-        expression: detection.expression,
-      }),
-    );
+    const detections = detectExpressionSitesInSourceFile(
+      sourceFile!,
+      checker,
+    ).map((detection) => ({
+      kind: detection.kind,
+      expression: detection.expression,
+    }));
 
     expect(detections).toEqual([
       {
@@ -77,7 +81,10 @@ describe('expression-site detection', () => {
   });
 
   it('does not detect local shadowed rsx function', () => {
-    const fixturePath = path.resolve(__dirname, './fixtures/shadowed-rsx.fixture.ts');
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/shadowed-rsx.fixture.ts',
+    );
 
     const program = createProgram(fixturePath);
     const checker = program.getTypeChecker();
@@ -91,7 +98,10 @@ describe('expression-site detection', () => {
   });
 
   it('detects from full program scan', () => {
-    const fixturePath = path.resolve(__dirname, './fixtures/expression-detection.fixture.ts');
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/expression-detection.fixture.ts',
+    );
 
     const program = createProgram(fixturePath);
 

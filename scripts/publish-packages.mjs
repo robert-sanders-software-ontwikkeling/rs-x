@@ -19,10 +19,7 @@ const nodeLibFolders = [
   'rs-x-react-components',
 ];
 const nodePackageFolders = [...nodeLibFolders, angularDist];
-const changelogFolders = [
-  ...nodeLibFolders,
-  'rs-x-angular/projects/rsx',
-];
+const changelogFolders = [...nodeLibFolders, 'rs-x-angular/projects/rsx'];
 
 // ---------------- UTILITIES ----------------
 function run(cmd, envOverrides = {}) {
