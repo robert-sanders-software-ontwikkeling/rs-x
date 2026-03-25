@@ -43,11 +43,11 @@ export class PropertyValueAccessor implements IPropertyValueAccessor {
     if (!obj) {
       return false;
     }
-    return (
-      Type.hasProperty(obj, index) &&
-      !(obj instanceof Date) &&
-      !isObservable(obj[index]) &&
-      !(obj[index] instanceof Promise)
-    );
+    if (!Type.hasProperty(obj, index) || obj instanceof Date) {
+      return false;
+    }
+
+    const value = obj[index];
+    return !isObservable(value) && !(value instanceof Promise);
   }
 }

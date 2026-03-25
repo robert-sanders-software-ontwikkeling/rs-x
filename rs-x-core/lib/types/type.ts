@@ -198,8 +198,16 @@ export class Type {
   }
 
   public static hasProperty(root: unknown, name: string): boolean {
+    if (!root || (typeof root !== 'object' && typeof root !== 'function')) {
+      return false;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(root, name)) {
+      return true;
+    }
+
     for (
-      let current = root;
+      let current = Object.getPrototypeOf(root);
       current && current !== Object.prototype;
       current = Object.getPrototypeOf(current)
     ) {
