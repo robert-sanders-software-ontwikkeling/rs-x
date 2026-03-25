@@ -1,5 +1,5 @@
 import { generate as astToString } from 'astring';
-import * as espree from 'espree';
+import { parseScript } from 'meriyah';
 import type {
   ArrayExpression as EstreeArrayExpression,
   AssignmentExpression as EstreeAssignmentExpression,
@@ -95,7 +95,7 @@ import { TypeofExpression } from './expressions/typeof-expression';
 import { UnaryNegationExpression } from './expressions/unary-negation-expression';
 import { UnaryPlusExpression } from './expressions/unary-plus-expression';
 
-enum EspreeExpressionType {
+enum SyntaxExpressionType {
   UnaryExpression = 'UnaryExpression',
   BinaryExpression = 'BinaryExpression',
   AssignmentExpression = 'AssignmentExpression',
@@ -116,28 +116,28 @@ enum EspreeExpressionType {
   Property = 'Property',
 }
 
-type MemberExpressionSegmentType = Expression | PrivateIdentifier | Super;
+type MemberPathSegmentType = Expression | PrivateIdentifier | Super;
 
 type ExpressionFactory<T extends Expression | SpreadElement | Property> = (
   expression: T,
 ) => AbstractExpression;
 
 type KnownExpressionType =
-  keyof (typeof JsEspreeExpressionParser.prototype)['expressionFactories'];
+  keyof (typeof JsExpressionParser.prototype)['expressionFactories'];
 
-interface IPathSehment {
-  expression: MemberExpressionSegmentType;
+interface IPathSegment {
+  expression: MemberPathSegmentType;
   computed: boolean;
 }
 
-type INormalizedMemberProperty = Pick<IPathSehment, 'expression' | 'computed'>;
+type INormalizedMemberSegment = Pick<IPathSegment, 'expression' | 'computed'>;
 
 @Injectable()
-export class JsEspreeExpressionParser implements IExpressionParser {
+export class JsExpressionParser implements IExpressionParser {
   public static readonly instance: IExpressionParser;
   private static readonly _parseOptions = {
-    ecmaVersion: 2022,
-    range: true,
+    next: true,
+    ranges: true,
   } as const;
   private _currentExpressionSource: string | undefined;
   private readonly createConstantExpression = {
@@ -151,24 +151,24 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       new ConstantBigIntExpression(BigInt(literal.value as string)),
   };
   private readonly expressionFactories: {
-    [EspreeExpressionType.UnaryExpression]: ExpressionFactory<UnaryExpression>;
-    [EspreeExpressionType.BinaryExpression]: ExpressionFactory<BinaryExpression>;
-    [EspreeExpressionType.AssignmentExpression]: ExpressionFactory<EstreeAssignmentExpression>;
-    [EspreeExpressionType.Literal]: ExpressionFactory<Literal>;
-    [EspreeExpressionType.ConditionalExpression]: ExpressionFactory<EstreeConditionalExpression>;
-    [EspreeExpressionType.LogicalExpression]: ExpressionFactory<LogicalExpression>;
-    [EspreeExpressionType.ChainExpression]: ExpressionFactory<ChainExpression>;
-    [EspreeExpressionType.MemberExpression]: ExpressionFactory<EstreeMemberExpression>;
-    [EspreeExpressionType.Identifier]: ExpressionFactory<Identifier>;
-    [EspreeExpressionType.NewExpression]: ExpressionFactory<EstreeNewExpression>;
-    [EspreeExpressionType.CallExpression]: ExpressionFactory<CallExpression>;
-    [EspreeExpressionType.TemplateLiteral]: ExpressionFactory<TemplateLiteral>;
-    [EspreeExpressionType.SpreadElement]: ExpressionFactory<SpreadElement>;
-    [EspreeExpressionType.SequenceExpression]: ExpressionFactory<EstreeSequenceExpression>;
-    [EspreeExpressionType.TaggedTemplateExpression]: ExpressionFactory<EstreeTaggedTemplateExpression>;
-    [EspreeExpressionType.ArrayExpression]: ExpressionFactory<EstreeArrayExpression>;
-    [EspreeExpressionType.ObjectExpression]: ExpressionFactory<EstreeObjectExpression>;
-    [EspreeExpressionType.Property]: ExpressionFactory<Property>;
+    [SyntaxExpressionType.UnaryExpression]: ExpressionFactory<UnaryExpression>;
+    [SyntaxExpressionType.BinaryExpression]: ExpressionFactory<BinaryExpression>;
+    [SyntaxExpressionType.AssignmentExpression]: ExpressionFactory<EstreeAssignmentExpression>;
+    [SyntaxExpressionType.Literal]: ExpressionFactory<Literal>;
+    [SyntaxExpressionType.ConditionalExpression]: ExpressionFactory<EstreeConditionalExpression>;
+    [SyntaxExpressionType.LogicalExpression]: ExpressionFactory<LogicalExpression>;
+    [SyntaxExpressionType.ChainExpression]: ExpressionFactory<ChainExpression>;
+    [SyntaxExpressionType.MemberExpression]: ExpressionFactory<EstreeMemberExpression>;
+    [SyntaxExpressionType.Identifier]: ExpressionFactory<Identifier>;
+    [SyntaxExpressionType.NewExpression]: ExpressionFactory<EstreeNewExpression>;
+    [SyntaxExpressionType.CallExpression]: ExpressionFactory<CallExpression>;
+    [SyntaxExpressionType.TemplateLiteral]: ExpressionFactory<TemplateLiteral>;
+    [SyntaxExpressionType.SpreadElement]: ExpressionFactory<SpreadElement>;
+    [SyntaxExpressionType.SequenceExpression]: ExpressionFactory<EstreeSequenceExpression>;
+    [SyntaxExpressionType.TaggedTemplateExpression]: ExpressionFactory<EstreeTaggedTemplateExpression>;
+    [SyntaxExpressionType.ArrayExpression]: ExpressionFactory<EstreeArrayExpression>;
+    [SyntaxExpressionType.ObjectExpression]: ExpressionFactory<EstreeObjectExpression>;
+    [SyntaxExpressionType.Property]: ExpressionFactory<Property>;
   };
   private readonly unaryExpressionFactories: Record<
     UnaryOperator,
@@ -185,28 +185,28 @@ export class JsEspreeExpressionParser implements IExpressionParser {
 
   constructor() {
     this.expressionFactories = {
-      [EspreeExpressionType.UnaryExpression]: this.createUnaryExpression,
-      [EspreeExpressionType.BinaryExpression]: this.createBinaryExpression,
-      [EspreeExpressionType.AssignmentExpression]:
+      [SyntaxExpressionType.UnaryExpression]: this.createUnaryExpression,
+      [SyntaxExpressionType.BinaryExpression]: this.createBinaryExpression,
+      [SyntaxExpressionType.AssignmentExpression]:
         this.createAssignmentExpression,
-      [EspreeExpressionType.Literal]: this.createLiteralExpression,
-      [EspreeExpressionType.ConditionalExpression]:
+      [SyntaxExpressionType.Literal]: this.createLiteralExpression,
+      [SyntaxExpressionType.ConditionalExpression]:
         this.createConditionalExpression,
-      [EspreeExpressionType.LogicalExpression]: this.createLogicalExpression,
-      [EspreeExpressionType.ChainExpression]: this.createChainExpression,
-      [EspreeExpressionType.MemberExpression]: this.createMemberExpression,
-      [EspreeExpressionType.Identifier]: this.createIdentifier,
-      [EspreeExpressionType.NewExpression]: this.createNewExpression,
-      [EspreeExpressionType.CallExpression]: this.createCallExpression,
-      [EspreeExpressionType.TemplateLiteral]:
+      [SyntaxExpressionType.LogicalExpression]: this.createLogicalExpression,
+      [SyntaxExpressionType.ChainExpression]: this.createChainExpression,
+      [SyntaxExpressionType.MemberExpression]: this.createMemberExpression,
+      [SyntaxExpressionType.Identifier]: this.createIdentifier,
+      [SyntaxExpressionType.NewExpression]: this.createNewExpression,
+      [SyntaxExpressionType.CallExpression]: this.createCallExpression,
+      [SyntaxExpressionType.TemplateLiteral]:
         this.createTemplateLiteralExpression,
-      [EspreeExpressionType.SpreadElement]: this.createSpreadExpression,
-      [EspreeExpressionType.SequenceExpression]: this.createSequenceExpression,
-      [EspreeExpressionType.TaggedTemplateExpression]:
+      [SyntaxExpressionType.SpreadElement]: this.createSpreadExpression,
+      [SyntaxExpressionType.SequenceExpression]: this.createSequenceExpression,
+      [SyntaxExpressionType.TaggedTemplateExpression]:
         this.createTaggedTemplateExpression,
-      [EspreeExpressionType.ArrayExpression]: this.createArrayExpression,
-      [EspreeExpressionType.ObjectExpression]: this.createObjectExpression,
-      [EspreeExpressionType.Property]: this.createPropertyExpression,
+      [SyntaxExpressionType.ArrayExpression]: this.createArrayExpression,
+      [SyntaxExpressionType.ObjectExpression]: this.createObjectExpression,
+      [SyntaxExpressionType.Property]: this.createPropertyExpression,
     };
 
     this.unaryExpressionFactories = {
@@ -445,7 +445,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     let computed = false;
     let optional = false;
 
-    if (expression.callee.type === EspreeExpressionType.MemberExpression) {
+    if (expression.callee.type === SyntaxExpressionType.MemberExpression) {
       objectExpression = this.createExpression(
         expression.callee.object,
       ) as IExpression<object>;
@@ -513,7 +513,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     let objectExpression: IExpression<object> | null = null;
     let functionExpression: IExpression<AnyFunction | string | number>;
 
-    if (expression.tag.type === EspreeExpressionType.MemberExpression) {
+    if (expression.tag.type === SyntaxExpressionType.MemberExpression) {
       objectExpression = this.createExpression(
         expression.tag.object,
       ) as IExpression<object>;
@@ -885,7 +885,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     propertyExpression: Property,
   ): AbstractExpression => {
     const keyExpression =
-      propertyExpression.key.type === EspreeExpressionType.Identifier
+      propertyExpression.key.type === SyntaxExpressionType.Identifier
         ? new ConstantStringExpression(
             Type.cast<Identifier>(propertyExpression.key).name,
           )
@@ -899,10 +899,10 @@ export class JsEspreeExpressionParser implements IExpressionParser {
   };
 
   private parseExpression(expression: string): ExpressionStatement {
-    const program = espree.parse(
+    const program = parseScript(
       expression,
-      JsEspreeExpressionParser._parseOptions,
-    ) as Program;
+      JsExpressionParser._parseOptions,
+    ) as unknown as Program;
 
     if (program.body.length === 0) {
       throw new ParserException(expression, 'Empty expression', 0);
@@ -944,10 +944,10 @@ export class JsEspreeExpressionParser implements IExpressionParser {
   }
 
   private normalizeMemberProperty(
-    expression: MemberExpressionSegmentType,
+    expression: MemberPathSegmentType,
     computed: boolean,
-  ): INormalizedMemberProperty {
-    if (computed && expression.type === EspreeExpressionType.Literal) {
+  ): INormalizedMemberSegment {
+    if (computed && expression.type === SyntaxExpressionType.Literal) {
       const property = expression as Literal;
       if (
         typeof property.value === 'string' ||
@@ -955,7 +955,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
       ) {
         return {
           expression: {
-            type: EspreeExpressionType.Identifier,
+            type: SyntaxExpressionType.Identifier,
             name: property.value,
           } as Identifier,
           computed: false,
@@ -970,15 +970,15 @@ export class JsEspreeExpressionParser implements IExpressionParser {
   }
 
   private flattenMemberExpression(
-    expr: MemberExpressionSegmentType,
-  ): IPathSehment[] {
-    const result: IPathSehment[] = [];
+    expr: MemberPathSegmentType,
+  ): IPathSegment[] {
+    const result: IPathSegment[] = [];
 
-    const walk = (node: MemberExpressionSegmentType): void => {
+    const walk = (node: MemberPathSegmentType): void => {
       switch (node.type) {
-        case EspreeExpressionType.MemberExpression:
+        case SyntaxExpressionType.MemberExpression:
           // first resolve the object
-          walk(node.object as MemberExpressionSegmentType);
+          walk(node.object as MemberPathSegmentType);
 
           // then push the property
           result.push(
@@ -986,7 +986,7 @@ export class JsEspreeExpressionParser implements IExpressionParser {
           );
           break;
 
-        case EspreeExpressionType.CallExpression:
+        case SyntaxExpressionType.CallExpression:
           // CallExpression is a single semantic segment
           result.push({
             expression: node,
@@ -1006,3 +1006,6 @@ export class JsEspreeExpressionParser implements IExpressionParser {
     return result;
   }
 }
+
+// Backward-compatible export name to avoid breaking downstream consumers.
+export { JsExpressionParser as JsEspreeExpressionParser };

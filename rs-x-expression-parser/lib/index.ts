@@ -12,7 +12,7 @@ export * from './expression-observer';
 export * from './expression-services';
 export * from './expressions';
 export * from './identifier-owner-resolver';
-export * from './js-espree-expression-parser';
+export * from './js-expression-parser';
 export * from './rs-x-expression-parser.module';
 export * from './rs-x-expression-parser-injection-tokes';
 export * from './rsx';

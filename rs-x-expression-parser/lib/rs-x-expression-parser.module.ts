@@ -48,7 +48,7 @@ import {
   ExpressionEvaluateManager,
   type IExpressionEvaluateManager,
 } from './expression-evaluate-manager';
-import { JsEspreeExpressionParser } from './js-espree-expression-parser';
+import { JsExpressionParser } from './js-expression-parser';
 import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
 
 InjectionContainer.load(RsXStateManagerModule);
@@ -69,7 +69,7 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
     .bind<IExpressionParser>(
       RsXExpressionParserInjectionTokens.IExpressionParser,
     )
-    .to(JsEspreeExpressionParser)
+    .to(JsExpressionParser)
     .inSingletonScope();
   options
     .bind<IExpressionManager>(

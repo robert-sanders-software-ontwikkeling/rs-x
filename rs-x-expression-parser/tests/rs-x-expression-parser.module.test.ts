@@ -41,7 +41,7 @@ import { GlobalIdentifierOwnerResolver } from '../lib/identifier-owner-resolver/
 import { MapKeyOwnerResolver } from '../lib/identifier-owner-resolver/map-key-owner-resolver';
 import { PropertyOwnerResolver } from '../lib/identifier-owner-resolver/property-owner-resolver';
 import { SetKeyOwnerResolver } from '../lib/identifier-owner-resolver/set-key-owner-resolver';
-import { JsEspreeExpressionParser } from '../lib/js-espree-expression-parser';
+import { JsExpressionParser } from '../lib/js-expression-parser';
 import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
@@ -112,7 +112,7 @@ describe('RsXExpressionParserModule tests', () => {
     const actual = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionParser,
     );
-    expect(actual).toBeInstanceOf(JsEspreeExpressionParser);
+    expect(actual).toBeInstanceOf(JsExpressionParser);
   });
 
   it('IExpressionParser instance is a singleton', () => {
