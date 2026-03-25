@@ -16,9 +16,18 @@ import type {
   IEvaluateManagerForExpression,
   IExpressionEvaluateManager,
 } from './expression-evaluate-manager.interface';
-import type { IExpressionEvaluateUnit } from './expression-evaluate-unit.interface';
+import type {
+  IExpressionEvaluateUnit,
+  IWatchRegistrationKey,
+} from './expression-evaluate-unit.interface';
 
 class EvaluateManagerForExpression implements IEvaluateManagerForExpression {
+  // Sentinel used when a unit does not provide a dedicated watch-rule key.
+  // This still allows deduplication by (context,index) without allocating
+  // extra wrapper keys per unit.
+  private static readonly _defaultWatchRuleKey = Symbol(
+    'default-watch-rule-key',
+  );
   private readonly _evaluateUnits: IExpressionEvaluateUnit[] = [];
   private readonly _changedSubscription: Subscription;
   private readonly _contextChangedSubscription: Subscription;
@@ -70,20 +79,55 @@ class EvaluateManagerForExpression implements IEvaluateManagerForExpression {
       return;
     }
 
+    // Performance optimization:
+    // During bootstrap, many units in the same expression graph can target the
+    // exact same (context,index) source. Re-running watch() for each one causes
+    // repeated state-manager registrations and creates O(n) churn.
+    //
+    // We cache the first watcher per registration key and let subsequent units
+    // reuse that already-watched value via setValue(...), avoiding duplicate
+    // watchState() calls while preserving per-unit ownership/disposal semantics.
+    let watchRegistrations:
+      | Map<unknown, Map<unknown, Map<unknown, IExpressionEvaluateUnit>>>
+      | undefined;
+
     const evaluateUnits = this._evaluateUnits;
     for (let i = 0; i < evaluateUnits.length; i++) {
       const evaluateUnit = evaluateUnits[i];
-      const value = evaluateUnit.watch();
 
-      if (value !== undefined) {
-        this.addChange({
-          context: evaluateUnit.context,
-          oldContext: evaluateUnit.context,
-          index: evaluateUnit.index,
-          newValue: value,
-          oldValue: undefined,
-        });
-      } else if (evaluateUnit.value !== undefined) {
+      const watchRegistrationKey = evaluateUnit.getWatchRegistrationKey?.();
+      if (watchRegistrationKey && watchRegistrations) {
+        const existingWatchRegistration = this.getWatchRegistration(
+          watchRegistrations,
+          watchRegistrationKey,
+        );
+        if (existingWatchRegistration) {
+          if (existingWatchRegistration.value !== undefined) {
+            evaluateUnit.setValue(
+              existingWatchRegistration.value,
+              watchRegistrationKey.context,
+              watchRegistrationKey.index,
+              false,
+            );
+          }
+          continue;
+        }
+      }
+
+      const value = evaluateUnit.watch();
+      if (watchRegistrationKey) {
+        watchRegistrations ??= new Map<
+          unknown,
+          Map<unknown, Map<unknown, IExpressionEvaluateUnit>>
+        >();
+        this.setWatchRegistration(
+          watchRegistrations,
+          watchRegistrationKey,
+          evaluateUnit,
+        );
+      }
+
+      if (value === undefined && evaluateUnit.value !== undefined) {
         this._changedQueue.add(evaluateUnit);
       }
     }
@@ -159,6 +203,59 @@ class EvaluateManagerForExpression implements IEvaluateManagerForExpression {
   private readonly onChange = (change: IStateChange) => {
     this.addChange(change);
   };
+
+  // Lookup path for bootstrap watch dedupe.
+  // Structure: context -> index -> watchRule -> unit
+  // This keeps lookups O(1) while avoiding string key serialization.
+  private getWatchRegistration(
+    registrations: Map<
+      unknown,
+      Map<unknown, Map<unknown, IExpressionEvaluateUnit>>
+    >,
+    key: IWatchRegistrationKey,
+  ): IExpressionEvaluateUnit | undefined {
+    const indexRegistrations = registrations.get(key.context);
+    const ruleRegistrations = indexRegistrations?.get(key.index);
+    if (!ruleRegistrations) {
+      return undefined;
+    }
+    return (
+      ruleRegistrations.get(key.watchRule) ??
+      ruleRegistrations.get(EvaluateManagerForExpression._defaultWatchRuleKey)
+    );
+  }
+
+  // Stores the first unit that performs watch() for a given registration key.
+  // Later equivalent units can reuse its observed value without re-registering.
+  private setWatchRegistration(
+    registrations: Map<
+      unknown,
+      Map<unknown, Map<unknown, IExpressionEvaluateUnit>>
+    >,
+    key: IWatchRegistrationKey,
+    evaluateUnit: IExpressionEvaluateUnit,
+  ): void {
+    let indexRegistrations = registrations.get(key.context);
+    if (!indexRegistrations) {
+      indexRegistrations = new Map<
+        unknown,
+        Map<unknown, IExpressionEvaluateUnit>
+      >();
+      registrations.set(key.context, indexRegistrations);
+    }
+
+    let ruleRegistrations = indexRegistrations.get(key.index);
+    if (!ruleRegistrations) {
+      ruleRegistrations = new Map<unknown, IExpressionEvaluateUnit>();
+      indexRegistrations.set(key.index, ruleRegistrations);
+    }
+
+    const ruleKey =
+      key.watchRule ?? EvaluateManagerForExpression._defaultWatchRuleKey;
+    if (!ruleRegistrations.has(ruleKey)) {
+      ruleRegistrations.set(ruleKey, evaluateUnit);
+    }
+  }
 
   private scheduleReevaluate(): void {
     if (this._reevaluateScheduled) {

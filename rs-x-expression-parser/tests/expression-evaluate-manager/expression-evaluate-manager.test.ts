@@ -11,6 +11,7 @@ import {
   ExpressionEvaluateManager,
   type IExpressionEvaluateUnit,
 } from '../../lib/expression-evaluate-manager';
+import type { IWatchRegistrationKey } from '../../lib/expression-evaluate-manager/expression-evaluate-unit.interface';
 
 class MatchingUnit implements IExpressionEvaluateUnit {
   public readonly count = 1;
@@ -129,6 +130,50 @@ class StickyNotReadyUnit implements IExpressionEvaluateUnit {
   public watch(): unknown {
     return undefined;
   }
+}
+
+class WatchRegistrationDedupUnit implements IExpressionEvaluateUnit {
+  public readonly count = 1;
+  public readonly commitChange = jest.fn();
+  public readonly dispose = jest.fn();
+  public value: unknown;
+
+  constructor(
+    public context: unknown,
+    public readonly index: unknown,
+    private readonly _watchRegistrationKey: IWatchRegistrationKey,
+    private readonly _watchValue: unknown,
+  ) {}
+
+  public clear(): void {}
+
+  public getWatchRegistrationKey(): IWatchRegistrationKey {
+    return this._watchRegistrationKey;
+  }
+
+  public isCommitReady(): boolean {
+    return true;
+  }
+
+  public setContext(): void {}
+
+  public setValue(
+    value: unknown,
+    context: unknown,
+    index: unknown,
+  ): IExpressionEvaluateUnit | null {
+    if (context !== this.context || index !== this.index) {
+      return null;
+    }
+
+    this.value = value;
+    return this;
+  }
+
+  public watch = jest.fn((): unknown => {
+    this.value = this._watchValue;
+    return this._watchValue;
+  });
 }
 
 const flushMicrotasks = async (): Promise<void> => {
@@ -505,5 +550,31 @@ describe('ExpressionEvaluateManager', () => {
 
     await flushMicrotasks();
     expect(evaluate).toHaveBeenCalledWith(true);
+  });
+
+  it('deduplicates watch registration for identical context/index/watchRule during initialize', () => {
+    const { manager } = setup();
+    const evaluate = jest.fn();
+    const managerInternals = manager as unknown as IManagerInternals;
+    const created = managerInternals.create(evaluate);
+
+    const context = { x: 1 };
+    const watchRule = { id: 'same-rule' };
+    const watchKey: IWatchRegistrationKey = {
+      context,
+      index: 'x',
+      watchRule,
+    };
+
+    const primary = new WatchRegistrationDedupUnit(context, 'x', watchKey, 1);
+    const duplicate = new WatchRegistrationDedupUnit(context, 'x', watchKey, 2);
+
+    created.instance.register(primary);
+    created.instance.register(duplicate);
+    created.instance.initialize();
+
+    expect(primary.watch).toHaveBeenCalledTimes(1);
+    expect(duplicate.watch).not.toHaveBeenCalled();
+    expect(duplicate.value).toBe(1);
   });
 });

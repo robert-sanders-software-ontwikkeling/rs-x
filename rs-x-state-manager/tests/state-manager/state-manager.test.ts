@@ -267,6 +267,40 @@ describe('StateManager tests', () => {
       expect(actual).toEqual(expected);
     });
 
+    it('Repeated watching the same context/index does not emit repeated initial change events (fan-out regression)', () => {
+      const object = { x: 10 };
+      const changes: IStateChange[] = [];
+      const subscription = stateManager.changed.subscribe((change) => {
+        changes.push(change);
+      });
+
+      stateManager.watchState(object, 'x');
+      for (let i = 0; i < 100; i += 1) {
+        stateManager.watchState(object, 'x');
+      }
+
+      object.x = 20;
+
+      subscription.unsubscribe();
+
+      expect(changes).toEqual([
+        {
+          context: object,
+          oldContext: object,
+          index: 'x',
+          oldValue: undefined,
+          newValue: 10,
+        },
+        {
+          context: object,
+          oldContext: object,
+          index: 'x',
+          oldValue: 10,
+          newValue: 20,
+        },
+      ]);
+    });
+
     it('Setting a new value for a watched field will emit a change event.', async () => {
       const object = { x: 10 };
       stateManager.watchState(object, 'x');

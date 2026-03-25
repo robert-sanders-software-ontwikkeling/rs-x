@@ -2,7 +2,10 @@ import { Type } from '@rs-x/core';
 import type { IIndexWatchRule, IStateManager } from '@rs-x/state-manager';
 import { IndexWatchRule } from '@rs-x/state-manager';
 
-import type { IExpressionEvaluateUnit } from './expression-evaluate-unit.interface';
+import type {
+  IExpressionEvaluateUnit,
+  IWatchRegistrationKey,
+} from './expression-evaluate-unit.interface';
 
 export class IdentifierExpressionEvaluateUnit implements IExpressionEvaluateUnit {
   public readonly count = 1;
@@ -118,6 +121,17 @@ export class IdentifierExpressionEvaluateUnit implements IExpressionEvaluateUnit
 
   public isCommitReady(): boolean {
     return true;
+  }
+
+  public getWatchRegistrationKey(): IWatchRegistrationKey | undefined {
+    if (Type.isNullOrUndefined(this._context)) {
+      return undefined;
+    }
+
+    return {
+      context: this._context,
+      index: this.index,
+    };
   }
 
   public setValue(

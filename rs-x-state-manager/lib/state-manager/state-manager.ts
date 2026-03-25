@@ -753,6 +753,11 @@ export class StateManager implements IStateManager {
     watched: boolean,
     ownerId: unknown,
   ): void {
+    const existingStateForContext = this._objectStateManager.getFromId(context);
+    const existingStateForIndex = existingStateForContext?.getFromId(index);
+    const previousValue =
+      transferedValue?.value ?? existingStateForIndex?.value ?? undefined;
+
     this.updateState(
       context,
       transferedValue?.context ?? context,
@@ -769,7 +774,7 @@ export class StateManager implements IStateManager {
         context,
         index,
         initialValue,
-        transferedValue?.value,
+        previousValue,
         transferedValue?.context,
       );
     }

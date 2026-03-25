@@ -1,11 +1,18 @@
 import type { IDisposable } from '@rs-x/core';
 import { type IIndexWatchRule } from '@rs-x/state-manager';
 
+export interface IWatchRegistrationKey {
+  readonly context: unknown;
+  readonly index: unknown;
+  readonly watchRule?: unknown;
+}
+
 export interface IExpressionEvaluateUnit extends IDisposable {
   readonly count: number;
   readonly index: unknown;
   readonly value: unknown;
   context: unknown;
+  getWatchRegistrationKey?(): IWatchRegistrationKey | undefined;
   isCommitReady(): boolean;
   setValue(
     value: unknown,

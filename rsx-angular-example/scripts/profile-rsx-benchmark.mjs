@@ -9,6 +9,8 @@ import { RsXExpressionParserModule, rsx } from '@rs-x/expression-parser';
 const DEFAULT_BENCHMARK_EXPRESSION_COUNT = 1000;
 const BENCHMARK_TERMS_PER_EXPRESSION = 32;
 const TOP_HOTSPOTS = 25;
+const DEFAULT_INCREMENT_STEP = 10;
+const DEFAULT_LINEARITY_TOLERANCE = 2.0;
 
 function getArgValue(name) {
   const prefix = `--${name}=`;
@@ -22,10 +24,15 @@ function getArgValue(name) {
 
 function parseConfig() {
   const source = getArgValue('source') ?? 'runtime';
+  const incremental = (getArgValue('incremental') ?? 'false') === 'true';
   const countValue = Number(
     getArgValue('count') ?? DEFAULT_BENCHMARK_EXPRESSION_COUNT,
   );
   const waitTimeoutValue = Number(getArgValue('wait-timeout-ms') ?? 15000);
+  const stepValue = Number(getArgValue('step') ?? DEFAULT_INCREMENT_STEP);
+  const linearityToleranceValue = Number(
+    getArgValue('linearity-tolerance') ?? DEFAULT_LINEARITY_TOLERANCE,
+  );
   const json = (getArgValue('json') ?? 'false') === 'true';
   const count =
     Number.isFinite(countValue) && countValue > 0
@@ -35,7 +42,23 @@ function parseConfig() {
     Number.isFinite(waitTimeoutValue) && waitTimeoutValue > 0
       ? Math.floor(waitTimeoutValue)
       : 15000;
-  return { source, count, waitTimeoutMs, json };
+  const step =
+    Number.isFinite(stepValue) && stepValue > 0
+      ? Math.floor(stepValue)
+      : DEFAULT_INCREMENT_STEP;
+  const linearityTolerance =
+    Number.isFinite(linearityToleranceValue) && linearityToleranceValue >= 1
+      ? linearityToleranceValue
+      : DEFAULT_LINEARITY_TOLERANCE;
+  return {
+    source,
+    incremental,
+    count,
+    waitTimeoutMs,
+    step,
+    linearityTolerance,
+    json,
+  };
 }
 
 function buildRuntimeBenchmarkDefinition(expressionCount) {
@@ -68,18 +91,18 @@ function buildGeneratedBenchmarkDefinition(expressionCount) {
   const fileReadStart = performance.now();
   const benchmarkFile = resolve(
     process.cwd(),
-    'rsx-angular-example/src/expressions/generated-benchmark-expressions.ts',
+    'rs-x-expression-parser/lib/benchmark/generated-benchmark-expression-strings.ts',
   );
   const source = readFileSync(benchmarkFile, 'utf8');
   const fileReadMs = performance.now() - fileReadStart;
-  const regex = /rsx\("((?:[^"\\]|\\.)*)"\)\(model\)/g;
-  const expressionStrings = [];
-  for (let match = regex.exec(source); match; match = regex.exec(source)) {
-    expressionStrings.push(match[1]);
-    if (expressionStrings.length >= expressionCount) {
-      break;
-    }
-  }
+  const arrayStart = source.indexOf('[');
+  const arrayEnd = source.lastIndexOf(']');
+  const serializedArray =
+    arrayStart >= 0 && arrayEnd > arrayStart
+      ? source.slice(arrayStart, arrayEnd + 1)
+      : '[]';
+  const allExpressionStrings = JSON.parse(serializedArray);
+  const expressionStrings = allExpressionStrings.slice(0, expressionCount);
 
   return {
     sharedModel: { x: 7, y: 8 },
@@ -175,7 +198,15 @@ async function waitAllWithTimeout(waiters, timeoutMs) {
 }
 
 async function run() {
-  const { source, count, waitTimeoutMs, json } = parseConfig();
+  const {
+    source,
+    incremental,
+    count,
+    waitTimeoutMs,
+    step,
+    linearityTolerance,
+    json,
+  } = parseConfig();
   const phase = {};
 
   const loadStart = performance.now();
@@ -188,6 +219,131 @@ async function run() {
       ? buildGeneratedBenchmarkDefinition(count)
       : buildRuntimeBenchmarkDefinition(count);
   phase.definitionBuildMs = performance.now() - buildStart;
+
+  if (incremental) {
+    const roundRows = [];
+    const expressions = [];
+    let previousPerExpressionMs;
+    let currentCount = 0;
+    let cumulativeTotalMs = 0;
+
+    while (currentCount < expressionStrings.length) {
+      const nextCount = Math.min(currentCount + step, expressionStrings.length);
+      const batchSize = nextCount - currentCount;
+
+      const createStart = performance.now();
+      const newExpressions = expressionStrings
+        .slice(currentCount, nextCount)
+        .map((expressionString) => rsx(expressionString)(sharedModel));
+      const createMs = performance.now() - createStart;
+      expressions.push(...newExpressions);
+
+      const initStart = performance.now();
+      const initializedCount = await waitAllWithTimeout(
+        newExpressions.map((expression) =>
+          expression.value !== undefined
+            ? Promise.resolve()
+            : new WaitForEvent(expression, 'changed').wait(emptyFunction),
+        ),
+        waitTimeoutMs,
+      );
+      const initMs = performance.now() - initStart;
+      const totalMs = createMs + initMs;
+      cumulativeTotalMs += totalMs;
+      const perExpressionMs = totalMs / batchSize;
+
+      roundRows.push({
+        count: nextCount,
+        batchSize,
+        createMs,
+        initMs,
+        totalMs,
+        cumulativeTotalMs,
+        perExpressionMs,
+        initializedCount,
+      });
+
+      if (initializedCount !== batchSize) {
+        throw new Error(
+          `Initialization incomplete at count=${nextCount}. initialized=${initializedCount}.`,
+        );
+      }
+
+      if (previousPerExpressionMs !== undefined) {
+        const ratio = perExpressionMs / previousPerExpressionMs;
+        if (ratio > linearityTolerance) {
+          const details = {
+            previousPerExpressionMs,
+            currentPerExpressionMs: perExpressionMs,
+            ratio,
+            tolerance: linearityTolerance,
+            currentCount: nextCount,
+          };
+          throw new Error(
+            `Non-linear degradation detected: ${JSON.stringify(details)}`,
+          );
+        }
+      }
+      previousPerExpressionMs = perExpressionMs;
+      currentCount = nextCount;
+    }
+
+    for (let i = 0; i < expressions.length; i += 1) {
+      expressions[i].dispose();
+    }
+
+    const finalRound = roundRows[roundRows.length - 1];
+    const fullInitWithinTarget = cumulativeTotalMs <= 1000;
+
+    const unloadStart = performance.now();
+    await InjectionContainer.unload(RsXExpressionParserModule);
+    phase.injectionUnloadMs = performance.now() - unloadStart;
+
+    const payload = {
+      config: {
+        source,
+        incremental,
+        requestedCount: count,
+        expressionCount: expressionStrings.length,
+        waitTimeoutMs,
+        step,
+        linearityTolerance,
+      },
+      result: {
+        fullCount: finalRound.count,
+        fullInitTotalMs: cumulativeTotalMs,
+        fullInitWithinTarget,
+      },
+      rounds: roundRows.map((row) => ({
+        count: row.count,
+        batchSize: row.batchSize,
+        createMs: Number(row.createMs.toFixed(2)),
+        initMs: Number(row.initMs.toFixed(2)),
+        totalMs: Number(row.totalMs.toFixed(2)),
+        cumulativeTotalMs: Number(row.cumulativeTotalMs.toFixed(2)),
+        perExpressionMs: Number(row.perExpressionMs.toFixed(4)),
+      })),
+    };
+
+    if (json) {
+      console.log(JSON.stringify(payload));
+      return;
+    }
+
+    console.log('\n=== Config ===');
+    console.log(JSON.stringify(payload.config));
+    console.log('\n=== Incremental Initialization ===');
+    console.table(payload.rounds);
+    console.log('\n=== Full Count Result ===');
+    console.log(
+      JSON.stringify({
+        fullCount: payload.result.fullCount,
+        fullInitTotalMs: Number(payload.result.fullInitTotalMs.toFixed(2)),
+        fullInitWithinTarget: payload.result.fullInitWithinTarget,
+      }),
+    );
+    return;
+  }
 
   const { output: expressions, profile: createProfile } = await withCpuProfile(
     async () => {
