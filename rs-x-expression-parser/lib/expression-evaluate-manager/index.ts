@@ -6,3 +6,4 @@ export * from './expression-evaluate-unit.interface';
 export * from './function-expression-evaluate-unit';
 export * from './identifier-expression-evaluate-unit';
 export * from './member-expression-evaluate-unit';
+export * from './sequence-expression-evaluate-unit';

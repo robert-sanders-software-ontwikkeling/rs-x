@@ -14,7 +14,7 @@ import {
 } from '@rs-x/core';
 
 import { AbstractObserver } from '../../abstract-observer';
-import type { IIndexWatchRule } from '../../index-watch-rule-registry/index-watch-rule.interface';
+import { IIndexWatchRule } from '../../index-watch-rule/index-watch-rule.interface';
 
 import type {
   IDateObserverProxyPair,
@@ -286,6 +286,7 @@ class DateProxy extends AbstractObserver<Date, Date, undefined> {
 
   protected override disposeInternal(): void {
     this._proxyRegistry.unregister(this.value);
+    this.indexWatchRule?.dispose();
     this.target = Type.cast(undefined);
   }
 }

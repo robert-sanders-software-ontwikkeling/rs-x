@@ -382,7 +382,7 @@ export const stateManagerApiItems: StateManagerApiItem[] = [
     module: 'index-watch-rule-registry',
     description:
       'Predicate contract for deciding whether nested indexes should be watched.',
-    sourcePath: 'index-watch-rule-registry/index-watch-rule.interface.ts',
+    sourcePath: 'index-watch-rule/index-watch-rule.interface.ts',
     signature: 'export interface IIndexWatchRule {',
   },
   {
@@ -1048,7 +1048,7 @@ export const stateManagerApiItems: StateManagerApiItem[] = [
     kind: 'type',
     module: 'index-watch-rule-registry',
     description: 'Type exported from index-watch-rule-registry.',
-    sourcePath: 'index-watch-rule-registry/index-watch-rule.interface.ts',
+    sourcePath: 'index-watch-rule/index-watch-rule.interface.ts',
     signature: 'export type ShouldWatchIndexPredicate = (',
   },
   {

@@ -1,174 +1,280 @@
-import type { IIndexWatchRule, IStateManager } from '@rs-x/state-manager';
+import { type IIndexWatchRule } from '@rs-x/state-manager';
+import { WatchFactoryMock, WatchMock } from '@rs-x/state-manager/testing';
 
 import { IdentifierExpressionEvaluateUnit } from '../../lib/expression-evaluate-manager/identifier-expression-evaluate-unit';
+import { ExpressionEvaluateChangeManagerMock } from '../../lib/testing';
 
 describe('IdentifierExpressionEvaluateUnit', () => {
-  const createStateManager = () => ({
-    getState: jest.fn(),
-    watchState: jest.fn(),
-    releaseState: jest.fn(),
+  let watchFactory: WatchFactoryMock;
+  let watch: WatchMock;
+  let changeManager: ExpressionEvaluateChangeManagerMock;
+
+  beforeEach(() => {
+    watch = new WatchMock({
+      context: { c: true },
+      index: 'a',
+      value: 1,
+    });
+    watchFactory = new WatchFactoryMock();
+    watchFactory.create.mockReturnValue({
+      id: 'watch-id',
+      instance: watch,
+      referenceCount: 1,
+    });
+    changeManager = new ExpressionEvaluateChangeManagerMock();
   });
 
-  type IIdentifierUnitTestInternals = {
-    syncValueFromState(): void;
-  };
-
-  it('watch returns undefined without context and supports readonly properties', () => {
-    const stateManager = createStateManager();
-    const commit = jest.fn();
+  it('watch does nothing when context is undefined', () => {
     const unit = new IdentifierExpressionEvaluateUnit(
       'a',
       undefined,
-      stateManager as unknown as IStateManager,
-      commit,
+      watchFactory,
+      undefined,
+      jest.fn(),
       'owner',
     );
 
-    expect(unit.watch()).toBeUndefined();
-
-    const context = {};
-    Object.defineProperty(context, 'a', {
-      configurable: true,
-      enumerable: true,
-      get: () => 1,
-    });
-    stateManager.getState.mockReturnValue(1);
-
-    unit.context = context;
-    expect(unit.watch()).toBe(1);
-    expect(stateManager.watchState).not.toHaveBeenCalled();
+    expect(unit.watch(changeManager)).toBeUndefined();
+    expect(watchFactory.create).not.toHaveBeenCalled();
   });
 
-  it('watch registers state watcher and merges custom/default watch rules', () => {
-    const stateManager = createStateManager();
-    const commit = jest.fn();
-    const defaultRule = {
+  it('watch creates watcher and sets current value from WatchMock', () => {
+    const unit = new IdentifierExpressionEvaluateUnit(
+      'a',
+      { c: true },
+      watchFactory,
+      undefined,
+      jest.fn(),
+      'owner',
+    );
+
+    unit.watch(changeManager);
+    expect(unit.value).toBe(1);
+    expect(watchFactory.create).toHaveBeenCalledWith({
+      index: 'a',
+      context: { c: true },
+      options: {
+        indexWatchRule: undefined,
+        ownerId: 'owner',
+      },
+    });
+  });
+
+  it('changed event updates value and marks unit dirty', () => {
+    const unit = new IdentifierExpressionEvaluateUnit(
+      'a',
+      { c: true },
+      watchFactory,
+      undefined,
+      jest.fn(),
+      'owner',
+    );
+
+    unit.watch(changeManager);
+
+    watch.changed.next({
+      context: { c: true },
+      oldContext: { c: true },
+      index: 'a',
+      oldValue: 1,
+      newValue: 2,
+    });
+    expect(unit.value).toBe(2);
+    expect(changeManager.markDirty).toHaveBeenCalledWith(unit);
+  });
+
+  it('contextChange event updates unit context', () => {
+    const unit = new IdentifierExpressionEvaluateUnit(
+      'a',
+      { c: true },
+      watchFactory,
+      undefined,
+      jest.fn(),
+      'owner',
+    );
+
+    unit.watch(changeManager);
+
+    watch.contextChange.next({
+      context: { c: 2 },
+      oldContext: { c: true },
+      index: 'a',
+    });
+    expect(unit.context).toEqual({ c: 2 });
+  });
+
+  it('change-cycle events are forwarded to change manager', () => {
+    const unit = new IdentifierExpressionEvaluateUnit(
+      'a',
+      { c: true },
+      watchFactory,
+      undefined,
+      jest.fn(),
+      'owner',
+    );
+
+    unit.watch(changeManager);
+
+    watch.startChangeCycle.next({
+      context: { c: 2 },
+      index: 'a',
+    });
+    watch.endChangeCycle.next({
+      context: { c: 2 },
+      index: 'a',
+    });
+    expect(changeManager.incrementChangeCycle).toHaveBeenCalledTimes(1);
+    expect(changeManager.decrementChangeCycle).toHaveBeenCalledTimes(1);
+  });
+
+  it('passes configured watch rule to watch factory options', () => {
+    const watchRule = {
       context: undefined,
-      test: jest.fn(() => false),
-    };
-    const customRule = {
-      context: undefined,
+      id: 'rule-1',
       test: jest.fn(() => true),
-    };
-    const context = { a: 2 };
-    stateManager.getState.mockReturnValue(2);
+      dispose: jest.fn(),
+    } as unknown as IIndexWatchRule;
 
     const unit = new IdentifierExpressionEvaluateUnit(
       'a',
-      context,
-      stateManager as unknown as IStateManager,
-      commit,
-      'owner',
-      defaultRule as unknown as IIndexWatchRule,
-    );
-
-    expect(unit.watch(customRule as unknown as IIndexWatchRule)).toBe(2);
-    expect(stateManager.watchState).toHaveBeenCalledTimes(1);
-    const watchRule = stateManager.watchState.mock.calls[0][2].indexWatchRule;
-    expect(watchRule.test('x', context)).toBe(true);
-    expect(customRule.test).toHaveBeenCalled();
-
-    // branch where merged rule falls back to default rule
-    customRule.test.mockReturnValue(false);
-    defaultRule.test.mockReturnValue(true);
-    expect(watchRule.test('y', context)).toBe(true);
-  });
-
-  it('context transitions while watching release/rebind state correctly', () => {
-    const stateManager = createStateManager();
-    const commit = jest.fn();
-    const c1 = { a: 1 };
-    const c2 = { a: 2 };
-    stateManager.getState.mockReturnValue(1);
-
-    const unit = new IdentifierExpressionEvaluateUnit(
-      'a',
-      c1,
-      stateManager as unknown as IStateManager,
-      commit,
-      'owner',
-    );
-
-    unit.watch();
-    unit.context = undefined;
-    expect(stateManager.releaseState).toHaveBeenCalledWith(c1, 'a', undefined);
-
-    unit.context = c2;
-    expect(stateManager.watchState).toHaveBeenCalledWith(c2, 'a', {
-      indexWatchRule: undefined,
-      ownerId: 'owner',
-    });
-  });
-
-  it('setContext, setValue, commit, clear and dispose behaviors', () => {
-    const stateManager = createStateManager();
-    const commit = jest.fn();
-    const context = { a: 1 };
-    stateManager.getState.mockReturnValue(1);
-
-    const unit = new IdentifierExpressionEvaluateUnit(
-      'a',
-      context,
-      stateManager as unknown as IStateManager,
-      commit,
-      'owner',
-    );
-    unit.watch();
-
-    unit.setContext({ a: 2 }, context, 'z');
-    expect(unit.context).toEqual({ a: 2 });
-
-    // setContext by index match even with oldContext mismatch
-    unit.setContext({ a: 22 }, { other: true }, 'a');
-    expect(unit.context).toEqual({ a: 22 });
-
-    expect(unit.setValue(3, { a: 3 }, 'a')).toBeNull();
-    const currentContext = unit.context;
-    expect(unit.setValue(3, currentContext, 'a')).toBe(unit);
-    expect(unit.value).toBe(3);
-
-    unit.commitChange();
-    expect(commit).toHaveBeenCalledWith(3);
-    expect(unit.isCommitReady()).toBe(true);
-
-    unit.clear();
-    unit.commitChange();
-    expect(commit).toHaveBeenCalledTimes(1);
-
-    unit.dispose();
-    unit.dispose();
-    expect(stateManager.releaseState).toHaveBeenCalled();
-  });
-
-  it('syncValueFromState swallows getState errors and sets undefined', () => {
-    const stateManager = createStateManager();
-    stateManager.getState.mockImplementation(() => {
-      throw new Error('boom');
-    });
-
-    const unit = new IdentifierExpressionEvaluateUnit(
-      'a',
-      { a: 1 },
-      stateManager as unknown as IStateManager,
+      { c: true },
+      watchFactory,
+      watchRule,
       jest.fn(),
       'owner',
     );
 
-    expect(unit.watch()).toBeUndefined();
-    expect(unit.value).toBeUndefined();
+    unit.watch(changeManager);
+
+    expect(watchFactory.create).toHaveBeenCalledWith({
+      index: 'a',
+      context: { c: true },
+      options: {
+        indexWatchRule: watchRule,
+        ownerId: 'owner',
+      },
+    });
   });
 
-  it('syncValueFromState sets undefined when context is nullish', () => {
-    const stateManager = createStateManager();
+  it('commitChange only commits when value is defined', () => {
+    const commit = jest.fn();
     const unit = new IdentifierExpressionEvaluateUnit(
       'a',
       undefined,
-      stateManager as unknown as IStateManager,
+      watchFactory,
+      undefined,
+      commit,
+      'owner',
+    );
+
+    expect(unit.isCommitReady()).toBe(true);
+    unit.watch(changeManager);
+    unit.commitChange();
+    expect(commit).not.toHaveBeenCalled();
+
+    watch = new WatchMock({
+      context: { c: true },
+      index: 'a',
+      value: 10,
+    });
+    watchFactory.create.mockReturnValue({
+      id: 'watch-id',
+      instance: watch,
+      referenceCount: 1,
+    });
+    const withValue = new IdentifierExpressionEvaluateUnit(
+      'a',
+      { c: true },
+      watchFactory,
+      undefined,
+      commit,
+      'owner',
+    );
+
+    withValue.watch(changeManager);
+    withValue.commitChange();
+    expect(commit).toHaveBeenCalledWith(10);
+  });
+
+  it('dispose is idempotent and disposes WatchMock once', () => {
+    const unit = new IdentifierExpressionEvaluateUnit(
+      'a',
+      { c: true },
+      watchFactory,
+      undefined,
       jest.fn(),
       'owner',
     );
 
-    (unit as unknown as IIdentifierUnitTestInternals).syncValueFromState();
-    expect(unit.value).toBeUndefined();
+    unit.watch(changeManager);
+    unit.dispose();
+    unit.dispose();
+
+    expect(watch.dispose).toHaveBeenCalledTimes(1);
+
+    expect(changeManager.markDirty).toHaveBeenCalledTimes(0);
+  });
+
+  it('commits with forceDirty for object value changes when leaf force option is enabled', () => {
+    const commit = jest.fn();
+    const unit = new IdentifierExpressionEvaluateUnit(
+      'a',
+      { c: true },
+      watchFactory,
+      undefined,
+      commit,
+      'owner',
+      undefined,
+      undefined,
+      false,
+      true,
+    );
+
+    unit.watch(changeManager);
+    const setValue = new Set([1, 2]);
+    watch.changed.next({
+      context: { c: true },
+      oldContext: { c: true },
+      index: 'a',
+      oldValue: 1,
+      newValue: setValue,
+    });
+    unit.commitChange();
+
+    expect(commit).toHaveBeenCalledWith(setValue, true);
+  });
+
+  it('dispose handles missing endChangeCycle subscription', () => {
+    const unit = new IdentifierExpressionEvaluateUnit(
+      'a',
+      { c: true },
+      watchFactory,
+      undefined,
+      jest.fn(),
+      'owner',
+    );
+
+    unit.watch(changeManager);
+    (
+      unit as unknown as { _endChangeCycleSubscription?: unknown }
+    )._endChangeCycleSubscription = undefined;
+
+    expect(() => unit.dispose()).not.toThrow();
+    expect(watch.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it('dispose without watch is safe', () => {
+    const unit = new IdentifierExpressionEvaluateUnit(
+      'a',
+      undefined,
+      watchFactory,
+      undefined,
+      jest.fn(),
+      'owner',
+    );
+
+    expect(() => unit.dispose()).not.toThrow();
+    expect(watchFactory.create).not.toHaveBeenCalled();
+    expect(watch.dispose).toHaveBeenCalledTimes(0);
   });
 });

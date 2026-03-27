@@ -7,7 +7,7 @@ import {
   type IPropertyChange,
 } from '@rs-x/core';
 
-import type { IIndexWatchRule } from '../../index-watch-rule-registry/index-watch-rule.interface';
+import { type IIndexWatchRule } from '../../index-watch-rule/index-watch-rule.interface';
 import { type IObserver } from '../../observer.interface';
 
 export interface IStateChangeObserverInfo {

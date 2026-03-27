@@ -24,4 +24,5 @@ export const RsXExpressionParserInjectionTokens = {
   IExpressionChangePlayback: Symbol('IExpressionChangePlayback'),
   IExpressionChangeTrackerManager: Symbol('IExpressionChangeTrackerManager'),
   IExpressionIdProvider: Symbol('IExpressionIdProvider'),
+  IIdentifierWatchRuleFactory: Symbol('IIdentifierWatchRuleFactory'),
 };

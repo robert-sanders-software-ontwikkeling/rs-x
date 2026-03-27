@@ -148,21 +148,25 @@ describe('Array expression tests', () => {
       ],
     };
 
-    const watchRule = new IndexWatchRule(model, (index, target, rootModel) => {
-      if (target === rootModel && index === 'cart') {
-        return true;
-      }
+    const watchRule = new IndexWatchRule(
+      'cart-rule',
+      model,
+      (index, target, rootModel) => {
+        if (target === rootModel && index === 'cart') {
+          return true;
+        }
 
-      if (Array.isArray(target)) {
-        return Number(index) === 0;
-      }
+        if (Array.isArray(target)) {
+          return Number(index) === 0;
+        }
 
-      if (target === model.cart[0]) {
-        return String(index) === 'qty';
-      }
+        if (target === model.cart[0]) {
+          return String(index) === 'qty';
+        }
 
-      return false;
-    });
+        return false;
+      },
+    );
 
     // Recursive leaf watching (enabled by rule)
     const firstItemExpression = rsx('cart[0]')(model, watchRule);

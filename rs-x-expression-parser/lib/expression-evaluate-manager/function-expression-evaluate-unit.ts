@@ -1,20 +1,35 @@
 import { PENDING } from '@rs-x/core';
 
-import { type IExpressionEvaluateUnit } from './expression-evaluate-unit.interface';
+import type {
+  IExpressionEvaluateChangeManager,
+  IExpressionEvaluateUnit,
+} from './expression-evaluate-unit.interface';
 
 export class FunctionExpressionEvaluateUnit implements IExpressionEvaluateUnit {
   public readonly count = 1;
   private _value: unknown;
   private _context: unknown;
+  private _changeManager!: IExpressionEvaluateChangeManager;
+  private _isDisposed = false;
+  private _isWatching = false;
+
+  private readonly _dependencyChangeManager: IExpressionEvaluateChangeManager =
+    {
+      isInitialized: () => this._changeManager.isInitialized(),
+      incrementChangeCycle: () => this._changeManager.incrementChangeCycle(),
+      decrementChangeCycle: () => this._changeManager.decrementChangeCycle(),
+      markDirty: () => {
+        this._value = this.evaluateSafely();
+        this._changeManager.markDirty(this);
+      },
+    };
 
   constructor(
     public readonly index: unknown,
     context: unknown,
-    private readonly _dependencyUnits: readonly IExpressionEvaluateUnit[],
+    private readonly _dependencies: readonly IExpressionEvaluateUnit[],
     private readonly _evaluate: () => unknown,
-    private readonly _commit: (value: unknown) => void,
-    private readonly _evaluateOnWatch = true,
-    private readonly _eagerEvaluateOnSetValue = false,
+    private readonly _commit: () => void,
   ) {
     this._context = context;
   }
@@ -23,103 +38,59 @@ export class FunctionExpressionEvaluateUnit implements IExpressionEvaluateUnit {
     return this._value;
   }
 
-  public setValueDirectly(value: unknown): void {
-    this._value = value;
-  }
-
   public get context(): unknown {
     return this._context;
   }
 
   public set context(value: unknown) {
+    if (this._context === value) {
+      return;
+    }
     this._context = value;
-  }
-
-  public watch(): unknown {
-    for (let i = 0; i < this._dependencyUnits.length; i++) {
-      this._dependencyUnits[i].watch();
-    }
-
-    if (!this._evaluateOnWatch) {
-      return this._value;
-    }
-
-    const value = this._evaluate();
-    if (value !== PENDING && value !== undefined) {
-      this._value = value;
-      return value;
-    }
-
-    return undefined;
-  }
-
-  public dispose(): void {
-    for (let i = 0; i < this._dependencyUnits.length; i++) {
-      this._dependencyUnits[i].dispose();
+    this._value = this.evaluateSafely();
+    if (this._changeManager) {
+      this._changeManager.markDirty(this);
     }
   }
 
-  public clear(): void {
-    this._value = undefined;
-    for (let i = 0; i < this._dependencyUnits.length; i++) {
-      this._dependencyUnits[i].clear();
+  public watch(changeManager: IExpressionEvaluateChangeManager): void {
+    this._changeManager = changeManager;
+    if (!this._isWatching) {
+      for (let i = 0; i < this._dependencies.length; i++) {
+        this._dependencies[i].watch(this._dependencyChangeManager);
+      }
+      this._isWatching = true;
     }
-  }
-
-  public setContext(
-    context: unknown,
-    oldContext: unknown,
-    index: unknown,
-  ): void {
-    for (let i = 0; i < this._dependencyUnits.length; i++) {
-      this._dependencyUnits[i].setContext(context, oldContext, index);
-    }
+    this._value = this.evaluateSafely();
   }
 
   public isCommitReady(): boolean {
     return true;
   }
 
-  public setValue(
-    value: unknown,
-    context: unknown,
-    index: unknown,
-    initialized: boolean,
-  ): IExpressionEvaluateUnit | null {
-    let matched = false;
-
-    if (this.context === context && this.index === index) {
-      this._value = value;
-      matched = true;
+  public commitChange(): void {
+    if (this._value === undefined) {
+      return;
     }
-
-    for (let i = 0; i < this._dependencyUnits.length; i++) {
-      const dependencyMatch = this._dependencyUnits[i].setValue(
-        value,
-        context,
-        index,
-        initialized,
-      );
-      if (dependencyMatch !== null) {
-        matched = true;
-      }
-    }
-
-    if (!matched) {
-      return null;
-    }
-
-    if (
-      this._eagerEvaluateOnSetValue &&
-      !(this.context === context && this.index === index)
-    ) {
-      this._value = this._evaluate();
-    }
-
-    return this;
+    this._commit();
   }
 
-  public commitChange(): void {
-    this._commit(this._value);
+  public dispose(): void {
+    if (this._isDisposed) {
+      return;
+    }
+    this._isDisposed = true;
+    for (let i = 0; i < this._dependencies.length; i++) {
+      this._dependencies[i].dispose();
+    }
+  }
+
+  private evaluateSafely(): unknown {
+    try {
+      const value = this._evaluate();
+      return value === PENDING ? undefined : value;
+    } catch {
+      return undefined;
+    }
   }
 }

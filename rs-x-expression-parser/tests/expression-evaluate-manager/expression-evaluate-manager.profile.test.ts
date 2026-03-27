@@ -2,11 +2,10 @@ import { performance } from 'node:perf_hooks';
 
 import { InjectionContainer } from '@rs-x/core';
 import {
-  type IStateManager,
+  type IWatchFactory,
   RsXStateManagerInjectionTokens,
 } from '@rs-x/state-manager';
 
-import { RsXExpressionParserInjectionTokens } from '../../lib';
 import {
   IdentifierExpressionEvaluateUnit,
   type IExpressionEvaluateManager,
@@ -15,6 +14,7 @@ import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
+import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
 
 const flushMicrotasks = async (): Promise<void> => {
   await Promise.resolve();
@@ -26,13 +26,13 @@ describe('ExpressionEvaluateManager profile', () => {
     shared: number;
   };
 
-  let stateManager: IStateManager;
+  let watchFactory: IWatchFactory;
   let evaluateManager: IExpressionEvaluateManager;
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
-    stateManager = InjectionContainer.get<IStateManager>(
-      RsXStateManagerInjectionTokens.IStateManager,
+    watchFactory = InjectionContainer.get<IWatchFactory>(
+      RsXStateManagerInjectionTokens.IWatchFactory,
     );
     evaluateManager = InjectionContainer.get<IExpressionEvaluateManager>(
       RsXExpressionParserInjectionTokens.IExpressionEvaluateManager,
@@ -61,7 +61,8 @@ describe('ExpressionEvaluateManager profile', () => {
         const unit = new IdentifierExpressionEvaluateUnit(
           repeatedIdentifier,
           model,
-          stateManager,
+          watchFactory,
+          undefined,
           () => {
             totalCommits++;
           },

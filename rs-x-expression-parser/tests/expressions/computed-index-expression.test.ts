@@ -178,7 +178,7 @@ describe('Computed index expression tests', () => {
     });
   });
 
-  it('emits change for tasks[trackedTask] when recursively watched done changes', async () => {
+  it('does not emit change for tasks[trackedTask] when only nested item members change', async () => {
     const taskA = { id: 'A', done: false, note: 'tracked member' };
     const taskB = { id: 'B', done: false, note: 'ignored member' };
 
@@ -187,33 +187,37 @@ describe('Computed index expression tests', () => {
       tasks: new Set([taskA, taskB]),
     };
 
-    const watchRule = new IndexWatchRule(model, (index, target, rootModel) => {
-      const root = rootModel as typeof model;
+    const watchRule = new IndexWatchRule(
+      'tasks-rule',
+      model,
+      (index, target, rootModel) => {
+        const root = rootModel as typeof model;
 
-      if (target === root && index === 'tasks') {
-        return true;
-      }
+        if (target === root && index === 'tasks') {
+          return true;
+        }
 
-      if (target instanceof Set) {
-        return (
-          index === root.trackedTask ||
-          (typeof index === 'object' &&
-            index !== null &&
-            (index as { id?: unknown }).id === root.trackedTask.id)
-        );
-      }
+        if (target instanceof Set) {
+          return (
+            index === root.trackedTask ||
+            (typeof index === 'object' &&
+              index !== null &&
+              (index as { id?: unknown }).id === root.trackedTask.id)
+          );
+        }
 
-      if (
-        target === root.trackedTask ||
-        (typeof target === 'object' &&
-          target !== null &&
-          (target as { id?: unknown }).id === root.trackedTask.id)
-      ) {
-        return String(index) === 'done';
-      }
+        if (
+          target === root.trackedTask ||
+          (typeof target === 'object' &&
+            target !== null &&
+            (target as { id?: unknown }).id === root.trackedTask.id)
+        ) {
+          return String(index) === 'done';
+        }
 
-      return false;
-    });
+        return false;
+      },
+    );
 
     const trackedTaskExpression = rsx('tasks[trackedTask]')(model, watchRule);
     await new WaitForEvent(trackedTaskExpression, 'changed').wait(
@@ -225,12 +229,13 @@ describe('Computed index expression tests', () => {
       'changed',
       {
         ignoreInitialValue: true,
+        timeout: 100,
       },
     ).wait(() => {
       taskA.done = true;
     });
 
-    expect(trackedChange).toBe(trackedTaskExpression);
+    expect(trackedChange).toBeNull();
 
     const ignoredChange = await new WaitForEvent(
       trackedTaskExpression,

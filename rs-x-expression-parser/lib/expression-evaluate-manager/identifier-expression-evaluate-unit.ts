@@ -1,29 +1,47 @@
-import { Type } from '@rs-x/core';
-import type { IIndexWatchRule, IStateManager } from '@rs-x/state-manager';
-import { IndexWatchRule } from '@rs-x/state-manager';
+import { type Subscription } from 'rxjs';
 
 import type {
+  IContextChanged,
+  IIndexWatchRule,
+  IStateChange,
+} from '@rs-x/state-manager';
+import {
+  type IWatch,
+  type IWatchFactory,
+} from '@rs-x/state-manager/lib/state-manager/watch-factory/watch-factory';
+
+import type {
+  IExpressionEvaluateChangeManager,
   IExpressionEvaluateUnit,
-  IWatchRegistrationKey,
 } from './expression-evaluate-unit.interface';
 
 export class IdentifierExpressionEvaluateUnit implements IExpressionEvaluateUnit {
   public readonly count = 1;
   private _value: unknown;
   private _context: unknown;
-  private _watch = false;
-  private _isDipsosed = false;
-  private _indexwatchRule: IIndexWatchRule | undefined;
+  private _watch: IWatch | undefined;
+  private _disposed = false;
+  private _changeManager!: IExpressionEvaluateChangeManager;
+  private _changedSubscription: Subscription | undefined;
+  private _contextChangedSubscription: Subscription | undefined;
+  private _startChangeCycleSubscription: Subscription | undefined;
+  private _endChangeCycleSubscription: Subscription | undefined;
+  private _activeCycleDepth = 0;
+  private _forceDirtyCommit = false;
 
   constructor(
     public readonly index: unknown,
     context: unknown,
-    private readonly _stateManager: IStateManager,
-    private readonly _commit: (value: unknown) => void,
+    private readonly _watchFactory: IWatchFactory,
+    private readonly _watchRule: IIndexWatchRule | undefined,
+    private readonly _commit: (value: unknown, forceDirty?: boolean) => void,
     private readonly _ownerId: unknown,
-    private readonly _defaultIndexWatchRule?: IIndexWatchRule,
+    private readonly _readValue?: (context: unknown, index: unknown) => unknown,
+    private readonly _isDeferredValue?: (value: unknown) => boolean,
+    private readonly _forceDirtyForObjectChanges = false,
+    private readonly _forceDirtyForCollectionItemObjectChanges = false,
   ) {
-    this.context = context;
+    this._context = context;
   }
 
   public get value(): unknown {
@@ -36,86 +54,94 @@ export class IdentifierExpressionEvaluateUnit implements IExpressionEvaluateUnit
 
   public set context(value: unknown) {
     if (this._context === value) {
+      // Same reference can still require a refresh (for example mutated Date/async state).
+      // This path is not a direct watch `changed` callback, so we diff before marking dirty.
+      this.refreshValueForUnchangedContext();
+      return;
+    }
+
+    const previousValue = this._value;
+    this.releaseWatch();
+    this._context = value;
+    if (this._watchRule) {
+      this._watchRule.context = value;
+    }
+    this._value = undefined;
+
+    if (this._changeManager && this._context !== undefined && !this._disposed) {
+      this.watch(this._changeManager);
+      // Rebind path: only enqueue reevaluation when effective value changed.
+      if (!Object.is(previousValue, this._value)) {
+        this._changeManager.markDirty(this);
+      }
+    }
+  }
+  private onChanged = (change: IStateChange) => {
+    const objectChanged =
+      change.newValue !== null && typeof change.newValue === 'object';
+    this._forceDirtyCommit =
+      objectChanged &&
+      (this._forceDirtyForObjectChanges ||
+        this._forceDirtyForCollectionItemObjectChanges);
+    this._value = change.newValue;
+    this._changeManager.markDirty(this);
+  };
+
+  private onContextChanged = (change: IContextChanged) => {
+    this._context = change.context;
+  };
+
+  private onStartChangeCycle = () => {
+    this._activeCycleDepth++;
+    this._changeManager.incrementChangeCycle();
+  };
+
+  private onEndChangeCycle = () => {
+    if (this._activeCycleDepth > 0) {
+      this._activeCycleDepth--;
+    }
+    this._changeManager.decrementChangeCycle();
+  };
+
+  public watch(changeManager: IExpressionEvaluateChangeManager): void {
+    this._changeManager = changeManager;
+    if (this.context === undefined) {
       return;
     }
 
     if (this._watch) {
-      const oldContext = this._context;
-      const hadContext = !Type.isNullOrUndefined(oldContext);
-      const hasContext = !Type.isNullOrUndefined(value);
-      this._context = value;
-
-      if (hadContext && !hasContext) {
-        this.releaseState(oldContext);
-      }
-
-      if (!hadContext && hasContext) {
-        this.watch();
-        this.syncValueFromState();
-      }
-
-      if (hadContext && hasContext) {
-        this.releaseState(oldContext);
-        this.watch();
-        this.syncValueFromState();
-      }
-    } else {
-      this._context = value;
-    }
-  }
-
-  public dispose(): void {
-    if (this._isDipsosed) {
       return;
     }
-    this._isDipsosed = true;
-    this.releaseState();
-  }
 
-  public watch(indexWatchRule?: IIndexWatchRule): unknown {
-    this._watch = true;
-    if (!this.context) {
-      return undefined;
-    }
-
-    if (Type.isReadonlyProperty(this._context, this.index)) {
-      this._value = this._stateManager.getState(this._context, this.index);
-      return this._value;
-    } else {
-      this._indexwatchRule = indexWatchRule ?? this._defaultIndexWatchRule;
-      if (indexWatchRule && this._defaultIndexWatchRule) {
-        this._indexwatchRule = new IndexWatchRule(
-          this._context,
-          (index, target) => {
-            return !!(
-              indexWatchRule.test(index, target) ||
-              this._defaultIndexWatchRule?.test(index, target)
-            );
-          },
-        );
-      }
-
-      this._stateManager.watchState(this._context, this.index, {
-        indexWatchRule: this._indexwatchRule,
+    this._watch = this._watchFactory.create({
+      index: this.index,
+      context: this.context,
+      options: {
+        indexWatchRule: this._watchRule,
         ownerId: this._ownerId,
-      });
+      },
+    }).instance;
 
-      this.syncValueFromState();
-      return this._value;
-    }
-  }
+    this._changedSubscription = this._watch.changed.subscribe(this.onChanged);
+    this._contextChangedSubscription = this._watch.contextChange.subscribe(
+      this.onContextChanged,
+    );
+    this._startChangeCycleSubscription = this._watch.startChangeCycle.subscribe(
+      this.onStartChangeCycle,
+    );
+    this._endChangeCycleSubscription = this._watch.endChangeCycle.subscribe(
+      this.onEndChangeCycle,
+    );
+    const resolvedValue = this.resolveValueFromContext();
+    const fallbackValue = this._isDeferredValue?.(resolvedValue)
+      ? undefined
+      : resolvedValue;
+    this._watch.watch();
 
-  public clear(): void {
-    this._value = undefined;
-  }
-
-  public setContext(
-    context: unknown,
-    oldContext: unknown,
-    index: unknown,
-  ): void {
-    if (oldContext === this.context || this.index === index) {
-      this.context = context;
+    // Prefer watch value first, then direct read fallback.
+    this._value = this._watch?.value;
+    if (this._value === undefined) {
+      this._value = fallbackValue;
     }
   }
 
@@ -123,54 +149,100 @@ export class IdentifierExpressionEvaluateUnit implements IExpressionEvaluateUnit
     return true;
   }
 
-  public getWatchRegistrationKey(): IWatchRegistrationKey | undefined {
-    if (Type.isNullOrUndefined(this._context)) {
-      return undefined;
-    }
-
-    return {
-      context: this._context,
-      index: this.index,
-    };
-  }
-
-  public setValue(
-    value: unknown,
-    context: unknown,
-    index: unknown,
-  ): IExpressionEvaluateUnit | null {
-    if (context !== this.context || this.index !== index) {
-      return null;
-    }
-
-    this.context = context;
-    this._value = value;
-
-    return this;
-  }
-
   public commitChange(): void {
     if (this._value === undefined) {
       return;
     }
-
-    this._commit(this._value);
+    const forceDirty = this.consumeForceDirtyCommit();
+    if (forceDirty) {
+      this._commit(this.value, true);
+      return;
+    }
+    this._commit(this.value);
   }
 
-  private releaseState(context: unknown = this.context): void {
-    this._stateManager.releaseState(context, this.index, this._indexwatchRule);
+  public consumeForceDirtyCommit(): boolean {
+    const forceDirty = this._forceDirtyCommit;
+    this._forceDirtyCommit = false;
+    return forceDirty;
   }
 
-  private syncValueFromState(): void {
-    if (Type.isNullOrUndefined(this._context)) {
-      this._value = undefined;
+  public dispose(): void {
+    if (this._disposed) {
+      return;
+    }
+    this._disposed = true;
+    this.releaseWatch();
+    this._value = undefined;
+  }
+
+  private releaseWatch(): void {
+    if (!this._watch) {
       return;
     }
 
-    try {
-      this._value = this._stateManager.getState(this._context, this.index);
-    } catch {
-      this._value = undefined;
+    while (this._activeCycleDepth > 0) {
+      this._activeCycleDepth--;
+      this._changeManager.decrementChangeCycle();
+    }
+
+    this._changedSubscription?.unsubscribe();
+    this._changedSubscription = undefined;
+
+    this._contextChangedSubscription?.unsubscribe();
+    this._contextChangedSubscription = undefined;
+
+    this._startChangeCycleSubscription?.unsubscribe();
+    this._startChangeCycleSubscription = undefined;
+
+    this._endChangeCycleSubscription?.unsubscribe();
+    this._endChangeCycleSubscription = undefined;
+
+    this._watch.dispose();
+    this._watch = undefined;
+  }
+
+  private resolveValueFromContext(): unknown {
+    const context = this._context as
+      | Record<PropertyKey, unknown>
+      | Map<unknown, unknown>
+      | undefined
+      | null;
+    if (context === undefined || context === null) {
+      return undefined;
+    }
+
+    if (this._readValue) {
+      try {
+        return this._readValue(context, this.index);
+      } catch {
+        return undefined;
+      }
+    }
+
+    if (context instanceof Map) {
+      return context.get(this.index);
+    }
+
+    const index = this.index as PropertyKey;
+    return context[index];
+  }
+
+  private refreshValueForUnchangedContext(): void {
+    if (!this._changeManager || this._disposed || this._context === undefined) {
+      return;
+    }
+
+    const previousValue = this._value;
+    this.releaseWatch();
+    this._value = undefined;
+    if (this._watchRule) {
+      this._watchRule.context = this._context;
+    }
+    this.watch(this._changeManager);
+    // Manual refresh path: avoid noisy reevaluations when recomputed value is unchanged.
+    if (!Object.is(previousValue, this._value)) {
+      this._changeManager.markDirty(this);
     }
   }
 }

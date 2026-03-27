@@ -1,4 +1,4 @@
-import { type IIndexWatchRule, IndexWatchRule } from '@rs-x/state-manager';
+import { type IIndexWatchRule } from '@rs-x/state-manager';
 
 import { IdentifierExpressionEvaluateUnit } from '../expression-evaluate-manager';
 import { type IExpressionEvaluateUnit } from '../expression-evaluate-manager/expression-evaluate-unit.interface';
@@ -7,22 +7,26 @@ import { AbstractExpression } from './abstract-expression';
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 import { ExpressionType } from './expression-parser.interface';
 
-export type IIdentifierBindConfiguration = IExpressionBindConfiguration & {
-  readonly currentValue?: unknown;
-  readonly context: unknown;
-  readonly isRoot?: boolean;
-};
-
 export class IdentifierExpression extends AbstractExpression {
   private _context: unknown;
   private _indexWatchRule!: IIndexWatchRule | undefined;
   private _isAsync: boolean | undefined;
   private _expressionEvaluateUnit!: IExpressionEvaluateUnit;
-  private _isLeafExpression = true;
   private _isMemberSegment = false;
+  private readonly _isStaticMemberLeaf: boolean;
+  private readonly _isLeaf: boolean | undefined;
+  private readonly _isMemberExpressionSegment: boolean | undefined;
 
-  constructor(expressionString: string) {
+  constructor(
+    expressionString: string,
+    isStaticMemberLeaf = false,
+    isLeaf?: boolean,
+    isMemberExpressionSegment?: boolean,
+  ) {
     super(ExpressionType.Identifier, expressionString);
+    this._isStaticMemberLeaf = isStaticMemberLeaf;
+    this._isLeaf = isLeaf;
+    this._isMemberExpressionSegment = isMemberExpressionSegment;
   }
 
   public override get isAsync(): boolean | undefined {
@@ -43,14 +47,19 @@ export class IdentifierExpression extends AbstractExpression {
   }
 
   public override clone(): this {
-    return new (this.constructor as new (expressionString: string) => this)(
+    const cloned = new (this.constructor as new (
+      expressionString: string,
+      isStaticMemberLeaf?: boolean,
+      isLeaf?: boolean,
+      isMemberExpressionSegment?: boolean,
+    ) => this)(
       this.expressionString,
+      this._isStaticMemberLeaf,
+      this._isLeaf,
+      this._isMemberExpressionSegment,
     );
+    return cloned;
   }
-
-  private commitValue = () => {
-    this.evaluateBottomToTop();
-  };
 
   protected override get expressionEvaluateUnit(): IExpressionEvaluateUnit {
     return this._expressionEvaluateUnit;
@@ -63,30 +72,33 @@ export class IdentifierExpression extends AbstractExpression {
     }
     const parent = this.parent;
     this._isMemberSegment = parent?.type === ExpressionType.Member;
-    this._isLeafExpression =
-      !parent || parent.childExpressions[parent.childExpressions.length - 1] === this;
 
     this._context = this.identifierOwnerResolver.resolve(
       this.index,
       settings.context,
     );
 
-    if (this._indexWatchRule) {
-      this._indexWatchRule.context = this._context;
-    } else {
-      this._indexWatchRule = new IndexWatchRule(
-        this._context,
-        this.shouldWatchIndex,
-      );
-    }
+    this._indexWatchRule = this.identifierWatchRuleFactory.create(
+      this._context,
+      {
+        index: this.index,
+        isLeaf: this._isLeaf ?? true,
+        isMemberExpressionSegment: this._isMemberExpressionSegment ?? false,
+        indexWatchRule: this.leafIndexWatchRule,
+      },
+    );
 
     this._expressionEvaluateUnit = new IdentifierExpressionEvaluateUnit(
       this.index,
       this._isMemberSegment ? undefined : this._context,
-      this.stateManager,
+      this.watchFactory,
+      this._indexWatchRule,
       this.commitValue,
       this.root,
-      this._indexWatchRule,
+      (context, index) => this.indexValueAccessor.getValue(context, index),
+      (value) => this.valueMetadata.isAsync(value),
+      this.isRoot,
+      this._isStaticMemberLeaf,
     );
 
     if (!this._isMemberSegment && !settings.skipEvaluateUnitRegistration) {
@@ -98,6 +110,7 @@ export class IdentifierExpression extends AbstractExpression {
 
   protected override internalDispose(): void {
     super.internalDispose();
+    this._indexWatchRule?.dispose();
     this._indexWatchRule = undefined;
   }
 
@@ -105,80 +118,23 @@ export class IdentifierExpression extends AbstractExpression {
     if (!this._context) {
       return this.expressionEvaluateUnit?.value ?? this.expressionString;
     }
-    return (
-      this.expressionEvaluateUnit?.value ??
-      this.indexValueAccessor.getValue(this._context, this.index)
-    );
+    const watchedValue = this.expressionEvaluateUnit?.value;
+    if (watchedValue !== undefined) {
+      return watchedValue;
+    }
+
+    const value = this.indexValueAccessor.getValue(this._context, this.index);
+    if (this.valueMetadata.isAsync(value)) {
+      return undefined;
+    }
+
+    return value;
   }
 
-  private shouldWatchIndex = (
-    targetIndex: unknown,
-    target: unknown,
-  ): boolean => {
-    const parent = this.parent;
-    const isBound = !!this._indexWatchRule;
-    const isMemberSegment = isBound
-      ? this._isMemberSegment
-      : parent?.type === ExpressionType.Member;
-    const isLeafExpression = isBound
-      ? this._isLeafExpression
-      : !parent ||
-        parent.childExpressions[parent.childExpressions.length - 1] === this;
-
-    const index = this.index;
-    const leafIndexWatchRule = this.leafIndexWatchRule;
-    const isSameTarget =
-      index === targetIndex && this.expressionEvaluateUnit.context === target;
-
-    // Fast reject: rule-based watching only
-    if (!isSameTarget) {
-      return !!leafIndexWatchRule?.test(targetIndex, target);
+  private commitValue = (_: unknown, forceDirty?: boolean) => {
+    if (forceDirty) {
+      this.markRootDirty();
     }
-
-    const value = this.indexValueAccessor.getValue(target, index);
-
-    if (!isLeafExpression && isMemberSegment) {
-      return this.needsProxyFast(value);
-    }
-
-    if (!isLeafExpression && this.isExpressionReferenceValue(value)) {
-      return true;
-    }
-
-    if (isLeafExpression) {
-      return (
-        this.needsProxyFast(value) ||
-        !!leafIndexWatchRule?.test(targetIndex, target)
-      );
-    }
-
-    return false;
+    this.evaluateBottomToTop();
   };
-
-  private isExpressionReferenceValue(value: unknown): boolean {
-    if (!value || typeof value !== 'object') {
-      return false;
-    }
-
-    const candidate = value as Record<string, unknown>;
-    return (
-      typeof candidate.bind === 'function' &&
-      typeof candidate.dispose === 'function' &&
-      'changed' in candidate &&
-      'value' in candidate
-    );
-  }
-
-  private needsProxyFast(value: unknown): boolean {
-    if (value === null) {
-      return false;
-    }
-
-    const valueType = typeof value;
-    if (valueType !== 'object' && valueType !== 'function') {
-      return false;
-    }
-
-    return this.valueMetadata.needsProxy(value);
-  }
 }

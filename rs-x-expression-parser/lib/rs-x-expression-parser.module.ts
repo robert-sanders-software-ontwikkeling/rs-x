@@ -35,6 +35,8 @@ import type { IExpressionObserverFactory } from './expression-observer/expressio
 import { ExpressionServices } from './expression-services/expression-services';
 import type { IExpressionServices } from './expression-services/expression-services.interface';
 import type { IExpressionParser } from './expressions/expression-parser.interface';
+import { IdentifierWatchRuleFactory } from './expressions/identifier-index-watch-rule/identifier-watch-rule.factory';
+import type { IIdentifierWatchRuleFactory } from './expressions/identifier-index-watch-rule/identifier-watch-rule.factory.interface';
 import { ArrayIndexOwnerResolver } from './identifier-owner-resolver/array-index-owner-resolver';
 import { DefaultIdentifierOwnerResolver } from './identifier-owner-resolver/default-identifier-owner-resolver';
 import { GlobalIdentifierOwnerResolver } from './identifier-owner-resolver/global-identifier-owner-resolver';
@@ -111,6 +113,7 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
     )
     .to(ExpressionEvaluateManager)
     .inSingletonScope();
+
   options
     .bind<IExpressionChangePlayback>(
       RsXExpressionParserInjectionTokens.IExpressionChangePlayback,
@@ -129,6 +132,13 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
       RsXExpressionParserInjectionTokens.IExpressionIdProvider,
     )
     .to(ExpressionIdProvider)
+    .inSingletonScope();
+
+  options
+    .bind<IIdentifierWatchRuleFactory>(
+      RsXExpressionParserInjectionTokens.IIdentifierWatchRuleFactory,
+    )
+    .to(IdentifierWatchRuleFactory)
     .inSingletonScope();
 
   registerMultiInjectServices(

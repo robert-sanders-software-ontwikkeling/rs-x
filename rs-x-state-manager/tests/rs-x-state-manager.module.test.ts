@@ -1,5 +1,6 @@
 import { InjectionContainer } from '@rs-x/core';
 
+import { IndexWatchRuleFactory } from '../lib/index-watch-rule/index-watch-rule.factory';
 import { ArrayObserverProxyPairFactory } from '../lib/object-observer/factories/array-observer-proxy-pair.factory';
 import { DateObserverProxyPairFactory } from '../lib/object-observer/factories/date-observer-proxy-pair.factory';
 import { MapObserverProxyPairFactory } from '../lib/object-observer/factories/map-observer-proxy-pair.factory';
@@ -521,6 +522,23 @@ describe('RsXStateManagerModule', () => {
     );
     const a2 = InjectionContainer.get(
       RsXStateManagerInjectionTokens.IStateManager,
+    );
+    expect(a1).toBe(a2);
+  });
+
+  it('can get an instance of IIndexWatchRuleFactory', () => {
+    const actual = InjectionContainer.get(
+      RsXStateManagerInjectionTokens.IIndexWatchRuleFactory,
+    );
+    expect(actual).toBeInstanceOf(IndexWatchRuleFactory);
+  });
+
+  it('IIndexWatchRuleFactory instance is a singelton', () => {
+    const a1 = InjectionContainer.get(
+      RsXStateManagerInjectionTokens.IIndexWatchRuleFactory,
+    );
+    const a2 = InjectionContainer.get(
+      RsXStateManagerInjectionTokens.IIndexWatchRuleFactory,
     );
     expect(a1).toBe(a2);
   });

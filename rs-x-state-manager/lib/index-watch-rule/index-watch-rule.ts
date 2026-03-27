@@ -1,9 +1,8 @@
-import { truePredicate } from '@rs-x/core';
-
 import type { IIndexWatchRule } from './index-watch-rule.interface';
 
 export class IndexWatchRule implements IIndexWatchRule {
   constructor(
+    public readonly id: string,
     public context: unknown,
     private readonly predicate: (
       index: unknown,
@@ -12,12 +11,9 @@ export class IndexWatchRule implements IIndexWatchRule {
     ) => boolean,
   ) {}
 
+  public dispose(): void {}
+
   public test(index: unknown, target: unknown): boolean {
     return this.predicate(index, target, this.context);
   }
 }
-
-export const watchIndexRecursiveRule = new IndexWatchRule(
-  undefined,
-  truePredicate,
-);

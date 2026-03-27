@@ -1,580 +1,139 @@
-import { Subject } from 'rxjs';
-
-import type {
-  IContextChanged,
-  IStateChange,
-  IStateManager,
-} from '@rs-x/state-manager';
-
 import type { IExpressionChangeTransactionManager } from '../../lib/expresion-change-transaction-manager.interface';
 import {
   ExpressionEvaluateManager,
   type IExpressionEvaluateUnit,
 } from '../../lib/expression-evaluate-manager';
-import type { IWatchRegistrationKey } from '../../lib/expression-evaluate-manager/expression-evaluate-unit.interface';
+import type { IExpressionEvaluateChangeManager } from '../../lib/expression-evaluate-manager/expression-evaluate-unit.interface';
 
-class MatchingUnit implements IExpressionEvaluateUnit {
-  public readonly count = 1;
-  public readonly commitChange = jest.fn();
-  public readonly dispose = jest.fn();
-  public context: unknown;
-  public value: unknown;
+const flushMicrotasks = async (): Promise<void> => {
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+};
 
-  constructor(public readonly index: unknown) {}
-
-  public clear(): void {}
-
-  public isCommitReady(): boolean {
-    return true;
-  }
-
-  public setContext(): void {}
-
-  public setValue(
-    value: unknown,
-    context: unknown,
-    index: unknown,
-  ): IExpressionEvaluateUnit | null {
-    if (index !== this.index) {
-      return null;
-    }
-
-    this.context = context;
-    this.value = value;
-    return this;
-  }
-
-  public watch(): unknown {
-    return undefined;
-  }
-}
-
-class ValueOnlyWatchUnit extends MatchingUnit {
-  constructor(index: unknown, initialValue: unknown) {
-    super(index);
-    this.value = initialValue;
-  }
-
-  public override watch(): unknown {
-    return undefined;
-  }
-}
-
-class SegmentGateUnit implements IExpressionEvaluateUnit {
-  public readonly count = 1;
-  public readonly context: unknown = undefined;
-  public readonly value: unknown = undefined;
-  public readonly commitChange = jest.fn(() => {
-    this._updatedSegments.clear();
-  });
-  public readonly dispose = jest.fn();
-
-  private readonly _updatedSegments = new Set<unknown>();
-
-  constructor(
-    public readonly index: unknown,
-    private readonly _requiredSegments: readonly unknown[],
-  ) {}
-
-  public clear(): void {}
-
-  public isCommitReady(): boolean {
-    return this._updatedSegments.size === this._requiredSegments.length;
-  }
-
-  public setContext(): void {}
-
-  public setValue(
-    _value: unknown,
-    _context: unknown,
-    index: unknown,
-  ): IExpressionEvaluateUnit | null {
-    if (!this._requiredSegments.includes(index)) {
-      return null;
-    }
-
-    this._updatedSegments.add(index);
-    return this;
-  }
-
-  public watch(): unknown {
-    return undefined;
-  }
-}
-
-class StickyNotReadyUnit implements IExpressionEvaluateUnit {
+class EvaluateUnitMock implements IExpressionEvaluateUnit {
   public readonly count = 1;
   public readonly index = 'x';
-  public readonly context: unknown = undefined;
-  public readonly value: unknown = undefined;
-  public readonly commitChange = jest.fn();
+  public readonly context = undefined;
+  public value: unknown;
   public readonly dispose = jest.fn();
-  private _ready = false;
+  public readonly commitChange = jest.fn();
 
-  public clear(): void {}
+  private _ready = true;
 
-  public setReady(value: boolean): void {
-    this._ready = value;
-  }
+  public watch = jest.fn((changeManager: IExpressionEvaluateChangeManager) => {
+    changeManager.markDirty(this);
+  });
 
   public isCommitReady(): boolean {
     return this._ready;
   }
 
-  public setContext(): void {}
-
-  public setValue(): IExpressionEvaluateUnit | null {
-    return this;
-  }
-
-  public watch(): unknown {
-    return undefined;
+  public setReady(value: boolean): void {
+    this._ready = value;
   }
 }
-
-class WatchRegistrationDedupUnit implements IExpressionEvaluateUnit {
-  public readonly count = 1;
-  public readonly commitChange = jest.fn();
-  public readonly dispose = jest.fn();
-  public value: unknown;
-
-  constructor(
-    public context: unknown,
-    public readonly index: unknown,
-    private readonly _watchRegistrationKey: IWatchRegistrationKey,
-    private readonly _watchValue: unknown,
-  ) {}
-
-  public clear(): void {}
-
-  public getWatchRegistrationKey(): IWatchRegistrationKey {
-    return this._watchRegistrationKey;
-  }
-
-  public isCommitReady(): boolean {
-    return true;
-  }
-
-  public setContext(): void {}
-
-  public setValue(
-    value: unknown,
-    context: unknown,
-    index: unknown,
-  ): IExpressionEvaluateUnit | null {
-    if (context !== this.context || index !== this.index) {
-      return null;
-    }
-
-    this.value = value;
-    return this;
-  }
-
-  public watch = jest.fn((): unknown => {
-    this.value = this._watchValue;
-    return this._watchValue;
-  });
-}
-
-const flushMicrotasks = async (): Promise<void> => {
-  await Promise.resolve();
-  await Promise.resolve();
-};
-
-type IInternalEvaluateManagerForExpression = {
-  register(unit: IExpressionEvaluateUnit): void;
-  initialize(): void;
-  _initialized: boolean;
-  _changedQueue: Set<unknown>;
-  _unresolvedCount: number;
-  _reevaluateScheduled: boolean;
-  _bootstrapScheduled: boolean;
-  readonly evaluateUnitsCount: number;
-  onContextChanged(change: IContextChanged): void;
-  onStartChangeCycle(): void;
-  onEndChangeCycle(): void;
-  scheduleReevaluate(): void;
-  scheduleInitialize(): void;
-};
-
-type ICreatedEvaluateManager = {
-  id: unknown;
-  instance: IInternalEvaluateManagerForExpression;
-};
-
-type IManagerInternals = {
-  create(commit: (initialized: boolean) => void): ICreatedEvaluateManager;
-  createId(commit: unknown): unknown;
-  release(id: unknown): { referenceCount: number };
-};
 
 describe('ExpressionEvaluateManager', () => {
   const setup = () => {
-    const changed = new Subject<IStateChange>();
-    const contextChanged = new Subject<IContextChanged>();
-    const startChangeCycle = new Subject<void>();
-    const endChangeCycle = new Subject<void>();
-
-    const stateManager = {
-      changed,
-      contextChanged,
-      startChangeCycle,
-      endChangeCycle,
-    } as unknown as IStateManager;
-
+    const committedListeners: Array<() => void> = [];
     const transactionManager = {
-      subscribeCommitted: jest.fn(() => () => undefined),
+      subscribeCommitted: jest.fn((listener: () => void) => {
+        committedListeners.push(listener);
+        return () => undefined;
+      }),
       suspend: jest.fn(),
-      continue: jest.fn(),
+      continue: jest.fn(() => {
+        committedListeners.forEach((listener) => listener());
+      }),
       commit: jest.fn(),
       dispose: jest.fn(),
     } as unknown as IExpressionChangeTransactionManager;
 
-    const manager = new ExpressionEvaluateManager(
-      stateManager,
-      transactionManager,
-    );
+    const manager = new ExpressionEvaluateManager(transactionManager);
 
     return {
-      changed,
       manager,
       transactionManager,
     };
   };
 
-  it('boots once when all units initialize and then reevaluates on further changes', async () => {
-    const { changed, manager, transactionManager } = setup();
-    const evaluate = jest.fn();
+  it('initializes once and commits bootstrap + reevaluation when a unit marks dirty', async () => {
+    const { manager, transactionManager } = setup();
+    const commit = jest.fn();
+    const created = manager.create(commit).instance;
+    const unit = new EvaluateUnitMock();
 
-    const managerInternals = manager as unknown as IManagerInternals;
-    const created = managerInternals.create(evaluate);
-
-    const u1 = new MatchingUnit('shared');
-    const u2 = new MatchingUnit('shared');
-
-    created.instance.register(u1);
-    created.instance.register(u2);
-
-    changed.next({
-      context: {},
-      oldContext: {},
-      index: 'shared',
-      oldValue: undefined,
-      newValue: 1,
-    });
-
+    created.register(unit);
+    created.initialize();
     await flushMicrotasks();
 
-    expect(evaluate).toHaveBeenCalledTimes(1);
-    expect(evaluate).toHaveBeenCalledWith(false);
-    expect(u1.commitChange).toHaveBeenCalledTimes(0);
-    expect(u2.commitChange).toHaveBeenCalledTimes(0);
-
-    changed.next({
-      context: {},
-      oldContext: {},
-      index: 'shared',
-      oldValue: 1,
-      newValue: 2,
-    });
-
-    await flushMicrotasks();
-
+    expect(unit.watch).toHaveBeenCalledTimes(1);
+    expect(unit.commitChange).toHaveBeenCalledTimes(1);
     expect(transactionManager.suspend).toHaveBeenCalledTimes(1);
     expect(transactionManager.continue).toHaveBeenCalledTimes(1);
-    expect(u1.commitChange).toHaveBeenCalledTimes(1);
-    expect(u2.commitChange).toHaveBeenCalledTimes(1);
+    expect(commit).toHaveBeenCalledWith(false);
+    expect(commit).toHaveBeenCalledWith(true);
   });
 
-  it('bootstraps even when only some units report initial changes', async () => {
-    const { changed, manager } = setup();
-    const evaluate = jest.fn();
+  it('proves post-bootstrap tryFlushQueue drains dirties queued during initialize', async () => {
+    const { manager, transactionManager } = setup();
+    const commit = jest.fn();
+    const created = manager.create(commit).instance;
+    const unit = new EvaluateUnitMock();
 
-    const managerInternals = manager as unknown as IManagerInternals;
-    const created = managerInternals.create(evaluate);
-
-    const u1 = new MatchingUnit('a');
-    const u2 = new MatchingUnit('b');
-
-    created.instance.register(u1);
-    created.instance.register(u2);
-
-    changed.next({
-      context: {},
-      oldContext: {},
-      index: 'a',
-      oldValue: undefined,
-      newValue: 1,
-    });
-
-    await flushMicrotasks();
-
-    expect(evaluate).toHaveBeenCalledTimes(1);
-    expect(evaluate).toHaveBeenCalledWith(false);
-    expect(u1.commitChange).not.toHaveBeenCalled();
-    expect(u2.commitChange).not.toHaveBeenCalled();
-  });
-
-  it('waits for all member-like segments before committing when updates arrive out of order', async () => {
-    const { changed, manager, transactionManager } = setup();
-    const evaluate = jest.fn();
-
-    const managerInternals = manager as unknown as IManagerInternals;
-    const created = managerInternals.create(evaluate);
-    const gateUnit = new SegmentGateUnit('a.b.c.d', ['a', 'b', 'c', 'd']);
-
-    created.instance.register(gateUnit);
-    created.instance._initialized = true;
-
-    const emit = (index: unknown) => {
-      changed.next({
-        context: {},
-        oldContext: {},
-        index,
-        oldValue: undefined,
-        newValue: 1,
-      });
-    };
-
-    emit('a');
-    await flushMicrotasks();
-    emit('b');
-    await flushMicrotasks();
-    emit('d');
-    await flushMicrotasks();
-
-    expect(gateUnit.commitChange).toHaveBeenCalledTimes(0);
-    expect(created.instance._changedQueue.size).toBe(1);
-
-    emit('c');
-    await flushMicrotasks();
-
-    expect(gateUnit.commitChange).toHaveBeenCalledTimes(1);
-    expect(created.instance._changedQueue.size).toBe(0);
-    expect(transactionManager.suspend).toHaveBeenCalledTimes(4);
-    expect(transactionManager.continue).toHaveBeenCalledTimes(4);
-  });
-
-  it('exposes ids consistently and disposes instance on release', () => {
-    const { manager } = setup();
-    const evaluate = jest.fn();
-
-    expect(manager.getId(evaluate)).toBe(evaluate);
-    const managerInternals = manager as unknown as IManagerInternals;
-    expect(managerInternals.createId(evaluate)).toBe(evaluate);
-
-    const created = managerInternals.create(evaluate);
-
-    const unit = new MatchingUnit('a');
-    created.instance.register(unit);
-
-    const released = managerInternals.release(created.id);
-
-    expect(released.referenceCount).toBe(0);
-    expect(unit.dispose).toHaveBeenCalledTimes(1);
-  });
-
-  it('propagates contextChanged events to units', () => {
-    const { manager } = setup();
-    const evaluate = jest.fn();
-    const managerInternals = manager as unknown as IManagerInternals;
-    const created = managerInternals.create(evaluate);
-
-    const unit = new MatchingUnit('a');
-    const setContextSpy = jest.spyOn(unit, 'setContext');
-    created.instance.register(unit);
-
-    created.instance.onContextChanged({
-      context: { next: true },
-      oldContext: { prev: true },
-      index: 'a',
-    });
-
-    expect(setContextSpy).toHaveBeenCalledTimes(1);
-    expect(setContextSpy).toHaveBeenCalledWith(
-      { next: true },
-      { prev: true },
-      'a',
+    // Dirty is raised synchronously while initialize() is wiring watchers.
+    unit.watch.mockImplementation(
+      (changeManager: IExpressionEvaluateChangeManager) => {
+        changeManager.markDirty(unit);
+      },
     );
-  });
+    created.register(unit);
+    created.initialize();
 
-  it('keeps changed units queued until they become commit-ready', async () => {
-    const { changed, manager, transactionManager } = setup();
-    const evaluate = jest.fn();
-    const managerInternals = manager as unknown as IManagerInternals;
-    const created = managerInternals.create(evaluate);
+    // No additional dirty signals happen after initialize() returns.
+    expect(unit.watch).toHaveBeenCalledTimes(1);
+    expect(unit.commitChange).toHaveBeenCalledTimes(0);
+    expect(transactionManager.suspend).toHaveBeenCalledTimes(0);
 
-    const unit = new StickyNotReadyUnit();
-    created.instance.register(unit);
-    created.instance._initialized = true;
-
-    changed.next({
-      context: {},
-      oldContext: {},
-      index: 'x',
-      oldValue: undefined,
-      newValue: 1,
-    });
+    // At this point we are still pre-bootstrap, and the dirty unit is queued.
+    const internal = created as unknown as {
+      _initialized: boolean;
+      _changeManager: IExpressionEvaluateChangeManager;
+      _changedQueue: Set<IExpressionEvaluateUnit>;
+    };
+    expect(internal._initialized).toBe(false);
+    expect(internal._changedQueue.has(unit)).toBe(true);
 
     await flushMicrotasks();
 
-    expect(unit.commitChange).not.toHaveBeenCalled();
-    expect(created.instance._changedQueue.size).toBe(1);
+    // Reevaluation happened without any new markDirty calls after initialize().
+    expect(unit.commitChange).toHaveBeenCalledTimes(1);
     expect(transactionManager.suspend).toHaveBeenCalledTimes(1);
     expect(transactionManager.continue).toHaveBeenCalledTimes(1);
+    expect(commit).toHaveBeenNthCalledWith(1, false);
+    expect(commit).toHaveBeenNthCalledWith(2, true);
+    expect(internal._changedQueue.size).toBe(0);
+  });
+
+  it('skips commitChange until the unit becomes ready', async () => {
+    const { manager } = setup();
+    const created = manager.create(jest.fn()).instance;
+    const unit = new EvaluateUnitMock();
+    unit.setReady(false);
+
+    created.register(unit);
+    created.initialize();
+    await flushMicrotasks();
+
+    expect(unit.commitChange).toHaveBeenCalledTimes(0);
 
     unit.setReady(true);
-    changed.next({
-      context: {},
-      oldContext: {},
-      index: 'x',
-      oldValue: 1,
-      newValue: 2,
-    });
-
+    const watchChangeManager = unit.watch.mock
+      .calls[0][0] as IExpressionEvaluateChangeManager;
+    watchChangeManager.markDirty(unit);
     await flushMicrotasks();
 
     expect(unit.commitChange).toHaveBeenCalledTimes(1);
-    expect(created.instance._changedQueue.size).toBe(0);
-  });
-
-  it('queues units that expose value during watch-only initialization', async () => {
-    const { manager } = setup();
-    const evaluate = jest.fn();
-    const managerInternals = manager as unknown as IManagerInternals;
-    const created = managerInternals.create(evaluate);
-
-    const unit = new ValueOnlyWatchUnit('a', 123);
-    created.instance.register(unit);
-
-    created.instance.initialize();
-    await flushMicrotasks();
-
-    expect(evaluate).toHaveBeenCalledWith(false);
-    expect(created.instance._changedQueue.size).toBe(0);
-  });
-
-  it('caches evaluateUnitsCount and skips bootstrap while unresolved', async () => {
-    const { manager } = setup();
-    const evaluate = jest.fn();
-    const managerInternals = manager as unknown as IManagerInternals;
-    const created = managerInternals.create(evaluate);
-
-    const u1 = new MatchingUnit('a');
-    const u2 = new MatchingUnit('b');
-    created.instance.register(u1);
-    created.instance.register(u2);
-
-    const first = created.instance.evaluateUnitsCount;
-    const second = created.instance.evaluateUnitsCount;
-    expect(first).toBe(2);
-    expect(second).toBe(2);
-
-    created.instance._unresolvedCount = 1;
-    created.instance.initialize();
-    await flushMicrotasks();
-
-    expect(evaluate).not.toHaveBeenCalled();
-  });
-
-  it('covers state-cycle and scheduler guards', async () => {
-    const { changed, manager, transactionManager } = setup();
-    const evaluate = jest.fn();
-    const managerInternals = manager as unknown as IManagerInternals;
-    const created = managerInternals.create(evaluate);
-
-    const unit = new MatchingUnit('a');
-    unit.watch = jest.fn(() => 1);
-    created.instance.register(unit);
-
-    // initialize path with value from watch -> addChange branch
-    created.instance.initialize();
-    await flushMicrotasks();
-    expect(evaluate).toHaveBeenCalledWith(false);
-
-    // initialize guard when already initialized
-    created.instance.initialize();
-    expect((unit.watch as jest.Mock).mock.calls.length).toBe(1);
-
-    // start/end change cycle handlers and flush guard
-    created.instance.onStartChangeCycle();
-    changed.next({
-      context: {},
-      oldContext: {},
-      index: 'a',
-      oldValue: 1,
-      newValue: 2,
-    });
-    await flushMicrotasks();
-    expect(transactionManager.suspend).toHaveBeenCalledTimes(0);
-
-    created.instance.onEndChangeCycle();
-    await flushMicrotasks();
-    expect(transactionManager.suspend).toHaveBeenCalledTimes(1);
-
-    // scheduleReevaluate guard when already scheduled
-    created.instance._reevaluateScheduled = true;
-    created.instance.scheduleReevaluate();
-    expect(transactionManager.suspend).toHaveBeenCalledTimes(1);
-
-    // scheduleInitialize guard when bootstrap already scheduled
-    created.instance._initialized = false;
-    created.instance._bootstrapScheduled = true;
-    created.instance.scheduleInitialize();
-    expect(created.instance._bootstrapScheduled).toBe(true);
-  });
-
-  it('executes subscribeCommitted callback path during reevaluate', async () => {
-    const { changed, manager, transactionManager } = setup();
-    const evaluate = jest.fn();
-    const managerInternals = manager as unknown as IManagerInternals;
-    const created = managerInternals.create(evaluate);
-    const unit = new MatchingUnit('a');
-    created.instance.register(unit);
-    created.instance._initialized = true;
-
-    (transactionManager.subscribeCommitted as jest.Mock).mockImplementation(
-      (listener: () => void) => {
-        listener();
-        return () => undefined;
-      },
-    );
-
-    changed.next({
-      context: {},
-      oldContext: {},
-      index: 'a',
-      oldValue: undefined,
-      newValue: 1,
-    });
-
-    await flushMicrotasks();
-    expect(evaluate).toHaveBeenCalledWith(true);
-  });
-
-  it('deduplicates watch registration for identical context/index/watchRule during initialize', () => {
-    const { manager } = setup();
-    const evaluate = jest.fn();
-    const managerInternals = manager as unknown as IManagerInternals;
-    const created = managerInternals.create(evaluate);
-
-    const context = { x: 1 };
-    const watchRule = { id: 'same-rule' };
-    const watchKey: IWatchRegistrationKey = {
-      context,
-      index: 'x',
-      watchRule,
-    };
-
-    const primary = new WatchRegistrationDedupUnit(context, 'x', watchKey, 1);
-    const duplicate = new WatchRegistrationDedupUnit(context, 'x', watchKey, 2);
-
-    created.instance.register(primary);
-    created.instance.register(duplicate);
-    created.instance.initialize();
-
-    expect(primary.watch).toHaveBeenCalledTimes(1);
-    expect(duplicate.watch).not.toHaveBeenCalled();
-    expect(duplicate.value).toBe(1);
   });
 });

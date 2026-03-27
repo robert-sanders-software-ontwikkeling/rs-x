@@ -1,6 +1,6 @@
 import {
-  FunctionExpressionEvaluateUnit,
   type IExpressionEvaluateUnit,
+  SequenceExpressionEvaluateUnit,
 } from '../expression-evaluate-manager';
 
 import { AbstractExpression } from './abstract-expression';
@@ -8,7 +8,7 @@ import type { IExpressionBindConfiguration } from './expression-bind-configurati
 import { ExpressionType } from './expression-parser.interface';
 
 export class SequenceExpression extends AbstractExpression {
-  private _expressionEvaluateUnit: FunctionExpressionEvaluateUnit | undefined;
+  private _expressionEvaluateUnit: IExpressionEvaluateUnit | undefined;
 
   constructor(expressionString: string, expressions: AbstractExpression[]) {
     super(ExpressionType.Sequence, expressionString, ...expressions);
@@ -37,39 +37,29 @@ export class SequenceExpression extends AbstractExpression {
       ...settings,
       skipEvaluateUnitRegistration: true,
     };
-
-    for (let i = 0; i < this._childExpressions.length; i++) {
-      this._childExpressions[i].bind(childBindSettings);
-    }
-
-    // Sequence operands before the last may have side effects. For member-segment usage
-    // we execute them once at bind time so the final operand can resolve on initialization.
-    for (let i = 0; i < this._childExpressions.length - 1; i++) {
-      AbstractExpression.evaluateExpression(
-        this._childExpressions[i] as AbstractExpression,
-      );
-    }
-
     const dependencyUnits: IExpressionEvaluateUnit[] = [];
-    for (let i = 0; i < this._childExpressions.length; i++) {
-      const dependencyUnit = AbstractExpression.getExpressionEvaluateUnit(
-        this._childExpressions[i] as AbstractExpression,
-      );
 
-      if (dependencyUnit) {
-        dependencyUnits.push(dependencyUnit);
+    for (let i = 0; i < this._childExpressions.length; i++) {
+      const childExpression = this._childExpressions[i];
+      childExpression.bind(childBindSettings);
+      const unit =
+        AbstractExpression.getExpressionEvaluateUnit(childExpression);
+      if (unit) {
+        dependencyUnits.push(unit);
       }
     }
 
-    this._expressionEvaluateUnit = new FunctionExpressionEvaluateUnit(
+    this._expressionEvaluateUnit = new SequenceExpressionEvaluateUnit(
       this.expressionString,
-      settings.context,
+      undefined,
       dependencyUnits,
       () => this.evaluate(),
       this.commitValue,
-      true,
-      true,
     );
+
+    if (!settings.skipEvaluateUnitRegistration) {
+      this.evaluateManagerForExpression.register(this._expressionEvaluateUnit);
+    }
   }
 
   protected override get expressionEvaluateUnit():
@@ -78,9 +68,10 @@ export class SequenceExpression extends AbstractExpression {
     return this._expressionEvaluateUnit;
   }
 
-  private readonly commitValue = (_value: unknown) => {
-    this.evaluateBottomToTop();
-  };
+  protected override internalDispose(): void {
+    super.internalDispose();
+    this._expressionEvaluateUnit = undefined;
+  }
 
   protected override evaluate(): unknown {
     const childExpression = this._childExpressions;
@@ -92,4 +83,8 @@ export class SequenceExpression extends AbstractExpression {
   protected override shouldAbortTopDownEvaluation(): boolean {
     return false;
   }
+
+  private commitValue = () => {
+    this.evaluateBottomToTop();
+  };
 }

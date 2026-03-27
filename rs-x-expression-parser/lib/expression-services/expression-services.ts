@@ -8,11 +8,13 @@ import {
 } from '@rs-x/core';
 import {
   type IStateManager,
+  IWatchFactory,
   RsXStateManagerInjectionTokens,
 } from '@rs-x/state-manager';
 
 import { type IExpressionEvaluateManager } from '../expression-evaluate-manager';
 import type { IExpressionIdProvider } from '../expression-id/expression-id-provider.interface';
+import type { IIdentifierWatchRuleFactory } from '../expressions/identifier-index-watch-rule/identifier-watch-rule.factory.interface';
 import type { IIdentifierOwnerResolver } from '../identifier-owner-resolver/identifier-owner-resolver.interface';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
 
@@ -35,5 +37,9 @@ export class ExpressionServices implements IExpressionServices {
     public readonly expressionIdProvider: IExpressionIdProvider,
     @Inject(RsXExpressionParserInjectionTokens.IdentifierOwnerResolver)
     public readonly identifierOwnerResolver: IIdentifierOwnerResolver,
+    @Inject(RsXExpressionParserInjectionTokens.IIdentifierWatchRuleFactory)
+    public readonly identifierWatchRuleFactory: IIdentifierWatchRuleFactory,
+    @Inject(RsXStateManagerInjectionTokens.IWatchFactory)
+    public readonly watchFactory: IWatchFactory,
   ) {}
 }

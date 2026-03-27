@@ -6,7 +6,7 @@ import {
 } from '@rs-x/core';
 
 import { GroupedChangeSubscriptionsForContextManager } from '../../grouped-change-subscriptions-for-context-manager';
-import type { IIndexWatchRule } from '../../index-watch-rule-registry/index-watch-rule.interface';
+import { type IIndexWatchRule } from '../../index-watch-rule/index-watch-rule.interface';
 import { type IObjectPropertyObserverProxyPairManager } from '../../object-property-observer-proxy-pair-manager.type';
 import { type IObserver } from '../../observer.interface';
 

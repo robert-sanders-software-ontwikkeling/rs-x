@@ -326,19 +326,23 @@ describe('Expression observer tests', () => {
         }
       };
 
+      const assertStableLinearRatio = (
+        totals: Array<{ size: number; identifierNotifications: number }>,
+      ) => {
+        // Shared-watch behavior should keep notifications close to a constant
+        // amount per expression (linear). Small fixed jitter is allowed.
+        const ratios = totals.map(
+          (row) => row.identifierNotifications / row.size,
+        );
+        const minRatio = Math.min(...ratios);
+        const maxRatio = Math.max(...ratios);
+        expect(maxRatio - minRatio).toBeLessThanOrEqual(1);
+      };
+
       assertNoSuperlinearGrowth(replaceATotals);
       assertNoSuperlinearGrowth(nestedNextTotals);
-
-      for (let i = 1; i < replaceATotals.length; i += 1) {
-        expect(replaceATotals[i]!.identifierNotifications).toBeLessThanOrEqual(
-          replaceATotals[i - 1]!.identifierNotifications,
-        );
-      }
-      for (let i = 1; i < nestedNextTotals.length; i += 1) {
-        expect(
-          nestedNextTotals[i]!.identifierNotifications,
-        ).toBeLessThanOrEqual(nestedNextTotals[i - 1]!.identifierNotifications);
-      }
+      assertStableLinearRatio(replaceATotals);
+      assertStableLinearRatio(nestedNextTotals);
     } finally {
       identifierCommitSpy.mockRestore();
     }

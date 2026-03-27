@@ -1,4 +1,4 @@
-import { ExpressionType } from '../../lib/expressions/expression-parser.interface';
+import { type ExpressionType } from '../../lib/expressions/expression-parser.interface';
 import { IdentifierExpression } from '../../lib/expressions/identifier-expression';
 
 describe('IdentifierExpression internals', () => {
@@ -21,7 +21,6 @@ describe('IdentifierExpression internals', () => {
     };
     isAsync: boolean | undefined;
     setValue(value: unknown): void;
-    shouldWatchIndex(targetIndex: unknown, target: unknown): boolean;
   };
 
   const createExpression = () => {
@@ -69,25 +68,5 @@ describe('IdentifierExpression internals', () => {
     expect(
       expression._services.indexValueAccessor.setValue,
     ).toHaveBeenNthCalledWith(2, { fallback: true }, 'a', 456);
-  });
-
-  it('falls back to parent-shape when bind-time flags are unavailable', () => {
-    const expression = createExpression();
-    const context = { owner: true };
-    expression._expressionEvaluateUnit = { context };
-    expression._services.indexValueAccessor.getValue.mockReturnValue({
-      bind: () => undefined,
-      dispose: () => undefined,
-      changed: {},
-      value: 10,
-    });
-    expression._services.valueMetadata.needsProxy.mockReturnValue(false);
-    expression._parent = {
-      type: ExpressionType.Addition,
-      childExpressions: [expression, {}],
-    };
-
-    const result = expression.shouldWatchIndex('a', context);
-    expect(result).toBe(true);
   });
 });

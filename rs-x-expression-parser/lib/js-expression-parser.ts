@@ -1,5 +1,4 @@
 import { generate as astToString } from 'astring';
-import { parseScript } from 'meriyah';
 import type {
   ArrayExpression as EstreeArrayExpression,
   AssignmentExpression as EstreeAssignmentExpression,
@@ -31,6 +30,7 @@ import type {
   UnaryExpression,
   UnaryOperator,
 } from 'estree';
+import { parseScript } from 'meriyah';
 
 import {
   type AnyFunction,
@@ -368,14 +368,37 @@ export class JsExpressionParser implements IExpressionParser {
     expression: EstreeMemberExpression,
   ): AbstractExpression => {
     const flattenedSegments = this.flattenMemberExpression(expression);
-    const pathSegments = new Array<AbstractExpression>(flattenedSegments.length);
+    const pathSegments = new Array<AbstractExpression>(
+      flattenedSegments.length,
+    );
     for (let i = 0; i < flattenedSegments.length; i += 1) {
       const segment = flattenedSegments[i];
       const segmentExpression = this.createExpression(segment.expression);
-      pathSegments[i] = segment.computed
-        ? new ComputedIndexExpression(segmentExpression)
-        : segmentExpression;
+      if (segment.computed) {
+        pathSegments[i] = new ComputedIndexExpression(segmentExpression);
+        continue;
+      }
+
+      const isStaticMemberLeaf = i === flattenedSegments.length - 1;
+      const isLeaf = i === flattenedSegments.length - 1;
+      pathSegments[i] =
+        isStaticMemberLeaf && segmentExpression instanceof IdentifierExpression
+          ? new IdentifierExpression(
+              segmentExpression.expressionString,
+              true,
+              isLeaf,
+              true,
+            )
+          : segmentExpression instanceof IdentifierExpression
+            ? new IdentifierExpression(
+                segmentExpression.expressionString,
+                false,
+                isLeaf,
+                true,
+              )
+            : segmentExpression;
     }
+
     return new MemberExpression(
       this.getExpressionSource(expression),
       pathSegments,
@@ -397,7 +420,7 @@ export class JsExpressionParser implements IExpressionParser {
   };
 
   private createIdentifier = (expression: Identifier): AbstractExpression => {
-    return new IdentifierExpression(expression.name);
+    return new IdentifierExpression(expression.name, false, true, false);
   };
 
   private createArrayExpression = (
@@ -549,7 +572,9 @@ export class JsExpressionParser implements IExpressionParser {
   } {
     const quasis = new Array<AbstractExpression>(templateLiteral.quasis.length);
     for (let i = 0; i < templateLiteral.quasis.length; i += 1) {
-      quasis[i] = new ConstantStringExpression(templateLiteral.quasis[i].value.raw);
+      quasis[i] = new ConstantStringExpression(
+        templateLiteral.quasis[i].value.raw,
+      );
     }
 
     const parameters = new Array<AbstractExpression>(
@@ -867,9 +892,9 @@ export class JsExpressionParser implements IExpressionParser {
     objectExpression: EstreeObjectExpression,
   ): AbstractExpression => {
     const properties = objectExpression.properties;
-    const propertyExpressions = new Array<PropertyExpression | SpreadExpression>(
-      properties.length,
-    );
+    const propertyExpressions = new Array<
+      PropertyExpression | SpreadExpression
+    >(properties.length);
     for (let i = 0; i < properties.length; i += 1) {
       propertyExpressions[i] = this.createExpression(properties[i]) as
         | PropertyExpression
@@ -969,9 +994,7 @@ export class JsExpressionParser implements IExpressionParser {
     };
   }
 
-  private flattenMemberExpression(
-    expr: MemberPathSegmentType,
-  ): IPathSegment[] {
+  private flattenMemberExpression(expr: MemberPathSegmentType): IPathSegment[] {
     const result: IPathSegment[] = [];
 
     const walk = (node: MemberPathSegmentType): void => {

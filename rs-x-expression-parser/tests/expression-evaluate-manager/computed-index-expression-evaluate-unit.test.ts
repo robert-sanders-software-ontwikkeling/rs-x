@@ -1,147 +1,144 @@
-import type { IStateManager } from '@rs-x/state-manager';
+import { WatchFactoryMock, WatchMock } from '@rs-x/state-manager/testing';
 
 import { ComputedIndexExpressionEvaluateUnit } from '../../lib/expression-evaluate-manager/computed-index-expression-evaluate-unit';
+import { ExpressionEvaluateChangeManagerMock } from '../../lib/testing';
 
 describe('ComputedIndexExpressionEvaluateUnit', () => {
-  const createStateManager = () => ({
-    watchState: jest.fn(),
-    releaseState: jest.fn(),
-    getState: jest.fn(),
-  });
-
-  type IComputedIndexTestInternals = {
-    syncValueFromState(): void;
-  };
-
-  it('watch returns undefined until both context and index are set', () => {
-    const stateManager = createStateManager();
-    const commit = jest.fn();
+  it('does not create an inner identifier watch until both context and index are set', () => {
+    const watchFactory = new WatchFactoryMock();
+    watchFactory.create.mockReturnValue({
+      id: 'watch-id',
+      instance: new WatchMock({
+        context: { ctx: true },
+        index: 'k',
+        value: 1,
+      }),
+      referenceCount: 1,
+    });
+    const changeManager = new ExpressionEvaluateChangeManagerMock();
     const unit = new ComputedIndexExpressionEvaluateUnit(
-      stateManager as unknown as IStateManager,
+      watchFactory,
       'owner',
-      commit,
+      undefined,
+      jest.fn(),
     );
 
-    expect(unit.watch()).toBeUndefined();
+    unit.watch(changeManager);
+    expect(watchFactory.create).not.toHaveBeenCalled();
+
     unit.context = { ctx: true };
-    expect(unit.watch()).toBeUndefined();
+    unit.watch(changeManager);
+    expect(watchFactory.create).not.toHaveBeenCalled();
+
     unit.setIndex('k');
-    expect(unit.index).toBe('k');
-    stateManager.getState.mockReturnValue(10);
-    expect(unit.watch()).toBe(10);
-    expect(stateManager.watchState).toHaveBeenCalled();
+    unit.watch(changeManager);
+    expect(watchFactory.create).toHaveBeenCalledTimes(1);
   });
 
-  it('setIndex rebinds state and commits only when resolved value changes', () => {
-    const stateManager = createStateManager();
-    const commit = jest.fn();
-    const unit = new ComputedIndexExpressionEvaluateUnit(
-      stateManager as unknown as IStateManager,
-      'owner',
-      commit,
-    );
-    const ctx = { ctx: true };
-    unit.context = ctx;
-
-    stateManager.getState.mockReturnValueOnce(1);
-    unit.setIndex('a');
-    expect(commit).toHaveBeenCalledTimes(1);
-
-    stateManager.getState.mockReturnValueOnce(1);
-    unit.setIndex('b');
-    expect(commit).toHaveBeenCalledTimes(1);
-
-    unit.setIndex('b');
-    expect(stateManager.releaseState).toHaveBeenCalledTimes(1);
-  });
-
-  it('context changes release previous state and rewatch new context', () => {
-    const stateManager = createStateManager();
-    const commit = jest.fn();
-    const unit = new ComputedIndexExpressionEvaluateUnit(
-      stateManager as unknown as IStateManager,
-      'owner',
-      commit,
-    );
-
-    const c1 = { c1: true };
-    const c2 = { c2: true };
-    stateManager.getState.mockReturnValue(5);
-
-    unit.context = c1;
-    unit.setIndex('x');
-    unit.context = c2;
-    expect(stateManager.releaseState).toHaveBeenCalledWith(c1, 'x');
-    expect(stateManager.watchState).toHaveBeenCalledWith(c2, 'x', {
-      ownerId: 'owner',
+  it('wires through WatchMock changes and marks computed unit dirty', () => {
+    const watch = new WatchMock({
+      context: { ctx: true },
+      index: 'k',
+      value: 1,
     });
-  });
+    const watchFactory = new WatchFactoryMock();
+    watchFactory.create.mockReturnValue({
+      id: 'watch-id',
+      instance: watch,
+      referenceCount: 1,
+    });
 
-  it('setContext and setValue match rules and commitChange guard', () => {
-    const stateManager = createStateManager();
-    const commit = jest.fn();
+    const changeManager = new ExpressionEvaluateChangeManagerMock();
     const unit = new ComputedIndexExpressionEvaluateUnit(
-      stateManager as unknown as IStateManager,
+      watchFactory,
       'owner',
-      commit,
+      undefined,
+      jest.fn(),
     );
-    const context = { ctx: true };
-    unit.context = context;
+
+    unit.context = { ctx: true };
     unit.setIndex('k');
+    unit.watch(changeManager);
 
-    expect(unit.setValue(1, context, 'x', true)).toBeNull();
-    expect(unit.setValue(1, { other: true }, 'k', true)).toBeNull();
+    expect(unit.value).toBe(1);
+    expect(watchFactory.create).toHaveBeenCalledWith({
+      index: 'k',
+      context: { ctx: true },
+      options: {
+        indexWatchRule: undefined,
+        ownerId: 'owner',
+      },
+    });
 
-    expect(unit.setValue(2, context, 'k', true)).toBe(unit);
+    watch.changed.next({
+      context: { ctx: true },
+      oldContext: { ctx: true },
+      index: 'k',
+      oldValue: 1,
+      newValue: 2,
+    });
+
     expect(unit.value).toBe(2);
-
-    unit.clear();
-    unit.commitChange();
-    expect(commit).toHaveBeenCalledTimes(0);
-
-    unit.setValue(3, context, 'k', true);
-    unit.commitChange();
-    expect(commit).toHaveBeenCalledTimes(1);
-
-    unit.setContext({ next: true }, context, 'zzz');
-    expect(unit.context).toEqual({ next: true });
-
-    const unchanged = unit.context;
-    unit.setContext({ noChange: true }, { other: true }, 'other');
-    expect(unit.context).toBe(unchanged);
+    expect(changeManager.markDirty).toHaveBeenCalledWith(unit);
   });
 
-  it('handles getState errors and dispose is idempotent', () => {
-    const stateManager = createStateManager();
-    const unit = new ComputedIndexExpressionEvaluateUnit(
-      stateManager as unknown as IStateManager,
-      'owner',
-      jest.fn(),
-    );
-    const ctx = { ctx: true };
-    unit.context = ctx;
-    stateManager.getState.mockImplementation(() => {
-      throw new Error('boom');
+  it('rebinds on context/index changes and disposes on teardown', () => {
+    const firstWatch = new WatchMock({
+      context: { ctx: 1 },
+      index: 'a',
+      value: 1,
     });
+    const secondWatch = new WatchMock({
+      context: { ctx: 2 },
+      index: 'a',
+      value: 2,
+    });
+    const thirdWatch = new WatchMock({
+      context: { ctx: 2 },
+      index: 'b',
+      value: 2,
+    });
+    const watchFactory = new WatchFactoryMock();
+    watchFactory.create
+      .mockReturnValueOnce({
+        id: 'watch-1',
+        instance: firstWatch,
+        referenceCount: 1,
+      })
+      .mockReturnValueOnce({
+        id: 'watch-2',
+        instance: secondWatch,
+        referenceCount: 1,
+      })
+      .mockReturnValue({
+        id: 'watch-3',
+        instance: thirdWatch,
+        referenceCount: 1,
+      });
 
-    unit.setIndex('k');
-    expect(unit.watch()).toBeUndefined();
-    expect(unit.isCommitReady()).toBe(true);
-
-    unit.dispose();
-    unit.dispose();
-    expect(stateManager.releaseState).toHaveBeenCalledWith(ctx, 'k');
-  });
-
-  it('syncValueFromState handles missing context/index', () => {
-    const stateManager = createStateManager();
+    const commit = jest.fn();
+    const changeManager = new ExpressionEvaluateChangeManagerMock();
     const unit = new ComputedIndexExpressionEvaluateUnit(
-      stateManager as unknown as IStateManager,
+      watchFactory,
       'owner',
-      jest.fn(),
+      undefined,
+      commit,
     );
 
-    (unit as unknown as IComputedIndexTestInternals).syncValueFromState();
-    expect(unit.value).toBeUndefined();
+    unit.context = { ctx: 1 };
+    unit.setIndex('a');
+    unit.watch(changeManager);
+    expect(unit.value).toBe(1);
+
+    unit.context = { ctx: 2 };
+    unit.setIndex('b');
+    expect(commit).toHaveBeenCalledTimes(0);
+    expect(unit.value).toBe(2);
+    expect(firstWatch.dispose).toHaveBeenCalledTimes(1);
+
+    unit.dispose();
+    unit.dispose();
+    expect(secondWatch.dispose).toHaveBeenCalledTimes(1);
+    expect(thirdWatch.dispose).toHaveBeenCalledTimes(1);
   });
 });

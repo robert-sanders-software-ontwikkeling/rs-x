@@ -7,7 +7,11 @@ import {
   type IValueMetadata,
   PENDING,
 } from '@rs-x/core';
-import type { IIndexWatchRule, IStateManager } from '@rs-x/state-manager';
+import type {
+  IIndexWatchRule,
+  IStateManager,
+  IWatchFactory,
+} from '@rs-x/state-manager';
 
 import {
   type IEvaluateManagerForExpression,
@@ -17,6 +21,7 @@ import { type IExpressionEvaluateUnit } from '../expression-evaluate-manager/exp
 import type { IExpressionServices } from '../expression-services/expression-services.interface';
 import { type IIdentifierOwnerResolver } from '../identifier-owner-resolver/identifier-owner-resolver.interface';
 
+import type { IIdentifierWatchRuleFactory } from './identifier-index-watch-rule/identifier-watch-rule.factory.interface';
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 import {
   type ChangeHook,
@@ -101,14 +106,7 @@ export abstract class AbstractExpression<
   protected set value(value: T | undefined) {
     this._oldValue = this._value;
     this._value = value;
-    let isChanged = !Object.is(this._oldValue, this._value);
-    if (!isChanged) {
-      const currentValueIsObject =
-        this._value !== null && typeof this._value === 'object';
-      const oldValueIsObject =
-        this._oldValue !== null && typeof this._oldValue === 'object';
-      isChanged = currentValueIsObject && oldValueIsObject;
-    }
+    const isChanged = !Object.is(this._oldValue, this._value);
 
     this._isDirty = !this._parent && (this._isDirty || isChanged);
   }
@@ -201,6 +199,14 @@ export abstract class AbstractExpression<
 
   protected get expressionEvaluateManager(): IExpressionEvaluateManager {
     return this._services?.expressionEvaluateManager;
+  }
+
+  protected get identifierWatchRuleFactory(): IIdentifierWatchRuleFactory {
+    return this._services?.identifierWatchRuleFactory;
+  }
+
+  protected get watchFactory(): IWatchFactory {
+    return this._services?.watchFactory;
   }
 
   protected get valueMetadata(): IValueMetadata {
@@ -344,6 +350,10 @@ export abstract class AbstractExpression<
     value: unknown,
   ): boolean {
     return value === undefined;
+  }
+
+  protected markRootDirty(): void {
+    this.absoluteRoot._isDirty = true;
   }
 
   private tryEmitChanged = () => {

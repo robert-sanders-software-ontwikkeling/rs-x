@@ -24,7 +24,7 @@ export class ConstantExpression<T> extends AbstractExpression<T> {
 
   protected override onBind(settings: IExpressionBindConfiguration): void {
     this.evaluateManagerForExpression.register(
-      new ConstExpressionEvaluateUnit(this, this.value, this.value),
+      new ConstExpressionEvaluateUnit(this.value),
     );
     super.onBind(settings);
   }

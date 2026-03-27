@@ -1,5 +1,5 @@
-import { performance } from 'node:perf_hooks';
 import { createRequire } from 'node:module';
+import { performance } from 'node:perf_hooks';
 
 import { generatedBenchmarkExpressionStrings } from '../../lib/benchmark/generated-benchmark-expression-strings';
 
@@ -89,14 +89,15 @@ describe('Generated benchmark parser spike', () => {
     if (process.env.RSX_BENCHMARK_LOG === 'true') {
       const summary = results
         .map(
-          (result) =>
-            `${result.name}=${Number(result.totalMs.toFixed(2))}ms`,
+          (result) => `${result.name}=${Number(result.totalMs.toFixed(2))}ms`,
         )
         .join(' ');
       console.log(`[parser-spike] count=${expressions.length} ${summary}`);
     }
 
     // Keep a minimal correctness assertion so this benchmark remains stable.
-    expect(results.find((result) => result.name === 'meriyah')?.totalMs).toBeGreaterThan(0);
+    expect(
+      results.find((result) => result.name === 'meriyah')?.totalMs,
+    ).toBeGreaterThan(0);
   });
 });

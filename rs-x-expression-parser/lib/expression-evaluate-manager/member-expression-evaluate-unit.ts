@@ -1,6 +1,7 @@
-import { PENDING } from '@rs-x/core';
-
-import type { IExpressionEvaluateUnit } from './expression-evaluate-unit.interface';
+import type {
+  IExpressionEvaluateChangeManager,
+  IExpressionEvaluateUnit,
+} from './expression-evaluate-unit.interface';
 
 export class MemberExpressionEvaluateUnit implements IExpressionEvaluateUnit {
   public readonly count: number;
@@ -8,26 +9,26 @@ export class MemberExpressionEvaluateUnit implements IExpressionEvaluateUnit {
   private readonly _updatedSegmentIndexes = new Set<number>();
   private _pendingStartSegmentIndex: number | undefined;
 
+  private _changeManager!: IExpressionEvaluateChangeManager;
+  private _segmentsChangeManager!: IExpressionEvaluateChangeManager;
+
   constructor(
     private _context: unknown,
     public readonly index: unknown,
     private readonly _segments: readonly IExpressionEvaluateUnit[],
   ) {
     this.count = 1;
+
+    this._segmentsChangeManager = {
+      markDirty: this.markDirty,
+      isInitialized: () => this._changeManager.isInitialized(),
+      incrementChangeCycle: () => this._changeManager.incrementChangeCycle(),
+      decrementChangeCycle: () => this._changeManager.decrementChangeCycle(),
+    };
   }
 
   public get context(): unknown {
     return this._context;
-  }
-
-  public set context(value: unknown) {
-    if (this._context === value) {
-      return;
-    }
-    this._context = value;
-
-    this.clear();
-    this._segments[0].context = value;
   }
 
   public get value(): unknown {
@@ -42,100 +43,36 @@ export class MemberExpressionEvaluateUnit implements IExpressionEvaluateUnit {
     this._segments.forEach((segment) => segment.dispose());
   }
 
-  public watch(): unknown {
+  public watch(changeManager: IExpressionEvaluateChangeManager): void {
+    this._changeManager = changeManager;
     const segments = this._segments;
-    segments[0].context = this.context;
+    if (segments.length > 0 && segments[0].context === undefined) {
+      segments[0].context = this._context;
+    }
 
     for (let i = 0; i < segments.length; i++) {
-      const watchedValue = segments[i].watch();
-      const currentValue =
-        watchedValue === undefined ? segments[i].value : watchedValue;
-
-      const nextSegmentIndex = i + 1;
-      if (nextSegmentIndex < segments.length) {
-        segments[nextSegmentIndex].context =
-          currentValue === PENDING ? undefined : currentValue;
+      segments[i].watch(this._segmentsChangeManager);
+      if (i < segments.length - 1 && segments[i].value !== undefined) {
+        segments[i + 1].context = segments[i].value;
       }
     }
-
-    return this.value === PENDING ? undefined : this.value;
   }
 
-  public clear(): void {
-    this._updatedSegmentIndexes.clear();
-    this._pendingStartSegmentIndex = undefined;
-    this._segments.forEach((segment) => segment.clear());
-  }
+  private markDirty = (segement: IExpressionEvaluateUnit) => {
+    const segementIndex = this._segments.indexOf(segement);
+    this._pendingStartSegmentIndex =
+      this._pendingStartSegmentIndex === undefined
+        ? segementIndex
+        : Math.min(this._pendingStartSegmentIndex, segementIndex);
 
-  public setContext(
-    context: unknown,
-    oldContext: unknown,
-    index: unknown,
-  ): void {
-    const segments = this._segments;
-    const segmentIndex = segments.findIndex(
-      (segment) => segment.context === oldContext && segment.index === index,
-    );
-    if (segmentIndex === -1) {
-      return;
+    this._updatedSegmentIndexes.add(segementIndex);
+    if (segementIndex === this._segments.length - 1) {
+      this._changeManager.markDirty(this);
+    } else {
+      this._segments[segementIndex + 1].context = segement.value;
     }
+  };
 
-    segments[segmentIndex].context = context;
-  }
-
-  public setValue(
-    value: unknown,
-    context: unknown,
-    index: unknown,
-    initialized: boolean,
-  ): IExpressionEvaluateUnit | null {
-    const segments = this._segments;
-    let segmentIndex = -1;
-    let segement: IExpressionEvaluateUnit | null = null;
-
-    for (let i = 0; i < segments.length; i++) {
-      const currentSegment = segments[i].setValue(
-        value,
-        context,
-        index,
-        initialized,
-      );
-
-      if (currentSegment === null) {
-        continue;
-      }
-
-      segmentIndex = i;
-      segement = currentSegment;
-      break;
-    }
-
-    if (segmentIndex === -1 || segement === null) {
-      return null;
-    }
-
-    if (initialized) {
-      this._updatedSegmentIndexes.add(segmentIndex);
-      this._pendingStartSegmentIndex =
-        this._pendingStartSegmentIndex === undefined
-          ? segmentIndex
-          : Math.min(this._pendingStartSegmentIndex, segmentIndex);
-    }
-
-    const nextSegmentIndex = segmentIndex + 1;
-    if (nextSegmentIndex < this._segments.length) {
-      const nextContext =
-        segement.value === PENDING ? undefined : segement.value;
-      this._segments[nextSegmentIndex].context = nextContext;
-      if (initialized && nextContext !== undefined) {
-        this._updatedSegmentIndexes.add(nextSegmentIndex);
-      }
-    }
-
-    return this;
-  }
-
-  //This method is only call after changes when initialize
   public isCommitReady(): boolean {
     if (this._pendingStartSegmentIndex === undefined) {
       return false;
@@ -154,6 +91,7 @@ export class MemberExpressionEvaluateUnit implements IExpressionEvaluateUnit {
     return true;
   }
 
+  //This method is only call after changes when initialize
   public commitChange(): void {
     if (!this.isCommitReady()) {
       return;

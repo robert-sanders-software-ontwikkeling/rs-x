@@ -24,8 +24,9 @@ export class ComputedIndexExpression extends ParameterizedExpression {
   protected override get expressionEvaluateUnit(): ComputedIndexExpressionEvaluateUnit {
     if (!this._expressionEvaluateUnit) {
       this._expressionEvaluateUnit = new ComputedIndexExpressionEvaluateUnit(
-        this.stateManager,
+        this.watchFactory,
         this.root,
+        undefined,
         this.commitCallback,
       );
     }
@@ -33,7 +34,10 @@ export class ComputedIndexExpression extends ParameterizedExpression {
     return this._expressionEvaluateUnit;
   }
 
-  private commitCallback = (): void => {
+  private commitCallback = (forceDirty?: boolean): void => {
+    if (forceDirty && this.isStaticIndexExpression()) {
+      this.markRootDirty();
+    }
     this.evaluateBottomToTop();
   };
 
@@ -70,5 +74,13 @@ export class ComputedIndexExpression extends ParameterizedExpression {
 
   protected override evaluateExpression(indexValue: unknown): unknown {
     return indexValue;
+  }
+
+  private isStaticIndexExpression(): boolean {
+    const indexExpression = this._childExpressions[0];
+    return (
+      indexExpression?.type === ExpressionType.Number ||
+      indexExpression?.type === ExpressionType.String
+    );
   }
 }

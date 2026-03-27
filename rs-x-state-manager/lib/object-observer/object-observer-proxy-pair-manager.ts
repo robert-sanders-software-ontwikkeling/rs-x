@@ -9,7 +9,7 @@ import {
   Type,
 } from '@rs-x/core';
 
-import type { IIndexWatchRule } from '../index-watch-rule-registry/index-watch-rule.interface';
+import { IIndexWatchRule } from '../index-watch-rule/index-watch-rule.interface';
 import type { IObserverProxyPair } from '../object-property-observer-proxy-pair-manager.type';
 import { RsXStateManagerInjectionTokens } from '../rs-x-state-manager-injection-tokens';
 

@@ -918,7 +918,9 @@ describe('Member expression tests', () => {
 
       await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
-      const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
+      const actual = (await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
         model.message = 'hi';
       })) as IExpression;
 

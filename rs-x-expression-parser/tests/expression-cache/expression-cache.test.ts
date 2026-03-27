@@ -52,14 +52,6 @@ describe('ExpressionCache', () => {
       type: ExpressionType.Multiplication,
     });
 
-    let cloneCount = 0;
-    (parsedExpression as unknown as { clone: jest.Mock }).clone = jest.fn(
-      () => {
-        cloneCount += 1;
-        return cloneA;
-      },
-    );
-
     const parser = {
       parse: jest.fn(() => parsedExpression),
     } as unknown as IExpressionParser;

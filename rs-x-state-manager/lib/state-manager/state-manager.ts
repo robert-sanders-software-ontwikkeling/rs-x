@@ -16,13 +16,14 @@ import {
   truePredicate,
 } from '@rs-x/core';
 
-import type { IIndexWatchRule } from '../index-watch-rule-registry/index-watch-rule.interface';
+import { IIndexWatchRule } from '../index-watch-rule/index-watch-rule.interface';
 import type { IObjectPropertyObserverProxyPairManager } from '../object-property-observer-proxy-pair-manager.type';
 import { RsXStateManagerInjectionTokens } from '../rs-x-state-manager-injection-tokens';
 
 import { StateChangeSubscriptionManager } from './state-change-subscription-manager/state-change-subsription-manager';
 import type { IObjectStateManager } from './object-state-manager.interface';
 import type {
+  IChangeCycleIndex,
   IContextChanged,
   IStateChange,
   IStateEventListener,
@@ -52,8 +53,8 @@ interface IStateEventSubscription {
 export class StateManager implements IStateManager {
   private readonly _changed = new Subject<IStateChange>();
   private readonly _contextChanged = new Subject<IContextChanged>();
-  private readonly _startChangeCycle = new Subject<void>();
-  private readonly _endChangeCycle = new Subject<void>();
+  private readonly _startChangeCycle = new Subject<IChangeCycleIndex>();
+  private readonly _endChangeCycle = new Subject<IChangeCycleIndex>();
   private readonly _stateChangeSubscriptionManager: StateChangeSubscriptionManager;
   private readonly _pending = new Map<unknown, unknown>();
   private readonly _stateEventSubscriptionsByContext = new Map<
@@ -96,11 +97,11 @@ export class StateManager implements IStateManager {
     return this._contextChanged;
   }
 
-  public get startChangeCycle(): Observable<void> {
+  public get startChangeCycle(): Observable<IChangeCycleIndex> {
     return this._startChangeCycle;
   }
 
-  public get endChangeCycle(): Observable<void> {
+  public get endChangeCycle(): Observable<IChangeCycleIndex> {
     return this._endChangeCycle;
   }
 
@@ -208,8 +209,9 @@ export class StateManager implements IStateManager {
     ownerId?: unknown,
   ): void {
     const isExternalSetState = ownerId === undefined;
+    const changeCycleIndex = { context, index };
     if (isExternalSetState) {
-      this._startChangeCycle.next();
+      this._startChangeCycle.next(changeCycleIndex);
     }
 
     try {
@@ -226,7 +228,7 @@ export class StateManager implements IStateManager {
       );
     } finally {
       if (isExternalSetState) {
-        this._endChangeCycle.next();
+        this._endChangeCycle.next(changeCycleIndex);
       }
     }
   }
@@ -371,9 +373,8 @@ export class StateManager implements IStateManager {
     ownerId: unknown,
   ): unknown {
     const state = this.getState(context, index);
-    this._objectStateManager
-      .create(context)
-      .instance.create({ value: state, key: index, watched, ownerId });
+    const stateForContext = this._objectStateManager.create(context).instance;
+    stateForContext.create({ value: state, key: index, watched, ownerId });
     return state;
   }
 
@@ -834,7 +835,8 @@ export class StateManager implements IStateManager {
       const value = this.getValue(context, index);
       const oldValue = this.getOldValue(context, index);
 
-      this._startChangeCycle.next();
+      const changeCycleIndex = { context, index };
+      this._startChangeCycle.next(changeCycleIndex);
 
       try {
         const currentValue = this.getCurrentValue(context, index);
@@ -842,7 +844,7 @@ export class StateManager implements IStateManager {
         this.updateState(context, context, index, value, watched, ownerId);
         this.emitChange(context, index, value, oldValue);
       } finally {
-        this._endChangeCycle.next();
+        this._endChangeCycle.next(changeCycleIndex);
       }
       return;
     }
@@ -852,10 +854,14 @@ export class StateManager implements IStateManager {
       return;
     }
 
-    this._startChangeCycle.next();
+    const chainLeaf = chainChanges[chainChanges.length - 1];
+    const changeCycleIndex = {
+      context: chainLeaf.context,
+      index: chainLeaf.index,
+    };
+    this._startChangeCycle.next(changeCycleIndex);
 
     try {
-      const chainLeaf = chainChanges[chainChanges.length - 1];
       const currentValue = this.getCurrentValue(
         chainLeaf.context,
         chainLeaf.index,
@@ -884,7 +890,7 @@ export class StateManager implements IStateManager {
         );
       }
     } finally {
-      this._endChangeCycle.next();
+      this._endChangeCycle.next(changeCycleIndex);
     }
   }
 }

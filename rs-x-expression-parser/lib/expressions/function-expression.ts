@@ -1,6 +1,7 @@
 import { type AnyFunction, Assertion, PENDING, Type } from '@rs-x/core';
 
 import {
+  ConstExpressionEvaluateUnit,
   FunctionExpressionEvaluateUnit,
   type IExpressionEvaluateUnit,
 } from '../expression-evaluate-manager';
@@ -12,26 +13,20 @@ import type { IExpressionBindConfiguration } from './expression-bind-configurati
 import { ExpressionType } from './expression-parser.interface';
 
 export class FunctionExpression extends AbstractExpression {
-  private _context: unknown;
   private _functionContext: unknown;
   private _functionId!: string;
-  private _functionExpressionEvaluateUnit:
-    | FunctionExpressionEvaluateUnit
-    | undefined;
-  private _lastInvocation:
-    | {
-        context: unknown;
-        functionName: string;
-        args: unknown[];
-        result: unknown;
-      }
-    | undefined;
+  private _context: unknown;
+  private _expressionEvaluateUnit: IExpressionEvaluateUnit | undefined;
+  private _isMemberSegment = false;
+  private _argumentEvaluateUnits: Array<IExpressionEvaluateUnit | undefined> =
+    [];
 
   constructor(
     expressionString: string,
     private readonly _functionExpression: AbstractExpression<
       AnyFunction | string | number
     >,
+
     private readonly _objectExpression: AbstractExpression<object>,
     private readonly _argumentsExpression: ArrayExpression,
     private readonly _computed: boolean,
@@ -75,17 +70,31 @@ export class FunctionExpression extends AbstractExpression {
   ): void {
     this._functionId = this.guidFactory.create();
     this._context = settings.context;
+    this._functionContext = this.absoluteRoot;
+    const isMemberSegment = this.parent?.type === ExpressionType.Member;
+    this._isMemberSegment = isMemberSegment;
+    this._argumentEvaluateUnits = [];
     const childBindSettings = {
       ...settings,
       skipEvaluateUnitRegistration: true,
     };
 
+    const unitsToRegister = new Set<IExpressionEvaluateUnit>();
+    const addUnit = (expression: AbstractExpression): void => {
+      const unit = AbstractExpression.getExpressionEvaluateUnit(expression);
+      if (unit) {
+        unitsToRegister.add(unit);
+      }
+    };
+
     if (this._objectExpression) {
+      this._objectExpression.bind(childBindSettings);
+      addUnit(this._objectExpression);
+
       if (this._computed) {
-        this._objectExpression.bind(childBindSettings);
         this._functionExpression.bind(childBindSettings);
+        addUnit(this._functionExpression);
       } else {
-        this._objectExpression.bind(childBindSettings);
         AbstractExpression.setHidden(this._functionExpression);
         this._functionExpression.bind({
           ...childBindSettings,
@@ -93,10 +102,16 @@ export class FunctionExpression extends AbstractExpression {
         });
       }
     } else {
+      this.evaluateManagerForExpression.register(
+        new ConstExpressionEvaluateUnit(settings.context),
+      );
+
       this._childExpressions[0].bind(childBindSettings);
+      addUnit(this._childExpressions[0]);
+
       AbstractExpression.setHidden(this._functionExpression);
       this._functionExpression.bind(
-        this._functionExpression.type == ExpressionType.Identifier
+        this._functionExpression.type === ExpressionType.Identifier
           ? { ...childBindSettings, context: undefined }
           : childBindSettings,
       );
@@ -104,85 +119,76 @@ export class FunctionExpression extends AbstractExpression {
 
     this._argumentsExpression.bind(childBindSettings);
 
-    const dependencyUnits: IExpressionEvaluateUnit[] = [];
-    const objectExpressionUnit = this._objectExpression
-      ? AbstractExpression.getExpressionEvaluateUnit(this._objectExpression)
-      : undefined;
-    if (objectExpressionUnit) {
-      dependencyUnits.push(objectExpressionUnit);
-    }
-
-    const functionExpressionUnit = AbstractExpression.getExpressionEvaluateUnit(
-      this._functionExpression,
-    );
-    if (functionExpressionUnit) {
-      dependencyUnits.push(functionExpressionUnit);
-    }
-
     for (
       let i = 0;
       i < this._argumentsExpression.childExpressions.length;
       i++
     ) {
-      const argumentUnit = AbstractExpression.getExpressionEvaluateUnit(
-        this._argumentsExpression.childExpressions[i] as AbstractExpression,
-      );
+      const argumentExpression = this._argumentsExpression.childExpressions[
+        i
+      ] as AbstractExpression;
+      const argumentUnit =
+        AbstractExpression.getExpressionEvaluateUnit(argumentExpression);
+      this._argumentEvaluateUnits.push(argumentUnit);
       if (argumentUnit) {
-        dependencyUnits.push(argumentUnit);
+        unitsToRegister.add(argumentUnit);
       }
     }
 
-    this._functionExpressionEvaluateUnit = new FunctionExpressionEvaluateUnit(
-      this._functionId,
-      undefined,
-      dependencyUnits,
-      () => this.evaluate(),
-      this.commitValue,
-      this.parent?.type === ExpressionType.Member,
-      this.parent?.type === ExpressionType.Member,
-    );
-
-    if (!settings.skipEvaluateUnitRegistration) {
-      this.evaluateManagerForExpression.register(
-        this._functionExpressionEvaluateUnit,
+    if (isMemberSegment) {
+      const functionEvaluateUnit = new FunctionExpressionEvaluateUnit(
+        this.expressionString,
+        undefined,
+        [...unitsToRegister.values()],
+        () => this.evaluate(),
+        this.commitValue,
       );
+      this._expressionEvaluateUnit = functionEvaluateUnit;
+      if (!settings.skipEvaluateUnitRegistration) {
+        this.evaluateManagerForExpression.register(functionEvaluateUnit);
+      }
+    } else {
+      this._expressionEvaluateUnit = undefined;
+    }
+
+    if (!settings.skipEvaluateUnitRegistration && !isMemberSegment) {
+      for (const unit of unitsToRegister.values()) {
+        this.evaluateManagerForExpression.register(unit);
+      }
     }
   }
 
   protected override get expressionEvaluateUnit():
-    | FunctionExpressionEvaluateUnit
+    | IExpressionEvaluateUnit
     | undefined {
-    return this._functionExpressionEvaluateUnit;
+    return this._expressionEvaluateUnit;
   }
 
   protected override internalDispose(): void {
     this.releaseResult();
-    this._functionExpressionEvaluateUnit?.dispose();
     super.internalDispose();
+    this._expressionEvaluateUnit = undefined;
   }
 
   protected override evaluate(): unknown {
-    this.syncObjectExpressionCache();
-    this.syncArgumentsExpressionCache();
+    const objectValue = this._objectExpression
+      ? (this._objectExpression.value ??
+        AbstractExpression.evaluateExpression(this._objectExpression))
+      : this._context;
 
-    const functionContext = Type.toObject(
-      this._objectExpression ? this._objectExpression.value : this._context,
-    );
+    const functionContext = Type.toObject(objectValue);
     if (!functionContext) {
       return PENDING;
     }
 
-    if (this._functionContext !== functionContext) {
-      this._functionContext = functionContext;
-      if (this._functionExpressionEvaluateUnit) {
-        this._functionExpressionEvaluateUnit.context = this._functionContext;
-      }
-    }
-
     const { functionName } = this;
 
+    const argsValue = this._isMemberSegment
+      ? this.evaluateArgumentsFromUnits()
+      : (this._argumentsExpression.value ??
+        AbstractExpression.evaluateExpression(this._argumentsExpression));
     const args =
-      this._argumentsExpression.value ??
+      argsValue ??
       (this._argumentsExpression.childExpressions.length === 0
         ? []
         : undefined);
@@ -194,35 +200,16 @@ export class FunctionExpression extends AbstractExpression {
     const func = Type.cast<Function>(functionContext[functionName]);
     Assertion.assertIsFunction(func, func.name);
 
-    if (
-      this._lastInvocation &&
-      this._lastInvocation.context === functionContext &&
-      this._lastInvocation.functionName === functionName &&
-      this.argsEqual(this._lastInvocation.args, args as unknown[])
-    ) {
-      return this._lastInvocation.result;
-    }
-
     const result = this.registerResult(
       func.call(functionContext, ...(args as unknown[])),
     );
-    this._lastInvocation = {
-      context: functionContext,
-      functionName,
-      args: [...(args as unknown[])],
-      result,
-    };
-    if (result !== PENDING && this._functionExpressionEvaluateUnit) {
-      this._functionExpressionEvaluateUnit.setValueDirectly(result);
-    }
+
     return result;
   }
 
   private get functionName(): string {
     return this._computed
-      ? (AbstractExpression.evaluateExpression(
-          this._functionExpression,
-        ) as string)
+      ? (this._functionExpression.value as string)
       : this._functionExpression.expressionString;
   }
 
@@ -246,55 +233,29 @@ export class FunctionExpression extends AbstractExpression {
     return result;
   }
 
-  private syncObjectExpressionCache(): void {
-    if (!this._objectExpression) {
-      return;
-    }
-
-    const value = AbstractExpression.evaluateExpression(this._objectExpression);
-    if (value === undefined) {
-      AbstractExpression.clearValue(this._objectExpression);
-      return;
-    }
-
-    AbstractExpression.setValue(this._objectExpression, () => value);
-  }
-
-  private syncArgumentsExpressionCache(): void {
-    if (this._argumentsExpression.childExpressions.length === 0) {
-      AbstractExpression.setValue(this._argumentsExpression, () => []);
-      return;
-    }
-
-    const args = this._argumentsExpression.childExpressions.map(
-      (childExpression) =>
-        AbstractExpression.evaluateExpression(
-          childExpression as AbstractExpression,
-        ),
-    );
-    if (args.some((arg) => arg === undefined)) {
-      AbstractExpression.clearValue(this._argumentsExpression);
-      return;
-    }
-
-    AbstractExpression.setValue(this._argumentsExpression, () => args);
-  }
-
-  private readonly commitValue = (_value: unknown) => {
+  private commitValue = () => {
     this.evaluateBottomToTop();
   };
 
-  private argsEqual(previous: unknown[], next: unknown[]): boolean {
-    if (previous.length !== next.length) {
-      return false;
-    }
+  private evaluateArgumentsFromUnits(): unknown[] {
+    const values: unknown[] = [];
+    const argumentExpressions = this._argumentsExpression.childExpressions;
 
-    for (let i = 0; i < previous.length; i++) {
-      if (!Object.is(previous[i], next[i])) {
-        return false;
+    for (let i = 0; i < argumentExpressions.length; i++) {
+      const argumentExpression = argumentExpressions[i] as AbstractExpression;
+      const unit = this._argumentEvaluateUnits[i];
+      const value =
+        unit?.value ??
+        argumentExpression.value ??
+        AbstractExpression.evaluateExpression(argumentExpression);
+
+      if (argumentExpression.type === ExpressionType.Spread) {
+        values.push(...((value as unknown[]) ?? []));
+      } else {
+        values.push(value);
       }
     }
 
-    return true;
+    return values;
   }
 }

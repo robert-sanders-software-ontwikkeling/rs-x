@@ -35,6 +35,7 @@ import { ExpressionIndexAccessor } from '../lib/expression-observer/expression-i
 import { ExpressionObserverFactory } from '../lib/expression-observer/expression-observer.factory';
 import { ExpressionObserverProxyPairFactory } from '../lib/expression-observer/expression-observer-proxy-pair.factory';
 import { ExpressionServices } from '../lib/expression-services/expression-services';
+import { IdentifierWatchRuleFactory } from '../lib/expressions/identifier-index-watch-rule/identifier-watch-rule.factory';
 import { ArrayIndexOwnerResolver } from '../lib/identifier-owner-resolver/array-index-owner-resolver';
 import { DefaultIdentifierOwnerResolver } from '../lib/identifier-owner-resolver/default-identifier-owner-resolver';
 import { GlobalIdentifierOwnerResolver } from '../lib/identifier-owner-resolver/global-identifier-owner-resolver';
@@ -405,6 +406,23 @@ describe('RsXExpressionParserModule tests', () => {
     );
     const a2 = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionIdProvider,
+    );
+    expect(a1).toBe(a2);
+  });
+
+  it('can get instance of IIdentifierWatchRuleFactory', () => {
+    const actual = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IIdentifierWatchRuleFactory,
+    );
+    expect(actual).toBeInstanceOf(IdentifierWatchRuleFactory);
+  });
+
+  it('IIdentifierWatchRuleFactory instance is a singleton', () => {
+    const a1 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IIdentifierWatchRuleFactory,
+    );
+    const a2 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IIdentifierWatchRuleFactory,
     );
     expect(a1).toBe(a2);
   });

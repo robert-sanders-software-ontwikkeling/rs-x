@@ -12,7 +12,7 @@ import {
   type IChangeSubscriptionsCreateMethods,
   type IGroupedChangeSubscriptionsForContextManager,
 } from '../../../grouped-change-subscriptions-for-context-manager';
-import type { IIndexWatchRule } from '../../../index-watch-rule-registry/index-watch-rule.interface';
+import { type IIndexWatchRule } from '../../../index-watch-rule/index-watch-rule.interface';
 import { type IObserver } from '../../../observer.interface';
 import { ObserverGroup } from '../../../observer-group';
 import { type IIndexObserverInfo } from '../index-observer-info.interface';
