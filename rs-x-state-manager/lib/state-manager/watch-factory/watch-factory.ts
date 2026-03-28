@@ -1,16 +1,16 @@
-import { Observable, Subject, Subscription } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 
 import {
   GuidKeyedInstanceFactory,
   IDisposable,
   IDisposableOwner,
-  IGuidFactory,
   IKeyedInstanceFactory,
   Inject,
   Injectable,
   RsXCoreInjectionTokens,
   Type,
 } from '@rs-x/core';
+import type { IGuidFactory } from '@rs-x/core';
 
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokens';
 import type {
@@ -43,10 +43,7 @@ class Watch implements IWatch {
   private _endChangeCycle = new Subject<IChangeCycleIndex>();
   private _isWatched = false;
   private _isDisposed = false;
-  private _changeSubscription!: Subscription | undefined;
-  private _contextChangedSubscription!: Subscription | undefined;
-  private _startChangeCycleSubscription!: Subscription | undefined;
-  private _endChangeCycleSubscription!: Subscription | undefined;
+  private _stateEventUnsubscribe: VoidFunction | undefined;
   private _value: unknown;
 
   constructor(
@@ -93,7 +90,10 @@ class Watch implements IWatch {
       this._value = this._stateManager.watchState(
         this.context,
         this.index,
-        this._options,
+        {
+          ...this._options,
+          suppressInitialChangeEmit: true,
+        },
       );
       // Some state transitions (for async/deferred values) can resolve during watch setup.
       // Read back the current state snapshot so `watch.value` reflects the latest state.
@@ -101,15 +101,16 @@ class Watch implements IWatch {
         this._value = this._stateManager.getState(this.context, this.index);
       }
     }
-    this._changeSubscription = this._stateManager.changed.subscribe(
-      this.onChanged,
+    this._stateEventUnsubscribe = this._stateManager.subscribeStateEvents(
+      this.context,
+      this.index,
+      {
+        onStateChange: this.onChanged,
+        onContextChanged: this.onContextChanged,
+        onStartChangeCycle: this.onStartChangeCycle,
+        onEndChangeCycle: this.onEndChangeCycle,
+      },
     );
-    this._contextChangedSubscription =
-      this._stateManager.contextChanged.subscribe(this.onContextChanged);
-    this._startChangeCycleSubscription =
-      this._stateManager.startChangeCycle.subscribe(this.onStartChangeCycle);
-    this._endChangeCycleSubscription =
-      this._stateManager.endChangeCycle.subscribe(this.onEndChangeCycle);
     this._isWatched = true;
   }
 
@@ -131,22 +132,12 @@ class Watch implements IWatch {
     }
   };
 
-  private onStartChangeCycle = (cylceIndex: IChangeCycleIndex) => {
-    if (
-      this._context === cylceIndex.context &&
-      this.index === cylceIndex.index
-    ) {
-      this._startChangeCycle.next(cylceIndex);
-    }
+  private onStartChangeCycle = (cycle: IChangeCycleIndex) => {
+    this._startChangeCycle.next(cycle);
   };
 
-  private onEndChangeCycle = (cylceIndex: IChangeCycleIndex) => {
-    if (
-      this._context === cylceIndex.context &&
-      this.index === cylceIndex.index
-    ) {
-      this._endChangeCycle.next(cylceIndex);
-    }
+  private onEndChangeCycle = (cycle: IChangeCycleIndex) => {
+    this._endChangeCycle.next(cycle);
   };
 
   public unwatch(): void {
@@ -161,15 +152,8 @@ class Watch implements IWatch {
         this.index,
         this._options.indexWatchRule,
       );
-      this._changeSubscription?.unsubscribe();
-      this._changeSubscription = undefined;
-      this._contextChangedSubscription?.unsubscribe();
-      this._contextChangedSubscription = undefined;
-      this._startChangeCycleSubscription?.unsubscribe();
-      this._startChangeCycleSubscription = undefined;
-      this._endChangeCycleSubscription?.unsubscribe();
-      this._endChangeCycleSubscription = undefined;
-
+      this._stateEventUnsubscribe?.();
+      this._stateEventUnsubscribe = undefined;
       this._isWatched = false;
     }
   }

@@ -34,7 +34,7 @@ export abstract class ParameterizedExpression<
     return this.evaluateExpression(...args);
   }
 
-  private readArg(childExpression: AbstractExpression): unknown {
+  protected readArg(childExpression: AbstractExpression): unknown {
     const value =
       childExpression.value === undefined
         ? AbstractExpression.evaluateExpression(childExpression)

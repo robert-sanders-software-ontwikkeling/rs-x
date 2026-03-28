@@ -6,11 +6,13 @@ import { DocsPageTemplate } from '../../../../components/DocsPageTemplate';
 import { MemoryUsageTabs } from './memory-usage-tabs.client';
 import {
   benchmarkMachine,
+  bindingStressGcEvidenceRows,
   bindingPerformanceRows,
   comparisonRows,
   memoryUsageRows,
   parseCachePerformanceRows,
   parsePerformanceRows,
+  sharedIdentifierBindingRows,
   topGainsForReleaseNotes,
   topRegressionsForReleaseNotes,
   updatePerformanceRows,
@@ -59,6 +61,19 @@ const updateChartRows = updatePerformanceRows.map((row) => ({
     bulkUpdateMs: row.bulkUpdateMs,
   },
 }));
+
+const sharedBindingAt10000 = sharedIdentifierBindingRows.find(
+  (row) => row.expressionCount === 10000,
+);
+
+const bindUniqueAt10000 = bindingPerformanceRows.find(
+  (row) => row.bindings === 10000,
+);
+
+const sharedVsUniqueFactor =
+  sharedBindingAt10000 && bindUniqueAt10000
+    ? bindUniqueAt10000.bindUniqueMs / sharedBindingAt10000.totalMs
+    : undefined;
 
 const formatPercent = (value: number): string => {
   const sign = value >= 0 ? '+' : '';
@@ -144,10 +159,14 @@ export default function PerformanceReportCoreConceptPage() {
           <p className="cardText">
             <strong>Binding</strong> measures first-time setup: rs-x attaches an
             expression to a specific model object and computes its initial
-            value. This happens once per bound expression, not on every update.{' '}
-            <em>Bind unique</em> binds each expression to a different model
-            object. <em>Bind same expression</em> reuses the same parsed
-            expression tree cloned across all bindings.
+            value. This happens once per bound expression, not on every update.
+            In the core benchmark script, <em>Bind unique</em> uses one wide
+            model with unique identifier pairs per binding (
+            <span className="codeInline">x0 + y0 ... xN + yN</span>), while{' '}
+            <em>Bind same expression</em> uses the same expression string (
+            <span className="codeInline">a + b</span>) across many row models.
+            The first is a stress shape; the second is closer to typical table
+            workloads.
           </p>
           <p className="cardText">
             <strong>Single update</strong> changes one field on one model and
@@ -274,6 +293,10 @@ export default function PerformanceReportCoreConceptPage() {
         <h2 className="cardTitle">
           Binding performance (initial full evaluation)
         </h2>
+        <p className="cardText">
+          Note: <span className="codeInline">bindUnique</span> in this chart is
+          a stress case with mostly non-shared identifier paths.
+        </p>
         <PerformanceBarChart
           ariaLabel="Binding performance chart comparing unique bind and same-expression bind"
           rows={bindingChartRows}
@@ -295,6 +318,108 @@ export default function PerformanceReportCoreConceptPage() {
           yAxisLabel="Setup time (ms)"
         />
         <BindingPerformanceTable rows={bindingPerformanceRows} />
+      </article>
+
+      <article className="card docsApiCard">
+        <h2 className="cardTitle">
+          Why stress-case binding can look non-linear
+        </h2>
+        <p className="cardText">
+          The <span className="codeInline">bindUnique</span> stress scenario is
+          intentionally allocation-heavy (many unique identifier paths on a
+          wide model). At larger sizes this becomes GC- and memory-pressure
+          bound, so wall-clock bind time grows faster than a simple linear
+          compute curve.
+        </p>
+        <p className="cardText">
+          Evidence from a focused local run (3 median samples per size) shows
+          heap, RSS, and forced-GC time rising rapidly with binding count:
+        </p>
+        <p className="cardText">
+          The 10,000 row is from a separate single-run measurement using{' '}
+          <span className="codeInline">--max-old-space-size=8192</span> to make
+          the upper bound explicit.
+        </p>
+        <table className="docsTable">
+          <thead>
+            <tr>
+              <th>Bindings</th>
+              <th>Bind median (ms)</th>
+              <th>Dispose median (ms)</th>
+              <th>Forced GC median (ms)</th>
+              <th>Heap after median (MB)</th>
+              <th>RSS after median (MB)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bindingStressGcEvidenceRows.map((row) => (
+              <tr key={`stress-gc-${row.expressionCount}`}>
+                <td>{row.expressionCount.toLocaleString()}</td>
+                <td>{row.bindMedianMs.toFixed(2)}</td>
+                <td>{row.disposeMedianMs.toFixed(2)}</td>
+                <td>{row.gcMedianMs.toFixed(2)}</td>
+                <td>{row.heapAfterMedianMb.toFixed(2)}</td>
+                <td>{row.rssAfterMedianMb.toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="cardText">
+          Interpretation: non-linearity in this stress shape is expected under
+          memory pressure and does not contradict near-linear behavior for the
+          shared-identifiers scenario.
+        </p>
+      </article>
+
+      <article className="card docsApiCard">
+        <h2 className="cardTitle">
+          Realistic shared-identifiers binding scenario
+        </h2>
+        <p className="cardText">
+          This scenario binds many expressions to one model while reusing only
+          10 identifiers across all bindings. It validates shared-watch
+          behavior and avoids quadratic watch registration growth.
+        </p>
+        <p className="cardText">
+          Source:{' '}
+          <span className="codeInline">
+            rs-x-expression-parser/tests/performance/shared-watch-scaling.test.ts
+          </span>
+        </p>
+        {sharedVsUniqueFactor !== undefined ? (
+          <p className="cardText">
+            At 10,000 bindings, this shared scenario is about{' '}
+            <span className="codeInline">
+              {sharedVsUniqueFactor.toFixed(1)}x
+            </span>{' '}
+            faster than the core report&apos;s{' '}
+            <span className="codeInline">bindUnique</span> stress shape.
+          </p>
+        ) : null}
+        <table className="docsTable">
+          <thead>
+            <tr>
+              <th>Expressions</th>
+              <th>Shared identifiers</th>
+              <th>watchState calls</th>
+              <th>New subscriptions</th>
+              <th>Total bind time (ms)</th>
+              <th>ms per expression</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sharedIdentifierBindingRows.map((row) => (
+              <tr key={`shared-${row.expressionCount}`}>
+                <td>{row.expressionCount.toLocaleString()}</td>
+                <td>{row.sharedIdentifierCount}</td>
+                <td>{row.watchStateCalls}</td>
+                <td>{row.newSubscriptions}</td>
+                <td>{row.totalMs.toFixed(2)}</td>
+                <td>{row.msPerExpression.toFixed(5)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </article>
 
       <article className="card docsApiCard">

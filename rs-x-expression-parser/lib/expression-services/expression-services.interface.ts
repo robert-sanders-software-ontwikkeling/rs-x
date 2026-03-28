@@ -3,8 +3,7 @@ import type {
   IIndexValueAccessor,
   IValueMetadata,
 } from '@rs-x/core';
-import type { IStateManager } from '@rs-x/state-manager';
-import { type IWatchFactory } from '@rs-x/state-manager/lib/state-manager/watch-factory/watch-factory';
+import type { IStateManager, IWatchFactory } from '@rs-x/state-manager';
 
 import type { IExpressionEvaluateManager } from '../expression-evaluate-manager';
 import { type IExpressionIdProvider } from '../expression-id/expression-id-provider.interface';

@@ -8,7 +8,7 @@ import {
 } from '@rs-x/core';
 import {
   type IStateManager,
-  IWatchFactory,
+  type IWatchFactory,
   RsXStateManagerInjectionTokens,
 } from '@rs-x/state-manager';
 

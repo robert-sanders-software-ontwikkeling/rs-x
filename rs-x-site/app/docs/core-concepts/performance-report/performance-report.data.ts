@@ -16,211 +16,307 @@ export const benchmarkMachine = {
   benchmarkScript:
     'rs-x-expression-parser/scripts/benchmark-core-concepts-performance.mjs',
   oldReport: 'reports/rsx-core-concepts-performance/benchmark-2026-03-14.json',
-  newReport: 'reports/rsx-core-concepts-performance/benchmark-2026-03-25.json',
+  newReport: 'reports/rsx-core-concepts-performance/benchmark-2026-03-28.json',
 };
+
+export type SharedIdentifierBindingRow = {
+  expressionCount: number;
+  sharedIdentifierCount: number;
+  watchStateCalls: number;
+  newSubscriptions: number;
+  totalMs: number;
+  msPerExpression: number;
+};
+
+export type BindingStressGcEvidenceRow = {
+  expressionCount: number;
+  bindMedianMs: number;
+  disposeMedianMs: number;
+  gcMedianMs: number;
+  heapAfterMedianMb: number;
+  rssAfterMedianMb: number;
+};
+
+export const sharedIdentifierBindingRows: SharedIdentifierBindingRow[] = [
+  {
+    expressionCount: 1000,
+    sharedIdentifierCount: 10,
+    watchStateCalls: 10,
+    newSubscriptions: 10,
+    totalMs: 170.32,
+    msPerExpression: 0.17032,
+  },
+  {
+    expressionCount: 3000,
+    sharedIdentifierCount: 10,
+    watchStateCalls: 10,
+    newSubscriptions: 10,
+    totalMs: 222.28,
+    msPerExpression: 0.07409,
+  },
+  {
+    expressionCount: 5000,
+    sharedIdentifierCount: 10,
+    watchStateCalls: 10,
+    newSubscriptions: 10,
+    totalMs: 296.69,
+    msPerExpression: 0.05934,
+  },
+  {
+    expressionCount: 10000,
+    sharedIdentifierCount: 10,
+    watchStateCalls: 10,
+    newSubscriptions: 10,
+    totalMs: 725.84,
+    msPerExpression: 0.07258,
+  },
+];
+
+export const bindingStressGcEvidenceRows: BindingStressGcEvidenceRow[] = [
+  {
+    expressionCount: 1000,
+    bindMedianMs: 106.37,
+    disposeMedianMs: 13.77,
+    gcMedianMs: 18.9,
+    heapAfterMedianMb: 75.33,
+    rssAfterMedianMb: 291.7,
+  },
+  {
+    expressionCount: 2000,
+    bindMedianMs: 313.86,
+    disposeMedianMs: 63.81,
+    gcMedianMs: 49.22,
+    heapAfterMedianMb: 234.27,
+    rssAfterMedianMb: 479.45,
+  },
+  {
+    expressionCount: 3000,
+    bindMedianMs: 696.09,
+    disposeMedianMs: 103.58,
+    gcMedianMs: 101.23,
+    heapAfterMedianMb: 490.14,
+    rssAfterMedianMb: 748.98,
+  },
+  {
+    expressionCount: 4000,
+    bindMedianMs: 1237.93,
+    disposeMedianMs: 147.08,
+    gcMedianMs: 183.21,
+    heapAfterMedianMb: 840.86,
+    rssAfterMedianMb: 1129.27,
+  },
+  {
+    expressionCount: 10000,
+    bindMedianMs: 6010.15,
+    disposeMedianMs: 713.42,
+    gcMedianMs: 64.02,
+    heapAfterMedianMb: 335.13,
+    rssAfterMedianMb: 718.98,
+  },
+];
 
 export const parsePerformanceRows: ParsePerformanceRow[] = [
   {
     nodeCount: 1,
     expressionShape: 'v0',
-    medianMs: 9.791,
-    usPerOperation: 1.96,
-    opsPerSecond: 510654,
+    medianMs: 10.721,
+    usPerOperation: 2.14,
+    opsPerSecond: 466367,
   },
   {
     nodeCount: 3,
     expressionShape: 'v0 + v1',
-    medianMs: 18.604,
-    usPerOperation: 3.72,
-    opsPerSecond: 268760,
+    medianMs: 16.676,
+    usPerOperation: 3.34,
+    opsPerSecond: 299826,
   },
   {
     nodeCount: 7,
     expressionShape: 'v0 + v1 + v2 + v3',
-    medianMs: 34.224,
-    usPerOperation: 6.84,
-    opsPerSecond: 146098,
+    medianMs: 38.78,
+    usPerOperation: 7.76,
+    opsPerSecond: 128933,
   },
   {
     nodeCount: 15,
     expressionShape: 'v0 + ... + v7',
-    medianMs: 63.174,
-    usPerOperation: 12.63,
-    opsPerSecond: 79146,
+    medianMs: 67.865,
+    usPerOperation: 13.57,
+    opsPerSecond: 73676,
   },
   {
     nodeCount: 31,
     expressionShape: 'v0 + ... + v15',
-    medianMs: 120.93,
-    usPerOperation: 24.19,
-    opsPerSecond: 41346,
+    medianMs: 161.509,
+    usPerOperation: 32.3,
+    opsPerSecond: 30958,
   },
   {
     nodeCount: 63,
     expressionShape: 'v0 + ... + v31',
-    medianMs: 286.024,
-    usPerOperation: 57.2,
-    opsPerSecond: 17481,
+    medianMs: 289.189,
+    usPerOperation: 57.84,
+    opsPerSecond: 17290,
   },
 ];
 
 export const parseCachePerformanceRows: ParseCachePerformanceRow[] = [
   {
     nodeCount: 1,
-    parseAndCloneMs: 10.343,
-    parseAndCloneUsPerOperation: 2.07,
-    cloneOnlyMs: 3.943,
-    cloneOnlyUsPerOperation: 0.79,
+    parseAndCloneMs: 12.997,
+    parseAndCloneUsPerOperation: 2.6,
+    cloneOnlyMs: 3.554,
+    cloneOnlyUsPerOperation: 0.71,
   },
   {
     nodeCount: 3,
-    parseAndCloneMs: 21.731,
-    parseAndCloneUsPerOperation: 4.35,
-    cloneOnlyMs: 10.483,
-    cloneOnlyUsPerOperation: 2.1,
+    parseAndCloneMs: 27.494,
+    parseAndCloneUsPerOperation: 5.5,
+    cloneOnlyMs: 10.57,
+    cloneOnlyUsPerOperation: 2.11,
   },
   {
     nodeCount: 7,
-    parseAndCloneMs: 37.918,
-    parseAndCloneUsPerOperation: 7.58,
-    cloneOnlyMs: 22.473,
-    cloneOnlyUsPerOperation: 4.49,
+    parseAndCloneMs: 43.184,
+    parseAndCloneUsPerOperation: 8.64,
+    cloneOnlyMs: 23.849,
+    cloneOnlyUsPerOperation: 4.77,
   },
   {
     nodeCount: 15,
-    parseAndCloneMs: 71.355,
-    parseAndCloneUsPerOperation: 14.27,
-    cloneOnlyMs: 47.688,
-    cloneOnlyUsPerOperation: 9.54,
+    parseAndCloneMs: 87.194,
+    parseAndCloneUsPerOperation: 17.44,
+    cloneOnlyMs: 52.022,
+    cloneOnlyUsPerOperation: 10.4,
   },
   {
     nodeCount: 31,
-    parseAndCloneMs: 131.846,
-    parseAndCloneUsPerOperation: 26.37,
-    cloneOnlyMs: 98.578,
-    cloneOnlyUsPerOperation: 19.72,
+    parseAndCloneMs: 183.119,
+    parseAndCloneUsPerOperation: 36.62,
+    cloneOnlyMs: 138.149,
+    cloneOnlyUsPerOperation: 27.63,
   },
   {
     nodeCount: 63,
-    parseAndCloneMs: 255.354,
-    parseAndCloneUsPerOperation: 51.07,
-    cloneOnlyMs: 207.264,
-    cloneOnlyUsPerOperation: 41.45,
+    parseAndCloneMs: 319.938,
+    parseAndCloneUsPerOperation: 63.99,
+    cloneOnlyMs: 258.886,
+    cloneOnlyUsPerOperation: 51.78,
   },
 ];
 
 export const bindingPerformanceRows: BindingPerformanceRow[] = [
   {
     bindings: 1000,
-    bindUniqueMs: 71.437,
-    bindSameExpressionMs: 60.169,
+    bindUniqueMs: 66.705,
+    bindSameExpressionMs: 58.205,
   },
   {
     bindings: 3000,
-    bindUniqueMs: 489.113,
-    bindSameExpressionMs: 414.515,
+    bindUniqueMs: 269.855,
+    bindSameExpressionMs: 266.118,
   },
   {
     bindings: 5000,
-    bindUniqueMs: 1499.889,
-    bindSameExpressionMs: 1414.788,
+    bindUniqueMs: 434.406,
+    bindSameExpressionMs: 420.283,
   },
   {
     bindings: 10000,
-    bindUniqueMs: 7306.124,
-    bindSameExpressionMs: 5859.936,
+    bindUniqueMs: 920.842,
+    bindSameExpressionMs: 833.943,
   },
 ];
 
 export const updatePerformanceRows: UpdatePerformanceRow[] = [
   {
     bindings: 1000,
-    singleUpdateMs: 0.648,
-    bulkUpdateMs: 60.724,
+    singleUpdateMs: 0.201,
+    bulkUpdateMs: 21.793,
   },
   {
     bindings: 3000,
-    singleUpdateMs: 1.251,
-    bulkUpdateMs: 584.828,
+    singleUpdateMs: 0.124,
+    bulkUpdateMs: 27.873,
   },
   {
     bindings: 5000,
-    singleUpdateMs: 2.556,
-    bulkUpdateMs: 1616.546,
+    singleUpdateMs: 0.099,
+    bulkUpdateMs: 50.828,
   },
   {
     bindings: 10000,
-    singleUpdateMs: 4.979,
-    bulkUpdateMs: 17778.462,
+    singleUpdateMs: 0.126,
+    bulkUpdateMs: 129.602,
   },
 ];
 
 export const memoryUsageRows: MemoryUsageRow[] = [
-  { scenario: 'Parse (1 nodes)', medianHeapMb: 11.7, peakRssMb: 93.2 },
-  { scenario: 'Parse (3 nodes)', medianHeapMb: 11.9, peakRssMb: 98.9 },
-  { scenario: 'Parse (7 nodes)', medianHeapMb: 13.4, peakRssMb: 107.7 },
-  { scenario: 'Parse (15 nodes)', medianHeapMb: 16.5, peakRssMb: 109.2 },
-  { scenario: 'Parse (31 nodes)', medianHeapMb: 13.8, peakRssMb: 125.8 },
-  { scenario: 'Parse (63 nodes)', medianHeapMb: 14.8, peakRssMb: 158.8 },
-  { scenario: 'Bind unique (1,000)', medianHeapMb: 94.2, peakRssMb: 276.3 },
+  { scenario: 'Parse (1 nodes)', medianHeapMb: 14.2, peakRssMb: 92.4 },
+  { scenario: 'Parse (3 nodes)', medianHeapMb: 12.6, peakRssMb: 97.8 },
+  { scenario: 'Parse (7 nodes)', medianHeapMb: 14.8, peakRssMb: 107.0 },
+  { scenario: 'Parse (15 nodes)', medianHeapMb: 11.6, peakRssMb: 108.1 },
+  { scenario: 'Parse (31 nodes)', medianHeapMb: 19.1, peakRssMb: 124.8 },
+  { scenario: 'Parse (63 nodes)', medianHeapMb: 25.1, peakRssMb: 125.4 },
+  { scenario: 'Bind unique (1,000)', medianHeapMb: 160.1, peakRssMb: 359.7 },
   {
     scenario: 'Bind same expression (1,000)',
-    medianHeapMb: 168.2,
-    peakRssMb: 375.7,
+    medianHeapMb: 152.5,
+    peakRssMb: 368.4,
   },
   {
     scenario: 'Single update (1,000)',
-    medianHeapMb: 180.8,
-    peakRssMb: 393.5,
+    medianHeapMb: 64.7,
+    peakRssMb: 383.6,
   },
-  { scenario: 'Bulk update (1,000)', medianHeapMb: 242.6, peakRssMb: 403.0 },
-  { scenario: 'Bind unique (3,000)', medianHeapMb: 413.1, peakRssMb: 683.2 },
+  { scenario: 'Bulk update (1,000)', medianHeapMb: 70.2, peakRssMb: 383.6 },
+  { scenario: 'Bind unique (3,000)', medianHeapMb: 441.1, peakRssMb: 780.5 },
   {
     scenario: 'Bind same expression (3,000)',
-    medianHeapMb: 625.9,
-    peakRssMb: 894.4,
+    medianHeapMb: 416.7,
+    peakRssMb: 802.1,
   },
   {
     scenario: 'Single update (3,000)',
-    medianHeapMb: 674.2,
-    peakRssMb: 905.1,
+    medianHeapMb: 171.1,
+    peakRssMb: 816.9,
   },
-  { scenario: 'Bulk update (3,000)', medianHeapMb: 695.1, peakRssMb: 921.5 },
-  { scenario: 'Bind unique (5,000)', medianHeapMb: 997.0, peakRssMb: 1305.0 },
+  { scenario: 'Bulk update (3,000)', medianHeapMb: 185.4, peakRssMb: 817.8 },
+  { scenario: 'Bind unique (5,000)', medianHeapMb: 685.9, peakRssMb: 1081.0 },
   {
     scenario: 'Bind same expression (5,000)',
-    medianHeapMb: 1305.2,
-    peakRssMb: 1596.0,
+    medianHeapMb: 642.8,
+    peakRssMb: 1089.9,
   },
   {
     scenario: 'Single update (5,000)',
-    medianHeapMb: 1385.9,
-    peakRssMb: 1643.0,
+    medianHeapMb: 283.0,
+    peakRssMb: 1108.0,
   },
   {
     scenario: 'Bulk update (5,000)',
-    medianHeapMb: 1438.3,
-    peakRssMb: 1646.9,
+    medianHeapMb: 306.6,
+    peakRssMb: 1108.4,
   },
   {
     scenario: 'Bind unique (10,000)',
-    medianHeapMb: 1920.7,
-    peakRssMb: 2294.2,
+    medianHeapMb: 1188.6,
+    peakRssMb: 1685.6,
   },
   {
     scenario: 'Bind same expression (10,000)',
-    medianHeapMb: 2482.5,
-    peakRssMb: 2688.2,
+    medianHeapMb: 1129.6,
+    peakRssMb: 1675.2,
   },
   {
     scenario: 'Single update (10,000)',
-    medianHeapMb: 2576.6,
-    peakRssMb: 2825.5,
+    medianHeapMb: 554.5,
+    peakRssMb: 1703.0,
   },
   {
     scenario: 'Bulk update (10,000)',
-    medianHeapMb: 2602.4,
-    peakRssMb: 2561.5,
+    medianHeapMb: 601.4,
+    peakRssMb: 1703.4,
   },
 ];
 

@@ -1,12 +1,11 @@
 import {
   IDisposableOwner,
-  IIndexValueAccessor,
   Inject,
   Injectable,
-  IValueMetadata,
   KeyedInstanceFactory,
   RsXCoreInjectionTokens,
 } from '@rs-x/core';
+import type { IIndexValueAccessor, IValueMetadata } from '@rs-x/core';
 import type { IIndexWatchRule } from '@rs-x/state-manager';
 
 import type {

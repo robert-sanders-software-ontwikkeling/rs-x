@@ -58,9 +58,7 @@ export abstract class AbstractExpression<
     if (!expressionString) {
       this.expressionString = this.toString();
     }
-    this.addChildExpressions(
-      childExpressions.filter((childExpression) => childExpression),
-    );
+    this.addChildExpressions(childExpressions);
 
     this._hidden = false;
   }
@@ -156,7 +154,7 @@ export abstract class AbstractExpression<
 
     if (!this._owner?.canDispose || this._owner?.canDispose()) {
       if (this._evaluateManagerForExpression && this.isEvaluationBoundary) {
-        this._evaluateManagerForExpression.dispose();
+        this._services?.expressionEvaluateManager?.release(this.onCommit);
       }
       this._evaluateManagerForExpression = undefined;
       this.internalDispose();
@@ -365,7 +363,12 @@ export abstract class AbstractExpression<
   };
 
   private addChildExpressions(expressions: AbstractExpression[]): void {
-    this._childExpressions.push(...expressions);
-    expressions.forEach((expression) => (expression._parent = this));
+    for (let i = 0; i < expressions.length; i++) {
+      const expr = expressions[i];
+      if (expr) {
+        this._childExpressions.push(expr);
+        expr._parent = this;
+      }
+    }
   }
 }

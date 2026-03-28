@@ -47,18 +47,12 @@ export class IdentifierExpression extends AbstractExpression {
   }
 
   public override clone(): this {
-    const cloned = new (this.constructor as new (
-      expressionString: string,
-      isStaticMemberLeaf?: boolean,
-      isLeaf?: boolean,
-      isMemberExpressionSegment?: boolean,
-    ) => this)(
+    return new IdentifierExpression(
       this.expressionString,
       this._isStaticMemberLeaf,
       this._isLeaf,
       this._isMemberExpressionSegment,
-    );
-    return cloned;
+    ) as this;
   }
 
   protected override get expressionEvaluateUnit(): IExpressionEvaluateUnit {

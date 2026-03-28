@@ -1,5 +1,4 @@
-import type { IIndexWatchRule } from '@rs-x/state-manager';
-import { type IWatchFactory } from '@rs-x/state-manager/lib/state-manager/watch-factory/watch-factory';
+import type { IIndexWatchRule, IWatchFactory } from '@rs-x/state-manager';
 
 import { emptyFunction } from '../../../rs-x-core/lib';
 

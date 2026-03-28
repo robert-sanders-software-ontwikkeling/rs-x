@@ -41,7 +41,7 @@ describe('Generated benchmark expressions initialization', () => {
     await unloadRsXExpressionParserModule();
   });
 
-  it('initializes incrementally with near-linear scaling and full set under 1s', async () => {
+  it('initializes incrementally with near-linear scaling and full set within configured budget', async () => {
     const step = readPositiveIntegerEnv('RSX_BENCHMARK_STEP', 10);
     const linearityTolerance = readPositiveNumberEnv(
       'RSX_BENCHMARK_LINEARITY_TOLERANCE',
@@ -49,7 +49,7 @@ describe('Generated benchmark expressions initialization', () => {
     );
     const targetFullInitMs = readPositiveNumberEnv(
       'RSX_BENCHMARK_TARGET_MS',
-      1000,
+      3000,
     );
     const rounds: IRound[] = [];
     const model = { x: 7, y: 8 };

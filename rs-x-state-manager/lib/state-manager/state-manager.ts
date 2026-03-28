@@ -10,11 +10,11 @@ import {
   Inject,
   Injectable,
   type IPropertyChange,
-  IProxyRegistry,
   PENDING,
   RsXCoreInjectionTokens,
   truePredicate,
 } from '@rs-x/core';
+import type { IProxyRegistry } from '@rs-x/core';
 
 import { IIndexWatchRule } from '../index-watch-rule/index-watch-rule.interface';
 import type { IObjectPropertyObserverProxyPairManager } from '../object-property-observer-proxy-pair-manager.type';
@@ -144,6 +144,8 @@ export class StateManager implements IStateManager {
         index,
         options?.ownerId,
         options?.indexWatchRule,
+        undefined,
+        options?.suppressInitialChangeEmit ?? false,
       );
       return value;
     } else {
@@ -212,6 +214,7 @@ export class StateManager implements IStateManager {
     const changeCycleIndex = { context, index };
     if (isExternalSetState) {
       this._startChangeCycle.next(changeCycleIndex);
+      this.emitStartChangeCycleEvents(changeCycleIndex);
     }
 
     try {
@@ -229,6 +232,7 @@ export class StateManager implements IStateManager {
     } finally {
       if (isExternalSetState) {
         this._endChangeCycle.next(changeCycleIndex);
+        this.emitEndChangeCycleEvents(changeCycleIndex);
       }
     }
   }
@@ -384,6 +388,7 @@ export class StateManager implements IStateManager {
     ownerId: unknown,
     indexWatchRule?: IIndexWatchRule,
     transferedValue?: ITransferedValue,
+    suppressInitialChangeEmit: boolean = false,
   ): void {
     this._stateChangeSubscriptionManager.create(context).instance.create({
       index: index,
@@ -398,6 +403,7 @@ export class StateManager implements IStateManager {
             transferedValue,
             true,
             ownerId,
+            suppressInitialChangeEmit,
           );
         }
         observer.init();
@@ -666,6 +672,30 @@ export class StateManager implements IStateManager {
     }
   }
 
+  private emitStartChangeCycleEvents(changeCycleIndex: IChangeCycleIndex): void {
+    const subscriptions = this._stateEventSubscriptionsByContext
+      .get(changeCycleIndex.context)
+      ?.get(changeCycleIndex.index);
+    if (!subscriptions || subscriptions.size === 0) {
+      return;
+    }
+    for (const subscription of subscriptions) {
+      subscription.listener.onStartChangeCycle?.(changeCycleIndex);
+    }
+  }
+
+  private emitEndChangeCycleEvents(changeCycleIndex: IChangeCycleIndex): void {
+    const subscriptions = this._stateEventSubscriptionsByContext
+      .get(changeCycleIndex.context)
+      ?.get(changeCycleIndex.index);
+    if (!subscriptions || subscriptions.size === 0) {
+      return;
+    }
+    for (const subscription of subscriptions) {
+      subscription.listener.onEndChangeCycle?.(changeCycleIndex);
+    }
+  }
+
   private emitStateChangeEvents(change: IStateChange): void {
     const subscriptions = this._stateEventSubscriptionsByContext
       .get(change.context)
@@ -753,9 +783,14 @@ export class StateManager implements IStateManager {
     transferedValue: ITransferedValue | undefined,
     watched: boolean,
     ownerId: unknown,
+    suppressInitialChangeEmit: boolean = false,
   ): void {
     const existingStateForContext = this._objectStateManager.getFromId(context);
     const existingStateForIndex = existingStateForContext?.getFromId(index);
+    const isFirstWatchedInitialization =
+      watched &&
+      transferedValue === undefined &&
+      existingStateForIndex === undefined;
     const previousValue =
       transferedValue?.value ?? existingStateForIndex?.value ?? undefined;
 
@@ -768,8 +803,9 @@ export class StateManager implements IStateManager {
       ownerId,
     );
     if (
-      !transferedValue?.shouldEmitChange ||
-      transferedValue.shouldEmitChange(context, index)
+      !(suppressInitialChangeEmit && isFirstWatchedInitialization) &&
+      (!transferedValue?.shouldEmitChange ||
+        transferedValue.shouldEmitChange(context, index))
     ) {
       this.emitChange(
         context,
@@ -837,6 +873,7 @@ export class StateManager implements IStateManager {
 
       const changeCycleIndex = { context, index };
       this._startChangeCycle.next(changeCycleIndex);
+      this.emitStartChangeCycleEvents(changeCycleIndex);
 
       try {
         const currentValue = this.getCurrentValue(context, index);
@@ -845,6 +882,7 @@ export class StateManager implements IStateManager {
         this.emitChange(context, index, value, oldValue);
       } finally {
         this._endChangeCycle.next(changeCycleIndex);
+        this.emitEndChangeCycleEvents(changeCycleIndex);
       }
       return;
     }
@@ -860,6 +898,7 @@ export class StateManager implements IStateManager {
       index: chainLeaf.index,
     };
     this._startChangeCycle.next(changeCycleIndex);
+    this.emitStartChangeCycleEvents(changeCycleIndex);
 
     try {
       const currentValue = this.getCurrentValue(
@@ -891,6 +930,7 @@ export class StateManager implements IStateManager {
       }
     } finally {
       this._endChangeCycle.next(changeCycleIndex);
+      this.emitEndChangeCycleEvents(changeCycleIndex);
     }
   }
 }

@@ -16,11 +16,14 @@ export interface IStateChange extends IContextChanged {
 export interface IStateOptions {
   indexWatchRule?: IIndexWatchRule;
   ownerId?: unknown;
+  suppressInitialChangeEmit?: boolean;
 }
 
 export interface IStateEventListener {
   onStateChange: (change: IStateChange) => void;
   onContextChanged: (change: IContextChanged) => void;
+  onStartChangeCycle?: (cycle: IChangeCycleIndex) => void;
+  onEndChangeCycle?: (cycle: IChangeCycleIndex) => void;
 }
 
 export interface IChangeCycleIndex {

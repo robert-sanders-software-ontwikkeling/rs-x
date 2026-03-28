@@ -51,6 +51,9 @@ describe('ExpressionCache', () => {
       expressionString: 'a * b',
       type: ExpressionType.Multiplication,
     });
+    (parsedExpression as unknown as { clone: jest.Mock }).clone = jest.fn(
+      () => cloneA,
+    );
 
     const parser = {
       parse: jest.fn(() => parsedExpression),

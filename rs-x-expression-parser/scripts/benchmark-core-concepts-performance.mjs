@@ -177,6 +177,17 @@ const flushMicrotasks = async (rounds = 3) => {
   }
 };
 
+const waitForExpressionsInitialized = async (expressions, maxPolls = 2000) => {
+  let polls = 0;
+  while (expressions.some((expression) => expression.value === undefined)) {
+    await flushMicrotasks(1);
+    polls += 1;
+    if (polls >= maxPolls) {
+      throw new Error('Timed out waiting for expressions to initialize');
+    }
+  }
+};
+
 const runTimer = async (runCount, warmupCount, action) => {
   for (let i = 0; i < warmupCount; i += 1) {
     await action();
@@ -271,6 +282,7 @@ const results = {
     parseByNodeCount: [],
     parseCacheByNodeCount: [],
     bindingScale: [],
+    bindingScaleInitialized: [],
   },
 };
 
@@ -413,6 +425,40 @@ for (const count of bindingCounts) {
 
   await resetRuntimeState();
 
+  const bindUniqueInitializedStats = await runTimer(
+    bindingRuns.bind,
+    bindingRuns.warmupBind,
+    async () => {
+      const expressions = [];
+      for (let i = 0; i < uniqueExpressions.length; i += 1) {
+        expressions.push(rsx(uniqueExpressions[i])(wideModel));
+      }
+      await waitForExpressionsInitialized(expressions);
+      for (const expression of expressions) {
+        expression.dispose();
+      }
+    },
+  );
+
+  await resetRuntimeState();
+
+  const bindSameInitializedStats = await runTimer(
+    bindingRuns.bind,
+    bindingRuns.warmupBind,
+    async () => {
+      const expressions = [];
+      for (let i = 0; i < rowModels.length; i += 1) {
+        expressions.push(rsx('a + b')(rowModels[i]));
+      }
+      await waitForExpressionsInitialized(expressions);
+      for (const expression of expressions) {
+        expression.dispose();
+      }
+    },
+  );
+
+  await resetRuntimeState();
+
   const updateExpressions = rowModels.map((row) => rsx('a + b')(row));
 
   const updateSingleStats = await runTimer(
@@ -463,8 +509,23 @@ for (const count of bindingCounts) {
     },
   });
 
+  results.sections.bindingScaleInitialized.push({
+    bindings: count,
+    bindUnique: {
+      ...bindUniqueInitializedStats,
+      usPerBinding: (bindUniqueInitializedStats.medianMs * 1000) / count,
+      bindingsPerSecond: (count / bindUniqueInitializedStats.medianMs) * 1000,
+    },
+    bindSameExpressionAgain: {
+      ...bindSameInitializedStats,
+      usPerBinding: (bindSameInitializedStats.medianMs * 1000) / count,
+      bindingsPerSecond:
+        (count / bindSameInitializedStats.medianMs) * 1000,
+    },
+  });
+
   console.log(
-    `bindings ${count.toLocaleString()}: bind unique ${formatMs(bindUniqueStats.medianMs)}, bind same ${formatMs(bindSameStats.medianMs)}, single update ${formatMs(updateSingleStats.medianMs)}, bulk update ${formatMs(updateBulkStats.medianMs)}`,
+    `bindings ${count.toLocaleString()}: bind unique ${formatMs(bindUniqueStats.medianMs)}, bind same ${formatMs(bindSameStats.medianMs)}, bind+init unique ${formatMs(bindUniqueInitializedStats.medianMs)}, bind+init same ${formatMs(bindSameInitializedStats.medianMs)}, single update ${formatMs(updateSingleStats.medianMs)}, bulk update ${formatMs(updateBulkStats.medianMs)}`,
   );
 }
 
@@ -538,6 +599,14 @@ const markdownLines = [
     return `| ${row.bindings.toLocaleString()} | ${row.updateSingleActiveBinding.medianMs.toFixed(3)} | ${row.updateBulkActiveBindings.medianMs.toFixed(3)} |`;
   }),
   '',
+  '## Binding performance (bind + initialize)',
+  '',
+  '| Bindings | Bind+initialize unique median (ms) | Bind+initialize same-expression median (ms) |',
+  '| ---: | ---: | ---: |',
+  ...results.sections.bindingScaleInitialized.map((row) => {
+    return `| ${row.bindings.toLocaleString()} | ${row.bindUnique.medianMs.toFixed(3)} | ${row.bindSameExpressionAgain.medianMs.toFixed(3)} |`;
+  }),
+  '',
   '## Memory usage',
   '',
   '| Scenario | Median heap after run (MB) | Peak RSS after run (MB) |',
@@ -551,6 +620,12 @@ const markdownLines = [
       `| Bind same expression (${row.bindings.toLocaleString()}) | ${row.bindSameExpressionAgain.memory.heapAfterMb.medianMb.toFixed(1)} | ${row.bindSameExpressionAgain.memory.rssAfterMb.maxMb.toFixed(1)} |`,
       `| Single update (${row.bindings.toLocaleString()}) | ${row.updateSingleActiveBinding.memory.heapAfterMb.medianMb.toFixed(1)} | ${row.updateSingleActiveBinding.memory.rssAfterMb.maxMb.toFixed(1)} |`,
       `| Bulk update (${row.bindings.toLocaleString()}) | ${row.updateBulkActiveBindings.memory.heapAfterMb.medianMb.toFixed(1)} | ${row.updateBulkActiveBindings.memory.rssAfterMb.maxMb.toFixed(1)} |`,
+    ];
+  }),
+  ...results.sections.bindingScaleInitialized.flatMap((row) => {
+    return [
+      `| Bind+initialize unique (${row.bindings.toLocaleString()}) | ${row.bindUnique.memory.heapAfterMb.medianMb.toFixed(1)} | ${row.bindUnique.memory.rssAfterMb.maxMb.toFixed(1)} |`,
+      `| Bind+initialize same expression (${row.bindings.toLocaleString()}) | ${row.bindSameExpressionAgain.memory.heapAfterMb.medianMb.toFixed(1)} | ${row.bindSameExpressionAgain.memory.rssAfterMb.maxMb.toFixed(1)} |`,
     ];
   }),
   '',

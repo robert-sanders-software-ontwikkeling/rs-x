@@ -1,31 +1,18 @@
-import { ObservableMock } from '@rs-x/core/testing';
+import { Subject } from 'rxjs';
 
-import type { IExpressionBindConfiguration } from '../expressions/expression-bind-configuration.type';
 import {
   type ChangeHook,
   type ExpressionType,
   type IExpression,
 } from '../expressions/expression-parser.interface';
 
-function createMock<Fn extends (...args: never[]) => unknown>(
-  implementation?: Fn,
-): Fn {
-  const maybeJest = (
-    globalThis as {
-      jest?: {
-        fn: (impl?: (...args: never[]) => unknown) => unknown;
-      };
-    }
-  ).jest;
-  if (maybeJest) {
-    return maybeJest.fn(implementation as (...args: never[]) => unknown) as Fn;
-  }
-  return ((...args: never[]) => implementation?.(...args)) as unknown as Fn;
-}
+declare const jest: {
+  fn: <T extends (...args: any[]) => any>(implementation?: T) => T;
+};
 
 export class ExpressionMock implements IExpression {
   public readonly id!: string;
-  public readonly changed = new ObservableMock();
+  public readonly changed = new Subject<IExpression<unknown, unknown>>();
   public readonly type!: ExpressionType;
   public readonly expressionString!: string;
   public readonly parent!: IExpression<unknown, unknown> | undefined;
@@ -41,10 +28,8 @@ export class ExpressionMock implements IExpression {
   }
 
   public readonly changeHook?: ChangeHook | undefined;
-  public readonly toString: () => string = createMock(() => '');
-  public readonly clone: () => this = createMock(() => this);
-  public readonly bind: (
-    settings: IExpressionBindConfiguration,
-  ) => IExpression<unknown, unknown> = createMock(() => this);
-  public readonly dispose: () => void = createMock(() => undefined);
+  public readonly toString = jest.fn();
+  public readonly clone = jest.fn();
+  public readonly bind = jest.fn();
+  public readonly dispose = jest.fn();
 }

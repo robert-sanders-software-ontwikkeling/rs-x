@@ -65,6 +65,7 @@ class StateChangeSubscriptionsForContextManager
       subscriptionData: undefined,
     };
   }
+
 }
 
 export class StateChangeSubscriptionManager

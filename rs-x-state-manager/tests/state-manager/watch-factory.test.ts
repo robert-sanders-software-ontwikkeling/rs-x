@@ -15,10 +15,13 @@ import { IndexWatchRuleMock } from '../../lib/testing/watch-index-rule.mock';
 interface IStateManagerMock {
   changedSubject: Subject<IStateChange>;
   contextChangedSubject: Subject<IContextChanged>;
-  startChangeCycleSubject: Subject<IChangeCycleIndex>;
-  endChangeCycleSubject: Subject<IChangeCycleIndex>;
+  emitStateChange: (event: IStateChange) => void;
+  emitContextChanged: (event: IContextChanged) => void;
+  emitStartChangeCycle: (event: IChangeCycleIndex) => void;
+  emitEndChangeCycle: (event: IChangeCycleIndex) => void;
   instance: IStateManager;
   watchState: jest.Mock;
+  subscribeStateEvents: jest.Mock;
   getState: jest.Mock;
   releaseState: jest.Mock;
 }
@@ -26,19 +29,105 @@ interface IStateManagerMock {
 const createStateManagerMock = (): IStateManagerMock => {
   const changedSubject = new Subject<IStateChange>();
   const contextChangedSubject = new Subject<IContextChanged>();
-  const startChangeCycleSubject = new Subject<IChangeCycleIndex>();
-  const endChangeCycleSubject = new Subject<IChangeCycleIndex>();
 
   const watchState = jest.fn();
+  const keyedListeners = new Map<
+    string,
+    Set<{
+      onStateChange: (change: IStateChange) => void;
+      onContextChanged: (change: IContextChanged) => void;
+      onStartChangeCycle?: (cycle: IChangeCycleIndex) => void;
+      onEndChangeCycle?: (cycle: IChangeCycleIndex) => void;
+    }>
+  >();
+  const contextIds = new WeakMap<object, number>();
+  let nextContextId = 0;
+  const getContextId = (context: unknown): string => {
+    if (
+      context === null ||
+      (typeof context !== 'object' && typeof context !== 'function')
+    ) {
+      return `${typeof context}:${String(context)}`;
+    }
+    const asObject = context as object;
+    let existing = contextIds.get(asObject);
+    if (existing === undefined) {
+      existing = ++nextContextId;
+      contextIds.set(asObject, existing);
+    }
+    return `obj:${existing}`;
+  };
+  const toKey = (context: unknown, index: unknown): string =>
+    `${String(index)}::${getContextId(context)}`;
+  const subscribeStateEvents = jest.fn(
+    (
+      context: unknown,
+      index: unknown,
+      listener: {
+        onStateChange: (change: IStateChange) => void;
+        onContextChanged: (change: IContextChanged) => void;
+        onStartChangeCycle?: (cycle: IChangeCycleIndex) => void;
+        onEndChangeCycle?: (cycle: IChangeCycleIndex) => void;
+      },
+    ) => {
+      const key = toKey(context, index);
+      const listeners = keyedListeners.get(key) ?? new Set();
+      listeners.add(listener);
+      keyedListeners.set(key, listeners);
+      return (): void => {
+        const current = keyedListeners.get(key);
+        current?.delete(listener);
+        if (current && current.size === 0) {
+          keyedListeners.delete(key);
+        }
+      };
+    },
+  );
   const getState = jest.fn();
   const releaseState = jest.fn();
+
+  const emitStateChange = (event: IStateChange): void => {
+    const key = toKey(event.context, event.index);
+    const listeners = keyedListeners.get(key);
+    if (!listeners) {
+      return;
+    }
+    listeners.forEach((listener) => listener.onStateChange(event));
+  };
+
+  const emitContextChanged = (event: IContextChanged): void => {
+    const oldKey = toKey(event.oldContext, event.index);
+    const listeners = keyedListeners.get(oldKey);
+    if (!listeners || listeners.size === 0) {
+      return;
+    }
+    keyedListeners.delete(oldKey);
+    const newKey = toKey(event.context, event.index);
+    const newListeners = keyedListeners.get(newKey) ?? new Set();
+    listeners.forEach((listener) => {
+      listener.onContextChanged(event);
+      newListeners.add(listener);
+    });
+    keyedListeners.set(newKey, newListeners);
+  };
+
+  const emitStartChangeCycle = (event: IChangeCycleIndex): void => {
+    const key = toKey(event.context, event.index);
+    keyedListeners.get(key)?.forEach((l) => l.onStartChangeCycle?.(event));
+  };
+
+  const emitEndChangeCycle = (event: IChangeCycleIndex): void => {
+    const key = toKey(event.context, event.index);
+    keyedListeners.get(key)?.forEach((l) => l.onEndChangeCycle?.(event));
+  };
 
   const instance = {
     changed: changedSubject.asObservable(),
     contextChanged: contextChangedSubject.asObservable(),
-    startChangeCycle: startChangeCycleSubject.asObservable(),
-    endChangeCycle: endChangeCycleSubject.asObservable(),
+    startChangeCycle: new Subject<IChangeCycleIndex>().asObservable(),
+    endChangeCycle: new Subject<IChangeCycleIndex>().asObservable(),
     watchState,
+    subscribeStateEvents,
     getState,
     releaseState,
   } as unknown as IStateManager;
@@ -46,10 +135,13 @@ const createStateManagerMock = (): IStateManagerMock => {
   return {
     changedSubject,
     contextChangedSubject,
-    startChangeCycleSubject,
-    endChangeCycleSubject,
+    emitStateChange,
+    emitContextChanged,
+    emitStartChangeCycle,
+    emitEndChangeCycle,
     instance,
     watchState,
+    subscribeStateEvents,
     getState,
     releaseState,
   };
@@ -167,7 +259,7 @@ describe('WatchFactory', () => {
       oldValue: 1,
       newValue: 2,
     };
-    stateManagerMock.changedSubject.next(validStateChange);
+    stateManagerMock.emitStateChange(validStateChange);
     expect(changed).toEqual([validStateChange]);
     expect(watch.value).toBe(2);
 
@@ -183,25 +275,19 @@ describe('WatchFactory', () => {
       oldContext: context,
       index,
     };
-    stateManagerMock.contextChangedSubject.next(validContextChanged);
+    stateManagerMock.emitContextChanged(validContextChanged);
     expect(contexts).toEqual([validContextChanged]);
     expect(watch.context).toBe(newContext);
 
-    stateManagerMock.startChangeCycleSubject.next({
-      context: otherContext,
-      index,
-    });
-    stateManagerMock.endChangeCycleSubject.next({
-      context: otherContext,
-      index,
-    });
+    stateManagerMock.emitStartChangeCycle({ context: otherContext, index });
+    stateManagerMock.emitEndChangeCycle({ context: otherContext, index });
     expect(starts).toHaveLength(0);
     expect(ends).toHaveLength(0);
 
     const validStart = { context: newContext, index };
     const validEnd = { context: newContext, index };
-    stateManagerMock.startChangeCycleSubject.next(validStart);
-    stateManagerMock.endChangeCycleSubject.next(validEnd);
+    stateManagerMock.emitStartChangeCycle(validStart);
+    stateManagerMock.emitEndChangeCycle(validEnd);
     expect(starts).toEqual([validStart]);
     expect(ends).toEqual([validEnd]);
   });
@@ -222,7 +308,7 @@ describe('WatchFactory', () => {
     watch.contextChange.subscribe((event) => contexts.push(event));
 
     watch.watch();
-    stateManagerMock.contextChangedSubject.next({
+    stateManagerMock.emitContextChanged({
       context: newContext,
       oldContext: context,
       index,
@@ -253,7 +339,7 @@ describe('WatchFactory', () => {
 
     // First dispose cannot teardown shared instance yet.
     first.dispose();
-    stateManagerMock.changedSubject.next({
+    stateManagerMock.emitStateChange({
       context,
       oldContext: context,
       index,

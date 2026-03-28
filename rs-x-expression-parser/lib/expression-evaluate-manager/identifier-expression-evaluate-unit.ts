@@ -4,11 +4,9 @@ import type {
   IContextChanged,
   IIndexWatchRule,
   IStateChange,
+  IWatch,
+  IWatchFactory,
 } from '@rs-x/state-manager';
-import {
-  type IWatch,
-  type IWatchFactory,
-} from '@rs-x/state-manager/lib/state-manager/watch-factory/watch-factory';
 
 import type {
   IExpressionEvaluateChangeManager,
