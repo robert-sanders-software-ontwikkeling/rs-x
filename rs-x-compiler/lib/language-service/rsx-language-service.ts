@@ -134,14 +134,48 @@ export function getRsxDiagnosticsForFile(
     const result = validateExpressionSite(site, checker);
     const literalStart = site.expressionLiteral.getStart(sourceFile) + 1;
     const literalEnd = site.expressionLiteral.getEnd() - 1;
+    const expressionText = site.expression;
 
-    return result.diagnostics.map((diagnostic) => ({
-      category: diagnostic.category,
-      message: diagnostic.message,
-      start: literalStart,
-      end: literalEnd,
-    }));
+    return result.diagnostics.map((diagnostic) => {
+      const tokenRange = resolveDiagnosticTokenRangeInExpression({
+        expression: expressionText,
+        token: diagnostic.token,
+      });
+      const start =
+        tokenRange === null ? literalStart : literalStart + tokenRange.start;
+      const end =
+        tokenRange === null ? literalEnd : literalStart + tokenRange.end;
+
+      return {
+        category: diagnostic.category,
+        message: diagnostic.message,
+        start,
+        end,
+      };
+    });
   });
+}
+
+function resolveDiagnosticTokenRangeInExpression(args: {
+  expression: string;
+  token: string | undefined;
+}): { start: number; end: number } | null {
+  const { expression, token } = args;
+  if (!token) {
+    return null;
+  }
+
+  const escapedToken = token.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  const pattern = new RegExp(`\\b${escapedToken}\\b`, 'u');
+  const match = pattern.exec(expression);
+  if (!match || typeof match.index !== 'number') {
+    return null;
+  }
+
+  return {
+    start: match.index,
+    end: match.index + token.length,
+  };
 }
 
 export function getRsxHoverAtPosition(

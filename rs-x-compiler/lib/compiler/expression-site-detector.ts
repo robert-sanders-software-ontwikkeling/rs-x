@@ -95,7 +95,7 @@ function isRsxCallee(
     return false;
   }
 
-  if (isAliasImportedFromExpressionParser(symbol)) {
+  if (isAliasImportedFromExpressionParser(symbol, checker)) {
     return true;
   }
 
@@ -119,8 +119,38 @@ function isRsxCallee(
   });
 }
 
-function isAliasImportedFromExpressionParser(symbol: ts.Symbol): boolean {
+function isAliasImportedFromExpressionParser(
+  symbol: ts.Symbol,
+  checker: ts.TypeChecker,
+  seenSymbols = new Set<ts.Symbol>(),
+): boolean {
+  if (seenSymbols.has(symbol)) {
+    return false;
+  }
+  seenSymbols.add(symbol);
+
   if ((symbol.flags & ts.SymbolFlags.Alias) === 0) {
+    const declarations = symbol.declarations ?? [];
+    for (const declaration of declarations) {
+      if (!ts.isVariableDeclaration(declaration) || !declaration.initializer) {
+        continue;
+      }
+
+      const initializerSymbol = checker.getSymbolAtLocation(
+        declaration.initializer,
+      );
+      if (
+        initializerSymbol &&
+        isAliasImportedFromExpressionParser(
+          initializerSymbol,
+          checker,
+          seenSymbols,
+        )
+      ) {
+        return true;
+      }
+    }
+
     return false;
   }
 

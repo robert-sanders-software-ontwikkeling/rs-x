@@ -5,6 +5,7 @@ export type CompilerDiagnosticCategory = 'semantic' | 'syntax' | 'unsupported';
 export interface ICompilerDiagnostic {
   readonly category: CompilerDiagnosticCategory;
   readonly message: string;
+  readonly token?: string;
 }
 
 const parser = new JsEspreeExpressionParser();

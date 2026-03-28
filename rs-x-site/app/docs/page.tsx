@@ -34,6 +34,11 @@ const advancedLinks = [
     title: 'Custom data types',
     meta: 'Teach rs-x to observe any class — observer, proxy, index accessor, DI wiring',
   },
+  {
+    href: '/docs/core-concepts/performance-report',
+    title: 'Performance report',
+    meta: 'Parse, bind, update, and memory benchmarks',
+  },
 ];
 
 const apiSymbols = [

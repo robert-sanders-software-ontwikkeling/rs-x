@@ -11,3 +11,4 @@ export function createLanguageServiceScaffold(): ILanguageServiceScaffold {
 }
 
 export * from './rsx-language-service';
+export * from './rsx-expression-lexing';

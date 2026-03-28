@@ -9,6 +9,7 @@
     "prod": "npm run build && npx serve out"
   },
   "dependencies": {
+    "@rs-x/compiler": "workspace:*",
     "@rs-x/core": "workspace:*",
     "@rs-x/expression-parser": "workspace:*",
     "@rs-x/react": "workspace:*",

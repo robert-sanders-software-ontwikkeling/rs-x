@@ -1,4 +1,4 @@
-import { Observable, Subject } from 'rxjs';
+import { Observable } from 'rxjs';
 
 import {
   GuidKeyedInstanceFactory,
@@ -11,6 +11,33 @@ import {
   Type,
 } from '@rs-x/core';
 import type { IGuidFactory } from '@rs-x/core';
+
+/**
+ * O(1)-removal broadcast dispatcher.
+ *
+ * RxJS Subject uses an Array for its subscriber list, making every
+ * unsubscribe() an O(N) indexOf + splice.  When many expressions share the
+ * same Watch (same context + index), disposing them one-by-one becomes O(N²).
+ *
+ * Dispatcher stores subscribers in a Map so add and remove are both O(1),
+ * while dispatch() remains O(N) (unavoidable for a broadcast).
+ */
+class Dispatcher<T> {
+  private readonly _listeners = new Map<number, (value: T) => void>();
+  private _nextId = 0;
+
+  readonly observable: Observable<T> = new Observable<T>((subscriber) => {
+    const id = this._nextId++;
+    this._listeners.set(id, (value) => subscriber.next(value));
+    return () => this._listeners.delete(id);
+  });
+
+  dispatch(value: T): void {
+    for (const listener of this._listeners.values()) {
+      listener(value);
+    }
+  }
+}
 
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokens';
 import type {
@@ -37,10 +64,10 @@ export interface IWatchDispableOwner extends IDisposableOwner {}
 
 class Watch implements IWatch {
   private _watchReferenceCount = 0;
-  private _change = new Subject<IStateChange>();
-  private _contextChanged = new Subject<IContextChanged>();
-  private _startChangeCycle = new Subject<IChangeCycleIndex>();
-  private _endChangeCycle = new Subject<IChangeCycleIndex>();
+  private readonly _changeDispatcher = new Dispatcher<IStateChange>();
+  private readonly _contextChangedDispatcher = new Dispatcher<IContextChanged>();
+  private readonly _startChangeCycleDispatcher = new Dispatcher<IChangeCycleIndex>();
+  private readonly _endChangeCycleDispatcher = new Dispatcher<IChangeCycleIndex>();
   private _isWatched = false;
   private _isDisposed = false;
   private _stateEventUnsubscribe: VoidFunction | undefined;
@@ -63,19 +90,19 @@ class Watch implements IWatch {
   }
 
   public get changed(): Observable<IStateChange> {
-    return this._change;
+    return this._changeDispatcher.observable;
   }
 
   public get contextChange(): Observable<IContextChanged> {
-    return this._contextChanged;
+    return this._contextChangedDispatcher.observable;
   }
 
   public get startChangeCycle(): Observable<IChangeCycleIndex> {
-    return this._startChangeCycle;
+    return this._startChangeCycleDispatcher.observable;
   }
 
   public get endChangeCycle(): Observable<IChangeCycleIndex> {
-    return this._endChangeCycle;
+    return this._endChangeCycleDispatcher.observable;
   }
 
   public watch(): void {
@@ -117,7 +144,7 @@ class Watch implements IWatch {
   private onChanged = (change: IStateChange) => {
     if (change.context == this._context && change.index === this.index) {
       this._value = change.newValue;
-      this._change.next(change);
+      this._changeDispatcher.dispatch(change);
     }
   };
 
@@ -128,16 +155,16 @@ class Watch implements IWatch {
       this.index === change.index
     ) {
       this._context = change.context;
-      this._contextChanged.next(change);
+      this._contextChangedDispatcher.dispatch(change);
     }
   };
 
   private onStartChangeCycle = (cycle: IChangeCycleIndex) => {
-    this._startChangeCycle.next(cycle);
+    this._startChangeCycleDispatcher.dispatch(cycle);
   };
 
   private onEndChangeCycle = (cycle: IChangeCycleIndex) => {
-    this._endChangeCycle.next(cycle);
+    this._endChangeCycleDispatcher.dispatch(cycle);
   };
 
   public unwatch(): void {

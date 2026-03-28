@@ -3278,6 +3278,14 @@ html[data-theme='dark'] .docsApiSection .advancedTopicList {
   fill: color-mix(in srgb, var(--brand-2) 86%, transparent);
 }
 
+.docsPerfSeriesLine.isTertiary {
+  stroke: color-mix(in srgb, #f59e0b 86%, transparent);
+}
+
+.docsPerfSeriesPoint.isTertiary {
+  fill: color-mix(in srgb, #f59e0b 86%, transparent);
+}
+
 .docsPerfLegend {
   margin-top: var(--sp-3);
   display: flex;
@@ -3310,6 +3318,10 @@ html[data-theme='dark'] .docsApiSection .advancedTopicList {
 
 .docsPerfLegendSwatch.isSecondary {
   background: color-mix(in srgb, var(--brand-2) 86%, transparent);
+}
+
+.docsPerfLegendSwatch.isTertiary {
+  background: color-mix(in srgb, #f59e0b 86%, transparent);
 }
 
 .docsPerfLegendText {

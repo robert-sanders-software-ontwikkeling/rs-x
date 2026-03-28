@@ -1,6 +1,5 @@
 'use client';
 
-import type { OnMount } from '@monaco-editor/react';
 import { useRouter } from 'next/navigation';
 import React from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
@@ -9,7 +8,6 @@ import { ObjectViewer } from '../../../../../src/components/object-viewer/object
 import { TsEditorWithErrorPanel } from '../../../../../src/components/ts-editor-with-error-panel/ts-editor-with-error-panel.component';
 import { ExpressionEditorBusinessService } from '../../../../../src/services/expression-editor-business.service';
 import { ExpressionEditorStateBuilder } from '../../../../../src/services/expression-editor-state-builder';
-import { ModelIntellisenseService } from '../../../../../src/services/model-intellisense.service';
 import { createQueryString, useEditorContext } from '../../../provider.client';
 
 const NewExpressionPageClient: React.FC = () => {
@@ -26,10 +24,6 @@ const NewExpressionPageClient: React.FC = () => {
   if (!modelInfo) {
     return <div style={{ padding: 16 }}>Model not found.</div>;
   }
-
-  const handleExpressionMount: OnMount = (_, monacoInstance) => {
-    ModelIntellisenseService.getInstance().register(monacoInstance);
-  };
 
   const addExpression = (name: string, expressionString: string) => {
     setCurrentState((prev) => {
@@ -117,7 +111,6 @@ const NewExpressionPageClient: React.FC = () => {
             errors={currentState.errors}
             save={addExpression}
             cancel={onCancel}
-            onMount={handleExpressionMount}
             options={{
               suggestOnTriggerCharacters: true,
               quickSuggestions: true,

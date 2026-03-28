@@ -282,6 +282,7 @@ function resolveIdentifierType(
     diagnostics.push({
       category: 'semantic',
       message: `Identifier '${normalizedIdentifier}' does not exist on model type.`,
+      token: normalizedIdentifier,
     });
     return {};
   }
@@ -558,6 +559,7 @@ function resolveFunctionTypeFromKnownContext(
     diagnostics.push({
       category: 'semantic',
       message: `Function '${functionName}' does not exist on target type.`,
+      token: functionName,
     });
     return {};
   }
@@ -577,6 +579,7 @@ function resolveFunctionTypeFromKnownContext(
     diagnostics.push({
       category: 'semantic',
       message: `'${functionName}' is not callable.`,
+      token: functionName,
     });
     return {};
   }
@@ -599,6 +602,7 @@ function resolveFunctionTypeFromKnownContext(
     diagnostics.push({
       category: 'semantic',
       message: `Arguments for '${functionName}' do not match any call signature.`,
+      token: functionName,
     });
     return {};
   }
@@ -731,9 +735,17 @@ function resolveNumericBinaryType(
   );
 
   if (!isNumberLike(leftType, checker) || !isNumberLike(rightType, checker)) {
+    const token = pickIncompatibleOperandToken({
+      leftExpression,
+      leftType,
+      rightExpression,
+      rightType,
+      checker,
+    });
     diagnostics.push({
       category: 'semantic',
       message: `Operator "${operator}" requires both left and right operands to be number-compatible.`,
+      token,
     });
   }
 
@@ -773,13 +785,45 @@ function resolveAdditionType(
     return { primitive: 'number' };
   }
 
+  if (
+    hasMissingIdentifierDiagnostic(leftExpression, diagnostics) ||
+    hasMissingIdentifierDiagnostic(rightExpression, diagnostics)
+  ) {
+    return {};
+  }
+
+  const token = pickIncompatibleOperandToken({
+    leftExpression,
+    leftType,
+    rightExpression,
+    rightType,
+    checker,
+  });
+
   diagnostics.push({
     category: 'semantic',
     message:
       'Operator "+" requires compatible operands (both number-like or at least one string-like).',
+    token,
   });
 
   return {};
+}
+
+function hasMissingIdentifierDiagnostic(
+  expression: AbstractExpression,
+  diagnostics: ICompilerDiagnostic[],
+): boolean {
+  if (expression.type !== ExpressionType.Identifier) {
+    return false;
+  }
+
+  const identifier = expression.expressionString;
+  const expectedMessage = `Identifier '${identifier}' does not exist on model type.`;
+  return diagnostics.some(
+    (diagnostic) =>
+      diagnostic.category === 'semantic' && diagnostic.message === expectedMessage,
+  );
 }
 
 function resolveNumericUnaryType(
@@ -803,6 +847,10 @@ function resolveNumericUnaryType(
     diagnostics.push({
       category: 'semantic',
       message: 'Unary numeric operator requires a number-compatible operand.',
+      token:
+        operandExpression.type === ExpressionType.Identifier
+          ? operandExpression.expressionString
+          : undefined,
     });
   }
 
@@ -827,6 +875,28 @@ function isStringLike(type: IResolvedType, checker: ts.TypeChecker): boolean {
     return false;
   }
   return tsTypeMatches(type.tsType, ts.TypeFlags.StringLike, checker);
+}
+
+function pickIncompatibleOperandToken(args: {
+  leftExpression: AbstractExpression;
+  leftType: IResolvedType;
+  rightExpression: AbstractExpression;
+  rightType: IResolvedType;
+  checker: ts.TypeChecker;
+}): string | undefined {
+  const { leftExpression, leftType, rightExpression, rightType, checker } = args;
+
+  const leftCompatible = isNumberLike(leftType, checker) || isStringLike(leftType, checker);
+  const rightCompatible =
+    isNumberLike(rightType, checker) || isStringLike(rightType, checker);
+
+  if (!leftCompatible && leftExpression.type === ExpressionType.Identifier) {
+    return leftExpression.expressionString;
+  }
+  if (!rightCompatible && rightExpression.type === ExpressionType.Identifier) {
+    return rightExpression.expressionString;
+  }
+  return undefined;
 }
 
 function resolveNestedExpressionType(

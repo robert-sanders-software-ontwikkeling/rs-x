@@ -157,6 +157,28 @@
   pointer-events: none;
 }
 
+/* RS-X expression highlighting inside rsx('...') strings */
+.tsEditorShell .monaco-editor .rsxExprIdentifier {
+  color: #9cdcfe;
+}
+
+.tsEditorShell .monaco-editor .rsxExprKeyword {
+  color: #c586c0;
+}
+
+.tsEditorShell .monaco-editor .rsxExprNumber {
+  color: #b5cea8;
+}
+
+.tsEditorShell .monaco-editor .rsxExprOperator,
+.tsEditorShell .monaco-editor .rsxExprPunctuation {
+  color: #d4d4d4;
+}
+
+.tsEditorShell .monaco-editor .rsxExprString {
+  color: #ce9178;
+}
+
 /* =========================================================
    Responsive
 ========================================================= */

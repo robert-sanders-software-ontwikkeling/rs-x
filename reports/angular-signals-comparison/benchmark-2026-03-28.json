@@ -1,0 +1,159 @@
+{
+  "generatedAt": "2026-03-28T13:38:28.539Z",
+  "environment": {
+    "nodeVersion": "v25.4.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "osRelease": "24.6.0",
+    "cpuModel": "Apple M4",
+    "totalMemoryGb": 16
+  },
+  "config": {
+    "bindingCounts": [
+      1000,
+      3000,
+      5000,
+      10000
+    ]
+  },
+  "scenarios": {
+    "syncIdentifier": [
+      {
+        "bindings": 1000,
+        "rsx": {
+          "bindMs": 28.473708000000045,
+          "singleUpdateMs": 0.09785449999998264,
+          "bulkUpdateMs": 6.222916499999997
+        },
+        "angular": {
+          "bindMs": 0.7443339999999807,
+          "singleUpdateMs": 0.012146000000029744,
+          "bulkUpdateMs": 0.27081250000003365
+        }
+      },
+      {
+        "bindings": 3000,
+        "rsx": {
+          "bindMs": 116.58662499999991,
+          "singleUpdateMs": 0.07454150000012305,
+          "bulkUpdateMs": 16.10437499999989
+        },
+        "angular": {
+          "bindMs": 1.446042000000034,
+          "singleUpdateMs": 0.008583499999986088,
+          "bulkUpdateMs": 0.9575414999997065
+        }
+      },
+      {
+        "bindings": 5000,
+        "rsx": {
+          "bindMs": 184.07737499999985,
+          "singleUpdateMs": 0.07416699999976117,
+          "bulkUpdateMs": 27.51274999999987
+        },
+        "angular": {
+          "bindMs": 3.3558124999999563,
+          "singleUpdateMs": 0.011083000000326138,
+          "bulkUpdateMs": 1.5802080000003116
+        }
+      },
+      {
+        "bindings": 10000,
+        "rsx": {
+          "bindMs": 352.9597080000003,
+          "singleUpdateMs": 0.07622900000023947,
+          "bulkUpdateMs": 53.38591649999944
+        },
+        "angular": {
+          "bindMs": 4.924582999999984,
+          "singleUpdateMs": 0.011499999999614374,
+          "bulkUpdateMs": 3.8070419999994556
+        }
+      }
+    ],
+    "asyncIdentifier": [
+      {
+        "bindings": 1000,
+        "rsx": {
+          "bindMs": 32.43058299999939,
+          "singleUpdateMs": 0.050229500000568805,
+          "bulkUpdateMs": 7.311812500000087
+        },
+        "angular": {
+          "bindMs": 1.9217500000013388,
+          "singleUpdateMs": 0.016749999999774445,
+          "bulkUpdateMs": 0.9504580000002534
+        }
+      },
+      {
+        "bindings": 3000,
+        "rsx": {
+          "bindMs": 128.8393750000032,
+          "singleUpdateMs": 0.058729499998662504,
+          "bulkUpdateMs": 20.95812500000102
+        },
+        "angular": {
+          "bindMs": 3.505417000000307,
+          "singleUpdateMs": 0.012270999999600463,
+          "bulkUpdateMs": 2.6647499999999127
+        }
+      },
+      {
+        "bindings": 5000,
+        "rsx": {
+          "bindMs": 223.55597900000066,
+          "singleUpdateMs": 0.058332999997219304,
+          "bulkUpdateMs": 33.29475000000093
+        },
+        "angular": {
+          "bindMs": 5.963645499999984,
+          "singleUpdateMs": 0.01116600000023027,
+          "bulkUpdateMs": 5.390708000006271
+        }
+      },
+      {
+        "bindings": 10000,
+        "rsx": {
+          "bindMs": 458.8565000000017,
+          "singleUpdateMs": 0.0633334999984072,
+          "bulkUpdateMs": 63.91360450000502
+        },
+        "angular": {
+          "bindMs": 15.109125000002678,
+          "singleUpdateMs": 0.01204150000194204,
+          "bulkUpdateMs": 11.585584000000381
+        }
+      }
+    ],
+    "sameModelExpressions": [
+      {
+        "bindings": 1000,
+        "bulkRounds": 10,
+        "rsx": {
+          "bindMs": 1868.6660839999968,
+          "singleUpdateMs": 207.03808299999946,
+          "bulkUpdateMs": 1834.9210829999938
+        },
+        "angular": {
+          "bindMs": 0.69245800000499,
+          "singleUpdateMs": 1.0973750000121072,
+          "bulkUpdateMs": 10.837834000005387
+        }
+      },
+      {
+        "bindings": 3000,
+        "bulkRounds": 10,
+        "rsx": {
+          "bindMs": 10647.858145999999,
+          "singleUpdateMs": 528.3862090000039,
+          "bulkUpdateMs": 5146.363959000009
+        },
+        "angular": {
+          "bindMs": 3.500166999991052,
+          "singleUpdateMs": 3.5522080000082497,
+          "bulkUpdateMs": 31.786791999998968
+        }
+      }
+    ]
+  }
+}

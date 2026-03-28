@@ -24,12 +24,15 @@ function buildWrapper(userCode: string): {
         type __Result =  IExpression<any, any>;
 
         async function __rsx_demo(): Promise<__Result> {
+          const { rsx, rxjs, printValue, stateManager, IndexWatchRule, WaitForEvent, ExpressionChangeTransactionManager } = api;
+          {
         `;
 
   const headerLines = header.split('\n').length - 1;
 
   const wrapped = `${header}${userCode}
-}
+          }
+        }
 `;
 
   return { wrapped, headerLines };
@@ -46,6 +49,10 @@ export function setupScriptModels(args: {
     allowJs: true,
     checkJs: true,
     allowNonTsExtensions: true,
+    allowReturnOutsideFunction: true,
+  });
+  monaco.typescript.typescriptDefaults.setCompilerOptions({
+    ...monaco.typescript.typescriptDefaults.getCompilerOptions(),
     allowReturnOutsideFunction: true,
   });
 
@@ -78,6 +85,16 @@ export function setupScriptModels(args: {
     const mapped: Monaco.editor.IMarkerData[] = [];
 
     for (const m of wrapperMarkers) {
+      if (String(m.code) === '1108') {
+        continue;
+      }
+      if (
+        typeof m.message === 'string' &&
+        m.message.includes('only be used within a function body')
+      ) {
+        continue;
+      }
+
       const startLine = m.startLineNumber - headerLines;
       const endLine = m.endLineNumber - headerLines;
 

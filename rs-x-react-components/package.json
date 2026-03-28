@@ -38,6 +38,7 @@
     "react-dom": "^19.2.4"
   },
   "dependencies": {
+    "@rs-x/compiler": "workspace:*",
     "@rs-x/core": "workspace:*",
     "@rs-x/expression-parser": "workspace:*",
     "@rs-x/state-manager": "workspace:*",

@@ -24,6 +24,7 @@ const dateStamp = new Date().toISOString().slice(0, 10);
 
 const parseTermCounts = [1, 2, 4, 8, 16, 32];
 const bindingCounts = [1000, 3000, 5000, 10000];
+const identifierOnlyBindingCounts = [100, 500, 1000, 3000, 5000, 10000];
 
 const runs = {
   parse: 7,
@@ -75,6 +76,16 @@ const getBindingRuns = (count) => {
     warmupUpdateSingle: warmups.updateSingle,
     warmupUpdateBulk: warmups.updateBulk,
   };
+};
+
+const getIdentifierOnlyRuns = (count) => {
+  if (count >= 10_000) {
+    return { bind: 5, updateSingle: 15, updateBulk: 7, warmupBind: 2, warmupUpdateSingle: 3, warmupUpdateBulk: 2 };
+  }
+  if (count >= 3_000) {
+    return { bind: 7, updateSingle: 20, updateBulk: 9, warmupBind: 2, warmupUpdateSingle: 3, warmupUpdateBulk: 2 };
+  }
+  return { bind: 9, updateSingle: 30, updateBulk: 12, warmupBind: 3, warmupUpdateSingle: 5, warmupUpdateBulk: 3 };
 };
 
 const median = (values) => {
@@ -162,6 +173,12 @@ const makeWideModel = (count) => {
 const makeRowModels = (count) =>
   Array.from({ length: count }, (_, i) => ({ a: i, b: i * 2 }));
 
+const makeIdentifierOnlyExpressions = (count) =>
+  Array.from({ length: count }, (_, i) => `field${i}`);
+
+const makeIdentifierOnlyModels = (count) =>
+  Array.from({ length: count }, (_, i) => ({ [`field${i}`]: i }));
+
 const countNodes = (expression) => {
   const children = expression.childExpressions ?? [];
   let total = 1;
@@ -174,6 +191,15 @@ const countNodes = (expression) => {
 const flushMicrotasks = async (rounds = 3) => {
   for (let i = 0; i < rounds; i += 1) {
     await Promise.resolve();
+  }
+};
+
+const gcFlush = async (rounds = 5) => {
+  for (let i = 0; i < rounds; i += 1) {
+    if (typeof global.gc === 'function') {
+      global.gc();
+    }
+    await flushMicrotasks(4);
   }
 };
 
@@ -242,10 +268,7 @@ const stateManager = InjectionContainer.get(
 const resetRuntimeState = async () => {
   stateManager.clear();
   expressionCache.dispose();
-  await flushMicrotasks();
-  if (typeof global.gc === 'function') {
-    global.gc();
-  }
+  await gcFlush();
 };
 
 const results = {
@@ -262,6 +285,7 @@ const results = {
   config: {
     parseTermCounts,
     bindingCounts,
+    identifierOnlyBindingCounts,
     runs,
     warmups,
     parseIterations,
@@ -283,6 +307,7 @@ const results = {
     parseCacheByNodeCount: [],
     bindingScale: [],
     bindingScaleInitialized: [],
+    identifierOnlyBindingScale: [],
   },
 };
 
@@ -529,6 +554,105 @@ for (const count of bindingCounts) {
   );
 }
 
+console.log('\nIdentifier-only binding scale');
+for (const count of identifierOnlyBindingCounts) {
+  await gcFlush(8);
+  const bindingRuns = getIdentifierOnlyRuns(count);
+  const identifierExpressions = makeIdentifierOnlyExpressions(count);
+  const identifierModels = makeIdentifierOnlyModels(count);
+
+  await resetRuntimeState();
+
+  const bindStats = await runTimer(
+    bindingRuns.bind,
+    bindingRuns.warmupBind,
+    async () => {
+      const expressions = [];
+      for (let i = 0; i < count; i += 1) {
+        expressions.push(rsx(identifierExpressions[i])(identifierModels[i]));
+      }
+      for (const expression of expressions) {
+        expression.dispose();
+      }
+    },
+  );
+
+  await resetRuntimeState();
+
+  const bindInitializedStats = await runTimer(
+    bindingRuns.bind,
+    bindingRuns.warmupBind,
+    async () => {
+      const expressions = [];
+      for (let i = 0; i < count; i += 1) {
+        expressions.push(rsx(identifierExpressions[i])(identifierModels[i]));
+      }
+      await waitForExpressionsInitialized(expressions);
+      for (const expression of expressions) {
+        expression.dispose();
+      }
+    },
+  );
+
+  await resetRuntimeState();
+
+  const updateExpressions = identifierModels.map((model, i) =>
+    rsx(identifierExpressions[i])(model),
+  );
+
+  const updateSingleStats = await runTimer(
+    bindingRuns.updateSingle,
+    bindingRuns.warmupUpdateSingle,
+    async () => {
+      const index = Math.floor(count / 2);
+      identifierModels[index][identifierExpressions[index]] += 1;
+      await flushMicrotasks();
+    },
+  );
+
+  const updateBulkStats = await runTimer(
+    bindingRuns.updateBulk,
+    bindingRuns.warmupUpdateBulk,
+    async () => {
+      for (let i = 0; i < count; i += 1) {
+        identifierModels[i][identifierExpressions[i]] += 1;
+      }
+      await flushMicrotasks();
+    },
+  );
+
+  for (const expression of updateExpressions) {
+    expression.dispose();
+  }
+  await resetRuntimeState();
+
+  results.sections.identifierOnlyBindingScale.push({
+    bindings: count,
+    bind: {
+      ...bindStats,
+      usPerBinding: (bindStats.medianMs * 1000) / count,
+      bindingsPerSecond: (count / bindStats.medianMs) * 1000,
+    },
+    bindInitialized: {
+      ...bindInitializedStats,
+      usPerBinding: (bindInitializedStats.medianMs * 1000) / count,
+      bindingsPerSecond: (count / bindInitializedStats.medianMs) * 1000,
+    },
+    updateSingleActiveBinding: {
+      ...updateSingleStats,
+    },
+    updateBulkActiveBindings: {
+      ...updateBulkStats,
+      usPerBinding: (updateBulkStats.medianMs * 1000) / count,
+      bindingsPerSecond: (count / updateBulkStats.medianMs) * 1000,
+    },
+  });
+
+  console.log(
+    `bindings ${count.toLocaleString()}: bind ${formatMs(bindStats.medianMs)}, bind+init ${formatMs(bindInitializedStats.medianMs)}, single update ${formatMs(updateSingleStats.medianMs)}, bulk update ${formatMs(updateBulkStats.medianMs)}`,
+  );
+}
+
 await fs.mkdir(reportsDirectory, { recursive: true });
 
 const jsonOutputPath = path.resolve(
@@ -607,6 +731,14 @@ const markdownLines = [
     return `| ${row.bindings.toLocaleString()} | ${row.bindUnique.medianMs.toFixed(3)} | ${row.bindSameExpressionAgain.medianMs.toFixed(3)} |`;
   }),
   '',
+  '## Identifier-only binding (single field, most common pattern)',
+  '',
+  '| Bindings | Bind median (ms) | Bind+initialize median (ms) | Single update median (ms) | Bulk update median (ms) |',
+  '| ---: | ---: | ---: | ---: | ---: |',
+  ...results.sections.identifierOnlyBindingScale.map((row) => {
+    return `| ${row.bindings.toLocaleString()} | ${row.bind.medianMs.toFixed(3)} | ${row.bindInitialized.medianMs.toFixed(3)} | ${row.updateSingleActiveBinding.medianMs.toFixed(3)} | ${row.updateBulkActiveBindings.medianMs.toFixed(3)} |`;
+  }),
+  '',
   '## Memory usage',
   '',
   '| Scenario | Median heap after run (MB) | Peak RSS after run (MB) |',
@@ -626,6 +758,14 @@ const markdownLines = [
     return [
       `| Bind+initialize unique (${row.bindings.toLocaleString()}) | ${row.bindUnique.memory.heapAfterMb.medianMb.toFixed(1)} | ${row.bindUnique.memory.rssAfterMb.maxMb.toFixed(1)} |`,
       `| Bind+initialize same expression (${row.bindings.toLocaleString()}) | ${row.bindSameExpressionAgain.memory.heapAfterMb.medianMb.toFixed(1)} | ${row.bindSameExpressionAgain.memory.rssAfterMb.maxMb.toFixed(1)} |`,
+    ];
+  }),
+  ...results.sections.identifierOnlyBindingScale.flatMap((row) => {
+    return [
+      `| Identifier-only bind (${row.bindings.toLocaleString()}) | ${row.bind.memory.heapAfterMb.medianMb.toFixed(1)} | ${row.bind.memory.rssAfterMb.maxMb.toFixed(1)} |`,
+      `| Identifier-only bind+initialize (${row.bindings.toLocaleString()}) | ${row.bindInitialized.memory.heapAfterMb.medianMb.toFixed(1)} | ${row.bindInitialized.memory.rssAfterMb.maxMb.toFixed(1)} |`,
+      `| Identifier-only single update (${row.bindings.toLocaleString()}) | ${row.updateSingleActiveBinding.memory.heapAfterMb.medianMb.toFixed(1)} | ${row.updateSingleActiveBinding.memory.rssAfterMb.maxMb.toFixed(1)} |`,
+      `| Identifier-only bulk update (${row.bindings.toLocaleString()}) | ${row.updateBulkActiveBindings.memory.heapAfterMb.medianMb.toFixed(1)} | ${row.updateBulkActiveBindings.memory.rssAfterMb.maxMb.toFixed(1)} |`,
     ];
   }),
   '',

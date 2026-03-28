@@ -99,14 +99,19 @@ const coreConceptLinks: DocsLinkItem[] = [
     meta: 'Nested property and member access',
   },
   {
+    href: '/docs/core-concepts/performance',
+    title: 'Performance',
+    meta: 'Caching, watch sharing, and selective updates explained',
+  },
+  {
+    href: '/docs/core-concepts/angular-signals-comparison',
+    title: 'Angular Signals comparison',
+    meta: 'rs-x vs Angular Signals: sync, async, and complex expression benchmarks',
+  },
+  {
     href: '/docs/core-concepts/modular-expressions',
     title: 'Modular expressions',
     meta: 'Compose reusable expression parts',
-  },
-  {
-    href: '/docs/core-concepts/performance-report',
-    title: 'Performance report',
-    meta: 'Parse, bind, update, and memory benchmarks',
   },
   {
     href: '/docs/core-concepts/readonly-properties',

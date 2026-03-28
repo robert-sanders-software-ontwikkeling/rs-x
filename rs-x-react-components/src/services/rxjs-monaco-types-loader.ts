@@ -235,6 +235,15 @@ export class RxjsMonacoTypesLoader {
             leafIndexWatchRule?: IIndexWatchRule,
           ) => IExpression<TReturn>;
         };
+
+        const rxjs: typeof api.rxjs;
+        const rsx: typeof api.rsx;
+        const printValue: typeof api.printValue;
+        const stateManager: typeof api.stateManager;
+        const IndexWatchRule: typeof api.IndexWatchRule;
+        const WaitForEvent: typeof api.WaitForEvent;
+        const ExpressionChangeTransactionManager:
+          typeof api.ExpressionChangeTransactionManager;
       }
 
       export {};

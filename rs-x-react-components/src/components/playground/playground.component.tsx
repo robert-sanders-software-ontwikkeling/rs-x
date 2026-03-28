@@ -15,7 +15,10 @@ import {
 } from '@rs-x/expression-parser';
 
 import { ensureExpressionParserBootstrapped } from '../../services/expression-parser-bootstrap';
+import { validatePlaygroundScriptWithRsxCompiler } from '../../services/playground-rsx-compiler.service';
 import { downloadProjectZip } from '../../services/project-export.service';
+import { installRsxExpressionColorizer } from '../../services/rsx-expression-colorizer.service';
+import { installRsxCompilerMarkers } from '../../services/rsx-compiler-marker.service';
 import { RxjsMonacoTypesLoader } from '../../services/rxjs-monaco-types-loader';
 import { ScriptEvaluator } from '../../services/script-evaluator';
 import { setupScriptModels } from '../../services/setup-script-models';
@@ -99,8 +102,7 @@ async function evaluateScript(scriptBody: string): Promise<EvalResult> {
 
           Example:
 
-          const $ = api.rxjs;
-          const rsx = api.rsx;
+          const $ = rxjs;
           cont model = {
             a: 10, 
             b: $.of(20)
@@ -123,8 +125,7 @@ const editorPlaceholder = dedent`
   // You should return a rs-x expression
   // For example:
 
-  const $ = api.rxjs;
-  const rsx = api.rsx;
+  const $ = rxjs;
   cont model = {
     a: 10, 
     b: $.of(20)
@@ -325,7 +326,9 @@ export const Playground: React.FC = () => {
 
     let cancelled = false;
     const loadingStart = Date.now();
+    let disposeRsxCompilerMarkers: (() => void) | undefined;
     let disposeScriptModels: (() => void) | undefined;
+    let disposeRsxExpressionColorizer: (() => void) | undefined;
     let disposeMonacoPlaceholder: (() => void) | undefined;
 
     setIsEditorLoading(true);
@@ -345,6 +348,14 @@ export const Playground: React.FC = () => {
           initialUserCode: scriptRef.current,
         });
         disposeScriptModels = scriptModels.dispose;
+        disposeRsxExpressionColorizer = installRsxExpressionColorizer(
+          editorMount.monaco,
+          scriptModels.userModel,
+        );
+        disposeRsxCompilerMarkers = installRsxCompilerMarkers({
+          monaco: editorMount.monaco,
+          model: scriptModels.userModel,
+        });
 
         await yieldFrame();
         if (cancelled) {
@@ -396,6 +407,8 @@ export const Playground: React.FC = () => {
     return () => {
       cancelled = true;
       disposeMonacoPlaceholder?.();
+      disposeRsxCompilerMarkers?.();
+      disposeRsxExpressionColorizer?.();
       disposeScriptModels?.();
     };
   }, [editorMount]);
@@ -473,6 +486,21 @@ export const Playground: React.FC = () => {
     try {
       await ensureExpressionParserBootstrapped();
       setIsBootstrapReady(true);
+
+      const compilerDiagnostics =
+        await validatePlaygroundScriptWithRsxCompiler(nextScript);
+      if (compilerDiagnostics.length > 0) {
+        const messages = compilerDiagnostics.map(
+          (diagnostic) =>
+            `[${diagnostic.category}] ${diagnostic.message} (line ${diagnostic.line}, col ${diagnostic.column})`,
+        );
+        setErrors(messages);
+        setNewExpression(undefined);
+        return {
+          ok: false,
+          error: messages.join('\n'),
+        };
+      }
 
       const result = await evaluateScript(nextScript);
       if (result.ok) {
