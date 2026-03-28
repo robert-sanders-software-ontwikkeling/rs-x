@@ -124,6 +124,17 @@ export abstract class KeyedInstanceFactory<
     return this.createWithId(data, id);
   }
 
+  /** Like `create(data).instance` but allocates no intermediate result object. */
+  public createAndGetInstance(data: TData): TInstance {
+    const id = this.getOrCreateId(data);
+    const instance = this.getOrCreateInstance(id, data);
+    const referenceCount = this.updateReferenceCount(id, 1, instance);
+    if (referenceCount === 1) {
+      this.onInstanceCreated(instance, data);
+    }
+    return instance;
+  }
+
   public release(
     id: TId,
     force?: boolean,

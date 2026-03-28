@@ -377,7 +377,7 @@ export class StateManager implements IStateManager {
     ownerId: unknown,
   ): unknown {
     const state = this.getState(context, index);
-    const stateForContext = this._objectStateManager.create(context).instance;
+    const stateForContext = this._objectStateManager.createAndGetInstance(context);
     stateForContext.create({ value: state, key: index, watched, ownerId });
     return state;
   }
@@ -390,7 +390,7 @@ export class StateManager implements IStateManager {
     transferedValue?: ITransferedValue,
     suppressInitialChangeEmit: boolean = false,
   ): void {
-    this._stateChangeSubscriptionManager.create(context).instance.create({
+    this._stateChangeSubscriptionManager.createAndGetInstance(context).createAndGetInstance({
       index: index,
       indexWatchRule,
       onChanged: (change) => this.onChange(change, true, ownerId),

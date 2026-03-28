@@ -21,6 +21,7 @@ describe('IdentifierExpressionEvaluateUnit', () => {
       instance: watch,
       referenceCount: 1,
     });
+    watchFactory.createAndGetInstance.mockReturnValue(watch);
     changeManager = new ExpressionEvaluateChangeManagerMock();
   });
 
@@ -50,7 +51,7 @@ describe('IdentifierExpressionEvaluateUnit', () => {
 
     unit.watch(changeManager);
     expect(unit.value).toBe(1);
-    expect(watchFactory.create).toHaveBeenCalledWith({
+    expect(watchFactory.createAndGetInstance).toHaveBeenCalledWith({
       index: 'a',
       context: { c: true },
       options: {
@@ -72,7 +73,7 @@ describe('IdentifierExpressionEvaluateUnit', () => {
 
     unit.watch(changeManager);
 
-    watch.changed.next({
+    watch.emitChanged({
       context: { c: true },
       oldContext: { c: true },
       index: 'a',
@@ -95,7 +96,7 @@ describe('IdentifierExpressionEvaluateUnit', () => {
 
     unit.watch(changeManager);
 
-    watch.contextChange.next({
+    watch.emitContextChanged({
       context: { c: 2 },
       oldContext: { c: true },
       index: 'a',
@@ -115,11 +116,11 @@ describe('IdentifierExpressionEvaluateUnit', () => {
 
     unit.watch(changeManager);
 
-    watch.startChangeCycle.next({
+    watch.emitStartChangeCycle({
       context: { c: 2 },
       index: 'a',
     });
-    watch.endChangeCycle.next({
+    watch.emitEndChangeCycle({
       context: { c: 2 },
       index: 'a',
     });
@@ -146,7 +147,7 @@ describe('IdentifierExpressionEvaluateUnit', () => {
 
     unit.watch(changeManager);
 
-    expect(watchFactory.create).toHaveBeenCalledWith({
+    expect(watchFactory.createAndGetInstance).toHaveBeenCalledWith({
       index: 'a',
       context: { c: true },
       options: {
@@ -182,6 +183,7 @@ describe('IdentifierExpressionEvaluateUnit', () => {
       instance: watch,
       referenceCount: 1,
     });
+    watchFactory.createAndGetInstance.mockReturnValue(watch);
     const withValue = new IdentifierExpressionEvaluateUnit(
       'a',
       { c: true },
@@ -232,7 +234,7 @@ describe('IdentifierExpressionEvaluateUnit', () => {
 
     unit.watch(changeManager);
     const setValue = new Set([1, 2]);
-    watch.changed.next({
+    watch.emitChanged({
       context: { c: true },
       oldContext: { c: true },
       index: 'a',
@@ -242,25 +244,6 @@ describe('IdentifierExpressionEvaluateUnit', () => {
     unit.commitChange();
 
     expect(commit).toHaveBeenCalledWith(setValue, true);
-  });
-
-  it('dispose handles missing endChangeCycle subscription', () => {
-    const unit = new IdentifierExpressionEvaluateUnit(
-      'a',
-      { c: true },
-      watchFactory,
-      undefined,
-      jest.fn(),
-      'owner',
-    );
-
-    unit.watch(changeManager);
-    (
-      unit as unknown as { _endChangeCycleSubscription?: unknown }
-    )._endChangeCycleSubscription = undefined;
-
-    expect(() => unit.dispose()).not.toThrow();
-    expect(watch.dispose).toHaveBeenCalledTimes(1);
   });
 
   it('dispose without watch is safe', () => {

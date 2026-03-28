@@ -6,15 +6,13 @@ import { ExpressionEvaluateChangeManagerMock } from '../../lib/testing';
 describe('ComputedIndexExpressionEvaluateUnit', () => {
   it('does not create an inner identifier watch until both context and index are set', () => {
     const watchFactory = new WatchFactoryMock();
-    watchFactory.create.mockReturnValue({
-      id: 'watch-id',
-      instance: new WatchMock({
+    watchFactory.createAndGetInstance.mockReturnValue(
+      new WatchMock({
         context: { ctx: true },
         index: 'k',
         value: 1,
       }),
-      referenceCount: 1,
-    });
+    );
     const changeManager = new ExpressionEvaluateChangeManagerMock();
     const unit = new ComputedIndexExpressionEvaluateUnit(
       watchFactory,
@@ -24,15 +22,15 @@ describe('ComputedIndexExpressionEvaluateUnit', () => {
     );
 
     unit.watch(changeManager);
-    expect(watchFactory.create).not.toHaveBeenCalled();
+    expect(watchFactory.createAndGetInstance).not.toHaveBeenCalled();
 
     unit.context = { ctx: true };
     unit.watch(changeManager);
-    expect(watchFactory.create).not.toHaveBeenCalled();
+    expect(watchFactory.createAndGetInstance).not.toHaveBeenCalled();
 
     unit.setIndex('k');
     unit.watch(changeManager);
-    expect(watchFactory.create).toHaveBeenCalledTimes(1);
+    expect(watchFactory.createAndGetInstance).toHaveBeenCalledTimes(1);
   });
 
   it('wires through WatchMock changes and marks computed unit dirty', () => {
@@ -42,11 +40,7 @@ describe('ComputedIndexExpressionEvaluateUnit', () => {
       value: 1,
     });
     const watchFactory = new WatchFactoryMock();
-    watchFactory.create.mockReturnValue({
-      id: 'watch-id',
-      instance: watch,
-      referenceCount: 1,
-    });
+    watchFactory.createAndGetInstance.mockReturnValue(watch);
 
     const changeManager = new ExpressionEvaluateChangeManagerMock();
     const unit = new ComputedIndexExpressionEvaluateUnit(
@@ -61,7 +55,7 @@ describe('ComputedIndexExpressionEvaluateUnit', () => {
     unit.watch(changeManager);
 
     expect(unit.value).toBe(1);
-    expect(watchFactory.create).toHaveBeenCalledWith({
+    expect(watchFactory.createAndGetInstance).toHaveBeenCalledWith({
       index: 'k',
       context: { ctx: true },
       options: {
@@ -70,7 +64,7 @@ describe('ComputedIndexExpressionEvaluateUnit', () => {
       },
     });
 
-    watch.changed.next({
+    watch.emitChanged({
       context: { ctx: true },
       oldContext: { ctx: true },
       index: 'k',
@@ -99,22 +93,10 @@ describe('ComputedIndexExpressionEvaluateUnit', () => {
       value: 2,
     });
     const watchFactory = new WatchFactoryMock();
-    watchFactory.create
-      .mockReturnValueOnce({
-        id: 'watch-1',
-        instance: firstWatch,
-        referenceCount: 1,
-      })
-      .mockReturnValueOnce({
-        id: 'watch-2',
-        instance: secondWatch,
-        referenceCount: 1,
-      })
-      .mockReturnValue({
-        id: 'watch-3',
-        instance: thirdWatch,
-        referenceCount: 1,
-      });
+    watchFactory.createAndGetInstance
+      .mockReturnValueOnce(firstWatch)
+      .mockReturnValueOnce(secondWatch)
+      .mockReturnValue(thirdWatch);
 
     const commit = jest.fn();
     const changeManager = new ExpressionEvaluateChangeManagerMock();

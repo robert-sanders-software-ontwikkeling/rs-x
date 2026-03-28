@@ -1,5 +1,3 @@
-import { type Subscription } from 'rxjs';
-
 import type {
   IContextChanged,
   IIndexWatchRule,
@@ -20,10 +18,6 @@ export class IdentifierExpressionEvaluateUnit implements IExpressionEvaluateUnit
   private _watch: IWatch | undefined;
   private _disposed = false;
   private _changeManager!: IExpressionEvaluateChangeManager;
-  private _changedSubscription: Subscription | undefined;
-  private _contextChangedSubscription: Subscription | undefined;
-  private _startChangeCycleSubscription: Subscription | undefined;
-  private _endChangeCycleSubscription: Subscription | undefined;
   private _activeCycleDepth = 0;
   private _forceDirtyCommit = false;
 
@@ -111,25 +105,21 @@ export class IdentifierExpressionEvaluateUnit implements IExpressionEvaluateUnit
       return;
     }
 
-    this._watch = this._watchFactory.create({
+    this._watch = this._watchFactory.createAndGetInstance({
       index: this.index,
       context: this.context,
       options: {
         indexWatchRule: this._watchRule,
         ownerId: this._ownerId,
       },
-    }).instance;
+    });
 
-    this._changedSubscription = this._watch.changed.subscribe(this.onChanged);
-    this._contextChangedSubscription = this._watch.contextChange.subscribe(
-      this.onContextChanged,
-    );
-    this._startChangeCycleSubscription = this._watch.startChangeCycle.subscribe(
-      this.onStartChangeCycle,
-    );
-    this._endChangeCycleSubscription = this._watch.endChangeCycle.subscribe(
-      this.onEndChangeCycle,
-    );
+    this._watch.addListeners(this, {
+      onChanged: this.onChanged,
+      onContextChanged: this.onContextChanged,
+      onStartChangeCycle: this.onStartChangeCycle,
+      onEndChangeCycle: this.onEndChangeCycle,
+    });
     const resolvedValue = this.resolveValueFromContext();
     const fallbackValue = this._isDeferredValue?.(resolvedValue)
       ? undefined
@@ -184,18 +174,7 @@ export class IdentifierExpressionEvaluateUnit implements IExpressionEvaluateUnit
       this._changeManager.decrementChangeCycle();
     }
 
-    this._changedSubscription?.unsubscribe();
-    this._changedSubscription = undefined;
-
-    this._contextChangedSubscription?.unsubscribe();
-    this._contextChangedSubscription = undefined;
-
-    this._startChangeCycleSubscription?.unsubscribe();
-    this._startChangeCycleSubscription = undefined;
-
-    this._endChangeCycleSubscription?.unsubscribe();
-    this._endChangeCycleSubscription = undefined;
-
+    this._watch.removeListeners(this);
     this._watch.dispose();
     this._watch = undefined;
   }

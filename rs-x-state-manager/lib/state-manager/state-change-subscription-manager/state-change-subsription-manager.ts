@@ -50,15 +50,15 @@ class StateChangeSubscriptionsForContextManager
     data: IStateChangeSubscriptionInfo,
     id: string,
   ): { subscriptionData: undefined; observer: IObserver } {
-    const objectObserver = this._objectObserverManager.create(context).instance;
-    const observer = objectObserver.create({
+    const objectObserver = this._objectObserverManager.createAndGetInstance(context);
+    const observer = objectObserver.createAndGetInstance({
       index: data.index,
       initializeManually: true,
       indexWatchRule: data.indexWatchRule,
       owner: {
         release: () => this.release(id),
       },
-    }).instance.observer;
+    }).observer;
 
     return {
       observer,

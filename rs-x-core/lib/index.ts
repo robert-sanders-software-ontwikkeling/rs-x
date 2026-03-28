@@ -1,4 +1,5 @@
 export * from './deep-clone';
+export * from './dispatcher';
 export * from './dependency-injection';
 export * from './equality-service';
 export * from './error-log';

@@ -12,6 +12,7 @@ export class KeyedInstanceFactoryMock<
   public readonly has = jest.fn();
   public readonly getId = jest.fn();
   public readonly create = jest.fn();
+  public readonly createAndGetInstance = jest.fn();
   public readonly release = jest.fn();
   public readonly getFromData = jest.fn();
   public readonly getFromId = jest.fn();

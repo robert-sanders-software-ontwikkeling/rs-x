@@ -13,6 +13,8 @@ export interface IKeyedInstanceFactory<
     instance: TInstance;
     id: TId;
   };
+  /** Like `create(data).instance` but allocates no intermediate result object. */
+  createAndGetInstance(data: TData): TInstance;
   release(
     id: TId,
     force?: boolean,

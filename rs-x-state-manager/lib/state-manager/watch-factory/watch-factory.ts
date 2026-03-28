@@ -1,6 +1,5 @@
-import { Observable } from 'rxjs';
-
 import {
+  Dispatcher,
   GuidKeyedInstanceFactory,
   IDisposable,
   IDisposableOwner,
@@ -11,33 +10,7 @@ import {
   Type,
 } from '@rs-x/core';
 import type { IGuidFactory } from '@rs-x/core';
-
-/**
- * O(1)-removal broadcast dispatcher.
- *
- * RxJS Subject uses an Array for its subscriber list, making every
- * unsubscribe() an O(N) indexOf + splice.  When many expressions share the
- * same Watch (same context + index), disposing them one-by-one becomes O(N²).
- *
- * Dispatcher stores subscribers in a Map so add and remove are both O(1),
- * while dispatch() remains O(N) (unavoidable for a broadcast).
- */
-class Dispatcher<T> {
-  private readonly _listeners = new Map<number, (value: T) => void>();
-  private _nextId = 0;
-
-  readonly observable: Observable<T> = new Observable<T>((subscriber) => {
-    const id = this._nextId++;
-    this._listeners.set(id, (value) => subscriber.next(value));
-    return () => this._listeners.delete(id);
-  });
-
-  dispatch(value: T): void {
-    for (const listener of this._listeners.values()) {
-      listener(value);
-    }
-  }
-}
+import { type Observable } from 'rxjs';
 
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokens';
 import type {
@@ -47,6 +20,13 @@ import type {
   IStateManager,
   IStateOptions,
 } from '../state-manager.interface';
+
+export interface IWatchCallbacks {
+  onChanged: (change: IStateChange) => void;
+  onContextChanged: (change: IContextChanged) => void;
+  onStartChangeCycle: (cycle: IChangeCycleIndex) => void;
+  onEndChangeCycle: (cycle: IChangeCycleIndex) => void;
+}
 
 export interface IWatch extends IDisposable {
   readonly changed: Observable<IStateChange>;
@@ -58,6 +38,9 @@ export interface IWatch extends IDisposable {
   readonly value: unknown;
   watch(): void;
   unwatch(): void;
+  /** Zero-allocation alternative to subscribing to the four Observables individually. */
+  addListeners(key: unknown, callbacks: IWatchCallbacks): void;
+  removeListeners(key: unknown): void;
 }
 
 export interface IWatchDispableOwner extends IDisposableOwner {}
@@ -183,6 +166,20 @@ class Watch implements IWatch {
       this._stateEventUnsubscribe = undefined;
       this._isWatched = false;
     }
+  }
+
+  public addListeners(key: unknown, callbacks: IWatchCallbacks): void {
+    this._changeDispatcher.addListener(key, callbacks.onChanged);
+    this._contextChangedDispatcher.addListener(key, callbacks.onContextChanged);
+    this._startChangeCycleDispatcher.addListener(key, callbacks.onStartChangeCycle);
+    this._endChangeCycleDispatcher.addListener(key, callbacks.onEndChangeCycle);
+  }
+
+  public removeListeners(key: unknown): void {
+    this._changeDispatcher.removeListener(key);
+    this._contextChangedDispatcher.removeListener(key);
+    this._startChangeCycleDispatcher.removeListener(key);
+    this._endChangeCycleDispatcher.removeListener(key);
   }
 
   public dispose(): void {
