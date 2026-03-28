@@ -33,7 +33,6 @@ export abstract class AbstractExpression<
   T = unknown,
   PT = unknown,
 > implements IExpression<T> {
-  private _releaseCommittedSubscription: (() => void) | undefined;
   private _changed: ReplaySubject<IExpression> | undefined;
   private _lastChangedValue: IExpression | undefined;
   private _parent: AbstractExpression<PT> | undefined;
@@ -45,22 +44,36 @@ export abstract class AbstractExpression<
   private _changeHook?: ChangeHook;
   private _evaluateManagerForExpression?: IEvaluateManagerForExpression;
   private _hidden: boolean;
-  protected readonly _childExpressions: AbstractExpression[] = [];
+  protected readonly _childExpressions!: AbstractExpression[];
   private _value: T | undefined;
   private _oldValue: unknown;
   private _isDirty = false;
 
+  private static readonly _EMPTY_CHILDREN: AbstractExpression[] = [];
+
   protected constructor(
     public readonly type: ExpressionType,
     public readonly expressionString: string,
-    ...childExpressions: AbstractExpression[]
+    children?: AbstractExpression[],
   ) {
     if (!expressionString) {
       this.expressionString = this.toString();
     }
-    this.addChildExpressions(childExpressions);
-
     this._hidden = false;
+
+    if (children?.length) {
+      const arr: AbstractExpression[] = [];
+      for (let i = 0; i < children.length; i++) {
+        const expr = children[i];
+        if (expr) {
+          arr.push(expr);
+          expr._parent = this;
+        }
+      }
+      this._childExpressions = arr;
+    } else {
+      this._childExpressions = AbstractExpression._EMPTY_CHILDREN;
+    }
   }
 
   public get hidden(): boolean {
@@ -293,11 +306,9 @@ export abstract class AbstractExpression<
   protected abstract evaluate(): T | undefined;
 
   protected internalDispose(): void {
-    this._releaseCommittedSubscription?.();
-    this._releaseCommittedSubscription = undefined;
-    this._childExpressions.forEach((childExpression) =>
-      childExpression.dispose(),
-    );
+    for (let i = 0; i < this._childExpressions.length; i++) {
+      this._childExpressions[i].dispose();
+    }
     this._isDisposed = true;
   }
 
@@ -362,13 +373,4 @@ export abstract class AbstractExpression<
     }
   };
 
-  private addChildExpressions(expressions: AbstractExpression[]): void {
-    for (let i = 0; i < expressions.length; i++) {
-      const expr = expressions[i];
-      if (expr) {
-        this._childExpressions.push(expr);
-        expr._parent = this;
-      }
-    }
-  }
 }

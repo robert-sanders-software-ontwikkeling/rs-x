@@ -10,7 +10,16 @@
       "Bash(npm test:*)",
       "Bash(node --max-old-space-size=2048 --expose-gc scripts/benchmark-core-concepts-performance.mjs)",
       "Bash(node scripts/benchmark-core-concepts-performance.mjs)",
-      "Bash(cross-env TZ=UTC pnpm jest --runInBand --no-cache --config jest.config.ts)"
+      "Bash(cross-env TZ=UTC pnpm jest --runInBand --no-cache --config jest.config.ts)",
+      "Bash(node --prof-process /Users/robertsanders/projects/rs-x/isolate-0x138008000-19494-v8.log)",
+      "Bash(node --cpu-prof --cpu-prof-name=/tmp/rsx-clone-profile.cpuprofile -e \":*)",
+      "Bash(cp /tmp/rsx-profile-clone.mjs /Users/robertsanders/projects/rs-x/rs-x-expression-parser/tmp-profile-clone.mjs)",
+      "Bash(node tmp-profile-clone.mjs)",
+      "Bash(node tmp-bind-gc-proof.mjs)",
+      "Bash(node -e \":*)",
+      "Bash(node --prof scripts/benchmark-core-concepts-performance.mjs)",
+      "Bash(ls -t /Users/robertsanders/projects/rs-x/rs-x-expression-parser/isolate-*.log)",
+      "Bash(node --prof-process /Users/robertsanders/projects/rs-x/rs-x-expression-parser/isolate-0x130018000-38157-v8.log)"
     ]
   }
 }

@@ -10,7 +10,7 @@ export abstract class ParameterizedExpression<
     expressionString: string,
     ...childExpressions: AbstractExpression[]
   ) {
-    super(type, expressionString, ...childExpressions);
+    super(type, expressionString, childExpressions);
   }
 
   protected abstract evaluateExpression(...args: unknown[]): T;

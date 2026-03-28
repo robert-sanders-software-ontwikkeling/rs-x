@@ -8,7 +8,7 @@ export class MemberExpression extends AbstractExpression {
   private _expressionEvaluateUnit!: MemberExpressionEvaluateUnit | undefined;
 
   constructor(expressionString: string, pathSeqments: AbstractExpression[]) {
-    super(ExpressionType.Member, expressionString, ...pathSeqments);
+    super(ExpressionType.Member, expressionString, pathSeqments);
   }
 
   public override clone(): this {

@@ -37,14 +37,12 @@ export class FunctionExpression extends AbstractExpression {
       ? _argumentsExpression
       : AbstractExpression.setHidden(_argumentsExpression);
 
-    super(
-      ExpressionType.Function,
-      expressionString,
+    super(ExpressionType.Function, expressionString, [
       _objectExpression ??
         AbstractExpression.setHidden(new ConstantNullExpression()),
       _functionExpression,
       argumentsExpression,
-    );
+    ]);
   }
 
   public override clone(): this {

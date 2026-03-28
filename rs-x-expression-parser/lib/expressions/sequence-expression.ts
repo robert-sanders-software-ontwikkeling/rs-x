@@ -11,7 +11,7 @@ export class SequenceExpression extends AbstractExpression {
   private _expressionEvaluateUnit: IExpressionEvaluateUnit | undefined;
 
   constructor(expressionString: string, expressions: AbstractExpression[]) {
-    super(ExpressionType.Sequence, expressionString, ...expressions);
+    super(ExpressionType.Sequence, expressionString, expressions);
   }
 
   public override clone(): this {
