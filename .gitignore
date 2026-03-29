@@ -5,3 +5,6 @@ coverage
 .angular
 .next
 public
+v8.log
+v8*.log
+isolate-*-v8.log
