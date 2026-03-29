@@ -197,6 +197,165 @@ export default function PerformanceReportCoreConceptPage() {
         </ul>
       </article>
 
+      <article className="card docsApiCard">
+        <h2 className="cardTitle">How rs-x disposes bindings</h2>
+        <p className="cardText">
+          Every binding registers callbacks on a shared{' '}
+          <span className="codeInline">Dispatcher&lt;T&gt;</span>. The
+          dispatcher uses a <span className="codeInline">Map</span> for
+          subscriber storage: add and remove are both O(1), and dispatch
+          iterates values in O(N). Destroying a component with N bindings
+          costs O(N) total — each binding is cleaned up exactly once with a
+          single map delete.
+        </p>
+        <p className="cardText">
+          Ownership is tracked automatically through a structured tree.
+          When a binding is released, rs-x walks the dependency graph and
+          disposes every registered watcher, subscriber, and state reference
+          in one pass — no manual teardown hooks required in application code.
+        </p>
+        <p className="cardText">
+          The stress-case dispose numbers below are from the allocation-heavy
+          unique-identifier scenario (worst case per binding). In the shared
+          identifier scenario, dispose is proportionally cheaper because the
+          watcher count does not grow with expression count.
+        </p>
+        <table className="docsTable">
+          <thead>
+            <tr>
+              <th>Bindings</th>
+              <th>Dispose median (ms)</th>
+              <th>ms / binding</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bindingStressGcEvidenceRows.slice(0, 4).map((row) => (
+              <tr key={`dispose-${row.expressionCount}`}>
+                <td>{row.expressionCount.toLocaleString()}</td>
+                <td>{row.disposeMedianMs.toFixed(2)}</td>
+                <td>
+                  {(row.disposeMedianMs / row.expressionCount).toFixed(4)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="cardText">
+          Dispose time grows near-linearly with binding count — the expected
+          behaviour for an O(N) cleanup pass. Per-binding cost stays in the
+          0.03–0.04 ms range across all measured scales.
+        </p>
+      </article>
+
+      <article className="card docsApiCard">
+        <h2 className="cardTitle">rs-x vs Angular Signals — not faster, but fast enough</h2>
+        <p className="cardText">
+          Angular Signals are faster than rs-x in every scenario. Angular
+          Signals run native compiled JavaScript — a{' '}
+          <span className="codeInline">
+            computed(() =&gt; price() * quantity())
+          </span>{' '}
+          is just a function call. rs-x parses{' '}
+          <span className="codeInline">&quot;price * quantity&quot;</span> into
+          an AST once at bind time, then walks that AST on every change. AST
+          evaluation will never be as fast as a compiled function. For deeply
+          nested arithmetic evaluated thousands of times per second, signals
+          win clearly.
+        </p>
+        <p className="cardText">
+          The right question is not <em>which is faster</em> but{' '}
+          <em>is rs-x fast enough</em> — and for the workloads it is designed
+          for, the answer is yes. A page component binds 20–100 expressions
+          once on mount (~0.7–3.4 ms total), and each subsequent reactive
+          update completes in ~0.5 µs. Users never perceive the difference.
+        </p>
+        <p className="cardText">
+          <strong>What rs-x buys with that performance trade-off is
+          transparent reactivity.</strong> The goal is that a developer should
+          not have to think about change detection at all. You define your model
+          as a plain JavaScript object — no special types, no reactive wrappers,
+          no API to learn:
+        </p>
+        <pre className="codeBlock">{`model.price = 42;`}</pre>
+        <p className="cardText">
+          You write an expression string and bind it. rs-x inspects the AST,
+          determines the dependencies, registers watchers, propagates changes,
+          and cleans up when the binding is released — all without any
+          instruction from your code. Async fields ({' '}
+          <span className="codeInline">Observable</span>,{' '}
+          <span className="codeInline">Promise</span>) are handled
+          transparently: the expression evaluates to the resolved value and
+          updates automatically when it arrives, with no special handling
+          required in the expression or the component.
+        </p>
+        <p className="cardText">
+          With Angular Signals the same computation requires declaring every
+          reactive value as a signal, wiring every derived value as a{' '}
+          <span className="codeInline">computed()</span>, managing async
+          separately, and cleaning up with{' '}
+          <span className="codeInline">DestroyRef</span> or{' '}
+          <span className="codeInline">takeUntilDestroyed</span>. The
+          reactivity model is explicit and you are responsible for every part
+          of it.
+        </p>
+        <p className="cardText">
+          <strong>Strong typing without losing flexibility.</strong> String
+          expressions do not mean giving up type safety. rs-x ships a{' '}
+          <strong>VS Code extension</strong> and a{' '}
+          <strong>build-time compiler plugin</strong> that read your model types
+          and provide full IntelliSense, autocomplete, and compile-time errors
+          inside expression strings. Invalid expressions are caught before they
+          ship — with the same tooling experience as writing TypeScript
+          directly.
+        </p>
+        <table className="docsTable">
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'left' }}>Dimension</th>
+              <th style={{ textAlign: 'left' }}>Angular Signals</th>
+              <th style={{ textAlign: 'left' }}>rs-x</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Raw update speed</td>
+              <td>Faster — native compiled JS</td>
+              <td>~0.5 µs per update (AST evaluation)</td>
+            </tr>
+            <tr>
+              <td>Model declaration</td>
+              <td>Each field must be a signal</td>
+              <td>Plain JS object — no boilerplate</td>
+            </tr>
+            <tr>
+              <td>Dependency wiring</td>
+              <td>Manual — computed() per derived value</td>
+              <td>Automatic — derived from expression AST</td>
+            </tr>
+            <tr>
+              <td>Async handling</td>
+              <td>Manual — explicit unwrapping required</td>
+              <td>Transparent — Observable and Promise resolved automatically</td>
+            </tr>
+            <tr>
+              <td>Ownership and disposal</td>
+              <td>Manual — DestroyRef / takeUntilDestroyed</td>
+              <td>Automatic — zero cleanup code required</td>
+            </tr>
+            <tr>
+              <td>Expression source</td>
+              <td>Source code only, fixed at build time</td>
+              <td>String — database, config, user input, runtime</td>
+            </tr>
+            <tr>
+              <td>Type safety</td>
+              <td>Full TypeScript</td>
+              <td>VS Code extension + build compiler plugin</td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+
       <div className="docsApiGrid">
         <article className="card docsApiCard">
           <h2 className="cardTitle">Machine and runtime</h2>
@@ -219,6 +378,19 @@ export default function PerformanceReportCoreConceptPage() {
             <span className="codeInline">
               {benchmarkMachine.benchmarkScript}
             </span>
+          </p>
+          <p className="cardText">
+            Run flags:{' '}
+            <span className="codeInline">
+              node --expose-gc --max-old-space-size=4096
+            </span>
+            .{' '}
+            <span className="codeInline">--expose-gc</span> allows the
+            benchmark to force a full GC between samples so heap measurements
+            reflect only the scenario under test.{' '}
+            <span className="codeInline">--max-old-space-size=4096</span> sets
+            an explicit 4 GB heap ceiling to keep large-scale binding runs
+            deterministic.
           </p>
           <p className="cardText">
             Compared snapshots:{' '}

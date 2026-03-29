@@ -93,6 +93,7 @@ export class IdentifierExpression extends AbstractExpression {
       (value) => this.valueMetadata.isAsync(value),
       this.isRoot,
       this._isStaticMemberLeaf,
+      () => this.incrementAncestorPendingCounts(),
     );
 
     if (!this._isMemberSegment && !settings.skipEvaluateUnitRegistration) {

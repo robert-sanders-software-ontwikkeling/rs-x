@@ -130,11 +130,22 @@ export function setupScriptModels(args: {
     applyMappedMarkers();
   });
 
+  const userMarkerSub = monaco.editor.onDidChangeMarkers((uris) => {
+    if (!uris.some((u) => u.toString() === userUri.toString())) {
+      return;
+    }
+
+    // Ensure top-level return diagnostics never reappear on the visible user model.
+    monaco.editor.setModelMarkers(userModel, 'typescript', []);
+    monaco.editor.setModelMarkers(userModel, 'javascript', []);
+  });
+
   applyMappedMarkers();
 
   const dispose = () => {
     userSub.dispose();
     markersSub.dispose();
+    userMarkerSub.dispose();
   };
 
   return { userModel, wrapperModel, dispose };

@@ -82,7 +82,7 @@ const groupDefinitions: readonly GroupDefinition[] = [
       'Core state lifecycle, rebinding payloads, and grouped state subscriptions.',
     includes: (moduleName) =>
       moduleName === 'state-manager' ||
-      moduleName === 'state-manager/state-change-subscription-manager' ||
+      moduleName.startsWith('state-manager/') ||
       moduleName === 'grouped-change-subscriptions-for-context-manager' ||
       moduleName === 'object-change',
   },
@@ -91,7 +91,7 @@ const groupDefinitions: readonly GroupDefinition[] = [
     title: 'Watch rules',
     description:
       'Index watch-rule contracts and rule implementations used for recursive branch tracking.',
-    includes: (moduleName) => moduleName === 'index-watch-rule-registry',
+    includes: (moduleName) => moduleName === 'index-watch-rule',
   },
   {
     key: 'observer-core',
@@ -99,6 +99,7 @@ const groupDefinitions: readonly GroupDefinition[] = [
     description:
       'Object observer managers, observer composition primitives, and observer factory contracts.',
     includes: (moduleName) =>
+      moduleName === 'abstract-observer' ||
       moduleName === 'object-observer' ||
       moduleName === 'object-observer/factories' ||
       moduleName === 'object-property-observer-proxy-pair-manager' ||

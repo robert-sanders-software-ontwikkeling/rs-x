@@ -3205,6 +3205,67 @@ html[data-theme='dark'] .docsApiSection .advancedTopicList {
   font-weight: 640;
 }
 
+.docsTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.docsTable th,
+.docsTable td {
+  text-align: left;
+  vertical-align: top;
+  padding: var(--sp-3) var(--sp-5);
+  border-bottom: 1px solid var(--border-soft);
+  line-height: 1.55;
+  white-space: nowrap;
+}
+
+.docsTable th {
+  background: color-mix(in oklab, var(--surface-2) 72%, transparent);
+  color: var(--docs-table-header);
+  font-weight: 700;
+  font-size: 0.85em;
+  letter-spacing: 0.01em;
+}
+
+.docsTable tr:last-child td {
+  border-bottom: none;
+}
+
+.docsTable tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--text) 3.5%, var(--surface-solid));
+}
+
+.docsTable tbody tr:nth-child(odd) td {
+  background: var(--surface-solid);
+}
+
+.docsTable tbody td {
+  color: var(--docs-table-body);
+}
+
+.docsTable tbody td:first-child {
+  color: var(--docs-table-key);
+  font-weight: 640;
+}
+
+html[data-theme='dark'] .docsTable th {
+  background: color-mix(in srgb, var(--surface-2) 84%, black 16%);
+}
+
+html[data-theme='dark'] .docsTable tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--text) 5.8%, var(--surface-solid));
+}
+
+html[data-theme='dark'] .docsTable tbody td {
+  color: color-mix(in srgb, var(--text) 56%, var(--muted));
+}
+
+html[data-theme='dark'] .docsTable tbody td:first-child {
+  color: color-mix(in srgb, var(--text) 64%, var(--muted));
+  font-weight: 640;
+}
+
 .docsPerfChart {
   margin-bottom: var(--sp-5);
   padding: var(--sp-4);

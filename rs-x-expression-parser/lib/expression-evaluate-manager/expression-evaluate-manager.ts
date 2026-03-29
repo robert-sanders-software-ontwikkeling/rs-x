@@ -15,10 +15,6 @@ import type {
 
 class EvaluateManagerForExpression implements IEvaluateManagerForExpression {
   private readonly _evaluateUnits: IExpressionEvaluateUnit[] = [];
-  // private readonly _changedSubscription: Subscription;
-  // private readonly _contextChangedSubscription: Subscription;
-  // private readonly _startChangeCycleSubscription: Subscription;
-  // private readonly _endChangeCycleSubscription: Subscription;
   private _unresolvedCount = 0;
   private _initialized = false;
   private _bootstrapScheduled = false;
@@ -28,6 +24,21 @@ class EvaluateManagerForExpression implements IEvaluateManagerForExpression {
   private readonly _changeManager: IExpressionEvaluateChangeManager;
 
   private _changedQueue = new Set<IExpressionEvaluateUnit>();
+
+  /**
+   * Built during register(): maps a primary unit to the replica units that share
+   * the same (context, index) pair within this expression manager. Used to fan
+   * out watch change notifications without each replica registering its own listener.
+   */
+  private _primaryToReplicas: Map<IExpressionEvaluateUnit, IExpressionEvaluateUnit[]> | undefined;
+
+  /**
+   * Temporary lookup used only during registration to find the existing primary
+   * for a (context, index) pair. Cleared after initialize() to free memory.
+   */
+  private _contextIndexToPrimary: Map<unknown, Map<unknown, IExpressionEvaluateUnit>> | undefined;
+
+  private readonly _onCommitted = () => this.commit(true);
 
   constructor(
     private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
@@ -54,19 +65,40 @@ class EvaluateManagerForExpression implements IEvaluateManagerForExpression {
   }
 
   public dispose(): void {
-    // this._changedSubscription.unsubscribe();
-    // this._contextChangedSubscription.unsubscribe();
-    // this._startChangeCycleSubscription.unsubscribe();
-    // this._endChangeCycleSubscription.unsubscribe();
-
     this._evaluateUnits.forEach((evaluateUnit) => evaluateUnit.dispose());
     this._initialized = false;
     this._bootstrapScheduled = false;
     this._reevaluateScheduled = false;
+    this._primaryToReplicas = undefined;
+    this._contextIndexToPrimary = undefined;
   }
 
   public register(evaluateUnit: IExpressionEvaluateUnit): void {
     this._evaluateUnits.push(evaluateUnit);
+
+    // Group units watching the same (context, index) so only the first (primary)
+    // registers a watch listener; replicas receive changes via fan-out in markDirty.
+    if (evaluateUnit.context !== undefined && evaluateUnit.watchAsReplica !== undefined) {
+      const groups = (this._contextIndexToPrimary ??= new Map());
+      let indexMap = groups.get(evaluateUnit.context);
+      if (indexMap === undefined) {
+        indexMap = new Map();
+        groups.set(evaluateUnit.context, indexMap);
+      }
+      const existing = indexMap.get(evaluateUnit.index);
+      if (existing === undefined) {
+        indexMap.set(evaluateUnit.index, evaluateUnit); // this unit is the primary
+      } else {
+        // This unit is a replica — record it under its primary.
+        const map = (this._primaryToReplicas ??= new Map());
+        let replicas = map.get(existing);
+        if (replicas === undefined) {
+          replicas = [];
+          map.set(existing, replicas);
+        }
+        replicas.push(evaluateUnit);
+      }
+    }
   }
 
   public initialize(): void {
@@ -74,10 +106,26 @@ class EvaluateManagerForExpression implements IEvaluateManagerForExpression {
       return;
     }
 
+    // Build a replica set for O(1) lookup, then drop the registration map.
+    let replicaSet: Set<IExpressionEvaluateUnit> | undefined;
+    if (this._primaryToReplicas !== undefined) {
+      replicaSet = new Set();
+      for (const replicas of this._primaryToReplicas.values()) {
+        for (const r of replicas) {
+          replicaSet.add(r);
+        }
+      }
+    }
+    this._contextIndexToPrimary = undefined;
+
     const evaluateUnits = this._evaluateUnits;
     for (let i = 0; i < evaluateUnits.length; i++) {
-      const evaluateUnit = evaluateUnits[i];
-      evaluateUnit.watch(this._changeManager);
+      const unit = evaluateUnits[i];
+      if (replicaSet?.has(unit)) {
+        unit.watchAsReplica!(this._changeManager);
+      } else {
+        unit.watch(this._changeManager);
+      }
     }
 
     this.tryFlushQueue();
@@ -130,6 +178,17 @@ class EvaluateManagerForExpression implements IEvaluateManagerForExpression {
 
   private markDirty = (evaluateUnit: IExpressionEvaluateUnit) => {
     this._changedQueue.add(evaluateUnit);
+
+    // Fan out to replicas that share the same (context, index) as this primary unit.
+    const replicas = this._primaryToReplicas?.get(evaluateUnit);
+    if (replicas !== undefined) {
+      const newValue = evaluateUnit.value;
+      for (let i = 0; i < replicas.length; i++) {
+        replicas[i].applyChange!(newValue);
+        this._changedQueue.add(replicas[i]);
+      }
+    }
+
     this.tryFlushQueue();
   };
 
@@ -159,24 +218,45 @@ class EvaluateManagerForExpression implements IEvaluateManagerForExpression {
     }
 
     this._reevaluateScheduled = true;
-    this._expressionChangeTransactionManager.subscribeCommitted(() =>
-      this.commit(true),
-    );
+    this._expressionChangeTransactionManager.subscribeCommitted(this._onCommitted);
     this._expressionChangeTransactionManager.suspend();
+    this._expressionChangeTransactionManager.scheduleDirtyFlush(this);
+  }
 
-    queueMicrotask(() => {
-      this._reevaluateScheduled = false;
+  public flush(): void {
+    this._reevaluateScheduled = false;
 
-      for (const changed of this._changedQueue.values()) {
-        if (!changed.isCommitReady()) {
-          continue;
-        }
-
-        changed.commitChange();
-        this._changedQueue.delete(changed);
+    // Fast path: single dirty unit (most common case) — skip array allocation.
+    if (this._changedQueue.size === 1) {
+      const unit = this._changedQueue.values().next().value!;
+      if (unit.isCommitReady()) {
+        this._changedQueue.clear();
+        unit.prepareForBatchEvaluate?.();
+        unit.commitChange();
       }
       this._expressionChangeTransactionManager.continue();
-    });
+      return;
+    }
+
+    // Phase 1: collect ready units and register ancestor pending counts so that
+    // shared ancestor nodes wait for all dirty children before re-evaluating.
+    const readyUnits: IExpressionEvaluateUnit[] = [];
+    for (const changed of this._changedQueue.values()) {
+      if (!changed.isCommitReady()) {
+        continue;
+      }
+      readyUnits.push(changed);
+      changed.prepareForBatchEvaluate?.();
+      this._changedQueue.delete(changed);
+    }
+
+    // Phase 2: commit each unit — ancestors now evaluate only once all dirty
+    // children have propagated their new values.
+    for (let i = 0; i < readyUnits.length; i++) {
+      readyUnits[i].commitChange();
+    }
+
+    this._expressionChangeTransactionManager.continue();
   }
 
   private scheduleInitialize(): void {

@@ -2427,6 +2427,19 @@ function printVersionHelp() {
   console.log('  rsx --version');
 }
 
+function isHelpToken(value) {
+  return value === '-h' || value === '--help' || value === '-help';
+}
+
+function isVersionToken(value) {
+  return (
+    value === '-v' ||
+    value === '--version' ||
+    value === '-version' ||
+    value === 'version'
+  );
+}
+
 function printHelpFor(command, target) {
   if (
     !command ||
@@ -2510,20 +2523,17 @@ function logError(message) {
 
 function main() {
   const { positionals, flags } = parseArgs(process.argv);
-  const [command, target] = positionals;
-  const wantsVersion =
-    command === '--version' ||
-    command === '-version' ||
-    command === '-v' ||
-    command === 'version' ||
-    flags.version === true;
+  const [command, target, third] = positionals;
+  const wantsVersion = isVersionToken(command) || flags.version === true;
   const wantsGeneralHelp =
     !command ||
     command === 'help' ||
-    command === '--help' ||
-    command === '-help' ||
-    command === '-h';
+    isHelpToken(command);
   const wantsCommandHelp = flags.help === true;
+  const hasPositionalHelpToken = positionals.some((token, index) => {
+    return index > 0 && isHelpToken(token);
+  });
+  const resolvedHelpTarget = isHelpToken(target) ? third : target;
 
   if (command === 'help') {
     printHelpFor(target, positionals[2]);
@@ -2537,6 +2547,11 @@ function main() {
 
   if (wantsCommandHelp) {
     printHelpFor(command, target);
+    return;
+  }
+
+  if (hasPositionalHelpToken) {
+    printHelpFor(command, resolvedHelpTarget);
     return;
   }
 

@@ -12,9 +12,15 @@ export interface IExpressionChangeCommitHandler {
 
 export type IExpressionCommitListener = () => void;
 
+export interface IDirtyFlushable {
+  flush(): void;
+}
+
 export interface IExpressionChangeTransactionManager extends IDisposable {
   subscribeCommitted(listener: IExpressionCommitListener): () => void;
   suspend(): void;
   continue(): void;
   commit(): void;
+  /** Register a manager to be flushed in the next shared microtask. */
+  scheduleDirtyFlush(manager: IDirtyFlushable): void;
 }

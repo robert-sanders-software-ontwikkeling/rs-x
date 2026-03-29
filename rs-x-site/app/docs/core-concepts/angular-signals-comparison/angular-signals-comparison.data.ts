@@ -56,23 +56,23 @@ export type SameModelRow = {
 export const syncIdentifierRows: SignalsComparisonRow[] = [
   {
     bindings: 1000,
-    rsx:     { bindMs: 28.47,  singleUpdateMs: 0.0979, bulkUpdateMs: 6.22  },
-    angular: { bindMs: 0.74,   singleUpdateMs: 0.0121, bulkUpdateMs: 0.27  },
+    rsx:     { bindMs: 27.93,  singleUpdateMs: 0.1026, bulkUpdateMs: 5.52  },
+    angular: { bindMs: 0.72,   singleUpdateMs: 0.0106, bulkUpdateMs: 0.22  },
   },
   {
     bindings: 3000,
-    rsx:     { bindMs: 116.59, singleUpdateMs: 0.0745, bulkUpdateMs: 16.10 },
-    angular: { bindMs: 1.45,   singleUpdateMs: 0.0086, bulkUpdateMs: 0.96  },
+    rsx:     { bindMs: 97.11,  singleUpdateMs: 0.0715, bulkUpdateMs: 14.99 },
+    angular: { bindMs: 1.74,   singleUpdateMs: 0.0077, bulkUpdateMs: 0.93  },
   },
   {
     bindings: 5000,
-    rsx:     { bindMs: 184.08, singleUpdateMs: 0.0742, bulkUpdateMs: 27.51 },
-    angular: { bindMs: 3.36,   singleUpdateMs: 0.0111, bulkUpdateMs: 1.58  },
+    rsx:     { bindMs: 163.39, singleUpdateMs: 0.0687, bulkUpdateMs: 25.48 },
+    angular: { bindMs: 3.02,   singleUpdateMs: 0.0092, bulkUpdateMs: 1.62  },
   },
   {
     bindings: 10000,
-    rsx:     { bindMs: 352.96, singleUpdateMs: 0.0762, bulkUpdateMs: 53.39 },
-    angular: { bindMs: 4.92,   singleUpdateMs: 0.0115, bulkUpdateMs: 3.81  },
+    rsx:     { bindMs: 337.12, singleUpdateMs: 0.0724, bulkUpdateMs: 50.10 },
+    angular: { bindMs: 4.84,   singleUpdateMs: 0.0100, bulkUpdateMs: 3.83  },
   },
 ];
 
@@ -84,23 +84,23 @@ export const syncIdentifierRows: SignalsComparisonRow[] = [
 export const asyncIdentifierRows: SignalsComparisonRow[] = [
   {
     bindings: 1000,
-    rsx:     { bindMs: 32.43,  singleUpdateMs: 0.0502, bulkUpdateMs: 7.31  },
-    angular: { bindMs: 1.92,   singleUpdateMs: 0.0167, bulkUpdateMs: 0.95  },
+    rsx:     { bindMs: 31.75,  singleUpdateMs: 0.0505, bulkUpdateMs: 6.99  },
+    angular: { bindMs: 1.81,   singleUpdateMs: 0.0167, bulkUpdateMs: 1.42  },
   },
   {
     bindings: 3000,
-    rsx:     { bindMs: 128.84, singleUpdateMs: 0.0587, bulkUpdateMs: 20.96 },
-    angular: { bindMs: 3.51,   singleUpdateMs: 0.0123, bulkUpdateMs: 2.66  },
+    rsx:     { bindMs: 123.48, singleUpdateMs: 0.0571, bulkUpdateMs: 19.07 },
+    angular: { bindMs: 3.29,   singleUpdateMs: 0.0119, bulkUpdateMs: 3.09  },
   },
   {
     bindings: 5000,
-    rsx:     { bindMs: 223.56, singleUpdateMs: 0.0583, bulkUpdateMs: 33.29 },
-    angular: { bindMs: 5.96,   singleUpdateMs: 0.0112, bulkUpdateMs: 5.39  },
+    rsx:     { bindMs: 206.83, singleUpdateMs: 0.0602, bulkUpdateMs: 31.49 },
+    angular: { bindMs: 5.13,   singleUpdateMs: 0.0111, bulkUpdateMs: 5.62  },
   },
   {
     bindings: 10000,
-    rsx:     { bindMs: 458.86, singleUpdateMs: 0.0633, bulkUpdateMs: 63.91 },
-    angular: { bindMs: 15.11,  singleUpdateMs: 0.0120, bulkUpdateMs: 11.59 },
+    rsx:     { bindMs: 435.31, singleUpdateMs: 0.0597, bulkUpdateMs: 59.46 },
+    angular: { bindMs: 13.66,  singleUpdateMs: 0.0120, bulkUpdateMs: 6.44  },
   },
 ];
 
@@ -118,9 +118,6 @@ export const asyncIdentifierRows: SignalsComparisonRow[] = [
 export const sameModelExpressionsRow: SameModelRow = {
   bindings: 1000,
   bulkRounds: 10,
-  // bindMs = create+init only (dispose measured separately).
-  // Splitting these apart revealed the real bind cost is ~480ms, not 1800ms.
-  // The 1800ms figure seen in earlier runs included ~1450ms of O(N²) dispose.
-  rsx:     { bindMs: 483, disposeMs: 1450, singleUpdateMs: 191, bulkUpdateMs: 1883 },
-  angular: { bindMs: 0.70, singleUpdateMs: 1.1, bulkUpdateMs: 10.0 },
+  rsx:     { bindMs: 397, disposeMs: 36, singleUpdateMs: 118, bulkUpdateMs: 1067 },
+  angular: { bindMs: 0.63, singleUpdateMs: 1.099, bulkUpdateMs: 12.08 },
 };

@@ -41,8 +41,6 @@ const arrayCollectionCode = dedent`
 `;
 
 const arrayCollectionPlaygroundScript = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const model = {
@@ -88,8 +86,6 @@ const mapCollectionCode = dedent`
 `;
 
 const mapCollectionPlaygroundScript = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const model = {
@@ -135,8 +131,6 @@ const setCollectionCode = dedent`
 `;
 
 const setCollectionPlaygroundScript = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const model = {
@@ -195,8 +189,6 @@ const arrayBasicsCode = dedent`
 `;
 
 const arrayBasicsPlaygroundScript = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const model = {
@@ -233,7 +225,7 @@ const arrayBasicsPlaygroundScript = dedent`
 const arraySpecificCode = dedent`
   import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
   import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
-  import { IndexWatchRule } from '@rs-x/state-manager';
+  import type { IIndexWatchRule } from '@rs-x/state-manager';
 
   await InjectionContainer.load(RsXExpressionParserModule);
 
@@ -244,21 +236,27 @@ const arraySpecificCode = dedent`
     ],
   };
 
-  const watchRule = new IndexWatchRule(model, (index, target, rootModel) => {
-    if (target === rootModel && index === 'cart') {
-      return true;
-    }
+  const watchRule: IIndexWatchRule = {
+    id: 'collections-rule',
+    context: model,
+    test(index, target) {
+      const rootModel = this.context as typeof model;
+      if (target === rootModel && index === 'cart') {
+        return true;
+      }
 
-    if (Array.isArray(target)) {
-      return Number(index) === 0;
-    }
+      if (Array.isArray(target)) {
+        return Number(index) === 0;
+      }
 
-    if (target === rootModel.cart[0]) {
-      return String(index) === 'qty';
-    }
+      if (target === rootModel.cart[0]) {
+        return String(index) === 'qty';
+      }
 
-    return false;
-  });
+      return false;
+    },
+    dispose() {},
+  };
 
   // Recursive leaf watching (enabled by rule)
   const firstItemExpression = rsx('cart[0]')(model, watchRule);
@@ -281,9 +279,6 @@ const arraySpecificCode = dedent`
 `;
 
 const arraySpecificPlaygroundScript = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
-  const { IndexWatchRule } = api;
   const emptyFunction = () => {};
 
   const model = {
@@ -293,21 +288,27 @@ const arraySpecificPlaygroundScript = dedent`
     ],
   };
 
-  const watchRule = new IndexWatchRule(model, (index, target, rootModel) => {
-    if (target === rootModel && index === 'cart') {
-      return true;
-    }
+  const watchRule = {
+    id: 'collections-rule',
+    context: model,
+    test(index, target) {
+      const rootModel = this.context;
+      if (target === rootModel && index === 'cart') {
+        return true;
+      }
 
-    if (Array.isArray(target)) {
-      return Number(index) === 0;
-    }
+      if (Array.isArray(target)) {
+        return Number(index) === 0;
+      }
 
-    if (target === rootModel.cart[0]) {
-      return String(index) === 'qty';
-    }
+      if (target === rootModel.cart[0]) {
+        return String(index) === 'qty';
+      }
 
-    return false;
-  });
+      return false;
+    },
+    dispose() {},
+  };
 
   // Recursive leaf watching (enabled by rule)
   const firstItemExpression = rsx('cart[0]')(model, watchRule);
@@ -368,8 +369,6 @@ const mapBasicsCode = dedent`
 `;
 
 const mapBasicsPlaygroundScript = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const model = {
@@ -407,7 +406,7 @@ const mapBasicsPlaygroundScript = dedent`
 const mapSpecificCode = dedent`
   import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
   import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
-  import { IndexWatchRule } from '@rs-x/state-manager';
+  import type { IIndexWatchRule } from '@rs-x/state-manager';
 
   await InjectionContainer.load(RsXExpressionParserModule);
 
@@ -421,21 +420,27 @@ const mapSpecificCode = dedent`
     ]),
   };
 
-  const watchRule = new IndexWatchRule(model, (index, target, rootModel) => {
-    if (target === rootModel && index === 'roles') {
-      return true;
-    }
+  const watchRule: IIndexWatchRule = {
+    id: 'collections-rule',
+    context: model,
+    test(index, target) {
+      const rootModel = this.context as typeof model;
+      if (target === rootModel && index === 'roles') {
+        return true;
+      }
 
-    if (target instanceof Map) {
-      return String(index) === 'admin';
-    }
+      if (target instanceof Map) {
+        return String(index) === 'admin';
+      }
 
-    if (target === rootModel.roles.get('admin')) {
-      return String(index) === 'enabled';
-    }
+      if (target === rootModel.roles.get('admin')) {
+        return String(index) === 'enabled';
+      }
 
-    return false;
-  });
+      return false;
+    },
+    dispose() {},
+  };
 
   // Recursive leaf watching (enabled by rule)
   const adminExpression = rsx('roles["admin"]')(model, watchRule);
@@ -458,9 +463,6 @@ const mapSpecificCode = dedent`
 `;
 
 const mapSpecificPlaygroundScript = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
-  const { IndexWatchRule } = api;
   const emptyFunction = () => {};
 
   const admin = { enabled: true, note: 'tracked leaf' };
@@ -473,21 +475,27 @@ const mapSpecificPlaygroundScript = dedent`
     ]),
   };
 
-  const watchRule = new IndexWatchRule(model, (index, target, rootModel) => {
-    if (target === rootModel && index === 'roles') {
-      return true;
-    }
+  const watchRule = {
+    id: 'collections-rule',
+    context: model,
+    test(index, target) {
+      const rootModel = this.context;
+      if (target === rootModel && index === 'roles') {
+        return true;
+      }
 
-    if (target instanceof Map) {
-      return String(index) === 'admin';
-    }
+      if (target instanceof Map) {
+        return String(index) === 'admin';
+      }
 
-    if (target === rootModel.roles.get('admin')) {
-      return String(index) === 'enabled';
-    }
+      if (target === rootModel.roles.get('admin')) {
+        return String(index) === 'enabled';
+      }
 
-    return false;
-  });
+      return false;
+    },
+    dispose() {},
+  };
 
   // Recursive leaf watching (enabled by rule)
   const adminExpression = rsx('roles["admin"]')(model, watchRule);
@@ -546,8 +554,6 @@ const setBasicsCode = dedent`
 `;
 
 const setBasicsPlaygroundScript = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const taskA = { id: 'A', done: false, note: 'leaf object' };
@@ -583,7 +589,7 @@ const setBasicsPlaygroundScript = dedent`
 const setSpecificCode = dedent`
   import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
   import { rsx, RsXExpressionParserModule } from '@rs-x/expression-parser';
-  import { IndexWatchRule } from '@rs-x/state-manager';
+  import type { IIndexWatchRule } from '@rs-x/state-manager';
 
   await InjectionContainer.load(RsXExpressionParserModule);
 
@@ -607,21 +613,27 @@ const setSpecificCode = dedent`
     );
   };
 
-  const watchRule = new IndexWatchRule(model, (index, target, rootModel) => {
-    if (target === rootModel && index === 'tasks') {
-      return true;
-    }
+  const watchRule: IIndexWatchRule = {
+    id: 'collections-rule',
+    context: model,
+    test(index, target) {
+      const rootModel = this.context as typeof model;
+      if (target === rootModel && index === 'tasks') {
+        return true;
+      }
 
-    if (target instanceof Set) {
-      return isTrackedTask(index, rootModel.trackedTask);
-    }
+      if (target instanceof Set) {
+        return isTrackedTask(index, rootModel.trackedTask);
+      }
 
-    if (isTrackedTask(target, rootModel.trackedTask)) {
-      return String(index) === 'done';
-    }
+      if (isTrackedTask(target, rootModel.trackedTask)) {
+        return String(index) === 'done';
+      }
 
-    return false;
-  });
+      return false;
+    },
+    dispose() {},
+  };
 
   // Recursive leaf watching (enabled by rule)
   const trackedTaskExpression = rsx('tasks[trackedTask]')(model, watchRule);
@@ -644,9 +656,6 @@ const setSpecificCode = dedent`
 `;
 
 const setSpecificPlaygroundScript = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
-  const { IndexWatchRule } = api;
   const emptyFunction = () => {};
 
   const taskA = { id: 'A', done: false, note: 'tracked member' };
@@ -669,21 +678,27 @@ const setSpecificPlaygroundScript = dedent`
     );
   };
 
-  const watchRule = new IndexWatchRule(model, (index, target, rootModel) => {
-    if (target === rootModel && index === 'tasks') {
-      return true;
-    }
+  const watchRule = {
+    id: 'collections-rule',
+    context: model,
+    test(index, target) {
+      const rootModel = this.context;
+      if (target === rootModel && index === 'tasks') {
+        return true;
+      }
 
-    if (target instanceof Set) {
-      return isTrackedTask(index, rootModel.trackedTask);
-    }
+      if (target instanceof Set) {
+        return isTrackedTask(index, rootModel.trackedTask);
+      }
 
-    if (isTrackedTask(target, rootModel.trackedTask)) {
-      return String(index) === 'done';
-    }
+      if (isTrackedTask(target, rootModel.trackedTask)) {
+        return String(index) === 'done';
+      }
 
-    return false;
-  });
+      return false;
+    },
+    dispose() {},
+  };
 
   // Recursive leaf watching (enabled by rule)
   const trackedTaskExpression = rsx('tasks[trackedTask]')(model, watchRule);
@@ -740,9 +755,9 @@ const collectionItemExamples: CollectionExample[] = [
     playgroundScript: arrayBasicsPlaygroundScript,
   },
   {
-    title: 'Array: recursive (with IndexWatchRule)',
+    title: 'Array: recursive (with IIndexWatchRule)',
     description:
-      'This example turns on recursive leaf watching for cart[0].qty by passing an IndexWatchRule.',
+      'This example turns on recursive leaf watching for cart[0].qty by passing an IIndexWatchRule.',
     code: arraySpecificCode,
     playgroundScript: arraySpecificPlaygroundScript,
   },
@@ -754,9 +769,9 @@ const collectionItemExamples: CollectionExample[] = [
     playgroundScript: mapBasicsPlaygroundScript,
   },
   {
-    title: 'Map: recursive (with IndexWatchRule)',
+    title: 'Map: recursive (with IIndexWatchRule)',
     description:
-      'This example keeps watching the admin key branch recursively and reacts to the enabled property using IndexWatchRule.',
+      'This example keeps watching the admin key branch recursively and reacts to the enabled property using IIndexWatchRule.',
     code: mapSpecificCode,
     playgroundScript: mapSpecificPlaygroundScript,
   },
@@ -768,9 +783,9 @@ const collectionItemExamples: CollectionExample[] = [
     playgroundScript: setBasicsPlaygroundScript,
   },
   {
-    title: 'Set: recursive (with IndexWatchRule)',
+    title: 'Set: recursive (with IIndexWatchRule)',
     description:
-      'This example enables recursive watching for one member and one nested property via IndexWatchRule.',
+      'This example enables recursive watching for one member and one nested property via IIndexWatchRule.',
     code: setSpecificCode,
     playgroundScript: setSpecificPlaygroundScript,
   },
@@ -815,7 +830,7 @@ export default function CollectionsDocsPage() {
             set, add, delete, and clear. Selected entry expressions react to
             that specific index/key/member. Nested properties inside the
             selected entry are only tracked when you pass an{' '}
-            <span className="codeInline">IndexWatchRule</span>.
+            <span className="codeInline">IIndexWatchRule</span>.
           </p>
         </article>
 
@@ -844,7 +859,7 @@ export default function CollectionsDocsPage() {
               one selected entry.
             </li>
             <li>
-              Use <span className="codeInline">IndexWatchRule</span> when you
+              Use <span className="codeInline">IIndexWatchRule</span> when you
               also need nested property tracking inside that selected entry.
             </li>
           </ul>
@@ -883,7 +898,7 @@ export default function CollectionsDocsPage() {
             Use an item/key/member expression when you need to observe one
             selected entry, not the whole collection. This keeps updates focused
             on the selected branch and avoids reacting to unrelated entries. Add
-            an <span className="codeInline">IndexWatchRule</span> when the
+            an <span className="codeInline">IIndexWatchRule</span> when the
             selected entry must also react to nested fields (for example{' '}
             <span className="codeInline">done</span> or{' '}
             <span className="codeInline">qty</span>).
@@ -898,7 +913,7 @@ export default function CollectionsDocsPage() {
               matters.
             </li>
             <li>
-              Add <span className="codeInline">IndexWatchRule</span> only when
+              Add <span className="codeInline">IIndexWatchRule</span> only when
               nested fields inside that selected entry must trigger updates.
             </li>
           </ul>
@@ -911,7 +926,7 @@ export default function CollectionsDocsPage() {
               value: 'entry',
               label: 'Watch collection item',
               description:
-                'These examples watch one selected entry path and show when nested changes require IndexWatchRule.',
+                'These examples watch one selected entry path and show when nested changes require IIndexWatchRule.',
             },
             {
               value: 'collection',

@@ -35,8 +35,8 @@ const stripPrintValueBinding = (script: string): string => {
 
 function buildProjectSource(script: string): ProjectSource {
   const hasRxjsAliasBinding =
-    /^\s*(const|let|var)\s+\$\s*=\s*api\.rxjs\s*;?\s*$/m.test(script);
-  const usesStateManagerApi = /api\.stateManager\b/.test(script);
+    /^\s*(const|let|var)\s+\$\s*=\s*(?:api\.)?rxjs\s*;?\s*$/m.test(script);
+  const usesStateManagerApi = /(?:\bapi\.)?stateManager\b/.test(script);
 
   let normalized = stripRsxBinding(script);
   normalized = stripWaitForEventBinding(normalized);
@@ -52,7 +52,15 @@ function buildProjectSource(script: string): ProjectSource {
     'InjectionContainer.get<IStateManager>(RsXStateManagerInjectionTokens.IStateManager)',
   );
   normalized = normalized.replace(
+    /(?<![\w$.])stateManager\b/g,
+    'InjectionContainer.get<IStateManager>(RsXStateManagerInjectionTokens.IStateManager)',
+  );
+  normalized = normalized.replace(
     /api\.ExpressionChangeTransactionManager\b/g,
+    'InjectionContainer.get<IExpressionChangeTransactionManager>(RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager)',
+  );
+  normalized = normalized.replace(
+    /(?<![\w$.])ExpressionChangeTransactionManager\b/g,
     'InjectionContainer.get<IExpressionChangeTransactionManager>(RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager)',
   );
 
@@ -61,7 +69,7 @@ function buildProjectSource(script: string): ProjectSource {
 
   if (hasRxjsAliasBinding) {
     normalized = normalized.replace(
-      /^\s*(const|let|var)\s+\$\s*=\s*api\.rxjs\s*;?\s*$/gm,
+      /^\s*(const|let|var)\s+\$\s*=\s*(?:api\.)?rxjs\s*;?\s*$/gm,
       '',
     );
     normalized = normalized.replace(/api\.rxjs\b/g, '$');
@@ -74,9 +82,9 @@ function buildProjectSource(script: string): ProjectSource {
   } else {
     const destructuredMembers = new Set<string>();
 
-    // Strip `const { interval, map } = api.rxjs;` lines, collecting member names
+    // Strip `const { interval, map } = rxjs;` or `... = api.rxjs;` lines, collecting member names
     normalized = normalized.replace(
-      /^\s*(?:const|let|var)\s+\{([^}]+)\}\s*=\s*api\.rxjs\s*;?\s*$/gm,
+      /^\s*(?:const|let|var)\s+\{([^}]+)\}\s*=\s*(?:api\.)?rxjs\s*;?\s*$/gm,
       (_full, members: string) => {
         members
           .split(',')
@@ -90,7 +98,7 @@ function buildProjectSource(script: string): ProjectSource {
     const directMembers = new Set<string>(destructuredMembers);
 
     normalized = normalized.replace(
-      /api\.rxjs\.([A-Za-z_$][\w$]*)/g,
+      /(?:api\.)?rxjs\.([A-Za-z_$][\w$]*)/g,
       (_full, member: string) => {
         directMembers.add(member);
         return member;

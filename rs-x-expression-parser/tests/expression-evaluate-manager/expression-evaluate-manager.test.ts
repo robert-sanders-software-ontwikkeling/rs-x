@@ -37,6 +37,7 @@ class EvaluateUnitMock implements IExpressionEvaluateUnit {
 describe('ExpressionEvaluateManager', () => {
   const setup = () => {
     const committedListeners: Array<() => void> = [];
+    const pendingFlushables: Array<{ flush(): void }> = [];
     const transactionManager = {
       subscribeCommitted: jest.fn((listener: () => void) => {
         committedListeners.push(listener);
@@ -48,6 +49,13 @@ describe('ExpressionEvaluateManager', () => {
       }),
       commit: jest.fn(),
       dispose: jest.fn(),
+      scheduleDirtyFlush: jest.fn((manager: { flush(): void }) => {
+        pendingFlushables.push(manager);
+        queueMicrotask(() => {
+          const toFlush = pendingFlushables.splice(0);
+          toFlush.forEach((m) => m.flush());
+        });
+      }),
     } as unknown as IExpressionChangeTransactionManager;
 
     const manager = new ExpressionEvaluateManager(transactionManager);

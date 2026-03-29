@@ -9,6 +9,25 @@ export interface StateManagerApiItem {
 
 export const stateManagerApiItems: StateManagerApiItem[] = [
   {
+    symbol: 'AbstractObserver',
+    kind: 'abstract class',
+    module: 'abstract-observer',
+    description:
+      'Base observer implementation that manages value snapshots, change emission, and lifecycle disposal.',
+    sourcePath: 'abstract-observer.ts',
+    signature: 'export abstract class AbstractObserver<',
+  },
+  {
+    symbol: 'AbstractObjectObserverProxyPairFactory',
+    kind: 'abstract class',
+    module: 'object-observer/factories',
+    description:
+      'Base class for object observer/proxy pair factories with shared wiring and observer-group integration.',
+    sourcePath:
+      'object-observer/factories/abstract-object-observer-proxy-pair.factory.ts',
+    signature: 'export abstract class AbstractObjectObserverProxyPairFactory<',
+  },
+  {
     symbol: 'ArrayObserverProxyPairFactory',
     kind: 'class',
     module: 'object-observer/factories',
@@ -219,6 +238,15 @@ export const stateManagerApiItems: StateManagerApiItem[] = [
     signature: 'export interface IContextChanged {',
   },
   {
+    symbol: 'IChangeCycleIndex',
+    kind: 'interface',
+    module: 'state-manager',
+    description:
+      'Cycle payload emitted by start/end change-cycle streams, identifying `(context, index)` being processed.',
+    sourcePath: 'state-manager/state-manager.interface.ts',
+    signature: 'export interface IChangeCycleIndex {',
+  },
+  {
     symbol: 'IDateObserverProxyPair',
     kind: 'type',
     module: 'proxies/date-proxy',
@@ -321,6 +349,15 @@ export const stateManagerApiItems: StateManagerApiItem[] = [
     signature: 'export interface IGroupedChangeSubscriptionsForContextManager<',
   },
   {
+    symbol: 'GroupedChangeSubscriptionsForContextManager',
+    kind: 'abstract class',
+    module: 'grouped-change-subscriptions-for-context-manager',
+    description:
+      'Base grouped subscription manager that coordinates observers and subscription data per context.',
+    sourcePath: 'grouped-change-subscriptions-for-context-manager.ts',
+    signature: 'export abstract class GroupedChangeSubscriptionsForContextManager<',
+  },
+  {
     symbol: 'IIndexChangeSubscriptionsForContextManager',
     kind: 'type',
     module: 'property-observer/factories/indexed-value-observer-proxy-pair',
@@ -379,11 +416,20 @@ export const stateManagerApiItems: StateManagerApiItem[] = [
   {
     symbol: 'IIndexWatchRule',
     kind: 'interface',
-    module: 'index-watch-rule-registry',
+    module: 'index-watch-rule',
     description:
       'Predicate contract for deciding whether nested indexes should be watched.',
     sourcePath: 'index-watch-rule/index-watch-rule.interface.ts',
     signature: 'export interface IIndexWatchRule {',
+  },
+  {
+    symbol: 'IIndexWatchRuleFactory',
+    kind: 'interface',
+    module: 'index-watch-rule',
+    description:
+      'Factory contract for creating context/index-specific watch rules.',
+    sourcePath: 'index-watch-rule/index-watch-rule.factory.interface.ts',
+    signature: 'export interface IIndexWatchRuleFactory {',
   },
   {
     symbol: 'IMapObserverProxyPair',
@@ -449,13 +495,24 @@ export const stateManagerApiItems: StateManagerApiItem[] = [
     signature: 'export class IndexChangeSubscriptionManager<',
   },
   {
-    symbol: 'IndexWatchRule',
-    kind: 'class',
-    module: 'index-watch-rule-registry',
+    symbol: 'IndexObserverProxyPairFactory',
+    kind: 'abstract class',
+    module: 'property-observer/factories/indexed-value-observer-proxy-pair',
     description:
-      'Context-aware rule wrapper used to enable recursive branch watching for selected indexes.',
-    sourcePath: 'index-watch-rule-registry/index-watch-rule.ts',
-    signature: 'export class IndexWatchRule implements IIndexWatchRule {',
+      'Base class for index-based observer/proxy factories used by collection and property observers.',
+    sourcePath:
+      'property-observer/factories/indexed-value-observer-proxy-pair/indexed-value-observer-proxy-pair.factory.ts',
+    signature: 'export abstract class IndexObserverProxyPairFactory<',
+  },
+  {
+    symbol: 'IndexWatchRuleFactory',
+    kind: 'class',
+    module: 'index-watch-rule',
+    description:
+      'Default factory that creates watch rules for context/index combinations.',
+    sourcePath: 'index-watch-rule/index-watch-rule.factory.ts',
+    signature:
+      'export class IndexWatchRuleFactory implements IIndexWatchRuleFactory {',
   },
   {
     symbol: 'IObjectChange',
@@ -811,9 +868,73 @@ export const stateManagerApiItems: StateManagerApiItem[] = [
     kind: 'interface',
     module: 'state-manager',
     description:
-      'Watch options for ownerId and recursive indexWatchRule configuration.',
+      'Watch options for ownerId, recursive indexWatchRule configuration, and initial emit suppression.',
     sourcePath: 'state-manager/state-manager.interface.ts',
     signature: 'export interface IStateOptions {',
+  },
+  {
+    symbol: 'IWatchCallbacks',
+    kind: 'interface',
+    module: 'state-manager/watch-factory',
+    description:
+      'Zero-allocation callback bundle for change, context-change, and cycle events.',
+    sourcePath: 'state-manager/watch-factory/watch-factory.ts',
+    signature: 'export interface IWatchCallbacks {',
+  },
+  {
+    symbol: 'IWatch',
+    kind: 'interface',
+    module: 'state-manager/watch-factory',
+    description:
+      'Reference-counted watch handle with observables and keyed listener registration.',
+    sourcePath: 'state-manager/watch-factory/watch-factory.ts',
+    signature: 'export interface IWatch extends IDisposable {',
+  },
+  {
+    symbol: 'IWatchDispableOwner',
+    kind: 'interface',
+    module: 'state-manager/watch-factory',
+    description:
+      'Disposable-owner contract used internally by watch instances.',
+    sourcePath: 'state-manager/watch-factory/watch-factory.ts',
+    signature: 'export interface IWatchDispableOwner extends IDisposableOwner {}',
+  },
+  {
+    symbol: 'IWatchId',
+    kind: 'interface',
+    module: 'state-manager/watch-factory',
+    description:
+      'Identity key for a watch registration `(context, index)`.',
+    sourcePath: 'state-manager/watch-factory/watch-factory.ts',
+    signature: 'export interface IWatchId {',
+  },
+  {
+    symbol: 'IWatchData',
+    kind: 'interface',
+    module: 'state-manager/watch-factory',
+    description:
+      'Watch registration payload containing identity and state options.',
+    sourcePath: 'state-manager/watch-factory/watch-factory.ts',
+    signature: 'export interface IWatchData extends IWatchId {',
+  },
+  {
+    symbol: 'IWatchFactory',
+    kind: 'type',
+    module: 'state-manager/watch-factory',
+    description:
+      'Keyed watch factory contract used by runtime services.',
+    sourcePath: 'state-manager/watch-factory/watch-factory.ts',
+    signature: 'export type IWatchFactory = IKeyedInstanceFactory<',
+  },
+  {
+    symbol: 'WatchFactory',
+    kind: 'class',
+    module: 'state-manager/watch-factory',
+    description:
+      'Creates and reuses reference-counted watch instances keyed by context/index/watch-rule identity.',
+    sourcePath: 'state-manager/watch-factory/watch-factory.ts',
+    signature:
+      'export class WatchFactory extends GuidKeyedInstanceFactory<IWatchData, IWatch, IWatchId> implements IWatchFactory',
   },
   {
     symbol: 'ISubscriptionIdInfo',
@@ -1046,8 +1167,8 @@ export const stateManagerApiItems: StateManagerApiItem[] = [
   {
     symbol: 'ShouldWatchIndexPredicate',
     kind: 'type',
-    module: 'index-watch-rule-registry',
-    description: 'Type exported from index-watch-rule-registry.',
+    module: 'index-watch-rule',
+    description: 'Type exported from index-watch-rule.',
     sourcePath: 'index-watch-rule/index-watch-rule.interface.ts',
     signature: 'export type ShouldWatchIndexPredicate = (',
   },
@@ -1092,10 +1213,10 @@ export const stateManagerApiItems: StateManagerApiItem[] = [
   {
     symbol: 'watchIndexRecursiveRule',
     kind: 'const',
-    module: 'index-watch-rule-registry',
+    module: 'index-watch-rule',
     description:
       'Default recursive watch rule that accepts every nested index.',
-    sourcePath: 'index-watch-rule-registry/index-watch-rule.ts',
-    signature: 'export const watchIndexRecursiveRule = new IndexWatchRule(',
+    sourcePath: 'index-watch-rule/watch-index-recursive-rule.ts',
+    signature: 'export const watchIndexRecursiveRule: IIndexWatchRule = {',
   },
 ];

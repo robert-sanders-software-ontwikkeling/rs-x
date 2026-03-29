@@ -66,8 +66,7 @@ async function evaluateScript(scriptBody: string): Promise<EvalResult> {
 
           Example:
 
-          const $ = api.rxjs;
-          const rsx = api.rsx;
+          const $ = rxjs;
           cont model = {
             a: 10, 
             b: $.of(20)
@@ -90,8 +89,7 @@ const editorPlaceholder = dedent`
   // You should return a rs-x expression
   // For example:
 
-  const $ = api.rxjs;
-  const rsx = api.rsx;
+  const $ = rxjs;
   cont model = {
     a: 10, 
     b: $.of(20)

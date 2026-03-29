@@ -49,7 +49,7 @@ const OBSERVATION_ROWS: ObservationRow[] = [
     mechanism: 'Patching',
     isAsync: false,
     detection:
-      'Property writes hit patched descriptors and emit changes; with IndexWatchRule, matching nested members are observed recursively.',
+      'Property writes hit patched descriptors and emit changes; with IIndexWatchRule, matching nested members are observed recursively.',
   },
   {
     valueType: 'Array',
@@ -57,7 +57,7 @@ const OBSERVATION_ROWS: ObservationRow[] = [
     mechanism: 'Proxy',
     isAsync: false,
     detection:
-      'Array mutations emit index-level changes; with IndexWatchRule, matching items are observed recursively.',
+      'Array mutations emit index-level changes; with IIndexWatchRule, matching items are observed recursively.',
   },
   {
     valueType: 'Map',
@@ -65,7 +65,7 @@ const OBSERVATION_ROWS: ObservationRow[] = [
     mechanism: 'Proxy',
     isAsync: false,
     detection:
-      'Map mutations emit key-level changes; with IndexWatchRule, matching entry values are observed recursively.',
+      'Map mutations emit key-level changes; with IIndexWatchRule, matching entry values are observed recursively.',
   },
   {
     valueType: 'Set',
@@ -73,7 +73,7 @@ const OBSERVATION_ROWS: ObservationRow[] = [
     mechanism: 'Proxy',
     isAsync: false,
     detection:
-      'Set membership mutations emit member-level changes; with IndexWatchRule, matching members are observed recursively.',
+      'Set membership mutations emit member-level changes; with IIndexWatchRule, matching members are observed recursively.',
   },
   {
     valueType: 'Date',
@@ -81,7 +81,7 @@ const OBSERVATION_ROWS: ObservationRow[] = [
     mechanism: 'Proxy',
     isAsync: false,
     detection:
-      'Date setter calls emit date-part changes; with IndexWatchRule, only matching date properties are emitted.',
+      'Date setter calls emit date-part changes; with IIndexWatchRule, only matching date properties are emitted.',
   },
   {
     valueType: 'Expression (AbstractExpression)',

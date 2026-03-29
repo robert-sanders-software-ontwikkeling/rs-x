@@ -83,8 +83,7 @@ const firstWorkingExampleCode = dedent`
 `;
 
 const playgroundExampleScript = dedent`
-  const rsx = api.rsx;
-  const { interval, map } = api.rxjs;
+  const { interval, map } = rxjs;
 
   const model = {
     a: 10,
@@ -134,7 +133,6 @@ const nestedExampleCode = dedent`
 `;
 
 const nestedPlaygroundScript = dedent`
-  const rsx = api.rsx;
 
   const model = {
     price: 100,

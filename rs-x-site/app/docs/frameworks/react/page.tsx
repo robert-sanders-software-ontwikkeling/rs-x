@@ -75,7 +75,14 @@ const useRsxExpressionLeafWatchCode = dedent`
   };
 
   // Watch only index 0 — the component ignores changes to other indices
-  const watchFirstOnly: IIndexWatchRule = { indices: [0] };
+  const watchFirstOnly: IIndexWatchRule = {
+    id: 'first-index-only',
+    context: null,
+    test(index, target) {
+      return Array.isArray(target) && index === 0;
+    },
+    dispose() {},
+  };
 
   function FirstItem() {
     const first = useRsxExpression<string>('items', {

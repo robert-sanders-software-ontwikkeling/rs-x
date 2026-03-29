@@ -52,7 +52,7 @@ export interface IStateManager {
     listener: IStateEventListener,
   ): () => void;
   releaseState(
-    oontext: unknown,
+    context: unknown,
     index: unknown,
     indexWatchRule?: IIndexWatchRule,
   ): void;

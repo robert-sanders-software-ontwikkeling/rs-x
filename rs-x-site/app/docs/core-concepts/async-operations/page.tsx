@@ -51,7 +51,6 @@ const asyncPromiseExampleCode = dedent`
 `;
 
 const asyncPromisePlaygroundScript = dedent`
-  const rsx = api.rsx;
 
   const model = {
     a: 10,
@@ -135,8 +134,7 @@ const asyncObservableExampleCode = dedent`
 `;
 
 const asyncObservablePlaygroundScript = dedent`
-  const $ = api.rxjs;
-  const rsx = api.rsx;
+  const $ = rxjs;
 
   const model = {
     a: 10,
@@ -230,7 +228,6 @@ const asyncExpressionValueExampleCode = dedent`
 `;
 
 const asyncExpressionValuePlaygroundScript = dedent`
-  const rsx = api.rsx;
 
   const partialModel = {
     base: 10,

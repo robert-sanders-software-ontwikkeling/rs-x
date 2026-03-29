@@ -1,4 +1,4 @@
-import { JsEspreeExpressionParser } from '@rs-x/expression-parser';
+import { JsExpressionParser } from '@rs-x/expression-parser';
 
 export type CompilerDiagnosticCategory = 'semantic' | 'syntax' | 'unsupported';
 
@@ -8,7 +8,7 @@ export interface ICompilerDiagnostic {
   readonly token?: string;
 }
 
-const parser = new JsEspreeExpressionParser();
+const parser = new JsExpressionParser();
 
 const trailingOperators = [
   'instanceof',

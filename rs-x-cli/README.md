@@ -2,6 +2,18 @@
 
 Command line installer for RS-X developer tooling.
 
+## Postinstall behavior
+
+When `@rs-x/cli` is installed, it attempts to install the VS Code extension
+automatically if the `code` CLI is available:
+- from the bundled local `.vsix` included in the package.
+
+Disable this behavior with:
+
+```bash
+RSX_SKIP_VSCODE_EXTENSION_INSTALL=true
+```
+
 ## Commands
 
 - `rsx doctor`

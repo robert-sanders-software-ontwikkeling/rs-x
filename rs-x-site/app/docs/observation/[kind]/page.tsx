@@ -1134,7 +1134,7 @@ const OBSERVATION_DOCS: Record<ObservationKind, ObservationDoc> = {
       'DateProxyFactory extends GuidKeyedInstanceFactory and groups by (date object + indexWatchRule), so one Date can have multiple scoped observers.',
       'DateProxy wraps setter methods (setFullYear, setMonth, setTime, etc.) and compares timestamp before/after mutation.',
       'When indexWatchRule is set, DateProxy emits only changed date properties that pass the watch rule.',
-      'DatePropertyObserverManager builds per-property observers backed by DateProxy + IndexWatchRule.',
+      'DatePropertyObserverManager builds per-property observers backed by DateProxy + IIndexWatchRule.',
       'Dispose unregisters date proxies and unsubscribes property observers safely.',
     ],
     steps: [
@@ -1333,14 +1333,18 @@ const OBSERVATION_DOCS: Record<ObservationKind, ObservationDoc> = {
         title: 'Step 4: watch one DateProperty value',
         subSteps: [
           {
-            title: 'Property-specific IndexWatchRule',
+            title: 'Property-specific IIndexWatchRule',
             description:
               'DatePropertyObserverManager creates a rule that matches one property on one Date instance.',
             code: dedent`
-              const indexWatchPredicate = (targetIndex, target, context) =>
-                targetIndex === index && target === context;
-
-              const indexWatchRule = new IndexWatchRule(this._date, indexWatchPredicate);
+              const indexWatchRule: IIndexWatchRule = {
+                id: 'date-property-rule',
+                context: this._date,
+                test(targetIndex, target) {
+                  return targetIndex === index && target === this.context;
+                },
+                dispose() {},
+              };
               const dateObserver = this._dateProxyFactory.create({
                 date: this._date,
                 indexWatchRule,

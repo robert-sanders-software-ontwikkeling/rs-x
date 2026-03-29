@@ -48,6 +48,7 @@ export abstract class AbstractExpression<
   private _value: T | undefined;
   private _oldValue: unknown;
   private _isDirty = false;
+  private _pendingDirtyCount = 0;
 
   private static readonly _EMPTY_CHILDREN: AbstractExpression[] = [];
 
@@ -313,9 +314,6 @@ export abstract class AbstractExpression<
   }
 
   protected canEvaluate(): boolean {
-    if (this._parent) {
-      return this._parent.canEvaluate();
-    }
     return true;
   }
 
@@ -323,9 +321,41 @@ export abstract class AbstractExpression<
     return this.canEvaluate() ? this.evaluateBottomToTop() : false;
   };
 
+  /**
+   * Walk from this node up to the root, incrementing each ancestor's
+   * `_pendingDirtyCount` by 1. If an ancestor's count was already > 0
+   * its parent is already registered — stop early to avoid double-counting.
+   * Used by batch-aware evaluate units before committing so that shared
+   * ancestor nodes wait for all dirty children before re-evaluating.
+   */
+  protected incrementAncestorPendingCounts(): void {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    let node: AbstractExpression = this;
+    while (node._parent !== undefined) {
+      const parent = node._parent as AbstractExpression;
+      parent._pendingDirtyCount++;
+      if (parent._pendingDirtyCount > 1) {
+        // Parent is already on a dirty path; its own parent is already counted.
+        break;
+      }
+      node = parent;
+    }
+  }
+
   protected evaluateBottomToTop(): boolean {
     const value = this.evaluate();
+
     if (value === PENDING) {
+      // Release our slot in the parent's pending count so the batch stays clean.
+      if (this._parent) {
+        const parent = this._parent as AbstractExpression;
+        if (parent._pendingDirtyCount > 0) {
+          parent._pendingDirtyCount--;
+          if (parent._pendingDirtyCount === 0) {
+            parent.reevaluated();
+          }
+        }
+      }
       return false;
     }
 
@@ -335,8 +365,15 @@ export abstract class AbstractExpression<
       this.changeHook(this, this._oldValue);
     }
 
-    if (this.parent) {
-      return this.parent.reevaluated();
+    if (this._parent) {
+      const parent = this._parent as AbstractExpression;
+      if (parent._pendingDirtyCount > 0) {
+        parent._pendingDirtyCount--;
+        if (parent._pendingDirtyCount > 0) {
+          return true; // More dirty children still pending — defer parent evaluation.
+        }
+      }
+      return parent.reevaluated();
     }
     return true;
   }

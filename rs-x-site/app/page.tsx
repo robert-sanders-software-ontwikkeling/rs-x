@@ -27,8 +27,7 @@ const codeExample = dedent`
 `;
 
 const playgroundExampleScript = dedent`
-  const rsx = api.rsx;
-  const { interval, map } = api.rxjs;
+  const { interval, map } = rxjs;
 
   const model = {
     a: 10,

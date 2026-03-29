@@ -33,8 +33,6 @@ const functionBasicCode = dedent`
 `;
 
 const functionBasicPlayground = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const model = {
@@ -86,8 +84,6 @@ const functionNestedThisCode = dedent`
 `;
 
 const functionNestedThisPlayground = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const model = {
@@ -142,8 +138,6 @@ const functionDynamicDispatchCode = dedent`
 `;
 
 const functionDynamicDispatchPlayground = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const model = {
@@ -192,8 +186,6 @@ const functionChainedCode = dedent`
 `;
 
 const functionChainedPlayground = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const model = {

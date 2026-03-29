@@ -75,6 +75,7 @@ export class RxjsMonacoTypesLoader {
       allowJs: true,
       checkJs: true,
       allowNonTsExtensions: true,
+      allowReturnOutsideFunction: true,
     };
 
     ts.typescriptDefaults.setCompilerOptions(compilerOptions);

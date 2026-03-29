@@ -17,6 +17,7 @@ export class IdentifierExpressionEvaluateUnit implements IExpressionEvaluateUnit
   private _context: unknown;
   private _watch: IWatch | undefined;
   private _disposed = false;
+  private _isReplica = false;
   private _changeManager!: IExpressionEvaluateChangeManager;
   private _activeCycleDepth = 0;
   private _forceDirtyCommit = false;
@@ -32,6 +33,7 @@ export class IdentifierExpressionEvaluateUnit implements IExpressionEvaluateUnit
     private readonly _isDeferredValue?: (value: unknown) => boolean,
     private readonly _forceDirtyForObjectChanges = false,
     private readonly _forceDirtyForCollectionItemObjectChanges = false,
+    private readonly _prepare?: () => void,
   ) {
     this._context = context;
   }
@@ -95,6 +97,26 @@ export class IdentifierExpressionEvaluateUnit implements IExpressionEvaluateUnit
     this._changeManager.decrementChangeCycle();
   };
 
+  public watchAsReplica(changeManager: IExpressionEvaluateChangeManager): void {
+    this._isReplica = true;
+    this._changeManager = changeManager;
+    if (this.context === undefined) {
+      return;
+    }
+    // Read the initial value directly — no watch listener registered.
+    const resolvedValue = this.resolveValueFromContext();
+    this._value = this._isDeferredValue?.(resolvedValue) ? undefined : resolvedValue;
+  }
+
+  public applyChange(newValue: unknown): void {
+    const objectChanged = newValue !== null && typeof newValue === 'object';
+    this._forceDirtyCommit =
+      objectChanged &&
+      (this._forceDirtyForObjectChanges ||
+        this._forceDirtyForCollectionItemObjectChanges);
+    this._value = newValue;
+  }
+
   public watch(changeManager: IExpressionEvaluateChangeManager): void {
     this._changeManager = changeManager;
     if (this.context === undefined) {
@@ -102,6 +124,13 @@ export class IdentifierExpressionEvaluateUnit implements IExpressionEvaluateUnit
     }
 
     if (this._watch) {
+      return;
+    }
+
+    if (this._isReplica) {
+      // Re-read the current value on context refresh — still no listener registration.
+      const resolvedValue = this.resolveValueFromContext();
+      this._value = this._isDeferredValue?.(resolvedValue) ? undefined : resolvedValue;
       return;
     }
 
@@ -131,6 +160,10 @@ export class IdentifierExpressionEvaluateUnit implements IExpressionEvaluateUnit
     if (this._value === undefined) {
       this._value = fallbackValue;
     }
+  }
+
+  public prepareForBatchEvaluate(): void {
+    this._prepare?.();
   }
 
   public isCommitReady(): boolean {
@@ -207,6 +240,17 @@ export class IdentifierExpressionEvaluateUnit implements IExpressionEvaluateUnit
 
   private refreshValueForUnchangedContext(): void {
     if (!this._changeManager || this._disposed || this._context === undefined) {
+      return;
+    }
+
+    if (this._isReplica) {
+      // Replicas have no watch to release — just re-read from context.
+      const previousValue = this._value;
+      const resolved = this.resolveValueFromContext();
+      this._value = this._isDeferredValue?.(resolved) ? undefined : resolved;
+      if (!Object.is(previousValue, this._value)) {
+        this._changeManager.markDirty(this);
+      }
       return;
     }
 

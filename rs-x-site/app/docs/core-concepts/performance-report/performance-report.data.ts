@@ -493,3 +493,4 @@ export const topGainsForReleaseNotes = [...comparisonRows]
 export const topRegressionsForReleaseNotes = [...comparisonRows]
   .filter((row) => row.gainPercent < 0)
   .sort((a, b) => a.gainPercent - b.gainPercent);
+

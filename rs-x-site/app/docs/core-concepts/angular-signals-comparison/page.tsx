@@ -118,17 +118,23 @@ export default function AngularSignalsComparisonPage() {
             <strong>string expressions vs compiled TypeScript</strong>. rs-x
             lets you write{' '}
             <span className="codeInline">&quot;price * quantity&quot;</span> and
-            bind it to any object; Angular Signals require you to express the
-            same computation as a JavaScript arrow function inside{' '}
+            bind it to any plain object; Angular Signals require you to express
+            the same computation as a JavaScript arrow function inside{' '}
             <span className="codeInline">computed()</span>. rs-x pays a parsing
-            cost once and then evaluates an AST on each change; Angular Signals
-            run native compiled JavaScript.
+            cost once at bind time and then evaluates an AST on each change;
+            Angular Signals run native compiled JavaScript.
+          </p>
+          <p className="cardText">
+            rs-x is completely independent of Angular — it has no framework
+            dependency and works with any plain JavaScript object.
           </p>
           <p className="cardText">
             Benchmarks were run with{' '}
-            <span className="codeInline">node --expose-gc</span> on Apple M4,
-            Node.js v25.4.0. Times are medians of multiple runs with forced GC
-            between sizes.
+            <span className="codeInline">
+              node --expose-gc --max-old-space-size=4096
+            </span>{' '}
+            on Apple M4, Node.js v25.4.0. Times are medians of multiple runs
+            with forced GC between sizes.
           </p>
         </article>
 
@@ -436,12 +442,13 @@ export default function AngularSignalsComparisonPage() {
             <span className="codeInline">computed()</span> once — under 1 ms.
           </p>
           <p className="cardText">
-            <strong>Dispose cost:</strong> disposing N expressions that all
-            share the same model is O(N²) in rs-x. Each{' '}
-            <span className="codeInline">dispose()</span> removes a subscriber
-            from a watcher list that still has N−i entries. For 1,000
-            expressions this is ~{sameModelExpressionsRow.rsx.disposeMs.toFixed(0)} ms.
-            Angular signals are garbage-collected — no explicit teardown cost.
+            <strong>Dispose cost:</strong> disposing 1,000 expressions that all
+            share the same model takes ~
+            {sameModelExpressionsRow.rsx.disposeMs.toFixed(0)} ms. The O(N²)
+            subscriber-removal bug that caused 1,450 ms in earlier measurements
+            was fixed in v2.0.0 by switching from array-based to Map-based
+            subscriber storage (O(1) removal). Angular signals are
+            garbage-collected — no explicit teardown cost.
           </p>
           <p className="cardText">
             <strong>Why update is slow:</strong> when{' '}
@@ -459,33 +466,50 @@ export default function AngularSignalsComparisonPage() {
         <article className="card docsApiCard">
           <h2 className="cardTitle">Summary</h2>
           <p className="cardText">
-            The right tool depends on what you are building:
+            Angular Signals are faster than rs-x in every scenario measured
+            here. That is not the right question. The right question is:{' '}
+            <strong>is rs-x fast enough?</strong>
           </p>
-          <ul className="advancedTopicLinks">
-            <li>
-              <strong>Angular Signals</strong> are faster in every scenario. If
-              you are writing TypeScript and can express your reactive logic as
-              arrow functions in <span className="codeInline">computed()</span>,
-              signals have lower binding cost and synchronous update propagation.
-            </li>
-            <li>
-              <strong>rs-x</strong> is designed for string-expression binding —
-              scenarios where expressions come from configuration, a server,
-              user input, or a formula language. You bind a plain JavaScript
-              object and write{' '}
-              <span className="codeInline">model.price = 42</span> without any
-              reactive boilerplate. rs-x also handles Observable and Promise
-              fields transparently.
-            </li>
-            <li>
-              For <strong>complex computed expressions</strong>, Angular&apos;s
-              compiled functions are dramatically faster. rs-x&apos;s AST
-              evaluator is designed for correctness and flexibility, not for
-              competing with native function calls on deeply-nested arithmetic.
-              Typical real-world expressions (identifiers, member access, simple
-              arithmetic) are far cheaper and close the gap considerably.
-            </li>
-          </ul>
+          <p className="cardText">
+            rs-x is designed to make reactivity <em>transparent</em>. You
+            define a model as a plain JavaScript object — no signals, no
+            decorators, no reactive wrappers. You write an expression string.
+            rs-x handles the rest: it detects which fields the expression reads,
+            watches them for changes, recomputes automatically, propagates the
+            result, and cleans up when the binding is released. Change detection
+            is not something you configure — it is solved for you.
+          </p>
+          <p className="cardText">
+            Observable and Promise fields are handled the same way. A field that
+            holds a <span className="codeInline">BehaviorSubject</span> or a{' '}
+            <span className="codeInline">Promise</span> is not a special case —
+            rs-x subscribes transparently and the expression evaluates to the
+            resolved value. No extra API, no{' '}
+            <span className="codeInline">toSignal()</span>, no unwrapping in the
+            expression.
+          </p>
+          <p className="cardText">
+            With Angular Signals, you are responsible for every part of the
+            reactive graph: declaring each field as a signal, deriving each
+            computed value explicitly, handling async separately with{' '}
+            <span className="codeInline">toSignal()</span>, and cleaning up with{' '}
+            <span className="codeInline">DestroyRef</span> or{' '}
+            <span className="codeInline">takeUntilDestroyed</span>. For
+            deeply-nested arithmetic evaluated at high frequency, that control
+            is worth it — native compiled functions are dramatically faster than
+            AST evaluation. For typical SPA bindings (identifiers, member
+            access, simple arithmetic), the gap closes considerably and the
+            scenarios above show rs-x is comfortably within real-world
+            thresholds.
+          </p>
+          <p className="cardText">
+            <strong>String expressions do not mean losing type safety.</strong>{' '}
+            rs-x ships a <strong>VS Code extension</strong> and a{' '}
+            <strong>build-time compiler plugin</strong> that read your model
+            types and provide full IntelliSense, autocomplete, and compile-time
+            errors inside expression strings. Invalid expressions are caught
+            before they ship.
+          </p>
         </article>
 
         {/* ── Related ───────────────────────────────────────────────────────── */}
