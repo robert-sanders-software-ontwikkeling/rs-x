@@ -5,6 +5,8 @@ export abstract class ParameterizedExpression<
   T = unknown,
   PT = unknown,
 > extends AbstractExpression<T, PT> {
+  private _preparedArgs: unknown[] | undefined;
+
   protected constructor(
     type: ExpressionType,
     expressionString: string,
@@ -16,21 +18,31 @@ export abstract class ParameterizedExpression<
   protected abstract evaluateExpression(...args: unknown[]): T;
 
   protected override canEvaluate(): boolean {
-    const args = this._childExpressions.map((childExpression) =>
-      this.readArg(childExpression),
-    );
-
-    if (args.some((arg) => arg === undefined)) {
-      return false;
+    const childExpressions = this._childExpressions;
+    const args = new Array<unknown>(childExpressions.length);
+    for (let i = 0; i < childExpressions.length; i++) {
+      const arg = this.readArg(childExpressions[i]);
+      if (arg === undefined) {
+        this._preparedArgs = undefined;
+        return false;
+      }
+      args[i] = arg;
     }
 
+    this._preparedArgs = args;
     return true;
   }
 
   protected override evaluate(): T {
-    const args = this._childExpressions.map((childExpression) =>
-      this.readArg(childExpression),
-    );
+    let args = this._preparedArgs;
+    if (!args) {
+      const childExpressions = this._childExpressions;
+      args = new Array<unknown>(childExpressions.length);
+      for (let i = 0; i < childExpressions.length; i++) {
+        args[i] = this.readArg(childExpressions[i]);
+      }
+    }
+    this._preparedArgs = undefined;
     return this.evaluateExpression(...args);
   }
 
