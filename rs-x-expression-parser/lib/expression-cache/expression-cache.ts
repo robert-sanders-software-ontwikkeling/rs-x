@@ -2,9 +2,9 @@ import { Inject, Injectable, KeyedInstanceFactory } from '@rs-x/core';
 
 import type {
   IExpression,
-  IExpressionParser,
 } from '../expressions/expression-parser.interface';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
+import type { IExpressionEngineSelector } from '../expression-engine/expression-engine.interface';
 
 import type { IExpressionCache } from './expression-cache.type';
 
@@ -17,8 +17,8 @@ export class ExpressionCache
   private _hasPrecompiledExpressions = false;
 
   constructor(
-    @Inject(RsXExpressionParserInjectionTokens.IExpressionParser)
-    private readonly _expressionParser: IExpressionParser,
+    @Inject(RsXExpressionParserInjectionTokens.IExpressionEngineSelector)
+    private readonly _expressionEngineSelector: IExpressionEngineSelector,
   ) {
     super();
   }
@@ -76,6 +76,6 @@ export class ExpressionCache
       return precompiledExpression;
     }
 
-    return this._expressionParser.parse(expressionString);
+    return this._expressionEngineSelector.create(expressionString);
   }
 }

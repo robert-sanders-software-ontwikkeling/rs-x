@@ -18,7 +18,8 @@ export class FunctionExpressionEvaluateUnit implements IExpressionEvaluateUnit {
       isInitialized: () => this._changeManager.isInitialized(),
       incrementChangeCycle: () => this._changeManager.incrementChangeCycle(),
       decrementChangeCycle: () => this._changeManager.decrementChangeCycle(),
-      markDirty: () => {
+      markDirty: (evaluateUnit) => {
+        this._onDependencyDirty?.(evaluateUnit);
         this._value = this.evaluateSafely();
         this._changeManager.markDirty(this);
       },
@@ -30,6 +31,9 @@ export class FunctionExpressionEvaluateUnit implements IExpressionEvaluateUnit {
     private readonly _dependencies: readonly IExpressionEvaluateUnit[],
     private readonly _evaluate: () => unknown,
     private readonly _commit: () => void,
+    private readonly _onDependencyDirty?: (
+      evaluateUnit: IExpressionEvaluateUnit,
+    ) => void,
   ) {
     this._context = context;
   }

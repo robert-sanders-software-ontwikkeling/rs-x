@@ -45,6 +45,7 @@
     "build:expression-editor": "pnpm --filter @rs-x/expression-editor run build",
     "typecheck:rsx": "node ./rs-x-cli/bin/rsx.cjs typecheck --project tsconfig.json",
     "test": "cross-env TZ=UTC pnpm jest --runInBand --no-cache --config jest.config.ts",
+    "test:performance": "cross-env TZ=UTC RSX_INCLUDE_PERFORMANCE_TESTS=true pnpm jest --runInBand --no-cache --config jest.config.ts rs-x-expression-parser/tests/performance",
     "test:angular": "pnpm --prefix rs-x-angular run test",
     "test:react": "pnpm --prefix rs-x-react run test",
     "test:coverage": "cross-env TZ=UTC pnpm jest --coverage",

@@ -22,6 +22,8 @@ Object.keys(compilerOptions.paths ?? {}).forEach((alias) => {
 
 // ESM dependencies that need Babel transform
 const esModules = ['rxjs', 'resize-observer-polyfill', 'superjson'].join('|');
+const includePerformanceTests =
+  process.env.RSX_INCLUDE_PERFORMANCE_TESTS === 'true';
 
 // ------------------------------
 // Jest configuration
@@ -36,6 +38,9 @@ const jestConfig: Config.InitialOptions = {
     '<rootDir>/rs-x-angular/',
     '<rootDir>/rs-x-react/',
     '<rootDir>/rs-x-vscode-extension/.vsix-stage/',
+    ...(!includePerformanceTests
+      ? ['<rootDir>/rs-x-expression-parser/tests/performance/']
+      : []),
   ],
 
   modulePathIgnorePatterns: [

@@ -111,6 +111,11 @@ const waitForInit = async (bindings, maxPolls = 5000) => {
 
 // ─── RSX setup ───────────────────────────────────────────────────────────────
 
+// Benchmark the alternative compiled-evaluator engine by default for RSX.
+if (process.env.RSX_EXPRESSION_ENGINE_MODE === undefined) {
+  process.env.RSX_EXPRESSION_ENGINE_MODE = 'compiled';
+}
+
 await InjectionContainer.load(RsXExpressionParserModule);
 const expressionCache = InjectionContainer.get(
   RsXExpressionParserInjectionTokens.IExpressionCache,

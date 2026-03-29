@@ -1,4 +1,6 @@
 export * from './benchmark';
+export * from './compiled-expression';
+export * from './expression-engine';
 export * from './expresion-change-transaction-manager';
 export * from './expresion-change-transaction-manager.interface';
 export * from './expression-cache';
@@ -12,6 +14,7 @@ export * from './expression-observer';
 export * from './expression-services';
 export * from './expressions';
 export * from './identifier-owner-resolver';
+export * from './js-expression-ast-parser';
 export * from './js-expression-parser';
 export * from './rs-x-expression-parser.module';
 export * from './rs-x-expression-parser-injection-tokes';

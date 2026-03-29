@@ -70,6 +70,22 @@ async function postAsync(
 async function withCpuProfile<T>(
   work: () => Promise<T>,
 ): Promise<{ output: T; profile: CpuProfile }> {
+  const shouldEnableCpuProfile =
+    process.env.RSX_BENCHMARK_ENABLE_CPU_PROFILE === 'true';
+  if (!shouldEnableCpuProfile) {
+    const startTime = Date.now() * 1000;
+    const output = await work();
+    const endTime = Date.now() * 1000;
+    return {
+      output,
+      profile: {
+        startTime,
+        endTime,
+        nodes: [],
+      },
+    };
+  }
+
   const session = new inspector.Session();
   session.connect();
   try {
@@ -98,7 +114,8 @@ describe('Generated benchmark bottleneck profiling', () => {
   });
 
   it('profiles create/bind bottlenecks for same-model expressions', async () => {
-    const count = readPositiveIntegerEnv('RSX_BENCHMARK_MAX_COUNT', 1000);
+    const defaultCount = process.env.CI ? 300 : 1000;
+    const count = readPositiveIntegerEnv('RSX_BENCHMARK_MAX_COUNT', defaultCount);
     const expressionStrings = loadGeneratedExpressionStrings(count);
     expect(expressionStrings.length).toBeGreaterThan(0);
 

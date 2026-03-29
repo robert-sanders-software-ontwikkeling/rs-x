@@ -19,7 +19,6 @@ import type {
   ObjectExpression as EstreeObjectExpression,
   Pattern,
   PrivateIdentifier,
-  Program,
   Property,
   RegExpLiteral,
   SequenceExpression as EstreeSequenceExpression,
@@ -30,10 +29,10 @@ import type {
   UnaryExpression,
   UnaryOperator,
 } from 'estree';
-import { parseScript } from 'meriyah';
 
 import {
   type AnyFunction,
+  Inject,
   Injectable,
   ParserException,
   Type,
@@ -94,6 +93,10 @@ import { TemplateLiteralExpression } from './expressions/template-literal-expres
 import { TypeofExpression } from './expressions/typeof-expression';
 import { UnaryNegationExpression } from './expressions/unary-negation-expression';
 import { UnaryPlusExpression } from './expressions/unary-plus-expression';
+import {
+  type IJsExpressionAstParser,
+} from './js-expression-ast-parser';
+import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
 
 enum SyntaxExpressionType {
   UnaryExpression = 'UnaryExpression',
@@ -135,10 +138,6 @@ type INormalizedMemberSegment = Pick<IPathSegment, 'expression' | 'computed'>;
 @Injectable()
 export class JsExpressionParser implements IExpressionParser {
   public static readonly instance: IExpressionParser;
-  private static readonly _parseOptions = {
-    next: true,
-    ranges: true,
-  } as const;
   private _currentExpressionSource: string | undefined;
   private readonly createConstantExpression = {
     string: (literal: Literal) =>
@@ -183,7 +182,10 @@ export class JsExpressionParser implements IExpressionParser {
     (expression: LogicalExpression) => AbstractExpression
   >;
 
-  constructor() {
+  constructor(
+    @Inject(RsXExpressionParserInjectionTokens.IJsExpressionAstParser)
+    private readonly _jsExpressionAstParser: IJsExpressionAstParser,
+  ) {
     this.expressionFactories = {
       [SyntaxExpressionType.UnaryExpression]: this.createUnaryExpression,
       [SyntaxExpressionType.BinaryExpression]: this.createBinaryExpression,
@@ -256,7 +258,9 @@ export class JsExpressionParser implements IExpressionParser {
   public parse(expressionString: string): AbstractExpression {
     this._currentExpressionSource = expressionString;
     try {
-      const espreeExpression = this.tryParse(expressionString);
+      const espreeExpression = this._jsExpressionAstParser.parse(
+        expressionString,
+      );
       return this.createExpression(espreeExpression);
     } catch (e) {
       if (e instanceof Error) {
@@ -267,10 +271,6 @@ export class JsExpressionParser implements IExpressionParser {
     } finally {
       this._currentExpressionSource = undefined;
     }
-  }
-
-  private tryParse(expressionString: string): Expression {
-    return this.parseExpression(expressionString).expression;
   }
 
   private createExpression(
@@ -922,35 +922,6 @@ export class JsExpressionParser implements IExpressionParser {
       this.createExpression(propertyExpression.value),
     );
   };
-
-  private parseExpression(expression: string): ExpressionStatement {
-    const program = parseScript(
-      expression,
-      JsExpressionParser._parseOptions,
-    ) as unknown as Program;
-
-    if (program.body.length === 0) {
-      throw new ParserException(expression, 'Empty expression', 0);
-    }
-
-    if (program.body.length > 1) {
-      throw new ParserException(
-        expression,
-        `Multiple expression are not supported`,
-        0,
-      );
-    }
-
-    if (program.body[0].type !== 'ExpressionStatement') {
-      throw new ParserException(
-        expression,
-        `Unsupported expression type ${program.body[0].type}`,
-        0,
-      );
-    }
-
-    return program.body[0];
-  }
 
   private getExpressionSource(
     expression: Node | PrivateIdentifier | Super,

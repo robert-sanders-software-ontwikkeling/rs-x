@@ -4,6 +4,7 @@ import type { AbstractExpression } from '@rs-x/expression-parser';
 import {
   ExpressionType,
   GlobalIdentifierOwnerResolver,
+  JsExpressionAstParser,
   JsEspreeExpressionParser,
 } from '@rs-x/expression-parser';
 
@@ -49,7 +50,7 @@ export function validateExpressionSites(
   program: ts.Program,
 ): IValidatedExpressionSite[] {
   const checker = program.getTypeChecker();
-  const parser = new JsEspreeExpressionParser();
+  const parser = new JsEspreeExpressionParser(new JsExpressionAstParser());
 
   return detectExpressionSites(program).map((site) =>
     validateExpressionSite(site, checker, parser),
@@ -59,7 +60,7 @@ export function validateExpressionSites(
 export function validateExpressionSite(
   site: IExpressionSiteDetection,
   checker: ts.TypeChecker,
-  parser = new JsEspreeExpressionParser(),
+  parser = new JsEspreeExpressionParser(new JsExpressionAstParser()),
 ): IValidatedExpressionSite {
   const diagnostics: ICompilerDiagnostic[] = [];
   const modelType = resolveModelType(site, checker);

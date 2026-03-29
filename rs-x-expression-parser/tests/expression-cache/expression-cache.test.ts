@@ -1,5 +1,6 @@
 import { ExpressionCache } from '../../lib/expression-cache';
-import { ExpressionType, type IExpressionParser } from '../../lib/expressions';
+import type { IExpressionEngineSelector } from '../../lib/expression-engine/expression-engine.interface';
+import { ExpressionType } from '../../lib/expressions';
 import { ExpressionMock } from '../../lib/testing';
 
 describe('ExpressionCache', () => {
@@ -16,11 +17,12 @@ describe('ExpressionCache', () => {
       () => parsedClone,
     );
 
-    const parser = {
-      parse: jest.fn(() => parsedExpression),
-    } as unknown as IExpressionParser;
+    const expressionEngineSelector = {
+      create: jest.fn(() => parsedExpression),
+      getMode: jest.fn(() => 'compiled'),
+    } as unknown as IExpressionEngineSelector;
 
-    const cache = new ExpressionCache(parser);
+    const cache = new ExpressionCache(expressionEngineSelector);
 
     const precompiledExpression = new ExpressionMock({
       expressionString: 'a + b',
@@ -37,7 +39,7 @@ describe('ExpressionCache', () => {
     cache.registerExpressionTree('a + b', precompiledExpression);
     const result = cache.create('a + b');
 
-    expect(parser.parse).not.toHaveBeenCalled();
+    expect(expressionEngineSelector.create).not.toHaveBeenCalled();
     expect(precompiledExpression.clone).toHaveBeenCalledTimes(1);
     expect(result.instance).toBe(precompiledClone);
   });
@@ -55,15 +57,16 @@ describe('ExpressionCache', () => {
       () => cloneA,
     );
 
-    const parser = {
-      parse: jest.fn(() => parsedExpression),
-    } as unknown as IExpressionParser;
-    const cache = new ExpressionCache(parser);
+    const expressionEngineSelector = {
+      create: jest.fn(() => parsedExpression),
+      getMode: jest.fn(() => 'compiled'),
+    } as unknown as IExpressionEngineSelector;
+    const cache = new ExpressionCache(expressionEngineSelector);
 
     const first = cache.create('a * b');
     const second = cache.create('a * b');
 
-    expect(parser.parse).toHaveBeenCalledTimes(1);
+    expect(expressionEngineSelector.create).toHaveBeenCalledTimes(1);
     expect(parsedExpression.clone).toHaveBeenCalledTimes(1);
     expect(first.instance).toBe(parsedExpression);
     expect(second.instance).toBe(cloneA);

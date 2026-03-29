@@ -6,6 +6,7 @@ import ts from 'typescript';
 
 import {
   ExpressionType,
+  JsExpressionAstParser,
   JsEspreeExpressionParser,
   type IExpression,
 } from '@rs-x/expression-parser';
@@ -125,7 +126,7 @@ function collectExpressionTypes(root: IExpression): Set<ExpressionType> {
 
 describe('expression-site validation (exhaustive matrix)', () => {
   it('covers every ExpressionType in parsed ASTs and validates all without diagnostics', async () => {
-    const parser = new JsEspreeExpressionParser();
+    const parser = new JsEspreeExpressionParser(new JsExpressionAstParser());
     const expressionCases = Object.entries(expressionByType).map(([, value]) => value);
     const seenTypes = new Set<ExpressionType>();
 

@@ -16,6 +16,12 @@ import {
 
 import { ExpressionCache } from './expression-cache/expression-cache';
 import type { IExpressionCache } from './expression-cache/expression-cache.type';
+import { CompiledExpressionCompiler } from './compiled-expression/compiled-expression.compiler';
+import type { ICompiledExpressionCompiler } from './compiled-expression/compiled-expression.compiler.interface';
+import { CompiledExpressionEngine } from './expression-engine/compiled-expression-engine';
+import { type ICompiledExpressionEngine, type IExpressionEngineSelector, type ITreeExpressionEngine } from './expression-engine/expression-engine.interface';
+import { ExpressionEngineSelector } from './expression-engine/expression-engine-selector';
+import { TreeExpressionEngine } from './expression-engine/tree-expression-engine';
 import { ExpressionChangePlayback } from './expression-change-playback/expression-change-playback';
 import { type IExpressionChangePlayback } from './expression-change-playback/expression-change-playback.interface';
 import { ExpressionChangeTrackerManager } from './expression-change-tracker/expression-change-tracker-manager';
@@ -51,6 +57,10 @@ import {
   type IExpressionEvaluateManager,
 } from './expression-evaluate-manager';
 import { JsExpressionParser } from './js-expression-parser';
+import {
+  JsExpressionAstParser,
+  type IJsExpressionAstParser,
+} from './js-expression-ast-parser';
 import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
 
 InjectionContainer.load(RsXStateManagerModule);
@@ -72,6 +82,12 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
       RsXExpressionParserInjectionTokens.IExpressionParser,
     )
     .to(JsExpressionParser)
+    .inSingletonScope();
+  options
+    .bind<IJsExpressionAstParser>(
+      RsXExpressionParserInjectionTokens.IJsExpressionAstParser,
+    )
+    .to(JsExpressionAstParser)
     .inSingletonScope();
   options
     .bind<IExpressionManager>(
@@ -100,6 +116,30 @@ export const RsXExpressionParserModule = new ContainerModule((options) => {
   options
     .bind<IExpressionCache>(RsXExpressionParserInjectionTokens.IExpressionCache)
     .to(ExpressionCache)
+    .inSingletonScope();
+  options
+    .bind<ICompiledExpressionCompiler>(
+      RsXExpressionParserInjectionTokens.ICompiledExpressionCompiler,
+    )
+    .to(CompiledExpressionCompiler)
+    .inSingletonScope();
+  options
+    .bind<ITreeExpressionEngine>(
+      RsXExpressionParserInjectionTokens.ITreeExpressionEngine,
+    )
+    .to(TreeExpressionEngine)
+    .inSingletonScope();
+  options
+    .bind<ICompiledExpressionEngine>(
+      RsXExpressionParserInjectionTokens.ICompiledExpressionEngine,
+    )
+    .to(CompiledExpressionEngine)
+    .inSingletonScope();
+  options
+    .bind<IExpressionEngineSelector>(
+      RsXExpressionParserInjectionTokens.IExpressionEngineSelector,
+    )
+    .to(ExpressionEngineSelector)
     .inSingletonScope();
   options
     .bind<IExpressionServices>(

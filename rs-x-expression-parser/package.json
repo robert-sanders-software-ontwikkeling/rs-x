@@ -32,6 +32,9 @@
   "scripts": {
     "build": "tsup lib/index.ts --format esm --dts --tsconfig ../tsconfig.build.json",
     "clean": "rimraf dist",
+    "test:expressions:tree": "pnpm jest --runInBand --config ../jest.config.ts ../rs-x-expression-parser/tests/expressions",
+    "test:expressions:compiled": "RSX_EXPRESSION_ENGINE_MODE=compiled pnpm jest --runInBand --config ../jest.config.ts ../rs-x-expression-parser/tests/compiled-expression",
+    "test:expressions:all-modes": "pnpm run test:expressions:tree && pnpm run test:expressions:compiled",
     "bench:spa-readiness": "node --expose-gc --max-old-space-size=4096 ./scripts/benchmark-spa-readiness.mjs",
     "bench:spa-readiness:median": "node ./scripts/benchmark-spa-readiness-median.mjs",
     "bench:core-concepts-performance": "node --expose-gc --max-old-space-size=4096 ./scripts/benchmark-core-concepts-performance.mjs"
