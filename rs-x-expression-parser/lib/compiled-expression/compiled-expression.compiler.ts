@@ -25,28 +25,196 @@ import type {
 
 @Injectable()
 export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
+  private static readonly DEFAULT_MAX_PLAN_CACHE_SIZE = 5000;
+  private static readonly MAX_PLAN_CACHE_SIZE_ENV =
+    'RSX_COMPILED_PLAN_CACHE_MAX';
+
+  private static readonly SIMPLE_IDENTIFIER_EXPRESSION_RE = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
+  private static readonly SIMPLE_MEMBER_CHAIN_EXPRESSION_RE = /^[A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)*$/;
+  private static readonly RESERVED_KEYWORD_EXPRESSIONS = new Set([
+    // JS literals / globals treated as special values
+    'true',
+    'false',
+    'null',
+    'undefined',
+    'NaN',
+    'Infinity',
+    'this',
+
+    // ECMAScript keywords that are syntactically invalid as identifier references in expression position
+    'break',
+    'case',
+    'catch',
+    'class',
+    'const',
+    'continue',
+    'debugger',
+    'default',
+    'delete',
+    'do',
+    'else',
+    'enum',
+    'export',
+    'extends',
+    'finally',
+    'for',
+    'function',
+    'if',
+    'import',
+    'in',
+    'instanceof',
+    'let',
+    'new',
+    'return',
+    'super',
+    'switch',
+    'throw',
+    'try',
+    'typeof',
+    'var',
+    'void',
+    'while',
+    'with',
+    'yield',
+  ]);
+
   private readonly _planCache = new Map<
     string,
     ICompiledExpressionPlan | undefined
   >();
+  private readonly _maxPlanCacheSize: number;
 
   constructor(
     @Inject(RsXExpressionParserInjectionTokens.IJsExpressionAstParser)
     private readonly _jsExpressionAstParser: IJsExpressionAstParser,
-  ) {}
+  ) {
+    this._maxPlanCacheSize = this.resolveMaxPlanCacheSize();
+  }
 
   public tryCompile(expressionString: string): ICompiledExpressionPlan | undefined {
     const cached = this._planCache.get(expressionString);
     if (cached !== undefined || this._planCache.has(expressionString)) {
+      if (cached !== undefined) {
+        // Promote in LRU cache to keep hot items longer
+        this._planCache.delete(expressionString);
+        this._planCache.set(expressionString, cached);
+      }
       return cached;
     }
 
     const compiled = this.buildPlan(expressionString);
-    this._planCache.set(expressionString, compiled);
+    this.cachePlan(expressionString, compiled);
     return compiled;
   }
 
+  private cachePlan(
+    expressionString: string,
+    plan: ICompiledExpressionPlan | undefined,
+  ): void {
+    if (this._planCache.has(expressionString)) {
+      this._planCache.set(expressionString, plan);
+      return;
+    }
+
+    if (this._planCache.size >= this._maxPlanCacheSize) {
+      const oldestKey = this._planCache.keys().next().value;
+      if (typeof oldestKey === 'string') {
+        this._planCache.delete(oldestKey);
+      }
+    }
+
+    this._planCache.set(expressionString, plan);
+  }
+
+  private resolveMaxPlanCacheSize(): number {
+    const processEnv = this.getProcessEnv();
+    const rawValue = processEnv?.[
+      CompiledExpressionCompiler.MAX_PLAN_CACHE_SIZE_ENV
+    ];
+    if (!rawValue) {
+      return CompiledExpressionCompiler.DEFAULT_MAX_PLAN_CACHE_SIZE;
+    }
+
+    const parsedValue = Number.parseInt(rawValue, 10);
+    if (Number.isNaN(parsedValue) || parsedValue <= 0) {
+      return CompiledExpressionCompiler.DEFAULT_MAX_PLAN_CACHE_SIZE;
+    }
+
+    return parsedValue;
+  }
+
+  private getProcessEnv(): Record<string, string | undefined> | undefined {
+    if (typeof process === 'undefined' || !process || !process.env) {
+      return undefined;
+    }
+
+    return process.env as Record<string, string | undefined>;
+  }
+
+  private createUnitExpressionPlan(expressionString: string): ICompiledExpressionPlan {
+
+    const plan: ICompiledExpressionPlan = {
+      expressionString,
+      dependencyNames: [expressionString],
+      watchDependencies: [
+        {
+          name: expressionString,
+          ownerPath: [],
+          isLeaf: true,
+          isMemberExpressionSegment: false,
+        },
+      ],
+      expressionType: ExpressionType.Identifier,
+      hasHiddenArgumentArray: false,
+      memberChain: undefined,
+      sequenceOperands: undefined,
+      evaluate: (value: unknown): unknown => value,
+      evaluateResolvedDependencies: (
+        model: unknown,
+        identifierOwnerResolver: {
+          resolve: (index: unknown, context?: unknown) => unknown;
+        },
+        indexValueAccessor: {
+          getResolvedValue: (context: unknown, index: string) => unknown;
+          getValue: (context: unknown, index: string) => unknown;
+        },
+        normalizeDependencyValue: (
+          value: unknown,
+          ownerContext: unknown,
+        ) => unknown,
+        wrapForRuntimeEvaluation: (value: unknown) => unknown,
+      ): unknown => {
+        const ownerContext =
+          identifierOwnerResolver.resolve(expressionString, model) ?? model;
+        const resolvedValue = indexValueAccessor.getResolvedValue(
+          ownerContext,
+          expressionString,
+        );
+        const rawValue =
+          resolvedValue !== undefined
+            ? resolvedValue
+            : indexValueAccessor.getValue(ownerContext, expressionString);
+        const normalizedValue = normalizeDependencyValue(rawValue, ownerContext);
+        return wrapForRuntimeEvaluation(normalizedValue);
+      },
+    };
+    return plan;
+
+  }
+
   private buildPlan(expressionString: string): ICompiledExpressionPlan | undefined {
+    if (
+      CompiledExpressionCompiler.SIMPLE_IDENTIFIER_EXPRESSION_RE.test(expressionString) &&
+      !CompiledExpressionCompiler.RESERVED_KEYWORD_EXPRESSIONS.has(expressionString)
+    ) {
+      return this.createUnitExpressionPlan(expressionString);
+    }
+
+    const simpleMemberChainPlan = this.tryBuildSimpleMemberChainPlan(expressionString);
+    if (simpleMemberChainPlan !== undefined) {
+      return simpleMemberChainPlan;
+    }
+
     let expression: Expression;
     try {
       expression = this._jsExpressionAstParser.parse(expressionString);
@@ -74,10 +242,86 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
     );
 
     try {
+      if (expressionType === ExpressionType.Identifier && orderedDependencies.length === 1) {
+        const dependencyName = orderedDependencies[0];
+        const evaluate = (value: unknown): unknown => value;
+        const evaluateResolvedDependencies = (
+          model: unknown,
+          identifierOwnerResolver: {
+            resolve: (index: unknown, context?: unknown) => unknown;
+          },
+          indexValueAccessor: {
+            getResolvedValue: (context: unknown, index: string) => unknown;
+            getValue: (context: unknown, index: string) => unknown;
+          },
+          normalizeDependencyValue: (
+            value: unknown,
+            ownerContext: unknown,
+          ) => unknown,
+          wrapForRuntimeEvaluation: (value: unknown) => unknown,
+        ): unknown => {
+          const ownerContext =
+            identifierOwnerResolver.resolve(dependencyName, model) ?? model;
+          const resolvedValue = indexValueAccessor.getResolvedValue(
+            ownerContext,
+            dependencyName,
+          );
+          const rawValue =
+            resolvedValue !== undefined
+              ? resolvedValue
+              : indexValueAccessor.getValue(ownerContext, dependencyName);
+          const normalizedValue = normalizeDependencyValue(rawValue, ownerContext);
+          return wrapForRuntimeEvaluation(normalizedValue);
+        };
+
+        return {
+          expressionString: normalizedExpressionString,
+          dependencyNames: orderedDependencies,
+          watchDependencies,
+          expressionType,
+          hasHiddenArgumentArray: this.hasHiddenArgumentArray(expression),
+          memberChain,
+          sequenceOperands,
+          evaluate,
+          evaluateResolvedDependencies,
+        };
+      }
+
+      const declarationLines = orderedDependencies
+        .map((dependencyName) => {
+          const ownerName = `${dependencyName}Owner`;
+          const resolvedName = `${dependencyName}Resolved`;
+          const rawName = `${dependencyName}Raw`;
+          const normalizedName = `${dependencyName}Normalized`;
+          const dependencyLiteral = JSON.stringify(dependencyName);
+          return [
+            `const ${ownerName} = identifierOwnerResolver.resolve(${dependencyLiteral}, model) ?? model;`,
+            `const ${resolvedName} = indexValueAccessor.getResolvedValue(${ownerName}, ${dependencyLiteral});`,
+            `const ${rawName} = ${resolvedName} !== undefined ? ${resolvedName} : indexValueAccessor.getValue(${ownerName}, ${dependencyLiteral});`,
+            `const ${normalizedName} = normalizeDependencyValue(${rawName}, ${ownerName});`,
+            `const ${dependencyName} = wrapForRuntimeEvaluation(${normalizedName});`,
+          ].join('\n');
+        })
+        .join('\n');
+
       const evaluate = new Function(
         ...orderedDependencies,
         `return (${expressionString});`,
       ) as (...args: unknown[]) => unknown;
+      const evaluateResolvedDependencies = new Function(
+        'model',
+        'identifierOwnerResolver',
+        'indexValueAccessor',
+        'normalizeDependencyValue',
+        'wrapForRuntimeEvaluation',
+        `${declarationLines}\nreturn (${expressionString});`,
+      ) as (
+        model: unknown,
+        identifierOwnerResolver: unknown,
+        indexValueAccessor: unknown,
+        normalizeDependencyValue: unknown,
+        wrapForRuntimeEvaluation: unknown,
+      ) => unknown;
       return {
         expressionString: normalizedExpressionString,
         dependencyNames: orderedDependencies,
@@ -87,55 +331,96 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
         memberChain,
         sequenceOperands,
         evaluate,
+        evaluateResolvedDependencies,
       };
     } catch {
       return undefined;
     }
   }
 
+  private tryBuildSimpleMemberChainPlan(
+    expressionString: string,
+  ): ICompiledExpressionPlan | undefined {
+    if (
+      !CompiledExpressionCompiler.SIMPLE_MEMBER_CHAIN_EXPRESSION_RE.test(
+        expressionString,
+      )
+    ) {
+      return undefined;
+    }
+
+    const parts = expressionString.split('.');
+    if (parts.length <= 1) {
+      return undefined;
+    }
+
+    if (parts.some((part) => CompiledExpressionCompiler.RESERVED_KEYWORD_EXPRESSIONS.has(part))) {
+      return undefined;
+    }
+
+    const rootIdentifier = parts[0];
+    const dependencyNames = [rootIdentifier];
+    const watchDependencies: ICompiledExpressionWatchDependency[] = [
+      {
+        name: rootIdentifier,
+        ownerPath: [],
+        isLeaf: false,
+        isMemberExpressionSegment: true,
+      },
+    ];
+
+    const segments = parts.slice(1).map((part, index) => {
+      const ownerPath = parts.slice(0, index + 1);
+      watchDependencies.push({
+        name: part,
+        ownerPath,
+        isLeaf: index === parts.length - 2,
+        isMemberExpressionSegment: true,
+      });
+      return {
+        kind: 'static' as const,
+        key: part,
+      };
+    });
+
+    const plan: ICompiledExpressionPlan = {
+      expressionString,
+      dependencyNames,
+      watchDependencies,
+      expressionType: ExpressionType.Member,
+      hasHiddenArgumentArray: false,
+      memberChain: {
+        rootIdentifier,
+        segments,
+      },
+      sequenceOperands: undefined,
+      evaluate: () => undefined,
+    };
+
+    return plan;
+  }
+
   private collectDependencies(
     expression: Expression,
     forWatching: boolean,
   ): Set<string> {
-    const dependencies = new Set<string>();
-
-    const visit = (node: unknown, parent?: Node, parentKey?: string): void => {
-      if (!this.isNode(node)) {
-        return;
-      }
-
-      if (
-        node.type === 'Identifier' &&
-        !this.shouldSkipIdentifier(node, parent, parentKey, forWatching)
-      ) {
-        dependencies.add(node.name);
-      }
-
-      const recordNode = node as unknown as Record<string, unknown>;
-      for (const [key, value] of Object.entries(recordNode)) {
-        if (key === 'loc' || key === 'range' || key === 'start' || key === 'end') {
-          continue;
-        }
-
-        if (Array.isArray(value)) {
-          for (let i = 0; i < value.length; i++) {
-            visit(value[i], node, key);
-          }
-          continue;
-        }
-
-        visit(value, node, key);
-      }
-    };
-
-    visit(expression);
-    return dependencies;
+    return this.collectDependenciesAndWatchDependencies(expression).dependencies;
   }
 
   private collectWatchDependencies(
     expression: Expression,
   ): ICompiledExpressionWatchDependency[] {
-    const dependencies = new Map<string, ICompiledExpressionWatchDependency>();
+    return [
+      ...this.collectDependenciesAndWatchDependencies(expression).watchDependencies.values(),
+    ];
+  }
+
+  private collectDependenciesAndWatchDependencies(expression: Expression): {
+    dependencies: Set<string>;
+    watchDependencies: Map<string, ICompiledExpressionWatchDependency>;
+  } {
+    const dependencies = new Set<string>();
+    const watchDependencies = new Map<string, ICompiledExpressionWatchDependency>();
 
     const visit = (
       node: unknown,
@@ -148,38 +433,41 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
         return;
       }
 
-      if (
-        node.type === 'Identifier' &&
-        !this.shouldSkipIdentifier(node, parent, parentKey, true)
-      ) {
-        const memberParent =
-          parent?.type === 'MemberExpression' ? parent : undefined;
-        const isMemberObjectSegment = memberParent !== undefined && parentKey === 'object';
-        const isMemberPropertySegment =
-          memberParent !== undefined && parentKey === 'property' && !memberParent.computed;
-        const isStaticCalleeProperty =
-          isMemberPropertySegment &&
-          (grandParent?.type === 'CallExpression' ||
-            grandParent?.type === 'NewExpression') &&
-          grandParentKey === 'callee';
-        if (isStaticCalleeProperty) {
-          return;
+      if (node.type === 'Identifier') {
+        if (!this.shouldSkipIdentifier(node, parent, parentKey, false)) {
+          dependencies.add(node.name);
         }
-        const ownerPath = isMemberPropertySegment
-          ? this.getStaticPath(memberParent.object)
-          : [];
-        const dependencyId = `${ownerPath.join('.')}|${node.name}`;
-        const existing = dependencies.get(dependencyId);
-        const dependency: ICompiledExpressionWatchDependency = {
-          name: node.name,
-          ownerPath,
-          isLeaf: !isMemberObjectSegment && (existing?.isLeaf ?? true),
-          isMemberExpressionSegment:
-            isMemberObjectSegment ||
-            isMemberPropertySegment ||
-            (existing?.isMemberExpressionSegment ?? false),
-        };
-        dependencies.set(dependencyId, dependency);
+
+        if (!this.shouldSkipIdentifier(node, parent, parentKey, true)) {
+          const memberParent =
+            parent?.type === 'MemberExpression' ? parent : undefined;
+          const isMemberObjectSegment =
+            memberParent !== undefined && parentKey === 'object';
+          const isMemberPropertySegment =
+            memberParent !== undefined && parentKey === 'property' && !memberParent.computed;
+          const isStaticCalleeProperty =
+            isMemberPropertySegment &&
+            (grandParent?.type === 'CallExpression' ||
+              grandParent?.type === 'NewExpression') &&
+            grandParentKey === 'callee';
+          if (!isStaticCalleeProperty) {
+            const ownerPath = isMemberPropertySegment
+              ? this.getStaticPath(memberParent.object)
+              : [];
+            const dependencyId = `${ownerPath.join('.')}|${node.name}`;
+            const existing = watchDependencies.get(dependencyId);
+            const dependency: ICompiledExpressionWatchDependency = {
+              name: node.name,
+              ownerPath,
+              isLeaf: !isMemberObjectSegment && (existing?.isLeaf ?? true),
+              isMemberExpressionSegment:
+                isMemberObjectSegment ||
+                isMemberPropertySegment ||
+                (existing?.isMemberExpressionSegment ?? false),
+            };
+            watchDependencies.set(dependencyId, dependency);
+          }
+        }
       }
 
       const recordNode = node as unknown as Record<string, unknown>;
@@ -200,7 +488,7 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
     };
 
     visit(expression);
-    return [...dependencies.values()];
+    return { dependencies, watchDependencies };
   }
 
   private shouldSkipIdentifier(

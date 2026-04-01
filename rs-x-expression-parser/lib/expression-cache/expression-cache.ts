@@ -5,8 +5,11 @@ import type {
 } from '../expressions/expression-parser.interface';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
 import type { IExpressionEngineSelector } from '../expression-engine/expression-engine.interface';
+import { hydrateExpressionCacheWithCompiledExpressionPlans } from '../compiled-expression/compiled-expression-cache-preload';
 
 import type { IExpressionCache } from './expression-cache.type';
+import { hydrateExpressionCacheWithPreparsedAsts } from './preparsed-expression-ast-registry';
+import { triggerLazyExpressionPreload } from './lazy-expression-preload-registry';
 
 @Injectable()
 export class ExpressionCache
@@ -21,6 +24,8 @@ export class ExpressionCache
     private readonly _expressionEngineSelector: IExpressionEngineSelector,
   ) {
     super();
+    hydrateExpressionCacheWithPreparsedAsts(this);
+    hydrateExpressionCacheWithCompiledExpressionPlans(this);
   }
 
   public registerExpressionTree(
@@ -70,6 +75,8 @@ export class ExpressionCache
   protected override createInstance(
     expressionString: string,
   ): IExpression<unknown, unknown> {
+    triggerLazyExpressionPreload(expressionString);
+
     const precompiledExpression =
       this._precompiledExpressions.get(expressionString);
     if (precompiledExpression) {

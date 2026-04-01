@@ -49,7 +49,7 @@ if [[ "$dry_run" == "true" ]]; then
   echo "[dry-run] npm pack --pack-destination \"$pack_dir\""
   tarball_name="$(node -p "const p=require('./package.json'); const safeName=p.name.replace(/^@/, '').replace('/', '-'); \`\${safeName}-\${p.version}.tgz\`")"
 else
-  tarball_name="$(npm pack --silent --pack-destination "$pack_dir")"
+  tarball_name="$(npm pack --silent --pack-destination "$pack_dir" | tail -n 1)"
 fi
 
 tarball_path="$pack_dir/$tarball_name"

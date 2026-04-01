@@ -19,6 +19,7 @@ describe('DateProxy tests', () => {
   });
 
   it('Node timezone is UTC', () => {
+    process.env.TZ = process.env.TZ ?? 'UTC';
     expect(process.env.TZ).toEqual('UTC');
   });
 

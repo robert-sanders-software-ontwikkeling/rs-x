@@ -54,6 +54,21 @@ const frameworkLinks: DocsLinkItem[] = [
 
 const coreConceptLinks: DocsLinkItem[] = [
   {
+    href: '/docs/core-concepts/first-expression',
+    title: 'Create your first expression',
+    meta: 'Step-by-step flow: bind, subscribe, options, and dispose',
+  },
+  {
+    href: '/docs/core-concepts/cli',
+    title: 'CLI',
+    meta: 'Scaffold, setup, build, and typecheck workflows with rsx commands',
+  },
+  {
+    href: '/docs/core-concepts/compiler',
+    title: 'Compiler',
+    meta: 'How build-time preparse/compiled/lazy options affect runtime tradeoffs',
+  },
+  {
     href: '/docs/core-concepts/async-operations',
     title: 'Async operations',
     meta: 'Mix Promise/Observable/expression values with sync values',

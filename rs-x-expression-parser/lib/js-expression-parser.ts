@@ -273,6 +273,25 @@ export class JsExpressionParser implements IExpressionParser {
     }
   }
 
+  public parseAst(
+    expressionAst: Expression,
+    expressionSource?: string,
+  ): AbstractExpression {
+    this._currentExpressionSource = expressionSource;
+    try {
+      return this.createExpression(expressionAst);
+    } catch (e) {
+      const source = expressionSource ?? astToString(Type.cast(expressionAst));
+      if (e instanceof Error) {
+        throw new ParserException(source, e.message);
+      }
+
+      throw new ParserException(source, String(e));
+    } finally {
+      this._currentExpressionSource = undefined;
+    }
+  }
+
   private createExpression(
     expression:
       | Expression

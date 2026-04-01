@@ -375,6 +375,35 @@ function resolveMapValueType(
   return { tsType: unwrapRsxExpressionType(typeArguments[1], checker) };
 }
 
+function resolveSetValueType(
+  type: ts.Type,
+  checker: ts.TypeChecker,
+): IResolvedType | null {
+  type = unwrapRsxExpressionType(type, checker);
+
+  if (type.isUnionOrIntersection()) {
+    for (const memberType of type.types) {
+      const memberSetValueType = resolveSetValueType(memberType, checker);
+      if (memberSetValueType) {
+        return memberSetValueType;
+      }
+    }
+    return null;
+  }
+
+  const symbolName = (type.aliasSymbol ?? type.getSymbol())?.getName();
+  if (symbolName !== 'Set') {
+    return null;
+  }
+
+  const typeArguments = checker.getTypeArguments(type as ts.TypeReference);
+  if (typeArguments.length < 1) {
+    return {};
+  }
+
+  return { tsType: unwrapRsxExpressionType(typeArguments[0], checker) };
+}
+
 function resolveMemberType(
   memberExpression: AbstractExpression,
   contextType: ts.Type,
@@ -464,6 +493,11 @@ function resolveIndexedType(
   const mapValueType = resolveMapValueType(targetType, checker);
   if (mapValueType) {
     return mapValueType;
+  }
+
+  const setValueType = resolveSetValueType(targetType, checker);
+  if (setValueType) {
+    return setValueType;
   }
 
   const isNumberIndexType =
@@ -865,7 +899,11 @@ function isNumberLike(type: IResolvedType, checker: ts.TypeChecker): boolean {
   if (!type.tsType) {
     return false;
   }
-  return tsTypeMatches(type.tsType, ts.TypeFlags.NumberLike, checker);
+  const unwrappedType = unwrapRsxExpressionType(type.tsType, checker);
+  if ((unwrappedType.flags & ts.TypeFlags.Any) !== 0) {
+    return true;
+  }
+  return tsTypeMatches(unwrappedType, ts.TypeFlags.NumberLike, checker);
 }
 
 function isStringLike(type: IResolvedType, checker: ts.TypeChecker): boolean {
@@ -875,7 +913,11 @@ function isStringLike(type: IResolvedType, checker: ts.TypeChecker): boolean {
   if (!type.tsType) {
     return false;
   }
-  return tsTypeMatches(type.tsType, ts.TypeFlags.StringLike, checker);
+  const unwrappedType = unwrapRsxExpressionType(type.tsType, checker);
+  if ((unwrappedType.flags & ts.TypeFlags.Any) !== 0) {
+    return true;
+  }
+  return tsTypeMatches(unwrappedType, ts.TypeFlags.StringLike, checker);
 }
 
 function pickIncompatibleOperandToken(args: {
@@ -971,15 +1013,30 @@ function tryUnwrapRsxExpressionType(
   const symbol = type.aliasSymbol ?? type.getSymbol();
   const symbolName = symbol?.getName();
   const typeArguments = checker.getTypeArguments(type as ts.TypeReference);
+  const hasThen = Boolean(type.getProperty('then'));
+  const hasSubscribe = Boolean(type.getProperty('subscribe'));
+  const isKnownExpressionWrapper =
+    symbolName === 'IExpression' ||
+    symbolName === 'Promise' ||
+    symbolName === 'Observable' ||
+    symbolName === 'Subject' ||
+    symbolName === 'BehaviorSubject';
+  const isThenableLike = hasThen;
+  const isObservableLike = hasSubscribe;
   if (
-    (symbolName === 'IExpression' ||
-      symbolName === 'Promise' ||
-      symbolName === 'Observable' ||
-      symbolName === 'Subject' ||
-      symbolName === 'BehaviorSubject') &&
-    typeArguments.length > 0
+    typeArguments.length > 0 &&
+    (isKnownExpressionWrapper || isThenableLike || isObservableLike)
   ) {
     return typeArguments[0];
+  }
+
+  if (isKnownExpressionWrapper || isObservableLike) {
+    const valueLikeType =
+      tryResolveValuePropertyType(type, checker) ??
+      tryResolveGetValueReturnType(type, checker);
+    if (valueLikeType) {
+      return valueLikeType;
+    }
   }
 
   // Fallback for concrete expression implementations where generic args are erased.
@@ -1000,4 +1057,41 @@ function tryUnwrapRsxExpressionType(
   }
 
   return checker.getTypeOfSymbolAtLocation(valueProperty, declaration);
+}
+
+function tryResolveValuePropertyType(
+  type: ts.Type,
+  checker: ts.TypeChecker,
+): ts.Type | null {
+  const valueProperty = type.getProperty('value');
+  const declaration =
+    valueProperty?.valueDeclaration ?? valueProperty?.declarations?.[0];
+  if (!valueProperty || !declaration) {
+    return null;
+  }
+
+  return checker.getTypeOfSymbolAtLocation(valueProperty, declaration);
+}
+
+function tryResolveGetValueReturnType(
+  type: ts.Type,
+  checker: ts.TypeChecker,
+): ts.Type | null {
+  const getValueSymbol = type.getProperty('getValue');
+  const declaration =
+    getValueSymbol?.valueDeclaration ?? getValueSymbol?.declarations?.[0];
+  if (!getValueSymbol || !declaration) {
+    return null;
+  }
+
+  const getValueType = checker.getTypeOfSymbolAtLocation(
+    getValueSymbol,
+    declaration,
+  );
+  const signatures = getValueType.getCallSignatures();
+  if (signatures.length === 0) {
+    return null;
+  }
+
+  return signatures[0]!.getReturnType();
 }

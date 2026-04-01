@@ -7,6 +7,12 @@ import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-inj
 
 let cachedExpressionFactory: IExpressionFactory | undefined;
 
+export interface IRsxOptions {
+  readonly preparse?: boolean;
+  readonly lazy?: boolean;
+  readonly compiled?: boolean;
+}
+
 const getExpressionFactory = (): IExpressionFactory => {
   cachedExpressionFactory ??= InjectionContainer.get(
     RsXExpressionParserInjectionTokens.IExpressionFactory,
@@ -16,6 +22,7 @@ const getExpressionFactory = (): IExpressionFactory => {
 
 export function rsx<TReturn, TModel extends object = object>(
   expressionString: string,
+  _options?: IRsxOptions,
 ): (
   model: TModel,
   leafIndexWatchRule?: IIndexWatchRule,

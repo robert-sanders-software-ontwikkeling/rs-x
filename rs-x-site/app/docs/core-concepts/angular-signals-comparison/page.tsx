@@ -8,6 +8,7 @@ import { DocsPageTemplate } from '../../../../components/DocsPageTemplate';
 import { PerformanceBarChart } from '../performance-report/performance-report-charts.client';
 
 import {
+  angularSignalsComparisonBenchmark,
   asyncIdentifierRows,
   sameModelExpressionsRow,
   syncIdentifierRows,
@@ -25,24 +26,58 @@ const toBindChartRows = (rows: typeof syncIdentifierRows) =>
   rows.map((r) => ({
     label: r.bindings.toLocaleString(),
     xValue: r.bindings,
-    values: { rsxMs: r.rsx.bindMs, angularMs: r.angular.bindMs },
+    values: {
+      rsxCompiledMs: r.rsxCompiled.bindMs,
+      rsxTreeMs: r.rsxTree.bindMs,
+      angularMs: r.angular.bindMs,
+    },
+  }));
+
+const toSingleUpdateChartRows = (rows: typeof syncIdentifierRows) =>
+  rows.map((r) => ({
+    label: r.bindings.toLocaleString(),
+    xValue: r.bindings,
+    values: {
+      rsxCompiledMs: r.rsxCompiled.singleUpdateMs,
+      rsxTreeMs: r.rsxTree.singleUpdateMs,
+      angularMs: r.angular.singleUpdateMs,
+    },
   }));
 
 const toBulkChartRows = (rows: typeof syncIdentifierRows) =>
   rows.map((r) => ({
     label: r.bindings.toLocaleString(),
     xValue: r.bindings,
-    values: { rsxMs: r.rsx.bulkUpdateMs, angularMs: r.angular.bulkUpdateMs },
+    values: {
+      rsxCompiledMs: r.rsxCompiled.bulkUpdateMs,
+      rsxTreeMs: r.rsxTree.bulkUpdateMs,
+      angularMs: r.angular.bulkUpdateMs,
+    },
   }));
 
 const syncBindChartRows = toBindChartRows(syncIdentifierRows);
+const syncSingleUpdateChartRows = toSingleUpdateChartRows(syncIdentifierRows);
 const syncBulkChartRows = toBulkChartRows(syncIdentifierRows);
 const asyncBindChartRows = toBindChartRows(asyncIdentifierRows);
+const asyncSingleUpdateChartRows = toSingleUpdateChartRows(asyncIdentifierRows);
 const asyncBulkChartRows = toBulkChartRows(asyncIdentifierRows);
 
-const twoSeriesMs = [
-  { key: 'rsxMs',     label: 'rs-x',             barClassName: 'isPrimary'   },
-  { key: 'angularMs', label: 'Angular Signals',   barClassName: 'isSecondary' },
+const threeSeriesMs = [
+  {
+    key: 'rsxCompiledMs',
+    label: 'rs-x compiled',
+    barClassName: 'isPrimary',
+  },
+  {
+    key: 'rsxTreeMs',
+    label: 'rs-x tree',
+    barClassName: 'isSecondary',
+  },
+  {
+    key: 'angularMs',
+    label: 'Angular Signals',
+    barClassName: 'isTertiary',
+  },
 ];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -136,6 +171,21 @@ export default function AngularSignalsComparisonPage() {
             on Apple M4, Node.js v25.4.0. Times are medians of multiple runs
             with forced GC between sizes.
           </p>
+          <p className="cardText">
+            Snapshot date:{' '}
+            <span className="codeInline">
+              {angularSignalsComparisonBenchmark.date}
+            </span>
+            . rs-x source reports:{' '}
+            <span className="codeInline">
+              {angularSignalsComparisonBenchmark.compiledReport}
+            </span>{' '}
+            and{' '}
+            <span className="codeInline">
+              {angularSignalsComparisonBenchmark.treeReport}
+            </span>
+            .
+          </p>
         </article>
 
         {/* ── Scenario 1: Sync identifier ───────────────────────────────────── */}
@@ -175,7 +225,7 @@ export default function AngularSignalsComparisonPage() {
           <PerformanceBarChart
             ariaLabel="Sync identifier bind time: rs-x vs Angular Signals"
             rows={syncBindChartRows}
-            series={twoSeriesMs}
+            series={threeSeriesMs}
             valueUnit="ms"
             decimals={3}
             xAxisLabel="Bindings"
@@ -183,66 +233,104 @@ export default function AngularSignalsComparisonPage() {
             xScale="log"
             yScale="log"
           />
-
-          <h3 className="cardSubtitle">Bulk update time</h3>
-          <p className="cardText">
-            Each field changes on each of the N separate models. Angular calls{' '}
-            <span className="codeInline">s.set()</span> and then reads the
-            computed — fully synchronous. rs-x detects the Proxy mutation,
-            flushes a microtask queue, and re-evaluates the expression tree. Both
-            scale linearly; Angular is faster because it skips the scheduler and
-            AST evaluation.
-          </p>
-          <PerformanceBarChart
-            ariaLabel="Sync identifier bulk update time: rs-x vs Angular Signals"
-            rows={syncBulkChartRows}
-            series={twoSeriesMs}
-            valueUnit="ms"
-            decimals={3}
-            xAxisLabel="Bindings"
-            yAxisLabel="Time (ms)"
-            xScale="log"
-            yScale="log"
-          />
-
-          <table className="docsTable" style={{ marginTop: '1rem' }}>
+          <table className="docsTable">
             <thead>
               <tr>
                 <th style={{ textAlign: 'left' }}>Bindings</th>
-                <th style={{ textAlign: 'left' }}>rs-x bind (ms)</th>
-                <th style={{ textAlign: 'left' }}>Angular bind (ms)</th>
-                <th style={{ textAlign: 'left' }}>rs-x single update (ms)</th>
-                <th style={{ textAlign: 'left' }}>Angular single update (ms)</th>
-                <th style={{ textAlign: 'left' }}>rs-x bulk update (ms)</th>
-                <th style={{ textAlign: 'left' }}>Angular bulk update (ms)</th>
+                <th style={{ textAlign: 'left' }}>rs-x compiled (ms)</th>
+                <th style={{ textAlign: 'left' }}>rs-x tree (ms)</th>
+                <th style={{ textAlign: 'left' }}>Angular (ms)</th>
               </tr>
             </thead>
             <tbody>
               {syncIdentifierRows.map((row) => (
-                <tr key={row.bindings}>
+                <tr key={`sync-bind-${row.bindings}`}>
                   <td>{row.bindings.toLocaleString()}</td>
-                  <td>{row.rsx.bindMs.toFixed(2)}</td>
+                  <td>{row.rsxCompiled.bindMs.toFixed(2)}</td>
+                  <td>{row.rsxTree.bindMs.toFixed(2)}</td>
                   <td>{row.angular.bindMs.toFixed(2)}</td>
-                  <td>{row.rsx.singleUpdateMs.toFixed(4)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <h3 className="cardSubtitle" style={{ marginTop: '1.25rem' }}>Single update time</h3>
+          <p className="cardText">
+            One field changes on one model; only that expression re-evaluates.
+            Both systems are effectively O(1) — cost does not grow with total
+            binding count. rs-x is ~0.07–0.10 ms because it schedules a
+            microtask before re-evaluating. Angular is ~0.009–0.012 ms because
+            it re-evaluates synchronously on the next read.
+          </p>
+          <PerformanceBarChart
+            ariaLabel="Sync identifier single update time: rs-x vs Angular Signals"
+            rows={syncSingleUpdateChartRows}
+            series={threeSeriesMs}
+            valueUnit="ms"
+            decimals={4}
+            xAxisLabel="Bindings"
+            yAxisLabel="Time (ms)"
+            xScale="log"
+            yScale="log"
+          />
+          <table className="docsTable">
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left' }}>Bindings</th>
+                <th style={{ textAlign: 'left' }}>rs-x compiled (ms)</th>
+                <th style={{ textAlign: 'left' }}>rs-x tree (ms)</th>
+                <th style={{ textAlign: 'left' }}>Angular (ms)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {syncIdentifierRows.map((row) => (
+                <tr key={`sync-single-${row.bindings}`}>
+                  <td>{row.bindings.toLocaleString()}</td>
+                  <td>{row.rsxCompiled.singleUpdateMs.toFixed(4)}</td>
+                  <td>{row.rsxTree.singleUpdateMs.toFixed(4)}</td>
                   <td>{row.angular.singleUpdateMs.toFixed(4)}</td>
-                  <td>{row.rsx.bulkUpdateMs.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <h3 className="cardSubtitle" style={{ marginTop: '1.25rem' }}>Bulk update time</h3>
+          <p className="cardText">
+            All N fields change; all N expressions re-evaluate. Both are O(N).
+            Angular is faster because it skips the microtask scheduler and
+            evaluates native compiled JavaScript directly.
+          </p>
+          <PerformanceBarChart
+            ariaLabel="Sync identifier bulk update time: rs-x vs Angular Signals"
+            rows={syncBulkChartRows}
+            series={threeSeriesMs}
+            valueUnit="ms"
+            decimals={3}
+            xAxisLabel="Bindings"
+            yAxisLabel="Time (ms)"
+            xScale="log"
+            yScale="log"
+          />
+          <table className="docsTable">
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left' }}>Bindings</th>
+                <th style={{ textAlign: 'left' }}>rs-x compiled (ms)</th>
+                <th style={{ textAlign: 'left' }}>rs-x tree (ms)</th>
+                <th style={{ textAlign: 'left' }}>Angular (ms)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {syncIdentifierRows.map((row) => (
+                <tr key={`sync-bulk-${row.bindings}`}>
+                  <td>{row.bindings.toLocaleString()}</td>
+                  <td>{row.rsxCompiled.bulkUpdateMs.toFixed(2)}</td>
+                  <td>{row.rsxTree.bulkUpdateMs.toFixed(2)}</td>
                   <td>{row.angular.bulkUpdateMs.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <ul className="advancedTopicLinks" style={{ marginTop: '1rem' }}>
-            <li>
-              <strong>Single update</strong> — one field changes on one model;
-              only that expression re-evaluates. Both systems are effectively
-              O(1). rs-x is ~0.07–0.10 ms (microtask scheduling overhead);
-              Angular is ~0.009–0.012 ms (synchronous read).
-            </li>
-            <li>
-              <strong>Bulk update</strong> — all N fields change; all N
-              expressions re-evaluate. Both are O(N).
-            </li>
-          </ul>
         </article>
 
         {/* ── Scenario 2: Async identifier ──────────────────────────────────── */}
@@ -283,7 +371,7 @@ export default function AngularSignalsComparisonPage() {
           <PerformanceBarChart
             ariaLabel="Async identifier bind time: rs-x vs Angular Signals"
             rows={asyncBindChartRows}
-            series={twoSeriesMs}
+            series={threeSeriesMs}
             valueUnit="ms"
             decimals={3}
             xAxisLabel="Bindings"
@@ -291,63 +379,102 @@ export default function AngularSignalsComparisonPage() {
             xScale="log"
             yScale="log"
           />
-
-          <h3 className="cardSubtitle">Bulk update time</h3>
-          <p className="cardText">
-            All N subjects emit a new value. Angular updates synchronously;
-            rs-x flushes microtasks. Note that at 10,000 bindings, Angular
-            begins to show overhead from managing many subscriptions (15 ms
-            bind), while rs-x also grows predictably. Both scale linearly.
-          </p>
-          <PerformanceBarChart
-            ariaLabel="Async identifier bulk update time: rs-x vs Angular Signals"
-            rows={asyncBulkChartRows}
-            series={twoSeriesMs}
-            valueUnit="ms"
-            decimals={3}
-            xAxisLabel="Bindings"
-            yAxisLabel="Time (ms)"
-            xScale="log"
-            yScale="log"
-          />
-
-          <table className="docsTable" style={{ marginTop: '1rem' }}>
+          <table className="docsTable">
             <thead>
               <tr>
                 <th style={{ textAlign: 'left' }}>Bindings</th>
-                <th style={{ textAlign: 'left' }}>rs-x bind (ms)</th>
-                <th style={{ textAlign: 'left' }}>Angular bind (ms)</th>
-                <th style={{ textAlign: 'left' }}>rs-x single update (ms)</th>
-                <th style={{ textAlign: 'left' }}>Angular single update (ms)</th>
-                <th style={{ textAlign: 'left' }}>rs-x bulk update (ms)</th>
-                <th style={{ textAlign: 'left' }}>Angular bulk update (ms)</th>
+                <th style={{ textAlign: 'left' }}>rs-x compiled (ms)</th>
+                <th style={{ textAlign: 'left' }}>rs-x tree (ms)</th>
+                <th style={{ textAlign: 'left' }}>Angular (ms)</th>
               </tr>
             </thead>
             <tbody>
               {asyncIdentifierRows.map((row) => (
-                <tr key={row.bindings}>
+                <tr key={`async-bind-${row.bindings}`}>
                   <td>{row.bindings.toLocaleString()}</td>
-                  <td>{row.rsx.bindMs.toFixed(2)}</td>
+                  <td>{row.rsxCompiled.bindMs.toFixed(2)}</td>
+                  <td>{row.rsxTree.bindMs.toFixed(2)}</td>
                   <td>{row.angular.bindMs.toFixed(2)}</td>
-                  <td>{row.rsx.singleUpdateMs.toFixed(4)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <h3 className="cardSubtitle" style={{ marginTop: '1.25rem' }}>Single update time</h3>
+          <p className="cardText">
+            One subject emits; one expression updates. O(1) for both — cost
+            does not grow with binding count. rs-x ~0.05 ms (microtask
+            overhead); Angular ~0.011–0.017 ms (synchronous read).
+          </p>
+          <PerformanceBarChart
+            ariaLabel="Async identifier single update time: rs-x vs Angular Signals"
+            rows={asyncSingleUpdateChartRows}
+            series={threeSeriesMs}
+            valueUnit="ms"
+            decimals={4}
+            xAxisLabel="Bindings"
+            yAxisLabel="Time (ms)"
+            xScale="log"
+            yScale="log"
+          />
+          <table className="docsTable">
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left' }}>Bindings</th>
+                <th style={{ textAlign: 'left' }}>rs-x compiled (ms)</th>
+                <th style={{ textAlign: 'left' }}>rs-x tree (ms)</th>
+                <th style={{ textAlign: 'left' }}>Angular (ms)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {asyncIdentifierRows.map((row) => (
+                <tr key={`async-single-${row.bindings}`}>
+                  <td>{row.bindings.toLocaleString()}</td>
+                  <td>{row.rsxCompiled.singleUpdateMs.toFixed(4)}</td>
+                  <td>{row.rsxTree.singleUpdateMs.toFixed(4)}</td>
                   <td>{row.angular.singleUpdateMs.toFixed(4)}</td>
-                  <td>{row.rsx.bulkUpdateMs.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <h3 className="cardSubtitle" style={{ marginTop: '1.25rem' }}>Bulk update time</h3>
+          <p className="cardText">
+            All N subjects emit; all N expressions update. O(N) for both.
+            Angular stays faster due to synchronous propagation; rs-x adds a
+            per-emission microtask cost.
+          </p>
+          <PerformanceBarChart
+            ariaLabel="Async identifier bulk update time: rs-x vs Angular Signals"
+            rows={asyncBulkChartRows}
+            series={threeSeriesMs}
+            valueUnit="ms"
+            decimals={3}
+            xAxisLabel="Bindings"
+            yAxisLabel="Time (ms)"
+            xScale="log"
+            yScale="log"
+          />
+          <table className="docsTable">
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left' }}>Bindings</th>
+                <th style={{ textAlign: 'left' }}>rs-x compiled (ms)</th>
+                <th style={{ textAlign: 'left' }}>rs-x tree (ms)</th>
+                <th style={{ textAlign: 'left' }}>Angular (ms)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {asyncIdentifierRows.map((row) => (
+                <tr key={`async-bulk-${row.bindings}`}>
+                  <td>{row.bindings.toLocaleString()}</td>
+                  <td>{row.rsxCompiled.bulkUpdateMs.toFixed(2)}</td>
+                  <td>{row.rsxTree.bulkUpdateMs.toFixed(2)}</td>
                   <td>{row.angular.bulkUpdateMs.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <ul className="advancedTopicLinks" style={{ marginTop: '1rem' }}>
-            <li>
-              <strong>Single update</strong> — one subject emits; one expression
-              updates. O(1) for both. rs-x ~0.05 ms; Angular ~0.011–0.017 ms.
-            </li>
-            <li>
-              <strong>Bulk update</strong> — all subjects emit; all expressions
-              update. O(N) for both. Angular stays faster due to synchronous
-              propagation; rs-x adds per-emission microtask cost.
-            </li>
-          </ul>
         </article>
 
         {/* ── Scenario 3: Same-model expressions ───────────────────────────── */}
@@ -412,49 +539,56 @@ export default function AngularSignalsComparisonPage() {
             </thead>
             <tbody>
               <tr>
-                <td>rs-x</td>
-                <td>{sameModelExpressionsRow.rsx.bindMs.toFixed(0)}</td>
-                <td>{sameModelExpressionsRow.rsx.disposeMs.toFixed(0)}</td>
-                <td>{sameModelExpressionsRow.rsx.singleUpdateMs.toFixed(0)}</td>
-                <td>{sameModelExpressionsRow.rsx.bulkUpdateMs.toFixed(0)}</td>
+                <td>rs-x compiled</td>
+                <td>{sameModelExpressionsRow.rsxCompiled.bindMs.toFixed(3)}</td>
+                <td>{sameModelExpressionsRow.rsxCompiled.disposeMs.toFixed(3)}</td>
+                <td>{sameModelExpressionsRow.rsxCompiled.singleUpdateMs.toFixed(3)}</td>
+                <td>{sameModelExpressionsRow.rsxCompiled.bulkUpdateMs.toFixed(3)}</td>
+              </tr>
+              <tr>
+                <td>rs-x tree</td>
+                <td>{sameModelExpressionsRow.rsxTree.bindMs.toFixed(3)}</td>
+                <td>{sameModelExpressionsRow.rsxTree.disposeMs.toFixed(3)}</td>
+                <td>{sameModelExpressionsRow.rsxTree.singleUpdateMs.toFixed(3)}</td>
+                <td>{sameModelExpressionsRow.rsxTree.bulkUpdateMs.toFixed(3)}</td>
               </tr>
               <tr>
                 <td>Angular Signals</td>
-                <td>{sameModelExpressionsRow.angular.bindMs.toFixed(2)}</td>
+                <td>{sameModelExpressionsRow.angular.bindMs.toFixed(3)}</td>
                 <td>GC</td>
                 <td>
-                  {sameModelExpressionsRow.angular.singleUpdateMs.toFixed(1)}
+                  {sameModelExpressionsRow.angular.singleUpdateMs.toFixed(3)}
                 </td>
                 <td>
-                  {sameModelExpressionsRow.angular.bulkUpdateMs.toFixed(1)}
+                  {sameModelExpressionsRow.angular.bulkUpdateMs.toFixed(3)}
                 </td>
               </tr>
             </tbody>
           </table>
 
           <p className="cardText" style={{ marginTop: '1rem' }}>
-            <strong>Bind cost (create+init):</strong> rs-x parses 1,000 unique
-            complex expression strings into AST trees and evaluates each for the
-            first time — ~{sameModelExpressionsRow.rsx.bindMs.toFixed(0)} ms.
-            Angular calls{' '}
-            <span className="codeInline">new Function()</span> 1,000 times
-            (pre-compiled to native JS) and reads each{' '}
-            <span className="codeInline">computed()</span> once — under 1 ms.
+            <strong>Bind cost (create+init):</strong> compiled mode avoids AST
+            walking at update time and reduces this shape to{' '}
+            {sameModelExpressionsRow.rsxCompiled.bindMs.toFixed(3)} ms vs tree
+            mode at {sameModelExpressionsRow.rsxTree.bindMs.toFixed(3)} ms.
+            Angular still leads because it runs native computed functions
+            directly ({sameModelExpressionsRow.angular.bindMs.toFixed(3)} ms).
           </p>
           <p className="cardText">
-            <strong>Dispose cost:</strong> disposing 1,000 expressions that all
-            share the same model takes ~
-            {sameModelExpressionsRow.rsx.disposeMs.toFixed(0)} ms. The O(N²)
-            subscriber-removal bug that caused 1,450 ms in earlier measurements
-            was fixed in v2.0.0 by switching from array-based to Map-based
-            subscriber storage (O(1) removal). Angular signals are
+            <strong>Dispose cost:</strong> compiled mode is{' '}
+            {sameModelExpressionsRow.rsxCompiled.disposeMs.toFixed(3)} ms and
+            tree mode is {sameModelExpressionsRow.rsxTree.disposeMs.toFixed(3)} ms
+            for 1,000 shared-model expressions. Angular signals are
             garbage-collected — no explicit teardown cost.
           </p>
           <p className="cardText">
-            <strong>Why update is slow:</strong> when{' '}
-            <span className="codeInline">x</span> changes, all 1,000 expressions
-            re-evaluate. Each walks a 60–120 node AST. Angular calls 1,000
-            pre-compiled native functions. Real-world expressions (
+            <strong>Why update is still slower than Angular:</strong> even in
+            compiled mode, rs-x still pays ownership/watch bookkeeping and
+            scheduling overhead around expression invalidation. Angular calls
+            native functions from{' '}
+            <span className="codeInline">new Function()</span> 1,000 times
+            and reads each <span className="codeInline">computed()</span>. Real-world
+            expressions (
             <span className="codeInline">price * quantity</span>,{' '}
             <span className="codeInline">isActive &amp;&amp; !isHidden</span>)
             have far fewer nodes and are much closer to the identifier-only
@@ -466,9 +600,14 @@ export default function AngularSignalsComparisonPage() {
         <article className="card docsApiCard">
           <h2 className="cardTitle">Summary</h2>
           <p className="cardText">
-            Angular Signals are faster than rs-x in every scenario measured
-            here. That is not the right question. The right question is:{' '}
-            <strong>is rs-x fast enough?</strong>
+            Angular Signals are faster in these benchmarks. The practical
+            question is not raw speed in isolation, but whether users can
+            perceive the difference in real screens and interactions.
+          </p>
+          <p className="cardText">
+            With compiled expressions enabled, rs-x remains very fast for
+            typical app workloads, while giving you capabilities that are hard
+            to match with purely code-defined reactivity.
           </p>
           <p className="cardText">
             rs-x is designed to make reactivity <em>transparent</em>. You
@@ -498,9 +637,17 @@ export default function AngularSignalsComparisonPage() {
             deeply-nested arithmetic evaluated at high frequency, that control
             is worth it — native compiled functions are dramatically faster than
             AST evaluation. For typical SPA bindings (identifiers, member
-            access, simple arithmetic), the gap closes considerably and the
-            scenarios above show rs-x is comfortably within real-world
-            thresholds.
+            access, simple arithmetic), compiled rs-x is generally within
+            response-time limits users can feel, and rs-x can compensate with flexibility:
+            runtime expression strings, automatic dependency wiring, transparent
+            async handling, and framework-agnostic usage.
+          </p>
+          <p className="cardText">
+            Speed matters most when users notice latency. If a workload is
+            truly compute-bound and evaluated at very high frequency, Angular
+            Signals is the stronger raw-performance choice. If your priority is
+            expressive runtime behavior with minimal reactive boilerplate,
+            compiled rs-x gives strong performance with a broader feature set.
           </p>
           <p className="cardText">
             <strong>String expressions do not mean losing type safety.</strong>{' '}

@@ -30,6 +30,13 @@ export interface ICompiledExpressionPlan {
   readonly memberChain?: ICompiledMemberChainPlan;
   readonly sequenceOperands?: readonly ICompiledSequenceOperandPlan[];
   evaluate(...args: unknown[]): unknown;
+  evaluateResolvedDependencies?(
+    model: unknown,
+    identifierOwnerResolver: unknown,
+    indexValueAccessor: unknown,
+    normalizeDependencyValue: unknown,
+    wrapForRuntimeEvaluation: unknown,
+  ): unknown;
 }
 
 export interface ICompiledSequenceOperandPlan {

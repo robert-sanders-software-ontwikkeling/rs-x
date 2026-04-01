@@ -50,32 +50,88 @@ describe('expression-site detection', () => {
     ).map((detection) => ({
       kind: detection.kind,
       expression: detection.expression,
+      preparse: detection.preparse,
+      lazy: detection.lazy,
+      compiled: detection.compiled,
     }));
 
     expect(detections).toEqual([
       {
         kind: 'rsx',
         expression: 'a + b.method().result',
+        preparse: true,
+        lazy: false,
+        compiled: true,
       },
       {
         kind: 'rsx',
         expression: 'a + b.method().result',
+        preparse: true,
+        lazy: false,
+        compiled: true,
+      },
+      {
+        kind: 'rsx',
+        expression: 'a + b.method().result',
+        preparse: false,
+        lazy: false,
+        compiled: true,
+      },
+      {
+        kind: 'rsx',
+        expression: 'a + b.method().result',
+        preparse: true,
+        lazy: true,
+        compiled: true,
+      },
+      {
+        kind: 'rsx',
+        expression: 'a + b.method().result',
+        preparse: true,
+        lazy: false,
+        compiled: false,
       },
       {
         kind: 'factory-create',
         expression: 'a + 1',
+        preparse: true,
+        lazy: false,
+        compiled: true,
       },
       {
         kind: 'factory-create',
         expression: 'a + 1',
+        preparse: true,
+        lazy: false,
+        compiled: true,
+      },
+      {
+        kind: 'factory-create',
+        expression: 'a + 2',
+        preparse: true,
+        lazy: false,
+        compiled: true,
+      },
+      {
+        kind: 'factory-create',
+        expression: 'b.method().result + 1',
+        preparse: true,
+        lazy: false,
+        compiled: true,
       },
       {
         kind: 'factory-create',
         expression: 'b.method().result',
+        preparse: true,
+        lazy: false,
+        compiled: true,
       },
       {
         kind: 'factory-create',
         expression: 'a',
+        preparse: true,
+        lazy: false,
+        compiled: true,
       },
     ]);
   });
@@ -110,32 +166,88 @@ describe('expression-site detection', () => {
       .map((detection) => ({
         kind: detection.kind,
         expression: detection.expression,
+        preparse: detection.preparse,
+        lazy: detection.lazy,
+        compiled: detection.compiled,
       }));
 
     expect(detections).toEqual([
       {
         kind: 'rsx',
         expression: 'a + b.method().result',
+        preparse: true,
+        lazy: false,
+        compiled: true,
       },
       {
         kind: 'rsx',
         expression: 'a + b.method().result',
+        preparse: true,
+        lazy: false,
+        compiled: true,
+      },
+      {
+        kind: 'rsx',
+        expression: 'a + b.method().result',
+        preparse: false,
+        lazy: false,
+        compiled: true,
+      },
+      {
+        kind: 'rsx',
+        expression: 'a + b.method().result',
+        preparse: true,
+        lazy: true,
+        compiled: true,
+      },
+      {
+        kind: 'rsx',
+        expression: 'a + b.method().result',
+        preparse: true,
+        lazy: false,
+        compiled: false,
       },
       {
         kind: 'factory-create',
         expression: 'a + 1',
+        preparse: true,
+        lazy: false,
+        compiled: true,
       },
       {
         kind: 'factory-create',
         expression: 'a + 1',
+        preparse: true,
+        lazy: false,
+        compiled: true,
+      },
+      {
+        kind: 'factory-create',
+        expression: 'a + 2',
+        preparse: true,
+        lazy: false,
+        compiled: true,
+      },
+      {
+        kind: 'factory-create',
+        expression: 'b.method().result + 1',
+        preparse: true,
+        lazy: false,
+        compiled: true,
       },
       {
         kind: 'factory-create',
         expression: 'b.method().result',
+        preparse: true,
+        lazy: false,
+        compiled: true,
       },
       {
         kind: 'factory-create',
         expression: 'a',
+        preparse: true,
+        lazy: false,
+        compiled: true,
       },
     ]);
   });

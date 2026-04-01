@@ -1,5 +1,8 @@
 import { Type } from '@rs-x/core';
-import { type IExpression } from '@rs-x/expression-parser';
+import {
+  type IExpression,
+  type IExpressionTree,
+} from '@rs-x/expression-parser';
 
 import { type LayoutEdge } from './layout-edge.interface';
 import { type LayoutNode } from './layout-node.interface';
@@ -7,7 +10,19 @@ import { type LayoutResult } from './layout-result.interface';
 import { type NodeId, type TNode } from './node.interface';
 
 function isHiddenExpression(expr: IExpression): boolean {
-  return Type.cast<{ hidden?: boolean }>(expr).hidden === true;
+  return isTreeExpression(expr) && expr.hidden === true;
+}
+
+function isTreeExpression(expr: IExpression): expr is IExpressionTree {
+  return 'childExpressions' in expr && 'hidden' in expr;
+}
+
+function getChildExpressions(expr: IExpression): readonly IExpression[] {
+  if (!isTreeExpression(expr)) {
+    return [];
+  }
+
+  return Type.cast<readonly IExpression[]>(expr.childExpressions ?? []);
 }
 
 export class TreeLayoutEngine {
@@ -118,7 +133,7 @@ export class TreeLayoutEngine {
 
         if (isHiddenExpression(child)) {
           // lift grandchildren
-          const grandKids = child.childExpressions ?? [];
+          const grandKids = getChildExpressions(child);
           for (const g of grandKids) {
             if (g) {
               visibleChildren.push(g);
@@ -137,7 +152,7 @@ export class TreeLayoutEngine {
           number: i + 1,
         });
 
-        const kids = expr.childExpressions ?? [];
+        const kids = getChildExpressions(expr);
         buildChildrenLiftHidden({
           parent: childNode,
           expressions: kids,
@@ -157,7 +172,7 @@ export class TreeLayoutEngine {
         return expr;
       }
 
-      const kids = expr.childExpressions ?? [];
+      const kids = getChildExpressions(expr);
       for (const k of kids) {
         const v = resolveVisibleRoot(k);
         if (v) {
@@ -182,7 +197,7 @@ export class TreeLayoutEngine {
 
     buildChildrenLiftHidden({
       parent: root,
-      expressions: visibleRootExpr.childExpressions ?? [],
+      expressions: getChildExpressions(visibleRootExpr),
       depth: 1,
     });
 

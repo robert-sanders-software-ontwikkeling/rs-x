@@ -19,5 +19,5 @@
   "editor.codeActionsOnSave": {
     "source.organizeImports": "never",
     "source.fixAll.eslint": "always"
-  }
+  },
 }

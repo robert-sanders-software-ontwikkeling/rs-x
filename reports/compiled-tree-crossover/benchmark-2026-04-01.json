@@ -1,0 +1,156 @@
+{
+  "generatedAt": "2026-04-01T08:52:36.656Z",
+  "environment": {
+    "nodeVersion": "v25.4.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "osRelease": "24.6.0",
+    "cpuModel": "Apple M4",
+    "totalMemoryGb": 16
+  },
+  "config": {
+    "pairCounts": [
+      1,
+      2,
+      4,
+      7,
+      12,
+      20,
+      33,
+      55,
+      90
+    ],
+    "bindings": 1000,
+    "updateRuns": 25,
+    "updateWarmup": 10,
+    "expressionShape": "\"x + y + x + y + …\" — N pairs → 4N−1 nodes, always 2 unique deps (x, y)",
+    "bindingShape": "1000 unique model objects (same x+y values, different object identity)",
+    "measurement": "Bindings are established and fully initialized before timing starts. Only steady-state update cost is measured (no bind overhead in the numbers). Single update: one model value changes, one binding re-evaluates. Bulk update: all model values change, all bindings re-evaluate."
+  },
+  "rows": [
+    {
+      "pairs": 1,
+      "nodeCount": 3,
+      "tree": {
+        "singleUpdateMs": 0.04262499999998681,
+        "bulkUpdateMs": 4.954000000000065
+      },
+      "compiled": {
+        "singleUpdateMs": 0.051791999999977634,
+        "bulkUpdateMs": 6.236125000000129
+      }
+    },
+    {
+      "pairs": 2,
+      "nodeCount": 7,
+      "tree": {
+        "singleUpdateMs": 0.049958000000060565,
+        "bulkUpdateMs": 6.531333000000359
+      },
+      "compiled": {
+        "singleUpdateMs": 0.05141600000024482,
+        "bulkUpdateMs": 7.042124999999942
+      }
+    },
+    {
+      "pairs": 4,
+      "nodeCount": 15,
+      "tree": {
+        "singleUpdateMs": 0.06329199999981938,
+        "bulkUpdateMs": 8.402750000000196
+      },
+      "compiled": {
+        "singleUpdateMs": 0.053541999999652035,
+        "bulkUpdateMs": 7.63366699999915
+      }
+    },
+    {
+      "pairs": 7,
+      "nodeCount": 27,
+      "tree": {
+        "singleUpdateMs": 0.060499999999592546,
+        "bulkUpdateMs": 11.263375000000451
+      },
+      "compiled": {
+        "singleUpdateMs": 0.05504099999961909,
+        "bulkUpdateMs": 8.083749999999782
+      }
+    },
+    {
+      "pairs": 12,
+      "nodeCount": 47,
+      "tree": {
+        "singleUpdateMs": 0.06600000000071304,
+        "bulkUpdateMs": 15.43158399999993
+      },
+      "compiled": {
+        "singleUpdateMs": 0.054666999998516985,
+        "bulkUpdateMs": 8.14075000000048
+      }
+    },
+    {
+      "pairs": 20,
+      "nodeCount": 79,
+      "tree": {
+        "singleUpdateMs": 0.06962500000008731,
+        "bulkUpdateMs": 21.917499999999563
+      },
+      "compiled": {
+        "singleUpdateMs": 0.059583000002021436,
+        "bulkUpdateMs": 9.021166000002268
+      }
+    },
+    {
+      "pairs": 33,
+      "nodeCount": 131,
+      "tree": {
+        "singleUpdateMs": 0.09054200000173296,
+        "bulkUpdateMs": 31.102875000000495
+      },
+      "compiled": {
+        "singleUpdateMs": 0.05583400000250549,
+        "bulkUpdateMs": 9.166290999997727
+      }
+    },
+    {
+      "pairs": 55,
+      "nodeCount": 219,
+      "tree": {
+        "singleUpdateMs": 0.09712500000023283,
+        "bulkUpdateMs": 46.91895900000236
+      },
+      "compiled": {
+        "singleUpdateMs": 0.05200000000331784,
+        "bulkUpdateMs": 9.615458000000217
+      }
+    },
+    {
+      "pairs": 90,
+      "nodeCount": 359,
+      "tree": {
+        "singleUpdateMs": 0.13366700000187848,
+        "bulkUpdateMs": 70.61470800000097
+      },
+      "compiled": {
+        "singleUpdateMs": 0.05983399999968242,
+        "bulkUpdateMs": 10.063125000000582
+      }
+    }
+  ],
+  "crossovers": {
+    "singleUpdateMs": {
+      "nodeCount": 8,
+      "between": [
+        7,
+        15
+      ]
+    },
+    "bulkUpdateMs": {
+      "nodeCount": 10,
+      "between": [
+        7,
+        15
+      ]
+    }
+  }
+}

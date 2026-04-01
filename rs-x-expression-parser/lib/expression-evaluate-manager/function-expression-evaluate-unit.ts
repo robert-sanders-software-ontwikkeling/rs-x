@@ -5,7 +5,8 @@ import type {
   IExpressionEvaluateUnit,
 } from './expression-evaluate-unit.interface';
 
-export class FunctionExpressionEvaluateUnit implements IExpressionEvaluateUnit {
+export class FunctionExpressionEvaluateUnit
+  implements IExpressionEvaluateUnit, IExpressionEvaluateChangeManager {
   public readonly count = 1;
   private _value: unknown;
   private _context: unknown;
@@ -13,17 +14,27 @@ export class FunctionExpressionEvaluateUnit implements IExpressionEvaluateUnit {
   private _isDisposed = false;
   private _isWatching = false;
 
-  private readonly _dependencyChangeManager: IExpressionEvaluateChangeManager =
-    {
-      isInitialized: () => this._changeManager.isInitialized(),
-      incrementChangeCycle: () => this._changeManager.incrementChangeCycle(),
-      decrementChangeCycle: () => this._changeManager.decrementChangeCycle(),
-      markDirty: (evaluateUnit) => {
-        this._onDependencyDirty?.(evaluateUnit);
-        this._value = this.evaluateSafely();
-        this._changeManager.markDirty(this);
-      },
-    };
+  public isInitialized(): boolean {
+    return this._changeManager.isInitialized();
+  }
+
+  public incrementChangeCycle(): void {
+    this._changeManager.incrementChangeCycle();
+  }
+
+  public decrementChangeCycle(): void {
+    this._changeManager.decrementChangeCycle();
+  }
+
+  public markDirty(evaluateUnit: IExpressionEvaluateUnit): void {
+    this._onDependencyDirty?.(evaluateUnit);
+    const beforeEval = this._value;
+    this._value = this.evaluateSafely();
+    if (typeof this.index === 'string' && this.index.includes('trackPrice')) {
+      console.log('[DEBUG FuncUnit.markDirty]', this.index.slice(0, 50), 'dep=', evaluateUnit.index, 'before=', beforeEval, 'after=', this._value);
+    }
+    this._changeManager.markDirty(this);
+  }
 
   constructor(
     public readonly index: unknown,
@@ -61,7 +72,7 @@ export class FunctionExpressionEvaluateUnit implements IExpressionEvaluateUnit {
     this._changeManager = changeManager;
     if (!this._isWatching) {
       for (let i = 0; i < this._dependencies.length; i++) {
-        this._dependencies[i].watch(this._dependencyChangeManager);
+        this._dependencies[i].watch(this);
       }
       this._isWatching = true;
     }
@@ -73,6 +84,9 @@ export class FunctionExpressionEvaluateUnit implements IExpressionEvaluateUnit {
   }
 
   public commitChange(): void {
+    if (typeof this.index === 'string' && this.index.includes('trackPrice')) {
+      console.log('[DEBUG FuncUnit.commitChange]', this.index, '_value=', this._value);
+    }
     if (this._value === undefined) {
       return;
     }

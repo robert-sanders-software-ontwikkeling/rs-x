@@ -220,7 +220,7 @@ describe('FunctionExpression tests', () => {
     expect(actual).toBe(expression);
   });
 
-  it('hides argument expression for zero-argument function calls', async () => {
+  it('evaluates zero-argument function calls without exposing tree internals', async () => {
     const model = {
       a: 1,
       initializeA() {
@@ -230,12 +230,10 @@ describe('FunctionExpression tests', () => {
 
     expression = rsx('initializeA()')(model);
     await new WaitForEvent(expression, 'changed').wait(() => {});
-
-    const argumentExpression = expression.childExpressions.find(
-      (childExpression) => childExpression.type === ExpressionType.Array,
-    );
-
-    expect(argumentExpression).toBeDefined();
-    expect(argumentExpression?.hidden).toBe(true);
+    expect(model.a).toBe(2);
+    expect(expression.value).toBeUndefined();
+    expect(
+      Object.prototype.hasOwnProperty.call(expression as object, 'childExpressions'),
+    ).toBe(false);
   });
 });

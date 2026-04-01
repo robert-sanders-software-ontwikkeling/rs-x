@@ -6,20 +6,40 @@ import { ItemLinkCardContent } from '@rs-x/react-components';
 import { DocsBreadcrumbs } from '../../../../components/DocsBreadcrumbs';
 import { DocsPageTemplate } from '../../../../components/DocsPageTemplate';
 
-import { identifierOnlyBindingPerformanceRows } from '../performance-report/performance-report.data';
+import {
+  expressionEngineModeMemoryRows,
+  expressionEngineModeAsyncRows,
+  expressionEngineModeSameModelRow,
+  identifierOnlyEngineModeRows,
+} from '../performance-report/performance-report.data';
 import { PerformanceBarChart } from '../performance-report/performance-report-charts.client';
 
-const identifierOnlyChartRows = identifierOnlyBindingPerformanceRows.map(
-  (row) => ({
-    label: row.bindings.toLocaleString(),
-    xValue: row.bindings,
-    values: {
-      bindMs: row.bindMs,
-      bulkUpdateMs: row.bulkUpdateMs,
-      singleUpdateMs: row.singleUpdateMs,
-    },
-  }),
-);
+const idBindChartRows = identifierOnlyEngineModeRows.map((row) => ({
+  label: row.bindings.toLocaleString(),
+  xValue: row.bindings,
+  values: { treeMs: row.tree.bindMs, compiledMs: row.compiled.bindMs },
+}));
+
+const idBulkChartRows = identifierOnlyEngineModeRows.map((row) => ({
+  label: row.bindings.toLocaleString(),
+  xValue: row.bindings,
+  values: { treeMs: row.tree.bulkUpdateMs, compiledMs: row.compiled.bulkUpdateMs },
+}));
+
+const idSingleChartRows = identifierOnlyEngineModeRows.map((row) => ({
+  label: row.bindings.toLocaleString(),
+  xValue: row.bindings,
+  values: { treeMs: row.tree.singleUpdateMs, compiledMs: row.compiled.singleUpdateMs },
+}));
+
+const formatPercent = (value: number): string => {
+  return value >= 0
+    ? `${value.toFixed(1)}% faster`
+    : `${Math.abs(value).toFixed(1)}% slower`;
+};
+
+const compiledVsTreePercent = (compiledMs: number, treeMs: number): number =>
+  ((treeMs - compiledMs) / treeMs) * 100;
 
 export const metadata: Metadata = {
   title: 'Performance',
@@ -115,77 +135,304 @@ export default function PerformancePage() {
           <p className="cardText">
             The table below shows bind and update performance for identifier-only
             expressions with unique fields across the given number of bindings.
-            Measured on Apple M4, Node.js v25.4.0.
+            Measured on Apple M4, Node.js v25.4.0. Bulk update is the worst case where every field changes and every expression re-evaluates. 
+            Single update is the best case where one field changes and one expression re-evaluates. Where bind is the initial cost to set up the binding, like parsing,creating watchers, and doing the initial value read.
+            The most important column is the single update time, which shows that even with 1,000,000 bindings, an update that touches one field and one expression still completes in under 1 ms. 
+            This scenario is most common in where only a few fields change at a time, and shows that rs-x can handle large numbers of bindings without slowing down updates. 
+            This is where rs-x excels it is able to update bindings locally and because of that it can keep update times low even as the number of bindings grows. 
+            You only pay the initial cost of setting up the bindings, and then updates are fast regardless of scale.
           </p>
+          <h3 className="cardSubtitle">Bind time</h3>
           <PerformanceBarChart
-            ariaLabel="Identifier-only binding performance"
-            rows={identifierOnlyChartRows}
+            ariaLabel="Identifier-only bind time — compiled vs tree"
+            rows={idBindChartRows}
             series={[
-              { key: 'bindMs', label: 'Bind', barClassName: 'isPrimary' },
-              {
-                key: 'bulkUpdateMs',
-                label: 'Bulk update',
-                barClassName: 'isSecondary',
-              },
-              {
-                key: 'singleUpdateMs',
-                label: 'Single update',
-                barClassName: 'isTertiary',
-              },
+              { key: 'treeMs', label: 'Tree', barClassName: 'isPrimary' },
+              { key: 'compiledMs', label: 'Compiled', barClassName: 'isSecondary' },
             ]}
             valueUnit="ms"
             decimals={3}
             xAxisLabel="Bindings"
-            yAxisLabel="Time (ms)"
+            yAxisLabel="Bind time (ms)"
             xScale="log"
             yScale="log"
           />
-          <table className="docsTable" style={{ marginTop: '1rem' }}>
+          <table className="docsTable">
             <thead>
               <tr>
                 <th style={{ textAlign: 'left' }}>Bindings</th>
-                <th style={{ textAlign: 'left' }}>Bind (ms)</th>
-                <th style={{ textAlign: 'left' }}>Single update (ms)</th>
-                <th style={{ textAlign: 'left' }}>Bulk update (ms)</th>
-                <th style={{ textAlign: 'left' }}>µs / binding</th>
+                <th style={{ textAlign: 'left' }}>Tree (ms)</th>
+                <th style={{ textAlign: 'left' }}>Compiled (ms)</th>
               </tr>
             </thead>
             <tbody>
-              {identifierOnlyBindingPerformanceRows.map((row) => (
-                <tr key={row.bindings}>
+              {identifierOnlyEngineModeRows.map((row) => (
+                <tr key={`bind-${row.bindings}`}>
                   <td>{row.bindings.toLocaleString()}</td>
-                  <td>{row.bindMs.toFixed(3)}</td>
-                  <td>{row.singleUpdateMs.toFixed(3)}</td>
-                  <td>{row.bulkUpdateMs.toFixed(3)}</td>
-                  <td>
-                    {((row.bindMs / row.bindings) * 1000).toFixed(1)}
-                  </td>
+                  <td>{row.tree.bindMs.toFixed(3)}</td>
+                  <td>{row.compiled.bindMs.toFixed(3)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <ul className="advancedTopicLinks" style={{ marginTop: '1rem' }}>
-            <li>
-              <strong>Bind</strong> — time to create all N bindings (clone
-              cached tree + attach to model + set up watcher). No initial value
-              read.
-            </li>
-            <li>
-              <strong>Single update</strong> — one field changes, one expression
-              re-evaluates. Effectively O(1) regardless of how many bindings are
-              active.
-            </li>
-            <li>
-              <strong>Bulk update</strong> — every field changes, every
-              expression re-evaluates. Scales linearly with binding count.
-            </li>
-            <li>
-              <strong>µs / binding</strong> — bind time normalised per
-              expression{' '}
-              <span className="codeInline">(Bind ms ÷ N) × 1000</span>. Shows
-              the per-unit cost is roughly constant (~30–37 µs) across scales.
-            </li>
-          </ul>
+
+          <h3 className="cardSubtitle" style={{ marginTop: '1.25rem' }}>Bulk update time</h3>
+          <PerformanceBarChart
+            ariaLabel="Identifier-only bulk update time — compiled vs tree"
+            rows={idBulkChartRows}
+            series={[
+              { key: 'treeMs', label: 'Tree', barClassName: 'isPrimary' },
+              { key: 'compiledMs', label: 'Compiled', barClassName: 'isSecondary' },
+            ]}
+            valueUnit="ms"
+            decimals={3}
+            xAxisLabel="Bindings"
+            yAxisLabel="Bulk update time (ms)"
+            xScale="log"
+            yScale="log"
+          />
+          <table className="docsTable">
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left' }}>Bindings</th>
+                <th style={{ textAlign: 'left' }}>Tree (ms)</th>
+                <th style={{ textAlign: 'left' }}>Compiled (ms)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {identifierOnlyEngineModeRows.map((row) => (
+                <tr key={`bulk-${row.bindings}`}>
+                  <td>{row.bindings.toLocaleString()}</td>
+                  <td>{row.tree.bulkUpdateMs.toFixed(3)}</td>
+                  <td>{row.compiled.bulkUpdateMs.toFixed(3)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <h3 className="cardSubtitle" style={{ marginTop: '1.25rem' }}>Single update time</h3>
+          <PerformanceBarChart
+            ariaLabel="Identifier-only single update time — compiled vs tree"
+            rows={idSingleChartRows}
+            series={[
+              { key: 'treeMs', label: 'Tree', barClassName: 'isPrimary' },
+              { key: 'compiledMs', label: 'Compiled', barClassName: 'isSecondary' },
+            ]}
+            valueUnit="ms"
+            decimals={3}
+            xAxisLabel="Bindings"
+            yAxisLabel="Single update time (ms)"
+            xScale="log"
+            yScale="log"
+          />
+          <table className="docsTable">
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left' }}>Bindings</th>
+                <th style={{ textAlign: 'left' }}>Tree (ms)</th>
+                <th style={{ textAlign: 'left' }}>Compiled (ms)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {identifierOnlyEngineModeRows.map((row) => (
+                <tr key={`single-${row.bindings}`}>
+                  <td>{row.bindings.toLocaleString()}</td>
+                  <td>{row.tree.singleUpdateMs.toFixed(3)}</td>
+                  <td>{row.compiled.singleUpdateMs.toFixed(3)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <h3 className="cardTitle" style={{ marginTop: '1.25rem' }}>
+            Compiled vs tree mode (identifier-only)
+          </h3>
+          <table className="docsTable">
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left' }}>Bindings</th>
+                <th style={{ textAlign: 'left' }}>Metric</th>
+                <th style={{ textAlign: 'left' }}>Compiled (ms)</th>
+                <th style={{ textAlign: 'left' }}>Tree (ms)</th>
+                <th style={{ textAlign: 'left' }}>Compiled vs tree</th>
+              </tr>
+            </thead>
+            <tbody>
+              {identifierOnlyEngineModeRows.flatMap((row) => {
+                const bindGain =
+                  ((row.tree.bindMs - row.compiled.bindMs) / row.tree.bindMs) *
+                  100;
+                const singleGain =
+                  ((row.tree.singleUpdateMs - row.compiled.singleUpdateMs) /
+                    row.tree.singleUpdateMs) *
+                  100;
+                const bulkGain =
+                  ((row.tree.bulkUpdateMs - row.compiled.bulkUpdateMs) /
+                    row.tree.bulkUpdateMs) *
+                  100;
+
+                return [
+                  <tr key={`${row.bindings}-bind`}>
+                    <td>{row.bindings.toLocaleString()}</td>
+                    <td>Bind</td>
+                    <td>{row.compiled.bindMs.toFixed(3)}</td>
+                    <td>{row.tree.bindMs.toFixed(3)}</td>
+                    <td>{formatPercent(bindGain)}</td>
+                  </tr>,
+                  <tr key={`${row.bindings}-single`}>
+                    <td>{row.bindings.toLocaleString()}</td>
+                    <td>Single update</td>
+                    <td>{row.compiled.singleUpdateMs.toFixed(3)}</td>
+                    <td>{row.tree.singleUpdateMs.toFixed(3)}</td>
+                    <td>{formatPercent(singleGain)}</td>
+                  </tr>,
+                  <tr key={`${row.bindings}-bulk`}>
+                    <td>{row.bindings.toLocaleString()}</td>
+                    <td>Bulk update</td>
+                    <td>{row.compiled.bulkUpdateMs.toFixed(3)}</td>
+                    <td>{row.tree.bulkUpdateMs.toFixed(3)}</td>
+                    <td>{formatPercent(bulkGain)}</td>
+                  </tr>,
+                ];
+              })}
+            </tbody>
+          </table>
+          <h3 className="cardTitle" style={{ marginTop: '1.25rem' }}>
+            Compiled vs tree mode (async identifier)
+          </h3>
+          <table className="docsTable">
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left' }}>Bindings</th>
+                <th style={{ textAlign: 'left' }}>Metric</th>
+                <th style={{ textAlign: 'left' }}>Compiled (ms)</th>
+                <th style={{ textAlign: 'left' }}>Tree (ms)</th>
+                <th style={{ textAlign: 'left' }}>Compiled vs tree</th>
+              </tr>
+            </thead>
+            <tbody>
+              {expressionEngineModeAsyncRows.flatMap((row) => [
+                <tr key={`async-${row.bindings}-bind`}>
+                  <td>{row.bindings.toLocaleString()}</td>
+                  <td>Bind</td>
+                  <td>{row.compiled.bindMs.toFixed(3)}</td>
+                  <td>{row.tree.bindMs.toFixed(3)}</td>
+                  <td>
+                    {formatPercent(
+                      compiledVsTreePercent(row.compiled.bindMs, row.tree.bindMs),
+                    )}
+                  </td>
+                </tr>,
+                <tr key={`async-${row.bindings}-single`}>
+                  <td>{row.bindings.toLocaleString()}</td>
+                  <td>Single update</td>
+                  <td>{row.compiled.singleUpdateMs.toFixed(3)}</td>
+                  <td>{row.tree.singleUpdateMs.toFixed(3)}</td>
+                  <td>
+                    {formatPercent(
+                      compiledVsTreePercent(
+                        row.compiled.singleUpdateMs,
+                        row.tree.singleUpdateMs,
+                      ),
+                    )}
+                  </td>
+                </tr>,
+                <tr key={`async-${row.bindings}-bulk`}>
+                  <td>{row.bindings.toLocaleString()}</td>
+                  <td>Bulk update</td>
+                  <td>{row.compiled.bulkUpdateMs.toFixed(3)}</td>
+                  <td>{row.tree.bulkUpdateMs.toFixed(3)}</td>
+                  <td>
+                    {formatPercent(
+                      compiledVsTreePercent(
+                        row.compiled.bulkUpdateMs,
+                        row.tree.bulkUpdateMs,
+                      ),
+                    )}
+                  </td>
+                </tr>,
+              ])}
+            </tbody>
+          </table>
+          <h3 className="cardTitle" style={{ marginTop: '1.25rem' }}>
+            Compiled vs tree mode (same-model generated expressions)
+          </h3>
+          <p className="cardText">
+            1,000 unique generated expressions, all bound to the same model{' '}
+            <span className="codeInline">{'{ x, y }'}</span>. Every expression
+            has the same structure: a deeply nested arithmetic chain with exactly
+            203 AST nodes, only the numeric constants differ. For comparison, a
+            typical expression like{' '}
+            <span className="codeInline">price * quantity</span> has 3 AST
+            nodes. These are extreme synthetic expressions designed to stress
+            test the evaluator, not representative of real application code.
+          </p>
+          <p className="cardText">
+            Representative shape (one repeated pattern within a larger
+            expression):{' '}
+            <span className="codeInline">
+              (((x + y) + ((x + y) + n) - a) * b) / ((x + y) + c)
+            </span>
+          </p>
+          <table className="docsTable">
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left' }}>Bindings</th>
+                <th style={{ textAlign: 'left' }}>Metric</th>
+                <th style={{ textAlign: 'left' }}>Compiled (ms)</th>
+                <th style={{ textAlign: 'left' }}>Tree (ms)</th>
+                <th style={{ textAlign: 'left' }}>Compiled vs tree</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{expressionEngineModeSameModelRow.bindings.toLocaleString()}</td>
+                <td>Bind</td>
+                <td>{expressionEngineModeSameModelRow.compiled.bindMs.toFixed(3)}</td>
+                <td>{expressionEngineModeSameModelRow.tree.bindMs.toFixed(3)}</td>
+                <td>
+                  {formatPercent(
+                    compiledVsTreePercent(
+                      expressionEngineModeSameModelRow.compiled.bindMs,
+                      expressionEngineModeSameModelRow.tree.bindMs,
+                    ),
+                  )}
+                </td>
+              </tr>
+              <tr>
+                <td>{expressionEngineModeSameModelRow.bindings.toLocaleString()}</td>
+                <td>Single update</td>
+                <td>
+                  {expressionEngineModeSameModelRow.compiled.singleUpdateMs.toFixed(
+                    3,
+                  )}
+                </td>
+                <td>{expressionEngineModeSameModelRow.tree.singleUpdateMs.toFixed(3)}</td>
+                <td>
+                  {formatPercent(
+                    compiledVsTreePercent(
+                      expressionEngineModeSameModelRow.compiled.singleUpdateMs,
+                      expressionEngineModeSameModelRow.tree.singleUpdateMs,
+                    ),
+                  )}
+                </td>
+              </tr>
+              <tr>
+                <td>{expressionEngineModeSameModelRow.bindings.toLocaleString()}</td>
+                <td>Bulk update</td>
+                <td>{expressionEngineModeSameModelRow.compiled.bulkUpdateMs.toFixed(3)}</td>
+                <td>{expressionEngineModeSameModelRow.tree.bulkUpdateMs.toFixed(3)}</td>
+                <td>
+                  {formatPercent(
+                    compiledVsTreePercent(
+                      expressionEngineModeSameModelRow.compiled.bulkUpdateMs,
+                      expressionEngineModeSameModelRow.tree.bulkUpdateMs,
+                    ),
+                  )}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+      
         </article>
 
         <article className="card docsApiCard">

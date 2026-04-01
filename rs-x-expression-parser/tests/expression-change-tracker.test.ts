@@ -5,7 +5,10 @@ import {
   type IExpressionChangeTracker,
   type IExpressionChangeTrackerManager,
 } from '../lib/expression-change-tracker/expression-change-tracker-manager.interface';
-import { type IExpression } from '../lib/expressions/expression-parser.interface';
+import {
+  type IExpression,
+  type IExpressionTree,
+} from '../lib/expressions/expression-parser.interface';
 import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
@@ -62,12 +65,12 @@ describe('ExpressionChangeTracker tests', () => {
 
     const expected: IExpressionChangeHistory[] = [
       {
-        expression: expression.childExpressions[0],
+        expression: (expression as IExpressionTree).childExpressions[0],
         value: 20,
         oldValue: undefined,
       },
       {
-        expression: expression.childExpressions[1],
+        expression: (expression as IExpressionTree).childExpressions[1],
         value: 30,
         oldValue: undefined,
       },

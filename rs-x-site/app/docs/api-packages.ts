@@ -80,6 +80,11 @@ const expressionParserLinks: DocsLinkItem[] = [
     meta: 'Binding entry point',
   },
   {
+    href: '/docs/irsx-options',
+    title: 'IRsxOptions',
+    meta: 'Declaration options for rsx(expression, options)',
+  },
+  {
     href: '/docs/expression-change-tracker-manager',
     title: 'Tracker manager',
     meta: 'Track history streams',

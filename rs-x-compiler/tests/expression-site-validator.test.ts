@@ -123,11 +123,35 @@ describe('expression-site validation', () => {
         messages: [],
       },
       {
+        expression: 'tasks[taskId]',
+        messages: [],
+      },
+      {
         expression: 'invoiceDate.year',
         messages: [],
       },
       {
         expression: 'x.y.z',
+        messages: [],
+      },
+      {
+        expression: 'nestedObservablePath.y.z',
+        messages: [],
+      },
+      {
+        expression: 'obsNumber + 1',
+        messages: [],
+      },
+      {
+        expression: 'subjNumber + 1',
+        messages: [],
+      },
+      {
+        expression: 'replayNumber + 1',
+        messages: [],
+      },
+      {
+        expression: 'getNumber$() + 1',
         messages: [],
       },
       {

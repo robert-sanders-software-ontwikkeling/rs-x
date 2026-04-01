@@ -39,6 +39,11 @@ const advancedLinks = [
     title: 'Performance report',
     meta: 'Parse, bind, update, and memory benchmarks',
   },
+  {
+    href: '/docs/core-concepts/compiled-vs-tree',
+    title: 'Compiled vs tree: the break-even point',
+    meta: 'At which expression complexity does compiled mode become faster than tree?',
+  },
 ];
 
 const apiSymbols = [

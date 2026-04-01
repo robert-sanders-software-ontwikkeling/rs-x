@@ -1,171 +1,338 @@
-import { PENDING } from '@rs-x/core';
+import {
+  type IDisposableOwner,
+  PENDING,
+} from '@rs-x/core';
 import { type IIndexWatchRule } from '@rs-x/state-manager';
+import { type Observable, ReplaySubject } from 'rxjs';
 
 import {
+  type IEvaluateManagerForExpression,
   FunctionExpressionEvaluateUnit,
-  IdentifierExpressionEvaluateUnit,
   type IExpressionEvaluateUnit,
 } from '../expression-evaluate-manager';
-import { ArrayExpression } from '../expressions/array-expression';
-import { AbstractExpression } from '../expressions/abstract-expression';
 import type { IExpressionBindConfiguration } from '../expressions/expression-bind-configuration.type';
 import {
+  type ChangeHook,
   ExpressionType,
   type IExpression,
 } from '../expressions/expression-parser.interface';
+import type { IExpressionServices } from '../expression-services/expression-services.interface';
 
 import type { ICompiledExpressionPlan } from './compiled-expression.compiler.interface';
+import { CompiledDependencyEvaluateUnit } from './compiled-dependency-evaluate-unit';
 
 class PendingDependencyValueError extends Error {}
 const UNRESOLVED = Symbol('compiled-expression-unresolved');
+const NOOP_COMMIT = () => {};
 
-class CompiledVirtualExpression extends AbstractExpression {
-  constructor(
-    type: ExpressionType,
-    expressionString: string,
-    private readonly _evaluateValue: () => unknown,
-    children?: AbstractExpression[],
-  ) {
-    super(type, expressionString, children);
-  }
-
-  public override clone(): this {
-    return new CompiledVirtualExpression(
-      this.type,
-      this.expressionString,
-      this._evaluateValue,
-      this._childExpressions.map((child) => child.clone()),
-    ) as this;
-  }
-
-  public override get value(): unknown {
-    return this.evaluate();
-  }
-
-  protected override evaluate(): unknown {
-    return this._evaluateValue();
-  }
-
-  protected override shouldAbortTopDownEvaluation(): boolean {
-    return false;
-  }
-}
-
-export class CompiledExpression extends AbstractExpression {
+export class CompiledExpression implements IExpression {
+  public readonly isRoot = true;
+  private _id = '';
+  private _changed: ReplaySubject<IExpression> | undefined;
+  private _lastChangedValue: IExpression | undefined;
+  private _changeHook: ChangeHook | undefined;
+  private _isAsync: boolean | undefined;
+  private _isAsyncComputed = false;
+  private _value: unknown;
+  private _oldValue: unknown;
+  private _isDirty = false;
+  private _isDisposed = false;
+  private _owner: IDisposableOwner | undefined;
+  private _leafIndexWatchRule: IIndexWatchRule | undefined;
+  private _evaluateManagerForExpression: IEvaluateManagerForExpression | undefined;
   private _evaluateUnit: IExpressionEvaluateUnit | undefined;
-  private _dependencyUnits: IdentifierExpressionEvaluateUnit[] = [];
+  private _dependencyUnits: CompiledDependencyEvaluateUnit[] = [];
   private _watchDependencies: ICompiledExpressionPlan['watchDependencies'] = [];
-  private _dependencyUnitByName = new Map<string, IdentifierExpressionEvaluateUnit>();
-  private _dependencyUnitByPath = new Map<string, IdentifierExpressionEvaluateUnit>();
+  private readonly _hasOwnerPathDependencies: boolean;
+  private readonly _needsResolvedMemberProxyInPlan: boolean;
+  private readonly _isSingleRootIdentifierExpression: boolean;
+  private readonly _requiresDependencyUnitByName: boolean;
+  // Pre-computed per-dependency flags (index-aligned with _plan.watchDependencies).
+  private readonly _depIsRootIdentifierDependency: readonly boolean[];
+  private readonly _depShouldForceDirty: readonly boolean[];
+  private readonly _depRequiresWatchRuleStatically: readonly boolean[];
+  private _dependencyUnitByName = new Map<string, CompiledDependencyEvaluateUnit>();
+  private _dependencyUnitByPath = new Map<string, CompiledDependencyEvaluateUnit>();
   private _dependencyWatchRules: IIndexWatchRule[] = [];
   private _dirtyDependencyNames = new Set<string>();
+  private readonly _readValue = (ctx: unknown, idx: unknown): unknown =>
+    this._cachedIndexValueAccessor!.getValue(ctx, idx);
+  private readonly _isDeferredValue = (val: unknown): boolean =>
+    this._cachedValueMetadata!.isAsync(val);
   private _sequenceOperandValues: unknown[] | undefined;
   private _sequenceDependencySnapshot = new Map<string, unknown>();
-  private _proxyByObject = new WeakMap<object, unknown>();
+  private _proxyByObject: WeakMap<object, unknown> | undefined;
   private _needsResolvedMemberProxy = false;
-  private _contractChildren: AbstractExpression[] = [];
+  private _shouldRefreshDependencyContexts = false;
   private _bindContext: unknown;
+  private _runtimeServices: IExpressionServices | undefined;
+  private _cachedIndexValueAccessor: IExpressionServices['indexValueAccessor'] | undefined;
+  private _cachedIdentifierOwnerResolver: IExpressionServices['identifierOwnerResolver'] | undefined;
+  private _cachedIdentifierWatchRuleFactory: IExpressionServices['identifierWatchRuleFactory'] | undefined;
+  private _cachedWatchFactory: IExpressionServices['watchFactory'] | undefined;
+  private _cachedValueMetadata: IExpressionServices['valueMetadata'] | undefined;
 
   constructor(private readonly _plan: ICompiledExpressionPlan) {
-    super(
-      _plan.expressionType,
-      _plan.expressionString,
-      _plan.hasHiddenArgumentArray
-        ? [AbstractExpression.setHidden(new ArrayExpression([]))]
-        : undefined,
-    );
     this._watchDependencies = _plan.watchDependencies;
-    this._contractChildren = this.createContractChildren();
-    for (let i = 0; i < this._contractChildren.length; i++) {
-      AbstractExpression.setParent(this._contractChildren[i], this);
+    this._hasOwnerPathDependencies = _plan.watchDependencies.some(
+      (dependency) => dependency.ownerPath.length > 0,
+    );
+    this._needsResolvedMemberProxyInPlan = _plan.watchDependencies.some(
+      (dependency) =>
+        dependency.ownerPath.length > 0 || dependency.isMemberExpressionSegment,
+    );
+    this._isSingleRootIdentifierExpression =
+      _plan.expressionType === ExpressionType.Identifier &&
+      _plan.watchDependencies.length === 1 &&
+      _plan.watchDependencies[0].ownerPath.length === 0;
+    this._requiresDependencyUnitByName =
+      _plan.expressionType === ExpressionType.Identifier ||
+      _plan.memberChain !== undefined ||
+      (_plan.sequenceOperands !== undefined && _plan.sequenceOperands.length > 0);
+
+    const isIdentifier = _plan.expressionType === ExpressionType.Identifier;
+    const isSingle = _plan.dependencyNames.length === 1;
+    const expressionTypeRequiresWatchRule =
+      _plan.expressionType === ExpressionType.Array ||
+      _plan.expressionType === ExpressionType.Object ||
+      _plan.expressionType === ExpressionType.Member ||
+      _plan.expressionType === ExpressionType.Function ||
+      _plan.expressionType === ExpressionType.Sequence;
+    const memberChain = _plan.memberChain;
+    const memberChainLastIsStatic =
+      _plan.expressionType === ExpressionType.Member &&
+      memberChain !== undefined &&
+      memberChain.segments.length > 0 &&
+      memberChain.segments[memberChain.segments.length - 1].kind === 'static';
+    const memberChainRoot = memberChain?.rootIdentifier;
+
+    const deps = _plan.watchDependencies;
+    const depCount = deps.length;
+    const depIsRootIdentifier = new Array<boolean>(depCount);
+    const depShouldForceDirty = new Array<boolean>(depCount);
+    const depRequiresWatchRule = new Array<boolean>(depCount);
+    for (let i = 0; i < depCount; i++) {
+      const dep = deps[i];
+      const isRootPath = dep.ownerPath.length === 0;
+      const isRootIdentifierDep = isIdentifier && isRootPath && isSingle;
+      const shouldForceDirtyForMemberLeaf =
+        memberChainLastIsStatic && isRootPath && dep.name === memberChainRoot;
+      const shouldForceDirty = (isIdentifier && isRootPath) || shouldForceDirtyForMemberLeaf;
+      depIsRootIdentifier[i] = isRootIdentifierDep;
+      depShouldForceDirty[i] = shouldForceDirty;
+      depRequiresWatchRule[i] =
+        expressionTypeRequiresWatchRule || shouldForceDirty || !isRootPath || dep.isMemberExpressionSegment;
+    }
+    this._depIsRootIdentifierDependency = depIsRootIdentifier;
+    this._depShouldForceDirty = depShouldForceDirty;
+    this._depRequiresWatchRuleStatically = depRequiresWatchRule;
+  }
+
+  public get type(): ExpressionType {
+    return this._plan.expressionType;
+  }
+
+  public get expressionString(): string {
+    return this._plan.expressionString;
+  }
+
+  public get id(): string {
+    if (!this._id) {
+      this._id = this.runtimeServices.guidFactory.create();
+    }
+    return this._id;
+  }
+
+  public get changed(): Observable<IExpression> {
+    if (!this._changed) {
+      this._changed = new ReplaySubject<IExpression>(1);
+      if (this._lastChangedValue) {
+        this._changed.next(this._lastChangedValue);
+      }
+    }
+    return this._changed;
+  }
+
+  public get isDisposed(): boolean {
+    return this._isDisposed;
+  }
+
+  public get changeHook(): ChangeHook | undefined {
+    return this._changeHook;
+  }
+
+  public set changeHook(value: ChangeHook | undefined) {
+    this._changeHook = value;
+    if (this._changeHook && this.value !== undefined) {
+      this._changeHook(this, undefined);
     }
   }
 
-  public override clone(): this {
+  public clone(): this {
     return new CompiledExpression(this._plan) as this;
   }
 
-  public override get childExpressions(): readonly IExpression[] {
-    if (this._contractChildren.length === 0) {
-      return super.childExpressions;
+  public get isAsync(): boolean | undefined {
+    if (this.type !== ExpressionType.Identifier) {
+      return false;
     }
 
-    return [...super.childExpressions, ...this._contractChildren];
+    if (this._bindContext === undefined) {
+      return undefined;
+    }
+
+    if (!this._isAsyncComputed) {
+      this._isAsyncComputed = true;
+      const dependencyName = this._plan.dependencyNames[0];
+      if (dependencyName) {
+        const rawValue = this.readDependencyRawValue(dependencyName, true).value;
+        this._isAsync =
+          rawValue !== UNRESOLVED && this.runtimeValueMetadata.isAsync(rawValue);
+      } else {
+        this._isAsync = false;
+      }
+    }
+
+    return this._isAsync;
   }
 
-  protected override get expressionEvaluateUnit():
-    | IExpressionEvaluateUnit
-    | undefined {
-    return this._evaluateUnit;
+  public toString(): string {
+    return this.expressionString;
   }
 
-  protected override onBind(settings: IExpressionBindConfiguration): void {
+  public bind(settings: IExpressionBindConfiguration): IExpression {
+    this.initializeRuntimeBinding(settings);
+    this.resetBindState();
+
+    const context = settings.context;
+    this._bindContext = context;
+    if (context === undefined) {
+      this.initializeEvaluateManager();
+      return this;
+    }
+
+    this.bindDependencyUnits(context);
+    this._evaluateUnit = this.createEvaluateUnit(context);
+    if (!this._evaluateManagerForExpression) {
+      this._evaluateManagerForExpression =
+        this.runtimeServices.expressionEvaluateManager.create(this.onCommit).instance;
+    }
+    this._evaluateManagerForExpression.register(this._evaluateUnit);
+    this._evaluateManagerForExpression.initialize();
+    return this;
+  }
+
+  private initializeRuntimeBinding(settings: IExpressionBindConfiguration): void {
+    this._runtimeServices = settings.services;
+    this._cachedIndexValueAccessor = settings.services.indexValueAccessor;
+    this._cachedIdentifierOwnerResolver = settings.services.identifierOwnerResolver;
+    this._cachedIdentifierWatchRuleFactory = settings.services.identifierWatchRuleFactory;
+    this._cachedWatchFactory = settings.services.watchFactory;
+    this._cachedValueMetadata = settings.services.valueMetadata;
+    this._leafIndexWatchRule = settings.leafIndexWatchRule;
+    this._owner = settings.owner;
+  }
+
+  private resetBindState(): void {
     this._dependencyUnits = [];
-    this._dependencyUnitByName.clear();
-    this._dependencyUnitByPath.clear();
+    if (this._requiresDependencyUnitByName) {
+      this._dependencyUnitByName.clear();
+    }
+    if (this._hasOwnerPathDependencies) {
+      this._dependencyUnitByPath.clear();
+    }
     this._dependencyWatchRules = [];
     this._watchDependencies = this._plan.watchDependencies;
     this._dirtyDependencyNames.clear();
     this._sequenceOperandValues = undefined;
     this._sequenceDependencySnapshot.clear();
-    this._proxyByObject = new WeakMap<object, unknown>();
-    this._needsResolvedMemberProxy = this._watchDependencies.some(
-      (dependency) =>
-        dependency.ownerPath.length > 0 || dependency.isMemberExpressionSegment,
-    );
+    this._proxyByObject = undefined;
+    this._isAsync = undefined;
+    this._isAsyncComputed = false;
+    this._shouldRefreshDependencyContexts = this._hasOwnerPathDependencies;
+    this._needsResolvedMemberProxy = this._needsResolvedMemberProxyInPlan;
+  }
 
-    const context = settings.context;
-    this._bindContext = context;
-    if (context === undefined) {
-      super.onBind(settings);
+  private bindDependencyUnits(context: unknown): void {
+    if (this._isSingleRootIdentifierExpression) {
+      const dependency = this._plan.watchDependencies[0];
+      const dependencyUnit = this.createDependencyUnit(dependency, 0, context);
+      this._dependencyUnits.push(dependencyUnit);
+      this._dependencyUnitByName.set(dependency.name, dependencyUnit);
       return;
     }
 
-    const watchDependencies = this._plan.watchDependencies;
-    for (let i = 0; i < watchDependencies.length; i++) {
-      const dependency = watchDependencies[i];
-      const dependencyName = dependency.name;
-      const dependencyPath = this.createDependencyPathKey(
-        dependency.ownerPath,
-        dependencyName,
-      );
-      const ownerContext = this.resolveOwnerContext(
-        dependencyName,
-        dependency.ownerPath,
-        context,
-      );
-      const watchRule = this.identifierWatchRuleFactory.create(ownerContext, {
-        index: dependencyName,
-        isLeaf: dependency.isLeaf,
-        isMemberExpressionSegment: dependency.isMemberExpressionSegment,
-        indexWatchRule: this.leafIndexWatchRule,
-      });
-      this._dependencyWatchRules.push(watchRule);
-      const dependencyUnit = new IdentifierExpressionEvaluateUnit(
-        dependencyName,
-        ownerContext,
-        this.watchFactory,
-        watchRule,
-        () => {},
-        this.root,
-        (valueContext, index) =>
-          this.indexValueAccessor.getValue(valueContext, index),
-        (value) => this.valueMetadata.isAsync(value),
-        this.type === 'identifier' && dependency.ownerPath.length === 0,
-        this.shouldForceDirtyForStaticMemberLeaf(dependency),
-      );
+    for (let i = 0; i < this._plan.watchDependencies.length; i++) {
+      const dependency = this._plan.watchDependencies[i];
+      const dependencyUnit = this.createDependencyUnit(dependency, i, context);
       this._dependencyUnits.push(dependencyUnit);
-      this._dependencyUnitByPath.set(dependencyPath, dependencyUnit);
+      if (this._hasOwnerPathDependencies) {
+        const dependencyPath = this.createDependencyPathKey(
+          dependency.ownerPath,
+          dependency.name,
+        );
+        this._dependencyUnitByPath.set(dependencyPath, dependencyUnit);
+      }
+
       if (
-        this._plan.dependencyNames.includes(dependencyName) &&
-        !this._dependencyUnitByName.has(dependencyName) &&
+        this._requiresDependencyUnitByName &&
+        !this._dependencyUnitByName.has(dependency.name) &&
         dependency.ownerPath.length === 0
       ) {
-        this._dependencyUnitByName.set(dependencyName, dependencyUnit);
+        this._dependencyUnitByName.set(dependency.name, dependencyUnit);
       }
     }
+  }
 
-    this._evaluateUnit = new FunctionExpressionEvaluateUnit(
+  private createDependencyUnit(
+    dependency: ICompiledExpressionPlan['watchDependencies'][number],
+    depIndex: number,
+    context: unknown,
+  ): CompiledDependencyEvaluateUnit {
+    const dependencyName = dependency.name;
+    const ownerContext = this.resolveOwnerContext(
+      dependencyName,
+      dependency.ownerPath,
+      context,
+    );
+    const shouldForceDirty = this._depShouldForceDirty[depIndex];
+    const requiresWatchRule =
+      this._depRequiresWatchRuleStatically[depIndex] ||
+      this.leafIndexWatchRule !== undefined;
+    const watchRule = requiresWatchRule
+      ? this.runtimeIdentifierWatchRuleFactory.create(ownerContext, {
+          index: dependencyName,
+          isLeaf: dependency.isLeaf,
+          isMemberExpressionSegment: dependency.isMemberExpressionSegment,
+          indexWatchRule: this.leafIndexWatchRule,
+        })
+      : undefined;
+
+    if (watchRule) {
+      this._dependencyWatchRules.push(watchRule);
+    }
+
+    return new CompiledDependencyEvaluateUnit(
+      dependencyName,
+      ownerContext,
+      this.runtimeWatchFactory,
+      watchRule,
+      this._depIsRootIdentifierDependency[depIndex]
+        ? this.commitIdentifierValue
+        : NOOP_COMMIT,
+      this.id,
+      this._readValue,
+      this._isDeferredValue,
+      shouldForceDirty,
+    );
+  }
+
+  private createEvaluateUnit(context: unknown): IExpressionEvaluateUnit {
+    if (this.type === ExpressionType.Identifier && this._dependencyUnits.length === 1) {
+      return this._dependencyUnits[0];
+    }
+
+    return new FunctionExpressionEvaluateUnit(
       this.expressionString,
       context,
       this._dependencyUnits,
@@ -173,51 +340,73 @@ export class CompiledExpression extends AbstractExpression {
       this.commitValue,
       this.onDependencyDirty,
     );
-    this.evaluateManagerForExpression.register(this._evaluateUnit);
-
-    for (let i = 0; i < this._contractChildren.length; i++) {
-      this._contractChildren[i].bind(settings);
-    }
-
-    super.onBind(settings);
   }
 
-  protected override evaluate(): unknown {
-    if (this._evaluateUnit) {
-      const value = this._evaluateUnit.value;
-      if (value !== undefined) {
-        return value;
+  public dispose(): void {
+    if (this._isDisposed) {
+      return;
+    }
+    if (!this._owner?.canDispose || this._owner?.canDispose()) {
+      if (this._evaluateManagerForExpression) {
+        this.runtimeServices.expressionEvaluateManager.release(this.onCommit);
       }
-      const eagerValue = this.evaluateCompiledValue();
-      return eagerValue === PENDING ? undefined : eagerValue;
+      this._evaluateManagerForExpression = undefined;
+      this.internalDispose();
     }
-    return this.evaluateCompiledValue();
+    this._owner?.release?.();
   }
 
-  protected override internalDispose(): void {
+  public get value(): unknown {
+    return this._value;
+  }
+
+  private internalDispose(): void {
     for (let i = 0; i < this._dependencyWatchRules.length; i++) {
       this._dependencyWatchRules[i].dispose();
     }
     this._dependencyWatchRules = [];
     this._dependencyUnits = [];
-    this._dependencyUnitByName.clear();
-    this._dependencyUnitByPath.clear();
+    if (this._requiresDependencyUnitByName) {
+      this._dependencyUnitByName.clear();
+    }
+    if (this._hasOwnerPathDependencies) {
+      this._dependencyUnitByPath.clear();
+    }
     this._dirtyDependencyNames.clear();
     this._sequenceOperandValues = undefined;
     this._sequenceDependencySnapshot.clear();
-    this._proxyByObject = new WeakMap<object, unknown>();
+    this._proxyByObject = undefined;
     this._needsResolvedMemberProxy = false;
-    for (let i = 0; i < this._contractChildren.length; i++) {
-      this._contractChildren[i].dispose();
-    }
-    this._contractChildren = [];
+    this._shouldRefreshDependencyContexts = false;
     this._bindContext = undefined;
+    this._runtimeServices = undefined;
+    this._cachedIndexValueAccessor = undefined;
+    this._cachedIdentifierOwnerResolver = undefined;
+    this._cachedIdentifierWatchRuleFactory = undefined;
+    this._cachedWatchFactory = undefined;
+    this._cachedValueMetadata = undefined;
     this._evaluateUnit = undefined;
-    super.internalDispose();
+    this._isAsync = undefined;
+    this._isAsyncComputed = false;
+    this._isDisposed = true;
   }
 
   private evaluateCompiledValue = (): unknown => {
-    this.refreshDependencyContexts();
+    if (this._shouldRefreshDependencyContexts) {
+      this.refreshDependencyContexts();
+    }
+
+    if (this.type === ExpressionType.Identifier) {
+      const identifierName = this._plan.dependencyNames[0];
+      if (identifierName) {
+        const rootDependencyUnit = this._dependencyUnits[0];
+        if (rootDependencyUnit?.value !== undefined) {
+          return rootDependencyUnit.value;
+        }
+        const resolved = this.resolveDependencyValue(identifierName, false);
+        return resolved === UNRESOLVED ? PENDING : resolved;
+      }
+    }
 
     const sequenceOperands = this._plan.sequenceOperands;
     if (sequenceOperands !== undefined && sequenceOperands.length > 0) {
@@ -225,17 +414,32 @@ export class CompiledExpression extends AbstractExpression {
     }
 
     const dependencyNames = this._plan.dependencyNames;
+    const memberChain = this._plan.memberChain;
+    if (memberChain !== undefined) {
+      const args = this.resolveDependencyArguments(dependencyNames, false);
+      if (args === PENDING) {
+        return PENDING;
+      }
+      return this.evaluateMemberChain(memberChain, dependencyNames, args);
+    }
+
     const args = this.resolveDependencyArguments(dependencyNames, false);
     if (args === PENDING) {
       return PENDING;
     }
 
-    const memberChain = this._plan.memberChain;
-    if (memberChain !== undefined) {
-      return this.evaluateMemberChain(memberChain, dependencyNames, args);
-    }
-
     try {
+      if (this._plan.evaluateResolvedDependencies) {
+        return this._plan.evaluateResolvedDependencies(
+          this._bindContext,
+          this.runtimeIdentifierOwnerResolver,
+          this.runtimeIndexValueAccessor,
+          (value: unknown, ownerContext: unknown) =>
+            this.normalizeDependencyValue(value, ownerContext),
+          (value: unknown) => this.wrapForRuntimeEvaluation(value),
+        );
+      }
+
       return this._plan.evaluate(...args);
     } catch (error) {
       if (error instanceof PendingDependencyValueError) {
@@ -246,12 +450,12 @@ export class CompiledExpression extends AbstractExpression {
   };
 
   private commitValue = (): void => {
+    if (this._plan.expressionString.includes('trackPrice')) {
+      console.log('[DEBUG commitValue called]', this._plan.expressionString, 'funcUnitVal=', this._evaluateUnit?.value, 'dirtyDeps=', [...this._dirtyDependencyNames]);
+    }
     let forceDirty = false;
     for (let i = 0; i < this._dependencyUnits.length; i++) {
-      const unit = this._dependencyUnits[i] as IdentifierExpressionEvaluateUnit & {
-        consumeForceDirtyCommit?: () => boolean;
-      };
-      if (unit.consumeForceDirtyCommit?.()) {
+      if (this._dependencyUnits[i].consumeForceDirtyCommit()) {
         forceDirty = true;
       }
     }
@@ -260,6 +464,14 @@ export class CompiledExpression extends AbstractExpression {
       this.markRootDirty();
     }
 
+    this.evaluateBottomToTop();
+    this._dirtyDependencyNames.clear();
+  };
+
+  private commitIdentifierValue = (_: unknown, forceDirty?: boolean): void => {
+    if (forceDirty) {
+      this.markRootDirty();
+    }
     this.evaluateBottomToTop();
     this._dirtyDependencyNames.clear();
   };
@@ -290,7 +502,7 @@ export class CompiledExpression extends AbstractExpression {
           return undefined;
         }
         try {
-          currentContext = this.indexValueAccessor.getValue(
+          currentContext = this.runtimeIndexValueAccessor.getValue(
             currentContext,
             ownerPath[i],
           );
@@ -298,7 +510,7 @@ export class CompiledExpression extends AbstractExpression {
           return undefined;
         }
       }
-      if (!this.indexValueAccessor.applies(currentContext, dependencyName)) {
+      if (!this.runtimeIndexValueAccessor.applies(currentContext, dependencyName)) {
         return undefined;
       }
       return currentContext;
@@ -313,8 +525,8 @@ export class CompiledExpression extends AbstractExpression {
     }
 
     const resolvedContext =
-      this.identifierOwnerResolver.resolve(dependencyName, context) ?? context;
-    if (!this.indexValueAccessor.applies(resolvedContext, dependencyName)) {
+      this.runtimeIdentifierOwnerResolver.resolve(dependencyName, context) ?? context;
+    if (!this.runtimeIndexValueAccessor.applies(resolvedContext, dependencyName)) {
       return undefined;
     }
     return resolvedContext;
@@ -354,26 +566,6 @@ export class CompiledExpression extends AbstractExpression {
       return value.bind(ownerContext);
     }
     return value;
-  }
-
-  private shouldForceDirtyForStaticMemberLeaf(
-    dependency: ICompiledExpressionPlan['watchDependencies'][number],
-  ): boolean {
-    if (this.type !== ExpressionType.Member) {
-      return false;
-    }
-
-    const memberChain = this._plan.memberChain;
-    if (!memberChain || memberChain.segments.length === 0) {
-      return false;
-    }
-
-    const lastSegment = memberChain.segments[memberChain.segments.length - 1];
-    return (
-      lastSegment.kind === 'static' &&
-      dependency.ownerPath.length === 0 &&
-      dependency.name === memberChain.rootIdentifier
-    );
   }
 
   private resolveDependencyArguments(
@@ -422,7 +614,7 @@ export class CompiledExpression extends AbstractExpression {
       : undefined;
     const ownerContext = watchedUnit
       ? watchedUnit.context
-      : this.identifierOwnerResolver.resolve(dependencyName, this._bindContext) ??
+      : this.runtimeIdentifierOwnerResolver.resolve(dependencyName, this._bindContext) ??
         this._bindContext;
 
     let rawValue: unknown;
@@ -430,7 +622,10 @@ export class CompiledExpression extends AbstractExpression {
       rawValue = watchedUnit.value;
     } else {
       try {
-        rawValue = this.indexValueAccessor.getValue(ownerContext, dependencyName);
+        rawValue = this.runtimeIndexValueAccessor.getValue(
+          ownerContext,
+          dependencyName,
+        );
       } catch {
         rawValue =
           ownerContext !== null &&
@@ -462,6 +657,7 @@ export class CompiledExpression extends AbstractExpression {
     }
 
     const target = value as object;
+    this._proxyByObject ??= new WeakMap<object, unknown>();
     const cachedProxy = this._proxyByObject.get(target);
     if (cachedProxy !== undefined) {
       return cachedProxy;
@@ -475,7 +671,7 @@ export class CompiledExpression extends AbstractExpression {
 
         let resolvedValue: unknown;
         try {
-          resolvedValue = this.indexValueAccessor.getResolvedValue(
+          resolvedValue = this.runtimeIndexValueAccessor.getResolvedValue(
             innerTarget,
             property,
           );
@@ -515,7 +711,7 @@ export class CompiledExpression extends AbstractExpression {
 
     const changedDependencies = initialRun
       ? new Set(dependencyNames)
-      : new Set(this._dirtyDependencyNames);
+      : this.collectActuallyChangedDependencies(this._dirtyDependencyNames);
 
     for (let i = 0; i < sequenceOperands.length; i++) {
       const operand = sequenceOperands[i];
@@ -556,6 +752,21 @@ export class CompiledExpression extends AbstractExpression {
       }
     }
     return false;
+  }
+
+  private collectActuallyChangedDependencies(
+    dirtyDependencies: Set<string>,
+  ): Set<string> {
+    const changedDependencies = new Set<string>();
+    dirtyDependencies.forEach((dependencyName) => {
+      const nextValue = this.readDependencyRawValue(dependencyName, true).value;
+      const previousValue = this._sequenceDependencySnapshot.get(dependencyName);
+      if (!Object.is(previousValue, nextValue)) {
+        this._sequenceDependencySnapshot.set(dependencyName, nextValue);
+        changedDependencies.add(dependencyName);
+      }
+    });
+    return changedDependencies;
   }
 
   private trackSequenceDependencyMutations(
@@ -608,7 +819,7 @@ export class CompiledExpression extends AbstractExpression {
       }
 
       try {
-        current = this.indexValueAccessor.getResolvedValue(current, index);
+        current = this.runtimeIndexValueAccessor.getResolvedValue(current, index);
       } catch {
         return undefined;
       }
@@ -625,79 +836,89 @@ export class CompiledExpression extends AbstractExpression {
     return current;
   }
 
-  private createContractChildren(): AbstractExpression[] {
-    const memberChain = this._plan.memberChain;
-    if (!memberChain) {
-      return [];
-    }
-
-    const segments: AbstractExpression[] = [];
-    segments.push(
-      new CompiledVirtualExpression(
-        ExpressionType.Identifier,
-        memberChain.rootIdentifier,
-        () => {
-          const value = this.readDependencyRawValue(
-            memberChain.rootIdentifier,
-            true,
-          ).value;
-          return value === UNRESOLVED ? undefined : value;
-        },
-      ),
-    );
-
-    for (let i = 0; i < memberChain.segments.length; i++) {
-      const segment = memberChain.segments[i];
-      if (segment.kind === 'static') {
-        segments.push(
-          new CompiledVirtualExpression(
-            ExpressionType.Identifier,
-            String(segment.key ?? ''),
-            () => segment.key,
-          ),
-        );
-        continue;
-      }
-
-      const dependencyNames = segment.dependencyNames ?? [];
-      const dependencyChildren = dependencyNames.map(
-        (dependencyName) =>
-          new CompiledVirtualExpression(
-            ExpressionType.Identifier,
-            dependencyName,
-            () => {
-              const value = this.readDependencyRawValue(
-                dependencyName,
-                true,
-              ).value;
-              return value === UNRESOLVED ? undefined : value;
-            },
-          ),
-      );
-
-      segments.push(
-        new CompiledVirtualExpression(
-          ExpressionType.ComputedIndex,
-          segment.expressionString ?? '[computed]',
-          () => {
-            const args = dependencyNames.map((dependencyName) => {
-              const value = this.readDependencyRawValue(dependencyName, true).value;
-              return value === UNRESOLVED ? undefined : value;
-            });
-            try {
-              if (segment.evaluateIndexByOwnDependencies) {
-                return segment.evaluateIndexByOwnDependencies(...args);
-              }
-              return segment.evaluateIndex?.(...args);
-            } catch {
-              return undefined;
-            }
-          },
-          dependencyChildren,
-        ),
-      );
-    }
-
-    return segments;
+  private get runtimeIndexValueAccessor() {
+    return this._cachedIndexValueAccessor!;
   }
+
+  private get runtimeIdentifierOwnerResolver() {
+    return this._cachedIdentifierOwnerResolver!;
+  }
+
+  private get runtimeIdentifierWatchRuleFactory() {
+    return this._cachedIdentifierWatchRuleFactory!;
+  }
+
+  private get runtimeWatchFactory() {
+    return this._cachedWatchFactory!;
+  }
+
+  private get runtimeValueMetadata() {
+    return this._cachedValueMetadata!;
+  }
+
+  private get runtimeServices(): IExpressionServices {
+    return this._runtimeServices as IExpressionServices;
+  }
+
+  private get leafIndexWatchRule(): IIndexWatchRule | undefined {
+    return this._leafIndexWatchRule;
+  }
+
+  private initializeEvaluateManager(): void {
+    if (!this._evaluateManagerForExpression) {
+      this._evaluateManagerForExpression =
+        this.runtimeServices.expressionEvaluateManager.create(this.onCommit).instance;
+    }
+    this._evaluateManagerForExpression.initialize();
+  }
+
+  private evaluateBottomToTop(): boolean {
+    const value = this.evaluateCompiledValue();
+    if (this._plan.expressionString.includes('trackPrice')) {
+      console.log('[DEBUG evaluateBottomToTop]', this._plan.expressionString, 'value=', value, 'old=', this._value, 'dirty=', this._isDirty, 'dirtyDeps=', [...this._dirtyDependencyNames]);
+    }
+    if (value === PENDING) {
+      return false;
+    }
+
+    this._oldValue = this._value;
+    this._value = value;
+    if (!Object.is(this._oldValue, this._value)) {
+      this._isDirty = true;
+    }
+
+    if (this._changeHook) {
+      this._changeHook(this, this._oldValue);
+    }
+    return true;
+  }
+
+  private markRootDirty(): void {
+    this._isDirty = true;
+  }
+
+  private tryEmitChanged = (): void => {
+    if (this._isDirty) {
+      this._isDirty = false;
+      this._lastChangedValue = this;
+      this._changed?.next(this);
+    }
+  };
+
+  private evalateTopToBottom = (): void => {
+    this._oldValue = this._value;
+    this._value = this.evaluateCompiledValue();
+    if (!Object.is(this._oldValue, this._value)) {
+      this._isDirty = true;
+    }
+    this.tryEmitChanged();
+  };
+
+  private onCommit = (initialized: boolean): void => {
+    if (initialized) {
+      this.tryEmitChanged();
+    } else {
+      this.evalateTopToBottom();
+    }
+  };
 }

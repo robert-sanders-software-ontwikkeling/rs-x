@@ -11,6 +11,6 @@ export interface ICompiledExpressionEngine {
 }
 
 export interface IExpressionEngineSelector {
-  create(expressionString: string): IExpression<unknown, unknown>;
+  create(expressionString: string, compiled?: boolean): IExpression<unknown, unknown>;
   getMode(): RsxExpressionEngineMode;
 }

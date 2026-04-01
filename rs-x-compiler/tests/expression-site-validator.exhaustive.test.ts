@@ -8,7 +8,7 @@ import {
   ExpressionType,
   JsExpressionAstParser,
   JsEspreeExpressionParser,
-  type IExpression,
+  type IExpressionTree,
 } from '@rs-x/expression-parser';
 
 import { validateExpressionSites } from '../lib/compiler/expression-site-validator';
@@ -108,9 +108,9 @@ const expressionByType: Record<ExpressionType, string> = {
   [ExpressionType.UnaryPlus]: '+count',
 };
 
-function collectExpressionTypes(root: IExpression): Set<ExpressionType> {
+function collectExpressionTypes(root: IExpressionTree): Set<ExpressionType> {
   const seen = new Set<ExpressionType>();
-  const stack: IExpression[] = [root];
+  const stack: IExpressionTree[] = [root];
 
   while (stack.length > 0) {
     const current = stack.pop();

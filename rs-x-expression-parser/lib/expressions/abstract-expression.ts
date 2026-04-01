@@ -27,12 +27,13 @@ import {
   type ChangeHook,
   type ExpressionType,
   type IExpression,
+  type IExpressionTree,
 } from './expression-parser.interface';
 
 export abstract class AbstractExpression<
   T = unknown,
   PT = unknown,
-> implements IExpression<T> {
+> implements IExpressionTree<T> {
   private _changed: ReplaySubject<IExpression> | undefined;
   private _lastChangedValue: IExpression | undefined;
   private _parent: AbstractExpression<PT> | undefined;
@@ -137,7 +138,7 @@ export abstract class AbstractExpression<
     return this._changed;
   }
 
-  public get childExpressions(): readonly IExpression[] {
+  public get childExpressions(): readonly IExpressionTree[] {
     return this._childExpressions;
   }
 

@@ -1,0 +1,792 @@
+Statistical profiling result from isolate-0x138018000-28227-compiled-hotpath-rebuilt.log, (10454 ticks, 9 unaccounted, 0 excluded).
+
+ [Shared libraries]:
+   ticks  total  nonlib   name
+   8422   80.6%          /Users/robertsanders/.nvm/versions/node/v25.4.0/bin/node
+    980    9.4%          /usr/lib/system/libsystem_kernel.dylib
+    169    1.6%          /usr/lib/system/libsystem_malloc.dylib
+     24    0.2%          /usr/lib/system/libsystem_platform.dylib
+      9    0.1%          /usr/lib/system/libdyld.dylib
+      3    0.0%          /usr/lib/system/libsystem_pthread.dylib
+      3    0.0%          /usr/lib/libc++abi.dylib
+      2    0.0%          /usr/lib/system/libsystem_m.dylib
+      1    0.0%          /usr/lib/libc++.1.dylib
+
+ [JavaScript]:
+   ticks  total  nonlib   name
+     44    0.4%    5.2%  JS: *Subscription.unsubscribe /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subscription.js:46:51
+     34    0.3%    4.0%  JS: *findIndexAccessor file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:574:20
+     29    0.3%    3.4%  JS: *randomUUID node:internal/crypto/webcrypto:91:20
+     19    0.2%    2.3%  JS: *getOrCreateId file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2186:16
+     16    0.2%    1.9%  JS: *newDescriptor.get file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1708:25
+     14    0.1%    1.7%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1186:39
+     13    0.1%    1.5%  JS: *releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:103:18
+     13    0.1%    1.5%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:82:17
+     11    0.1%    1.3%  JS: +Watch2 file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3479:3
+     10    0.1%    1.2%  JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+     10    0.1%    1.2%  JS: *dispatch file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1380:11
+     10    0.1%    1.2%  JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2862:17
+     10    0.1%    1.2%  JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1263:22
+      9    0.1%    1.1%  JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1172:17
+      8    0.1%    1.0%  JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1272:41
+      8    0.1%    1.0%  JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2512:50
+      8    0.1%    1.0%  JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2113:37
+      8    0.1%    1.0%  JS: *resolveOwnerContext file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2555:22
+      8    0.1%    1.0%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:963:17
+      8    0.1%    1.0%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:5100:17
+      7    0.1%    0.8%  JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1086:47
+      7    0.1%    0.8%  JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2036:10
+      7    0.1%    0.8%  JS: *updateReferenceCount file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1887:23
+      7    0.1%    0.8%  JS: *release file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1839:10
+      7    0.1%    0.8%  JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2036:10
+      7    0.1%    0.8%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1757:42
+      7    0.1%    0.8%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:3547:22
+      6    0.1%    0.7%  JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3518:8
+      6    0.1%    0.7%  JS: +refreshDependencyContexts file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2589:28
+      6    0.1%    0.7%  JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3106:25
+      6    0.1%    0.7%  JS: *removeStateEventSubscription file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3243:31
+      6    0.1%    0.7%  JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1246:9
+      6    0.1%    0.7%  JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:5139:9
+      6    0.1%    0.7%  JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1825:9
+      6    0.1%    0.7%  JS: *_CompiledExpression file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2410:14
+      6    0.1%    0.7%  JS: *Subject.next /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subject.js:57:39
+      6    0.1%    0.7%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2217:43
+      5    0.0%    0.6%  JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      5    0.0%    0.6%  JS: ^unwatch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3560:10
+      5    0.0%    0.6%  JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      5    0.0%    0.6%  JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:5100:17
+      5    0.0%    0.6%  JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1020:3
+      5    0.0%    0.6%  JS: *internalDispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2491:18
+      5    0.0%    0.6%  JS: *SafeSubscriber /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subscriber.js:149:28
+      5    0.0%    0.6%  JS: *ReplaySubject._subscribe /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/ReplaySubject.js:47:51
+      5    0.0%    0.6%  JS: *PropertObserver2 file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1632:14
+      5    0.0%    0.6%  JS: *KeyedInstanceFactory file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1756:14
+      5    0.0%    0.6%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:965:42
+      4    0.0%    0.5%  JS: ^removeListeners file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3578:18
+      4    0.0%    0.5%  JS: ^evalateTopToBottom file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2199:21
+      4    0.0%    0.5%  JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      4    0.0%    0.5%  JS: +internalDispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2491:18
+      4    0.0%    0.5%  JS: +deepClone file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2766:12
+      4    0.0%    0.5%  JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4024:9
+      4    0.0%    0.5%  JS: *subscribeStateEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2992:23
+      4    0.0%    0.5%  JS: *getOrCreateId file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1884:16
+      4    0.0%    0.5%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1755:17
+      4    0.0%    0.5%  JS: *applies file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:6278:10
+      4    0.0%    0.5%  JS: *applies file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2736:10
+      4    0.0%    0.5%  JS: *Subject._subscribe /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subject.js:125:45
+      4    0.0%    0.5%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2905:67
+      3    0.0%    0.4%  JS: ^onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      3    0.0%    0.4%  JS: ^init file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:100:42
+      3    0.0%    0.4%  JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3110:41
+      3    0.0%    0.4%  JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1687:50
+      3    0.0%    0.4%  JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3518:8
+      3    0.0%    0.4%  JS: +tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3106:25
+      3    0.0%    0.4%  JS: +releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2218:18
+      3    0.0%    0.4%  JS: +emitChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3073:13
+      3    0.0%    0.4%  JS: +dispatch file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1380:11
+      3    0.0%    0.4%  JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:82:17
+      3    0.0%    0.4%  JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3618:17
+      3    0.0%    0.4%  JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1755:17
+      3    0.0%    0.4%  JS: +createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1183:22
+      3    0.0%    0.4%  JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:3609:9
+      3    0.0%    0.4%  JS: +ReplaySubject._subscribe /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/ReplaySubject.js:47:51
+      3    0.0%    0.4%  JS: +EvaluateManagerForExpression2 file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1430:3
+      3    0.0%    0.4%  JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:346:39
+      3    0.0%    0.4%  JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1627:20
+      3    0.0%    0.4%  JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1086:47
+      3    0.0%    0.4%  JS: *releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2218:18
+      3    0.0%    0.4%  JS: *onReleased file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1761:13
+      3    0.0%    0.4%  JS: *onReleased file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4040:13
+      3    0.0%    0.4%  JS: *getFromId file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1799:12
+      3    0.0%    0.4%  JS: *get indexValueAccessor file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2067:25
+      3    0.0%    0.4%  JS: *get context file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1055:14
+      3    0.0%    0.4%  JS: *cryptoThisCheck node:internal/bootstrap/web/exposed-window-or-worker:112:29
+      3    0.0%    0.4%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2904:17
+      3    0.0%    0.4%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2829:17
+      3    0.0%    0.4%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1649:17
+      3    0.0%    0.4%  JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4024:9
+      3    0.0%    0.4%  JS: *applies file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2790:10
+      3    0.0%    0.4%  JS: *_AbstractExpression file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1953:14
+      2    0.0%    0.2%  JS: ^setInitialValue file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3339:18
+      2    0.0%    0.2%  JS: ^onChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3377:11
+      2    0.0%    0.2%  JS: ^get context file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1706:14
+      2    0.0%    0.2%  JS: ^dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1738:10
+      2    0.0%    0.2%  JS: ^dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1167:10
+      2    0.0%    0.2%  JS: ^createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3618:17
+      2    0.0%    0.2%  JS: ^createContractChildren file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2803:25
+      2    0.0%    0.2%  JS: +wrapForRuntimeEvaluation file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2675:27
+      2    0.0%    0.2%  JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      2    0.0%    0.2%  JS: +test file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:5056:7
+      2    0.0%    0.2%  JS: +serializeUUID node:internal/crypto/random:362:23
+      2    0.0%    0.2%  JS: +readDependencyRawValue file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2645:25
+      2    0.0%    0.2%  JS: +patch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1648:8
+      2    0.0%    0.2%  JS: +onIndexSet file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1277:13
+      2    0.0%    0.2%  JS: +isReadonlyProperty file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:253:28
+      2    0.0%    0.2%  JS: +getGroupMemberId file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3610:19
+      2    0.0%    0.2%  JS: +evalateTopToBottom file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2199:21
+      2    0.0%    0.2%  JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      2    0.0%    0.2%  JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3584:10
+      2    0.0%    0.2%  JS: +createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2862:17
+      2    0.0%    0.2%  JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1246:9
+      2    0.0%    0.2%  JS: +_ObserverGroup file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:265:14
+      2    0.0%    0.2%  JS: +_AbstractExpression file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1934:3
+      2    0.0%    0.2%  JS: +StateChangeSubscriptionsForContextManager2 file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2853:14
+      2    0.0%    0.2%  JS: +PropertObserver2 file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1632:14
+      2    0.0%    0.2%  JS: +GroupedKeyedInstanceFactory file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2132:35
+      2    0.0%    0.2%  JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1186:39
+      2    0.0%    0.2%  JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2536:40
+      2    0.0%    0.2%  JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1077:38
+      2    0.0%    0.2%  JS: +<anonymous> /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subject.js:59:46
+      2    0.0%    0.2%  JS: *unnsubscribeToObserverEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3047:31
+      2    0.0%    0.2%  JS: *releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2907:18
+      2    0.0%    0.2%  JS: *patch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1648:8
+      2    0.0%    0.2%  JS: *normalizeString node:path:92:25
+      2    0.0%    0.2%  JS: *isAsync file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2827:10
+      2    0.0%    0.2%  JS: *getOrCreateInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1899:22
+      2    0.0%    0.2%  JS: *get valueMetadata file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2082:20
+      2    0.0%    0.2%  JS: *get value file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:24:12
+      2    0.0%    0.2%  JS: *get target file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:30:13
+      2    0.0%    0.2%  JS: *applies file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2654:10
+      2    0.0%    0.2%  JS: *applies file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2627:10
+      2    0.0%    0.2%  JS: *ReplaySubject.next /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/ReplaySubject.js:38:45
+      2    0.0%    0.2%  JS: *GroupedKeyedInstanceFactory file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2132:35
+      2    0.0%    0.2%  JS: *GroupedChangeSubscriptionsForContextManager file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:73:14
+      2    0.0%    0.2%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1758:39
+      2    0.0%    0.2%  JS: *<anonymous> /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subject.js:59:46
+      1    0.0%    0.1%  JS: ^watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+      1    0.0%    0.1%  JS: ^set value file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2002:12
+      1    0.0%    0.1%  JS: ^set file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2747:6
+      1    0.0%    0.1%  JS: ^releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1655:18
+      1    0.0%    0.1%  JS: ^refreshDependencyContexts file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2589:28
+      1    0.0%    0.1%  JS: ^readDependencyRawValue file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2645:25
+      1    0.0%    0.1%  JS: ^onIndexSet file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1277:13
+      1    0.0%    0.1%  JS: ^onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2105:9
+      1    0.0%    0.1%  JS: ^isURL node:internal/url:771:15
+      1    0.0%    0.1%  JS: ^internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3068:21
+      1    0.0%    0.1%  JS: ^getFromId file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1799:12
+      1    0.0%    0.1%  JS: ^get value file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3503:12
+      1    0.0%    0.1%  JS: ^get parent file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2023:13
+      1    0.0%    0.1%  JS: ^get isEvaluationBoundary file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2088:27
+      1    0.0%    0.1%  JS: ^get evaluateManagerForExpression file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2091:35
+      1    0.0%    0.1%  JS: ^flush file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1596:8
+      1    0.0%    0.1%  JS: ^findLongestRegisteredExtension node:internal/modules/cjs/loader:584:40
+      1    0.0%    0.1%  JS: ^evaluateSafely file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1747:17
+      1    0.0%    0.1%  JS: ^dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1465:10
+      1    0.0%    0.1%  JS: ^createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2829:17
+      1    0.0%    0.1%  JS: ^create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:3972:9
+      1    0.0%    0.1%  JS: ^consumeForceDirtyCommit file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1162:26
+      1    0.0%    0.1%  JS: ^acquireStateEventSubscription file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3319:32
+      1    0.0%    0.1%  JS: ^StateForObjectManager file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2741:14
+      1    0.0%    0.1%  JS: ^IdentifierIndexWatchRuleFactoryForContext2 file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:5087:3
+      1    0.0%    0.1%  JS: ^EvaluateManagerForExpression2 file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1452:14
+      1    0.0%    0.1%  JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3620:42
+      1    0.0%    0.1%  JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3554:47
+      1    0.0%    0.1%  JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/scripts/profile-expression-hotpath.mjs:51:34
+      1    0.0%    0.1%  JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2536:40
+      1    0.0%    0.1%  JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2512:50
+      1    0.0%    0.1%  JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2445:67
+      1    0.0%    0.1%  JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1466:33
+      1    0.0%    0.1%  JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1451:41
+      1    0.0%    0.1%  JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1090:45
+      1    0.0%    0.1%  JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1077:38
+      1    0.0%    0.1%  JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2837:56
+      1    0.0%    0.1%  JS: +watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+      1    0.0%    0.1%  JS: +unnsubscribeToObserverEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3047:31
+      1    0.0%    0.1%  JS: +tryFlushQueue file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1575:16
+      1    0.0%    0.1%  JS: +subscribeCommitted file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:3525:21
+      1    0.0%    0.1%  JS: +shouldForceDirtyForStaticMemberLeaf file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2614:38
+      1    0.0%    0.1%  JS: +set value file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2002:12
+      1    0.0%    0.1%  JS: +rsx file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:6366:13
+      1    0.0%    0.1%  JS: +resolveOwnerContext file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2555:22
+      1    0.0%    0.1%  JS: +replaceState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2802:15
+      1    0.0%    0.1%  JS: +randomUUID node:internal/crypto/webcrypto:91:20
+      1    0.0%    0.1%  JS: +onReleased file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4040:13
+      1    0.0%    0.1%  JS: +onDispose file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1876:12
+      1    0.0%    0.1%  JS: +onChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3377:11
+      1    0.0%    0.1%  JS: +normalizeString node:path:92:25
+      1    0.0%    0.1%  JS: +isAsync file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2827:10
+      1    0.0%    0.1%  JS: +init file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:39:7
+      1    0.0%    0.1%  JS: +init file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:275:7
+      1    0.0%    0.1%  JS: +getValueMetadata file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2836:19
+      1    0.0%    0.1%  JS: +getValue file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3119:11
+      1    0.0%    0.1%  JS: +getSubsriptionData file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:79:21
+      1    0.0%    0.1%  JS: +getState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3011:11
+      1    0.0%    0.1%  JS: +getReferenceCount file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1852:20
+      1    0.0%    0.1%  JS: +getPathFromURLPosix node:internal/url:1559:29
+      1    0.0%    0.1%  JS: +getId file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1749:8
+      1    0.0%    0.1%  JS: +getId file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4018:8
+      1    0.0%    0.1%  JS: +getId file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:3603:8
+      1    0.0%    0.1%  JS: +get watchFactory file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2079:19
+      1    0.0%    0.1%  JS: +get valueMetadata file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2082:20
+      1    0.0%    0.1%  JS: +get value file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1052:12
+      1    0.0%    0.1%  JS: +get leafIndexWatchRule file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2061:25
+      1    0.0%    0.1%  JS: +get isEmpty file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1793:14
+      1    0.0%    0.1%  JS: +get context file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1055:14
+      1    0.0%    0.1%  JS: +emitValue file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:316:12
+      1    0.0%    0.1%  JS: +emitStartChangeCycleEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3272:29
+      1    0.0%    0.1%  JS: +emitChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:58:13
+      1    0.0%    0.1%  JS: +disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1636:18
+      1    0.0%    0.1%  JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1738:10
+      1    0.0%    0.1%  JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1167:10
+      1    0.0%    0.1%  JS: +cryptoThisCheck node:internal/bootstrap/web/exposed-window-or-worker:112:29
+      1    0.0%    0.1%  JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:963:17
+      1    0.0%    0.1%  JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1649:17
+      1    0.0%    0.1%  JS: +createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1263:22
+      1    0.0%    0.1%  JS: +createContractChildren file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2803:25
+      1    0.0%    0.1%  JS: +createAndGetInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1830:23
+      1    0.0%    0.1%  JS: +consumeForceDirtyCommit file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1162:26
+      1    0.0%    0.1%  JS: +commit file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:3531:9
+      1    0.0%    0.1%  JS: +__values /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subject.js:17:51
+      1    0.0%    0.1%  JS: +Watch2 file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3493:14
+      1    0.0%    0.1%  JS: +Subscription.unsubscribe /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subscription.js:46:51
+      1    0.0%    0.1%  JS: +Subject.next /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subject.js:57:39
+      1    0.0%    0.1%  JS: +Subject._subscribe /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subject.js:125:45
+      1    0.0%    0.1%  JS: +SafeSubscriber /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subscriber.js:149:28
+      1    0.0%    0.1%  JS: +ReplaySubject.next /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/ReplaySubject.js:38:45
+      1    0.0%    0.1%  JS: +ReplaySubject._trimBuffer /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/ReplaySubject.js:59:52
+      1    0.0%    0.1%  JS: +ReplaySubject /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/ReplaySubject.js:23:27
+      1    0.0%    0.1%  JS: +PropertyObserverProxyPairManager2 file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:954:14
+      1    0.0%    0.1%  JS: +PropertyObserverManager2 file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1746:14
+      1    0.0%    0.1%  JS: +GroupedChangeSubscriptionsForContextManager file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:73:14
+      1    0.0%    0.1%  JS: +FunctionExpressionEvaluateUnit file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1695:14
+      1    0.0%    0.1%  JS: +AbstractObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:17:14
+      1    0.0%    0.1%  JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:965:42
+      1    0.0%    0.1%  JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3111:36
+      1    0.0%    0.1%  JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1757:42
+      1    0.0%    0.1%  JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:5128:114
+      1    0.0%    0.1%  JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2466:21
+      1    0.0%    0.1%  JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1674:3
+      1    0.0%    0.1%  JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1559:38
+      1    0.0%    0.1%  JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1090:45
+      1    0.0%    0.1%  JS: *set value file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2002:12
+      1    0.0%    0.1%  JS: *rsx file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:6366:13
+      1    0.0%    0.1%  JS: *releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:972:18
+      1    0.0%    0.1%  JS: *releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1880:18
+      1    0.0%    0.1%  JS: *refreshDependencyContexts file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2589:28
+      1    0.0%    0.1%  JS: *queueMicrotask node:internal/process/task_queues:159:24
+      1    0.0%    0.1%  JS: *onReleased file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:108:13
+      1    0.0%    0.1%  JS: *onReleased file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:5106:13
+      1    0.0%    0.1%  JS: *onReleased file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1878:13
+      1    0.0%    0.1%  JS: *newDescriptor.set file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1711:25
+      1    0.0%    0.1%  JS: *isReadonlyProperty file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:253:28
+      1    0.0%    0.1%  JS: *init file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:39:7
+      1    0.0%    0.1%  JS: *init file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:275:7
+      1    0.0%    0.1%  JS: *getValue file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:558:11
+      1    0.0%    0.1%  JS: *getReferenceCount file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1852:20
+      1    0.0%    0.1%  JS: *getId file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2796:8
+      1    0.0%    0.1%  JS: *getId file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2744:8
+      1    0.0%    0.1%  JS: *getId file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1776:8
+      1    0.0%    0.1%  JS: *getId file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1749:8
+      1    0.0%    0.1%  JS: *get identifierWatchRuleFactory file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2076:33
+      1    0.0%    0.1%  JS: *get context file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3500:14
+      1    0.0%    0.1%  JS: *get /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subject.js:114:23
+      1    0.0%    0.1%  JS: *createWithId file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1908:15
+      1    0.0%    0.1%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4067:17
+      1    0.0%    0.1%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4043:17
+      1    0.0%    0.1%  JS: *createId file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:5097:11
+      1    0.0%    0.1%  JS: *createDependencyPathKey file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2602:26
+      1    0.0%    0.1%  JS: *applies file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2763:10
+      1    0.0%    0.1%  JS: *applies file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2708:10
+      1    0.0%    0.1%  JS: *applies file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2681:10
+      1    0.0%    0.1%  JS: *Subscription.add /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subscription.js:115:43
+      1    0.0%    0.1%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:346:39
+      1    0.0%    0.1%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1272:41
+
+ [C++]:
+   ticks  total  nonlib   name
+
+ [Summary]:
+   ticks  total  nonlib   name
+    832    8.0%   98.9%  JavaScript
+      0    0.0%    0.0%  C++
+   6001   57.4%  713.6%  GC
+   9613   92.0%          Shared libraries
+      9    0.1%          Unaccounted
+
+ [C++ entry points]:
+   ticks    cpp   total   name
+
+ [Bottom up (heavy) profile]:
+  Note: percentage shows a share of a particular caller in the total
+  amount of its parent calls.
+  Callers occupying less than 1.0% are not shown.
+
+   ticks parent  name
+   8422   80.6%  /Users/robertsanders/.nvm/versions/node/v25.4.0/bin/node
+    623    7.4%    /Users/robertsanders/.nvm/versions/node/v25.4.0/bin/node
+    119   19.1%      JS: *getOrCreateId file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2186:16
+     30   25.2%        JS: *createAndGetInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1830:23
+     30  100.0%          JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+     28   93.3%            JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      2    6.7%            JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1719:8
+     22   18.5%        JS: +createAndGetInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1830:23
+     22  100.0%          JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+     18   81.8%            JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      4   18.2%            JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1719:8
+     22   18.5%        JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2862:17
+     22  100.0%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:82:17
+     22  100.0%            JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3106:25
+     19   16.0%        JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+     19  100.0%          JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+     14   73.7%            JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      4   21.1%            JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2105:9
+      1    5.3%            JS: ^onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2105:9
+     13   10.9%        JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1263:22
+     13  100.0%          JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1246:9
+     13  100.0%            JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:963:17
+      8    6.7%        JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3106:25
+      6   75.0%          JS: ^watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+      3   50.0%            JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3518:8
+      3   50.0%            JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3518:8
+      2   25.0%          JS: +watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+      2  100.0%            JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3518:8
+      2    1.7%        JS: +createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2862:17
+      2  100.0%          JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:82:17
+      2  100.0%            JS: +tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3106:25
+      2    1.7%        JS: +createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1263:22
+      2  100.0%          JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1246:9
+      2  100.0%            JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:963:17
+     21    3.4%      JS: *releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:103:18
+      7   33.3%        JS: *releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2907:18
+      7  100.0%          JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1809:10
+      7  100.0%            JS: ~clear file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3005:8
+      7   33.3%        JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1186:39
+      7  100.0%          JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      6   85.7%            JS: *unnsubscribeToObserverEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3047:31
+      1   14.3%            JS: +unnsubscribeToObserverEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3047:31
+      4   19.0%        JS: *release file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1839:10
+      4  100.0%          JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1186:39
+      3   75.0%            JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      1   25.0%            JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      2    9.5%        JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1809:10
+      2  100.0%          JS: +releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2907:18
+      2  100.0%            JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1809:10
+      1    4.8%        JS: *updateReferenceCount file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1887:23
+      1  100.0%          JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1186:39
+      1  100.0%            JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+     20    3.2%      JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2036:10
+     20  100.0%        JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/scripts/profile-expression-hotpath.mjs:1:1
+     20  100.0%          /Users/robertsanders/.nvm/versions/node/v25.4.0/bin/node
+     19    3.0%      JS: *updateReferenceCount file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1887:23
+      7   36.8%        JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2036:10
+      7  100.0%          JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/scripts/profile-expression-hotpath.mjs:1:1
+      7  100.0%            /Users/robertsanders/.nvm/versions/node/v25.4.0/bin/node
+      2   10.5%        JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3584:10
+      2  100.0%          JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1738:10
+      1   50.0%            JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1466:33
+      1   50.0%            JS: +releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1655:18
+      2   10.5%        JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1809:10
+      2  100.0%          JS: +releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2907:18
+      2  100.0%            JS: *updateReferenceCount file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1887:23
+      2   10.5%        JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:3972:9
+      2  100.0%          JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:6368:10
+      2  100.0%            JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/scripts/profile-expression-hotpath.mjs:51:34
+      1    5.3%        JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      1  100.0%          JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      1  100.0%            JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      1    5.3%        JS: +onReleased file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4040:13
+      1  100.0%          JS: *updateReferenceCount file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1887:23
+      1  100.0%            JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2036:10
+      1    5.3%        JS: +createWithId file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1908:15
+      1  100.0%          JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      1  100.0%            JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4024:9
+      1    5.3%        JS: +createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1172:17
+      1  100.0%          JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:82:17
+      1  100.0%            JS: *getOrCreateInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1899:22
+      1    5.3%        JS: +createAndGetInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1830:23
+      1  100.0%          JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      1  100.0%            JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      1    5.3%        JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2830:55
+      1  100.0%          JS: ^onReleased file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2784:13
+      1  100.0%            JS: *release file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1839:10
+     18    2.9%      JS: +unnsubscribeToObserverEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3047:31
+     18  100.0%        JS: ^internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3068:21
+     15   83.3%          JS: ^releaseState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2999:15
+     15  100.0%            JS: ^unwatch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3560:10
+      3   16.7%          JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3584:10
+      3  100.0%            JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1738:10
+     15    2.4%      JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1167:10
+     15  100.0%        JS: ^dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1738:10
+     12   80.0%          JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1466:33
+     12  100.0%            /Users/robertsanders/.nvm/versions/node/v25.4.0/bin/node
+      3   20.0%          JS: +releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1655:18
+      3  100.0%            JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2036:10
+     13    2.1%      JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3584:10
+     10   76.9%        JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1738:10
+      8   80.0%          JS: +releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1655:18
+      7   87.5%            JS: *updateReferenceCount file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1887:23
+      1   12.5%            JS: +updateReferenceCount file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1887:23
+      2   20.0%          JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1466:33
+      2  100.0%            /Users/robertsanders/.nvm/versions/node/v25.4.0/bin/node
+      3   23.1%        JS: ^releaseWatch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1175:15
+      3  100.0%          JS: ^dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1167:10
+      2   66.7%            JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1465:10
+      1   33.3%            JS: ^dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1738:10
+     13    2.1%      JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      6   46.2%        JS: +unnsubscribeToObserverEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3047:31
+      6  100.0%          JS: ^internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3068:21
+      4   66.7%            JS: ^releaseState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2999:15
+      2   33.3%            JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3584:10
+      6   46.2%        JS: *unnsubscribeToObserverEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3047:31
+      6  100.0%          JS: ^internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3068:21
+      3   50.0%            JS: +unwatch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3560:10
+      2   33.3%            JS: ^releaseState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2999:15
+      1   16.7%            JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3584:10
+      1    7.7%        JS: +internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3068:21
+      1  100.0%          JS: +releaseState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2999:15
+      1  100.0%            JS: ^unwatch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3560:10
+     10    1.6%      JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3518:8
+      5   50.0%        JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      5  100.0%          JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      5  100.0%            JS: ^onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2105:9
+      5   50.0%        JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      5  100.0%          JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      5  100.0%            JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+     10    1.6%      JS: *removeListener file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1377:17
+     10  100.0%        JS: ^removeListeners file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3578:18
+      7   70.0%          JS: ^releaseWatch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1175:15
+      7  100.0%            JS: ^dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1167:10
+      3   30.0%          JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1738:10
+      3  100.0%            JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1466:33
+     10    1.6%      JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1825:9
+      4   40.0%        JS: ^createEvaluateManagerForExpression file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2110:37
+      4  100.0%          JS: +get evaluateManagerForExpression file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2091:35
+      4  100.0%            JS: ^onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      4   40.0%        JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1172:17
+      4  100.0%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:82:17
+      4  100.0%            JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1263:22
+      1   10.0%        JS: ^replaceState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2802:15
+      1  100.0%          JS: +updateState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3089:14
+      1  100.0%            JS: ^setInitialValue file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3339:18
+      1   10.0%        JS: +replaceState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2802:15
+      1  100.0%          JS: +setInitialValue file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3339:18
+      1  100.0%            JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3111:36
+      9    1.4%      JS: +watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+      5   55.6%        JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3518:8
+      3   60.0%          JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      3  100.0%            JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      2   40.0%          JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      2  100.0%            JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      4   44.4%        JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3518:8
+      3   75.0%          JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      3  100.0%            JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      1   25.0%          JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      1  100.0%            JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      9    1.4%      JS: *removeStateEventSubscription file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3243:31
+      6   66.7%        JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2995:12
+      6  100.0%          JS: ^unwatch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3560:10
+      6  100.0%            JS: ^dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3584:10
+      1   11.1%        JS: +unwatch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3560:10
+      1  100.0%          JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1167:10
+      1  100.0%            JS: ^dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1738:10
+      1   11.1%        JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3584:10
+      1  100.0%          JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1738:10
+      1  100.0%            JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1466:33
+      1   11.1%        JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2995:12
+      1  100.0%          JS: ^unwatch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3560:10
+      1  100.0%            JS: ^dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3584:10
+      9    1.4%      JS: *releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2218:18
+      6   66.7%        JS: *release file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1839:10
+      4   66.7%          JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1167:10
+      4  100.0%            JS: ^dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1738:10
+      1   16.7%          JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3621:39
+      1  100.0%            JS: ^dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3584:10
+      1   16.7%          JS: +releaseWatch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1175:15
+      1  100.0%            JS: ^dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1167:10
+      3   33.3%        JS: *updateReferenceCount file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1887:23
+      3  100.0%          JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3621:39
+      3  100.0%            JS: ^dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3584:10
+      9    1.4%      JS: *createAndGetInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1830:23
+      9  100.0%        JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      9  100.0%          JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      6   66.7%            JS: ^onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2105:9
+      2   22.2%            JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      1   11.1%            JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2105:9
+      8    1.3%      JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/scripts/profile-expression-hotpath.mjs:1:1
+      8  100.0%        /Users/robertsanders/.nvm/versions/node/v25.4.0/bin/node
+      8    1.3%      JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      8  100.0%        JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      5   62.5%          JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      3   60.0%            JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4024:9
+      2   40.0%            JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4024:9
+      3   37.5%          JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2105:9
+      3  100.0%            JS: ^onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      8    1.3%      JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3106:25
+      7   87.5%        JS: ^watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+      4   57.1%          JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3518:8
+      4  100.0%            JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      3   42.9%          JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3518:8
+      2   66.7%            JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      1   33.3%            JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      1   12.5%        JS: +watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+      1  100.0%          JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3518:8
+      1  100.0%            JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      8    1.3%      JS: *release file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1839:10
+      3   37.5%        JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2830:55
+      3  100.0%          JS: ^onReleased file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2784:13
+      3  100.0%            JS: *release file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1839:10
+      2   25.0%        JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3621:39
+      2  100.0%          JS: ^dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3584:10
+      2  100.0%            JS: ^releaseWatch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1175:15
+      2   25.0%        JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1167:10
+      2  100.0%          JS: ^dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1738:10
+      2  100.0%            JS: +releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1655:18
+      1   12.5%        JS: +internalDispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2491:18
+      1  100.0%          JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2036:10
+      1  100.0%            JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/scripts/profile-expression-hotpath.mjs:1:1
+      8    1.3%      JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:82:17
+      8  100.0%        JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1263:22
+      8  100.0%          JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1246:9
+      8  100.0%            JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:963:17
+      7    1.1%      JS: ^emitStartChangeCycleEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3272:29
+      7  100.0%        JS: ^onChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3377:11
+      7  100.0%          JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3110:41
+      5   71.4%            JS: *<anonymous> /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subject.js:59:46
+      2   28.6%            JS: *ReplaySubject.next /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/ReplaySubject.js:38:45
+      7    1.1%      JS: +removeListeners file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3578:18
+      6   85.7%        JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1738:10
+      3   50.0%          JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1466:33
+      3  100.0%            /Users/robertsanders/.nvm/versions/node/v25.4.0/bin/node
+      3   50.0%          JS: +releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1655:18
+      2   66.7%            JS: *updateReferenceCount file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1887:23
+      1   33.3%            JS: +updateReferenceCount file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1887:23
+      1   14.3%        JS: ^releaseWatch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1175:15
+      1  100.0%          JS: ^dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1167:10
+      1  100.0%            JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1465:10
+      7    1.1%      JS: +createAndGetInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1830:23
+      7  100.0%        JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      7  100.0%          JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      4   57.1%            JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      3   42.9%            JS: ^onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2105:9
+      7    1.1%      JS: *releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2907:18
+      7  100.0%        JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1809:10
+      7  100.0%          JS: ~clear file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3005:8
+      7  100.0%            JS: ~resetRuntimeState file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/scripts/profile-expression-hotpath.mjs:39:27
+      7    1.1%      JS: *get evaluateManagerForExpression file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2091:35
+      4   57.1%        JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      2   50.0%          JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4024:9
+      1   50.0%            JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:3972:9
+      1   50.0%            JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:6368:10
+      2   50.0%          JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4024:9
+      1   50.0%            JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:3972:9
+      1   50.0%            JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/scripts/profile-expression-hotpath.mjs:66:34
+      3   42.9%        JS: ^onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      2   66.7%          JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4024:9
+      1   50.0%            JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:3972:9
+      1   50.0%            JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/scripts/profile-expression-hotpath.mjs:66:34
+      1   33.3%          JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4024:9
+      1  100.0%            JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/scripts/profile-expression-hotpath.mjs:66:34
+    161    1.9%    JS: *getOrCreateId file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2186:16
+     57   35.4%      JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2862:17
+     54   94.7%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:82:17
+     54  100.0%          JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3106:25
+     38   70.4%            JS: ^watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+     16   29.6%            JS: +watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+      3    5.3%        JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:82:17
+      2   66.7%          JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3106:25
+      2  100.0%            JS: ^watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+      1   33.3%          JS: +tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3106:25
+      1  100.0%            JS: ^watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+     31   19.3%      JS: *createAndGetInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1830:23
+     31  100.0%        JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+     30   96.8%          JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+     25   83.3%            JS: ^onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2105:9
+      3   10.0%            JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2105:9
+      2    6.7%            JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      1    3.2%          JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1719:8
+      1  100.0%            JS: ^initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+     26   16.1%      JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1263:22
+     26  100.0%        JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1246:9
+     26  100.0%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:963:17
+     26  100.0%            JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2862:17
+     16    9.9%      JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+     16  100.0%        JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      7   43.8%          JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2105:9
+      7  100.0%            JS: ^onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      5   31.3%          JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      4   80.0%            JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4024:9
+      1   20.0%            JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4024:9
+      4   25.0%          JS: ^onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2105:9
+      4  100.0%            JS: ^onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+     13    8.1%      JS: +createAndGetInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1830:23
+     13  100.0%        JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+     12   92.3%          JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+     10   83.3%            JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      1    8.3%            JS: ^onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2105:9
+      1    8.3%            JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2105:9
+      1    7.7%          JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1719:8
+      1  100.0%            JS: ^initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+     10    6.2%      JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3106:25
+      9   90.0%        JS: ^watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+      5   55.6%          JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3518:8
+      5  100.0%            JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      4   44.4%          JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3518:8
+      3   75.0%            JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      1   25.0%            JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      1   10.0%        JS: +watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+      1  100.0%          JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3518:8
+      1  100.0%            JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      3    1.9%      JS: +tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3106:25
+      2   66.7%        JS: ^watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+      2  100.0%          JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3518:8
+      2  100.0%            JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      1   33.3%        JS: +watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+      1  100.0%          JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3518:8
+      1  100.0%            JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      3    1.9%      JS: +createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2862:17
+      2   66.7%        JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:82:17
+      2  100.0%          JS: +tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3106:25
+      1   50.0%            JS: ^watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+      1   50.0%            JS: +watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+      1   33.3%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:82:17
+      1  100.0%          JS: +tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3106:25
+      1  100.0%            JS: +watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+      2    1.2%      JS: +createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1263:22
+      2  100.0%        JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1246:9
+      2  100.0%          JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:963:17
+      2  100.0%            JS: +createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2862:17
+
+    980    9.4%  /usr/lib/system/libsystem_kernel.dylib
+     25    2.6%    JS: ^readFileSync node:fs:428:22
+     23   92.0%      JS: ^defaultLoadImpl node:internal/modules/cjs/loader:1130:25
+     22   95.7%        JS: ^loadSource node:internal/modules/cjs/loader:1818:20
+     22  100.0%          JS: ^<anonymous> node:internal/modules/cjs/loader:1899:37
+     22  100.0%            JS: ^<anonymous> node:internal/modules/cjs/loader:1509:33
+      1    4.3%        JS: ^<anonymous> node:internal/modules/cjs/loader:1899:37
+      1  100.0%          JS: ^<anonymous> node:internal/modules/cjs/loader:1509:33
+      1  100.0%            JS: ^<anonymous> node:internal/modules/cjs/loader:1210:24
+      1    4.0%      JS: ~getSourceSync node:internal/modules/esm/load:32:23
+      1  100.0%        JS: ^defaultLoadSync node:internal/modules/esm/load:132:25
+      1  100.0%          JS: ^#loadAndMaybeBlockOnLoaderThread node:internal/modules/esm/loader:784:35
+      1  100.0%            JS: ^#loadSync node:internal/modules/esm/loader:801:12
+      1    4.0%      JS: ~<anonymous> /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/util/UnsubscriptionError.js:1:1
+      1  100.0%        JS: ~<anonymous> /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subscription.js:1:1
+      1  100.0%          JS: ~<anonymous> /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subscriber.js:1:1
+      1  100.0%            JS: ~<anonymous> /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Observable.js:1:1
+     12    1.2%    JS: ^stat node:internal/modules/cjs/loader:260:14
+     10   83.3%      JS: ^tryFile node:internal/modules/cjs/loader:552:17
+     10  100.0%        JS: ^tryExtensions node:internal/modules/cjs/loader:568:23
+     10  100.0%          JS: ^<anonymous> node:internal/modules/cjs/loader:697:28
+     10  100.0%            JS: ^<anonymous> node:internal/modules/cjs/loader:1363:35
+      2   16.7%      JS: ^<anonymous> node:internal/modules/cjs/loader:697:28
+      2  100.0%        JS: ^<anonymous> node:internal/modules/cjs/loader:1363:35
+      2  100.0%          JS: ^defaultResolveImpl node:internal/modules/cjs/loader:1044:30
+      2  100.0%            JS: ^resolveForCJSWithHooks node:internal/modules/cjs/loader:1039:32
+     12    1.2%    JS: +findParentPackageJSON node:internal/modules/package_json_reader:142:31
+     12  100.0%      JS: ^getNearestParentPackageJSON node:internal/modules/package_json_reader:178:37
+      8   66.7%        JS: ^trySelf node:internal/modules/cjs/loader:624:17
+      8  100.0%          JS: ^<anonymous> node:internal/modules/cjs/loader:1363:35
+      8  100.0%            JS: ^defaultResolveImpl node:internal/modules/cjs/loader:1044:30
+      4   33.3%        JS: ^<anonymous> node:internal/modules/cjs/loader:1899:37
+      4  100.0%          JS: ^<anonymous> node:internal/modules/cjs/loader:1509:33
+      4  100.0%            JS: ^<anonymous> node:internal/modules/cjs/loader:1210:24
+
+    169    1.6%  /usr/lib/system/libsystem_malloc.dylib
+     37   21.9%    /Users/robertsanders/.nvm/versions/node/v25.4.0/bin/node
+     25   67.6%      JS: *getOrCreateId file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2186:16
+      7   28.0%        JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2862:17
+      5   71.4%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:82:17
+      5  100.0%            JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3106:25
+      2   28.6%          JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:82:17
+      2  100.0%            JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3106:25
+      5   20.0%        JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      5  100.0%          JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      3   60.0%            JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      2   40.0%            JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2105:9
+      4   16.0%        JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3106:25
+      3   75.0%          JS: ^watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+      2   66.7%            JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3518:8
+      1   33.3%            JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3518:8
+      1   25.0%          JS: +watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+      1  100.0%            JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3518:8
+      3   12.0%        JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1263:22
+      3  100.0%          JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1246:9
+      3  100.0%            JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:963:17
+      3   12.0%        JS: *createAndGetInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1830:23
+      3  100.0%          JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      3  100.0%            JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      2    8.0%        JS: +createAndGetInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1830:23
+      2  100.0%          JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      2  100.0%            JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      1    4.0%        JS: +tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3106:25
+      1  100.0%          JS: ^watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+      1  100.0%            JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3518:8
+      2    5.4%      JS: +ReplaySubject.next /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/ReplaySubject.js:38:45
+      2  100.0%        JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:346:39
+      2  100.0%          JS: +emitValue file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:316:12
+      2  100.0%            JS: ^onIndexSet file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1277:13
+      2    5.4%      JS: *getOrCreateInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1899:22
+      2  100.0%        JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:5139:9
+      2  100.0%          JS: ^onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      2  100.0%            JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4024:9
+      1    2.7%      JS: ^parseSource node:internal/deps/cjs-module-lexer/lexer:85:22
+      1  100.0%        JS: ~parseCJS node:internal/deps/cjs-module-lexer/lexer:40:19
+      1  100.0%          JS: ~cjsPreparseModuleExports node:internal/modules/esm/translators:397:34
+      1  100.0%            JS: ~createCJSModuleWrap node:internal/modules/esm/translators:212:29
+      1    2.7%      JS: +getOrCreateId file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2186:16
+      1  100.0%        JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      1  100.0%          JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1719:8
+      1  100.0%            JS: ^initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      1    2.7%      JS: +createWithId file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1908:15
+      1  100.0%        JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      1  100.0%          JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4024:9
+      1  100.0%            JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/scripts/profile-expression-hotpath.mjs:51:34
+      1    2.7%      JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1825:9
+      1  100.0%        JS: ^create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:3972:9
+      1  100.0%          JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:6368:10
+      1  100.0%            JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/scripts/profile-expression-hotpath.mjs:51:34
+      1    2.7%      JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2862:17
+      1  100.0%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:82:17
+      1  100.0%          JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3106:25
+      1  100.0%            JS: ^watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2983:13
+      1    2.7%      JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1263:22
+      1  100.0%        JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1246:9
+      1  100.0%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:963:17
+      1  100.0%            JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2862:17
+      1    2.7%      JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1825:9
+      1  100.0%        JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1172:17
+      1  100.0%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:82:17
+      1  100.0%            JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1263:22
+      1    2.7%      JS: *ReplaySubject.next /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/ReplaySubject.js:38:45
+      1  100.0%        JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:346:39
+      1  100.0%          JS: +onIndexSet file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1277:13
+      1  100.0%            JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1272:41
+      7    4.1%    JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:5139:9
+      7  100.0%      JS: ^onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      6   85.7%        JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4024:9
+      3   50.0%          JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:3972:9
+      3  100.0%            JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:6368:10
+      3   50.0%          JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/scripts/profile-expression-hotpath.mjs:66:34
+      3  100.0%            /Users/robertsanders/.nvm/versions/node/v25.4.0/bin/node
+      1   14.3%        JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4024:9
+      1  100.0%          JS: ^create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:3972:9
+      1  100.0%            JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:6368:10
+      6    3.6%    JS: *getOrCreateId file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2186:16
+      4   66.7%      JS: *createAndGetInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1830:23
+      4  100.0%        JS: ^watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      4  100.0%          JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      2   50.0%            JS: ^onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2105:9
+      2   50.0%            JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      2   33.3%      JS: +watch file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1110:8
+      2  100.0%        JS: +initialize file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:1496:13
+      1   50.0%          JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      1  100.0%            JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4024:9
+      1   50.0%          JS: +onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2105:9
+      1  100.0%            JS: ^onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      4    2.4%    JS: *<anonymous> /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subject.js:59:46
+      3   75.0%      JS: +ReplaySubject.next /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/ReplaySubject.js:38:45
+      3  100.0%        JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:346:39
+      3  100.0%          JS: +emitValue file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:316:12
+      3  100.0%            JS: ^onIndexSet file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1277:13
+      1   25.0%      JS: +Subject.next /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subject.js:57:39
+      1  100.0%        JS: +internalEmitChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1684:21
+      1  100.0%          JS: +newDescriptor.set file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1711:25
+      1  100.0%            /Users/robertsanders/.nvm/versions/node/v25.4.0/bin/node
+      2    1.2%    JS: *getOrCreateInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1899:22
+      2  100.0%      JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:5139:9
+      2  100.0%        JS: ^onBind file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:2435:9
+      1   50.0%          JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4024:9
+      1  100.0%            JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:6368:10
+      1   50.0%          JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/dist/index.js:4024:9
+      1  100.0%            JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-expression-parser/scripts/profile-expression-hotpath.mjs:66:34
+

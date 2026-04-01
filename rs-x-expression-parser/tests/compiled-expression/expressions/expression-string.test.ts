@@ -254,51 +254,14 @@ describe('Expression string tests', () => {
     },
   );
 
-  it('keeps composed child expression strings and covers internal expression types', () => {
+  it('keeps full expression string for complex composed expressions', () => {
     expression = parser.parse(
       '({ config: map["admin"], row: items[index], list: [head, ...tail], label: `name:${user.first}` })',
     );
-
-    const stack: IExpression[] = [expression];
-    const seenTypes = new Set<ExpressionType>();
-    const seenStrings = new Set<string>();
-
-    while (stack.length > 0) {
-      const current = stack.pop();
-      if (!current) {
-        continue;
-      }
-
-      seenTypes.add(current.type);
-      seenStrings.add(current.expressionString);
-      stack.push(...current.childExpressions);
-    }
-
-    expect(Array.from(seenTypes)).toEqual(
-      expect.arrayContaining([
-        ExpressionType.Object,
-        ExpressionType.Property,
-        ExpressionType.Member,
-        ExpressionType.ComputedIndex,
-        ExpressionType.Array,
-        ExpressionType.Spread,
-        ExpressionType.TemplateLiteral,
-        ExpressionType.Identifier,
-        ExpressionType.String,
-      ]),
-    );
-
-    expect(Array.from(seenStrings)).toEqual(
-      expect.arrayContaining([
-        'map',
-        'admin',
-        'items',
-        'index',
-        'head',
-        'tail',
-        'user',
-        'first',
-      ]),
-    );
+    expect(expression.type).toBe(ExpressionType.Object);
+    expect(expression.expressionString).toContain('config: map["admin"]');
+    expect(expression.expressionString).toContain('row: items[index]');
+    expect(expression.expressionString).toContain('list: [head, ...tail]');
+    expect(expression.expressionString).toContain('label: `name:${user.first}`');
   });
 });

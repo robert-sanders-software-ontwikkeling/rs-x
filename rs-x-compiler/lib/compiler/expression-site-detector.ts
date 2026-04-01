@@ -5,6 +5,9 @@ export type ExpressionEntryPointKind = 'rsx' | 'factory-create';
 export interface IExpressionSiteDetection {
   readonly kind: ExpressionEntryPointKind;
   readonly expression: string;
+  readonly preparse: boolean;
+  readonly lazy: boolean;
+  readonly compiled: boolean;
   readonly expressionLiteral: ts.StringLiteralLike;
   readonly callExpression: ts.CallExpression;
   readonly sourceFile: ts.SourceFile;
@@ -62,7 +65,7 @@ function tryDetectRsxEntryPoint(
   }
 
   const rsxInvocation = callExpression.expression;
-  if (rsxInvocation.arguments.length !== 1) {
+  if (rsxInvocation.arguments.length < 1 || rsxInvocation.arguments.length > 2) {
     return null;
   }
 
@@ -77,9 +80,14 @@ function tryDetectRsxEntryPoint(
     return null;
   }
 
+  const rsxOptions = resolveRsxOptions(rsxInvocation.arguments[1]);
+
   return {
     kind: 'rsx',
     expression: expressionLiteral.text,
+    preparse: rsxOptions.preparse,
+    lazy: rsxOptions.lazy,
+    compiled: rsxOptions.compiled,
     expressionLiteral,
     callExpression,
     sourceFile: callExpression.getSourceFile(),
@@ -210,10 +218,78 @@ function tryDetectFactoryEntryPoint(
   return {
     kind: 'factory-create',
     expression: expressionLiteral.text,
+    preparse: true,
+    lazy: false,
+    compiled: true,
     expressionLiteral,
     callExpression,
     sourceFile: callExpression.getSourceFile(),
   };
+}
+
+function resolveRsxOptions(optionArgument?: ts.Expression): {
+  preparse: boolean;
+  lazy: boolean;
+  compiled: boolean;
+} {
+  let preparse = true;
+  let lazy = false;
+  let compiled = true;
+
+  if (!optionArgument || !ts.isObjectLiteralExpression(optionArgument)) {
+    return { preparse, lazy, compiled };
+  }
+
+  for (let i = 0; i < optionArgument.properties.length; i += 1) {
+    const property = optionArgument.properties[i];
+    if (!ts.isPropertyAssignment(property)) {
+      continue;
+    }
+
+    if (isPropertyName(property.name, 'preparse')) {
+      if (property.initializer.kind === ts.SyntaxKind.FalseKeyword) {
+        preparse = false;
+      }
+      if (property.initializer.kind === ts.SyntaxKind.TrueKeyword) {
+        preparse = true;
+      }
+      continue;
+    }
+
+    if (isPropertyName(property.name, 'lazy')) {
+      if (property.initializer.kind === ts.SyntaxKind.TrueKeyword) {
+        lazy = true;
+      }
+      if (property.initializer.kind === ts.SyntaxKind.FalseKeyword) {
+        lazy = false;
+      }
+      continue;
+    }
+
+    if (isPropertyName(property.name, 'compiled')) {
+      if (property.initializer.kind === ts.SyntaxKind.TrueKeyword) {
+        compiled = true;
+      }
+      if (property.initializer.kind === ts.SyntaxKind.FalseKeyword) {
+        compiled = false;
+      }
+    }
+  }
+
+  return { preparse, lazy, compiled };
+}
+
+function isPropertyName(
+  propertyName: ts.PropertyName,
+  expectedName: string,
+): boolean {
+  if (ts.isIdentifier(propertyName)) {
+    return propertyName.text === expectedName;
+  }
+  if (ts.isStringLiteral(propertyName)) {
+    return propertyName.text === expectedName;
+  }
+  return false;
 }
 
 function resolveStaticExpressionLiteral(

@@ -1,5 +1,5 @@
-import { type IExpression } from '../expressions/expression-parser.interface';
+import { type IExpressionTree } from '../expressions/expression-parser.interface';
 
 export interface IExpressionIdProvider {
-  getId(node: IExpression): string;
+  getId(node: IExpressionTree): string;
 }

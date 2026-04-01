@@ -5,40 +5,42 @@
  *   node --expose-gc rs-x-expression-parser/scripts/benchmark-angular-signals-comparison.mjs
  *
  * Machine: Apple M4, 16 GB RAM, darwin/arm64, Node.js v25.4.0
- * Date: 2026-03-28
+ * Date: 2026-03-29
  */
+
+export const angularSignalsComparisonBenchmark = {
+  date: '2026-03-29',
+  compiledReport:
+    'reports/angular-signals-comparison/benchmark-2026-03-29-compiled.json',
+  treeReport: 'reports/angular-signals-comparison/benchmark-2026-03-29-tree.json',
+};
+
+type RuntimeMetrics = {
+  bindMs: number;
+  singleUpdateMs: number;
+  bulkUpdateMs: number;
+};
 
 export type SignalsComparisonRow = {
   bindings: number;
-  rsx: {
-    bindMs: number;
-    singleUpdateMs: number;
-    bulkUpdateMs: number;
-  };
-  angular: {
-    bindMs: number;
-    singleUpdateMs: number;
-    bulkUpdateMs: number;
-  };
+  rsxCompiled: RuntimeMetrics;
+  rsxTree: RuntimeMetrics;
+  angular: RuntimeMetrics;
 };
 
 export type SameModelRow = {
-  /** Number of expression bindings (fixed at 1000 — one per generated expression). */
   bindings: number;
-  /** Number of sequential x-changes in the bulk-update measurement. */
   bulkRounds: number;
-  rsx: {
-    /** Create+init only (no dispose). */
+  rsxCompiled: {
     bindMs: number;
-    /**
-     * Dispose cost measured separately because disposing N expressions from the
-     * same model is O(N²): each dispose removes a subscriber from a watcher list
-     * that still has N-i entries. This is teardown cost, not setup cost.
-     */
     disposeMs: number;
-    /** Change x once → all 1000 expressions re-evaluate. */
     singleUpdateMs: number;
-    /** bulkRounds sequential x-changes, all 1000 re-evaluate each round. */
+    bulkUpdateMs: number;
+  };
+  rsxTree: {
+    bindMs: number;
+    disposeMs: number;
+    singleUpdateMs: number;
     bulkUpdateMs: number;
   };
   angular: {
@@ -47,77 +49,175 @@ export type SameModelRow = {
     bulkUpdateMs: number;
   };
 };
-
-// ─── Scenario 1: Sync identifier ─────────────────────────────────────────────
-// Each of the N bindings watches a unique field (`fieldN`) on its own model.
-//   rs-x:     rsx('fieldN')(model)         — Proxy-based watching, async microtask
-//   Angular:  signal(v) + computed(() => s()) — explicit reactive primitive, sync
 
 export const syncIdentifierRows: SignalsComparisonRow[] = [
   {
     bindings: 1000,
-    rsx:     { bindMs: 27.93,  singleUpdateMs: 0.1026, bulkUpdateMs: 5.52  },
-    angular: { bindMs: 0.72,   singleUpdateMs: 0.0106, bulkUpdateMs: 0.22  },
+    rsxCompiled: {
+      bindMs: 34.30241700000005,
+      singleUpdateMs: 0.11079150000000482,
+      bulkUpdateMs: 6.340415999999948,
+    },
+    rsxTree: {
+      bindMs: 33.856416000000024,
+      singleUpdateMs: 0.11370850000002974,
+      bulkUpdateMs: 6.697375000000022,
+    },
+    angular: {
+      bindMs: 0.923041000000012,
+      singleUpdateMs: 0.013583000000039647,
+      bulkUpdateMs: 0.38164549999999053,
+    },
   },
   {
     bindings: 3000,
-    rsx:     { bindMs: 97.11,  singleUpdateMs: 0.0715, bulkUpdateMs: 14.99 },
-    angular: { bindMs: 1.74,   singleUpdateMs: 0.0077, bulkUpdateMs: 0.93  },
+    rsxCompiled: {
+      bindMs: 146.94012500000008,
+      singleUpdateMs: 0.08739549999995688,
+      bulkUpdateMs: 17.674187500000016,
+    },
+    rsxTree: {
+      bindMs: 118.55699999999979,
+      singleUpdateMs: 0.08045849999984966,
+      bulkUpdateMs: 17.601499999999987,
+    },
+    angular: {
+      bindMs: 2.4234590000005483,
+      singleUpdateMs: 0.010041999999884865,
+      bulkUpdateMs: 1.2958959999996296,
+    },
   },
   {
     bindings: 5000,
-    rsx:     { bindMs: 163.39, singleUpdateMs: 0.0687, bulkUpdateMs: 25.48 },
-    angular: { bindMs: 3.02,   singleUpdateMs: 0.0092, bulkUpdateMs: 1.62  },
+    rsxCompiled: {
+      bindMs: 229.56187500000033,
+      singleUpdateMs: 0.08104199999979755,
+      bulkUpdateMs: 29.741667000000234,
+    },
+    rsxTree: {
+      bindMs: 226.45187549999991,
+      singleUpdateMs: 0.08966599999985192,
+      bulkUpdateMs: 29.552708000000166,
+    },
+    angular: {
+      bindMs: 3.910874500000318,
+      singleUpdateMs: 0.011457999999038293,
+      bulkUpdateMs: 2.0398330000007263,
+    },
   },
   {
     bindings: 10000,
-    rsx:     { bindMs: 337.12, singleUpdateMs: 0.0724, bulkUpdateMs: 50.10 },
-    angular: { bindMs: 4.84,   singleUpdateMs: 0.0100, bulkUpdateMs: 3.83  },
+    rsxCompiled: {
+      bindMs: 475.55075000000033,
+      singleUpdateMs: 0.10656299999936891,
+      bulkUpdateMs: 56.222312499999134,
+    },
+    rsxTree: {
+      bindMs: 466.62316699999974,
+      singleUpdateMs: 0.07854149999911897,
+      bulkUpdateMs: 53.14960449999944,
+    },
+    angular: {
+      bindMs: 6.622457999999824,
+      singleUpdateMs: 0.01420849999976781,
+      bulkUpdateMs: 4.977708500000517,
+    },
   },
 ];
-
-// ─── Scenario 2: Async identifier (BehaviorSubject) ──────────────────────────
-// Each model field is a BehaviorSubject. The binding tracks the emitted value.
-//   rs-x:     rsx('stream')(model)              — auto-subscribes to observable
-//   Angular:  toSignal(behaviorSubject, {injector}) — synchronous on emit
 
 export const asyncIdentifierRows: SignalsComparisonRow[] = [
   {
     bindings: 1000,
-    rsx:     { bindMs: 31.75,  singleUpdateMs: 0.0505, bulkUpdateMs: 6.99  },
-    angular: { bindMs: 1.81,   singleUpdateMs: 0.0167, bulkUpdateMs: 1.42  },
+    rsxCompiled: {
+      bindMs: 41.82183299999815,
+      singleUpdateMs: 0.06527050000113377,
+      bulkUpdateMs: 8.926416500000414,
+    },
+    rsxTree: {
+      bindMs: 41.742041999999856,
+      singleUpdateMs: 0.06041699999877892,
+      bulkUpdateMs: 8.582479500000773,
+    },
+    angular: {
+      bindMs: 3.513542000000598,
+      singleUpdateMs: 0.0203334999987419,
+      bulkUpdateMs: 1.4287920000006125,
+    },
   },
   {
     bindings: 3000,
-    rsx:     { bindMs: 123.48, singleUpdateMs: 0.0571, bulkUpdateMs: 19.07 },
-    angular: { bindMs: 3.29,   singleUpdateMs: 0.0119, bulkUpdateMs: 3.09  },
+    rsxCompiled: {
+      bindMs: 178.78758300000118,
+      singleUpdateMs: 0.07150000000001455,
+      bulkUpdateMs: 22.780312499999127,
+    },
+    rsxTree: {
+      bindMs: 179.26833299999998,
+      singleUpdateMs: 0.08272900000156369,
+      bulkUpdateMs: 23.16039600000113,
+    },
+    angular: {
+      bindMs: 5.745624999999563,
+      singleUpdateMs: 0.01524999999855936,
+      bulkUpdateMs: 4.163541500000065,
+    },
   },
   {
     bindings: 5000,
-    rsx:     { bindMs: 206.83, singleUpdateMs: 0.0602, bulkUpdateMs: 31.49 },
-    angular: { bindMs: 5.13,   singleUpdateMs: 0.0111, bulkUpdateMs: 5.62  },
+    rsxCompiled: {
+      bindMs: 291.30943750000006,
+      singleUpdateMs: 0.06650000000081491,
+      bulkUpdateMs: 37.6315839999952,
+    },
+    rsxTree: {
+      bindMs: 294.7113539999955,
+      singleUpdateMs: 0.06787499999336433,
+      bulkUpdateMs: 36.34799999999814,
+    },
+    angular: {
+      bindMs: 8.809249999998428,
+      singleUpdateMs: 0.01237500000570435,
+      bulkUpdateMs: 6.779957999999169,
+    },
   },
   {
     bindings: 10000,
-    rsx:     { bindMs: 435.31, singleUpdateMs: 0.0597, bulkUpdateMs: 59.46 },
-    angular: { bindMs: 13.66,  singleUpdateMs: 0.0120, bulkUpdateMs: 6.44  },
+    rsxCompiled: {
+      bindMs: 595.7966669999951,
+      singleUpdateMs: 0.07872950000455603,
+      bulkUpdateMs: 69.2245830000029,
+    },
+    rsxTree: {
+      bindMs: 613.0943330000009,
+      singleUpdateMs: 0.07910449999690172,
+      bulkUpdateMs: 75.67206249999799,
+    },
+    angular: {
+      bindMs: 27.065708000001905,
+      singleUpdateMs: 0.015291499999875668,
+      bulkUpdateMs: 13.241020999998,
+    },
   },
 ];
-
-// ─── Scenario 3: Same-model — all 1000 generated complex expressions ──────────
-// All 1000 generated expressions (from generated-benchmark-expression-strings.ts)
-// are bound to ONE shared model { x, y }. These are deeply-nested arithmetic
-// expressions, each with 60–100+ AST nodes.
-//   rs-x:     rsx(generatedExpression[i])({ x, y }) — AST-based evaluation
-//   Angular:  computed(() => new Function('x','y', expr)(xSig(), ySig()))
-//             — compiled to native JS, full JIT speed
-//
-// "Single update" = change x once → all 1000 dependents re-evaluate.
-// "Bulk update"   = 10 sequential x-changes, 1000 re-evaluations each round.
 
 export const sameModelExpressionsRow: SameModelRow = {
   bindings: 1000,
   bulkRounds: 10,
-  rsx:     { bindMs: 397, disposeMs: 36, singleUpdateMs: 118, bulkUpdateMs: 1067 },
-  angular: { bindMs: 0.63, singleUpdateMs: 1.099, bulkUpdateMs: 12.08 },
+  rsxCompiled: {
+    bindMs: 15.344124999988708,
+    disposeMs: 4.00845800001116,
+    singleUpdateMs: 5.9167080000042915,
+    bulkUpdateMs: 31.685665999990306,
+  },
+  rsxTree: {
+    bindMs: 590.4162079999951,
+    disposeMs: 28.03495899999689,
+    singleUpdateMs: 63.286000000007334,
+    bulkUpdateMs: 486.1790000000037,
+  },
+  angular: {
+    bindMs: 0.7499169999937294,
+    singleUpdateMs: 1.4668329999985872,
+    bulkUpdateMs: 13.446458000005805,
+  },
 };

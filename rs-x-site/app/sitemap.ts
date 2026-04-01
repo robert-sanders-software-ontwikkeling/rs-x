@@ -41,6 +41,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
     // Core concepts
     {
+      url: `${BASE_URL}/docs/core-concepts/first-expression`,
+      priority: 0.8,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/core-concepts/cli`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/core-concepts/compiler`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
       url: `${BASE_URL}/docs/core-concepts/async-operations`,
       priority: 0.7,
       changeFrequency: 'monthly',
@@ -321,6 +336,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     {
       url: `${BASE_URL}/docs/iexpression`,
       priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/irsx-options`,
+      priority: 0.6,
       changeFrequency: 'monthly',
     },
     {

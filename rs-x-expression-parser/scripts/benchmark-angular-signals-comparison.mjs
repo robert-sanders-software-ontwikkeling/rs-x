@@ -45,6 +45,7 @@ const reportsDirectory = path.resolve(
   'angular-signals-comparison',
 );
 const dateStamp = new Date().toISOString().slice(0, 10);
+const engineMode = process.env.RSX_EXPRESSION_ENGINE_MODE ?? 'compiled';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -89,6 +90,23 @@ const median = (values) => {
     : sorted[mid];
 };
 
+const percentile = (values, p) => {
+  if (values.length === 0) {
+    return 0;
+  }
+  const sorted = [...values].sort((a, b) => a - b);
+  const index = Math.floor((sorted.length - 1) * p);
+  return sorted[index];
+};
+
+const summarizeMb = (samples) => ({
+  minMb: Math.min(...samples),
+  maxMb: Math.max(...samples),
+  medianMb: median(samples),
+  p95Mb: percentile(samples, 0.95),
+  avgMb: samples.reduce((sum, value) => sum + value, 0) / samples.length,
+});
+
 const measureMs = async (runs, warmup, fn) => {
   for (let i = 0; i < warmup; i++) await fn();
   const samples = [];
@@ -99,6 +117,31 @@ const measureMs = async (runs, warmup, fn) => {
     samples.push(performance.now() - t0);
   }
   return median(samples);
+};
+
+const measureWithMemory = async (runs, warmup, fn) => {
+  for (let i = 0; i < warmup; i++) await fn();
+  const durationSamples = [];
+  const rssAfterSamples = [];
+  const heapAfterSamples = [];
+  for (let i = 0; i < runs; i++) {
+    if (typeof global.gc === 'function') global.gc();
+    const t0 = performance.now();
+    await fn();
+    const duration = performance.now() - t0;
+    await flushMicrotasks(1);
+    const memoryAfter = process.memoryUsage();
+    durationSamples.push(duration);
+    rssAfterSamples.push(memoryAfter.rss / MB);
+    heapAfterSamples.push(memoryAfter.heapUsed / MB);
+  }
+  return {
+    medianMs: median(durationSamples),
+    memory: {
+      rssAfterMb: summarizeMb(rssAfterSamples),
+      heapAfterMb: summarizeMb(heapAfterSamples),
+    },
+  };
 };
 
 const waitForInit = async (bindings, maxPolls = 5000) => {
@@ -190,7 +233,7 @@ for (const count of bindingCounts) {
   // ── RSX bind ──────────────────────────────────────────────────────────────
   await rsxReset();
 
-  const rsxBindMs = await measureMs(r.bind, r.warmupBind, async () => {
+  const rsxBind = await measureWithMemory(r.bind, r.warmupBind, async () => {
     const bindings = expressions.map((expr, i) => rsx(expr)(models[i]));
     await flushMicrotasks(5);
     for (const b of bindings) b.dispose();
@@ -202,15 +245,23 @@ for (const count of bindingCounts) {
   const rsxLiveBindings = expressions.map((expr, i) => rsx(expr)(models[i]));
   await flushMicrotasks(5);
 
-  const rsxSingleUpdateMs = await measureMs(r.update, r.warmupUpdate, async () => {
-    models[mid][`field${mid}`] += 1;
-    await flushMicrotasks(3);
-  });
+  const rsxSingleUpdate = await measureWithMemory(
+    r.update,
+    r.warmupUpdate,
+    async () => {
+      models[mid][`field${mid}`] += 1;
+      await flushMicrotasks(3);
+    },
+  );
 
-  const rsxBulkUpdateMs = await measureMs(r.update, r.warmupUpdate, async () => {
-    for (let i = 0; i < count; i++) models[i][`field${i}`] += 1;
-    await flushMicrotasks(3);
-  });
+  const rsxBulkUpdate = await measureWithMemory(
+    r.update,
+    r.warmupUpdate,
+    async () => {
+      for (let i = 0; i < count; i++) models[i][`field${i}`] += 1;
+      await flushMicrotasks(3);
+    },
+  );
 
   for (const b of rsxLiveBindings) b.dispose();
   await rsxReset();
@@ -218,7 +269,7 @@ for (const count of bindingCounts) {
   // ── Angular bind ──────────────────────────────────────────────────────────
   await gcFlush(4);
 
-  const angularBindMs = await measureMs(r.bind, r.warmupBind, async () => {
+  const angularBind = await measureWithMemory(r.bind, r.warmupBind, async () => {
     const pairs = Array.from({ length: count }, (_, i) => {
       const s = signal(i);
       const c = computed(() => s());
@@ -238,36 +289,56 @@ for (const count of bindingCounts) {
     return { s, c };
   });
 
-  const angularSingleUpdateMs = await measureMs(r.update, r.warmupUpdate, async () => {
-    angularPairs[mid].s.update((v) => v + 1);
-    angularPairs[mid].c();
-  });
+  const angularSingleUpdate = await measureWithMemory(
+    r.update,
+    r.warmupUpdate,
+    async () => {
+      angularPairs[mid].s.update((v) => v + 1);
+      angularPairs[mid].c();
+    },
+  );
 
-  const angularBulkUpdateMs = await measureMs(r.update, r.warmupUpdate, async () => {
-    for (const { s } of angularPairs) s.update((v) => v + 1);
-    for (const { c } of angularPairs) c();
-  });
+  const angularBulkUpdate = await measureWithMemory(
+    r.update,
+    r.warmupUpdate,
+    async () => {
+      for (const { s } of angularPairs) s.update((v) => v + 1);
+      for (const { c } of angularPairs) c();
+    },
+  );
 
   angularPairs.length; // prevent GC during measurement
   await gcFlush(4);
 
   console.log(
     `  ${count.toLocaleString()} bindings` +
-    `  | RSX  bind=${rsxBindMs.toFixed(2)}ms single=${rsxSingleUpdateMs.toFixed(4)}ms bulk=${rsxBulkUpdateMs.toFixed(2)}ms` +
-    `  | ANG  bind=${angularBindMs.toFixed(2)}ms single=${angularSingleUpdateMs.toFixed(4)}ms bulk=${angularBulkUpdateMs.toFixed(2)}ms`,
+    `  | RSX  bind=${rsxBind.medianMs.toFixed(2)}ms single=${rsxSingleUpdate.medianMs.toFixed(4)}ms bulk=${rsxBulkUpdate.medianMs.toFixed(2)}ms` +
+    `  | ANG  bind=${angularBind.medianMs.toFixed(2)}ms single=${angularSingleUpdate.medianMs.toFixed(4)}ms bulk=${angularBulkUpdate.medianMs.toFixed(2)}ms`,
   );
 
   results.scenarios.syncIdentifier.push({
     bindings: count,
     rsx: {
-      bindMs: rsxBindMs,
-      singleUpdateMs: rsxSingleUpdateMs,
-      bulkUpdateMs: rsxBulkUpdateMs,
+      bindMs: rsxBind.medianMs,
+      singleUpdateMs: rsxSingleUpdate.medianMs,
+      bulkUpdateMs: rsxBulkUpdate.medianMs,
     },
     angular: {
-      bindMs: angularBindMs,
-      singleUpdateMs: angularSingleUpdateMs,
-      bulkUpdateMs: angularBulkUpdateMs,
+      bindMs: angularBind.medianMs,
+      singleUpdateMs: angularSingleUpdate.medianMs,
+      bulkUpdateMs: angularBulkUpdate.medianMs,
+    },
+    memory: {
+      rsx: {
+        bind: rsxBind.memory,
+        singleUpdate: rsxSingleUpdate.memory,
+        bulkUpdate: rsxBulkUpdate.memory,
+      },
+      angular: {
+        bind: angularBind.memory,
+        singleUpdate: angularSingleUpdate.memory,
+        bulkUpdate: angularBulkUpdate.memory,
+      },
     },
   });
 }
@@ -290,7 +361,7 @@ for (const count of bindingCounts) {
   // ── RSX async bind ────────────────────────────────────────────────────────
   await rsxReset();
 
-  const rsxAsyncBindMs = await measureMs(r.bind, r.warmupBind, async () => {
+  const rsxAsyncBind = await measureWithMemory(r.bind, r.warmupBind, async () => {
     const asyncModels = Array.from(
       { length: count },
       (_, i) => ({ stream: new BehaviorSubject(i) }),
@@ -311,15 +382,23 @@ for (const count of bindingCounts) {
   const rsxAsyncBindings = rsxAsyncModels.map((m) => rsx('stream')(m));
   await waitForInit(rsxAsyncBindings);
 
-  const rsxAsyncSingleUpdateMs = await measureMs(r.update, r.warmupUpdate, async () => {
-    rsxAsyncModels[mid].stream.next(rsxAsyncModels[mid].stream.getValue() + 1);
-    await flushMicrotasks(3);
-  });
+  const rsxAsyncSingleUpdate = await measureWithMemory(
+    r.update,
+    r.warmupUpdate,
+    async () => {
+      rsxAsyncModels[mid].stream.next(rsxAsyncModels[mid].stream.getValue() + 1);
+      await flushMicrotasks(3);
+    },
+  );
 
-  const rsxAsyncBulkUpdateMs = await measureMs(r.update, r.warmupUpdate, async () => {
-    for (const m of rsxAsyncModels) m.stream.next(m.stream.getValue() + 1);
-    await flushMicrotasks(3);
-  });
+  const rsxAsyncBulkUpdate = await measureWithMemory(
+    r.update,
+    r.warmupUpdate,
+    async () => {
+      for (const m of rsxAsyncModels) m.stream.next(m.stream.getValue() + 1);
+      await flushMicrotasks(3);
+    },
+  );
 
   for (const b of rsxAsyncBindings) b.dispose();
   for (const m of rsxAsyncModels) m.stream.complete();
@@ -328,16 +407,20 @@ for (const count of bindingCounts) {
   // ── Angular async bind ────────────────────────────────────────────────────
   await gcFlush(4);
 
-  const angularAsyncBindMs = await measureMs(r.bind, r.warmupBind, async () => {
-    const pairs = Array.from({ length: count }, (_, i) => {
-      const subj = new BehaviorSubject(i);
-      const sig = toSignal(subj, { injector: angularInjector });
-      sig(); // force initial read
-      return { subj, sig };
-    });
-    for (const { subj } of pairs) subj.complete();
-    pairs.length;
-  });
+  const angularAsyncBind = await measureWithMemory(
+    r.bind,
+    r.warmupBind,
+    async () => {
+      const pairs = Array.from({ length: count }, (_, i) => {
+        const subj = new BehaviorSubject(i);
+        const sig = toSignal(subj, { injector: angularInjector });
+        sig(); // force initial read
+        return { subj, sig };
+      });
+      for (const { subj } of pairs) subj.complete();
+      pairs.length;
+    },
+  );
 
   await gcFlush(4);
 
@@ -349,37 +432,57 @@ for (const count of bindingCounts) {
     return { subj, sig };
   });
 
-  const angularAsyncSingleUpdateMs = await measureMs(r.update, r.warmupUpdate, async () => {
-    const { subj, sig } = angularAsyncPairs[mid];
-    subj.next(subj.getValue() + 1);
-    sig();
-  });
+  const angularAsyncSingleUpdate = await measureWithMemory(
+    r.update,
+    r.warmupUpdate,
+    async () => {
+      const { subj, sig } = angularAsyncPairs[mid];
+      subj.next(subj.getValue() + 1);
+      sig();
+    },
+  );
 
-  const angularAsyncBulkUpdateMs = await measureMs(r.update, r.warmupUpdate, async () => {
-    for (const { subj } of angularAsyncPairs) subj.next(subj.getValue() + 1);
-    for (const { sig } of angularAsyncPairs) sig();
-  });
+  const angularAsyncBulkUpdate = await measureWithMemory(
+    r.update,
+    r.warmupUpdate,
+    async () => {
+      for (const { subj } of angularAsyncPairs) subj.next(subj.getValue() + 1);
+      for (const { sig } of angularAsyncPairs) sig();
+    },
+  );
 
   for (const { subj } of angularAsyncPairs) subj.complete();
   await gcFlush(4);
 
   console.log(
     `  ${count.toLocaleString()} bindings` +
-    `  | RSX  bind=${rsxAsyncBindMs.toFixed(2)}ms single=${rsxAsyncSingleUpdateMs.toFixed(4)}ms bulk=${rsxAsyncBulkUpdateMs.toFixed(2)}ms` +
-    `  | ANG  bind=${angularAsyncBindMs.toFixed(2)}ms single=${angularAsyncSingleUpdateMs.toFixed(4)}ms bulk=${angularAsyncBulkUpdateMs.toFixed(2)}ms`,
+    `  | RSX  bind=${rsxAsyncBind.medianMs.toFixed(2)}ms single=${rsxAsyncSingleUpdate.medianMs.toFixed(4)}ms bulk=${rsxAsyncBulkUpdate.medianMs.toFixed(2)}ms` +
+    `  | ANG  bind=${angularAsyncBind.medianMs.toFixed(2)}ms single=${angularAsyncSingleUpdate.medianMs.toFixed(4)}ms bulk=${angularAsyncBulkUpdate.medianMs.toFixed(2)}ms`,
   );
 
   results.scenarios.asyncIdentifier.push({
     bindings: count,
     rsx: {
-      bindMs: rsxAsyncBindMs,
-      singleUpdateMs: rsxAsyncSingleUpdateMs,
-      bulkUpdateMs: rsxAsyncBulkUpdateMs,
+      bindMs: rsxAsyncBind.medianMs,
+      singleUpdateMs: rsxAsyncSingleUpdate.medianMs,
+      bulkUpdateMs: rsxAsyncBulkUpdate.medianMs,
     },
     angular: {
-      bindMs: angularAsyncBindMs,
-      singleUpdateMs: angularAsyncSingleUpdateMs,
-      bulkUpdateMs: angularAsyncBulkUpdateMs,
+      bindMs: angularAsyncBind.medianMs,
+      singleUpdateMs: angularAsyncSingleUpdate.medianMs,
+      bulkUpdateMs: angularAsyncBulkUpdate.medianMs,
+    },
+    memory: {
+      rsx: {
+        bind: rsxAsyncBind.memory,
+        singleUpdate: rsxAsyncSingleUpdate.memory,
+        bulkUpdate: rsxAsyncBulkUpdate.memory,
+      },
+      angular: {
+        bind: angularAsyncBind.memory,
+        singleUpdate: angularAsyncSingleUpdate.memory,
+        bulkUpdate: angularAsyncBulkUpdate.memory,
+      },
     },
   });
 }
@@ -417,6 +520,8 @@ const sameModelCount = generatedBenchmarkExpressionStrings.length; // 1000
 
   let rsxSameBindMs = 0;
   let rsxSameDisposeMs = 0;
+  let rsxSameBindMemory = undefined;
+  let rsxSameDisposeMemory = undefined;
   {
     // Warmup runs (dispose included — we just don't record the time)
     for (let w = 0; w < r.warmupBind; w++) {
@@ -431,6 +536,10 @@ const sameModelCount = generatedBenchmarkExpressionStrings.length; // 1000
     // Measured runs — create+init timed separately from dispose
     const bindSamples = [];
     const disposeSamples = [];
+    const bindRssAfterSamples = [];
+    const bindHeapAfterSamples = [];
+    const disposeRssAfterSamples = [];
+    const disposeHeapAfterSamples = [];
     for (let run = 0; run < r.bind; run++) {
       if (typeof global.gc === 'function') global.gc();
       const model = { x: 1, y: 2 };
@@ -442,14 +551,28 @@ const sameModelCount = generatedBenchmarkExpressionStrings.length; // 1000
       const t1 = performance.now();
       for (const b of bindings) b.dispose();
       const t2 = performance.now();
+      await flushMicrotasks(1);
+      const afterDisposeMemory = process.memoryUsage();
       bindSamples.push(t1 - t0);
       disposeSamples.push(t2 - t1);
+      bindRssAfterSamples.push(afterDisposeMemory.rss / MB);
+      bindHeapAfterSamples.push(afterDisposeMemory.heapUsed / MB);
+      disposeRssAfterSamples.push(afterDisposeMemory.rss / MB);
+      disposeHeapAfterSamples.push(afterDisposeMemory.heapUsed / MB);
       stateManager.clear(); expressionCache.dispose(); await gcFlush(2);
     }
     bindSamples.sort((a, b) => a - b);
     disposeSamples.sort((a, b) => a - b);
     rsxSameBindMs = bindSamples[Math.floor(bindSamples.length / 2)];
     rsxSameDisposeMs = disposeSamples[Math.floor(disposeSamples.length / 2)];
+    rsxSameBindMemory = {
+      rssAfterMb: summarizeMb(bindRssAfterSamples),
+      heapAfterMb: summarizeMb(bindHeapAfterSamples),
+    };
+    rsxSameDisposeMemory = {
+      rssAfterMb: summarizeMb(disposeRssAfterSamples),
+      heapAfterMb: summarizeMb(disposeHeapAfterSamples),
+    };
   }
 
   await rsxReset();
@@ -462,13 +585,17 @@ const sameModelCount = generatedBenchmarkExpressionStrings.length; // 1000
   await flushMicrotasks(8);
 
   // Single update: change x → all N re-evaluate
-  const rsxSameSingleUpdateMs = await measureMs(r.update, r.warmupUpdate, async () => {
-    rsxSameModel.x += 1;
-    await flushMicrotasks(5);
-  });
+  const rsxSameSingleUpdate = await measureWithMemory(
+    r.update,
+    r.warmupUpdate,
+    async () => {
+      rsxSameModel.x += 1;
+      await flushMicrotasks(5);
+    },
+  );
 
   // Bulk update: BULK_ROUNDS sequential changes to x
-  const rsxSameBulkUpdateMs = await measureMs(
+  const rsxSameBulkUpdate = await measureWithMemory(
     Math.max(3, Math.floor(r.update / 4)),
     1,
     async () => {
@@ -485,17 +612,21 @@ const sameModelCount = generatedBenchmarkExpressionStrings.length; // 1000
   // ── Angular same-model bind ───────────────────────────────────────────────
   await gcFlush(4);
 
-  const angularSameBindMs = await measureMs(r.bind, r.warmupBind, async () => {
-    const xSig = signal(1);
-    const ySig = signal(2);
-    const computeds = Array.from({ length: count }, (_, i) => {
-      const fn = compiledExprFns[i % exprCount];
-      const c = computed(() => fn(xSig(), ySig()));
-      c(); // force initial eval
-      return c;
-    });
-    computeds.length;
-  });
+  const angularSameBind = await measureWithMemory(
+    r.bind,
+    r.warmupBind,
+    async () => {
+      const xSig = signal(1);
+      const ySig = signal(2);
+      const computeds = Array.from({ length: count }, (_, i) => {
+        const fn = compiledExprFns[i % exprCount];
+        const c = computed(() => fn(xSig(), ySig()));
+        c(); // force initial eval
+        return c;
+      });
+      computeds.length;
+    },
+  );
 
   await gcFlush(4);
 
@@ -510,13 +641,17 @@ const sameModelCount = generatedBenchmarkExpressionStrings.length; // 1000
   });
 
   // Single update: xSig changes → all N need re-eval
-  const angularSameSingleUpdateMs = await measureMs(r.update, r.warmupUpdate, async () => {
-    angularXSig.update((v) => v + 1);
-    for (const c of angularSameComputeds) c();
-  });
+  const angularSameSingleUpdate = await measureWithMemory(
+    r.update,
+    r.warmupUpdate,
+    async () => {
+      angularXSig.update((v) => v + 1);
+      for (const c of angularSameComputeds) c();
+    },
+  );
 
   // Bulk update: BULK_ROUNDS sequential changes to xSig
-  const angularSameBulkUpdateMs = await measureMs(
+  const angularSameBulkUpdate = await measureWithMemory(
     Math.max(3, Math.floor(r.update / 4)),
     1,
     async () => {
@@ -532,23 +667,36 @@ const sameModelCount = generatedBenchmarkExpressionStrings.length; // 1000
 
   console.log(
     `  ${count.toLocaleString()} bindings` +
-    `  | RSX  bind(create+init)=${rsxSameBindMs.toFixed(2)}ms dispose=${rsxSameDisposeMs.toFixed(0)}ms singleX=${rsxSameSingleUpdateMs.toFixed(3)}ms bulkX(${BULK_ROUNDS})=${rsxSameBulkUpdateMs.toFixed(2)}ms` +
-    `  | ANG  bind=${angularSameBindMs.toFixed(2)}ms singleX=${angularSameSingleUpdateMs.toFixed(3)}ms bulkX(${BULK_ROUNDS})=${angularSameBulkUpdateMs.toFixed(2)}ms`,
+    `  | RSX  bind(create+init)=${rsxSameBindMs.toFixed(2)}ms dispose=${rsxSameDisposeMs.toFixed(0)}ms singleX=${rsxSameSingleUpdate.medianMs.toFixed(3)}ms bulkX(${BULK_ROUNDS})=${rsxSameBulkUpdate.medianMs.toFixed(2)}ms` +
+    `  | ANG  bind=${angularSameBind.medianMs.toFixed(2)}ms singleX=${angularSameSingleUpdate.medianMs.toFixed(3)}ms bulkX(${BULK_ROUNDS})=${angularSameBulkUpdate.medianMs.toFixed(2)}ms`,
   );
 
   results.scenarios.sameModelExpressions.push({
     bindings: count,
     bulkRounds: BULK_ROUNDS,
-    rsx: {
+      rsx: {
       bindMs: rsxSameBindMs,
       disposeMs: rsxSameDisposeMs,
-      singleUpdateMs: rsxSameSingleUpdateMs,
-      bulkUpdateMs: rsxSameBulkUpdateMs,
+      singleUpdateMs: rsxSameSingleUpdate.medianMs,
+      bulkUpdateMs: rsxSameBulkUpdate.medianMs,
     },
     angular: {
-      bindMs: angularSameBindMs,
-      singleUpdateMs: angularSameSingleUpdateMs,
-      bulkUpdateMs: angularSameBulkUpdateMs,
+      bindMs: angularSameBind.medianMs,
+      singleUpdateMs: angularSameSingleUpdate.medianMs,
+      bulkUpdateMs: angularSameBulkUpdate.medianMs,
+    },
+    memory: {
+      rsx: {
+        bind: rsxSameBindMemory,
+        dispose: rsxSameDisposeMemory,
+        singleUpdate: rsxSameSingleUpdate.memory,
+        bulkUpdate: rsxSameBulkUpdate.memory,
+      },
+      angular: {
+        bind: angularSameBind.memory,
+        singleUpdate: angularSameSingleUpdate.memory,
+        bulkUpdate: angularSameBulkUpdate.memory,
+      },
     },
   });
 }
@@ -562,7 +710,10 @@ await rsxReset();
 
 await fs.mkdir(reportsDirectory, { recursive: true });
 
-const jsonPath = path.resolve(reportsDirectory, `benchmark-${dateStamp}.json`);
+const jsonPath = path.resolve(
+  reportsDirectory,
+  `benchmark-${dateStamp}-${engineMode}.json`,
+);
 await fs.writeFile(jsonPath, `${JSON.stringify(results, null, 2)}\n`, 'utf-8');
 
 const lines = [
@@ -596,9 +747,42 @@ const lines = [
     `| ${r.bindings.toLocaleString()} | ${r.rsx.bindMs.toFixed(3)} | ${r.angular.bindMs.toFixed(3)} | ${r.rsx.singleUpdateMs.toFixed(3)} | ${r.angular.singleUpdateMs.toFixed(3)} | ${r.rsx.bulkUpdateMs.toFixed(3)} | ${r.angular.bulkUpdateMs.toFixed(3)} |`,
   ),
   '',
+  '## Memory usage (mode-specific)',
+  '',
+  '| Scenario | Metric | System | Median heap after run (MB) | Peak RSS after run (MB) |',
+  '| --- | --- | --- | ---: | ---: |',
+  ...results.scenarios.syncIdentifier.flatMap((r) => [
+    `| Sync identifier (${r.bindings.toLocaleString()}) | Bind | RSX | ${r.memory.rsx.bind.heapAfterMb.medianMb.toFixed(1)} | ${r.memory.rsx.bind.rssAfterMb.maxMb.toFixed(1)} |`,
+    `| Sync identifier (${r.bindings.toLocaleString()}) | Bind | Angular | ${r.memory.angular.bind.heapAfterMb.medianMb.toFixed(1)} | ${r.memory.angular.bind.rssAfterMb.maxMb.toFixed(1)} |`,
+    `| Sync identifier (${r.bindings.toLocaleString()}) | Single update | RSX | ${r.memory.rsx.singleUpdate.heapAfterMb.medianMb.toFixed(1)} | ${r.memory.rsx.singleUpdate.rssAfterMb.maxMb.toFixed(1)} |`,
+    `| Sync identifier (${r.bindings.toLocaleString()}) | Single update | Angular | ${r.memory.angular.singleUpdate.heapAfterMb.medianMb.toFixed(1)} | ${r.memory.angular.singleUpdate.rssAfterMb.maxMb.toFixed(1)} |`,
+    `| Sync identifier (${r.bindings.toLocaleString()}) | Bulk update | RSX | ${r.memory.rsx.bulkUpdate.heapAfterMb.medianMb.toFixed(1)} | ${r.memory.rsx.bulkUpdate.rssAfterMb.maxMb.toFixed(1)} |`,
+    `| Sync identifier (${r.bindings.toLocaleString()}) | Bulk update | Angular | ${r.memory.angular.bulkUpdate.heapAfterMb.medianMb.toFixed(1)} | ${r.memory.angular.bulkUpdate.rssAfterMb.maxMb.toFixed(1)} |`,
+  ]),
+  ...results.scenarios.asyncIdentifier.flatMap((r) => [
+    `| Async identifier (${r.bindings.toLocaleString()}) | Bind | RSX | ${r.memory.rsx.bind.heapAfterMb.medianMb.toFixed(1)} | ${r.memory.rsx.bind.rssAfterMb.maxMb.toFixed(1)} |`,
+    `| Async identifier (${r.bindings.toLocaleString()}) | Bind | Angular | ${r.memory.angular.bind.heapAfterMb.medianMb.toFixed(1)} | ${r.memory.angular.bind.rssAfterMb.maxMb.toFixed(1)} |`,
+    `| Async identifier (${r.bindings.toLocaleString()}) | Single update | RSX | ${r.memory.rsx.singleUpdate.heapAfterMb.medianMb.toFixed(1)} | ${r.memory.rsx.singleUpdate.rssAfterMb.maxMb.toFixed(1)} |`,
+    `| Async identifier (${r.bindings.toLocaleString()}) | Single update | Angular | ${r.memory.angular.singleUpdate.heapAfterMb.medianMb.toFixed(1)} | ${r.memory.angular.singleUpdate.rssAfterMb.maxMb.toFixed(1)} |`,
+    `| Async identifier (${r.bindings.toLocaleString()}) | Bulk update | RSX | ${r.memory.rsx.bulkUpdate.heapAfterMb.medianMb.toFixed(1)} | ${r.memory.rsx.bulkUpdate.rssAfterMb.maxMb.toFixed(1)} |`,
+    `| Async identifier (${r.bindings.toLocaleString()}) | Bulk update | Angular | ${r.memory.angular.bulkUpdate.heapAfterMb.medianMb.toFixed(1)} | ${r.memory.angular.bulkUpdate.rssAfterMb.maxMb.toFixed(1)} |`,
+  ]),
+  ...results.scenarios.sameModelExpressions.flatMap((r) => [
+    `| Same-model generated (${r.bindings.toLocaleString()}) | Bind | RSX | ${r.memory.rsx.bind.heapAfterMb.medianMb.toFixed(1)} | ${r.memory.rsx.bind.rssAfterMb.maxMb.toFixed(1)} |`,
+    `| Same-model generated (${r.bindings.toLocaleString()}) | Bind | Angular | ${r.memory.angular.bind.heapAfterMb.medianMb.toFixed(1)} | ${r.memory.angular.bind.rssAfterMb.maxMb.toFixed(1)} |`,
+    `| Same-model generated (${r.bindings.toLocaleString()}) | Dispose | RSX | ${r.memory.rsx.dispose.heapAfterMb.medianMb.toFixed(1)} | ${r.memory.rsx.dispose.rssAfterMb.maxMb.toFixed(1)} |`,
+    `| Same-model generated (${r.bindings.toLocaleString()}) | Single update | RSX | ${r.memory.rsx.singleUpdate.heapAfterMb.medianMb.toFixed(1)} | ${r.memory.rsx.singleUpdate.rssAfterMb.maxMb.toFixed(1)} |`,
+    `| Same-model generated (${r.bindings.toLocaleString()}) | Single update | Angular | ${r.memory.angular.singleUpdate.heapAfterMb.medianMb.toFixed(1)} | ${r.memory.angular.singleUpdate.rssAfterMb.maxMb.toFixed(1)} |`,
+    `| Same-model generated (${r.bindings.toLocaleString()}) | Bulk update | RSX | ${r.memory.rsx.bulkUpdate.heapAfterMb.medianMb.toFixed(1)} | ${r.memory.rsx.bulkUpdate.rssAfterMb.maxMb.toFixed(1)} |`,
+    `| Same-model generated (${r.bindings.toLocaleString()}) | Bulk update | Angular | ${r.memory.angular.bulkUpdate.heapAfterMb.medianMb.toFixed(1)} | ${r.memory.angular.bulkUpdate.rssAfterMb.maxMb.toFixed(1)} |`,
+  ]),
+  '',
 ];
 
-const mdPath = path.resolve(reportsDirectory, `benchmark-${dateStamp}.md`);
+const mdPath = path.resolve(
+  reportsDirectory,
+  `benchmark-${dateStamp}-${engineMode}.md`,
+);
 await fs.writeFile(mdPath, lines.join('\n') + '\n', 'utf-8');
 
 console.log(`\nSaved JSON: ${jsonPath}`);

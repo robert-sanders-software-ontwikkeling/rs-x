@@ -1,0 +1,293 @@
+import dedent from 'dedent';
+import type { Metadata } from 'next';
+
+import {
+  type CoreConceptDoc,
+  CoreConceptPageLayout,
+} from '../_template/core-concept-page';
+
+const installCliCode = dedent`
+  # Local (recommended in project)
+  # npm
+  npm install -D @rs-x/cli
+
+  # pnpm
+  pnpm add -D @rs-x/cli
+
+  # Global (optional)
+  # npm
+  npm install -g @rs-x/cli
+
+  # pnpm
+  pnpm add -g @rs-x/cli
+`;
+
+const bootstrapExistingProjectCode = dedent`
+  # Auto-detect framework and wire bootstrap
+  npx rsx init
+
+  # Or force a specific entry file
+  npx rsx init --entry src/main.ts
+`;
+
+const createTemplateProjectCode = dedent`
+  # Full template names
+  npx rsx project angular --name my-rsx-angular-app
+  npx rsx project vuejs --name my-rsx-vue-app
+  npx rsx project react --name my-rsx-react-app
+  npx rsx project nextjs --name my-rsx-next-app
+  npx rsx project nodejs --name my-rsx-node-app
+
+  # Short aliases
+  npx rsx project a --name my-rsx-angular-app
+  npx rsx project v --name my-rsx-vue-app
+  npx rsx project r --name my-rsx-react-app
+  npx rsx project nx --name my-rsx-next-app
+  npx rsx project js --name my-rsx-node-app
+`;
+
+const setupIntegrationCode = dedent`
+  # Auto-detect framework and apply setup
+  npx rsx setup
+`;
+
+const buildAndTypecheckCode = dedent`
+  # Build with RS-X transform
+  npx rsx build --project tsconfig.json
+
+  # Production profile (AOT preparse/compiled outputs when configured)
+  npx rsx build --project tsconfig.json --prod
+
+  # TypeScript + RS-X semantic checks
+  npx rsx typecheck --project tsconfig.json
+`;
+
+const commandReferenceCode = dedent`
+  rsx doctor
+  rsx add
+  rsx install vscode [--force] [--local] [--dry-run]
+  rsx install compiler [--pm <pnpm|npm|yarn|bun>] [--dry-run]
+  rsx setup [--pm <pnpm|npm|yarn|bun>] [--force] [--local] [--dry-run]
+  rsx init [--pm ...] [--entry <path>] [--skip-install] [--skip-vscode] [--force] [--local] [--dry-run]
+  rsx project [angular|vuejs|react|nextjs|nodejs] [--name <project-name>] [--template <...>] [--pm ...] [--skip-install] [--skip-vscode] [--dry-run]
+  rsx build [--project <tsconfig>] [--out-dir <path>] [--prod] [--aot-preparse <true|false>] [--aot-preparse-file <path>] [--aot-compiled <true|false>] [--aot-compiled-file <path>] [--compiled-resolved-evaluator <true|false>] [--no-emit] [--dry-run]
+  rsx typecheck [--project <tsconfig>] [--dry-run]
+  rsx version
+  rsx --version
+`;
+
+const installVsCodeCode = dedent`
+  # Marketplace install
+  npx rsx install vscode
+
+  # Reinstall
+  npx rsx install vscode --force
+
+  # Build/install local VSIX from repository workspace
+  npx rsx install vscode --local --force
+`;
+
+const vscodeInstallRecoveryCode = dedent`
+  # 1) Check VS Code CLI is available
+  code --version
+
+  # 2) Retry install through rsx
+  npx rsx install vscode --force
+
+  # 3) If needed, install VSIX manually
+  code --install-extension "/absolute/path/to/rs-x-vscode-extension-<version>.vsix"
+
+  # 4) Optional: disable postinstall auto-install in CI or restricted environments
+  RSX_SKIP_VSCODE_EXTENSION_INSTALL=true
+`;
+
+const installCompilerCode = dedent`
+  npx rsx install compiler
+  npx rsx install compiler --pm pnpm
+`;
+
+const doctorAndAddCode = dedent`
+  # Environment diagnostics
+  npx rsx doctor
+
+  # Interactive expression creator
+  npx rsx add
+`;
+
+const helpAndVersionCode = dedent`
+  npx rsx help
+  npx rsx help build
+  npx rsx help project
+  npx rsx --version
+`;
+
+const doc: CoreConceptDoc = {
+  title: 'CLI',
+  lead: 'Use the rsx CLI to diagnose environments, create projects, wire framework bootstrap, install tooling, and run rs-x-aware build/typecheck workflows.',
+  whatItMeans:
+    'The rsx CLI is the main way to set up and operate rs-x in an application. Instead of manually wiring bootstrap files, transforms, and scripts, you run clear commands (`init`, `setup`, `project`, `build`, `typecheck`) that apply the same integration steps every time.',
+  whyItMatters:
+    'Using the CLI makes onboarding faster and keeps configuration consistent. Teams get the same project structure, bootstrap wiring, build flags, and diagnostics flow across Angular, Vue, React, Next.js, and Node.js projects.',
+  keyPoints: [
+    'Every primary CLI command is covered here (`doctor`, `add`, `install`, `setup`, `init`, `project`, `build`, `typecheck`, `version`).',
+    'Install once (`@rs-x/cli`) and use `rsx` commands in package scripts or `npx rsx ...`.',
+    'Use `rsx init` for existing projects when you want automatic bootstrap wiring.',
+    'Use `rsx setup` to auto-detect the framework and apply the correct integration.',
+    'Use `rsx project <template>` to create a full starter with rs-x already integrated.',
+    'Use `rsx build` and `rsx typecheck` in CI to enforce rs-x compile and expression semantics.',
+  ],
+  deepDive: [
+    {
+      title: '1) Install the CLI',
+      paragraphs: [
+        'Install `@rs-x/cli` as a dev dependency in your workspace (recommended). This provides the `rsx` command from local project scripts and keeps team environments version-aligned.',
+        'Global install is optional. It is convenient for running `rsx` directly in any terminal, but local project install is usually better for reproducible CI/dev behavior.',
+      ],
+    },
+    {
+      title: '2) Initialize or setup an existing app',
+      paragraphs: [
+        '`rsx init` focuses on package installation and bootstrap wiring based on detected context.',
+        '`rsx setup` auto-detects framework context and applies the matching integration flow.',
+      ],
+    },
+    {
+      title: '3) What the CLI installs',
+      paragraphs: [
+        'Installing `@rs-x/cli` adds the `rsx` command. During package postinstall, the CLI also attempts to install the bundled rs-x VS Code extension automatically when `code` is available on PATH.',
+        '`rsx init` installs runtime packages (`@rs-x/core`, `@rs-x/state-manager`, `@rs-x/expression-parser`) and compiler tooling (`@rs-x/compiler`, `@rs-x/typescript-plugin`), then wires bootstrap.',
+        'Template/setup flows install framework-specific packages when needed (for example `@rs-x/angular` for Angular and `@rs-x/react` for React/Next.js).',
+      ],
+    },
+    {
+      title: '4) Create new template projects',
+      paragraphs: [
+        '`rsx project` supports `angular`, `vuejs`, `react`, `nextjs`, and `nodejs` templates.',
+        'You can choose by full name, short alias, `--template`, or interactive prompt.',
+        'Template-specific extras are included (for example Angular installs `@rs-x/angular`, React/Next install `@rs-x/react`).',
+      ],
+    },
+    {
+      title: '5) VS Code extension features and fallback',
+      paragraphs: [
+        'The rs-x VS Code extension enables RS-X expression IntelliSense and diagnostics in TypeScript/JavaScript files. It also wires the `@rs-x/typescript-plugin` so expression errors show inside the editor.',
+        'If automatic VSIX installation fails, verify the `code` CLI command is available, rerun `rsx install vscode --force`, or install the VSIX manually with `code --install-extension`.',
+      ],
+    },
+    {
+      title: '6) Build and validate with rs-x tooling',
+      paragraphs: [
+        '`rsx build` runs the rs-x transform-aware compilation pipeline.',
+        'Use `--prod` with `rsx.build` config in `package.json` for generated AOT artifacts (preparse/compiled/registration).',
+        'Compiled generation is controlled per expression by `rsx(expression, { compiled: true | false })` (default `true`).',
+        '`rsx typecheck` adds rs-x semantic validation on top of TypeScript checks for safer CI gates.',
+      ],
+    },
+    {
+      title: '7) Full command reference',
+      paragraphs: [
+        'Use `rsx help` or `rsx help <command>` to print command-specific usage at any time.',
+        'The command matrix below is the complete current surface of the CLI.',
+      ],
+    },
+  ],
+  examples: [
+    {
+      title: 'Command Reference',
+      description:
+        'Complete command surface including framework variants and build/typecheck flags.',
+      code: commandReferenceCode,
+    },
+    {
+      title: 'Install CLI',
+      description:
+        'Install the CLI locally so `rsx` commands are available in your project scripts.',
+      code: installCliCode,
+    },
+    {
+      title: 'Bootstrap Existing Project',
+      description:
+        'Use `init` when you already have an app and want rs-x package/bootstrap setup.',
+      code: bootstrapExistingProjectCode,
+    },
+    {
+      title: 'Create Template Project',
+      description:
+        'Generate a new rs-x-ready app directly from CLI templates (full names or short aliases).',
+      code: createTemplateProjectCode,
+    },
+    {
+      title: 'Framework Setup',
+      description:
+        'Apply framework-specific integration in an existing app repository.',
+      code: setupIntegrationCode,
+    },
+    {
+      title: 'Install VS Code Extension',
+      description:
+        'Install or reinstall the rs-x VS Code extension from marketplace or local VSIX.',
+      code: installVsCodeCode,
+    },
+    {
+      title: 'VSIX Failure Recovery',
+      description:
+        'If postinstall or install command cannot apply the VSIX, use this fallback flow.',
+      code: vscodeInstallRecoveryCode,
+    },
+    {
+      title: 'Install Compiler Tooling',
+      description:
+        'Install RS-X compiler packages into your current project.',
+      code: installCompilerCode,
+    },
+    {
+      title: 'Doctor and Add',
+      description:
+        'Run environment diagnostics and create expression files interactively.',
+      code: doctorAndAddCode,
+    },
+    {
+      title: 'Build and Typecheck',
+      description:
+        'Run rs-x build and semantic checks locally or in CI.',
+      code: buildAndTypecheckCode,
+    },
+    {
+      title: 'Help and Version',
+      description:
+        'Inspect command help and print the current CLI version.',
+      code: helpAndVersionCode,
+    },
+  ],
+  related: [
+    {
+      href: '/docs/core-concepts/dependency-injection',
+      title: 'Dependency injection',
+      meta: 'How runtime services are composed and overridden',
+    },
+    {
+      href: '/docs/frameworks/react',
+      title: 'React integration',
+      meta: 'UseRsx hooks and React integration details',
+    },
+    {
+      href: '/docs/frameworks/angular',
+      title: 'Angular integration',
+      meta: 'Pipes/providers and Angular usage patterns',
+    },
+    {
+      href: '/docs/core-concepts/performance-report',
+      title: 'Performance report',
+      meta: 'Understand parse/bind/update behavior and tradeoffs',
+    },
+  ],
+};
+
+export const metadata: Metadata = {
+  title: doc.title,
+  description: doc.lead,
+};
+
+export default function Page() {
+  return <CoreConceptPageLayout doc={doc} />;
+}

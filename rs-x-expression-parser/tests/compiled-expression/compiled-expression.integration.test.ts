@@ -4,8 +4,15 @@ import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
+import {
+  clearPrecompiledCompiledExpressionPlans,
+  registerPrecompiledCompiledExpressionPlan,
+} from '../../lib/compiled-expression/precompiled-expression-plan-registry';
+import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+import type { IExpressionFactory } from '../../lib/expression-factory';
 import { rsx } from '../../lib/rsx';
 import { ExpressionType } from '../../lib/expressions/expression-parser.interface';
+import type { ICompiledExpressionPlan } from '../../lib/compiled-expression/compiled-expression.compiler.interface';
 
 async function waitForValue(
   expression: { value: unknown },
@@ -21,10 +28,14 @@ async function waitForValue(
 
 describe('Compiled expression engine integration', () => {
   const previousMode = process.env.RSX_EXPRESSION_ENGINE_MODE;
+  let expressionFactory: IExpressionFactory;
 
   beforeAll(async () => {
     process.env.RSX_EXPRESSION_ENGINE_MODE = 'compiled';
     await InjectionContainer.load(RsXExpressionParserModule);
+    expressionFactory = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionFactory,
+    ) as IExpressionFactory;
   });
 
   afterAll(async () => {
@@ -34,6 +45,10 @@ describe('Compiled expression engine integration', () => {
       process.env.RSX_EXPRESSION_ENGINE_MODE = previousMode;
     }
     await unloadRsXExpressionParserModule();
+  });
+
+  afterEach(() => {
+    clearPrecompiledCompiledExpressionPlans();
   });
 
   it('evaluates and updates compiled arithmetic expressions', async () => {
@@ -60,6 +75,132 @@ describe('Compiled expression engine integration', () => {
     expect(expression.type).toBe(ExpressionType.Addition);
     await waitForValue(expression);
     expect(expression.value).toBe(8);
+    expression.dispose();
+  });
+
+  it('uses precompiled registry plan when expression is created through rsx shortcut', async () => {
+    const expressionString = 'a + b';
+    const plan: ICompiledExpressionPlan = {
+      expressionString,
+      dependencyNames: ['a', 'b'],
+      watchDependencies: [
+        {
+          name: 'a',
+          ownerPath: [],
+          isLeaf: true,
+          isMemberExpressionSegment: false,
+        },
+        {
+          name: 'b',
+          ownerPath: [],
+          isLeaf: true,
+          isMemberExpressionSegment: false,
+        },
+      ],
+      expressionType: ExpressionType.Addition,
+      hasHiddenArgumentArray: false,
+      memberChain: undefined,
+      sequenceOperands: undefined,
+      evaluate: (a: unknown, b: unknown) => Number(a) * 10 + Number(b),
+      evaluateResolvedDependencies: (
+        model: unknown,
+        identifierOwnerResolver: {
+          resolve: (index: unknown, context?: unknown) => unknown;
+        },
+        indexValueAccessor: {
+          getResolvedValue: (context: unknown, index: string) => unknown;
+          getValue: (context: unknown, index: string) => unknown;
+        },
+      ) => {
+        const aOwner = identifierOwnerResolver.resolve('a', model) ?? model;
+        const bOwner = identifierOwnerResolver.resolve('b', model) ?? model;
+        const aResolved = indexValueAccessor.getResolvedValue(aOwner, 'a');
+        const bResolved = indexValueAccessor.getResolvedValue(bOwner, 'b');
+        const aRaw =
+          aResolved !== undefined
+            ? aResolved
+            : indexValueAccessor.getValue(aOwner, 'a');
+        const bRaw =
+          bResolved !== undefined
+            ? bResolved
+            : indexValueAccessor.getValue(bOwner, 'b');
+        return Number(aRaw) * 10 + Number(bRaw);
+      },
+    };
+
+    registerPrecompiledCompiledExpressionPlan(expressionString, plan);
+    const model = { a: 2, b: 3 };
+    const expression = rsx<number>(expressionString)(model);
+
+    await waitForValue(expression);
+    expect(expression.value).toBe(23);
+    await new WaitForEvent(expression, 'changed').wait(() => {
+      model.a = 5;
+    });
+    expect(expression.value).toBe(53);
+    expression.dispose();
+  });
+
+  it('uses precompiled registry plan when expression is created through expressionFactory.create', async () => {
+    const expressionString = 'a + b';
+    const plan: ICompiledExpressionPlan = {
+      expressionString,
+      dependencyNames: ['a', 'b'],
+      watchDependencies: [
+        {
+          name: 'a',
+          ownerPath: [],
+          isLeaf: true,
+          isMemberExpressionSegment: false,
+        },
+        {
+          name: 'b',
+          ownerPath: [],
+          isLeaf: true,
+          isMemberExpressionSegment: false,
+        },
+      ],
+      expressionType: ExpressionType.Addition,
+      hasHiddenArgumentArray: false,
+      memberChain: undefined,
+      sequenceOperands: undefined,
+      evaluate: (a: unknown, b: unknown) => Number(a) * 10 + Number(b),
+      evaluateResolvedDependencies: (
+        model: unknown,
+        identifierOwnerResolver: {
+          resolve: (index: unknown, context?: unknown) => unknown;
+        },
+        indexValueAccessor: {
+          getResolvedValue: (context: unknown, index: string) => unknown;
+          getValue: (context: unknown, index: string) => unknown;
+        },
+      ) => {
+        const aOwner = identifierOwnerResolver.resolve('a', model) ?? model;
+        const bOwner = identifierOwnerResolver.resolve('b', model) ?? model;
+        const aResolved = indexValueAccessor.getResolvedValue(aOwner, 'a');
+        const bResolved = indexValueAccessor.getResolvedValue(bOwner, 'b');
+        const aRaw =
+          aResolved !== undefined
+            ? aResolved
+            : indexValueAccessor.getValue(aOwner, 'a');
+        const bRaw =
+          bResolved !== undefined
+            ? bResolved
+            : indexValueAccessor.getValue(bOwner, 'b');
+        return Number(aRaw) * 10 + Number(bRaw);
+      },
+    };
+
+    registerPrecompiledCompiledExpressionPlan(expressionString, plan);
+    const model = { a: 1, b: 4 };
+    const expression = expressionFactory.create<number>(model, expressionString);
+
+    await waitForValue(expression);
+    expect(expression.value).toBe(14);
+    await new WaitForEvent(expression, 'changed').wait(() => {
+      model.b = 9;
+    });
+    expect(expression.value).toBe(19);
     expression.dispose();
   });
 });

@@ -1,9 +1,17 @@
 import { ExpressionCache } from '../../lib/expression-cache';
 import type { IExpressionEngineSelector } from '../../lib/expression-engine/expression-engine.interface';
 import { ExpressionType } from '../../lib/expressions';
+import {
+  clearLazyExpressionPreloaders,
+  registerLazyExpressionPreloader,
+} from '../../lib/expression-cache/lazy-expression-preload-registry';
 import { ExpressionMock } from '../../lib/testing';
 
 describe('ExpressionCache', () => {
+  afterEach(() => {
+    clearLazyExpressionPreloaders();
+  });
+
   it('registerExpressionTree prevents parser usage for precompiled expression', () => {
     const parsedExpression = new ExpressionMock({
       expressionString: 'a + b',
@@ -70,5 +78,43 @@ describe('ExpressionCache', () => {
     expect(parsedExpression.clone).toHaveBeenCalledTimes(1);
     expect(first.instance).toBe(parsedExpression);
     expect(second.instance).toBe(cloneA);
+  });
+
+  it('triggers lazy preloader synchronously on first cache miss and can satisfy request without parser', () => {
+    const parsedExpression = new ExpressionMock({
+      expressionString: 'a - b',
+      type: ExpressionType.Subtraction,
+    });
+    const expressionEngineSelector = {
+      create: jest.fn(() => parsedExpression),
+      getMode: jest.fn(() => 'compiled'),
+    } as unknown as IExpressionEngineSelector;
+    const cache = new ExpressionCache(expressionEngineSelector);
+
+    const precompiledExpression = new ExpressionMock({
+      expressionString: 'a - b',
+      type: ExpressionType.Subtraction,
+    });
+    const precompiledClone = new ExpressionMock({
+      expressionString: 'a - b',
+      type: ExpressionType.Subtraction,
+    });
+    (precompiledExpression as unknown as { clone: jest.Mock }).clone = jest.fn(
+      () => precompiledClone,
+    );
+
+    let loaderCalls = 0;
+    registerLazyExpressionPreloader('a - b', () => {
+      loaderCalls += 1;
+      cache.registerExpressionTree('a - b', precompiledExpression);
+    });
+
+    const first = cache.create('a - b');
+    const second = cache.create('a - b');
+
+    expect(loaderCalls).toBe(1);
+    expect(expressionEngineSelector.create).not.toHaveBeenCalled();
+    expect(first.instance).toBe(precompiledClone);
+    expect(second.instance).toBe(precompiledClone);
   });
 });

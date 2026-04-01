@@ -32,7 +32,8 @@ export class ExpressionEngineSelector implements IExpressionEngineSelector {
   }
 
   public getMode(): RsxExpressionEngineMode {
-    const explicitMode = process.env.RSX_EXPRESSION_ENGINE_MODE;
+    const processEnv = this.getProcessEnv();
+    const explicitMode = processEnv?.RSX_EXPRESSION_ENGINE_MODE;
     if (explicitMode === 'compiled') {
       return 'compiled';
     }
@@ -41,10 +42,18 @@ export class ExpressionEngineSelector implements IExpressionEngineSelector {
     }
 
     // Backward compatibility with the temporary benchmark toggle.
-    if (process.env.RSX_ENABLE_COMPILED_EXPRESSIONS === 'true') {
+    if (processEnv?.RSX_ENABLE_COMPILED_EXPRESSIONS === 'true') {
       return 'compiled';
     }
 
     return 'tree';
+  }
+
+  private getProcessEnv(): Record<string, string | undefined> | undefined {
+    if (typeof process === 'undefined' || !process || !process.env) {
+      return undefined;
+    }
+
+    return process.env as Record<string, string | undefined>;
   }
 }

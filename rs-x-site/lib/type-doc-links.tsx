@@ -21,6 +21,7 @@ const TYPE_DOC_LINKS: Record<string, string> = {
   IExpressionChangeTrackerManager: '/docs/expression-change-tracker-manager',
   IExpressionChangeTransactionManager:
     '/docs/expression-change-transaction-manager',
+  IRsxOptions: '/docs/irsx-options',
   IIndexWatchRule: '/docs/index-watch-rule',
   IProxyRegistry: '/docs/iproxy-registry',
   IMultiInjectService: '/docs/core-api/IMultiInjectService',

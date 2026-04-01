@@ -1,8 +1,10 @@
 import {
   type IExpression,
   type IExpressionFactory,
+  RsXExpressionParserInjectionTokens,
   rsx,
 } from '@rs-x/expression-parser';
+import { InjectionContainer } from '@rs-x/core';
 
 interface Model {
   a: number;
@@ -18,12 +20,22 @@ declare const dynamicExpression: string;
 
 rsx('a + b.method().result')(model);
 rsx(`a + b.method().result`)(model);
+rsx('a + b.method().result', { preparse: false })(model);
+rsx('a + b.method().result', { lazy: true })(model);
+rsx('a + b.method().result', { compiled: false })(model);
 rsx(dynamicExpression)(model);
 
 declare const expressionFactory: IExpressionFactory;
 expressionFactory.create(model, 'a + 1');
 expressionFactory.create(model, `a + 1`);
 expressionFactory.create(model, dynamicExpression);
+const expressionFactoryFromDi = InjectionContainer.get<IExpressionFactory>(
+  RsXExpressionParserInjectionTokens.IExpressionFactory,
+);
+expressionFactoryFromDi.create(model, 'a + 2');
+InjectionContainer.get<IExpressionFactory>(
+  RsXExpressionParserInjectionTokens.IExpressionFactory,
+).create(model, 'b.method().result + 1');
 
 declare function getFactory(): IExpressionFactory;
 getFactory().create(model, 'b.method().result');

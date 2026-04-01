@@ -13,15 +13,164 @@ const EXPRESSION_PARSER_DTS =
 const PRELUDE_LINES = 1;
 const WRAPPER_HEADER = [
   '"use strict";',
-  '(async function (api) {',
+  '(async function (api: IPlaygroundApi) {',
   '  const rsx = __rsx_import;',
-  '  const { rxjs, printValue, stateManager, IndexWatchRule, WaitForEvent, ExpressionChangeTransactionManager } = api;',
+  '  const rxjs: RsxPlaygroundRxjsApi = api.rxjs;',
+  '  const printValue = api.printValue;',
+  '  const stateManager = api.stateManager;',
+  '  const IndexWatchRule = api.IndexWatchRule;',
+  '  const WaitForEvent = api.WaitForEvent;',
+  '  const ExpressionChangeTransactionManager = api.ExpressionChangeTransactionManager;',
   '  {',
 ];
 const WRAPPER_FOOTER = ['  }', '})'];
 const WRAPPER_LINE_OFFSET = PRELUDE_LINES + WRAPPER_HEADER.length;
 const EXPRESSION_PARSER_GLOBAL_DTS = `
 declare global {
+interface RsxPlaygroundSubscriptionLike {
+  unsubscribe(): void;
+  readonly closed?: boolean;
+}
+
+interface RsxPlaygroundObserver<T> {
+  next(value: T): void;
+  error?(error: unknown): void;
+  complete?(): void;
+}
+
+interface RsxPlaygroundOperatorFunction<TSource, TResult> {
+  (source: RsxPlaygroundObservable<TSource>): RsxPlaygroundObservable<TResult>;
+}
+
+interface RsxPlaygroundMonoTypeOperatorFunction<T>
+  extends RsxPlaygroundOperatorFunction<T, T> {}
+
+interface RsxPlaygroundObservable<T> {
+  readonly value?: T;
+  subscribe(
+    observer?: Partial<RsxPlaygroundObserver<T>>,
+  ): RsxPlaygroundSubscriptionLike;
+  pipe(): RsxPlaygroundObservable<T>;
+  pipe<A>(
+    op1: RsxPlaygroundOperatorFunction<T, A>,
+  ): RsxPlaygroundObservable<A>;
+  pipe<A, B>(
+    op1: RsxPlaygroundOperatorFunction<T, A>,
+    op2: RsxPlaygroundOperatorFunction<A, B>,
+  ): RsxPlaygroundObservable<B>;
+}
+
+interface RsxPlaygroundSubject<T> extends RsxPlaygroundObservable<T> {
+  next(value: T): void;
+}
+
+interface RsxPlaygroundBehaviorSubject<T> extends RsxPlaygroundSubject<T> {
+  value: T;
+  getValue(): T;
+}
+
+type RsxPlaygroundRxjsApi = {
+  Observable: new <T>() => RsxPlaygroundObservable<T>;
+  Subject: new <T>() => RsxPlaygroundSubject<T>;
+  BehaviorSubject: new <T>(value: T) => RsxPlaygroundBehaviorSubject<T>;
+  ReplaySubject: new <T>(bufferSize?: number) => RsxPlaygroundSubject<T>;
+  AsyncSubject: new <T>() => RsxPlaygroundSubject<T>;
+  of: <T>(...values: T[]) => RsxPlaygroundObservable<T>;
+  interval: (period: number) => RsxPlaygroundObservable<number>;
+  timer: (dueTime: number) => RsxPlaygroundObservable<number>;
+  map: <TResult>(
+    project: (value: unknown, index: number) => TResult,
+  ) => RsxPlaygroundOperatorFunction<unknown, TResult>;
+  startWith: <TSource>(
+    ...values: TSource[]
+  ) => RsxPlaygroundMonoTypeOperatorFunction<TSource>;
+  filter: <TSource>(
+    predicate: (value: TSource, index: number) => boolean,
+  ) => RsxPlaygroundMonoTypeOperatorFunction<TSource>;
+  tap: <TSource>(
+    next: (value: TSource) => void,
+  ) => RsxPlaygroundMonoTypeOperatorFunction<TSource>;
+};
+}
+
+declare global {
+  type RsxPlaygroundConstructor<T = unknown> = new (...args: unknown[]) => T;
+  type RsxPlaygroundCallable = (...args: unknown[]) => unknown;
+
+  interface Math {
+    floor(value: number): number;
+    random(): number;
+  }
+
+  const Math: Math;
+  const Date: RsxPlaygroundConstructor<{
+    getFullYear(): number;
+    setFullYear(value: number): void;
+    getTime(): number;
+    setTime(value: number): void;
+  }>;
+  const Number: {
+    (value?: unknown): number;
+    new (value?: unknown): { valueOf(): number };
+  };
+  const String: {
+    (value?: unknown): string;
+    new (value?: unknown): { valueOf(): string };
+  };
+  const Boolean: {
+    (value?: unknown): boolean;
+    new (value?: unknown): { valueOf(): boolean };
+  };
+  const BigInt: (value?: unknown) => bigint;
+  const Symbol: (description?: string) => symbol;
+  const Object: RsxPlaygroundConstructor<object> & RsxPlaygroundCallable;
+  const Array: RsxPlaygroundConstructor<unknown[]>;
+  const RegExp: RsxPlaygroundConstructor<object>;
+  const Map: RsxPlaygroundConstructor<object>;
+  const Set: RsxPlaygroundConstructor<object>;
+  const WeakMap: RsxPlaygroundConstructor<object>;
+  const WeakSet: RsxPlaygroundConstructor<object>;
+  const Promise: RsxPlaygroundConstructor<PromiseLike<unknown>>;
+  const Error: RsxPlaygroundConstructor<Error>;
+  const TypeError: RsxPlaygroundConstructor<Error>;
+  const RangeError: RsxPlaygroundConstructor<Error>;
+  const ReferenceError: RsxPlaygroundConstructor<Error>;
+  const SyntaxError: RsxPlaygroundConstructor<Error>;
+  const URIError: RsxPlaygroundConstructor<Error>;
+  const AggregateError: RsxPlaygroundConstructor<Error>;
+  const JSON: {
+    parse(text: string): unknown;
+    stringify(value: unknown): string;
+  };
+  const Intl: Record<string, unknown>;
+  const Reflect: Record<string, unknown>;
+  const Proxy: RsxPlaygroundConstructor<object>;
+  const parseInt: (text: string, radix?: number) => number;
+  const parseFloat: (text: string) => number;
+  const isNaN: (value: unknown) => boolean;
+  const isFinite: (value: unknown) => boolean;
+  const encodeURI: (value: string) => string;
+  const encodeURIComponent: (value: string) => string;
+  const decodeURI: (value: string) => string;
+  const decodeURIComponent: (value: string) => string;
+  const setTimeout: (
+    callback: (...args: unknown[]) => void,
+    delay?: number,
+    ...args: unknown[]
+  ) => unknown;
+  const clearTimeout: (id: unknown) => void;
+  const setInterval: (
+    callback: (...args: unknown[]) => void,
+    delay?: number,
+    ...args: unknown[]
+  ) => unknown;
+  const clearInterval: (id: unknown) => void;
+  const console: {
+    log: (...args: unknown[]) => void;
+    warn: (...args: unknown[]) => void;
+    error: (...args: unknown[]) => void;
+  };
+
   interface IIndexWatchRule {
     context: unknown;
     test(index: unknown, target: unknown): boolean;
@@ -40,21 +189,23 @@ declare global {
   }
 
   const rsx: (expression: string) => (model: unknown) => unknown;
-  const rxjs: unknown;
+  const rxjs: RsxPlaygroundRxjsApi;
   const printValue: (value: unknown) => void;
   const stateManager: IStateManager;
   const IndexWatchRule: new (...args: unknown[]) => IIndexWatchRule;
   const WaitForEvent: new (...args: unknown[]) => unknown;
   const ExpressionChangeTransactionManager: IExpressionChangeTransactionManager;
-  const api: {
+  interface IPlaygroundApi {
     rsx: typeof rsx;
-    rxjs: typeof rxjs;
+    rxjs: RsxPlaygroundRxjsApi;
     printValue: typeof printValue;
     stateManager: typeof stateManager;
     IndexWatchRule: typeof IndexWatchRule;
     WaitForEvent: typeof WaitForEvent;
     ExpressionChangeTransactionManager: typeof ExpressionChangeTransactionManager;
-  };
+  }
+
+  const api: IPlaygroundApi;
 }
 export {};
 `;
@@ -131,7 +282,7 @@ function createInMemoryProgram(args: {
     checkJs: true,
     allowReturnOutsideFunction: true,
     allowNonTsExtensions: true,
-    noResolve: true,
+    noResolve: false,
     skipLibCheck: true,
     noLib: true,
   };
@@ -180,7 +331,11 @@ function createInMemoryProgram(args: {
     },
     resolveModuleNames: (moduleNames) =>
       moduleNames.map((moduleName) => {
-        if (moduleName === '@rs-x/expression-parser') {
+        if (
+          moduleName === '@rs-x/expression-parser' ||
+          moduleName === 'rxjs' ||
+          moduleName === 'rxjs/operators'
+        ) {
           return {
             resolvedFileName: EXPRESSION_PARSER_DTS,
             extension: ts.Extension.Dts,

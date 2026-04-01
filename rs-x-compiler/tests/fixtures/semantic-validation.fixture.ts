@@ -1,4 +1,4 @@
-import type { BehaviorSubject, Observable } from 'rxjs';
+import type { BehaviorSubject, Observable, ReplaySubject } from 'rxjs';
 
 import {
   type IExpression,
@@ -13,6 +13,8 @@ interface Model {
   items: number[];
   lookup: Record<string, number>;
   map: Map<string, number>;
+  tasks: Set<{ id: string; done: boolean }>;
+  taskId: string;
   nestedA: {
     map: Record<string, number>;
   };
@@ -22,6 +24,14 @@ interface Model {
       z: number;
     };
   }>;
+  nestedObservablePath: Observable<{
+    y: Observable<{
+      z: number;
+    }>;
+  }>;
+  obsNumber: Observable<number>;
+  subjNumber: BehaviorSubject<number>;
+  replayNumber: ReplaySubject<number>;
   a: {
     b: BehaviorSubject<{
       c: BehaviorSubject<{
@@ -36,6 +46,7 @@ interface Model {
     };
   };
   multiply(a: number, b: number): number;
+  getNumber$(): Observable<number>;
 }
 
 declare const model: Model;
@@ -58,8 +69,14 @@ rsx('lookup[key]')(model);
 rsx('nestedA.map[key]')(model);
 rsx('map["b"]')(model);
 rsx('map[key]')(model);
+rsx('tasks[taskId]')(model);
 rsx('invoiceDate.year')(model);
 rsx('x.y.z')(model);
+rsx('nestedObservablePath.y.z')(model);
+rsx('obsNumber + 1')(model);
+rsx('subjNumber + 1')(model);
+rsx('replayNumber + 1')(model);
+rsx('getNumber$() + 1')(model);
 rsx('a.b.c.d')(model);
 expressionFactory.create(model, 'multiply(count, 2)');
 rsx('x1 * 3')(modularModel);

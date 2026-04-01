@@ -1,7 +1,10 @@
 import { emptyFunction, InjectionContainer, WaitForEvent } from '@rs-x/core';
 import { IndexWatchRule } from '@rs-x/state-manager';
 
-import { type IExpression } from '../../lib/expressions/expression-parser.interface';
+import {
+  type IExpression,
+  type IExpressionTree,
+} from '../../lib/expressions/expression-parser.interface';
 import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
@@ -266,10 +269,9 @@ describe('Computed index expression tests', () => {
     // Flush deferred member-path bindings.
     await new Promise<void>((resolve) => queueMicrotask(resolve));
 
-    const memberSegments = expression.childExpressions as IExpression[];
-    const indexExpression = memberSegments[1] as IExpression;
-    const trackedTaskIdentifier = indexExpression
-      .childExpressions[0] as IExpression;
+    const memberSegments = (expression as IExpressionTree).childExpressions;
+    const indexExpression = memberSegments[1] as IExpressionTree;
+    const trackedTaskIdentifier = indexExpression.childExpressions[0];
 
     expect(trackedTaskIdentifier.expressionString).toBe('trackedTask');
     expect(trackedTaskIdentifier.value).toBe(taskA);

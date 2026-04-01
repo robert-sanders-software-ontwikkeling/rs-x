@@ -12,17 +12,21 @@ export interface IExpression<T = unknown, PT = unknown> extends IDisposable {
   readonly changed: Observable<IExpression>;
   readonly type: ExpressionType;
   readonly expressionString: string;
-  readonly parent: IExpression<PT> | undefined;
-  readonly childExpressions: readonly IExpression[];
   readonly value: T | undefined;
   readonly isRoot: boolean;
   readonly isAsync: boolean | undefined;
   readonly isDisposed: boolean;
-  readonly hidden: boolean;
   changeHook?: ChangeHook;
   toString(): string;
   clone(): this;
   bind(settings: IExpressionBindConfiguration): IExpression;
+}
+
+export interface IExpressionTree<T = unknown, PT = unknown>
+  extends IExpression<T, PT> {
+  readonly parent: IExpressionTree<PT> | undefined;
+  readonly childExpressions: readonly IExpressionTree[];
+  readonly hidden: boolean;
 }
 
 export interface IPropertyPath {

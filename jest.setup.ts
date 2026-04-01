@@ -51,4 +51,10 @@ if (typeof globalThis.structuredClone === 'undefined') {
   });
 }
 
+// Keep memory lightweight during test runs by shrinking compiled plan cache.
+// Increase via RSX_COMPILED_PLAN_CACHE_MAX in CI or specific performance runs.
+if (!process.env.RSX_COMPILED_PLAN_CACHE_MAX) {
+  process.env.RSX_COMPILED_PLAN_CACHE_MAX = '200';
+}
+
 expect.extend(customMatchers);
