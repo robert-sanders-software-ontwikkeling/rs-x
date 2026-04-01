@@ -1,6 +1,5 @@
 import {
-  GuidKeyedInstanceFactory,
-  type IGuidFactory,
+  GroupedKeyedInstanceFactory,
   Inject,
   Injectable,
   InvalidOperationException,
@@ -21,9 +20,10 @@ import type {
 
 @Injectable()
 export class ObjectObserverProxyPairManager
-  extends GuidKeyedInstanceFactory<IProxyTarget<unknown>, IObserverProxyPair>
+  extends GroupedKeyedInstanceFactory<number, IProxyTarget<unknown>, IObserverProxyPair>
   implements IObjectObserverProxyPairManager
 {
+  private _nextId = 0;
   constructor(
     @Inject(
       RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryProviderFactory,
@@ -31,10 +31,8 @@ export class ObjectObserverProxyPairManager
     private readonly getObserverFactoryProvider: () => IObjectObserverProxyPairFactoryProvider,
     @Inject(RsXCoreInjectionTokens.IProxyRegistry)
     private readonly _proxyRegistry: IProxyRegistry,
-    @Inject(RsXCoreInjectionTokens.IGuidFactory)
-    guidFactory: IGuidFactory,
   ) {
-    super(guidFactory);
+    super();
   }
 
   protected override getGroupId(data: IProxyTarget<unknown>): unknown {
@@ -50,7 +48,7 @@ export class ObjectObserverProxyPairManager
   public override create(data: IProxyTarget<unknown>): {
     referenceCount: number;
     instance: IObserverProxyPair<unknown>;
-    id: string;
+    id: number;
   } {
     if (this._proxyRegistry.isProxy(data.target)) {
       throw new InvalidOperationException('Cannot create a proxy for a proxy');
@@ -61,7 +59,7 @@ export class ObjectObserverProxyPairManager
 
   protected createInstance(
     objectObserverInfo: IProxyTarget<unknown>,
-    id: string,
+    id: number,
   ): IObserverProxyPair {
     const factory = this.getObserverFactoryProvider().factories.find(
       (factory) => factory.applies(objectObserverInfo.target),
@@ -81,5 +79,9 @@ export class ObjectObserverProxyPairManager
     observerProxyPair: IObserverProxyPair,
   ): void {
     observerProxyPair.observer.dispose();
+  }
+
+  protected override createUniqueId(_data: IProxyTarget<unknown>): number {
+    return this._nextId++;
   }
 }

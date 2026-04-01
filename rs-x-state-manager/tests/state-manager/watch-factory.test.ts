@@ -1,6 +1,5 @@
 import { Subject } from 'rxjs';
 
-import type { IGuidFactory } from '@rs-x/core';
 import { Type } from '@rs-x/core';
 
 import {
@@ -149,16 +148,11 @@ const createStateManagerMock = (): IStateManagerMock => {
 
 describe('WatchFactory', () => {
   let stateManagerMock: IStateManagerMock;
-  let guidFactory: IGuidFactory;
   let watchFactory: WatchFactory;
 
   beforeEach(() => {
     stateManagerMock = createStateManagerMock();
-    let guidIndex = 0;
-    guidFactory = {
-      create: jest.fn(() => `guid-${++guidIndex}`),
-    } as unknown as IGuidFactory;
-    watchFactory = new WatchFactory(stateManagerMock.instance, guidFactory);
+    watchFactory = new WatchFactory(stateManagerMock.instance);
   });
 
   afterEach(() => {

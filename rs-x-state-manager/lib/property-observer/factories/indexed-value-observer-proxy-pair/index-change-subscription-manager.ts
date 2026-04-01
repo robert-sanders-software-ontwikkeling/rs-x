@@ -1,7 +1,6 @@
 import {
   type IDisposableOwner,
   type IErrorLog,
-  type IGuidFactory,
   type IKeyedInstanceFactory,
   type IPropertyChange,
   KeyedInstanceFactory,
@@ -65,9 +64,8 @@ class IndexChangeSubscriptionsForContextManager<TIndex>
     releaseContext: () => void,
     private readonly _indexSetObserverManager: IIndexSetObserverManager<unknown>,
     errorLog: IErrorLog,
-    guidFactory: IGuidFactory,
   ) {
-    super(context, releaseContext, errorLog, guidFactory);
+    super(context, releaseContext, errorLog);
   }
 
   protected getGroupId(data: ISubscriptionIdInfo<TIndex>): TIndex {
@@ -83,7 +81,7 @@ class IndexChangeSubscriptionsForContextManager<TIndex>
   protected createObserver(
     context: unknown,
     data: ISubscriptionInfo<TIndex>,
-    id: string,
+    id: number,
   ): { subscriptionData: ObserverGroup; observer: IObserver } {
     const indexSetObserver = this._indexSetObserverManager
       .create(context)
@@ -100,7 +98,7 @@ class IndexChangeSubscriptionsForContextManager<TIndex>
   private createGroupObserver(
     data: ISubscriptionInfo<TIndex>,
     indexSetObserver: IObserver,
-    id: string,
+    id: number,
   ): ObserverGroup {
     const observer = new ObserverGroup(
       {
@@ -136,7 +134,6 @@ export class IndexChangeSubscriptionManager<
   constructor(
     private readonly _indexSetObserverManager: IIndexSetObserverManager<unknown>,
     private readonly _errorLog: IErrorLog,
-    private readonly _guidFactory: IGuidFactory,
   ) {
     super();
   }
@@ -157,13 +154,12 @@ export class IndexChangeSubscriptionManager<
       () => this.release(context),
       this._indexSetObserverManager,
       this._errorLog,
-      this._guidFactory,
     );
   }
 
   protected override releaseInstance(
     instance: IIndexChangeSubscriptionsForContextManager<TIndex>,
-    id: string,
+    id: number,
   ): void {
     super.releaseInstance(instance, id);
     instance.dispose();

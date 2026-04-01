@@ -1,7 +1,6 @@
 import {
   emptyFunction,
   ErrorLog,
-  GuidFactory,
   InjectionContainer,
   type IPropertyChange,
   truePredicate,
@@ -32,7 +31,6 @@ describe('StateChangeSubscriptionManager tests', () => {
         RsXStateManagerInjectionTokens.IObjectPropertyObserverProxyPairManager,
       ),
       new ErrorLog(),
-      new GuidFactory(),
     );
     indexWatchRule = new IndexWatchRuleMock();
     indexWatchRule.test.mockReturnValue(true);

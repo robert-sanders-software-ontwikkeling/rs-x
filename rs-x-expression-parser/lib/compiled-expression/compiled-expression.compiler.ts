@@ -471,11 +471,15 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
       }
 
       const recordNode = node as unknown as Record<string, unknown>;
-      for (const [key, value] of Object.entries(recordNode)) {
+      for (const key in recordNode) {
+        if (!Object.prototype.hasOwnProperty.call(recordNode, key)) {
+          continue;
+        }
         if (key === 'loc' || key === 'range' || key === 'start' || key === 'end') {
           continue;
         }
 
+        const value = recordNode[key];
         if (Array.isArray(value)) {
           for (let i = 0; i < value.length; i++) {
             visit(value[i], node, key, parent, parentKey);

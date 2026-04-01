@@ -1,6 +1,5 @@
 import {
   type IErrorLog,
-  type IGuidFactory,
   type IInstanceGroupInfo,
   KeyedInstanceFactory,
 } from '@rs-x/core';
@@ -30,9 +29,8 @@ class StateChangeSubscriptionsForContextManager
     releaseContext: () => void,
     private readonly _objectObserverManager: IObjectPropertyObserverProxyPairManager,
     errorLog: IErrorLog,
-    guidFactory: IGuidFactory,
   ) {
-    super(context, releaseContext, errorLog, guidFactory);
+    super(context, releaseContext, errorLog);
   }
 
   protected getGroupId(data: IStateChangeSubscriptionIdInfo): unknown {
@@ -48,7 +46,7 @@ class StateChangeSubscriptionsForContextManager
   protected createObserver(
     context: unknown,
     data: IStateChangeSubscriptionInfo,
-    id: string,
+    id: number,
   ): { subscriptionData: undefined; observer: IObserver } {
     const objectObserver = this._objectObserverManager.createAndGetInstance(context);
     const observer = objectObserver.createAndGetInstance({
@@ -79,7 +77,6 @@ export class StateChangeSubscriptionManager
   constructor(
     private readonly _objectObserverManager: IObjectPropertyObserverProxyPairManager,
     private readonly _errorLog: IErrorLog,
-    private readonly _guidFactory: IGuidFactory,
   ) {
     super();
   }
@@ -90,7 +87,7 @@ export class StateChangeSubscriptionManager
 
   public instanceGroupInfoEntriesForContext(
     context: unknown,
-  ): IterableIterator<IInstanceGroupInfo<string, IObserver>> {
+  ): IterableIterator<IInstanceGroupInfo<number, IObserver>> {
     return (
       this.getFromId(context)?.instanceGroupInfoEntries() ??
       [][Symbol.iterator]()
@@ -119,7 +116,6 @@ export class StateChangeSubscriptionManager
       () => this.release(id),
       this._objectObserverManager,
       this._errorLog,
-      this._guidFactory,
     );
   }
 

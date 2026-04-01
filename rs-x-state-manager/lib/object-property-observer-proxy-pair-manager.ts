@@ -1,6 +1,5 @@
 import {
-  GuidKeyedInstanceFactory,
-  type IGuidFactory,
+  GroupedKeyedInstanceFactory,
   Inject,
   Injectable,
   KeyedInstanceFactory,
@@ -22,20 +21,21 @@ import type {
 import { RsXStateManagerInjectionTokens } from './rs-x-state-manager-injection-tokens';
 
 class PropertyObserverProxyPairManager
-  extends GuidKeyedInstanceFactory<
+  extends GroupedKeyedInstanceFactory<
+    number,
     IPropertyInfo,
     IObserverProxyPair,
     IIndexInfo
   >
   implements IPropertyObserverProxyPairManager
 {
+  private _nextId = 0;
   constructor(
-    guidFactory: IGuidFactory,
     private readonly _object: unknown,
     private readonly _observerFactories: readonly IIndexObserverProxyPairFactory[],
     private readonly releaseContext: () => void,
   ) {
-    super(guidFactory);
+    super();
   }
 
   protected getGroupId(data: IPropertyInfo): unknown {
@@ -48,7 +48,7 @@ class PropertyObserverProxyPairManager
 
   protected createInstance(
     propertyInfo: IPropertyInfo,
-    id: string,
+    id: number,
   ): IObserverProxyPair {
     return this.getObserverFactory(propertyInfo).create(
       {
@@ -71,6 +71,10 @@ class PropertyObserverProxyPairManager
 
   protected override onReleased(): void {
     this.releaseContext();
+  }
+
+  protected override createUniqueId(_data: IPropertyInfo): number {
+    return this._nextId++;
   }
 
   private getObserverFactory(
@@ -104,8 +108,6 @@ export class ObjectPropertyObserverProxyPairManager
       RsXStateManagerInjectionTokens.IPropertyObserverProxyPairFactoryList,
     )
     private readonly _factories: IIndexObserverProxyPairFactory[],
-    @Inject(RsXCoreInjectionTokens.IGuidFactory)
-    private readonly _guidFactory: IGuidFactory,
   ) {
     super();
   }
@@ -122,7 +124,6 @@ export class ObjectPropertyObserverProxyPairManager
     context: unknown,
   ): IPropertyObserverProxyPairManager {
     return new PropertyObserverProxyPairManager(
-      this._guidFactory,
       context,
       this._factories,
       () => this.release(context),

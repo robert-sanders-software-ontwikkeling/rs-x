@@ -5,7 +5,6 @@ import {
   type IChainPart,
   type IEqualityService,
   type IErrorLog,
-  type IGuidFactory,
   type IIndexValueAccessor,
   Inject,
   Injectable,
@@ -72,8 +71,6 @@ export class StateManager implements IStateManager {
     private readonly _objectStateManager: IObjectStateManager,
     @Inject(RsXCoreInjectionTokens.IErrorLog)
     errorLog: IErrorLog,
-    @Inject(RsXCoreInjectionTokens.IGuidFactory)
-    guidFactory: IGuidFactory,
     @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
     private readonly _indexValueAccessor: IIndexValueAccessor,
     @Inject(RsXCoreInjectionTokens.IEqualityService)
@@ -85,7 +82,6 @@ export class StateManager implements IStateManager {
     this._stateChangeSubscriptionManager = new StateChangeSubscriptionManager(
       objectObserverManager,
       errorLog,
-      guidFactory,
     );
   }
 
@@ -129,7 +125,7 @@ export class StateManager implements IStateManager {
       index: index,
       indexWatchRule,
     });
-    return id ? stateChangeSubscriptionsForContextManager.has(id) : false;
+    return id !== undefined ? stateChangeSubscriptionsForContextManager.has(id) : false;
   }
 
   public watchState(

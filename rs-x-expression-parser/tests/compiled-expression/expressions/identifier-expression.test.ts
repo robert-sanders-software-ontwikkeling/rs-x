@@ -98,6 +98,51 @@ describe('IdentifierExpression tests', () => {
     expect(actual).toBe(expression);
   });
 
+  it('updates only the bound expression when a single row changes', async () => {
+    const rows = Array.from({ length: 20 }, (_, index) => ({
+      a: index + 1,
+    }));
+
+    const expressions = rows.map((row) => rsx('a')(row));
+    try {
+      const initialValues = (await Promise.all(
+        expressions.map((expr) =>
+          new WaitForEvent(expr, 'changed').wait(() => {}),
+        ),
+      )) as Array<IExpression | null>;
+
+      initialValues.forEach((result, index) => {
+        expect(result?.value).toEqual(index + 1);
+        expect(expressions[index].value).toEqual(index + 1);
+      });
+
+      const targetIndex = 7;
+      const nextValue = 999;
+      const waiters = expressions.map((expr) =>
+        new WaitForEvent(expr, 'changed', {
+          ignoreInitialValue: true,
+          timeout: 200,
+        }).wait(() => {}),
+      );
+
+      rows[targetIndex].a = nextValue;
+
+      const results = (await Promise.all(waiters)) as Array<IExpression | null>;
+
+      results.forEach((result, index) => {
+        if (index === targetIndex) {
+          expect(result?.value).toEqual(nextValue);
+          expect(expressions[index].value).toEqual(nextValue);
+        } else {
+          expect(result).toBeNull();
+          expect(expressions[index].value).toEqual(index + 1);
+        }
+      });
+    } finally {
+      expressions.forEach((expr) => expr.dispose());
+    }
+  });
+
   it('will emit change event for readonly getter-only property backed by stateManager', async () => {
     const stateManager: IStateManager = InjectionContainer.get(
       RsXStateManagerInjectionTokens.IStateManager,

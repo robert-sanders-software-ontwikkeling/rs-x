@@ -1,6 +1,6 @@
 import {
   Dispatcher,
-  GuidKeyedInstanceFactory,
+  GroupedKeyedInstanceFactory,
   IDisposable,
   IDisposableOwner,
   IKeyedInstanceFactory,
@@ -9,7 +9,6 @@ import {
   RsXCoreInjectionTokens,
   Type,
 } from '@rs-x/core';
-import type { IGuidFactory } from '@rs-x/core';
 import { type Observable } from 'rxjs';
 
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokens';
@@ -208,7 +207,7 @@ export interface IWatchData extends IWatchId {
 }
 
 export type IWatchFactory = IKeyedInstanceFactory<
-  string,
+  number,
   IWatchData,
   IWatch,
   IWatchId
@@ -216,19 +215,18 @@ export type IWatchFactory = IKeyedInstanceFactory<
 
 @Injectable()
 export class WatchFactory
-  extends GuidKeyedInstanceFactory<IWatchData, IWatch, IWatchId>
+  extends GroupedKeyedInstanceFactory<number, IWatchData, IWatch, IWatchId>
   implements IWatchFactory
 {
   private readonly _identityMap = new WeakMap<object, string>();
   private _identityIndex = 0;
+  private _nextId = 0;
 
   constructor(
     @Inject(RsXStateManagerInjectionTokens.IStateManager)
     private readonly _stateManager: IStateManager,
-    @Inject(RsXCoreInjectionTokens.IGuidFactory)
-    guidFactory: IGuidFactory,
   ) {
-    super(guidFactory);
+    super();
   }
   protected override getGroupId(data: IWatchId): unknown {
     return data.context;
@@ -243,7 +241,7 @@ export class WatchFactory
 
     return `${this.toIdentityKey(watchData.index)}|${this.toIdentityKey(watchRule)}`;
   }
-  protected override createInstance(data: IWatchData, id: string): IWatch {
+  protected override createInstance(data: IWatchData, id: number): IWatch {
     return new Watch(
       {
         canDispose: () => this.getReferenceCount(id) === 1,
@@ -254,6 +252,10 @@ export class WatchFactory
       data.options,
       this._stateManager,
     );
+  }
+
+  protected override createUniqueId(_data: IWatchData): number {
+    return this._nextId++;
   }
 
   private toIdentityKey(value: unknown): string {

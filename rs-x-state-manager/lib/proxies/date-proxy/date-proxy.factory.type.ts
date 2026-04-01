@@ -14,7 +14,7 @@ export interface IDateProxyData extends IDateProxyIdData {
 
 export type IDateObserverProxyPair = IObserverProxyPair<Date>;
 export type IDateProxyFactory = IKeyedInstanceFactory<
-  string,
+  number,
   IDateProxyData,
   IDateObserverProxyPair
 >;

@@ -26,7 +26,7 @@ export interface IStateChangeSubscriptionInfo extends IStateChangeSubscriptionId
 
 export type IStateChangeSubscriptionsForContextManager =
   IGroupedKeyedInstanceFactory<
-    string,
+    number,
     IStateChangeSubscriptionInfo,
     IObserver,
     IStateChangeSubscriptionIdInfo
@@ -39,5 +39,5 @@ export interface IStateChangeSubscriptionManager extends IKeyedInstanceFactory<
   isRegistered(context: unknown, key: unknown): boolean;
   instanceGroupInfoEntriesForContext(
     context: unknown,
-  ): IterableIterator<IInstanceGroupInfo<string, IObserver>>;
+  ): IterableIterator<IInstanceGroupInfo<number, IObserver>>;
 }

@@ -1,6 +1,5 @@
 import {
   type IErrorLog,
-  type IGuidFactory,
   type IIndexValueAccessor,
   Inject,
   Injectable,
@@ -29,8 +28,6 @@ export class NonIterableObjectPropertyObserverProxyPairFactory extends IndexObse
     objectPropertyObserverManager: IObjectPropertyObserverManager,
     @Inject(RsXCoreInjectionTokens.IErrorLog)
     errorLog: IErrorLog,
-    @Inject(RsXCoreInjectionTokens.IGuidFactory)
-    guidFactory: IGuidFactory,
     @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
     indexValueAccessor: IIndexValueAccessor,
     @Inject(RsXCoreInjectionTokens.IProxyRegistry)
@@ -42,7 +39,6 @@ export class NonIterableObjectPropertyObserverProxyPairFactory extends IndexObse
       objectObserveryManager,
       objectPropertyObserverManager,
       errorLog,
-      guidFactory,
       indexValueAccessor,
       proxyRegister,
       valueMetadata,

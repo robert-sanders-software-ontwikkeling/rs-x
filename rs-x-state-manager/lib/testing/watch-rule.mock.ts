@@ -8,5 +8,5 @@ import {
 } from '../state-manager';
 
 export class WatchFactoryMock
-  extends KeyedInstanceFactoryMock<string, IWatchData, IWatch, IWatchId>
+  extends KeyedInstanceFactoryMock<number, IWatchData, IWatch, IWatchId>
   implements IWatchFactory {}

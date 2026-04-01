@@ -1,7 +1,6 @@
 import {
   type DateProperty,
   type IErrorLog,
-  type IGuidFactory,
   type IIndexValueAccessor,
   Inject,
   Injectable,
@@ -30,8 +29,6 @@ export class DatePropertyObserverProxyPairFactory
     datePropertyObserverManager: IDatePropertyObserverManager,
     @Inject(RsXCoreInjectionTokens.IErrorLog)
     errorLog: IErrorLog,
-    @Inject(RsXCoreInjectionTokens.IGuidFactory)
-    guidFactory: IGuidFactory,
     @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
     datePropertyAccessor: IIndexValueAccessor,
     @Inject(RsXCoreInjectionTokens.IProxyRegistry)
@@ -43,7 +40,6 @@ export class DatePropertyObserverProxyPairFactory
       objectObserverManager,
       datePropertyObserverManager,
       errorLog,
-      guidFactory,
       datePropertyAccessor,
       proxyRegister,
       valueMetadata,

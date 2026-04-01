@@ -1,4 +1,4 @@
-import { GuidFactory, UnsupportedException } from '@rs-x/core';
+import { UnsupportedException } from '@rs-x/core';
 
 import { ObjectPropertyObserverProxyPairManager } from '../../lib/object-property-observer-proxy-pair-manager';
 import { type IPropertyObserverProxyPairManager } from '../../lib/object-property-observer-proxy-pair-manager.type';
@@ -22,7 +22,6 @@ describe('PropertyObserverProxyPairManager tests', () => {
 
     propertyObserverManager = new ObjectPropertyObserverProxyPairManager(
       observerFactories,
-      new GuidFactory(),
     ).create(object).instance;
   });
 

@@ -1090,6 +1090,51 @@ describe('Member expression tests', () => {
     expect(model).not.isWritableProperty('f');
   });
 
+  it('updates only the bound expression when a single row member changes', async () => {
+    const rows = Array.from({ length: 20 }, (_, index) => ({
+      a: { b: index + 1 },
+    }));
+
+    const expressions = rows.map((row) => rsx('a.b')(row));
+    try {
+      const initialValues = (await Promise.all(
+        expressions.map((expr) =>
+          new WaitForEvent(expr, 'changed').wait(() => {}),
+        ),
+      )) as Array<IExpression | null>;
+
+      initialValues.forEach((result, index) => {
+        expect(result?.value).toEqual(index + 1);
+        expect(expressions[index].value).toEqual(index + 1);
+      });
+
+      const targetIndex = 12;
+      const nextValue = 321;
+      const waiters = expressions.map((expr) =>
+        new WaitForEvent(expr, 'changed', {
+          ignoreInitialValue: true,
+          timeout: 200,
+        }).wait(() => {}),
+      );
+
+      rows[targetIndex].a.b = nextValue;
+
+      const results = (await Promise.all(waiters)) as Array<IExpression | null>;
+
+      results.forEach((result, index) => {
+        if (index === targetIndex) {
+          expect(result?.value).toEqual(nextValue);
+          expect(expressions[index].value).toEqual(nextValue);
+        } else {
+          expect(result).toBeNull();
+          expect(expressions[index].value).toEqual(index + 1);
+        }
+      });
+    } finally {
+      expressions.forEach((expr) => expr.dispose());
+    }
+  });
+
   it('When creating expressions with shared identifiers, the expressions will be observed until all associated expressions have been released.', async () => {
     const model = {
       a: {

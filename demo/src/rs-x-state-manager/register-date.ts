@@ -40,7 +40,7 @@ function watchDate(stateManager: IStateManager) {
     model.date.setFullYear(2023);
 
     console.log('Set value:');
-    model.date = new Date(2024, 5, 6);
+    model.date = utCDate(2024, 5, 6);
 
     console.log('Latest value:');
     console.log(stateManager.getState<Date>(model, 'date').toUTCString());

@@ -11,7 +11,6 @@ import {
   defaultIndexValueAccessorList,
   type IDisposableOwner,
   type IErrorLog,
-  type IGuidFactory,
   type IIndexValueAccessor,
   Inject,
   Injectable,
@@ -311,7 +310,6 @@ class TextDocumentIndexObserverProxyPairFactory extends IndexObserverProxyPairFa
     @Inject(MyTokens.TextDocumentIndexObserverManager)
     indexObserverManager: TextDocumentIndexObserverManager,
     @Inject(RsXCoreInjectionTokens.IErrorLog) errorLog: IErrorLog,
-    @Inject(RsXCoreInjectionTokens.IGuidFactory) guidFactory: IGuidFactory,
     @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
     indexValueAccessor: IIndexValueAccessor,
     @Inject(RsXCoreInjectionTokens.IProxyRegistry)
@@ -323,7 +321,6 @@ class TextDocumentIndexObserverProxyPairFactory extends IndexObserverProxyPairFa
       objectObserverManager,
       Type.cast(indexObserverManager),
       errorLog,
-      guidFactory,
       indexValueAccessor,
       proxyRegister,
       valueMetadata,
