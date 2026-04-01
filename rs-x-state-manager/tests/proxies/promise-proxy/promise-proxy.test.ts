@@ -40,7 +40,7 @@ describe('PromiseProxy tests', () => {
     );
     const promise = Promise.resolve(10);
 
-    const { observer } = promiseProxyFactory.create({ promise }).instance;
+    const { observer } = promiseProxyFactory.createAndGetInstance({ promise });
 
     const actual = await new WaitForEvent(observer, 'changed').wait(() => {});
 
@@ -63,7 +63,7 @@ describe('PromiseProxy tests', () => {
         resolve = resolveHandler;
       },
     );
-    const { observer } = promiseProxyFactory.create({ promise }).instance;
+    const { observer } = promiseProxyFactory.createAndGetInstance({ promise });
 
     const actual = await new WaitForEvent(observer, 'changed').wait(() => {
       resolve(10);

@@ -22,7 +22,7 @@ describe('PropertyObserverProxyPairManager tests', () => {
 
     propertyObserverManager = new ObjectPropertyObserverProxyPairManager(
       observerFactories,
-    ).create(object).instance;
+    ).createAndGetInstance(object);
   });
 
   it('will throw an error for unsupported type', () => {
@@ -57,7 +57,7 @@ describe('PropertyObserverProxyPairManager tests', () => {
     };
     observerFactories[0].create.mockReturnValue(expected);
 
-    const actual = propertyObserverManager.create({ index: 'x' }).instance;
+    const actual = propertyObserverManager.createAndGetInstance({ index: 'x' });
 
     expect(observerFactories[0].create).toHaveBeenCalledTimes(1);
     expect(observerFactories[0].create).toHaveBeenCalledWith(

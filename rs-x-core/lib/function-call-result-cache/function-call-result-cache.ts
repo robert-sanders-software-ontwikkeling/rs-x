@@ -147,8 +147,8 @@ export class FunctionCallResultCache implements IFunctionCallResultCache {
     result: IFunctionCallResult,
   ): IFunctionCallResultCacheEntry {
     return this._functionCallResultCacheManager
-      .create(context)
-      .instance.create(result).instance;
+      .createAndGetInstance(context)
+      .createAndGetInstance(result);
   }
 
   public has(context: unknown, index: IDisposableFunctionCallIndex): boolean {

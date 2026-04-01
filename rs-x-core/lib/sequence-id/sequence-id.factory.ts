@@ -210,8 +210,8 @@ export class SequenceIdFactory implements ISequenceIdFactory {
 
   public create(context: unknown, sequence: unknown[]): ISequenceWithId {
     return this._valueSequenceIdRegistryManager
-      .create(context)
-      .instance.create(sequence).instance;
+      .createAndGetInstance(context)
+      .createAndGetInstance(sequence);
   }
 
   public release(context: unknown, id: string): void {

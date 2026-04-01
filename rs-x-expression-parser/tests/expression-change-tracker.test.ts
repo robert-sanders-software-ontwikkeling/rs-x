@@ -56,7 +56,7 @@ describe('ExpressionChangeTracker tests', () => {
 
   it('emit initial values', async () => {
     expressionChangeTracker =
-      expressionChangeTrackerManager.create(expression).instance;
+      expressionChangeTrackerManager.createAndGetInstance(expression);
 
     const actual = await new WaitForEvent(
       expressionChangeTracker,

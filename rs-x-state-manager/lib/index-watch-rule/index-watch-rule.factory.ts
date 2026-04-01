@@ -105,7 +105,7 @@ export class IndexWatchRuleFactory implements IIndexWatchRuleFactory {
 
   public create(context: unknown, index: unknown): IIndexWatchRule {
     return this._identifierIndexWatchRuleManager
-      .create(context)
-      .instance.create(index).instance;
+      .createAndGetInstance(context)
+      .createAndGetInstance(index);
   }
 }

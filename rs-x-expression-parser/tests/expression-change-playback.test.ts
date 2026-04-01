@@ -76,7 +76,7 @@ describe('ExpressionChangePlayback tests', () => {
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);
 
     expressionChangeTracker =
-      expressionChangeTrackerManager.create(expression).instance;
+      expressionChangeTrackerManager.createAndGetInstance(expression);
   });
 
   afterEach(() => {

@@ -125,7 +125,7 @@ export abstract class IndexObserverProxyPairFactory<
     indexWatchRule: IIndexWatchRule | undefined,
   ): ObserverGroup {
     const indexChangeSubscriptionsForContextManager =
-      this._indexChangeSubscriptionManager.create(object).instance;
+      this._indexChangeSubscriptionManager.createAndGetInstance(object);
     const { id } = indexChangeSubscriptionsForContextManager.create({
       index,
       initialValue,

@@ -37,7 +37,7 @@ describe('IDatePropertyObserverManager tests', () => {
     const date = new Date(2021, 1, 3);
     const observer = datePropertyObserverManager
       .create(date)
-      .instance.create({ index: 'year' }).instance;
+      .instance.createAndGetInstance({ index: 'year' });
     const dateProxy = proxyRegister.getProxy<Date>(date);
 
     const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -51,7 +51,7 @@ describe('IDatePropertyObserverManager tests', () => {
     const date = new Date(2021, 1, 3);
     const observer = datePropertyObserverManager
       .create(date)
-      .instance.create({ index: 'year' }).instance;
+      .instance.createAndGetInstance({ index: 'year' });
 
     expect(proxyRegister.getProxy(date)).toBeDefined();
 
@@ -88,7 +88,7 @@ describe('IDatePropertyObserverManager tests', () => {
       const date = new Date(2021, 1, 3);
       const observer = datePropertyObserverManager
         .create(date)
-        .instance.create({ index: 'year' }).instance;
+        .instance.createAndGetInstance({ index: 'year' });
       const dateProxy = proxyRegister.getProxy<Date>(date);
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -102,7 +102,7 @@ describe('IDatePropertyObserverManager tests', () => {
       const date = new Date(2021, 1, 3);
       const observer = datePropertyObserverManager
         .create(date)
-        .instance.create({ index: 'year' }).instance;
+        .instance.createAndGetInstance({ index: 'year' });
       const dateProxy = proxyRegister.getProxy<Date>(date);
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -123,7 +123,7 @@ describe('IDatePropertyObserverManager tests', () => {
       const date = new Date(2021, 1, 3);
       const observer = datePropertyObserverManager
         .create(date)
-        .instance.create({ index: 'year' }).instance;
+        .instance.createAndGetInstance({ index: 'year' });
       const dateProxy = proxyRegister.getProxy<Date>(date);
 
       const actual = await new WaitForEvent(observer, 'changed').wait(() => {

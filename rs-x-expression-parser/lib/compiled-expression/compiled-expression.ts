@@ -220,7 +220,7 @@ export class CompiledExpression implements IExpression {
     this._evaluateUnit = this.createEvaluateUnit(context);
     if (!this._evaluateManagerForExpression) {
       this._evaluateManagerForExpression =
-        this.runtimeServices.expressionEvaluateManager.create(this.onCommit).instance;
+        this.runtimeServices.expressionEvaluateManager.createAndGetInstance(this.onCommit);
     }
     this._evaluateManagerForExpression.register(this._evaluateUnit);
     this._evaluateManagerForExpression.initialize();
@@ -911,7 +911,7 @@ export class CompiledExpression implements IExpression {
   private initializeEvaluateManager(): void {
     if (!this._evaluateManagerForExpression) {
       this._evaluateManagerForExpression =
-        this.runtimeServices.expressionEvaluateManager.create(this.onCommit).instance;
+        this.runtimeServices.expressionEvaluateManager.createAndGetInstance(this.onCommit);
     }
     this._evaluateManagerForExpression.initialize();
   }

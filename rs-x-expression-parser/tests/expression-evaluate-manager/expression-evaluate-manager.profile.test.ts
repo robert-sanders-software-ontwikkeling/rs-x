@@ -69,7 +69,7 @@ describe('ExpressionEvaluateManager profile', () => {
           evaluate,
         );
 
-        evaluateManager.create(evaluate).instance.register(unit);
+        evaluateManager.createAndGetInstance(evaluate).register(unit);
       }
     }
 

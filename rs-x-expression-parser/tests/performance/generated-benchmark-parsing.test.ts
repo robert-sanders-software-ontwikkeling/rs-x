@@ -85,7 +85,7 @@ describe('Generated benchmark expressions parsing', () => {
     const cloneOnlyExpressions: IExpression[] = [];
     for (let i = 0; i < expressionStrings.length; i += 1) {
       const expressionString = expressionStrings[i];
-      const expression = expressionCache.create(expressionString).instance;
+      const expression = expressionCache.createAndGetInstance(expressionString);
       cloneOnlyExpressions.push(expression);
     }
     const cloneMs = performance.now() - cloneStartMs;

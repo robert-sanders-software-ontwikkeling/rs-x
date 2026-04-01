@@ -1,0 +1,665 @@
+Statistical profiling result from isolate-0x140018000-6312-rsx-watch-setup-v8.log, (4148 ticks, 2 unaccounted, 0 excluded).
+
+ [Shared libraries]:
+   ticks  total  nonlib   name
+     29    0.7%          /usr/lib/system/libsystem_malloc.dylib
+      6    0.1%          /usr/lib/system/libdyld.dylib
+      3    0.1%          /usr/lib/system/libsystem_c.dylib
+      1    0.0%          /usr/lib/libobjc.A.dylib
+
+ [JavaScript]:
+   ticks  total  nonlib   name
+     39    0.9%    0.9%  JS: *Subscription.unsubscribe /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subscription.js:46:51
+     29    0.7%    0.7%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+     28    0.7%    0.7%  JS: *GroupedKeyedInstanceFactory file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2132:35
+     22    0.5%    0.5%  JS: *Subject._trySubscribe /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subject.js:121:48
+     21    0.5%    0.5%  JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2864:17
+     18    0.4%    0.4%  JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+     17    0.4%    0.4%  JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+     17    0.4%    0.4%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:970:17
+     15    0.4%    0.4%  JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3107:25
+     15    0.4%    0.4%  JS: *AbstractObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:17:14
+     14    0.3%    0.3%  JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+     14    0.3%    0.3%  JS: *SafeSubscriber /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subscriber.js:149:28
+     13    0.3%    0.3%  JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1190:22
+     12    0.3%    0.3%  JS: *findIndexAccessor file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:574:20
+     12    0.3%    0.3%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1193:39
+     11    0.3%    0.3%  JS: *replaceState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2804:15
+     11    0.3%    0.3%  JS: *getOrCreateId file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2186:16
+     11    0.3%    0.3%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:909:17
+     11    0.3%    0.3%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2906:67
+     10    0.2%    0.2%  JS: *setInitialValue file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3340:18
+      9    0.2%    0.2%  JS: *releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:104:18
+      9    0.2%    0.2%  JS: *init file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:279:7
+      9    0.2%    0.2%  JS: *get file:///Users/robertsanders/projects/rs-x/node_modules/@inversifyjs/core/lib/esm/index.js:1:29869
+      9    0.2%    0.2%  JS: *KeyedInstanceFactory file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1756:14
+      9    0.2%    0.2%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3112:36
+      8    0.2%    0.2%  JS: *GroupedChangeSubscriptionsForContextManager file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:74:14
+      7    0.2%    0.2%  JS: *releaseState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3000:15
+      6    0.1%    0.1%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1105:17
+      6    0.1%    0.1%  JS: *_ObserverGroup file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:269:14
+      6    0.1%    0.1%  JS: *ReplaySubject._subscribe /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/ReplaySubject.js:47:51
+      5    0.1%    0.1%  JS: *releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2908:18
+      5    0.1%    0.1%  JS: *onReleased file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1878:13
+      5    0.1%    0.1%  JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      5    0.1%    0.1%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2778:17
+      5    0.1%    0.1%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2250:17
+      5    0.1%    0.1%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1010:17
+      5    0.1%    0.1%  JS: *Observable.subscribe /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Observable.js:23:47
+      5    0.1%    0.1%  JS: *DatePropertyObserver2 file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1403:14
+      5    0.1%    0.1%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:913:39
+      5    0.1%    0.1%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1222:67
+      4    0.1%    0.1%  JS: *updateReferenceCount file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1887:23
+      4    0.1%    0.1%  JS: *onReleased file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:982:13
+      4    0.1%    0.1%  JS: *onReleased file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2786:13
+      4    0.1%    0.1%  JS: *internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3069:21
+      4    0.1%    0.1%  JS: *disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1416:18
+      4    0.1%    0.1%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1221:17
+      3    0.1%    0.1%  JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:909:17
+      3    0.1%    0.1%  JS: +CollectionIndexObserver2 file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1051:14
+      3    0.1%    0.1%  JS: *watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2984:13
+      3    0.1%    0.1%  JS: *createWithId file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1908:15
+      3    0.1%    0.1%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1969:17
+      3    0.1%    0.1%  JS: *applies file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2681:10
+      2    0.0%    0.0%  JS: +watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2984:13
+      2    0.0%    0.0%  JS: +createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+      2    0.0%    0.0%  JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1252:9
+      2    0.0%    0.0%  JS: +_ObserverGroup file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:269:14
+      2    0.0%    0.0%  JS: +DateProxy2 file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2145:14
+      2    0.0%    0.0%  JS: +DatePropertyObserver2 file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1403:14
+      2    0.0%    0.0%  JS: +CollectionIndexObserverManager2 file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1096:14
+      2    0.0%    0.0%  JS: *releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:979:18
+      2    0.0%    0.0%  JS: *releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1224:18
+      2    0.0%    0.0%  JS: *releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1138:18
+      2    0.0%    0.0%  JS: *isObserver /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Observable.js:99:20
+      2    0.0%    0.0%  JS: *init file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:101:42
+      2    0.0%    0.0%  JS: *get file:///Users/robertsanders/projects/rs-x/node_modules/@inversifyjs/container/lib/esm/index.js:1:13691
+      2    0.0%    0.0%  JS: *disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:346:18
+      2    0.0%    0.0%  JS: *disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1066:18
+      2    0.0%    0.0%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2905:17
+      2    0.0%    0.0%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2831:17
+      2    0.0%    0.0%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:193:17
+      2    0.0%    0.0%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1782:17
+      2    0.0%    0.0%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1447:17
+      2    0.0%    0.0%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1135:17
+      2    0.0%    0.0%  JS: *applies file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:651:10
+      2    0.0%    0.0%  JS: *applies file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2790:10
+      2    0.0%    0.0%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:972:42
+      2    0.0%    0.0%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1108:39
+      2    0.0%    0.0%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2837:56
+      2    0.0%    0.0%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/node_modules/@inversifyjs/core/lib/esm/index.js:1:35830
+      1    0.0%    0.0%  JS: ^main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      1    0.0%    0.0%  JS: ^createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+      1    0.0%    0.0%  JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:989:58
+      1    0.0%    0.0%  JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:69:3
+      1    0.0%    0.0%  JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1757:42
+      1    0.0%    0.0%  JS: +tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3107:25
+      1    0.0%    0.0%  JS: +toObject file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:443:18
+      1    0.0%    0.0%  JS: +replaceState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2804:15
+      1    0.0%    0.0%  JS: +releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1785:18
+      1    0.0%    0.0%  JS: +releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1224:18
+      1    0.0%    0.0%  JS: +patch file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1648:8
+      1    0.0%    0.0%  JS: +onReleased file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:199:13
+      1    0.0%    0.0%  JS: +isPosixPathSeparator node:path:69:30
+      1    0.0%    0.0%  JS: +init file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:279:7
+      1    0.0%    0.0%  JS: +hasProperty file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:370:21
+      1    0.0%    0.0%  JS: +getPropertyDescriptor file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:425:31
+      1    0.0%    0.0%  JS: +getOrCreateId file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2186:16
+      1    0.0%    0.0%  JS: +get value file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:24:12
+      1    0.0%    0.0%  JS: +get rootObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:273:19
+      1    0.0%    0.0%  JS: +get file:///Users/robertsanders/projects/rs-x/node_modules/@inversifyjs/container/lib/esm/index.js:1:13691
+      1    0.0%    0.0%  JS: +emitChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3074:13
+      1    0.0%    0.0%  JS: +createRootObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:595:21
+      1    0.0%    0.0%  JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:970:17
+      1    0.0%    0.0%  JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1447:17
+      1    0.0%    0.0%  JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1105:17
+      1    0.0%    0.0%  JS: +applies file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:690:10
+      1    0.0%    0.0%  JS: +applies file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:788:10
+      1    0.0%    0.0%  JS: +applies file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2708:10
+      1    0.0%    0.0%  JS: +applies file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:167:10
+      1    0.0%    0.0%  JS: +Subscription.remove /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subscription.js:149:46
+      1    0.0%    0.0%  JS: +Subscription.add /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subscription.js:115:43
+      1    0.0%    0.0%  JS: +Subject._subscribe /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subject.js:125:45
+      1    0.0%    0.0%  JS: +St file:///Users/robertsanders/projects/rs-x/node_modules/@inversifyjs/core/lib/esm/index.js:1:38846
+      1    0.0%    0.0%  JS: +Observable.subscribe /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Observable.js:23:47
+      1    0.0%    0.0%  JS: +ArrayProxy2 file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1825:14
+      1    0.0%    0.0%  JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2386:39
+      1    0.0%    0.0%  JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1972:39
+      1    0.0%    0.0%  JS: +<anonymous> /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Observable.js:26:46
+      1    0.0%    0.0%  JS: *releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1111:18
+      1    0.0%    0.0%  JS: *releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1880:18
+      1    0.0%    0.0%  JS: *onReleased file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:199:13
+      1    0.0%    0.0%  JS: *onReleased file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1761:13
+      1    0.0%    0.0%  JS: *onReleased file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1461:13
+      1    0.0%    0.0%  JS: *onReleased file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1114:13
+      1    0.0%    0.0%  JS: *onInstanceCreated file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1882:20
+      1    0.0%    0.0%  JS: *normalizeString node:path:92:25
+      1    0.0%    0.0%  JS: *hasProperty file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:370:21
+      1    0.0%    0.0%  JS: *get rootObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:273:19
+      1    0.0%    0.0%  JS: *get bindings file:///Users/robertsanders/projects/rs-x/node_modules/@inversifyjs/core/lib/esm/index.js:1:17904
+      1    0.0%    0.0%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2383:17
+      1    0.0%    0.0%  JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1482:17
+      1    0.0%    0.0%  JS: *createContext file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:43:20
+      1    0.0%    0.0%  JS: *applies file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:765:10
+      1    0.0%    0.0%  JS: *applies file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:690:10
+      1    0.0%    0.0%  JS: *applies file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:592:10
+      1    0.0%    0.0%  JS: *applies file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:552:10
+      1    0.0%    0.0%  JS: *applies file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2763:10
+      1    0.0%    0.0%  JS: *applies file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2736:10
+      1    0.0%    0.0%  JS: *applies file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2627:10
+      1    0.0%    0.0%  JS: *Subscription.add /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subscription.js:115:43
+      1    0.0%    0.0%  JS: *Subscriber.unsubscribe /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subscriber.js:72:49
+      1    0.0%    0.0%  JS: *Subject._subscribe /Users/robertsanders/projects/rs-x/node_modules/rxjs/dist/cjs/internal/Subject.js:125:45
+      1    0.0%    0.0%  JS: *PropertObserver2 file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1632:14
+      1    0.0%    0.0%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:394:152
+      1    0.0%    0.0%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2386:39
+      1    0.0%    0.0%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1758:39
+      1    0.0%    0.0%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1455:39
+      1    0.0%    0.0%  JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1197:92
+
+ [C++]:
+   ticks  total  nonlib   name
+   3353   80.8%   81.6%  t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+     30    0.7%    0.7%  T __kernelrpc_mach_port_get_set_status
+     26    0.6%    0.6%  T _semaphore_destroy
+     19    0.5%    0.5%  T _mach_absolute_time
+     17    0.4%    0.4%  T _task_get_special_port
+      9    0.2%    0.2%  T _recvmsg
+      7    0.2%    0.2%  T _mig_get_reply_port
+      4    0.1%    0.1%  T _task_set_special_port
+      3    0.1%    0.1%  T node::loader::ModuleWrap::New(v8::FunctionCallbackInfo<v8::Value> const&)
+      2    0.0%    0.0%  T __os_semaphore_create
+      2    0.0%    0.0%  T __kernelrpc_mach_port_get_refs
+      1    0.0%    0.0%  t __os_nospin_lock_unlock_slow
+      1    0.0%    0.0%  t __os_nospin_lock_lock_slow
+      1    0.0%    0.0%  T _graftdmg
+
+ [Summary]:
+   ticks  total  nonlib   name
+    632   15.2%   15.4%  JavaScript
+   3475   83.8%   84.6%  C++
+    342    8.2%    8.3%  GC
+     39    0.9%          Shared libraries
+      2    0.0%          Unaccounted
+
+ [C++ entry points]:
+   ticks    cpp   total   name
+   3044   97.8%   73.4%  t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+     30    1.0%    0.7%  T __kernelrpc_mach_port_get_set_status
+     19    0.6%    0.5%  T _mach_absolute_time
+      7    0.2%    0.2%  T _mig_get_reply_port
+      4    0.1%    0.1%  T _task_set_special_port
+      3    0.1%    0.1%  T node::loader::ModuleWrap::New(v8::FunctionCallbackInfo<v8::Value> const&)
+      2    0.1%    0.0%  T _recvmsg
+      1    0.0%    0.0%  T _graftdmg
+      1    0.0%    0.0%  T __os_semaphore_create
+
+ [Bottom up (heavy) profile]:
+  Note: percentage shows a share of a particular caller in the total
+  amount of its parent calls.
+  Callers occupying less than 1.0% are not shown.
+
+   ticks parent  name
+   3353   80.8%  t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+    381   11.4%    JS: *KeyedInstanceFactory file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1756:14
+    223   58.5%      JS: *GroupedKeyedInstanceFactory file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2132:35
+    145   65.0%        JS: *GroupedChangeSubscriptionsForContextManager file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:74:14
+     77   53.1%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2905:17
+     77  100.0%            JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3107:25
+     65   44.8%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1221:17
+     62   95.4%            JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+      3    4.6%            JS: *getOrCreateInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1899:22
+      3    2.1%          JS: +StateChangeSubscriptionsForContextManager2 file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2855:14
+      3  100.0%            JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2905:17
+     77   34.5%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1010:17
+     77  100.0%          JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2864:17
+     74   96.1%            JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+      3    3.9%            JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+     55   14.4%      JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2831:17
+     53   96.4%        JS: *replaceState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2804:15
+     53  100.0%          JS: *setInitialValue file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3340:18
+     53  100.0%            JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3112:36
+      2    3.6%        JS: *getOrCreateInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1899:22
+      2  100.0%          JS: +replaceState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2804:15
+      2  100.0%            JS: +setInitialValue file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3340:18
+     37    9.7%      JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1782:17
+     37  100.0%        JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+     37  100.0%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+     37  100.0%            JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+     24    6.3%      JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1135:17
+     24  100.0%        JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+     24  100.0%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+     24  100.0%            JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+     18    4.7%      JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1482:17
+     18  100.0%        JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+     18  100.0%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+     18  100.0%            JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+     10    2.6%      JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:218:17
+     10  100.0%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1447:17
+     10  100.0%          JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+     10  100.0%            JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+    360   10.7%    t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+     49   13.6%      JS: *releaseInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:104:18
+     47   95.9%        JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1193:39
+     44   93.6%          JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+     17   38.6%            JS: *internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3069:21
+     14   31.8%            JS: *releaseState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3000:15
+      3    6.8%            JS: +unnsubscribeToObserverEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3048:31
+      3    6.8%            JS: +releaseState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3000:15
+      3    6.8%            JS: +internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3069:21
+      2    4.5%            JS: *unnsubscribeToObserverEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3048:31
+      2    4.5%            JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      3    6.4%          JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      2   66.7%            JS: +releaseState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3000:15
+      1   33.3%            JS: *internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3069:21
+      1    2.0%        JS: *updateReferenceCount file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1887:23
+      1  100.0%          JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1193:39
+      1  100.0%            JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      1    2.0%        JS: *release file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1839:10
+      1  100.0%          JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1193:39
+      1  100.0%            JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+     45   12.5%      JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1193:39
+     44   97.8%        JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+     25   56.8%          JS: *internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3069:21
+     25  100.0%            JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+     13   29.5%          JS: *releaseState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3000:15
+      9   69.2%            JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      4   30.8%            JS: ^main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      3    6.8%          JS: +unnsubscribeToObserverEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3048:31
+      3  100.0%            JS: +main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      2    4.5%          JS: +releaseState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3000:15
+      2  100.0%            JS: ^main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      1    2.3%          JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      1  100.0%            t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      1    2.2%        JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      1  100.0%          JS: +releaseState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3000:15
+      1  100.0%            JS: ^main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+     24    6.7%      JS: *onReleased file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2786:13
+     17   70.8%        JS: *internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3069:21
+     17  100.0%          JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+     17  100.0%            t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      6   25.0%        JS: *releaseState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3000:15
+      5   83.3%          JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      5  100.0%            t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      1   16.7%          JS: ^main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      1  100.0%            t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      1    4.2%        JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      1  100.0%          t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+     21    5.8%      JS: *onReleased file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:982:13
+     21  100.0%        JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1193:39
+     21  100.0%          JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+     13   61.9%            JS: *internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3069:21
+      6   28.6%            JS: *releaseState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3000:15
+      2    9.5%            JS: +unnsubscribeToObserverEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3048:31
+     17    4.7%      JS: *getOrCreateId file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2186:16
+     16   94.1%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1105:17
+     16  100.0%          JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+     16  100.0%            JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+      1    5.9%        JS: +CollectionIndexObserver2 file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1051:14
+      1  100.0%          JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1105:17
+      1  100.0%            JS: *getOrCreateInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1899:22
+     17    4.7%      JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+     12   70.6%        JS: *releaseState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3000:15
+      9   75.0%          JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      9  100.0%            t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      3   25.0%          JS: ^main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      3  100.0%            t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      2   11.8%        JS: +unnsubscribeToObserverEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3048:31
+      2  100.0%          JS: +main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      2  100.0%            t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      1    5.9%        JS: +releaseState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3000:15
+      1  100.0%          JS: ^main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      1  100.0%            t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      1    5.9%        JS: *unnsubscribeToObserverEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3048:31
+      1  100.0%          JS: +main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      1  100.0%            t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      1    5.9%        JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      1  100.0%          t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+     16    4.4%      JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1105:17
+     16  100.0%        JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+     16  100.0%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+     16  100.0%            JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+     14    3.9%      JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2906:67
+     14  100.0%        JS: *onReleased file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:109:13
+     14  100.0%          JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1193:39
+     14  100.0%            JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+     14    3.9%      JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1222:67
+     14  100.0%        JS: *onReleased file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:109:13
+     14  100.0%          JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1193:39
+     14  100.0%            JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+     11    3.1%      JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:913:39
+     11  100.0%        JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+     11  100.0%          JS: *disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1066:18
+      6   54.5%            JS: *disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:346:18
+      5   45.5%            JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+     10    2.8%      JS: *updateReferenceCount file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1887:23
+      2   20.0%        JS: +release file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1839:10
+      2  100.0%          JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1193:39
+      2  100.0%            JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      2   20.0%        JS: +internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3069:21
+      2  100.0%          JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      2  100.0%            t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      1   10.0%        JS: +onReleased file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2786:13
+      1  100.0%          JS: *updateReferenceCount file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1887:23
+      1  100.0%            JS: +release file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1839:10
+      1   10.0%        JS: +onReleased file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1114:13
+      1  100.0%          JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1108:39
+      1  100.0%            JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      1   10.0%        JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:913:39
+      1  100.0%          JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      1  100.0%            JS: +disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1066:18
+      1   10.0%        JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2253:39
+      1  100.0%          JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      1  100.0%            JS: +disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1416:18
+      1   10.0%        JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1222:67
+      1  100.0%          JS: +onReleased file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:109:13
+      1  100.0%            JS: *updateReferenceCount file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1887:23
+      1   10.0%        JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1193:39
+      1  100.0%          JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      1  100.0%            JS: +unnsubscribeToObserverEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3048:31
+     10    2.8%      JS: *internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3069:21
+     10  100.0%        JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+     10  100.0%          t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      9    2.5%      JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3107:25
+      7   77.8%        JS: *watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2984:13
+      6   85.7%          JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      6  100.0%            t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      1   14.3%          JS: +main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      1  100.0%            t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      2   22.2%        JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      2  100.0%          t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      8    2.2%      t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      8  100.0%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2250:17
+      8  100.0%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1447:17
+      8  100.0%            JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+      7    1.9%      JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2864:17
+      7  100.0%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+      7  100.0%          JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3107:25
+      7  100.0%            JS: *watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2984:13
+      7    1.9%      JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2250:17
+      7  100.0%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1447:17
+      7  100.0%          JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+      7  100.0%            JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+      6    1.7%      JS: *onReleased file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1114:13
+      6  100.0%        JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1108:39
+      3   50.0%          JS: *disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:346:18
+      3  100.0%            JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      2   33.3%          JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      2  100.0%            JS: *internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3069:21
+      1   16.7%          JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      1  100.0%            JS: ^disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:346:18
+      6    1.7%      JS: *disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2229:18
+      6  100.0%        JS: *disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1416:18
+      6  100.0%          JS: *disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:346:18
+      6  100.0%            JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      4    1.1%      JS: *releaseState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3000:15
+      3   75.0%        JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      3  100.0%          t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      1   25.0%        JS: ^main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      1  100.0%          t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      4    1.1%      JS: *release file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1839:10
+      1   25.0%        JS: ~<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2386:39
+      1  100.0%          JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      1  100.0%            JS: +disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:346:18
+      1   25.0%        JS: ~<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1455:39
+      1  100.0%          JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      1  100.0%            JS: ^disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:346:18
+      1   25.0%        JS: ^<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1972:39
+      1  100.0%          JS: +dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      1  100.0%            JS: +disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:346:18
+      1   25.0%        JS: +<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1193:39
+      1  100.0%          JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      1  100.0%            JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      4    1.1%      JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2253:39
+      4  100.0%        JS: *disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1416:18
+      4  100.0%          JS: *disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:346:18
+      4  100.0%            JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      4    1.1%      JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1758:39
+      4  100.0%        JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      3   75.0%          JS: *releaseState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3000:15
+      3  100.0%            JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      1   25.0%          JS: +unnsubscribeToObserverEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3048:31
+      1  100.0%            JS: +main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      4    1.1%      JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1108:39
+      3   75.0%        JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      3  100.0%          JS: *internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3069:21
+      3  100.0%            JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      1   25.0%        JS: *disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:346:18
+      1  100.0%          JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      1  100.0%            JS: *internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3069:21
+    153    4.6%    JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+     80   52.3%      JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+     71   88.8%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:970:17
+     71  100.0%          JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2864:17
+     71  100.0%            JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+      8   10.0%        JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1252:9
+      8  100.0%          JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:970:17
+      8  100.0%            JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2864:17
+      1    1.3%        JS: ^create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1252:9
+      1  100.0%          JS: ^createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:970:17
+      1  100.0%            JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2864:17
+     66   43.1%      JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3107:25
+     48   72.7%        JS: *watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2984:13
+     34   70.8%          JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+     34  100.0%            t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      9   18.8%          JS: +main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      9  100.0%            t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      5   10.4%          JS: ^main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      5  100.0%            t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+     17   25.8%        JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+     17  100.0%          t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      1    1.5%        JS: +watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2984:13
+      1  100.0%          JS: ^main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      1  100.0%            t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      5    3.3%      JS: +tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3107:25
+      4   80.0%        JS: *watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2984:13
+      2   50.0%          JS: +main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      2  100.0%            t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      2   50.0%          JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      2  100.0%            t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      1   20.0%        JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      1  100.0%          t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      2    1.3%      JS: *getOrCreateInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1899:22
+      2  100.0%        JS: +createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+      2  100.0%          JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1252:9
+      2  100.0%            JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:970:17
+    146    4.4%    JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3107:25
+    101   69.2%      JS: *watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2984:13
+     87   86.1%        JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+     87  100.0%          t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+     10    9.9%        JS: ^main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+     10  100.0%          t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      4    4.0%        JS: +main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      4  100.0%          t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+     42   28.8%      JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+     42  100.0%        t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      3    2.1%      JS: +watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2984:13
+      3  100.0%        JS: ^main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      3  100.0%          t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+    121    3.6%    JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:970:17
+    121  100.0%      JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2864:17
+    121  100.0%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+    121  100.0%          JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3107:25
+     91   75.2%            JS: *watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2984:13
+     27   22.3%            JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      3    2.5%            JS: +watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2984:13
+    121    3.6%    JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1190:22
+    110   90.9%      JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+    110  100.0%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+    110  100.0%          JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+    103   93.6%            JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:970:17
+      6    5.5%            JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1252:9
+     11    9.1%      JS: +createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+      6   54.5%        JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+      3   50.0%          JS: *getOrCreateInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1899:22
+      3  100.0%            JS: +createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+      3   50.0%          JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+      3  100.0%            JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1252:9
+      5   45.5%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+      3   60.0%          JS: *getOrCreateInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1899:22
+      3  100.0%            JS: +createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+      2   40.0%          JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+      1   50.0%            JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1252:9
+      1   50.0%            JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1252:9
+    103    3.1%    JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1105:17
+    103  100.0%      JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+    103  100.0%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+    103  100.0%          JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+    103  100.0%            JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:970:17
+    102    3.0%    JS: *PropertObserver2 file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1632:14
+    100   98.0%      JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1755:17
+    100  100.0%        JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+    100  100.0%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+    100  100.0%            JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+      2    2.0%      JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1755:17
+      2  100.0%        JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+      2  100.0%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+      2  100.0%            JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+     95    2.8%    JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2864:17
+     92   96.8%      JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+     92  100.0%        JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3107:25
+     66   71.7%          JS: *watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2984:13
+     58   87.9%            JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      5    7.6%            JS: ^main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      3    4.5%            JS: +main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+     24   26.1%          JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+     24  100.0%            t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      2    2.2%          JS: +watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2984:13
+      2  100.0%            JS: ^main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      3    3.2%      JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+      2   66.7%        JS: +tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3107:25
+      2  100.0%          JS: *watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2984:13
+      2  100.0%            JS: ^main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      1   33.3%        JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3107:25
+      1  100.0%          JS: *watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2984:13
+      1  100.0%            JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+     93    2.8%    JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1969:17
+     93  100.0%      JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:393:9
+     93  100.0%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:909:17
+     93  100.0%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1105:17
+     93  100.0%            JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+     85    2.5%    JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+     33   38.8%      JS: *releaseState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3000:15
+     26   78.8%        JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+     26  100.0%          t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      7   21.2%        JS: ^main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      7  100.0%          t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+     21   24.7%      JS: *internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3069:21
+     21  100.0%        JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+     21  100.0%          t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+     15   17.6%      JS: *disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1066:18
+      9   60.0%        JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      5   55.6%          JS: *internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3069:21
+      5  100.0%            JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      3   33.3%          JS: +internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3069:21
+      3  100.0%            JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      1   11.1%          JS: +disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:346:18
+      1  100.0%            JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      6   40.0%        JS: *disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:346:18
+      6  100.0%          JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      6  100.0%            JS: *internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3069:21
+      4    4.7%      JS: +unnsubscribeToObserverEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3048:31
+      4  100.0%        JS: +main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      4  100.0%          t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      3    3.5%      JS: +releaseState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3000:15
+      3  100.0%        JS: ^main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      3  100.0%          t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      3    3.5%      JS: +internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3069:21
+      3  100.0%        JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      3  100.0%          t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      3    3.5%      JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      3  100.0%        t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      1    1.2%      JS: +disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:346:18
+      1  100.0%        JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      1  100.0%          JS: *internalUnregister file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3069:21
+      1  100.0%            JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      1    1.2%      JS: +disposeInternal file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1066:18
+      1  100.0%        JS: *dispose file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:41:10
+      1  100.0%          JS: +unnsubscribeToObserverEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3048:31
+      1  100.0%            JS: +main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      1    1.2%      JS: *unnsubscribeToObserverEvents file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3048:31
+      1  100.0%        JS: +main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      1  100.0%          t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+     84    2.5%    JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+     74   88.1%      JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:970:17
+     74  100.0%        JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2864:17
+     74  100.0%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+     74  100.0%            JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3107:25
+     10   11.9%      JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1252:9
+     10  100.0%        JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:970:17
+     10  100.0%          JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2864:17
+     10  100.0%            JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+     74    2.2%    JS: *getOrCreateId file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2186:16
+     64   86.5%      JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1105:17
+     64  100.0%        JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+     64  100.0%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+     64  100.0%            JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+      9   12.2%      JS: +CollectionIndexObserver2 file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1051:14
+      9  100.0%        JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1105:17
+      7   77.8%          JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+      7  100.0%            JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+      2   22.2%          JS: *getOrCreateInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1899:22
+      2  100.0%            JS: +createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+      1    1.4%      JS: +createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2864:17
+      1  100.0%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+      1  100.0%          JS: +tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3107:25
+      1  100.0%            JS: +watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2984:13
+     65    1.9%    JS: *setInitialValue file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3340:18
+     65  100.0%      JS: *<anonymous> file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3112:36
+     65  100.0%        JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3107:25
+     42   64.6%          JS: *watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2984:13
+     33   78.6%            JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      5   11.9%            JS: ^main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      4    9.5%            JS: +main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+     20   30.8%          JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+     20  100.0%            t std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> node::BlobSerializerDeserializer::ToStr<node::PropInfo>(node::PropInfo const&) const
+      3    4.6%          JS: +watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2984:13
+      2   66.7%            JS: ^main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+      1   33.3%            JS: +main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+     55    1.6%    JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2383:17
+     55  100.0%      JS: *createWithId file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1908:15
+     55  100.0%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:909:17
+     55  100.0%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1105:17
+     55  100.0%            JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+     42    1.3%    JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:909:17
+     42  100.0%      JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1105:17
+     42  100.0%        JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+     42  100.0%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+     42  100.0%            JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+     42    1.3%    JS: *GroupedKeyedInstanceFactory file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:2132:35
+     26   61.9%      JS: *GroupedChangeSubscriptionsForContextManager file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:74:14
+     13   50.0%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2905:17
+     13  100.0%          JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3107:25
+      9   69.2%            JS: *watchState file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2984:13
+      4   30.8%            JS: *main file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/scripts/profile-watch-setup.mjs:66:20
+     12   46.2%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1221:17
+     12  100.0%          JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+     11   91.7%            JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:970:17
+      1    8.3%            JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1252:9
+      1    3.8%        JS: +IndexChangeSubscriptionsForContextManager2 file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1170:14
+      1  100.0%          JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1221:17
+      1  100.0%            JS: *getOrCreateInstance file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1899:22
+     16   38.1%      JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1010:17
+     16  100.0%        JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:2864:17
+     16  100.0%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+     16  100.0%            JS: *tryToSubscribeToChange file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:3107:25
+     41    1.2%    JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1755:17
+     41  100.0%      JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+     41  100.0%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+     41  100.0%          JS: *createGroupObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1269:22
+     38   92.7%            JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:970:17
+      3    7.3%            JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1252:9
+     37    1.1%    JS: *_ObserverGroup file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:269:14
+     18   48.6%      JS: *create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:393:9
+     18  100.0%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:909:17
+     18  100.0%          JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1105:17
+     18  100.0%            JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+     12   32.4%      JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:909:17
+     12  100.0%        JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1105:17
+     12  100.0%          JS: *createObserver file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1179:17
+     12  100.0%            JS: *createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:83:17
+      7   18.9%      JS: +create file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:393:9
+      7  100.0%        JS: +createInstance file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:909:17
+      7  100.0%          JS: *createWithId file:///Users/robertsanders/projects/rs-x/rs-x-core/dist/index.js:1908:15
+      7  100.0%            JS: +CollectionIndexObserver2 file:///Users/robertsanders/projects/rs-x/rs-x-state-manager/dist/index.js:1051:14
+

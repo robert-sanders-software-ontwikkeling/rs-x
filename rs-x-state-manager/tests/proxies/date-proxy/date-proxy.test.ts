@@ -38,7 +38,7 @@ function expectDateParts(actual: Date, expected: Date): void {
     const setProxyFactory = new DateProxyFactory(
       proxyRegistry,
     );
-    const { proxy } = setProxyFactory.create({ date }).instance;
+    const { proxy } = setProxyFactory.createAndGetInstance({ date });
 
     expect(proxyRegistry.register).toHaveBeenCalledTimes(1);
     expect(proxyRegistry.register.mock.calls[0][0]).toBe(date);
@@ -51,7 +51,7 @@ function expectDateParts(actual: Date, expected: Date): void {
     const setProxyFactory = new DateProxyFactory(
       proxyRegistry,
     );
-    const { observer } = setProxyFactory.create({ date }).instance;
+    const { observer } = setProxyFactory.createAndGetInstance({ date });
 
     observer.dispose();
 

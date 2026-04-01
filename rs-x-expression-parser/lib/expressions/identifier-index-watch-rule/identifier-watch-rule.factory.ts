@@ -181,6 +181,6 @@ export class IdentifierWatchRuleFactory implements IIdentifierWatchRuleFactory {
   ): IIndexWatchRule {
     return this._identifierIndexWatchRuleManager
       .create(context)
-      .instance.create(data).instance;
+      .instance.createAndGetInstance(data);
   }
 }

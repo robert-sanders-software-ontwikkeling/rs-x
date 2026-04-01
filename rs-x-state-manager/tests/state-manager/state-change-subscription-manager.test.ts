@@ -47,7 +47,7 @@ describe('StateChangeSubscriptionManager tests', () => {
       },
     };
     const stateChangeSubscrionInfoForContext =
-      stateChangeSubscriptionManager.create(context).instance;
+      stateChangeSubscriptionManager.createAndGetInstance(context);
     const recursiveObserver = stateChangeSubscrionInfoForContext.create({
       index: 'x',
       indexWatchRule,
@@ -72,7 +72,7 @@ describe('StateChangeSubscriptionManager tests', () => {
       },
     };
     const stateChangeSubscriptionInfoForContext =
-      stateChangeSubscriptionManager.create(context).instance;
+      stateChangeSubscriptionManager.createAndGetInstance(context);
     const recursiveObserver = stateChangeSubscriptionInfoForContext.create({
       index: 'x',
       indexWatchRule,
@@ -113,7 +113,7 @@ describe('StateChangeSubscriptionManager tests', () => {
       },
     };
     const stateChangeSubscrionInfoForContext =
-      stateChangeSubscriptionManager.create(context).instance;
+      stateChangeSubscriptionManager.createAndGetInstance(context);
     const recursiveObserver = stateChangeSubscrionInfoForContext.create({
       index: 'x',
       indexWatchRule,
@@ -151,7 +151,7 @@ describe('StateChangeSubscriptionManager tests', () => {
       },
     };
     const stateChangeSubscrionInfoForContext =
-      stateChangeSubscriptionManager.create(context).instance;
+      stateChangeSubscriptionManager.createAndGetInstance(context);
     const recursiveObserver = stateChangeSubscrionInfoForContext.create({
       index: 'x',
       indexWatchRule,
@@ -190,7 +190,7 @@ describe('StateChangeSubscriptionManager tests', () => {
     };
 
     const stateChangeSubscrionInfoForContext =
-      stateChangeSubscriptionManager.create(context).instance;
+      stateChangeSubscriptionManager.createAndGetInstance(context);
     const recursiveObserver = stateChangeSubscrionInfoForContext.create({
       index: 'x',
       indexWatchRule,
@@ -242,7 +242,7 @@ describe('StateChangeSubscriptionManager tests', () => {
       },
     };
     const stateChangeSubscrionInfoForContext =
-      stateChangeSubscriptionManager.create(context).instance;
+      stateChangeSubscriptionManager.createAndGetInstance(context);
     const recursiveObserver = stateChangeSubscrionInfoForContext.create({
       index: 'x',
       indexWatchRule,

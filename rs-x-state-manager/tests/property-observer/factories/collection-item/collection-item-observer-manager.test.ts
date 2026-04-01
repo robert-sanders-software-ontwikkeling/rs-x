@@ -43,8 +43,8 @@ describe('ICollectionItemObserverManager tests', () => {
       const array = [1, 2];
       const observer = collectionItemObserverManager
         .create(array)
-        .instance.create({ index: 0 }).instance;
-      collectionItemObserverManager.create(array).instance.create({ index: 1 });
+        .instance.createAndGetInstance({ index: 0 });
+      collectionItemObserverManager.createAndGetInstance(array).create({ index: 1 });
 
       observer.dispose();
 
@@ -58,7 +58,7 @@ describe('ICollectionItemObserverManager tests', () => {
       const array = [1];
       const observer = collectionItemObserverManager
         .create(array)
-        .instance.create({ index: 0 }).instance;
+        .instance.createAndGetInstance({ index: 0 });
 
       observer.dispose();
 
@@ -72,7 +72,7 @@ describe('ICollectionItemObserverManager tests', () => {
       const array = [1, 2];
       const observer = collectionItemObserverManager
         .create(array)
-        .instance.create({ index: 0 }).instance;
+        .instance.createAndGetInstance({ index: 0 });
 
       const arrayIndexObserverManager =
         collectionItemObserverManager.getFromId(array);
@@ -91,7 +91,7 @@ describe('ICollectionItemObserverManager tests', () => {
         const array = [1, 2];
         const observer = collectionItemObserverManager
           .create(array)
-          .instance.create({ index: 1 }).instance;
+          .instance.createAndGetInstance({ index: 1 });
         const proxy = arrayProxyFactory.getFromData({ array })
           ?.proxy as unknown[];
 
@@ -113,7 +113,7 @@ describe('ICollectionItemObserverManager tests', () => {
         const array = [1, 2, 3];
         const observer = collectionItemObserverManager
           .create(array)
-          .instance.create({ index: 2 }).instance;
+          .instance.createAndGetInstance({ index: 2 });
         const proxy = arrayProxyFactory.getFromData({ array })
           ?.proxy as unknown[];
 
@@ -136,7 +136,7 @@ describe('ICollectionItemObserverManager tests', () => {
         const array = [1, 2, 2];
         const observer = collectionItemObserverManager
           .create(array)
-          .instance.create({ index: 1 }).instance;
+          .instance.createAndGetInstance({ index: 1 });
         const proxy = arrayProxyFactory.getFromData({ array })
           ?.proxy as unknown[];
 
@@ -165,7 +165,7 @@ describe('ICollectionItemObserverManager tests', () => {
       ]);
       const observer = collectionItemObserverManager
         .create(map)
-        .instance.create({ index: 'a' }).instance;
+        .instance.createAndGetInstance({ index: 'a' });
 
       expect(mapProxyFactory.getFromData({ map })).toBeDefined();
 
@@ -208,7 +208,7 @@ describe('ICollectionItemObserverManager tests', () => {
         ]);
         const observer = collectionItemObserverManager
           .create(map)
-          .instance.create({ index: 'b' }).instance;
+          .instance.createAndGetInstance({ index: 'b' });
         const mapProxy = mapProxyFactory.getFromData({ map })?.proxy as Map<
           string,
           number
@@ -227,7 +227,7 @@ describe('ICollectionItemObserverManager tests', () => {
         ]);
         const observer = collectionItemObserverManager
           .create(map)
-          .instance.create({ index: 'a' }).instance;
+          .instance.createAndGetInstance({ index: 'a' });
         const mapProxy = mapProxyFactory.getFromData({ map })?.proxy as Map<
           string,
           number
@@ -254,7 +254,7 @@ describe('ICollectionItemObserverManager tests', () => {
         ]);
         const observer = collectionItemObserverManager
           .create(map)
-          .instance.create({ index: 'a' }).instance;
+          .instance.createAndGetInstance({ index: 'a' });
         const mapProxy = mapProxyFactory.getFromData({ map })?.proxy as Map<
           string,
           number
@@ -281,7 +281,7 @@ describe('ICollectionItemObserverManager tests', () => {
         ]);
         const observer = collectionItemObserverManager
           .create(map)
-          .instance.create({ index: 'a' }).instance;
+          .instance.createAndGetInstance({ index: 'a' });
         const mapProxy = mapProxyFactory.getFromData({ map })?.proxy as Map<
           string,
           number
@@ -309,7 +309,7 @@ describe('ICollectionItemObserverManager tests', () => {
       const set = new Set([1, 2]);
       const observer = collectionItemObserverManager
         .create(set)
-        .instance.create({ index: 1 }).instance;
+        .instance.createAndGetInstance({ index: 1 });
 
       expect(setProxyFactory.getFromData({ set })).toBeDefined();
 
@@ -346,7 +346,7 @@ describe('ICollectionItemObserverManager tests', () => {
         const set = new Set([1, 2]);
         const observer = collectionItemObserverManager
           .create(set)
-          .instance.create({ index: 1 }).instance;
+          .instance.createAndGetInstance({ index: 1 });
         const setProxy = setProxyFactory.getFromData({ set })
           ?.proxy as Set<unknown>;
 
@@ -361,7 +361,7 @@ describe('ICollectionItemObserverManager tests', () => {
         const set = new Set([1, 2]);
         const observer = collectionItemObserverManager
           .create(set)
-          .instance.create({ index: 1 }).instance;
+          .instance.createAndGetInstance({ index: 1 });
         const setProxy = setProxyFactory.getFromData({ set })
           ?.proxy as Set<unknown>;
 

@@ -20,8 +20,7 @@ export class ExpressionFactory implements IExpressionFactory {
     leafIndexWatchRule?: IIndexWatchRule,
   ): IExpression<T> {
     return this._expressionManager
-      .create(context)
-      .instance.create({ expressionString, leafIndexWatchRule })
-      .instance as IExpression<T>;
+      .createAndGetInstance(context)
+      .create({ expressionString, leafIndexWatchRule }).instance as IExpression<T>;
   }
 }

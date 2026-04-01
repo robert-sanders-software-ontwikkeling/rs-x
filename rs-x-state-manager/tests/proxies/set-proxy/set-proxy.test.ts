@@ -36,7 +36,7 @@ describe('SetProxy tests', () => {
     const set = new Set();
     const proxyRegistry = new ProxyRegistryMock();
     const setProxyFactory = new SetProxyFactory(proxyRegistry);
-    const { proxy } = setProxyFactory.create({ set }).instance;
+    const { proxy } = setProxyFactory.createAndGetInstance({ set });
 
     expect(proxyRegistry.register).toHaveBeenCalledTimes(1);
     expect(proxyRegistry.register.mock.calls[0][0]).toBe(set);
@@ -67,7 +67,7 @@ describe('SetProxy tests', () => {
 
       const observerProxyPair = new SetProxyFactory(
         new ProxyRegistryMock(),
-      ).create(setData).instance;
+      ).createAndGetInstance(setData);
 
       expect(observerProxyPair.proxy?.has(1)).toEqual(true);
       expect(observerProxyPair.proxy?.has(2)).toEqual(true);

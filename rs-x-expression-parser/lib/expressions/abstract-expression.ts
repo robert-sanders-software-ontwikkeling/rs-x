@@ -261,7 +261,7 @@ export abstract class AbstractExpression<
   }
 
   protected createEvaluateManagerForExpression(): IEvaluateManagerForExpression {
-    return this.expressionEvaluateManager.create(this.onCommit).instance;
+    return this.expressionEvaluateManager.createAndGetInstance(this.onCommit);
   }
 
   private onCommit = (initialized: boolean) => {

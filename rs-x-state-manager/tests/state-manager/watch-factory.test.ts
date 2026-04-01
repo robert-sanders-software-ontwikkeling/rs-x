@@ -318,7 +318,7 @@ describe('WatchFactory', () => {
     jest.spyOn(Type, 'isReadonlyProperty').mockReturnValue(false);
     stateManagerMock.watchState.mockReturnValue(1);
 
-    const first = watchFactory.create({ context, index, options: {} }).instance;
+    const first = watchFactory.createAndGetInstance({ context, index, options: {} });
     const second = watchFactory.create({
       context,
       index,
