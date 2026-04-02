@@ -68,31 +68,53 @@ const currentVersion = corePackage.version;
 const bump = bumps.get('@rs-x/core') ?? 'patch';
 const targetVersion = bumpVersion(currentVersion, bump);
 
-const npmVersionsRaw = execSync('npm view @rs-x/core versions --json', {
-  stdio: ['ignore', 'pipe', 'inherit'],
-  encoding: 'utf8',
-});
-const npmVersions = JSON.parse(npmVersionsRaw);
-const versionList = Array.isArray(npmVersions) ? npmVersions : [];
+let nextPreVersion = 0;
 
-const prereleasePattern = new RegExp(`^${targetVersion}-next\\.(\\d+)$`);
-let maxPreVersion = -1;
-
-for (const version of versionList) {
-  if (typeof version !== 'string') {
-    continue;
+try {
+  const distTagsRaw = execSync('npm view @rs-x/core dist-tags --json', {
+    stdio: ['ignore', 'pipe', 'inherit'],
+    encoding: 'utf8',
+  });
+  const distTags = JSON.parse(distTagsRaw);
+  if (distTags && typeof distTags.next === 'string') {
+    const match = distTags.next.match(
+      new RegExp(`^${targetVersion}-next\\.(\\d+)$`),
+    );
+    if (match) {
+      nextPreVersion = Number.parseInt(match[1], 10) + 1;
+    }
   }
-  const match = prereleasePattern.exec(version);
-  if (!match) {
-    continue;
-  }
-  const value = Number.parseInt(match[1], 10);
-  if (Number.isInteger(value) && value > maxPreVersion) {
-    maxPreVersion = value;
-  }
+} catch {
+  // ignore and fall back to full versions list
 }
 
-const nextPreVersion = maxPreVersion + 1;
+if (nextPreVersion === 0) {
+  const npmVersionsRaw = execSync('npm view @rs-x/core versions --json', {
+    stdio: ['ignore', 'pipe', 'inherit'],
+    encoding: 'utf8',
+  });
+  const npmVersions = JSON.parse(npmVersionsRaw);
+  const versionList = Array.isArray(npmVersions) ? npmVersions : [];
+
+  const prereleasePattern = new RegExp(`^${targetVersion}-next\\.(\\d+)$`);
+  let maxPreVersion = -1;
+
+  for (const version of versionList) {
+    if (typeof version !== 'string') {
+      continue;
+    }
+    const match = prereleasePattern.exec(version);
+    if (!match) {
+      continue;
+    }
+    const value = Number.parseInt(match[1], 10);
+    if (Number.isInteger(value) && value > maxPreVersion) {
+      maxPreVersion = value;
+    }
+  }
+
+  nextPreVersion = maxPreVersion + 1;
+}
 const preJsonRaw = readFileSync(preJsonPath, 'utf8');
 const preJson = JSON.parse(preJsonRaw);
 const currentPreVersion =
