@@ -178,15 +178,38 @@ function detectPackageManager(explicitPm) {
   return 'npm';
 }
 
+function applyTagToPackages(packages, tag) {
+  return packages.map((pkg) => {
+    const lastAt = pkg.lastIndexOf('@');
+    const slashIndex = pkg.indexOf('/');
+    const hasVersion = pkg.startsWith('@') ? lastAt > slashIndex : lastAt > 0;
+    if (hasVersion) {
+      return pkg;
+    }
+    return `${pkg}@${tag}`;
+  });
+}
+
+function resolveInstallTag(flags) {
+  return parseBooleanFlag(flags.next, false) ? 'next' : undefined;
+}
+
 function installPackages(pm, packages, options = {}) {
-  const { dev = false, dryRun = false, label = 'packages' } = options;
+  const { dev = false, dryRun = false, label = 'packages', tag } = options;
+  const resolvedPackages = tag ? applyTagToPackages(packages, tag) : packages;
   const argsByPm = {
-    pnpm: dev ? ['add', '-D', ...packages] : ['add', ...packages],
+    pnpm: dev
+      ? ['add', '-D', ...resolvedPackages]
+      : ['add', ...resolvedPackages],
     npm: dev
-      ? ['install', '--save-dev', ...packages]
-      : ['install', '--save', ...packages],
-    yarn: dev ? ['add', '--dev', ...packages] : ['add', ...packages],
-    bun: dev ? ['add', '--dev', ...packages] : ['add', ...packages],
+      ? ['install', '--save-dev', ...resolvedPackages]
+      : ['install', '--save', ...resolvedPackages],
+    yarn: dev
+      ? ['add', '--dev', ...resolvedPackages]
+      : ['add', ...resolvedPackages],
+    bun: dev
+      ? ['add', '--dev', ...resolvedPackages]
+      : ['add', ...resolvedPackages],
   };
 
   const installArgs = argsByPm[pm];
@@ -195,23 +218,26 @@ function installPackages(pm, packages, options = {}) {
     process.exit(1);
   }
 
-  logInfo(`Installing ${label} with ${pm}...`);
+  const tagInfo = tag ? ` (tag: ${tag})` : '';
+  logInfo(`Installing ${label} with ${pm}${tagInfo}...`);
   run(pm, installArgs, { dryRun });
   logOk(`Installed ${label}.`);
 }
 
-function installRuntimePackages(pm, dryRun) {
+function installRuntimePackages(pm, dryRun, tag) {
   installPackages(pm, RUNTIME_PACKAGES, {
     dev: false,
     dryRun,
+    tag,
     label: 'runtime RS-X packages',
   });
 }
 
-function installCompilerPackages(pm, dryRun) {
+function installCompilerPackages(pm, dryRun, tag) {
   installPackages(pm, COMPILER_PACKAGES, {
     dev: true,
     dryRun,
+    tag,
     label: 'compiler tooling',
   });
 }
@@ -608,13 +634,14 @@ function resolveProjectRsxSpecs(
   options = {},
 ) {
   const includeAngularPackage = Boolean(options.includeAngularPackage);
+  const versionSpec = options.tag ? options.tag : RSX_PACKAGE_VERSION;
   const defaults = {
-    '@rs-x/core': RSX_PACKAGE_VERSION,
-    '@rs-x/state-manager': RSX_PACKAGE_VERSION,
-    '@rs-x/expression-parser': RSX_PACKAGE_VERSION,
-    '@rs-x/compiler': RSX_PACKAGE_VERSION,
-    '@rs-x/typescript-plugin': RSX_PACKAGE_VERSION,
-    ...(includeAngularPackage ? { '@rs-x/angular': RSX_PACKAGE_VERSION } : {}),
+    '@rs-x/core': versionSpec,
+    '@rs-x/state-manager': versionSpec,
+    '@rs-x/expression-parser': versionSpec,
+    '@rs-x/compiler': versionSpec,
+    '@rs-x/typescript-plugin': versionSpec,
+    ...(includeAngularPackage ? { '@rs-x/angular': versionSpec } : {}),
     '@rs-x/cli': null,
   };
 
@@ -919,6 +946,7 @@ async function runProject(flags) {
   const dryRun = Boolean(flags['dry-run']);
   const skipInstall = Boolean(flags['skip-install']);
   const pm = detectPackageManager(flags.pm);
+  const tag = resolveInstallTag(flags);
   let projectName = typeof flags.name === 'string' ? flags.name.trim() : '';
 
   if (!projectName) {
@@ -946,6 +974,7 @@ async function runProject(flags) {
     projectRoot,
     workspaceRoot,
     tarballsDir,
+    { tag },
   );
   if (fs.existsSync(projectRoot) && fs.readdirSync(projectRoot).length > 0) {
     logError(`Target directory is not empty: ${projectRoot}`);
@@ -1700,11 +1729,12 @@ function runInit(flags) {
   const skipVscode = Boolean(flags['skip-vscode']);
   const skipInstall = Boolean(flags['skip-install']);
   const pm = detectPackageManager(flags.pm);
+  const tag = resolveInstallTag(flags);
   const projectRoot = process.cwd();
 
   if (!skipInstall) {
-    installRuntimePackages(pm, dryRun);
-    installCompilerPackages(pm, dryRun);
+    installRuntimePackages(pm, dryRun, tag);
+    installCompilerPackages(pm, dryRun, tag);
   } else {
     logInfo('Skipping package installation (--skip-install).');
   }
@@ -2212,6 +2242,7 @@ module.exports = {
 function runSetupReact(flags) {
   const dryRun = Boolean(flags['dry-run']);
   const pm = detectPackageManager(flags.pm);
+  const tag = resolveInstallTag(flags);
   const projectRoot = process.cwd();
   const packageJsonPath = path.join(projectRoot, 'package.json');
   if (!fs.existsSync(packageJsonPath)) {
@@ -2238,6 +2269,7 @@ function runSetupReact(flags) {
     installPackages(pm, ['@rs-x/react'], {
       dev: false,
       dryRun,
+      tag,
       label: 'RS-X React bindings',
     });
   } else {
@@ -2253,6 +2285,7 @@ function runSetupReact(flags) {
 function runSetupNext(flags) {
   const dryRun = Boolean(flags['dry-run']);
   const pm = detectPackageManager(flags.pm);
+  const tag = resolveInstallTag(flags);
   runInit({
     ...flags,
     'skip-vscode': true,
@@ -2261,6 +2294,7 @@ function runSetupNext(flags) {
     installPackages(pm, ['@rs-x/react'], {
       dev: false,
       dryRun,
+      tag,
       label: 'RS-X React bindings',
     });
   } else {
@@ -2276,6 +2310,7 @@ function runSetupNext(flags) {
 function runSetupVue(flags) {
   const dryRun = Boolean(flags['dry-run']);
   const pm = detectPackageManager(flags.pm);
+  const tag = resolveInstallTag(flags);
   runInit({
     ...flags,
     'skip-vscode': true,
@@ -2284,6 +2319,7 @@ function runSetupVue(flags) {
     installPackages(pm, ['@rs-x/vue'], {
       dev: false,
       dryRun,
+      tag,
       label: 'RS-X Vue bindings',
     });
   } else {
@@ -2299,6 +2335,7 @@ function runSetupVue(flags) {
 function runSetupAngular(flags) {
   const dryRun = Boolean(flags['dry-run']);
   const pm = detectPackageManager(flags.pm);
+  const tag = resolveInstallTag(flags);
 
   runInit({
     ...flags,
@@ -2309,6 +2346,7 @@ function runSetupAngular(flags) {
     installPackages(pm, ['@rs-x/angular'], {
       dev: false,
       dryRun,
+      tag,
       label: 'RS-X Angular bindings',
     });
     installPackages(pm, ['@angular-builders/custom-webpack'], {
@@ -2345,6 +2383,7 @@ function runSetupAngular(flags) {
 function runSetupAuto(flags) {
   const projectRoot = process.cwd();
   const context = detectProjectContext(projectRoot);
+  const tag = resolveInstallTag(flags);
 
   if (context === 'react') {
     logInfo('Auto-detected framework: react');
@@ -2372,8 +2411,8 @@ function runSetupAuto(flags) {
 
   logInfo('No framework-specific setup detected; running generic setup.');
   const pm = detectPackageManager(flags.pm);
-  installRuntimePackages(pm, Boolean(flags['dry-run']));
-  installCompilerPackages(pm, Boolean(flags['dry-run']));
+  installRuntimePackages(pm, Boolean(flags['dry-run']), tag);
+  installCompilerPackages(pm, Boolean(flags['dry-run']), tag);
   installVsCodeExtension(flags);
 }
 
@@ -3142,24 +3181,27 @@ function printInstallHelp(target) {
   if (target === 'compiler') {
     console.log('Usage:');
     console.log(
-      '  rsx install compiler [--pm <pnpm|npm|yarn|bun>] [--dry-run]',
+      '  rsx install compiler [--pm <pnpm|npm|yarn|bun>] [--next] [--dry-run]',
     );
     console.log('');
     console.log('Options:');
     console.log('  --pm        Explicit package manager');
+    console.log('  --next      Install prerelease versions (dist-tag next)');
     console.log('  --dry-run   Print commands without executing them');
     return;
   }
 
   console.log('Usage:');
   console.log('  rsx install vscode [--force] [--local] [--dry-run]');
-  console.log('  rsx install compiler [--pm <pnpm|npm|yarn|bun>] [--dry-run]');
+  console.log(
+    '  rsx install compiler [--pm <pnpm|npm|yarn|bun>] [--next] [--dry-run]',
+  );
 }
 
 function printSetupHelp() {
   console.log('Usage:');
   console.log(
-    '  rsx setup [--pm <pnpm|npm|yarn|bun>] [--force] [--local] [--dry-run]',
+    '  rsx setup [--pm <pnpm|npm|yarn|bun>] [--next] [--force] [--local] [--dry-run]',
   );
   console.log('');
   console.log('What it does:');
@@ -3173,6 +3215,7 @@ function printSetupHelp() {
   console.log('');
   console.log('Options:');
   console.log('  --pm        Explicit package manager');
+  console.log('  --next      Install prerelease versions (dist-tag next)');
   console.log('  --force     Reinstall extension if already installed');
   console.log('  --local     Build/install local VSIX from repo workspace');
   console.log('  --dry-run   Print commands without executing them');
@@ -3181,7 +3224,7 @@ function printSetupHelp() {
 function printInitHelp() {
   console.log('Usage:');
   console.log(
-    '  rsx init [--pm <pnpm|npm|yarn|bun>] [--entry <path>] [--skip-install] [--skip-vscode] [--force] [--local] [--dry-run]',
+    '  rsx init [--pm <pnpm|npm|yarn|bun>] [--entry <path>] [--next] [--skip-install] [--skip-vscode] [--force] [--local] [--dry-run]',
   );
   console.log('');
   console.log('What it does:');
@@ -3196,6 +3239,7 @@ function printInitHelp() {
   console.log('Options:');
   console.log('  --pm            Explicit package manager');
   console.log('  --entry         Explicit application entry file');
+  console.log('  --next          Install prerelease versions (dist-tag next)');
   console.log('  --skip-install  Skip npm/pnpm/yarn/bun package installation');
   console.log('  --skip-vscode   Skip VS Code extension installation');
   console.log('  --force         Reinstall extension if already installed');
@@ -3206,7 +3250,7 @@ function printInitHelp() {
 function printProjectHelp() {
   console.log('Usage:');
   console.log(
-    '  rsx project [angular|vuejs|react|nextjs|nodejs] [--name <project-name>] [--pm <pnpm|npm|yarn|bun>] [--template <angular|vuejs|react|nextjs|nodejs>] [--tarballs-dir <path>] [--skip-install] [--skip-vscode] [--dry-run]',
+    '  rsx project [angular|vuejs|react|nextjs|nodejs] [--name <project-name>] [--pm <pnpm|npm|yarn|bun>] [--next] [--template <angular|vuejs|react|nextjs|nodejs>] [--tarballs-dir <path>] [--skip-install] [--skip-vscode] [--dry-run]',
   );
   console.log('');
   console.log('What it does:');
@@ -3228,6 +3272,7 @@ function printProjectHelp() {
     '  --template      Project template (if omitted, asks interactively)',
   );
   console.log('  --pm            Explicit package manager');
+  console.log('  --next          Install prerelease versions (dist-tag next)');
   console.log(
     '  --tarballs-dir  Directory containing local RS-X package tarballs (*.tgz)',
   );
@@ -3449,7 +3494,8 @@ function main() {
 
   if (command === 'install' && target === 'compiler') {
     const pm = detectPackageManager(flags.pm);
-    installCompilerPackages(pm, Boolean(flags['dry-run']));
+    const tag = resolveInstallTag(flags);
+    installCompilerPackages(pm, Boolean(flags['dry-run']), tag);
     return;
   }
 

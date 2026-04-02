@@ -49,10 +49,10 @@ The rs-x VS Code extension provides:
 - `rsx doctor`
 - `rsx add` (aliases: `rsx -a`, `rsx -add`)
 - `rsx install vscode [--force] [--local] [--dry-run]`
-- `rsx install compiler [--pm <pnpm|npm|yarn|bun>] [--dry-run]`
-- `rsx setup [--pm <pnpm|npm|yarn|bun>] [--force] [--local] [--dry-run]`
-- `rsx init [--pm <pnpm|npm|yarn|bun>] [--entry <path>] [--skip-install] [--skip-vscode] [--force] [--local] [--dry-run]`
-- `rsx project [angular|vuejs|react|nextjs|nodejs] [--name <project-name>] [--template <...>] [--pm <pnpm|npm|yarn|bun>] [--skip-install] [--skip-vscode] [--dry-run]`
+- `rsx install compiler [--pm <pnpm|npm|yarn|bun>] [--next] [--dry-run]`
+- `rsx setup [--pm <pnpm|npm|yarn|bun>] [--next] [--force] [--local] [--dry-run]`
+- `rsx init [--pm <pnpm|npm|yarn|bun>] [--entry <path>] [--next] [--skip-install] [--skip-vscode] [--force] [--local] [--dry-run]`
+- `rsx project [angular|vuejs|react|nextjs|nodejs] [--name <project-name>] [--template <...>] [--pm <pnpm|npm|yarn|bun>] [--next] [--skip-install] [--skip-vscode] [--dry-run]`
 - `rsx build [--project <path-to-tsconfig>] [--out-dir <path>] [--dry-run]`
 - `rsx typecheck [--project <path-to-tsconfig>] [--dry-run]`
 
@@ -88,5 +88,6 @@ npx @rs-x/cli init --entry src/main.ts --skip-vscode
 npx @rs-x/cli setup
 npx @rs-x/cli install vscode --force
 npx @rs-x/cli install compiler --pm pnpm
+npx @rs-x/cli install compiler --next
 npx @rs-x/cli typecheck --project tsconfig.json
 ```

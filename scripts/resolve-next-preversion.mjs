@@ -13,13 +13,13 @@ const status = JSON.parse(statusRaw);
 
 const releases = Array.isArray(status.releases) ? status.releases : [];
 if (releases.length === 0) {
-  console.log('No releases found in changeset status. Skipping preVersion set.');
+  console.log(
+    'No releases found in changeset status. Skipping preVersion set.',
+  );
   process.exit(0);
 }
 
-const coreRelease = releases.find(
-  (release) => release.name === '@rs-x/core',
-);
+const coreRelease = releases.find((release) => release.name === '@rs-x/core');
 const targetRelease = coreRelease ?? releases[0];
 const targetVersion = targetRelease.newVersion;
 
@@ -61,4 +61,6 @@ const resolvedPreVersion = Math.max(currentPreVersion, nextPreVersion);
 preJson.preVersion = resolvedPreVersion;
 
 writeFileSync(preJsonPath, `${JSON.stringify(preJson, null, 2)}\n`, 'utf8');
-console.log(`Resolved preVersion: ${resolvedPreVersion} (base ${targetVersion})`);
+console.log(
+  `Resolved preVersion: ${resolvedPreVersion} (base ${targetVersion})`,
+);

@@ -66,10 +66,10 @@ const commandReferenceCode = dedent`
   rsx doctor
   rsx add
   rsx install vscode [--force] [--local] [--dry-run]
-  rsx install compiler [--pm <pnpm|npm|yarn|bun>] [--dry-run]
-  rsx setup [--pm <pnpm|npm|yarn|bun>] [--force] [--local] [--dry-run]
-  rsx init [--pm ...] [--entry <path>] [--skip-install] [--skip-vscode] [--force] [--local] [--dry-run]
-  rsx project [angular|vuejs|react|nextjs|nodejs] [--name <project-name>] [--template <...>] [--pm ...] [--skip-install] [--skip-vscode] [--dry-run]
+  rsx install compiler [--pm <pnpm|npm|yarn|bun>] [--next] [--dry-run]
+  rsx setup [--pm <pnpm|npm|yarn|bun>] [--next] [--force] [--local] [--dry-run]
+  rsx init [--pm ...] [--entry <path>] [--next] [--skip-install] [--skip-vscode] [--force] [--local] [--dry-run]
+  rsx project [angular|vuejs|react|nextjs|nodejs] [--name <project-name>] [--template <...>] [--pm ...] [--next] [--skip-install] [--skip-vscode] [--dry-run]
   rsx build [--project <tsconfig>] [--out-dir <path>] [--prod] [--aot-preparse <true|false>] [--aot-preparse-file <path>] [--aot-compiled <true|false>] [--aot-compiled-file <path>] [--compiled-resolved-evaluator <true|false>] [--no-emit] [--dry-run]
   rsx typecheck [--project <tsconfig>] [--dry-run]
   rsx version
@@ -103,6 +103,7 @@ const vscodeInstallRecoveryCode = dedent`
 
 const installCompilerCode = dedent`
   npx rsx install compiler
+  npx rsx install compiler --next
   npx rsx install compiler --pm pnpm
 `;
 
@@ -157,6 +158,7 @@ const doc: CoreConceptDoc = {
         'Installing `@rs-x/cli` adds the `rsx` command. During package postinstall, the CLI also attempts to install the bundled rs-x VS Code extension automatically when `code` is available on PATH.',
         '`rsx init` installs runtime packages (`@rs-x/core`, `@rs-x/state-manager`, `@rs-x/expression-parser`) and compiler tooling (`@rs-x/compiler`, `@rs-x/typescript-plugin`), then wires bootstrap.',
         'Template/setup flows install framework-specific packages when needed (for example `@rs-x/angular` for Angular, `@rs-x/react` for React/Next.js, and `@rs-x/vue` for Vue).',
+        'Add `--next` to install prerelease versions (dist-tag `next`) when testing upcoming releases.',
       ],
     },
     {
