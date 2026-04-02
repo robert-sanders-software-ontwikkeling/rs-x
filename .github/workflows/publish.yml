@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       dist_tag:
-        description: 'npm dist-tag (auto, latest, next)'
+        description: "npm dist-tag (auto, latest, next). Note: non-main only allows 'auto' or 'next'."
         required: false
         default: 'auto'
       promote_from_next:
@@ -65,17 +65,16 @@ jobs:
       - name: Resolve dist-tag
         run: |
           DIST_TAG_INPUT='${{ github.event.inputs.dist_tag }}'
-          if [ -z "$DIST_TAG_INPUT" ] || [ "$DIST_TAG_INPUT" = "auto" ]; then
-            if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-              DIST_TAG_INPUT="latest"
-            else
-              DIST_TAG_INPUT="next"
+          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            if [ -n "$DIST_TAG_INPUT" ] && [ "$DIST_TAG_INPUT" != "auto" ] && [ "$DIST_TAG_INPUT" != "next" ]; then
+              echo "Error: dist-tag '$DIST_TAG_INPUT' is not allowed on non-main."
+              exit 1
             fi
-          fi
-
-          if [ "$DIST_TAG_INPUT" = "latest" ] && [ "${{ github.ref }}" != "refs/heads/main" ]; then
-            echo "Error: dist-tag 'latest' is only allowed on main."
-            exit 1
+            DIST_TAG_INPUT="next"
+          else
+            if [ -z "$DIST_TAG_INPUT" ] || [ "$DIST_TAG_INPUT" = "auto" ]; then
+              DIST_TAG_INPUT="latest"
+            fi
           fi
 
           echo "DIST_TAG=$DIST_TAG_INPUT" >> "$GITHUB_ENV"
