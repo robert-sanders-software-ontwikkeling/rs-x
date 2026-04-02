@@ -96,8 +96,15 @@ jobs:
         run: node scripts/resolve-next-preversion.mjs
 
       # ---------------- VERSION ----------------
-      - name: Version packages (Changesets)
+      - name: Version packages (Changesets - latest)
+        if: ${{ env.DIST_TAG != 'next' }}
         run: pnpm changeset version
+
+      - name: Version packages (Changesets - next)
+        if: ${{ env.DIST_TAG == 'next' }}
+        run: |
+          node scripts/resolve-next-preversion.mjs
+          pnpm changeset version
 
       - name: Debug prerelease versions
         if: ${{ env.DIST_TAG == 'next' }}
