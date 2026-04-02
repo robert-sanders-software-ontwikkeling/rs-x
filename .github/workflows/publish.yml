@@ -91,6 +91,10 @@ jobs:
         if: ${{ env.DIST_TAG != 'next' }}
         run: pnpm changeset pre exit || true
 
+      - name: Resolve next preVersion
+        if: ${{ env.DIST_TAG == 'next' }}
+        run: node scripts/resolve-next-preversion.mjs
+
       # ---------------- VERSION ----------------
       - name: Version packages (Changesets)
         run: pnpm changeset version
