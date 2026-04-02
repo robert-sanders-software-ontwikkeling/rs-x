@@ -99,6 +99,13 @@ jobs:
       - name: Version packages (Changesets)
         run: pnpm changeset version
 
+      - name: Debug prerelease versions
+        if: ${{ env.DIST_TAG == 'next' }}
+        run: |
+          echo "pre.json:"
+          cat .changeset/pre.json
+          node -e "console.log('@rs-x/core version:', require('./rs-x-core/package.json').version)"
+
       # ---------------- BUILD ----------------
       - name: Build Node libraries
         run: pnpm run build:libs

@@ -1,31 +1,72 @@
 #!/usr/bin/env node
 import { execSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const preJsonPath = resolve('.changeset', 'pre.json');
+const changesetDir = resolve('.changeset');
+const bumpRank = { patch: 0, minor: 1, major: 2 };
 
-const statusRaw = execSync('pnpm changeset status --json', {
-  stdio: ['ignore', 'pipe', 'inherit'],
-  encoding: 'utf8',
-});
-const status = JSON.parse(statusRaw);
-
-const releases = Array.isArray(status.releases) ? status.releases : [];
-if (releases.length === 0) {
-  console.log(
-    'No releases found in changeset status. Skipping preVersion set.',
+function parseChangesetBumps() {
+  const files = readdirSync(changesetDir).filter(
+    (name) =>
+      name.endsWith('.md') &&
+      name !== 'README.md' &&
+      name !== 'pre.json' &&
+      name !== 'config.json',
   );
-  process.exit(0);
+
+  const bumps = new Map();
+
+  for (const file of files) {
+    const content = readFileSync(resolve(changesetDir, file), 'utf8');
+    const sections = content.split('---');
+    if (sections.length < 3) {
+      continue;
+    }
+    const frontmatter = sections[1] ?? '';
+    for (const line of frontmatter.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) {
+        continue;
+      }
+      const match = trimmed.match(/^["']?([^"']+)["']?:\s*(major|minor|patch)$/);
+      if (!match) {
+        continue;
+      }
+      const name = match[1];
+      const bump = match[2];
+      const existing = bumps.get(name);
+      if (!existing || bumpRank[bump] > bumpRank[existing]) {
+        bumps.set(name, bump);
+      }
+    }
+  }
+
+  return bumps;
 }
 
-const coreRelease = releases.find((release) => release.name === '@rs-x/core');
-const targetRelease = coreRelease ?? releases[0];
-const targetVersion = targetRelease.newVersion;
-
-if (typeof targetVersion !== 'string' || targetVersion.length === 0) {
-  throw new Error('Failed to resolve target version for prerelease.');
+function bumpVersion(version, bump) {
+  const [major, minor, patch] = version.split('.').map((value) => Number(value));
+  if (![major, minor, patch].every((value) => Number.isInteger(value))) {
+    throw new Error(`Invalid version: ${version}`);
+  }
+  if (bump === 'major') {
+    return `${major + 1}.0.0`;
+  }
+  if (bump === 'minor') {
+    return `${major}.${minor + 1}.0`;
+  }
+  return `${major}.${minor}.${patch + 1}`;
 }
+
+const bumps = parseChangesetBumps();
+const corePackage = JSON.parse(
+  readFileSync(resolve('rs-x-core', 'package.json'), 'utf8'),
+);
+const currentVersion = corePackage.version;
+const bump = bumps.get('@rs-x/core') ?? 'patch';
+const targetVersion = bumpVersion(currentVersion, bump);
 
 const npmVersionsRaw = execSync('npm view @rs-x/core versions --json', {
   stdio: ['ignore', 'pipe', 'inherit'],
