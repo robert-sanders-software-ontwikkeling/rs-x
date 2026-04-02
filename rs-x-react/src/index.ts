@@ -1,3 +1,2 @@
-export * from './expression.factory';
-export * from './expression-manager';
+export * from './expression-change-transaction-manager';
 export * from './hooks';

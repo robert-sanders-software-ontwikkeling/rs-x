@@ -27,45 +27,42 @@ export default function PerformancePage() {
           <h1 className="sectionTitle">Performance</h1>
           <p className="sectionLead">
             rs-x performance is dependent on a few factors:
-            <span>
-              <ul>
-                <li>
-                  Expression complexity: this can affect parsing and evaluation
-                  times, Although both can be mitigated by preparsing and
-                  compiling expressions at build time. This is done by default.
-                  Most of the time expressions are just identifiers, so the
-                  complexity is minimal. Expression are also cached,so if you
-                  parse expression at runtime you only pay the cost once per
-                  unique expression string. So for table with 10,000 rows and 20
-                  unique column expressions, rs-x only parses 20 expressions.
-                </li>
-                <li>
-                  Number of unique (model, field) pairs you bind to: for every
-                  unique (model, field) pair RS-X wil create a watch. This
-                  process is optimized by sharing watchers between expression.
-                  But still you can have a lot of watchers if you are not
-                  careful. For example, for a table with 1000 rows and 10
-                  columns, 10000 watchers need to be created. Although rs-x can
-                  still deal with a large number of bindings it can affect the
-                  initial loading time. It doesnt affect the performance once
-                  the initial loading is done.
-                  <Link href="/docs/core-concepts/performance-demo">
-                    <span>
-                      <strong> See Demo</strong>
-                    </span>
-                  </Link>
-                </li>
-                <li>
-                  Update frequency: as the number of changes increases, the cost
-                  of updates typically grows. In RS-X, this is less of a
-                  concern. Expression evaluation is efficient, and only the
-                  expressions that depend on the changed data are re-evaluated
-                  and emit change events. As a result, updates remain localized,
-                  even when changes occur frequently.
-                </li>
-              </ul>
-            </span>
           </p>
+          <ul className="docsBulletList">
+            <li>
+              Expression complexity: this can affect parsing and evaluation
+              times, Although both can be mitigated by preparsing and compiling
+              expressions at build time. This is done by default. Most of the
+              time expressions are just identifiers, so the complexity is
+              minimal. Expression are also cached,so if you parse expression at
+              runtime you only pay the cost once per unique expression string.
+              So for table with 10,000 rows and 20 unique column expressions,
+              rs-x only parses 20 expressions.
+            </li>
+            <li>
+              Number of unique (model, field) pairs you bind to: for every
+              unique (model, field) pair RS-X wil create a watch. This process
+              is optimized by sharing watchers between expression. But still you
+              can have a lot of watchers if you are not careful. For example,
+              for a table with 1000 rows and 10 columns, 10000 watchers need to
+              be created. Although rs-x can still deal with a large number of
+              bindings it can affect the initial loading time. It doesnt affect
+              the performance once the initial loading is done.
+              <Link href="/docs/core-concepts/performance-demo">
+                <span>
+                  <strong> See Demo</strong>
+                </span>
+              </Link>
+            </li>
+            <li>
+              Update frequency: as the number of changes increases, the cost of
+              updates typically grows. In RS-X, this is less of a concern.
+              Expression evaluation is efficient, and only the expressions that
+              depend on the changed data are re-evaluated and emit change
+              events. As a result, updates remain localized, even when changes
+              occur frequently.
+            </li>
+          </ul>
           <p className="sectionLead" style={{ marginTop: '0.5rem' }}>
             All benchmarks on this page and its sub-pages were measured on{' '}
             {benchmarkMachine.cpu}, {benchmarkMachine.memory}, Node.js{' '}

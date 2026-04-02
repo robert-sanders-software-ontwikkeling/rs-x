@@ -12,6 +12,7 @@ const installCode = dedent`
 
 const vueBasicCode = dedent`
   import { reactive } from 'vue';
+  import { rsx } from '@rs-x/expression-parser';
   import { useRsxExpression } from '@rs-x/vue';
 
   const model = reactive({
@@ -19,38 +20,22 @@ const vueBasicCode = dedent`
     quantity: 2,
   });
 
-  const total = useRsxExpression<number>('price * quantity', { model });
+  const totalExpr = rsx<number>('price * quantity')(model);
+  const total = useRsxExpression(totalExpr);
 
   model.quantity = 3; // Vue updates when total.value changes
 `;
 
 const vueComposableCode = dedent`
   import { getCurrentScope, onScopeDispose, shallowRef } from 'vue';
-  import { ArgumentException, Type } from '@rs-x/core';
   import { AbstractExpression, type IExpression } from '@rs-x/expression-parser';
-  import { getExpressionFactory } from '@rs-x/vue';
-  import type { IIndexWatchRule } from '@rs-x/state-manager';
 
-  export function useRsxExpression<T>(
-    expression: string | IExpression<T>,
-    options?: { model?: object; leafWatchRule?: IIndexWatchRule },
-  ) {
-    const { model, leafWatchRule } = options || {};
-    if (Type.isString(expression) && !model) {
-      throw new ArgumentException('model is required when expression is a string');
+  export function useRsxExpression<T>(expression: IExpression<T>) {
+    if (!(expression instanceof AbstractExpression)) {
+      throw new Error('useRsxExpression: expression must be an IExpression');
     }
 
-    let expr: IExpression<T>;
-    let ownsExpression = false;
-
-    if (Type.isString(expression)) {
-      expr = getExpressionFactory().create<T>(model as object, expression, leafWatchRule);
-      ownsExpression = true;
-    } else if (expression instanceof AbstractExpression) {
-      expr = expression;
-    } else {
-      throw new Error('useRsxExpression: expression must be a string or an IExpression');
-    }
+    const expr = expression;
 
     const value = shallowRef<T | null>(expr.value ?? null);
     const subscription = expr.changed.subscribe(() => {
@@ -60,9 +45,6 @@ const vueComposableCode = dedent`
     if (getCurrentScope()) {
       onScopeDispose(() => {
         subscription.unsubscribe();
-        if (ownsExpression) {
-          expr.dispose();
-        }
       });
     }
 
@@ -84,6 +66,7 @@ const vueComposableUsageCode = dedent`
 const vueComponentCode = dedent`
   <script setup lang="ts">
   import { reactive } from 'vue';
+  import { rsx } from '@rs-x/expression-parser';
   import { useRsxExpression } from '@rs-x/vue';
 
   const model = reactive({
@@ -91,7 +74,8 @@ const vueComponentCode = dedent`
     quantity: 2,
   });
 
-  const total = useRsxExpression<number>('price * quantity', { model });
+  const totalExpr = rsx<number>('price * quantity')(model);
+  const total = useRsxExpression(totalExpr);
 
   function bump() {
     model.quantity += 1;
@@ -136,13 +120,13 @@ const doc: CoreConceptDoc = {
   title: 'Vue integration',
   lead: 'Use the @rs-x/vue composable to bind expressions directly to Vue components — no manual subscriptions required.',
   whatItMeans:
-    'The @rs-x/vue package provides a useRsxExpression composable. It creates (or accepts) an rs-x expression, subscribes to its change events, and exposes the live value as a Vue ref.',
+    'The @rs-x/vue package provides a useRsxExpression composable. It accepts an rs-x expression, subscribes to its change events, and exposes the live value as a Vue ref.',
   whyItMatters:
     'You keep Vue components declarative while rs-x handles fine-grained dependency tracking. Vue updates automatically whenever the expression value changes.',
   keyPoints: [
-    'useRsxExpression accepts a string (with model) or a pre-built IExpression.',
+    'useRsxExpression accepts a pre-built IExpression from rsx(...).',
     'Subscriptions are disposed automatically when the component scope is destroyed.',
-    'Use leafWatchRule to narrow which array or map entries trigger updates.',
+    'Use rsx(..., { leafWatchRule })(model) to narrow which array or map entries trigger updates.',
   ],
   examples: [
     {
@@ -154,7 +138,7 @@ const doc: CoreConceptDoc = {
     {
       title: 'Basic usage',
       description:
-        'Pass a model and expression string. The composable returns a ref with the live value.',
+        'Create an expression with rsx(...) and pass it to the composable.',
       code: vueBasicCode,
     },
     {
@@ -181,24 +165,39 @@ const doc: CoreConceptDoc = {
   ],
   related: [
     {
-      href: '/docs/frameworks/react',
-      title: 'React integration',
-      meta: 'Hooks for expression binding and model subscriptions',
+      href: 'https://vuejs.org',
+      title: 'Vue official website',
+      meta: 'Docs, guides, and Vue ecosystem',
     },
     {
-      href: '/docs/frameworks/angular',
-      title: 'Angular integration',
-      meta: 'RsxPipe for template bindings',
+      href: '/docs',
+      title: 'Docs overview',
+      meta: 'Core concepts and API reference',
     },
     {
-      href: '/docs/core-concepts/member-expressions',
-      title: 'Member expressions',
-      meta: 'Nested access and indexed member tracking',
+      href: '/docs/core-concepts/first-expression',
+      title: 'First expression',
+      meta: 'Bind expressions and subscribe to changes',
     },
     {
-      href: '/docs/collections',
-      title: 'Collections',
-      meta: 'Array/Map/Set tracking patterns',
+      href: '/docs/core-concepts/cli',
+      title: 'CLI',
+      meta: 'Install, setup, build, and typecheck workflows',
+    },
+    {
+      href: '/docs/core-concepts/compiler',
+      title: 'Compiler',
+      meta: 'Build-time parsing, validation, and compiled expressions',
+    },
+    {
+      href: '/docs/core-concepts/batching-transactions',
+      title: 'Batching transactions',
+      meta: 'Group updates and emit once',
+    },
+    {
+      href: '/docs/core-concepts/performance',
+      title: 'Performance',
+      meta: 'Parsing, binding, update costs, and memory',
     },
   ],
 };

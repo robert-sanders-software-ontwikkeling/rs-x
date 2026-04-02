@@ -39,6 +39,58 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE_URL}/about`, priority: 0.5, changeFrequency: 'monthly' },
     { url: `${BASE_URL}/sponsor`, priority: 0.4, changeFrequency: 'monthly' },
 
+    // SEO landing pages
+    {
+      url: `${BASE_URL}/react`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/vue`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/angular`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/rxjs`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/nodejs`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/typescript`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/javascript`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/reactivity`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/change-detection`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/spa-frameworks`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+
     // Core concepts
     {
       url: `${BASE_URL}/docs/core-concepts/first-expression`,

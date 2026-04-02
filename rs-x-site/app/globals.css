@@ -863,6 +863,7 @@ html[data-theme='dark'] .headerGetStartedCta:hover {
   flex-wrap: wrap;
   gap: var(--sp-2);
   margin-top: var(--sp-4);
+  margin-bottom: var(--sp-4);
 }
 
 .cardNote {
@@ -1938,6 +1939,10 @@ html[data-theme='dark'] .homePage .hTitle {
 ========================================================= */
 .toolingSection {
   padding: var(--sp-9) 0 var(--sp-10);
+}
+
+.seoGlossarySection {
+  margin-top: var(--sp-8);
 }
 
 .toolingShell {
@@ -3311,6 +3316,19 @@ html[data-theme='dark'] .docsApiSection .advancedTopicList {
 .docsApiSection .comparisonTable tbody td:first-child {
   color: var(--docs-table-key);
   font-weight: 640;
+}
+
+.docsApiSection .docsBulletList {
+  margin: var(--sp-4) 0 var(--sp-6);
+  padding-left: var(--sp-6);
+  color: var(--docs-body);
+  line-height: 1.7;
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.docsApiSection .docsBulletList li {
+  margin: 0;
 }
 
 .docsTable {

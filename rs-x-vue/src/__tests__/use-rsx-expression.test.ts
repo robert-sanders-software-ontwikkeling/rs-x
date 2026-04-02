@@ -1,19 +1,31 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { effectScope, nextTick, reactive } from 'vue';
 
-import type { IExpression } from '@rs-x/expression-parser';
+import { InjectionContainer } from '@rs-x/core';
+import {
+  type IExpression,
+  rsx,
+  RsXExpressionParserModule,
+} from '@rs-x/expression-parser';
 
-import { getExpressionFactory } from '../expression.factory';
 import { useRsxExpression } from '../hooks/use-rsx-expression';
 
 describe('useRsxExpression (Vue)', () => {
-  it('binds a string expression and updates when the model changes', async () => {
+  beforeEach(() => {
+    InjectionContainer.load(RsXExpressionParserModule);
+  });
+
+  afterEach(() => {
+    InjectionContainer.unload(RsXExpressionParserModule);
+  });
+  it('binds an rsx expression and updates when the model changes', async () => {
     const model = reactive({ x: 2, y: 3 });
+    const expr = rsx<number>('x + y')(model);
     const scope = effectScope();
     let valueRef: ReturnType<typeof useRsxExpression<number>> | undefined;
 
     scope.run(() => {
-      valueRef = useRsxExpression<number>('x + y', { model });
+      valueRef = useRsxExpression<number>(expr);
     });
 
     await nextTick();
@@ -29,8 +41,7 @@ describe('useRsxExpression (Vue)', () => {
 
   it('does not dispose a pre-built expression', async () => {
     const model = reactive({ x: 1, y: 4 });
-    const factory = getExpressionFactory();
-    const expr = factory.create<number>(model, 'x + y') as IExpression<number>;
+    const expr = rsx<number>('x + y')(model) as IExpression<number>;
 
     const scope = effectScope();
     let valueRef: ReturnType<typeof useRsxExpression<number>> | undefined;

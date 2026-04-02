@@ -13,12 +13,26 @@ export const metadata: Metadata = {
     template: '%s | rs-x',
   },
   description:
-    'rs-x is a JavaScript/TypeScript library for declarative reactivity: bind expressions to a model and updates propagate automatically — no compilation step required.',
+    'rs-x is a JavaScript/TypeScript library for declarative reactivity: bind expressions to a model and updates propagate automatically — no compilation step required. Works with React, Vue, and Angular, and pairs naturally with RxJS and Node.js.',
+  keywords: [
+    'reactivity',
+    'change detection',
+    'reactive expressions',
+    'react',
+    'vue',
+    'angular',
+    'rxjs',
+    'nodejs',
+    'spa framework',
+    'typescript',
+    'javascript',
+    'state management',
+  ],
   metadataBase: new URL('https://rsxjs.com'),
   openGraph: {
     title: 'rs-x — Declarative reactivity for JavaScript & TypeScript',
     description:
-      'Bind expressions to a model. rs-x builds fine-grained dependencies and propagates updates automatically — no compilation step required.',
+      'Bind expressions to a model. rs-x builds fine-grained dependencies and propagates updates automatically — no compilation step required. Works with React, Vue, and Angular, and pairs naturally with RxJS and Node.js.',
     url: 'https://rsxjs.com',
     siteName: 'rs-x',
     locale: 'en_US',
@@ -36,7 +50,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'rs-x — Declarative reactivity for JavaScript & TypeScript',
     description:
-      'Bind expressions to a model. rs-x builds fine-grained dependencies and propagates updates automatically.',
+      'Bind expressions to a model. rs-x builds fine-grained dependencies and propagates updates automatically for React, Vue, and Angular, plus RxJS and Node.js.',
     images: ['/opengraph-image.png'],
   },
   robots: {
@@ -88,13 +102,35 @@ export default function RootLayout({
                   operatingSystem: 'Any',
                   url: 'https://rsxjs.com',
                   description:
-                    'A JavaScript/TypeScript library for declarative reactivity: bind expressions to a model and updates propagate automatically — no compilation step required.',
+                    'A JavaScript/TypeScript library for declarative reactivity: bind expressions to a model and updates propagate automatically — no compilation step required. Works with React, Vue, and Angular, and pairs naturally with RxJS and Node.js.',
+                  keywords:
+                    'reactivity, change detection, reactive expressions, react, vue, angular, rxjs, nodejs, spa framework, typescript, javascript',
                   offers: {
                     '@type': 'Offer',
                     price: '0',
                     priceCurrency: 'USD',
                   },
                   publisher: { '@id': 'https://rsxjs.com/#organization' },
+                },
+                {
+                  '@type': 'SoftwareSourceCode',
+                  '@id': 'https://rsxjs.com/#source',
+                  name: 'rs-x',
+                  codeRepository:
+                    'https://github.com/robert-sanders-software-ontwikkeling/rs-x',
+                  programmingLanguage: ['TypeScript', 'JavaScript'],
+                  runtimePlatform: [
+                    'React',
+                    'Vue',
+                    'Angular',
+                    'RxJS',
+                    'Node.js',
+                  ],
+                  license:
+                    'https://github.com/robert-sanders-software-ontwikkeling/rs-x/blob/main/LICENSE',
+                  keywords:
+                    'reactivity, change detection, reactive expressions, react, vue, angular, rxjs, nodejs, spa framework, typescript, javascript',
+                  isPartOf: { '@id': 'https://rsxjs.com/#software' },
                 },
                 {
                   '@type': 'WebSite',

@@ -1,4 +1,7 @@
+import { useEffect, useRef } from 'react';
+
 import { truePredicate, Type, UnsupportedException } from '@rs-x/core';
+import { type IExpression, rsx } from '@rs-x/expression-parser';
 
 import { useRsxExpression } from './use-rsx-expression';
 
@@ -9,8 +12,38 @@ export function useRsxModel<
   TRsolvedModel extends object,
 >(model: TModel, mustWath?: FieldFilter): TRsolvedModel {
   const resolvedModel = {};
+  const expressionCacheRef = useRef(
+    new WeakMap<object, Map<string, IExpression<unknown>>>(),
+  );
 
   const _mustWath = mustWath ?? truePredicate;
+
+  useEffect(() => {
+    return () => {
+      expressionCacheRef.current = new WeakMap();
+    };
+  }, [model]);
+
+  const getOrCreateExpression = (
+    parent: object,
+    field: string,
+  ): IExpression<unknown> => {
+    const cache = expressionCacheRef.current;
+    let fieldMap = cache.get(parent);
+    if (!fieldMap) {
+      fieldMap = new Map();
+      cache.set(parent, fieldMap);
+    }
+
+    let expression = fieldMap.get(field);
+    if (!expression) {
+      expression = rsx(field)(parent);
+      fieldMap.set(field, expression);
+    }
+
+    return expression;
+  };
+
   Type.walkObjectTopToBottom(
     model,
     (parent, field, value) => {
@@ -30,7 +63,7 @@ export function useRsxModel<
 
       resolvedModel[field] = Type.isPlainObject(value)
         ? useRsxModel(value as object, mustWath)
-        : useRsxExpression(field, { model: parent });
+        : useRsxExpression(getOrCreateExpression(parent, field));
     },
     false,
   );

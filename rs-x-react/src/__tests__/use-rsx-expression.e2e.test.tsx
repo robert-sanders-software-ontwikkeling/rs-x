@@ -1,21 +1,22 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { type IExpression } from '@rs-x/expression-parser';
-import { type IIndexWatchRule } from '@rs-x/state-manager';
+import { InjectionContainer } from '@rs-x/core';
+import {
+  type IExpression,
+  rsx,
+  RsXExpressionParserModule,
+} from '@rs-x/expression-parser';
 
-import { getExpressionFactory } from '../expression.factory';
 import { useRsxExpression } from '../hooks/use-rsx-expression';
 
 // Component binding a real RS-X expression
 const TestComponent: React.FC<{
-  model: { x: number; r: number };
-  expression: string | IExpression;
-  leafWatchRule?: IIndexWatchRule;
-}> = ({ model, expression, leafWatchRule }) => {
-  const result = useRsxExpression<number>(expression, { model, leafWatchRule });
+  expression: IExpression;
+}> = ({ expression }) => {
+  const result = useRsxExpression<number>(expression);
 
   return (
     <div>
@@ -29,7 +30,8 @@ const TestComponentWithRepeater: React.FC<{
     numbers: Promise<number[]>;
   };
 }> = ({ model }) => {
-  const items = useRsxExpression<number[]>('numbers', { model });
+  const expr = React.useMemo(() => rsx<number[]>('numbers')(model), [model]);
+  const items = useRsxExpression<number[]>(expr);
 
   return (
     <div>
@@ -43,6 +45,13 @@ const TestComponentWithRepeater: React.FC<{
 };
 
 describe('useRsxExpression E2E (real RS-X)', () => {
+  beforeEach(() => {
+    InjectionContainer.load(RsXExpressionParserModule);
+  });
+
+  afterEach(() => {
+    InjectionContainer.unload(RsXExpressionParserModule);
+  });
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -81,11 +90,11 @@ describe('useRsxExpression E2E (real RS-X)', () => {
     });
   });
 
-  it('computes expression and updates when model changes: using expression string', async () => {
+  it('computes expression and updates when model changes: using rsx', async () => {
     const model = { x: 3, r: 5 };
-    const expressionString = 'r * x * (1 - x)';
+    const expr = rsx('r * x * (1 - x)')(model);
 
-    render(<TestComponent model={model} expression={expressionString} />);
+    render(<TestComponent expression={expr} />);
 
     const resultDiv = screen.getByTestId('result');
     expect(resultDiv.textContent).toBe('-30'); // 5*3*(1-3)
@@ -103,11 +112,9 @@ describe('useRsxExpression E2E (real RS-X)', () => {
 
   it('computes expression and updates when model changes: using expression tree', async () => {
     const model = { x: 3, r: 5 };
-    const expressionString = 'r * x * (1 - x)';
-    const factory = getExpressionFactory();
-    const exprInstance = factory.create(model, expressionString);
+    const exprInstance = rsx('r * x * (1 - x)')(model);
 
-    render(<TestComponent model={model} expression={exprInstance} />);
+    render(<TestComponent expression={exprInstance} />);
 
     const resultDiv = screen.getByTestId('result');
 
@@ -124,57 +131,27 @@ describe('useRsxExpression E2E (real RS-X)', () => {
     });
   });
 
-  it('recreates expression tree if expression string changes', async () => {
-    const user = userEvent.setup();
-    const model = { x: 2, r: 3 };
-
-    const Wrapper: React.FC = () => {
-      const [expr, setExpr] = React.useState('r * x');
-      return (
-        <>
-          <button
-            data-testid="change-expression"
-            onClick={() => setExpr('r + x')}
-          >
-            Change Expression
-          </button>
-          <TestComponent model={model} expression={expr} />
-        </>
-      );
-    };
-
-    render(<Wrapper />);
-
-    const resultDiv = screen.getByTestId('result');
-    const btn = screen.getByTestId('change-expression');
-
-    expect(resultDiv.textContent).toBe('6'); // 2*3
-    await user.click(btn);
-    expect(resultDiv.textContent).toBe('5'); // 2+3
-  });
-
   it('recreates expression tree if expression changes', async () => {
     const user = userEvent.setup();
     const model = { x: 2, r: 3 };
 
     const Wrapper: React.FC = () => {
-      const [expr, setExpr] = React.useState<string | IExpression>('r * x');
+      const [expr, setExpr] = React.useState<IExpression>(rsx('r * x')(model));
       return (
         <>
           <button
             data-testid="change-expression"
-            onClick={() =>
-              setExpr(getExpressionFactory().create(model, 'r + x'))
-            }
+            onClick={() => setExpr(rsx('r + x')(model))}
           >
             Change Expression
           </button>
-          <TestComponent model={model} expression={expr} />
+          <TestComponent expression={expr} />
         </>
       );
     };
 
     render(<Wrapper />);
+
     const resultDiv = screen.getByTestId('result');
     const btn = screen.getByTestId('change-expression');
 
@@ -188,6 +165,7 @@ describe('useRsxExpression E2E (real RS-X)', () => {
 
     const Wrapper: React.FC = () => {
       const [model, setModel] = React.useState({ x: 1, r: 2 });
+      const expr = React.useMemo(() => rsx('r * x')(model), [model]);
       return (
         <>
           <button
@@ -196,7 +174,7 @@ describe('useRsxExpression E2E (real RS-X)', () => {
           >
             Change Model
           </button>
-          <TestComponent model={model} expression="r * x" />
+          <TestComponent expression={expr} />
         </>
       );
     };
@@ -210,33 +188,12 @@ describe('useRsxExpression E2E (real RS-X)', () => {
     expect(resultDiv.textContent).toBe('20'); // 5*4
   });
 
-  it('disposes expression tree on unmount if created by hook', async () => {
+  it('does not dispose expressions automatically', async () => {
     const model = { x: 1, r: 1 };
-    const expressionString = 'r * x';
-
-    const factory = getExpressionFactory();
-    const exprInstance = factory.create(model, expressionString);
-    const disposeSpy = vi.spyOn(exprInstance, 'dispose');
-
-    vi.spyOn(factory, 'create').mockReturnValue(exprInstance);
-
-    const { unmount } = render(
-      <TestComponent model={model} expression={expressionString} />,
-    );
-
-    expect(disposeSpy).not.toHaveBeenCalled();
-    unmount();
-    expect(disposeSpy).toHaveBeenCalled();
-  });
-
-  it('does NOT dispose external expression tree on unmount', async () => {
-    const model = { x: 1, r: 1 };
-    const expr = getExpressionFactory().create(model, 'r * x');
+    const expr = rsx('r * x')(model);
     const disposeSpy = vi.spyOn(expr, 'dispose');
 
-    const Wrapper: React.FC = () => (
-      <TestComponent model={model} expression={expr} />
-    );
+    const Wrapper: React.FC = () => <TestComponent expression={expr} />;
 
     const { unmount } = render(<Wrapper />);
     unmount();

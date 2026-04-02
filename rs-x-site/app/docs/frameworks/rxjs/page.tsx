@@ -7,6 +7,11 @@ import {
 } from '../../core-concepts/_template/core-concept-page';
 
 const installCode = dedent`
+  # CLI (recommended)
+  npx rsx init
+  npm install rxjs
+
+  # Manual
   npm install @rs-x/core @rs-x/state-manager @rs-x/expression-parser rxjs
 `;
 
@@ -30,12 +35,37 @@ const rxjsBasicCode = dedent`
   model.price.next(120); // logs "total: 360"
 `;
 
+const rxjsBasicPlaygroundScript = dedent`
+  const $ = rxjs;
+
+  const model = {
+    price: new $.BehaviorSubject(100),
+    quantity: 2,
+  };
+
+  // Observable values participate in expressions like normal fields
+  const totalExpr = rsx('price * quantity')(model);
+
+  totalExpr.changed.subscribe(() => {
+    console.log('total:', totalExpr.value);
+  });
+
+  model.quantity = 3; // logs "total: 300"
+  model.price.next(120); // logs "total: 360"
+
+  return totalExpr;
+`;
+
 const rxjsNestedCode = dedent`
   import { BehaviorSubject } from 'rxjs';
   import { rsx } from '@rs-x/expression-parser';
 
+  // Observable that emits objects which contain Observables
   const model = {
-    cart: [{ price: new BehaviorSubject(10) }, { price: new BehaviorSubject(20) }],
+    cart: new BehaviorSubject([
+      { price: new BehaviorSubject(10) },
+      { price: new BehaviorSubject(20) },
+    ]),
   };
 
   const firstPrice = rsx<number>('cart[0].price')(model);
@@ -44,7 +74,29 @@ const rxjsNestedCode = dedent`
     console.log('first price:', firstPrice.value);
   });
 
-  model.cart[0].price.next(15); // logs "first price: 15"
+  model.cart.value[0].price.next(15); // logs "first price: 15"
+`;
+
+const rxjsNestedPlaygroundScript = dedent`
+  const $ = rxjs;
+
+  // Observable that emits objects which contain Observables
+  const model = {
+    cart: new $.BehaviorSubject([
+      { price: new $.BehaviorSubject(10) },
+      { price: new $.BehaviorSubject(20) },
+    ]),
+  };
+
+  const firstPrice = rsx('cart[0].price')(model);
+
+  firstPrice.changed.subscribe(() => {
+    console.log('first price:', firstPrice.value);
+  });
+
+  model.cart.value[0].price.next(15); // logs "first price: 15"
+
+  return firstPrice;
 `;
 
 const doc: CoreConceptDoc = {
@@ -65,11 +117,14 @@ const doc: CoreConceptDoc = {
       description:
         'Observable values participate in expressions like normal fields.',
       code: rxjsBasicCode,
+      playgroundScript: rxjsBasicPlaygroundScript,
     },
     {
       title: 'Nested Observable values',
-      description: 'Bind to nested Observable properties inside array entries.',
+      description:
+        'Observable emits array entries that themselves contain Observable properties.',
       code: rxjsNestedCode,
+      playgroundScript: rxjsNestedPlaygroundScript,
     },
     {
       title: 'Installation',
@@ -79,24 +134,39 @@ const doc: CoreConceptDoc = {
   ],
   related: [
     {
-      href: '/docs/core-concepts/async-operations',
-      title: 'Async operations',
-      meta: 'Promises and Observables in expressions',
+      href: 'https://rxjs.dev',
+      title: 'RxJS official website',
+      meta: 'API docs, guides, and RxJS resources',
     },
     {
-      href: '/docs/collections',
-      title: 'Collections',
-      meta: 'Array/Map/Set indexing and reactive updates',
+      href: '/docs',
+      title: 'Docs overview',
+      meta: 'Core concepts and API reference',
     },
     {
-      href: '/docs/frameworks/react',
-      title: 'React integration',
-      meta: 'Hook-based bindings for expressions',
+      href: '/docs/core-concepts/first-expression',
+      title: 'First expression',
+      meta: 'Bind expressions and subscribe to changes',
     },
     {
-      href: '/docs/frameworks/angular',
-      title: 'Angular integration',
-      meta: 'RsxPipe for templates',
+      href: '/docs/core-concepts/cli',
+      title: 'CLI',
+      meta: 'Install, setup, build, and typecheck workflows',
+    },
+    {
+      href: '/docs/core-concepts/compiler',
+      title: 'Compiler',
+      meta: 'Build-time parsing, validation, and compiled expressions',
+    },
+    {
+      href: '/docs/core-concepts/batching-transactions',
+      title: 'Batching transactions',
+      meta: 'Group updates and emit once',
+    },
+    {
+      href: '/docs/core-concepts/performance',
+      title: 'Performance',
+      meta: 'Parsing, binding, update costs, and memory',
     },
   ],
 };

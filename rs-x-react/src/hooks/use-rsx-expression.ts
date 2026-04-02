@@ -1,45 +1,14 @@
 import { useLayoutEffect, useMemo, useState } from 'react';
 
-import { ArgumentException, Type } from '@rs-x/core';
 import { AbstractExpression, type IExpression } from '@rs-x/expression-parser';
-import { type IIndexWatchRule } from '@rs-x/state-manager';
 
-import { getExpressionFactory } from '../expression.factory';
-
-export interface IUseRsxExpressionOptions {
-  model?: object;
-  leafWatchRule?: IIndexWatchRule;
-}
-
-export function useRsxExpression<T>(
-  expression: string | IExpression<T>,
-  options?: IUseRsxExpressionOptions,
-): T | null {
-  const { model, leafWatchRule } = options || {};
-  if (Type.isString(expression) && !model) {
-    throw new ArgumentException(
-      'model is required when expression is a string',
-    );
-  }
-  const { expressionTree, ownsExpression } = useMemo(() => {
-    if (Type.isString(expression)) {
-      const factory = getExpressionFactory();
-      return {
-        expressionTree: factory.create<T>(
-          model as object,
-          expression,
-          leafWatchRule,
-        ),
-        ownsExpression: true,
-      };
-    }
+export function useRsxExpression<T>(expression: IExpression<T>): T | null {
+  const expressionTree = useMemo(() => {
     if (expression instanceof AbstractExpression) {
-      return { expressionTree: expression, ownsExpression: false };
+      return expression;
     }
-    throw new Error(
-      'useRsxExpression: expression must be a string or an IExpression',
-    );
-  }, [expression, model, leafWatchRule]);
+    throw new Error('useRsxExpression: expression must be an IExpression');
+  }, [expression]);
 
   const [value, setValue] = useState<T | null>(() => {
     if (expressionTree.value !== undefined) {
@@ -68,11 +37,8 @@ export function useRsxExpression<T>(
 
     return () => {
       changedSubscription.unsubscribe();
-      if (ownsExpression) {
-        expressionTree.dispose(); // only dispose if we created it
-      }
     };
-  }, [expressionTree, ownsExpression]); // recreate if expression string or model changes
+  }, [expressionTree]); // recreate if expression changes
 
   return value;
 }

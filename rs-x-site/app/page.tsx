@@ -1,8 +1,31 @@
 import dedent from 'dedent';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { HeroGraphic } from '../components/HeroGraphic';
 import { SyntaxCodeBlock } from '../components/SyntaxCodeBlock';
+
+export const metadata: Metadata = {
+  title: 'rs-x — Fine-grained reactivity for TypeScript & JavaScript',
+  description:
+    'rs-x brings fine-grained change detection to React, Vue, and Angular, and pairs naturally with RxJS and Node.js. Bind expressions to your model and let updates propagate automatically.',
+  keywords: [
+    'reactivity',
+    'change detection',
+    'fine-grained reactivity',
+    'react',
+    'vue',
+    'angular',
+    'rxjs',
+    'nodejs',
+    'spa framework',
+    'typescript',
+    'javascript',
+  ],
+  alternates: {
+    canonical: '/',
+  },
+};
 
 const codeExample = dedent`
   import { rsx } from '@rs-x/expression-parser';
@@ -69,6 +92,13 @@ export default function HomePage() {
                 Strongly typed, declarative reactivity for runtime-bound
                 expressions. Bind an expression to a model, and RS-X
                 automatically tracks fine-grained dependencies.
+              </p>
+              <p className="hSub">
+                Works with modern SPA frameworks: React, Vue, and Angular. Pairs
+                naturally with RxJS for streams and reactive state. Ideal for
+                apps that need fast change detection and predictable reactive
+                updates in TypeScript and JavaScript. Also works great in
+                Node.js services.
               </p>
 
               <div className="heroActions">
@@ -231,6 +261,104 @@ export default function HomePage() {
                 </div>
               </article>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="frameworksSection" aria-labelledby="frameworks-title">
+        <div className="container">
+          <header className="toolingHeader">
+            <h2 id="frameworks-title" className="toolingTitle">
+              Framework-ready reactivity
+            </h2>
+            <p className="toolingLead">
+              rs-x delivers fine-grained change detection across React, Vue, and
+              Angular, while pairing naturally with RxJS and Node.js — ideal for
+              SPA frameworks and backend services that need precise, type-safe
+              updates.
+            </p>
+          </header>
+
+          <div className="toolingCards">
+            <article className="toolingCard">
+              <div className="toolingCardBody">
+                <h3 className="toolingCardTitle">React</h3>
+                <p className="toolingCardText">
+                  Use RS-X hooks to bind expressions directly in React
+                  components with minimal boilerplate.
+                </p>
+                <Link
+                  className="btn btnGhost toolingCardCta"
+                  href="/docs/frameworks/react"
+                >
+                  React integration <span aria-hidden="true">→</span>
+                </Link>
+              </div>
+            </article>
+
+            <article className="toolingCard">
+              <div className="toolingCardBody">
+                <h3 className="toolingCardTitle">Vue</h3>
+                <p className="toolingCardText">
+                  Leverage the @rs-x/vue composable for reactive expressions and
+                  clean change detection in Vue apps.
+                </p>
+                <Link
+                  className="btn btnGhost toolingCardCta"
+                  href="/docs/frameworks/vue"
+                >
+                  Vue integration <span aria-hidden="true">→</span>
+                </Link>
+              </div>
+            </article>
+
+            <article className="toolingCard">
+              <div className="toolingCardBody">
+                <h3 className="toolingCardTitle">Angular</h3>
+                <p className="toolingCardText">
+                  Bind expressions with the rsx pipe and keep Angular templates
+                  reactive and predictable.
+                </p>
+                <Link
+                  className="btn btnGhost toolingCardCta"
+                  href="/docs/frameworks/angular"
+                >
+                  Angular integration <span aria-hidden="true">→</span>
+                </Link>
+              </div>
+            </article>
+
+            <article className="toolingCard">
+              <div className="toolingCardBody">
+                <h3 className="toolingCardTitle">RxJS</h3>
+                <p className="toolingCardText">
+                  Combine rxjs streams with rs-x expressions for reactive data
+                  flows and efficient updates.
+                </p>
+                <Link
+                  className="btn btnGhost toolingCardCta"
+                  href="/docs/frameworks/rxjs"
+                >
+                  RxJS integration <span aria-hidden="true">→</span>
+                </Link>
+              </div>
+            </article>
+
+            <article className="toolingCard">
+              <div className="toolingCardBody">
+                <h3 className="toolingCardTitle">Node.js</h3>
+                <p className="toolingCardText">
+                  Use rs-x in Node.js services for reactive data pipelines,
+                  model binding, and predictable change propagation.
+                </p>
+                <Link
+                  className="btn btnGhost toolingCardCta"
+                  href="/get-started"
+                >
+                  Node.js setup <span aria-hidden="true">→</span>
+                </Link>
+              </div>
+            </article>
           </div>
         </div>
       </section>

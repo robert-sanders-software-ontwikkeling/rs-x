@@ -2,13 +2,29 @@ import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { UnsupportedException } from '@rs-x/core';
+import type * as ExpressionParser from '@rs-x/expression-parser';
 
 import { useRsxExpression } from '../hooks/use-rsx-expression';
 import { useRsxModel } from '../hooks/use-rsx-model';
 
 vi.mock('../hooks/use-rsx-expression');
+vi.mock('@rs-x/expression-parser', async () => {
+  const actual = await vi.importActual<ExpressionParser>(
+    '@rs-x/expression-parser',
+  );
+  return {
+    ...actual,
+    rsx: (expressionString: string) => (model: Record<string, unknown>) =>
+      ({
+        expressionString,
+        value: model[expressionString],
+        changed: { subscribe: () => ({ unsubscribe: () => {} }) },
+      }) as unknown,
+  };
+});
 
 describe('useRsxForm', () => {
+  type IExpression = ExpressionParser.IExpression;
   beforeEach(() => {
     vi.resetAllMocks();
   });
@@ -33,7 +49,7 @@ describe('useRsxForm', () => {
   it('resolves plain fields and ignores methods and arrow functions', () => {
     // Arrange
     (useRsxExpression as unknown as vi.Mock).mockImplementation(
-      (field: string, { model }: { model: object }) => model[field],
+      (expression: IExpression) => expression.value,
     );
 
     const model = {
@@ -57,8 +73,12 @@ describe('useRsxForm', () => {
     });
 
     expect(useRsxExpression).toHaveBeenCalledTimes(2);
-    expect(useRsxExpression).toHaveBeenCalledWith('name', { model });
-    expect(useRsxExpression).toHaveBeenCalledWith('age', { model });
+    expect(useRsxExpression).toHaveBeenCalledWith(
+      expect.objectContaining({ value: 'Alice' }),
+    );
+    expect(useRsxExpression).toHaveBeenCalledWith(
+      expect.objectContaining({ value: 30 }),
+    );
   });
 
   it('calls useRsxExpression for all plain object fields', () => {
@@ -70,18 +90,18 @@ describe('useRsxForm', () => {
     renderHook(() => useRsxModel(form));
 
     // All fields should be watched
-    expect(useRsxExpression).toHaveBeenCalledWith('age', {
-      model: form.customer,
-    });
-    expect(useRsxExpression).toHaveBeenCalledWith('income', {
-      model: form.customer,
-    });
-    expect(useRsxExpression).toHaveBeenCalledWith('score', {
-      model: form.credit,
-    });
-    expect(useRsxExpression).toHaveBeenCalledWith('outstandingDebt', {
-      model: form.credit,
-    });
+    expect(useRsxExpression).toHaveBeenCalledWith(
+      expect.objectContaining({ value: 30 }),
+    );
+    expect(useRsxExpression).toHaveBeenCalledWith(
+      expect.objectContaining({ value: 5000 }),
+    );
+    expect(useRsxExpression).toHaveBeenCalledWith(
+      expect.objectContaining({ value: 700 }),
+    );
+    expect(useRsxExpression).toHaveBeenCalledWith(
+      expect.objectContaining({ value: 2000 }),
+    );
   });
 
   it('returns resolved model with nested structure and reactive leaves', () => {
@@ -91,8 +111,7 @@ describe('useRsxForm', () => {
     };
 
     (useRsxExpression as unknown as vi.Mock).mockImplementation(
-      (field: string, { model }: { model: Record<string, unknown> }) =>
-        model[field],
+      (expression: IExpression) => expression.value,
     );
 
     const { result } = renderHook(() => useRsxModel(form));
@@ -114,8 +133,14 @@ describe('useRsxForm', () => {
 
     renderHook(() => useRsxModel(form, mustWatch));
 
-    expect(useRsxExpression).toHaveBeenCalledWith('a', { model: form });
-    expect(useRsxExpression).not.toHaveBeenCalledWith('b', { model: form });
-    expect(useRsxExpression).toHaveBeenCalledWith('c', { model: form });
+    expect(useRsxExpression).toHaveBeenCalledWith(
+      expect.objectContaining({ value: 1 }),
+    );
+    expect(useRsxExpression).not.toHaveBeenCalledWith(
+      expect.objectContaining({ value: 2 }),
+    );
+    expect(useRsxExpression).toHaveBeenCalledWith(
+      expect.objectContaining({ value: 3 }),
+    );
   });
 });
