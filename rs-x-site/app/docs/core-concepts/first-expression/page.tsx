@@ -68,8 +68,7 @@ const optionsUsageCode = dedent`
 
 export const metadata: Metadata = {
   title: 'Create your first expression',
-  description:
-    'Guide: declare an expression, bind a model, react to changes.',
+  description: 'Guide: declare an expression, bind a model, react to changes.',
 };
 
 export default function FirstExpressionPage() {
@@ -151,7 +150,10 @@ export default function FirstExpressionPage() {
             </li>
             <li>
               Cleanup when done:
-              <span className="codeInline"> subscription.unsubscribe(); sum.dispose(); </span>
+              <span className="codeInline">
+                {' '}
+                subscription.unsubscribe(); sum.dispose();{' '}
+              </span>
             </li>
           </ul>
         </article>
@@ -160,8 +162,8 @@ export default function FirstExpressionPage() {
           <h2 className="cardTitle">When to use options</h2>
           <p className="cardText">
             In most cases you keep using:
-            <span className="codeInline"> rsx(&apos;a + b&apos;)(model) </span>
-            . Add options only when you need build-time optimization behavior.
+            <span className="codeInline"> rsx(&apos;a + b&apos;)(model) </span>.
+            Add options only when you need build-time optimization behavior.
           </p>
           <div className="tableWrap">
             <table className="docsTable">
@@ -177,29 +179,58 @@ export default function FirstExpressionPage() {
                   <td>
                     <span className="codeInline">leafIndexWatchRule</span>
                   </td>
-                  <td>You need custom runtime tracking behavior for leaf nodes</td>
-                  <td><span className="codeInline">rsx(...)(model, leafIndexWatchRule?)</span></td>
+                  <td>
+                    You need custom runtime tracking behavior for leaf nodes
+                  </td>
+                  <td>
+                    <span className="codeInline">
+                      rsx(...)(model, leafIndexWatchRule?)
+                    </span>
+                  </td>
                 </tr>
                 <tr>
                   <td>
                     <span className="codeInline">preparse</span>
                   </td>
-                  <td>Parse this expression at compile time so runtime parser work is skipped</td>
-                  <td>Second argument of the declaration call: <span className="codeInline">rsx(expression, {`{ preparse }`})</span></td>
+                  <td>
+                    Parse this expression at compile time so runtime parser work
+                    is skipped
+                  </td>
+                  <td>
+                    Second argument of the declaration call:{' '}
+                    <span className="codeInline">
+                      rsx(expression, {`{ preparse }`})
+                    </span>
+                  </td>
                 </tr>
                 <tr>
                   <td>
                     <span className="codeInline">lazy</span>
                   </td>
-                  <td>Load this expression cache entry only when it is first used</td>
-                  <td>Second argument of the declaration call: <span className="codeInline">rsx(expression, {`{ lazy }`})</span></td>
+                  <td>
+                    Load this expression cache entry only when it is first used
+                  </td>
+                  <td>
+                    Second argument of the declaration call:{' '}
+                    <span className="codeInline">
+                      rsx(expression, {`{ lazy }`})
+                    </span>
+                  </td>
                 </tr>
                 <tr>
                   <td>
                     <span className="codeInline">compiled</span>
                   </td>
-                  <td>Enable/disable compiled-plan generation for this expression site (default true)</td>
-                  <td>Second argument of the declaration call: <span className="codeInline">rsx(expression, {`{ compiled }`})</span></td>
+                  <td>
+                    Enable/disable compiled-plan generation for this expression
+                    site (default true)
+                  </td>
+                  <td>
+                    Second argument of the declaration call:{' '}
+                    <span className="codeInline">
+                      rsx(expression, {`{ compiled }`})
+                    </span>
+                  </td>
                 </tr>
               </tbody>
             </table>

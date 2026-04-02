@@ -15,7 +15,10 @@ const maxCount = readPositiveIntegerEnv('RSX_BENCHMARK_MAX_COUNT', 20000);
 const iterations = readPositiveIntegerEnv('RSX_BENCHMARK_ITERATIONS', 5);
 const warmupCount = readPositiveIntegerEnv('RSX_BENCHMARK_WARMUP_COUNT', 500);
 
-const expressionStrings = generatedBenchmarkExpressionStrings.slice(0, maxCount);
+const expressionStrings = generatedBenchmarkExpressionStrings.slice(
+  0,
+  maxCount,
+);
 if (expressionStrings.length === 0) {
   throw new Error('No benchmark expressions found.');
 }
@@ -25,7 +28,9 @@ const warmupExpressions = expressionStrings.slice(
   Math.min(warmupCount, expressionStrings.length),
 );
 
-const warmupCompiler = new CompiledExpressionCompiler(new JsExpressionAstParser());
+const warmupCompiler = new CompiledExpressionCompiler(
+  new JsExpressionAstParser(),
+);
 for (let i = 0; i < warmupExpressions.length; i += 1) {
   warmupCompiler.tryCompile(warmupExpressions[i]);
 }

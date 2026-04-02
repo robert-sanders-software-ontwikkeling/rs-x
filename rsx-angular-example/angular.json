@@ -14,9 +14,7 @@
             "index": "src/index.html",
             "main": "src/main.ts",
             "tsConfig": "tsconfig.json",
-            "polyfills": [
-              "src/rsx-generated/rsx-aot-registration.generated.ts"
-            ]
+            "polyfills": ["src/rsx-generated/rsx-aot-registration.generated.ts"]
           }
         },
         "serve": {

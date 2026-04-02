@@ -12,6 +12,6 @@ export function createCompilerScaffold(): ICompilerScaffold {
   };
 }
 
+export * from './expression-aot-generator';
 export * from './expression-site-detector';
 export * from './expression-site-validator';
-export * from './expression-aot-generator';

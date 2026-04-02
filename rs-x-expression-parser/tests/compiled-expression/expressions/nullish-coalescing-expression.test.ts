@@ -55,7 +55,10 @@ describe('NullishCoalescingExpression tests', () => {
     const clonedExpression = expression.clone();
 
     try {
-      expectCompiledOrTreeInstanceOf(clonedExpression, NullishCoalescingExpression);
+      expectCompiledOrTreeInstanceOf(
+        clonedExpression,
+        NullishCoalescingExpression,
+      );
       expect(clonedExpression.type).toEqual(ExpressionType.NullishCoalescing);
       expect(clonedExpression.expressionString).toEqual('a ?? b');
 

@@ -1,10 +1,10 @@
 import { ExpressionCache } from '../../lib/expression-cache';
-import type { IExpressionEngineSelector } from '../../lib/expression-engine/expression-engine.interface';
-import { ExpressionType } from '../../lib/expressions';
 import {
   clearLazyExpressionPreloaders,
   registerLazyExpressionPreloader,
 } from '../../lib/expression-cache/lazy-expression-preload-registry';
+import type { IExpressionEngineSelector } from '../../lib/expression-engine/expression-engine.interface';
+import { ExpressionType } from '../../lib/expressions';
 import { ExpressionMock } from '../../lib/testing';
 
 describe('ExpressionCache', () => {
@@ -45,7 +45,7 @@ describe('ExpressionCache', () => {
     );
 
     cache.registerExpressionTree('a + b', precompiledExpression);
-    const result = cache.create('a + b');
+    const result = cache.create({ expressionString: 'a + b' });
 
     expect(expressionEngineSelector.create).not.toHaveBeenCalled();
     expect(precompiledExpression.clone).toHaveBeenCalledTimes(1);
@@ -71,8 +71,8 @@ describe('ExpressionCache', () => {
     } as unknown as IExpressionEngineSelector;
     const cache = new ExpressionCache(expressionEngineSelector);
 
-    const first = cache.create('a * b');
-    const second = cache.create('a * b');
+    const first = cache.create({ expressionString: 'a * b' });
+    const second = cache.create({ expressionString: 'a * b' });
 
     expect(expressionEngineSelector.create).toHaveBeenCalledTimes(1);
     expect(parsedExpression.clone).toHaveBeenCalledTimes(1);
@@ -109,8 +109,8 @@ describe('ExpressionCache', () => {
       cache.registerExpressionTree('a - b', precompiledExpression);
     });
 
-    const first = cache.create('a - b');
-    const second = cache.create('a - b');
+    const first = cache.create({ expressionString: 'a - b' });
+    const second = cache.create({ expressionString: 'a - b' });
 
     expect(loaderCalls).toBe(1);
     expect(expressionEngineSelector.create).not.toHaveBeenCalled();

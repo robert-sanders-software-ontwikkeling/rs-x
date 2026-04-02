@@ -47,7 +47,10 @@ describe('ConstantNumberExpression tests', () => {
     const clonedExpression = expression.clone();
 
     try {
-      expectCompiledOrTreeInstanceOf(clonedExpression, ConstantNumberExpression);
+      expectCompiledOrTreeInstanceOf(
+        clonedExpression,
+        ConstantNumberExpression,
+      );
       expect(clonedExpression.type).toEqual(ExpressionType.Number);
       expect(clonedExpression.expressionString).toEqual('100');
 

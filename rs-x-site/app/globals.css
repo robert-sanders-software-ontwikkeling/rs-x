@@ -97,12 +97,16 @@
   /* Page glow */
   --pageGlowA: rgba(11, 102, 255, 0.06);
   --pageGlowB: rgba(43, 182, 169, 0.05);
-  --hero-section-bg: linear-gradient(180deg,
-      rgba(255, 255, 255, 0.72),
-      rgba(255, 255, 255, 0.42));
-  --quickstart-section-bg: linear-gradient(180deg,
-      rgba(246, 248, 252, 0.88),
-      rgba(246, 248, 252, 0.78));
+  --hero-section-bg: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.72),
+    rgba(255, 255, 255, 0.42)
+  );
+  --quickstart-section-bg: linear-gradient(
+    180deg,
+    rgba(246, 248, 252, 0.88),
+    rgba(246, 248, 252, 0.78)
+  );
   --section-divider: rgba(10, 25, 55, 0.09);
 
   /* Code */
@@ -180,12 +184,16 @@ html[data-theme='dark'] {
 
   --pageGlowA: rgba(122, 182, 255, 0.1);
   --pageGlowB: rgba(73, 217, 200, 0.08);
-  --hero-section-bg: linear-gradient(180deg,
-      rgba(12, 18, 35, 0.56),
-      rgba(12, 18, 35, 0.24));
-  --quickstart-section-bg: linear-gradient(180deg,
-      rgba(7, 11, 20, 0.62),
-      rgba(7, 11, 20, 0.42));
+  --hero-section-bg: linear-gradient(
+    180deg,
+    rgba(12, 18, 35, 0.56),
+    rgba(12, 18, 35, 0.24)
+  );
+  --quickstart-section-bg: linear-gradient(
+    180deg,
+    rgba(7, 11, 20, 0.62),
+    rgba(7, 11, 20, 0.42)
+  );
   --section-divider: rgba(237, 242, 255, 0.1);
 
   --code-bg: rgba(122, 182, 255, 0.1);
@@ -992,7 +1000,7 @@ html[data-theme='dark'] .headerGetStartedCta:hover {
   padding-bottom: 0;
 }
 
-.docsLandingSection .docsApiNamespace+.docsApiNamespace {
+.docsLandingSection .docsApiNamespace + .docsApiNamespace {
   border-top: 0;
   padding-top: 0;
 }
@@ -1138,7 +1146,7 @@ html[data-theme='dark'] .docsLandingSection .docsCards .card {
   gap: var(--sp-2);
 }
 
-.docsApiLinkGrid>li {
+.docsApiLinkGrid > li {
   margin: 0;
 }
 
@@ -1157,7 +1165,7 @@ html[data-theme='dark'] .docsLandingSection .docsCards .card {
   gap: var(--sp-2);
 }
 
-.docsApiNamespace+.docsApiNamespace {
+.docsApiNamespace + .docsApiNamespace {
   padding-top: var(--sp-4);
   border-top: 1px solid var(--border-soft);
 }
@@ -1262,16 +1270,20 @@ html[data-theme='dark'] .docsLandingSection .docsCards .card {
 
 .docsMemberExamplesTabsHost::before {
   left: 0;
-  background: linear-gradient(90deg,
-      color-mix(in srgb, var(--surface-2) 92%, var(--surface-solid)),
-      transparent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--surface-2) 92%, var(--surface-solid)),
+    transparent
+  );
 }
 
 .docsMemberExamplesTabsHost::after {
   right: 0;
-  background: linear-gradient(270deg,
-      color-mix(in srgb, var(--surface-2) 92%, var(--surface-solid)),
-      transparent);
+  background: linear-gradient(
+    270deg,
+    color-mix(in srgb, var(--surface-2) 92%, var(--surface-solid)),
+    transparent
+  );
 }
 
 .docsMemberExamplesTabsHost.canScrollLeft::before {
@@ -1695,9 +1707,11 @@ html[data-theme='dark'] .docsLandingSection .docsCards .card {
   margin: 0 auto;
   box-shadow: var(--shadow-1);
   background:
-    linear-gradient(180deg,
+    linear-gradient(
+      180deg,
       color-mix(in srgb, var(--brand) 7%, transparent) 0%,
-      color-mix(in srgb, var(--brand) 0%, transparent) 22%),
+      color-mix(in srgb, var(--brand) 0%, transparent) 22%
+    ),
     linear-gradient(180deg, var(--surface), var(--surface-2));
 }
 
@@ -1919,6 +1933,113 @@ html[data-theme='dark'] .homePage .hTitle {
   color: color-mix(in srgb, var(--text) 90%, var(--muted));
 }
 
+/* =========================================================
+   Tooling Section (home page)
+========================================================= */
+.toolingSection {
+  padding: var(--sp-9) 0 var(--sp-10);
+}
+
+.toolingShell {
+  max-width: 1060px;
+  margin: 0 auto;
+}
+
+.toolingHeader {
+  margin-bottom: var(--sp-9);
+}
+
+.toolingTitle {
+  margin: 0 0 var(--sp-3);
+  font-size: clamp(1.72rem, 2.15vw, 2.02rem);
+  letter-spacing: -0.03em;
+  font-weight: 760;
+}
+
+.toolingLead {
+  margin: 0;
+  max-width: 58ch;
+  color: var(--muted);
+  font-size: var(--fs-2);
+  line-height: 1.62;
+}
+
+.toolingCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--sp-6);
+  align-items: stretch;
+}
+
+.toolingCard {
+  display: flex;
+  flex-direction: row;
+  gap: var(--sp-5);
+  align-items: stretch;
+  padding: var(--sp-7);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-xl);
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+  box-shadow: var(--shadow-1);
+}
+
+.toolingCardIcon {
+  flex-shrink: 0;
+  align-self: flex-start;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+  color: var(--brand);
+}
+
+.toolingCardBody {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.toolingCardTitle {
+  margin: 0 0 var(--sp-3);
+  font-size: clamp(1.08rem, 0.96vw, 1.18rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.toolingCardText {
+  margin: 0 0 var(--sp-4);
+  color: var(--muted);
+  font-size: 0.99rem;
+  line-height: 1.62;
+  flex: 1;
+}
+
+.toolingCardCta {
+  width: fit-content;
+}
+
+html[data-theme='dark'] .homePage .toolingCard {
+  border-color: color-mix(in srgb, var(--border-soft) 64%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-solid) 90%, var(--surface-2)),
+    color-mix(in srgb, var(--surface-2) 94%, var(--surface-solid))
+  );
+}
+
+html[data-theme='dark'] .homePage .toolingCardTitle {
+  color: color-mix(in srgb, var(--text) 82%, var(--muted));
+}
+
+html[data-theme='dark'] .homePage .toolingCardIcon {
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+}
+
 html[data-theme='dark'] .homePage .hSubhead {
   color: color-mix(in srgb, var(--text) 84%, var(--muted));
 }
@@ -1929,20 +2050,26 @@ html[data-theme='dark'] .homePage .heroCards .cardTitle {
 
 html[data-theme='dark'] .homePage .heroCards .card {
   border-color: color-mix(in srgb, var(--border-soft) 64%, transparent);
-  background: linear-gradient(180deg,
-      color-mix(in srgb, var(--surface-solid) 90%, var(--surface-2)),
-      color-mix(in srgb, var(--surface-2) 94%, var(--surface-solid)));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-solid) 90%, var(--surface-2)),
+    color-mix(in srgb, var(--surface-2) 94%, var(--surface-solid))
+  );
 }
 
 html[data-theme='dark'] .homePage .homeQuickstartSection .quickstartShell {
   border-color: color-mix(in srgb, var(--border-soft) 66%, transparent);
   background:
-    linear-gradient(180deg,
+    linear-gradient(
+      180deg,
       color-mix(in srgb, var(--brand) 5%, transparent) 0%,
-      color-mix(in srgb, var(--brand) 0%, transparent) 20%),
-    linear-gradient(180deg,
+      color-mix(in srgb, var(--brand) 0%, transparent) 20%
+    ),
+    linear-gradient(
+      180deg,
       color-mix(in srgb, var(--surface-solid) 90%, var(--surface-2)),
-      color-mix(in srgb, var(--surface-2) 96%, var(--surface-solid)));
+      color-mix(in srgb, var(--surface-2) 96%, var(--surface-solid))
+    );
 }
 
 html[data-theme='dark'] .homePage .qsStepCard,
@@ -2014,8 +2141,14 @@ html[data-theme='dark'] .docsApiSection .docsApiPackageTabLabel {
   color: color-mix(in srgb, var(--text) 56%, var(--muted));
 }
 
-html[data-theme='dark'] .docsLandingSection .docsApiPackageTab.isActive .docsApiPackageTabLabel,
-html[data-theme='dark'] .docsApiSection .docsApiPackageTab.isActive .docsApiPackageTabLabel {
+html[data-theme='dark']
+  .docsLandingSection
+  .docsApiPackageTab.isActive
+  .docsApiPackageTabLabel,
+html[data-theme='dark']
+  .docsApiSection
+  .docsApiPackageTab.isActive
+  .docsApiPackageTabLabel {
   color: color-mix(in srgb, var(--text) 86%, var(--muted));
 }
 
@@ -2141,7 +2274,7 @@ html[data-theme='dark'] .docsLandingSection .docsSearchHint {
   color: var(--code-fg);
 }
 
-.qsCodeHeader+.qsCodeBlock {
+.qsCodeHeader + .qsCodeBlock {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
 }
@@ -2552,7 +2685,8 @@ html[data-theme='dark'] .comparisonTable tbody td a {
 }
 
 .expressionTypesTable thead th {
-  border-bottom: 1px solid color-mix(in srgb, var(--brand) 28%, var(--border-soft));
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--brand) 28%, var(--border-soft));
 }
 
 html:not([data-theme='dark']) .expressionTypesTable th {
@@ -2561,7 +2695,8 @@ html:not([data-theme='dark']) .expressionTypesTable th {
 }
 
 html:not([data-theme='dark']) .expressionTypesTable thead th {
-  border-bottom: 1px solid color-mix(in srgb, var(--brand) 28%, var(--border-soft));
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--brand) 28%, var(--border-soft));
 }
 
 .expressionTypesTable tbody tr:nth-child(even) td,
@@ -2636,7 +2771,8 @@ html[data-theme='dark'] .expressionTypesTable td {
 }
 
 html[data-theme='dark'] .expressionTypesTable thead th {
-  border-bottom: 1px solid color-mix(in srgb, var(--brand) 36%, var(--border-soft));
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--brand) 36%, var(--border-soft));
 }
 
 .observationAsyncBadge {
@@ -2759,7 +2895,7 @@ html[data-theme='dark'] .expressionTypesTable thead th {
   content: none;
 }
 
-.docsPageShell>* {
+.docsPageShell > * {
   position: relative;
   z-index: 1;
 }
@@ -2947,7 +3083,7 @@ html[data-theme='dark'] .expressionTypesTable thead th {
   align-items: start;
 }
 
-.docsApiGrid> :not(.docsApiCode) {
+.docsApiGrid > :not(.docsApiCode) {
   min-width: 0;
 }
 
@@ -2975,12 +3111,12 @@ html[data-theme='dark'] .expressionTypesTable thead th {
   line-height: 1.7;
 }
 
-.docsApiCard .cardText+.cardText {
+.docsApiCard .cardText + .cardText {
   margin-top: var(--sp-3);
 }
 
-.docsApiCard>.cardTitle:not(:first-child),
-.docsApiCard>.coreInlineCodeTitle:not(:first-child) {
+.docsApiCard > .cardTitle:not(:first-child),
+.docsApiCard > .coreInlineCodeTitle:not(:first-child) {
   margin-top: var(--sp-6);
 }
 
@@ -3177,8 +3313,6 @@ html[data-theme='dark'] .docsApiSection .advancedTopicList {
   font-weight: 640;
 }
 
-
-
 .docsTable {
   width: 100%;
   border-collapse: collapse;
@@ -3196,7 +3330,6 @@ html[data-theme='dark'] .docsApiSection .advancedTopicList {
 
 .tableWrap .docsTable td {
   white-space: wrap;
-
 }
 
 .docsTable th {
@@ -3494,7 +3627,8 @@ html[data-theme='dark'] .docsTable tbody td:first-child {
   margin: 0;
   padding: 0.45rem 0.8rem;
   background: color-mix(in srgb, var(--surface-2) 80%, var(--surface-solid));
-  border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 64%, transparent);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border-soft) 64%, transparent);
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 700;
@@ -3541,7 +3675,8 @@ html[data-theme='dark'] .docsTable tbody td:first-child {
 
 .docsPerfDemoTh {
   padding: 0.38rem 0.65rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 70%, transparent);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border-soft) 70%, transparent);
   background: color-mix(in srgb, var(--surface-2) 80%, var(--surface-solid));
   color: var(--muted);
   font-weight: 700;
@@ -3563,7 +3698,8 @@ html[data-theme='dark'] .docsTable tbody td:first-child {
 
 .docsPerfDemoTd {
   padding: 0.3rem 0.65rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 40%, transparent);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border-soft) 40%, transparent);
   color: var(--docs-body);
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -3801,9 +3937,11 @@ html[data-theme='dark'] .docsTable tbody td:first-child {
   width: 100%;
   height: auto;
   background:
-    radial-gradient(circle at 12% 10%,
+    radial-gradient(
+      circle at 12% 10%,
       color-mix(in srgb, var(--surface-2) 62%, transparent) 0,
-      transparent 54%),
+      transparent 54%
+    ),
     color-mix(in srgb, var(--surface) 98%, var(--surface-solid));
 }
 
@@ -3961,9 +4099,11 @@ html[data-theme='dark'] .docsTable tbody td:first-child {
   --rsx-left-accent-offset-top: 3.1rem;
   --rsx-left-accent-offset-bottom: 0.7rem;
   --rsx-left-accent-width: 4px;
-  --rsx-left-accent: linear-gradient(180deg,
-      color-mix(in srgb, var(--brand) 62%, transparent),
-      color-mix(in srgb, var(--brand-2) 58%, transparent));
+  --rsx-left-accent: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--brand) 62%, transparent),
+    color-mix(in srgb, var(--brand-2) 58%, transparent)
+  );
 }
 
 .advancedCodeStepHeader {

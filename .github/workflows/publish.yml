@@ -98,7 +98,7 @@ jobs:
         run: |
           set -e
           echo "Checking npm for existing versions..."
-          for pkg in @rs-x/core @rs-x/state-manager @rs-x/expression-parser @rs-x/compiler @rs-x/typescript-plugin @rs-x/cli @rs-x/react @rs-x/react-components; do
+          for pkg in @rs-x/core @rs-x/state-manager @rs-x/expression-parser @rs-x/compiler @rs-x/typescript-plugin @rs-x/cli @rs-x/react @rs-x/react-components @rs-x/vue; do
             if pnpm info $pkg &> /dev/null; then
               echo "$pkg exists on npm → will publish with OIDC & provenance"
             else

@@ -2,8 +2,10 @@ import type { Expression } from 'estree';
 
 import { InjectionContainer } from '@rs-x/core';
 
-import type { IExpression } from '../expressions/expression-parser.interface';
-import type { IExpressionParser } from '../expressions/expression-parser.interface';
+import type {
+  IExpression,
+  IExpressionParser,
+} from '../expressions/expression-parser.interface';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
 
 import type { IExpressionCache } from './expression-cache.type';

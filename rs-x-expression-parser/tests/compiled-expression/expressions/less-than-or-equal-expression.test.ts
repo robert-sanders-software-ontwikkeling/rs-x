@@ -49,7 +49,10 @@ describe('LessThanOrEqualExpression tests', () => {
     const clonedExpression = expression.clone();
 
     try {
-      expectCompiledOrTreeInstanceOf(clonedExpression, LessThanOrEqualExpression);
+      expectCompiledOrTreeInstanceOf(
+        clonedExpression,
+        LessThanOrEqualExpression,
+      );
       expect(clonedExpression.type).toEqual(ExpressionType.LessThanOrEqual);
       expect(clonedExpression.expressionString).toEqual('a <= b');
 

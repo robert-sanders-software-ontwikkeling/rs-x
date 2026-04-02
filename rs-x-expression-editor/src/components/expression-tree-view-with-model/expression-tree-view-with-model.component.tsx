@@ -4,8 +4,8 @@ import React, { type JSX } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 
 import {
-  type IExpression,
   type IExpressionChangeHistory,
+  type IExpressionTree,
 } from '@rs-x/expression-parser';
 
 import { ChangeHistoryPanel } from '../change-history-panel/change-history-panel.component';
@@ -19,7 +19,7 @@ export interface IExpressionTreeViewWithModel {
   hideTrackChange?: boolean;
   hideHeader?: boolean;
   changeHistoryIndex?: number;
-  expression?: IExpression;
+  expression?: IExpressionTree;
   changeHistory?: IExpressionChangeHistory[][];
   treeHighlight: IExpressionChangeHistory[];
   treeZoomPercent: number;

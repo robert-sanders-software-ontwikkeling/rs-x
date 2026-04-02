@@ -36,6 +36,8 @@ const SOURCES = {
     model: '/docs/observation',
     nesting: '/docs/core-concepts/member-expressions',
     ts: '/docs/iexpression',
+    compiler: '/docs/core-concepts/compiler',
+    vscode: '/docs/core-concepts/cli',
   },
   react: {
     overview: 'https://react.dev/learn',
@@ -712,6 +714,208 @@ const COMPARISON_ROWS: IComparisonRow[] = [
       'Preact Signals': withRef(
         'No built-in runtime parser for arbitrary formula strings.',
         SOURCES.preactSignals.parsing,
+      ),
+    },
+  },
+  {
+    dimension: 'Compiled expressions (AOT)',
+    values: {
+      'RS-X': withRef(
+        'Optional. The rs-x compiler pre-compiles expression strings into optimised JS at build time, replacing the runtime parser entirely. Catches type errors and invalid identifiers before they reach users. Without the compiler, expressions are parsed at runtime.',
+        SOURCES.rsx.compiler,
+      ),
+      'React (Hooks)': withRef(
+        'No expression compiler. JSX is standard TypeScript compilation — no reactive-specific AOT step.',
+        SOURCES.react.overview,
+      ),
+      'Vue 3 Reactivity': withRef(
+        'Template expressions are compiled at build time. The ref() / reactive() / computed() API is runtime-only.',
+        SOURCES.vue.parsing,
+      ),
+      'Angular Signals': withRef(
+        'Yes — Angular Ivy AOT compiles all template expressions at build time. Signal reads inside templates are also AOT-optimised.',
+        SOURCES.angular.parsing,
+      ),
+      Svelte: withRef(
+        'Yes — the Svelte compiler converts all reactive primitives ($state, $derived, $effect) into optimised vanilla JS. No virtual DOM, no runtime framework overhead.',
+        SOURCES.svelte.parsing,
+      ),
+      SolidJS: withRef(
+        'Yes — a Babel/Vite transform compiles JSX into fine-grained reactive DOM calls at build time.',
+        SOURCES.solid.parsing,
+      ),
+      MobX: withRef(
+        'No. All reactivity is runtime-only. Standard TS compilation with decorator transform.',
+        SOURCES.mobx.overview,
+      ),
+      RxJS: withRef('No. Pure runtime library.', SOURCES.rxjs.overview),
+      'Preact Signals': withRef(
+        'No. All signal reactivity is runtime-only.',
+        SOURCES.preactSignals.overview,
+      ),
+    },
+  },
+  {
+    dimension: 'Expression pre-parsing / caching',
+    values: {
+      'RS-X': withRef(
+        'Yes — in runtime (tree) mode, each unique expression string is parsed once and the resulting AST is cached. Subsequent bindings of the same expression string reuse the cached AST with zero re-parse cost.',
+        SOURCES.rsx.parsing,
+      ),
+      'React (Hooks)': withRef(
+        'Not applicable. Reactive logic is written as JS functions, not parsed strings — no parse step exists.',
+        SOURCES.react.overview,
+      ),
+      'Vue 3 Reactivity': withRef(
+        'Template expressions are compiled once at build time. No runtime parsing of expression strings.',
+        SOURCES.vue.parsing,
+      ),
+      'Angular Signals': withRef(
+        'Template expressions are compiled once at build time (AOT). No runtime parsing.',
+        SOURCES.angular.parsing,
+      ),
+      Svelte: withRef(
+        'All expressions are compiled at build time. No runtime parsing of expression strings.',
+        SOURCES.svelte.parsing,
+      ),
+      SolidJS: withRef(
+        'JSX is compiled at build time. No runtime expression parsing.',
+        SOURCES.solid.parsing,
+      ),
+      MobX: withRef(
+        'Not applicable. Computeds are JavaScript functions — no string parsing involved.',
+        SOURCES.mobx.overview,
+      ),
+      RxJS: withRef(
+        'Not applicable. Streams are composed in code, not parsed from strings.',
+        SOURCES.rxjs.overview,
+      ),
+      'Preact Signals': withRef(
+        'Not applicable. Signals are JavaScript values, not parsed strings.',
+        SOURCES.preactSignals.overview,
+      ),
+    },
+  },
+  {
+    dimension: 'Lazy evaluation of derived values',
+    values: {
+      'RS-X': withRef(
+        "Eager — expressions re-evaluate as soon as a dependency changes. However, the initial evaluation after binding is deferred to a microtask, so expression.value is undefined immediately after rsx('...')(model). Subscribe to expression.changed (a ReplaySubject) to receive the value once ready, even if subscribing after the first emission.",
+        SOURCES.rsx.derived,
+      ),
+      'React (Hooks)': withRef(
+        'useMemo is lazy — it recomputes only when dependencies listed in its array change and the component re-renders.',
+        SOURCES.react.derived,
+      ),
+      'Vue 3 Reactivity': withRef(
+        'computed() is lazy — it marks itself dirty on dependency change but only re-evaluates when the computed value is next read.',
+        SOURCES.vue.derived,
+      ),
+      'Angular Signals': withRef(
+        'computed() is lazy — it recalculates only when read after any dependency signal has changed.',
+        SOURCES.angular.derived,
+      ),
+      Svelte: withRef(
+        '$derived is eager — it recalculates synchronously when dependencies change, before the next microtask.',
+        SOURCES.svelte.derived,
+      ),
+      SolidJS: withRef(
+        'createMemo is lazy — it marks itself stale on dependency change but only re-runs when the memo is next read.',
+        SOURCES.solid.derived,
+      ),
+      MobX: withRef(
+        'computed() is lazy — it recalculates only when observed and a dependency has changed since the last read.',
+        SOURCES.mobx.derived,
+      ),
+      RxJS: withRef(
+        'Pull-based (cold) Observables are lazy — they produce values only when subscribed. Hot Observables push eagerly.',
+        SOURCES.rxjs.derived,
+      ),
+      'Preact Signals': withRef(
+        'computed() is lazy — it recalculates only when read after a dependency signal changes.',
+        SOURCES.preactSignals.derived,
+      ),
+    },
+  },
+  {
+    dimension: 'Per-expression control over parse / compile strategy',
+    values: {
+      'RS-X': withRef(
+        'Yes — each expression can independently choose its evaluation strategy: runtime-parsed (tree), pre-parsed from cache, or AOT-compiled. This means hot-path expressions can be compiled while dynamic or user-defined expressions remain runtime-parsed — all within the same application.',
+        SOURCES.rsx.compiler,
+      ),
+      'React (Hooks)': withRef(
+        'No. Expressions are JS functions — there is no parse strategy to configure per hook.',
+        SOURCES.react.overview,
+      ),
+      'Vue 3 Reactivity': withRef(
+        'No. Template expressions are all compiled at build time; the reactive API is always runtime. No per-expression strategy control.',
+        SOURCES.vue.overview,
+      ),
+      'Angular Signals': withRef(
+        'No. All template expressions go through AOT compilation. No per-expression runtime strategy.',
+        SOURCES.angular.overview,
+      ),
+      Svelte: withRef(
+        'No. All reactive code is compiled at build time by the Svelte compiler uniformly.',
+        SOURCES.svelte.overview,
+      ),
+      SolidJS: withRef(
+        'No. All JSX is compiled at build time. No per-expression strategy.',
+        SOURCES.solid.overview,
+      ),
+      MobX: withRef(
+        'No. All computeds are JS functions evaluated at runtime. No parse strategy applies.',
+        SOURCES.mobx.overview,
+      ),
+      RxJS: withRef(
+        'No. All streams are composed in code at runtime. No parse strategy applies.',
+        SOURCES.rxjs.overview,
+      ),
+      'Preact Signals': withRef(
+        'No. All signals are JS values. No parse strategy to configure.',
+        SOURCES.preactSignals.overview,
+      ),
+    },
+  },
+  {
+    dimension: 'IDE IntelliSense for expressions',
+    values: {
+      'RS-X': withRef(
+        "Yes — the RS-X VS Code extension resolves identifiers inside rsx('...') strings against your model type, underlines invalid expressions in the editor, and surfaces type errors without leaving the IDE.",
+        SOURCES.rsx.vscode,
+      ),
+      'React (Hooks)': withRef(
+        'Full IntelliSense via the TypeScript language server. No special extension needed — hooks and props are typed through standard TS inference.',
+        SOURCES.react.overview,
+      ),
+      'Vue 3 Reactivity': withRef(
+        'Volar VS Code extension provides IntelliSense, type checking, and autocomplete inside .vue template expressions.',
+        'https://vuejs.org/guide/typescript/overview.html',
+      ),
+      'Angular Signals': withRef(
+        'Angular Language Service extension provides IntelliSense and type checking for template expressions including signal reads.',
+        'https://angular.dev/tools/language-service',
+      ),
+      Svelte: withRef(
+        'Svelte for VS Code extension provides IntelliSense and type checking inside .svelte files, including $state and $derived rune usage.',
+        'https://svelte.dev/docs/svelte/typescript',
+      ),
+      SolidJS: withRef(
+        'Standard TypeScript IntelliSense covers signals and memos. No official dedicated VS Code extension for SolidJS-specific expression checking.',
+        SOURCES.solid.overview,
+      ),
+      MobX: withRef(
+        'Standard TypeScript IntelliSense. No dedicated IDE extension — all types flow through standard TS decorator/class inference.',
+        SOURCES.mobx.overview,
+      ),
+      RxJS: withRef(
+        'Standard TypeScript IntelliSense. Observable<T> types flow through operator chains automatically.',
+        SOURCES.rxjs.overview,
+      ),
+      'Preact Signals': withRef(
+        'Standard TypeScript IntelliSense. No dedicated VS Code extension — signal types are inferred by the TS compiler.',
+        SOURCES.preactSignals.overview,
       ),
     },
   },

@@ -1,3 +1,5 @@
+import { type Observable } from 'rxjs';
+
 import {
   Dispatcher,
   GroupedKeyedInstanceFactory,
@@ -6,10 +8,8 @@ import {
   IKeyedInstanceFactory,
   Inject,
   Injectable,
-  RsXCoreInjectionTokens,
   Type,
 } from '@rs-x/core';
-import { type Observable } from 'rxjs';
 
 import { RsXStateManagerInjectionTokens } from '../../rs-x-state-manager-injection-tokens';
 import type {
@@ -47,9 +47,12 @@ export interface IWatchDispableOwner extends IDisposableOwner {}
 class Watch implements IWatch {
   private _watchReferenceCount = 0;
   private readonly _changeDispatcher = new Dispatcher<IStateChange>();
-  private readonly _contextChangedDispatcher = new Dispatcher<IContextChanged>();
-  private readonly _startChangeCycleDispatcher = new Dispatcher<IChangeCycleIndex>();
-  private readonly _endChangeCycleDispatcher = new Dispatcher<IChangeCycleIndex>();
+  private readonly _contextChangedDispatcher =
+    new Dispatcher<IContextChanged>();
+  private readonly _startChangeCycleDispatcher =
+    new Dispatcher<IChangeCycleIndex>();
+  private readonly _endChangeCycleDispatcher =
+    new Dispatcher<IChangeCycleIndex>();
   private _isWatched = false;
   private _isDisposed = false;
   private _stateEventUnsubscribe: VoidFunction | undefined;
@@ -96,14 +99,10 @@ class Watch implements IWatch {
     if (Type.isReadonlyProperty(this.context, this.index)) {
       this._value = this._stateManager.getState(this.context, this.index);
     } else {
-      this._value = this._stateManager.watchState(
-        this.context,
-        this.index,
-        {
-          ...this._options,
-          suppressInitialChangeEmit: true,
-        },
-      );
+      this._value = this._stateManager.watchState(this.context, this.index, {
+        ...this._options,
+        suppressInitialChangeEmit: true,
+      });
       // Some state transitions (for async/deferred values) can resolve during watch setup.
       // Read back the current state snapshot so `watch.value` reflects the latest state.
       if (this._value === undefined) {
@@ -170,7 +169,10 @@ class Watch implements IWatch {
   public addListeners(key: unknown, callbacks: IWatchCallbacks): void {
     this._changeDispatcher.addListener(key, callbacks.onChanged);
     this._contextChangedDispatcher.addListener(key, callbacks.onContextChanged);
-    this._startChangeCycleDispatcher.addListener(key, callbacks.onStartChangeCycle);
+    this._startChangeCycleDispatcher.addListener(
+      key,
+      callbacks.onStartChangeCycle,
+    );
     this._endChangeCycleDispatcher.addListener(key, callbacks.onEndChangeCycle);
   }
 

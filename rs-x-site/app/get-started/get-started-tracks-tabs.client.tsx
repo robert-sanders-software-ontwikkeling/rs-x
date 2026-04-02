@@ -90,8 +90,9 @@ const tracks: readonly Track[] = [
       'Start the Angular dev server.',
       'Create your first template binding with the `rsx` pipe.',
       <>
-        Open the <Link href="/docs/frameworks/angular">Angular framework docs</Link>{' '}
-        for integration details.
+        Open the{' '}
+        <Link href="/docs/frameworks/angular">Angular framework docs</Link> for
+        integration details.
       </>,
     ],
     commands: [
@@ -119,12 +120,12 @@ const tracks: readonly Track[] = [
     label: 'Vue',
     title: 'Create a new Vue project',
     description:
-      'Creates a Vue + TypeScript starter and wires rs-x setup with a `useRsx` composable example.',
+      'Creates a Vue + TypeScript starter and wires rs-x setup with an `@rs-x/vue` example.',
     steps: [
       'Install the CLI in your project or use npx.',
       'Generate the project from the Vue template.',
       'Start the dev server.',
-      'Review the generated rs-x example in the starter app.',
+      'Review the generated @rs-x/vue example in the starter app.',
     ],
     commands: [
       '# 1) Install CLI (optional when using npx)',
@@ -140,7 +141,7 @@ const tracks: readonly Track[] = [
       'npm run dev',
       '# Verify: app loads without errors in terminal/browser.',
       '',
-      '# 5) Review generated example',
+      '# 5) Review generated example (uses @rs-x/vue)',
       '# src/App.vue',
     ].join('\n'),
   },
@@ -204,12 +205,15 @@ const tracks: readonly Track[] = [
 ];
 
 export function GetStartedTracksTabs(): React.ReactElement {
-  const [activeTrack, setActiveTrack] = useState<string>(tracks[0]?.value ?? '');
+  const [activeTrack, setActiveTrack] = useState<string>(
+    tracks[0]?.value ?? '',
+  );
   const tabItems = useMemo<ITabItem<string>[]>(() => {
     return tracks.map((track) => ({ value: track.value, label: track.label }));
   }, []);
 
-  const active = tracks.find((track) => track.value === activeTrack) ?? tracks[0];
+  const active =
+    tracks.find((track) => track.value === activeTrack) ?? tracks[0];
 
   return (
     <article className="card docsApiCard">

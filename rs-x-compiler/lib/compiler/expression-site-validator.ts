@@ -4,8 +4,8 @@ import type { AbstractExpression } from '@rs-x/expression-parser';
 import {
   ExpressionType,
   GlobalIdentifierOwnerResolver,
-  JsExpressionAstParser,
   JsEspreeExpressionParser,
+  JsExpressionAstParser,
 } from '@rs-x/expression-parser';
 
 import {
@@ -28,7 +28,7 @@ interface IResolvedType {
 }
 
 const globalIdentifierOwnerResolver = new GlobalIdentifierOwnerResolver();
-const supportedDateProperties = new Set<string>([
+export const supportedDateProperties = new Set<string>([
   'year',
   'utcYear',
   'month',
@@ -252,7 +252,14 @@ function resolveIdentifierType(
   diagnostics: ICompilerDiagnostic[],
 ): IResolvedType {
   const normalizedIdentifier = String(identifier);
-  contextType = unwrapRsxExpressionType(contextType, checker);
+  contextType = checker.getNonNullableType(
+    unwrapRsxExpressionType(contextType, checker),
+  );
+  // If the context resolved to any/unknown (e.g. inferred from unresolved `this`
+  // in a JS object literal inside an in-memory program), allow any identifier.
+  if (contextType.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) {
+    return {};
+  }
   const property = contextType.getProperty(normalizedIdentifier);
   if (!property) {
     const mapValueType = resolveMapValueType(contextType, checker);
@@ -329,7 +336,10 @@ function isAllowedGlobalIdentifier(identifier: string): boolean {
   return globalIdentifierOwnerResolver.resolve(identifier) !== null;
 }
 
-function isDateLikeType(type: ts.Type, checker: ts.TypeChecker): boolean {
+export function isDateLikeType(
+  type: ts.Type,
+  checker: ts.TypeChecker,
+): boolean {
   type = unwrapRsxExpressionType(type, checker);
 
   if (type.isUnionOrIntersection()) {
@@ -580,6 +590,10 @@ function resolveFunctionTypeFromKnownContext(
   functionNameExpression?: AbstractExpression,
 ): IResolvedType {
   objectType = unwrapRsxExpressionType(objectType, checker);
+  // If the object resolved to any/unknown we cannot inspect its properties.
+  if (objectType.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) {
+    return {};
+  }
   const fnExpression =
     functionNameExpression ??
     (functionExpression.childExpressions[1] as AbstractExpression);
@@ -857,7 +871,8 @@ function hasMissingIdentifierDiagnostic(
   const expectedMessage = `Identifier '${identifier}' does not exist on model type.`;
   return diagnostics.some(
     (diagnostic) =>
-      diagnostic.category === 'semantic' && diagnostic.message === expectedMessage,
+      diagnostic.category === 'semantic' &&
+      diagnostic.message === expectedMessage,
   );
 }
 
@@ -927,9 +942,11 @@ function pickIncompatibleOperandToken(args: {
   rightType: IResolvedType;
   checker: ts.TypeChecker;
 }): string | undefined {
-  const { leftExpression, leftType, rightExpression, rightType, checker } = args;
+  const { leftExpression, leftType, rightExpression, rightType, checker } =
+    args;
 
-  const leftCompatible = isNumberLike(leftType, checker) || isStringLike(leftType, checker);
+  const leftCompatible =
+    isNumberLike(leftType, checker) || isStringLike(leftType, checker);
   const rightCompatible =
     isNumberLike(rightType, checker) || isStringLike(rightType, checker);
 

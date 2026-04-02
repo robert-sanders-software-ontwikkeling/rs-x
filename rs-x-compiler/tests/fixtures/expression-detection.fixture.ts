@@ -1,10 +1,10 @@
+import { InjectionContainer } from '@rs-x/core';
 import {
   type IExpression,
   type IExpressionFactory,
-  RsXExpressionParserInjectionTokens,
   rsx,
+  RsXExpressionParserInjectionTokens,
 } from '@rs-x/expression-parser';
-import { InjectionContainer } from '@rs-x/core';
 
 interface Model {
   a: number;

@@ -47,6 +47,10 @@ interface Model {
   };
   multiply(a: number, b: number): number;
   getNumber$(): Observable<number>;
+  cart: {
+    items: { qty: number }[];
+    first(): { qty: number } | undefined;
+  };
 }
 
 declare const model: Model;
@@ -78,6 +82,7 @@ rsx('subjNumber + 1')(model);
 rsx('replayNumber + 1')(model);
 rsx('getNumber$() + 1')(model);
 rsx('a.b.c.d')(model);
+rsx('cart.first().qty')(model);
 expressionFactory.create(model, 'multiply(count, 2)');
 rsx('x1 * 3')(modularModel);
 rsx('xObj.total * 2')(modularModel);

@@ -614,9 +614,7 @@ function resolveProjectRsxSpecs(
     '@rs-x/expression-parser': RSX_PACKAGE_VERSION,
     '@rs-x/compiler': RSX_PACKAGE_VERSION,
     '@rs-x/typescript-plugin': RSX_PACKAGE_VERSION,
-    ...(includeAngularPackage
-      ? { '@rs-x/angular': RSX_PACKAGE_VERSION }
-      : {}),
+    ...(includeAngularPackage ? { '@rs-x/angular': RSX_PACKAGE_VERSION } : {}),
     '@rs-x/cli': null,
   };
 
@@ -686,7 +684,10 @@ function resolveProjectRsxSpecs(
     ),
     ...(includeAngularPackage
       ? {
-          '@rs-x/angular': path.join(workspaceRoot, 'rs-x-angular/projects/rsx'),
+          '@rs-x/angular': path.join(
+            workspaceRoot,
+            'rs-x-angular/projects/rsx',
+          ),
         }
       : {}),
     '@rs-x/cli': path.join(workspaceRoot, 'rs-x-cli'),
@@ -787,11 +788,7 @@ function normalizeProjectTemplate(value) {
   if (normalized === 'angular' || normalized === 'a' || normalized === 'ng') {
     return 'angular';
   }
-  if (
-    normalized === 'vue' ||
-    normalized === 'vuejs' ||
-    normalized === 'v'
-  ) {
+  if (normalized === 'vue' || normalized === 'vuejs' || normalized === 'v') {
     return 'vuejs';
   }
   if (normalized === 'react' || normalized === 'r') {
@@ -873,14 +870,14 @@ function createVueRsxAppTemplate() {
   return `<script setup lang="ts">
 import { reactive } from 'vue';
 
-import { useRsx } from './composables/use-rsx';
+import { useRsxExpression } from '@rs-x/vue';
 
 const model = reactive<Record<string, number>>({
   a: 2,
   b: 3,
 });
 
-const result = useRsx<number>('a + b', model, 0);
+const result = useRsxExpression<number>('a + b', { model });
 
 function incrementA(): void {
   model.a += 1;
@@ -896,7 +893,7 @@ function incrementB(): void {
     <h1>RS-X + Vue</h1>
     <p>Expression: <code>rsx('a + b')</code></p>
     <p>Model: a={{ model.a }}, b={{ model.b }}</p>
-    <p>Result (from RS-X expression value): <strong>{{ result }}</strong></p>
+    <p>Result (from RS-X expression value): <strong>{{ result ?? 0 }}</strong></p>
     <div style="display: flex; gap: 0.75rem;">
       <button @click="incrementA">Increment a</button>
       <button @click="incrementB">Increment b</button>
@@ -906,60 +903,15 @@ function incrementB(): void {
 `;
 }
 
-function createVueUseRsxComposableTemplate() {
-  return `import { onBeforeUnmount, onMounted, ref, type Ref } from 'vue';
-import { rsx, type IExpression } from '@rs-x/expression-parser';
-
-export function useRsx<T = unknown>(
-  expressionString: string,
-  model: Record<string, unknown>,
-  fallbackValue: T,
-): Ref<T> {
-  const value = ref<T>(fallbackValue) as Ref<T>;
-  let expression: IExpression<T> | undefined;
-  let subscription: { unsubscribe: () => void } | undefined;
-
-  const syncValue = () => {
-    if (!expression) {
-      return;
-    }
-
-    const next = expression.value;
-    if (next !== undefined) {
-      value.value = next as T;
-    }
-  };
-
-  onMounted(() => {
-    expression = rsx(expressionString)(model) as IExpression<T>;
-    syncValue();
-    subscription = expression.changed.subscribe(() => {
-      syncValue();
-    });
-  });
-
-  onBeforeUnmount(() => {
-    subscription?.unsubscribe();
-    expression?.dispose();
-  });
-
-  return value;
-}
-`;
-}
-
 function applyVueRsxTemplate(projectRoot, dryRun) {
   const appVuePath = path.join(projectRoot, 'src/App.vue');
   if (!fs.existsSync(appVuePath)) {
-    logWarn(`Vue app file not found at ${appVuePath}. Skipping RS-X example patch.`);
+    logWarn(
+      `Vue app file not found at ${appVuePath}. Skipping RS-X example patch.`,
+    );
     return;
   }
 
-  writeFileWithDryRun(
-    path.join(projectRoot, 'src/composables/use-rsx.ts'),
-    createVueUseRsxComposableTemplate(),
-    dryRun,
-  );
   writeFileWithDryRun(appVuePath, createVueRsxAppTemplate(), dryRun);
 }
 
@@ -1159,11 +1111,9 @@ function scaffoldProjectTemplate(template, projectName, pm, flags) {
   }
 
   if (template === 'react') {
-    run(
-      'npx',
-      ['create-vite@latest', projectName, '--template', 'react-ts'],
-      { dryRun },
-    );
+    run('npx', ['create-vite@latest', projectName, '--template', 'react-ts'], {
+      dryRun,
+    });
     return;
   }
 
@@ -1487,7 +1437,8 @@ function wrapAngularEntry(source) {
 }
 
 function wrapVueEntry(source) {
-  const vueStartPattern = /createApp\([\s\S]*?\)\s*\.\s*mount\([\s\S]*?\)\s*;/mu;
+  const vueStartPattern =
+    /createApp\([\s\S]*?\)\s*\.\s*mount\([\s\S]*?\)\s*;/mu;
   const match = source.match(vueStartPattern);
   if (!match) {
     return null;
@@ -2324,10 +2275,20 @@ function runSetupNext(flags) {
 
 function runSetupVue(flags) {
   const dryRun = Boolean(flags['dry-run']);
+  const pm = detectPackageManager(flags.pm);
   runInit({
     ...flags,
     'skip-vscode': true,
   });
+  if (!Boolean(flags['skip-install'])) {
+    installPackages(pm, ['@rs-x/vue'], {
+      dev: false,
+      dryRun,
+      label: 'RS-X Vue bindings',
+    });
+  } else {
+    logInfo('Skipping RS-X Vue bindings install (--skip-install).');
+  }
   wireRsxVitePlugin(process.cwd(), dryRun);
   if (!Boolean(flags['skip-vscode'])) {
     installVsCodeExtension(flags);
@@ -2437,14 +2398,14 @@ function runBuild(flags) {
   const context = detectProjectContext(projectRoot);
   const rsxBuildConfig = resolveRsxBuildConfig(projectRoot);
   const defaultPreparseEnabled = prodMode
-    ? (typeof rsxBuildConfig.preparse === 'boolean'
-        ? rsxBuildConfig.preparse
-        : context === 'angular')
+    ? typeof rsxBuildConfig.preparse === 'boolean'
+      ? rsxBuildConfig.preparse
+      : context === 'angular'
     : context === 'angular';
   const defaultCompiledEnabled = prodMode
-    ? (typeof rsxBuildConfig.compiled === 'boolean'
-        ? rsxBuildConfig.compiled
-        : true)
+    ? typeof rsxBuildConfig.compiled === 'boolean'
+      ? rsxBuildConfig.compiled
+      : true
     : false;
   const aotPreparseEnabled = parseBooleanFlag(
     flags['aot-preparse'],
@@ -2460,8 +2421,8 @@ function runBuild(flags) {
       : typeof rsxBuildConfig.preparseFile === 'string'
         ? path.resolve(projectRoot, rsxBuildConfig.preparseFile)
         : context === 'angular'
-        ? path.join(projectRoot, 'src', 'rsx-aot-preparsed.generated.ts')
-        : null;
+          ? path.join(projectRoot, 'src', 'rsx-aot-preparsed.generated.ts')
+          : null;
   const aotCompiledFile =
     typeof flags['aot-compiled-file'] === 'string'
       ? path.resolve(projectRoot, flags['aot-compiled-file'])
@@ -2553,23 +2514,18 @@ function runBuild(flags) {
   let blockingDiagnostics = [];
   try {
     const preEmitDiagnostics = ts.getPreEmitDiagnostics(program);
-    blockingDiagnostics = preEmitDiagnostics.filter(
-      (diagnostic) => {
-        if (diagnostic.category !== ts.DiagnosticCategory.Error) {
-          return false;
-        }
-        const diagnosticFilePath = diagnostic.file?.fileName
-          ? path.resolve(diagnostic.file.fileName)
-          : null;
-        if (
-          diagnosticFilePath &&
-          ignoredGeneratedFiles.has(diagnosticFilePath)
-        ) {
-          return false;
-        }
-        return true;
-      },
-    );
+    blockingDiagnostics = preEmitDiagnostics.filter((diagnostic) => {
+      if (diagnostic.category !== ts.DiagnosticCategory.Error) {
+        return false;
+      }
+      const diagnosticFilePath = diagnostic.file?.fileName
+        ? path.resolve(diagnostic.file.fileName)
+        : null;
+      if (diagnosticFilePath && ignoredGeneratedFiles.has(diagnosticFilePath)) {
+        return false;
+      }
+      return true;
+    });
   } catch (error) {
     if (
       error instanceof RangeError &&
@@ -2723,7 +2679,6 @@ function resolveRsxCompilerModule(projectRoot) {
 }
 
 function runRsxSemanticValidation(program, projectRoot, compilerModule) {
-
   if (
     !compilerModule ||
     typeof compilerModule.validateExpressionSites !== 'function'
@@ -2781,8 +2736,7 @@ function runRsxAotPreparseGeneration({
 
   if (
     !compilerModule ||
-    typeof compilerModule.generateAotParsedExpressionCacheModule !==
-      'function'
+    typeof compilerModule.generateAotParsedExpressionCacheModule !== 'function'
   ) {
     logWarn(
       'Skipping RS-X preparse generation: compiler does not expose generateAotParsedExpressionCacheModule.',
@@ -2941,10 +2895,7 @@ function toImportSpecifier(fromFile, toFile) {
   const fromDir = path.dirname(fromFile);
   const relativePath = path.relative(fromDir, toFile).replace(/\\/g, '/');
   const withoutExtension = relativePath.replace(/\.[cm]?[jt]sx?$/u, '');
-  if (
-    withoutExtension.startsWith('./') ||
-    withoutExtension.startsWith('../')
-  ) {
+  if (withoutExtension.startsWith('./') || withoutExtension.startsWith('../')) {
     return withoutExtension;
   }
   return `./${withoutExtension}`;
@@ -2966,7 +2917,9 @@ function ensureAngularPolyfillsContainsFile({
   try {
     angularJson = JSON.parse(fs.readFileSync(angularJsonPath, 'utf8'));
   } catch {
-    logWarn('Failed to parse angular.json. Skipping RS-X AOT runtime injection.');
+    logWarn(
+      'Failed to parse angular.json. Skipping RS-X AOT runtime injection.',
+    );
     return;
   }
 
@@ -3048,7 +3001,10 @@ function ensureAngularPolyfillsContainsFile({
     return;
   }
 
-  fs.writeFileSync(angularJsonPath, `${JSON.stringify(angularJson, null, 2)}\n`);
+  fs.writeFileSync(
+    angularJsonPath,
+    `${JSON.stringify(angularJson, null, 2)}\n`,
+  );
   logOk(`Updated angular.json to inject RS-X AOT runtime registration.`);
 }
 
@@ -3062,9 +3018,7 @@ function resolveRsxBuildConfig(projectRoot) {
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
     const rsxConfig = packageJson.rsx ?? {};
     const buildConfig = rsxConfig.build ?? {};
-    return typeof buildConfig === 'object' && buildConfig
-      ? buildConfig
-      : {};
+    return typeof buildConfig === 'object' && buildConfig ? buildConfig : {};
   } catch {
     return {};
   }
@@ -3265,11 +3219,14 @@ function printProjectHelp() {
   );
   console.log('  - For Angular template: also installs @rs-x/angular');
   console.log('  - For React/Next templates: also installs @rs-x/react');
+  console.log('  - For Vue template: also installs @rs-x/vue');
   console.log('  - Installs dependencies (unless --skip-install)');
   console.log('');
   console.log('Options:');
   console.log('  --name          Project folder/package name');
-  console.log('  --template      Project template (if omitted, asks interactively)');
+  console.log(
+    '  --template      Project template (if omitted, asks interactively)',
+  );
   console.log('  --pm            Explicit package manager');
   console.log(
     '  --tarballs-dir  Directory containing local RS-X package tarballs (*.tgz)',
@@ -3440,9 +3397,7 @@ function main() {
   const [command, target, third] = positionals;
   const wantsVersion = isVersionToken(command) || flags.version === true;
   const wantsGeneralHelp =
-    !command ||
-    command === 'help' ||
-    isHelpToken(command);
+    !command || command === 'help' || isHelpToken(command);
   const wantsCommandHelp = flags.help === true;
   const hasPositionalHelpToken = positionals.some((token, index) => {
     return index > 0 && isHelpToken(token);
@@ -3520,11 +3475,11 @@ function main() {
     const templateFromFlag = normalizeProjectTemplate(flags.template);
     const nameHint =
       !templateFromTarget && typeof target === 'string' ? target : third;
-    const effectiveTemplate =
-      templateFromFlag ?? templateFromTarget ?? null;
+    const effectiveTemplate = templateFromFlag ?? templateFromTarget ?? null;
 
     (async () => {
-      const chosenTemplate = effectiveTemplate ?? (await promptProjectTemplate());
+      const chosenTemplate =
+        effectiveTemplate ?? (await promptProjectTemplate());
       await runProjectWithTemplate(chosenTemplate, {
         ...flags,
         _nameHint: nameHint,

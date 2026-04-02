@@ -1,4 +1,3 @@
-import { expectCompiledOrTreeInstanceOf } from './_compiled-assertions';
 process.env.RSX_EXPRESSION_ENGINE_MODE = 'compiled';
 
 import { type ExpressionType } from '../../../lib/expressions/expression-parser.interface';

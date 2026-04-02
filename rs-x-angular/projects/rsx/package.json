@@ -10,8 +10,8 @@
   "exports": {
     ".": {
       "import": "./fesm2022/rs-x-angular.mjs",
-      "default": "./fesm2022/rs-x-angular.mjs",
-      "types": "./types/rs-x-angular.d.ts"
+      "types": "./types/rs-x-angular.d.ts",
+      "default": "./fesm2022/rs-x-angular.mjs"
     },
     "./package.json": {
       "default": "./package.json"

@@ -21,19 +21,29 @@ const bindChartRows = bindCrossoverRows.map((row) => ({
 const bulkUpdateChartRows = updateCrossoverRows.map((row) => ({
   label: String(row.nodeCount),
   xValue: row.nodeCount,
-  values: { treeMs: row.tree.bulkUpdateMs, compiledMs: row.compiled.bulkUpdateMs },
+  values: {
+    treeMs: row.tree.bulkUpdateMs,
+    compiledMs: row.compiled.bulkUpdateMs,
+  },
 }));
 
 const singleUpdateChartRows = updateCrossoverRows.map((row) => ({
   label: String(row.nodeCount),
   xValue: row.nodeCount,
-  values: { treeMs: row.tree.singleUpdateMs, compiledMs: row.compiled.singleUpdateMs },
+  values: {
+    treeMs: row.tree.singleUpdateMs,
+    compiledMs: row.compiled.singleUpdateMs,
+  },
 }));
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const fmtMs = (ms: number) =>
-  ms >= 10 ? `${ms.toFixed(0)} ms` : ms >= 1 ? `${ms.toFixed(1)} ms` : `${ms.toFixed(3)} ms`;
+  ms >= 10
+    ? `${ms.toFixed(0)} ms`
+    : ms >= 1
+      ? `${ms.toFixed(1)} ms`
+      : `${ms.toFixed(3)} ms`;
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
@@ -56,19 +66,28 @@ export default function CompiledVsTreePage() {
             ]}
           />
           <p className="docsApiEyebrow">Core Concepts</p>
-          <h1 className="sectionTitle">Compiled vs tree: the break-even point</h1>
+          <h1 className="sectionTitle">
+            Compiled vs tree: the break-even point
+          </h1>
           <p className="sectionLead">
             rs-x runs in two modes. Tree mode evaluates expressions by walking
             the parsed AST. Compiled mode compiles each expression to a native
-            JavaScript function once, then calls it on every update. Both modes
-            are correct, but they have different performance profiles depending
-            on how complex your expressions are.
+            JavaScript function at build time. Both modes can be mixed an
+            configured per expression via the expression compile option. By
+            default expressions are compiled, because compiled mode is faster
+            for most scenarios. The only tradeoff is that compiling can increase
+            the loading time because the file size can become quite big if you
+            have a lot of complex expression. But most of the time expression
+            are just identifiers, so the file size will beminimal. You can
+            mitigate big file size by only compiling the expressions that by
+            using lazy loading the expression not needed on the home page and
+            maybe load them in the bakcground if you use rs-x in a wb
+            application.
           </p>
         </div>
       </div>
 
       <div className="docsApiGrid">
-
         {/* ── Why the modes differ ── */}
         <article className="card docsApiCard" style={{ gridColumn: '1 / -1' }}>
           <h2 className="cardTitle">Why the costs differ</h2>
@@ -76,7 +95,9 @@ export default function CompiledVsTreePage() {
             Every expression is parsed into an AST. The number of nodes in that
             AST grows with expression complexity — a simple{' '}
             <span className="codeInline">price</span> has 1 node;{' '}
-            <span className="codeInline">price * quantity * (1 - discount)</span>{' '}
+            <span className="codeInline">
+              price * quantity * (1 - discount)
+            </span>{' '}
             has 7; a deeply nested arithmetic expression can have hundreds.
           </p>
           <p className="cardText">
@@ -89,10 +110,9 @@ export default function CompiledVsTreePage() {
             <strong>Compiled mode</strong> compiles the expression to a JS
             function once (at first bind), caches the compiled plan, and shares
             it across all bindings. Each binding just records which model fields
-            to watch — the plan stores only the{' '}
-            <em>unique dependencies</em>, not the full AST. On every update, it
-            calls the compiled function directly, which V8 can JIT optimise as a
-            native function.
+            to watch — the plan stores only the <em>unique dependencies</em>,
+            not the full AST. On every update, it calls the compiled function
+            directly, which V8 can JIT optimise as a native function.
           </p>
           <p className="cardText">
             The benchmark below uses expressions of the form{' '}
@@ -100,9 +120,8 @@ export default function CompiledVsTreePage() {
             exactly 2 unique dependencies (<span className="codeInline">x</span>{' '}
             and <span className="codeInline">y</span>), regardless of how many
             nodes the expression has. This isolates the effect of AST size while
-            keeping the dependency count constant.
-            {' '}Measured on {crossoverMachine.cpuModel}, Node.js{' '}
-            {crossoverMachine.nodeVersion},{' '}
+            keeping the dependency count constant. Measured on{' '}
+            {crossoverMachine.cpuModel}, Node.js {crossoverMachine.nodeVersion},{' '}
             {crossoverMachine.bindings.toLocaleString()} bindings.
           </p>
         </article>
@@ -113,9 +132,9 @@ export default function CompiledVsTreePage() {
           <p className="cardText">
             Creating a new binding requires setting up one watcher entry per
             unique dependency. In compiled mode, the bind cost scales with the
-            number of unique dependencies — not the total node count. Because the
-            benchmark expressions always have exactly 2 unique dependencies (
-            <span className="codeInline">x</span> and{' '}
+            number of unique dependencies — not the total node count. Because
+            the benchmark expressions always have exactly 2 unique dependencies
+            (<span className="codeInline">x</span> and{' '}
             <span className="codeInline">y</span>) regardless of how many nodes
             the expression has, the compiled bind cost stays nearly flat as node
             count grows. In tree mode, the full AST must be cloned — the cost
@@ -124,15 +143,19 @@ export default function CompiledVsTreePage() {
           <p className="cardText">
             The lines cross at approximately{' '}
             <strong>~{crossoverMachine.bindCrossoverNodes} nodes</strong>. Above
-            that point, compiled mode is consistently faster for binding, and the
-            advantage grows rapidly with expression size.
+            that point, compiled mode is consistently faster for binding, and
+            the advantage grows rapidly with expression size.
           </p>
           <PerformanceBarChart
             ariaLabel="Bind time vs AST node count — compiled vs tree"
             rows={bindChartRows}
             series={[
               { key: 'treeMs', label: 'Tree', barClassName: 'isPrimary' },
-              { key: 'compiledMs', label: 'Compiled', barClassName: 'isSecondary' },
+              {
+                key: 'compiledMs',
+                label: 'Compiled',
+                barClassName: 'isSecondary',
+              },
             ]}
             valueUnit="ms"
             decimals={1}
@@ -185,15 +208,19 @@ export default function CompiledVsTreePage() {
           <p className="cardText">
             The lines cross at approximately{' '}
             <strong>~{crossoverMachine.bulkUpdateCrossoverNodes} nodes</strong>.
-            At 359 nodes, compiled bulk updates are{' '}
-            <strong>7× faster</strong> than tree.
+            At 359 nodes, compiled bulk updates are <strong>11× faster</strong>{' '}
+            than tree.
           </p>
           <PerformanceBarChart
             ariaLabel="Bulk update time vs AST node count — compiled vs tree"
             rows={bulkUpdateChartRows}
             series={[
               { key: 'treeMs', label: 'Tree', barClassName: 'isPrimary' },
-              { key: 'compiledMs', label: 'Compiled', barClassName: 'isSecondary' },
+              {
+                key: 'compiledMs',
+                label: 'Compiled',
+                barClassName: 'isSecondary',
+              },
             ]}
             valueUnit="ms"
             decimals={2}
@@ -213,7 +240,8 @@ export default function CompiledVsTreePage() {
             </thead>
             <tbody>
               {updateCrossoverRows.map((row) => {
-                const speedup = row.tree.bulkUpdateMs / row.compiled.bulkUpdateMs;
+                const speedup =
+                  row.tree.bulkUpdateMs / row.compiled.bulkUpdateMs;
                 const label =
                   speedup >= 1.05
                     ? `${speedup.toFixed(1)}×`
@@ -242,14 +270,21 @@ export default function CompiledVsTreePage() {
             compiled mode calls the pre-compiled function (cost stays flat).
             Because only one binding fires, the absolute times are very small —
             tenths of a millisecond — but the crossover is still visible around{' '}
-            <strong>~{crossoverMachine.singleUpdateCrossoverNodes} nodes</strong>.
+            <strong>
+              ~{crossoverMachine.singleUpdateCrossoverNodes} nodes
+            </strong>
+            .
           </p>
           <PerformanceBarChart
             ariaLabel="Single update time vs AST node count — compiled vs tree"
             rows={singleUpdateChartRows}
             series={[
               { key: 'treeMs', label: 'Tree', barClassName: 'isPrimary' },
-              { key: 'compiledMs', label: 'Compiled', barClassName: 'isSecondary' },
+              {
+                key: 'compiledMs',
+                label: 'Compiled',
+                barClassName: 'isSecondary',
+              },
             ]}
             valueUnit="ms"
             decimals={3}
@@ -269,11 +304,13 @@ export default function CompiledVsTreePage() {
             </thead>
             <tbody>
               {updateCrossoverRows.map((row) => {
-                const speedup = row.tree.singleUpdateMs / row.compiled.singleUpdateMs;
+                const speedup =
+                  row.tree.singleUpdateMs / row.compiled.singleUpdateMs;
                 const label =
                   speedup >= 1.05
                     ? `${speedup.toFixed(1)}×`
-                    : row.compiled.singleUpdateMs / row.tree.singleUpdateMs >= 1.05
+                    : row.compiled.singleUpdateMs / row.tree.singleUpdateMs >=
+                        1.05
                       ? `tree ${(row.compiled.singleUpdateMs / row.tree.singleUpdateMs).toFixed(1)}× faster`
                       : 'equal';
                 return (
@@ -303,8 +340,10 @@ export default function CompiledVsTreePage() {
             To opt in to compiled mode, pass{' '}
             <span className="codeInline">{'{ compiled: true }'}</span> as the
             second argument:{' '}
-            <span className="codeInline">{'rsx(expression, { compiled: true })(model)'}</span>.
-            To use tree mode, omit the option or pass{' '}
+            <span className="codeInline">
+              {'rsx(expression, { compiled: true })(model)'}
+            </span>
+            . To use tree mode, omit the option or pass{' '}
             <span className="codeInline">{'{ compiled: false }'}</span>. Tree
             mode may be preferable if you have a large number of very simple
             single-identifier expressions and minimising JIT warm-up time
@@ -313,14 +352,13 @@ export default function CompiledVsTreePage() {
           <p className="cardText">
             The benchmark expressions here always have exactly 2 unique
             dependencies. The real crossover in your application depends on your
-            specific expression shapes. Expressions with more unique dependencies
-            but fewer nodes (e.g. a flat sum of many different fields) will see a
-            later crossover for bind time; expressions with many nodes but few
-            unique dependencies (e.g. a complex formula reusing the same fields)
-            will see a much earlier one.
+            specific expression shapes. Expressions with more unique
+            dependencies but fewer nodes (e.g. a flat sum of many different
+            fields) will see a later crossover for bind time; expressions with
+            many nodes but few unique dependencies (e.g. a complex formula
+            reusing the same fields) will see a much earlier one.
           </p>
         </article>
-
       </div>
     </DocsPageTemplate>
   );

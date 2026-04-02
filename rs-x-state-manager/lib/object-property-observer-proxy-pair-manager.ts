@@ -1,10 +1,8 @@
 import {
   GroupedKeyedInstanceFactory,
-  Inject,
   Injectable,
   KeyedInstanceFactory,
   MultiInject,
-  RsXCoreInjectionTokens,
   Type,
   UnsupportedException,
 } from '@rs-x/core';
@@ -123,10 +121,8 @@ export class ObjectPropertyObserverProxyPairManager
   protected createInstance(
     context: unknown,
   ): IPropertyObserverProxyPairManager {
-    return new PropertyObserverProxyPairManager(
-      context,
-      this._factories,
-      () => this.release(context),
+    return new PropertyObserverProxyPairManager(context, this._factories, () =>
+      this.release(context),
     );
   }
 }

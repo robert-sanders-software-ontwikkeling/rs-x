@@ -49,7 +49,10 @@ describe('MultiplicationExpression tests', () => {
     const clonedExpression = expression.clone();
 
     try {
-      expectCompiledOrTreeInstanceOf(clonedExpression, MultiplicationExpression);
+      expectCompiledOrTreeInstanceOf(
+        clonedExpression,
+        MultiplicationExpression,
+      );
       expect(clonedExpression.type).toEqual(ExpressionType.Multiplication);
       expect(clonedExpression.expressionString).toEqual('a * b');
 

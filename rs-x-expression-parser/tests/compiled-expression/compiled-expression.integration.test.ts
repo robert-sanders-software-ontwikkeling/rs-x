@@ -1,18 +1,18 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import {
-  RsXExpressionParserModule,
-  unloadRsXExpressionParserModule,
-} from '../../lib/rs-x-expression-parser.module';
+import type { ICompiledExpressionPlan } from '../../lib/compiled-expression/compiled-expression.compiler.interface';
 import {
   clearPrecompiledCompiledExpressionPlans,
   registerPrecompiledCompiledExpressionPlan,
 } from '../../lib/compiled-expression/precompiled-expression-plan-registry';
-import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
 import type { IExpressionFactory } from '../../lib/expression-factory';
-import { rsx } from '../../lib/rsx';
 import { ExpressionType } from '../../lib/expressions/expression-parser.interface';
-import type { ICompiledExpressionPlan } from '../../lib/compiled-expression/compiled-expression.compiler.interface';
+import {
+  RsXExpressionParserModule,
+  unloadRsXExpressionParserModule,
+} from '../../lib/rs-x-expression-parser.module';
+import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../../lib/rsx';
 
 async function waitForValue(
   expression: { value: unknown },
@@ -193,7 +193,10 @@ describe('Compiled expression engine integration', () => {
 
     registerPrecompiledCompiledExpressionPlan(expressionString, plan);
     const model = { a: 1, b: 4 };
-    const expression = expressionFactory.create<number>(model, expressionString);
+    const expression = expressionFactory.create<number>(
+      model,
+      expressionString,
+    );
 
     await waitForValue(expression);
     expect(expression.value).toBe(14);

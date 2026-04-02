@@ -47,7 +47,10 @@ describe('ConstantBooleanExpression tests', () => {
     const clonedExpression = expression.clone();
 
     try {
-      expectCompiledOrTreeInstanceOf(clonedExpression, ConstantBooleanExpression);
+      expectCompiledOrTreeInstanceOf(
+        clonedExpression,
+        ConstantBooleanExpression,
+      );
       expect(clonedExpression.type).toEqual(ExpressionType.Boolean);
       expect(clonedExpression.expressionString).toEqual('true');
 

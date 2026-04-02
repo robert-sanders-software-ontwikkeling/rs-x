@@ -47,7 +47,10 @@ describe('ConstantRegExpExpression tests', () => {
     const clonedExpression = expression.clone();
 
     try {
-      expectCompiledOrTreeInstanceOf(clonedExpression, ConstantRegExpExpression);
+      expectCompiledOrTreeInstanceOf(
+        clonedExpression,
+        ConstantRegExpExpression,
+      );
       expect(clonedExpression.type).toEqual(ExpressionType.RegExp);
       expect(clonedExpression.expressionString).toEqual('/ab+c/i');
 

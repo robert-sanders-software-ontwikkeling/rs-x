@@ -137,13 +137,13 @@ function getExpressionText(expression: IExpression): {
   };
 }
 
-function isTreeExpression(expression: IExpression): expression is IExpressionTree {
+function isTreeExpression(
+  expression: IExpression,
+): expression is IExpressionTree {
   return 'parent' in expression && 'childExpressions' in expression;
 }
 
-function getTreeParent(
-  expression: IExpression,
-): IExpressionTree | undefined {
+function getTreeParent(expression: IExpression): IExpressionTree | undefined {
   if (!isTreeExpression(expression)) {
     return undefined;
   }

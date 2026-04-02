@@ -44,28 +44,64 @@ export type BindCrossoverRow = {
 
 /** 1000 unique models, steady-state update time (bindings pre-established). */
 export const updateCrossoverRows: CrossoverRow[] = [
-  { nodeCount: 3,   tree: { singleUpdateMs: 0.043, bulkUpdateMs: 4.954  }, compiled: { singleUpdateMs: 0.052, bulkUpdateMs: 6.236  } },
-  { nodeCount: 7,   tree: { singleUpdateMs: 0.050, bulkUpdateMs: 6.531  }, compiled: { singleUpdateMs: 0.051, bulkUpdateMs: 7.042  } },
-  { nodeCount: 15,  tree: { singleUpdateMs: 0.063, bulkUpdateMs: 8.403  }, compiled: { singleUpdateMs: 0.054, bulkUpdateMs: 7.634  } },
-  { nodeCount: 27,  tree: { singleUpdateMs: 0.060, bulkUpdateMs: 11.263 }, compiled: { singleUpdateMs: 0.055, bulkUpdateMs: 8.084  } },
-  { nodeCount: 47,  tree: { singleUpdateMs: 0.066, bulkUpdateMs: 15.432 }, compiled: { singleUpdateMs: 0.055, bulkUpdateMs: 8.141  } },
-  { nodeCount: 79,  tree: { singleUpdateMs: 0.070, bulkUpdateMs: 21.917 }, compiled: { singleUpdateMs: 0.060, bulkUpdateMs: 9.021  } },
-  { nodeCount: 131, tree: { singleUpdateMs: 0.091, bulkUpdateMs: 31.103 }, compiled: { singleUpdateMs: 0.056, bulkUpdateMs: 9.166  } },
-  { nodeCount: 219, tree: { singleUpdateMs: 0.097, bulkUpdateMs: 46.919 }, compiled: { singleUpdateMs: 0.052, bulkUpdateMs: 9.615  } },
-  { nodeCount: 359, tree: { singleUpdateMs: 0.134, bulkUpdateMs: 70.615 }, compiled: { singleUpdateMs: 0.060, bulkUpdateMs: 10.063 } },
+  {
+    nodeCount: 3,
+    tree: { singleUpdateMs: 0.065, bulkUpdateMs: 6.898 },
+    compiled: { singleUpdateMs: 0.068, bulkUpdateMs: 7.388 },
+  },
+  {
+    nodeCount: 7,
+    tree: { singleUpdateMs: 0.062, bulkUpdateMs: 8.407 },
+    compiled: { singleUpdateMs: 0.073, bulkUpdateMs: 11.112 },
+  },
+  {
+    nodeCount: 15,
+    tree: { singleUpdateMs: 0.079, bulkUpdateMs: 15.052 },
+    compiled: { singleUpdateMs: 0.096, bulkUpdateMs: 13.432 },
+  },
+  {
+    nodeCount: 27,
+    tree: { singleUpdateMs: 0.111, bulkUpdateMs: 24.59 },
+    compiled: { singleUpdateMs: 0.108, bulkUpdateMs: 14.463 },
+  },
+  {
+    nodeCount: 47,
+    tree: { singleUpdateMs: 0.118, bulkUpdateMs: 30.46 },
+    compiled: { singleUpdateMs: 0.104, bulkUpdateMs: 14.888 },
+  },
+  {
+    nodeCount: 79,
+    tree: { singleUpdateMs: 0.127, bulkUpdateMs: 44.008 },
+    compiled: { singleUpdateMs: 0.11, bulkUpdateMs: 18.127 },
+  },
+  {
+    nodeCount: 131,
+    tree: { singleUpdateMs: 0.184, bulkUpdateMs: 71.955 },
+    compiled: { singleUpdateMs: 0.111, bulkUpdateMs: 17.38 },
+  },
+  {
+    nodeCount: 219,
+    tree: { singleUpdateMs: 0.21, bulkUpdateMs: 155.98 },
+    compiled: { singleUpdateMs: 0.121, bulkUpdateMs: 17.765 },
+  },
+  {
+    nodeCount: 359,
+    tree: { singleUpdateMs: 1.719, bulkUpdateMs: 621.647 },
+    compiled: { singleUpdateMs: 0.135, bulkUpdateMs: 54.728 },
+  },
 ];
 
 /** 1000 unique models, cold bind time (create bindings + dispose). */
 export const bindCrossoverRows: BindCrossoverRow[] = [
-  { nodeCount: 3,   tree: { bindMs: 25.944  }, compiled: { bindMs: 26.147  } },
-  { nodeCount: 7,   tree: { bindMs: 44.299  }, compiled: { bindMs: 26.864  } },
-  { nodeCount: 15,  tree: { bindMs: 62.708  }, compiled: { bindMs: 30.201  } },
-  { nodeCount: 27,  tree: { bindMs: 79.227  }, compiled: { bindMs: 32.565  } },
-  { nodeCount: 47,  tree: { bindMs: 123.117 }, compiled: { bindMs: 34.663  } },
-  { nodeCount: 79,  tree: { bindMs: 195.612 }, compiled: { bindMs: 32.312  } },
-  { nodeCount: 131, tree: { bindMs: 299.048 }, compiled: { bindMs: 32.145  } },
-  { nodeCount: 219, tree: { bindMs: 699.465 }, compiled: { bindMs: 78.732  } },
-  { nodeCount: 359, tree: { bindMs: 1809.997 }, compiled: { bindMs: 67.223 } },
+  { nodeCount: 3, tree: { bindMs: 37.202 }, compiled: { bindMs: 32.812 } },
+  { nodeCount: 7, tree: { bindMs: 66.073 }, compiled: { bindMs: 70.154 } },
+  { nodeCount: 15, tree: { bindMs: 330.068 }, compiled: { bindMs: 100.051 } },
+  { nodeCount: 27, tree: { bindMs: 1231.013 }, compiled: { bindMs: 145.444 } },
+  { nodeCount: 47, tree: { bindMs: 596.255 }, compiled: { bindMs: 166.014 } },
+  { nodeCount: 79, tree: { bindMs: 1042.953 }, compiled: { bindMs: 129.957 } },
+  { nodeCount: 131, tree: { bindMs: 1692.902 }, compiled: { bindMs: 528.165 } },
+  { nodeCount: 219, tree: { bindMs: 2626.695 }, compiled: { bindMs: 520.761 } },
+  { nodeCount: 359, tree: { bindMs: 4179.42 }, compiled: { bindMs: 338.45 } },
 ];
 
 export const crossoverMachine = {
@@ -74,9 +110,9 @@ export const crossoverMachine = {
   bindings: 1000,
   expressionShape: 'x + y + x + y + … (always 2 deps)',
   /** Estimated crossover node count for bind time. */
-  bindCrossoverNodes: 3,
+  bindCrossoverNodes: 7,
   /** Estimated crossover node count for bulk update time. */
-  bulkUpdateCrossoverNodes: 10,
+  bulkUpdateCrossoverNodes: 12,
   /** Estimated crossover node count for single update time. */
-  singleUpdateCrossoverNodes: 8,
+  singleUpdateCrossoverNodes: 25,
 };

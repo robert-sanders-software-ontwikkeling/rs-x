@@ -49,7 +49,10 @@ describe('ExponentiationExpression tests', () => {
     const clonedExpression = expression.clone();
 
     try {
-      expectCompiledOrTreeInstanceOf(clonedExpression, ExponentiationExpression);
+      expectCompiledOrTreeInstanceOf(
+        clonedExpression,
+        ExponentiationExpression,
+      );
       expect(clonedExpression.type).toEqual(ExpressionType.Exponentiation);
       expect(clonedExpression.expressionString).toEqual('a ** b');
 

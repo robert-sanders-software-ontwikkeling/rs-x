@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-01T08:55:43.365Z",
+  "generatedAt": "2026-04-01T18:26:29.402Z",
   "environment": {
     "nodeVersion": "v25.4.0",
     "platform": "darwin",
@@ -32,98 +32,98 @@
       "pairs": 1,
       "nodeCount": 3,
       "tree": {
-        "bindMs": 25.94418799999994
+        "bindMs": 37.201562499999966
       },
       "compiled": {
-        "bindMs": 26.14727049999965
+        "bindMs": 32.811833499999466
       }
     },
     {
       "pairs": 2,
       "nodeCount": 7,
       "tree": {
-        "bindMs": 44.29949949999991
+        "bindMs": 66.07335400000011
       },
       "compiled": {
-        "bindMs": 26.864416500000516
+        "bindMs": 70.15399949999846
       }
     },
     {
       "pairs": 4,
       "nodeCount": 15,
       "tree": {
-        "bindMs": 62.70752100000209
+        "bindMs": 330.06847950000156
       },
       "compiled": {
-        "bindMs": 30.201145499999257
+        "bindMs": 100.05058300000383
       }
     },
     {
       "pairs": 7,
       "nodeCount": 27,
       "tree": {
-        "bindMs": 79.22743700000137
+        "bindMs": 1231.0134585000196
       },
       "compiled": {
-        "bindMs": 32.5647089999984
+        "bindMs": 145.44406249996973
       }
     },
     {
       "pairs": 12,
       "nodeCount": 47,
       "tree": {
-        "bindMs": 123.11733300000196
+        "bindMs": 596.2546455000411
       },
       "compiled": {
-        "bindMs": 34.663291999997455
+        "bindMs": 166.0141869999934
       }
     },
     {
       "pairs": 20,
       "nodeCount": 79,
       "tree": {
-        "bindMs": 195.61243749999267
+        "bindMs": 1042.9533335000742
       },
       "compiled": {
-        "bindMs": 32.312375000008615
+        "bindMs": 129.9568750000326
       }
     },
     {
       "pairs": 33,
       "nodeCount": 131,
       "tree": {
-        "bindMs": 299.0483335000026
+        "bindMs": 1692.9021669999347
       },
       "compiled": {
-        "bindMs": 32.14516649999132
+        "bindMs": 528.1653749999823
       }
     },
     {
       "pairs": 55,
       "nodeCount": 219,
       "tree": {
-        "bindMs": 699.4650625000068
+        "bindMs": 2626.694978999789
       },
       "compiled": {
-        "bindMs": 78.73245799998404
+        "bindMs": 520.7609790000133
       }
     },
     {
       "pairs": 90,
       "nodeCount": 359,
       "tree": {
-        "bindMs": 1809.9968750000116
+        "bindMs": 4179.420000000158
       },
       "compiled": {
-        "bindMs": 67.22345850005513
+        "bindMs": 338.4499170000199
       }
     }
   ],
   "crossover": {
-    "nodeCount": 3,
+    "nodeCount": 7,
     "between": [
-      3,
-      7
+      7,
+      15
     ]
   }
 }

@@ -48,7 +48,10 @@ describe('ConstantBigIntExpression tests', () => {
     const clonedExpression = expression.clone();
 
     try {
-      expectCompiledOrTreeInstanceOf(clonedExpression, ConstantBigIntExpression);
+      expectCompiledOrTreeInstanceOf(
+        clonedExpression,
+        ConstantBigIntExpression,
+      );
       expect(clonedExpression.type).toEqual(ExpressionType.BigInt);
       expect(clonedExpression.expressionString).toEqual('9007199254740991');
 

@@ -80,12 +80,33 @@ const getBindingRuns = (count) => {
 
 const getIdentifierOnlyRuns = (count) => {
   if (count >= 10_000) {
-    return { bind: 5, updateSingle: 15, updateBulk: 7, warmupBind: 2, warmupUpdateSingle: 3, warmupUpdateBulk: 2 };
+    return {
+      bind: 5,
+      updateSingle: 15,
+      updateBulk: 7,
+      warmupBind: 2,
+      warmupUpdateSingle: 3,
+      warmupUpdateBulk: 2,
+    };
   }
   if (count >= 3_000) {
-    return { bind: 7, updateSingle: 20, updateBulk: 9, warmupBind: 2, warmupUpdateSingle: 3, warmupUpdateBulk: 2 };
+    return {
+      bind: 7,
+      updateSingle: 20,
+      updateBulk: 9,
+      warmupBind: 2,
+      warmupUpdateSingle: 3,
+      warmupUpdateBulk: 2,
+    };
   }
-  return { bind: 9, updateSingle: 30, updateBulk: 12, warmupBind: 3, warmupUpdateSingle: 5, warmupUpdateBulk: 3 };
+  return {
+    bind: 9,
+    updateSingle: 30,
+    updateBulk: 12,
+    warmupBind: 3,
+    warmupUpdateSingle: 5,
+    warmupUpdateBulk: 3,
+  };
 };
 
 const median = (values) => {
@@ -544,8 +565,7 @@ for (const count of bindingCounts) {
     bindSameExpressionAgain: {
       ...bindSameInitializedStats,
       usPerBinding: (bindSameInitializedStats.medianMs * 1000) / count,
-      bindingsPerSecond:
-        (count / bindSameInitializedStats.medianMs) * 1000,
+      bindingsPerSecond: (count / bindSameInitializedStats.medianMs) * 1000,
     },
   });
 

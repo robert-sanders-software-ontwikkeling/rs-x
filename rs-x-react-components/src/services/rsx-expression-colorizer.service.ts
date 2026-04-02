@@ -2,8 +2,8 @@ import type * as Monaco from 'monaco-editor';
 
 import {
   findRsxExpressionLiteralRanges,
-  tokenizeRsxExpression,
   type RsxTokenKind,
+  tokenizeRsxExpression,
 } from '@rs-x/compiler';
 
 const tokenClassByKind: Record<RsxTokenKind, string> = {

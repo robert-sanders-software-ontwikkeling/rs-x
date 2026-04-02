@@ -229,7 +229,9 @@ describe('FunctionExpression tests', () => {
     expression = rsx('initializeA()')(model);
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
-    const argumentExpression = (expression as IExpressionTree).childExpressions.find(
+    const argumentExpression = (
+      expression as IExpressionTree
+    ).childExpressions.find(
       (childExpression) => childExpression.type === ExpressionType.Array,
     );
 

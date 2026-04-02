@@ -1,4 +1,3 @@
-import { expectCompiledOrTreeInstanceOf } from './_compiled-assertions';
 process.env.RSX_EXPRESSION_ENGINE_MODE = 'compiled';
 
 import { InjectionContainer } from '@rs-x/core';
@@ -262,6 +261,8 @@ describe('Expression string tests', () => {
     expect(expression.expressionString).toContain('config: map["admin"]');
     expect(expression.expressionString).toContain('row: items[index]');
     expect(expression.expressionString).toContain('list: [head, ...tail]');
-    expect(expression.expressionString).toContain('label: `name:${user.first}`');
+    expect(expression.expressionString).toContain(
+      'label: `name:${user.first}`',
+    );
   });
 });

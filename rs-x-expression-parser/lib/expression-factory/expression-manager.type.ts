@@ -14,6 +14,7 @@ export interface IExpressionIdData {
 
 export interface IExpressionData extends IExpressionIdData {
   leafIndexWatchRule?: IIndexWatchRule;
+  compiled?: boolean;
 }
 
 export type IExpressionForContextManager = IKeyedInstanceFactory<

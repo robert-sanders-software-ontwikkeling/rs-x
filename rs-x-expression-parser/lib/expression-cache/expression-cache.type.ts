@@ -2,9 +2,15 @@ import type { IKeyedInstanceFactory } from '@rs-x/core';
 
 import type { IExpression } from '../expressions/expression-parser.interface';
 
+export interface IExpressionCacheData {
+  expressionString: string;
+  /** When set, overrides the global engine mode for this expression. */
+  compiled?: boolean;
+}
+
 export interface IExpressionCache extends IKeyedInstanceFactory<
   string,
-  string,
+  IExpressionCacheData,
   IExpression
 > {
   registerExpressionTree(

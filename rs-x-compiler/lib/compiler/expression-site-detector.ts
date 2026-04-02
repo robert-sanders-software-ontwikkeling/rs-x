@@ -65,7 +65,10 @@ function tryDetectRsxEntryPoint(
   }
 
   const rsxInvocation = callExpression.expression;
-  if (rsxInvocation.arguments.length < 1 || rsxInvocation.arguments.length > 2) {
+  if (
+    rsxInvocation.arguments.length < 1 ||
+    rsxInvocation.arguments.length > 2
+  ) {
     return null;
   }
 

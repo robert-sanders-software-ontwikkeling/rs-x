@@ -6,6 +6,7 @@ Command line installer for RS-X developer tooling.
 
 When `@rs-x/cli` is installed, it attempts to install the VS Code extension
 automatically if the `code` CLI is available:
+
 - from the bundled local `.vsix` included in the package.
 
 Disable this behavior with:
@@ -19,13 +20,15 @@ RSX_SKIP_VSCODE_EXTENSION_INSTALL=true
 Installing `@rs-x/cli` gives you the `rsx` command.
 
 Running `rsx init` installs:
+
 - runtime packages: `@rs-x/core`, `@rs-x/state-manager`, `@rs-x/expression-parser`
 - compiler/tooling packages: `@rs-x/compiler`, `@rs-x/typescript-plugin`
-- framework-specific packages when required by setup/template (for example `@rs-x/angular` or `@rs-x/react`)
+- framework-specific packages when required by setup/template (for example `@rs-x/angular`, `@rs-x/react`, or `@rs-x/vue`)
 
 ## VS Code extension features
 
 The rs-x VS Code extension provides:
+
 - RS-X expression IntelliSense
 - RS-X expression diagnostics in TS/JS files
 - integration through `@rs-x/typescript-plugin`
@@ -68,12 +71,14 @@ The rs-x VS Code extension provides:
 - install VS Code extension (unless `--skip-vscode`)
 
 `rsx setup` behavior:
+
 - `rsx setup` auto-detects framework (`angular`, `react`, `vuejs`, `next`, fallback generic) and runs matching setup flow.
 
 `rsx project` template extras:
+
 - `angular`: installs `@rs-x/angular`
 - `react` and `nextjs`: install `@rs-x/react`
-- `vuejs`: adds `src/composables/use-rsx.ts` and replaces `src/App.vue` with an RS-X expression example (`useRsx('a + b', model, 0)`)
+- `vuejs`: installs `@rs-x/vue` and replaces `src/App.vue` with an RS-X expression example (`useRsxExpression('a + b', { model })`)
 
 ## Examples
 

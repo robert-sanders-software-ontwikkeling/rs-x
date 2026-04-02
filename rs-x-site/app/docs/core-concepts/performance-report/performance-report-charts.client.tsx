@@ -16,7 +16,7 @@ type PerformanceBarChartProps = {
   ariaLabel: string;
   rows: ChartRow[];
   series: ChartSeries[];
-  valueUnit?: 'us' | 'ms' | 'mb' | '';
+  valueUnit?: 'µs' | 'ms' | 'mb' | '';
   decimals?: number;
   xAxisLabel?: string;
   yAxisLabel?: string;
@@ -103,14 +103,11 @@ export function PerformanceBarChart({
 
   const yMax = yScale === 'log' ? rawMax * 1.5 : rawMax * 1.1;
   const yLogMin =
-    yScale === 'log'
-      ? Math.pow(10, Math.floor(Math.log10(rawMin)))
-      : 0;
+    yScale === 'log' ? Math.pow(10, Math.floor(Math.log10(rawMin))) : 0;
   const yLogMax =
-    yScale === 'log'
-      ? Math.pow(10, Math.ceil(Math.log10(yMax)))
-      : 0;
-  const yLogRange = yScale === 'log' ? Math.log10(yLogMax) - Math.log10(yLogMin) || 1 : 1;
+    yScale === 'log' ? Math.pow(10, Math.ceil(Math.log10(yMax))) : 0;
+  const yLogRange =
+    yScale === 'log' ? Math.log10(yLogMax) - Math.log10(yLogMin) || 1 : 1;
 
   const logXMin =
     xScale === 'log'
@@ -139,7 +136,9 @@ export function PerformanceBarChart({
     if (yScale === 'log') {
       const clamped = Math.max(yLogMin, value);
       const ratio = (Math.log10(clamped) - Math.log10(yLogMin)) / yLogRange;
-      return MARGIN_TOP + plotHeight - Math.max(0, Math.min(1, ratio)) * plotHeight;
+      return (
+        MARGIN_TOP + plotHeight - Math.max(0, Math.min(1, ratio)) * plotHeight
+      );
     }
     const ratio = Math.max(0, Math.min(1, value / yMax));
     return MARGIN_TOP + plotHeight - ratio * plotHeight;

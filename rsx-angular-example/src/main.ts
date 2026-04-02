@@ -1,7 +1,10 @@
 import { InjectionContainer } from '@rs-x/core';
 import { type IExpression, rsx } from '@rs-x/expression-parser';
-import { RsXExpressionParserModule } from '@rs-x/expression-parser';
-import { RsXExpressionParserInjectionTokens } from '@rs-x/expression-parser';
+import {
+  RsXExpressionParserInjectionTokens,
+  RsXExpressionParserModule,
+} from '@rs-x/expression-parser';
+
 import {
   benchmarkExpressionFactories,
   lightBenchmarkExpressionFactories,
@@ -120,9 +123,7 @@ async function createExpressionsInBatches(
 function createExpressionsStrict(
   expressionFactories: ReadonlyArray<() => IExpression>,
 ): IExpression[] {
-  return expressionFactories.map((createExpression) =>
-    createExpression(),
-  );
+  return expressionFactories.map((createExpression) => createExpression());
 }
 
 function disposeExpressionsStrict(expressions: readonly IExpression[]): void {
@@ -157,7 +158,7 @@ async function runBenchmark(
           ? identifierDifferentModelExpressionFactories
           : shape === 'addition10kDifferentModels'
             ? additionDifferentModelExpressionFactories
-        : benchmarkExpressionFactories;
+            : benchmarkExpressionFactories;
   const startCreateCalls = expressionCacheDebugState.createCalls;
   const startPrecompiledCreates = expressionCacheDebugState.precompiledCreates;
   const startFallbackCreates = expressionCacheDebugState.fallbackCreates;
@@ -233,7 +234,8 @@ async function waitForExpressionsToHaveValue(
       const expressionIndex = unresolvedIndexes[cursor];
       if (expressions[expressionIndex].value !== undefined) {
         resolvedCount += 1;
-        unresolvedIndexes[cursor] = unresolvedIndexes[unresolvedIndexes.length - 1];
+        unresolvedIndexes[cursor] =
+          unresolvedIndexes[unresolvedIndexes.length - 1];
         unresolvedIndexes.pop();
       }
     }
@@ -244,7 +246,11 @@ async function waitForExpressionsToHaveValue(
 
 function buildExpressionString(expressionIndex: number): string {
   const terms: string[] = [];
-  for (let termIndex = 0; termIndex < BENCHMARK_TERMS_PER_EXPRESSION; termIndex += 1) {
+  for (
+    let termIndex = 0;
+    termIndex < BENCHMARK_TERMS_PER_EXPRESSION;
+    termIndex += 1
+  ) {
     terms.push(`v_${expressionIndex}_${termIndex}`);
   }
   return terms.join(' + ');
@@ -274,10 +280,10 @@ function installExpressionCacheDebugHooks(): void {
   for (let index = 0; index < BENCHMARK_EXPRESSION_COUNT; index += 1) {
     expectedExpressions[index] = buildExpressionString(index);
   }
-  const preloadedBenchmarkExpressions = expectedExpressions.filter((expression) =>
-    precompiledExpressions.has(expression),
+  const preloadedBenchmarkExpressions = expectedExpressions.filter(
+    (expression) => precompiledExpressions.has(expression),
   ).length;
-  // eslint-disable-next-line no-console
+
   console.info(
     `[rsx benchmark] preloaded benchmark expressions: ${preloadedBenchmarkExpressions}/${BENCHMARK_EXPRESSION_COUNT}`,
   );
@@ -380,9 +386,9 @@ function renderApp(): void {
         ? 'identifier10kDifferentModels'
         : additionDifferentModelsShapeRadio.checked
           ? 'addition10kDifferentModels'
-      : lightShapeRadio.checked
-        ? 'light'
-        : 'heavy';
+          : lightShapeRadio.checked
+            ? 'light'
+            : 'heavy';
     if (shape === 'identifier10k') {
       mode = 'strict';
       strictModeCheckbox.checked = true;
@@ -444,7 +450,7 @@ function renderApp(): void {
       const message = error instanceof Error ? error.message : String(error);
       results.innerHTML = `<p style="color: #b42318;">Benchmark failed: ${message}</p>`;
       // Keep error visible in devtools so failures are easy to diagnose.
-      // eslint-disable-next-line no-console
+
       console.error('Benchmark execution failed', error);
     } finally {
       button.disabled = false;

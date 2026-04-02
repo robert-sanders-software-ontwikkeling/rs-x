@@ -14,7 +14,10 @@ function readPositiveIntegerEnv(name, fallback) {
 const maxCount = readPositiveIntegerEnv('RSX_BENCHMARK_MAX_COUNT', 2000);
 const iterations = readPositiveIntegerEnv('RSX_BENCHMARK_ITERATIONS', 1);
 
-const expressionStrings = generatedBenchmarkExpressionStrings.slice(0, maxCount);
+const expressionStrings = generatedBenchmarkExpressionStrings.slice(
+  0,
+  maxCount,
+);
 if (expressionStrings.length === 0) {
   throw new Error('No benchmark expressions found.');
 }

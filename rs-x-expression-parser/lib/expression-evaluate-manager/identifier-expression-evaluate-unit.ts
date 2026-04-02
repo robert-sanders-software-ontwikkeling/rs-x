@@ -105,7 +105,9 @@ export class IdentifierExpressionEvaluateUnit implements IExpressionEvaluateUnit
     }
     // Read the initial value directly — no watch listener registered.
     const resolvedValue = this.resolveValueFromContext();
-    this._value = this._isDeferredValue?.(resolvedValue) ? undefined : resolvedValue;
+    this._value = this._isDeferredValue?.(resolvedValue)
+      ? undefined
+      : resolvedValue;
   }
 
   public applyChange(newValue: unknown): void {
@@ -130,7 +132,9 @@ export class IdentifierExpressionEvaluateUnit implements IExpressionEvaluateUnit
     if (this._isReplica) {
       // Re-read the current value on context refresh — still no listener registration.
       const resolvedValue = this.resolveValueFromContext();
-      this._value = this._isDeferredValue?.(resolvedValue) ? undefined : resolvedValue;
+      this._value = this._isDeferredValue?.(resolvedValue)
+        ? undefined
+        : resolvedValue;
       return;
     }
 

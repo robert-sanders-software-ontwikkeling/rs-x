@@ -1,9 +1,7 @@
-import type {
-  IExpressionEvaluateChangeManager
-} from '../expression-evaluate-manager/expression-evaluate-unit.interface';
+import type { IExpressionEvaluateChangeManager } from '../expression-evaluate-manager/expression-evaluate-unit.interface';
 
 declare const jest: {
-  fn: <T extends (...args: any[]) => any>(implementation?: T) => T;
+  fn: <T extends (...args: unknown[]) => unknown>(implementation?: T) => T;
 };
 
 export class ExpressionEvaluateChangeManagerMock implements IExpressionEvaluateChangeManager {

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-01T08:52:36.656Z",
+  "generatedAt": "2026-04-01T18:26:26.290Z",
   "environment": {
     "nodeVersion": "v25.4.0",
     "platform": "darwin",
@@ -32,121 +32,121 @@
       "pairs": 1,
       "nodeCount": 3,
       "tree": {
-        "singleUpdateMs": 0.04262499999998681,
-        "bulkUpdateMs": 4.954000000000065
+        "singleUpdateMs": 0.06537500000001728,
+        "bulkUpdateMs": 6.897500000000036
       },
       "compiled": {
-        "singleUpdateMs": 0.051791999999977634,
-        "bulkUpdateMs": 6.236125000000129
+        "singleUpdateMs": 0.06837500000006003,
+        "bulkUpdateMs": 7.387583000000177
       }
     },
     {
       "pairs": 2,
       "nodeCount": 7,
       "tree": {
-        "singleUpdateMs": 0.049958000000060565,
-        "bulkUpdateMs": 6.531333000000359
+        "singleUpdateMs": 0.06175000000030195,
+        "bulkUpdateMs": 8.407333999999992
       },
       "compiled": {
-        "singleUpdateMs": 0.05141600000024482,
-        "bulkUpdateMs": 7.042124999999942
+        "singleUpdateMs": 0.07275000000026921,
+        "bulkUpdateMs": 11.111667000000125
       }
     },
     {
       "pairs": 4,
       "nodeCount": 15,
       "tree": {
-        "singleUpdateMs": 0.06329199999981938,
-        "bulkUpdateMs": 8.402750000000196
+        "singleUpdateMs": 0.07949999999982538,
+        "bulkUpdateMs": 15.051832999999533
       },
       "compiled": {
-        "singleUpdateMs": 0.053541999999652035,
-        "bulkUpdateMs": 7.63366699999915
+        "singleUpdateMs": 0.09604199999921548,
+        "bulkUpdateMs": 13.432125000001179
       }
     },
     {
       "pairs": 7,
       "nodeCount": 27,
       "tree": {
-        "singleUpdateMs": 0.060499999999592546,
-        "bulkUpdateMs": 11.263375000000451
+        "singleUpdateMs": 0.11066599999867321,
+        "bulkUpdateMs": 24.58970799999952
       },
       "compiled": {
-        "singleUpdateMs": 0.05504099999961909,
-        "bulkUpdateMs": 8.083749999999782
+        "singleUpdateMs": 0.10766700000021956,
+        "bulkUpdateMs": 14.462917000000743
       }
     },
     {
       "pairs": 12,
       "nodeCount": 47,
       "tree": {
-        "singleUpdateMs": 0.06600000000071304,
-        "bulkUpdateMs": 15.43158399999993
+        "singleUpdateMs": 0.11787499999991269,
+        "bulkUpdateMs": 30.459917000000132
       },
       "compiled": {
-        "singleUpdateMs": 0.054666999998516985,
-        "bulkUpdateMs": 8.14075000000048
+        "singleUpdateMs": 0.10366699999940465,
+        "bulkUpdateMs": 14.888166000000638
       }
     },
     {
       "pairs": 20,
       "nodeCount": 79,
       "tree": {
-        "singleUpdateMs": 0.06962500000008731,
-        "bulkUpdateMs": 21.917499999999563
+        "singleUpdateMs": 0.1272080000017013,
+        "bulkUpdateMs": 44.007708000001
       },
       "compiled": {
-        "singleUpdateMs": 0.059583000002021436,
-        "bulkUpdateMs": 9.021166000002268
+        "singleUpdateMs": 0.10995800000091549,
+        "bulkUpdateMs": 18.126666000003752
       }
     },
     {
       "pairs": 33,
       "nodeCount": 131,
       "tree": {
-        "singleUpdateMs": 0.09054200000173296,
-        "bulkUpdateMs": 31.102875000000495
+        "singleUpdateMs": 0.18370900000445545,
+        "bulkUpdateMs": 71.9552909999984
       },
       "compiled": {
-        "singleUpdateMs": 0.05583400000250549,
-        "bulkUpdateMs": 9.166290999997727
+        "singleUpdateMs": 0.1109580000047572,
+        "bulkUpdateMs": 17.380124999996042
       }
     },
     {
       "pairs": 55,
       "nodeCount": 219,
       "tree": {
-        "singleUpdateMs": 0.09712500000023283,
-        "bulkUpdateMs": 46.91895900000236
+        "singleUpdateMs": 0.21033300000999589,
+        "bulkUpdateMs": 155.9802500000078
       },
       "compiled": {
-        "singleUpdateMs": 0.05200000000331784,
-        "bulkUpdateMs": 9.615458000000217
+        "singleUpdateMs": 0.12104099999123719,
+        "bulkUpdateMs": 17.76520900000469
       }
     },
     {
       "pairs": 90,
       "nodeCount": 359,
       "tree": {
-        "singleUpdateMs": 0.13366700000187848,
-        "bulkUpdateMs": 70.61470800000097
+        "singleUpdateMs": 1.719041999996989,
+        "bulkUpdateMs": 621.6472500000091
       },
       "compiled": {
-        "singleUpdateMs": 0.05983399999968242,
-        "bulkUpdateMs": 10.063125000000582
+        "singleUpdateMs": 0.13529100001323968,
+        "bulkUpdateMs": 54.72774999999092
       }
     }
   ],
   "crossovers": {
     "singleUpdateMs": {
-      "nodeCount": 8,
+      "nodeCount": 25,
       "between": [
-        7,
-        15
+        15,
+        27
       ]
     },
     "bulkUpdateMs": {
-      "nodeCount": 10,
+      "nodeCount": 12,
       "between": [
         7,
         15

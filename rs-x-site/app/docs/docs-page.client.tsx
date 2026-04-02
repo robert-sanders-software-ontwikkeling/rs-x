@@ -50,6 +50,16 @@ const frameworkLinks: DocsLinkItem[] = [
     title: 'Angular',
     meta: 'RsxPipe and providexRsx() for reactive Angular templates',
   },
+  {
+    href: '/docs/frameworks/vue',
+    title: 'Vue',
+    meta: 'Composition API patterns with rs-x expressions',
+  },
+  {
+    href: '/docs/frameworks/rxjs',
+    title: 'RxJS',
+    meta: 'Observable values inside expressions',
+  },
 ];
 
 const coreConceptLinks: DocsLinkItem[] = [
@@ -116,12 +126,7 @@ const coreConceptLinks: DocsLinkItem[] = [
   {
     href: '/docs/core-concepts/performance',
     title: 'Performance',
-    meta: 'Caching, watch sharing, and selective updates explained',
-  },
-  {
-    href: '/docs/core-concepts/angular-signals-comparison',
-    title: 'Angular Signals comparison',
-    meta: 'rs-x vs Angular Signals: sync, async, and complex expression benchmarks',
+    meta: 'Engine modes, parsing, binding, updates, memory — and what changed in v2',
   },
   {
     href: '/docs/core-concepts/modular-expressions',
@@ -266,8 +271,9 @@ export function DocsPageClient({
               </p>
               <h2 className="cardTitle">Framework integrations</h2>
               <p className="cardText">
-                Drop-in integrations for React and Angular — bind expressions
-                directly to your components and templates with zero boilerplate.
+                Drop-in integrations for React, Angular, Vue, and RxJS — bind
+                expressions directly to your components and templates with zero
+                boilerplate.
               </p>
               <ul
                 className="docsApiLinkGrid docsConceptLinkGrid"

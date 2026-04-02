@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
 import { ItemLinkCardContent } from '@rs-x/react-components';
 
@@ -105,7 +105,6 @@ export default function AngularSignalsComparisonPage() {
       </div>
 
       <div className="docsApiGrid">
-
         {/* ── How each system works ─────────────────────────────────────────── */}
         <article className="card docsApiCard">
           <h2 className="cardTitle">How each system works</h2>
@@ -113,8 +112,8 @@ export default function AngularSignalsComparisonPage() {
           <h3 className="cardSubtitle">rs-x</h3>
           <p className="cardText">
             rs-x binds a <em>string expression</em> to a plain JavaScript
-            object. The expression is parsed once and cached; subsequent bindings
-            clone the cached tree. rs-x attaches a JavaScript{' '}
+            object. The expression is parsed once and cached; subsequent
+            bindings clone the cached tree. rs-x attaches a JavaScript{' '}
             <span className="codeInline">Proxy</span> to the model so it can
             detect property mutations automatically — you change{' '}
             <span className="codeInline">model.price = 42</span> and rs-x sees
@@ -254,7 +253,9 @@ export default function AngularSignalsComparisonPage() {
             </tbody>
           </table>
 
-          <h3 className="cardSubtitle" style={{ marginTop: '1.25rem' }}>Single update time</h3>
+          <h3 className="cardSubtitle" style={{ marginTop: '1.25rem' }}>
+            Single update time
+          </h3>
           <p className="cardText">
             One field changes on one model; only that expression re-evaluates.
             Both systems are effectively O(1) — cost does not grow with total
@@ -294,7 +295,9 @@ export default function AngularSignalsComparisonPage() {
             </tbody>
           </table>
 
-          <h3 className="cardSubtitle" style={{ marginTop: '1.25rem' }}>Bulk update time</h3>
+          <h3 className="cardSubtitle" style={{ marginTop: '1.25rem' }}>
+            Bulk update time
+          </h3>
           <p className="cardText">
             All N fields change; all N expressions re-evaluate. Both are O(N).
             Angular is faster because it skips the microtask scheduler and
@@ -335,7 +338,9 @@ export default function AngularSignalsComparisonPage() {
 
         {/* ── Scenario 2: Async identifier ──────────────────────────────────── */}
         <article className="card docsApiCard">
-          <h2 className="cardTitle">Scenario 2 — Async identifier (Observable)</h2>
+          <h2 className="cardTitle">
+            Scenario 2 — Async identifier (Observable)
+          </h2>
           <p className="cardText">
             Each model field holds a{' '}
             <span className="codeInline">BehaviorSubject</span>. The binding
@@ -400,11 +405,13 @@ export default function AngularSignalsComparisonPage() {
             </tbody>
           </table>
 
-          <h3 className="cardSubtitle" style={{ marginTop: '1.25rem' }}>Single update time</h3>
+          <h3 className="cardSubtitle" style={{ marginTop: '1.25rem' }}>
+            Single update time
+          </h3>
           <p className="cardText">
-            One subject emits; one expression updates. O(1) for both — cost
-            does not grow with binding count. rs-x ~0.05 ms (microtask
-            overhead); Angular ~0.011–0.017 ms (synchronous read).
+            One subject emits; one expression updates. O(1) for both — cost does
+            not grow with binding count. rs-x ~0.05 ms (microtask overhead);
+            Angular ~0.011–0.017 ms (synchronous read).
           </p>
           <PerformanceBarChart
             ariaLabel="Async identifier single update time: rs-x vs Angular Signals"
@@ -438,7 +445,9 @@ export default function AngularSignalsComparisonPage() {
             </tbody>
           </table>
 
-          <h3 className="cardSubtitle" style={{ marginTop: '1.25rem' }}>Bulk update time</h3>
+          <h3 className="cardSubtitle" style={{ marginTop: '1.25rem' }}>
+            Bulk update time
+          </h3>
           <p className="cardText">
             All N subjects emit; all N expressions update. O(N) for both.
             Angular stays faster due to synchronous propagation; rs-x adds a
@@ -499,10 +508,10 @@ export default function AngularSignalsComparisonPage() {
                 rsx(generatedExpr[i])(&#123; x, y &#125;)
               </span>{' '}
               — each string is parsed into an AST (1,000 unique parses, each
-              tree has 60–120+ nodes). Re-evaluation walks the tree
-              interpreting each node. When <span className="codeInline">x</span>{' '}
-              changes, all 1,000 expressions must re-evaluate because they all
-              depend on <span className="codeInline">x</span>.
+              tree has 60–120+ nodes). Re-evaluation walks the tree interpreting
+              each node. When <span className="codeInline">x</span> changes, all
+              1,000 expressions must re-evaluate because they all depend on{' '}
+              <span className="codeInline">x</span>.
             </li>
             <li>
               <strong>Angular:</strong>{' '}
@@ -541,16 +550,28 @@ export default function AngularSignalsComparisonPage() {
               <tr>
                 <td>rs-x compiled</td>
                 <td>{sameModelExpressionsRow.rsxCompiled.bindMs.toFixed(3)}</td>
-                <td>{sameModelExpressionsRow.rsxCompiled.disposeMs.toFixed(3)}</td>
-                <td>{sameModelExpressionsRow.rsxCompiled.singleUpdateMs.toFixed(3)}</td>
-                <td>{sameModelExpressionsRow.rsxCompiled.bulkUpdateMs.toFixed(3)}</td>
+                <td>
+                  {sameModelExpressionsRow.rsxCompiled.disposeMs.toFixed(3)}
+                </td>
+                <td>
+                  {sameModelExpressionsRow.rsxCompiled.singleUpdateMs.toFixed(
+                    3,
+                  )}
+                </td>
+                <td>
+                  {sameModelExpressionsRow.rsxCompiled.bulkUpdateMs.toFixed(3)}
+                </td>
               </tr>
               <tr>
                 <td>rs-x tree</td>
                 <td>{sameModelExpressionsRow.rsxTree.bindMs.toFixed(3)}</td>
                 <td>{sameModelExpressionsRow.rsxTree.disposeMs.toFixed(3)}</td>
-                <td>{sameModelExpressionsRow.rsxTree.singleUpdateMs.toFixed(3)}</td>
-                <td>{sameModelExpressionsRow.rsxTree.bulkUpdateMs.toFixed(3)}</td>
+                <td>
+                  {sameModelExpressionsRow.rsxTree.singleUpdateMs.toFixed(3)}
+                </td>
+                <td>
+                  {sameModelExpressionsRow.rsxTree.bulkUpdateMs.toFixed(3)}
+                </td>
               </tr>
               <tr>
                 <td>Angular Signals</td>
@@ -577,8 +598,8 @@ export default function AngularSignalsComparisonPage() {
           <p className="cardText">
             <strong>Dispose cost:</strong> compiled mode is{' '}
             {sameModelExpressionsRow.rsxCompiled.disposeMs.toFixed(3)} ms and
-            tree mode is {sameModelExpressionsRow.rsxTree.disposeMs.toFixed(3)} ms
-            for 1,000 shared-model expressions. Angular signals are
+            tree mode is {sameModelExpressionsRow.rsxTree.disposeMs.toFixed(3)}{' '}
+            ms for 1,000 shared-model expressions. Angular signals are
             garbage-collected — no explicit teardown cost.
           </p>
           <p className="cardText">
@@ -586,9 +607,9 @@ export default function AngularSignalsComparisonPage() {
             compiled mode, rs-x still pays ownership/watch bookkeeping and
             scheduling overhead around expression invalidation. Angular calls
             native functions from{' '}
-            <span className="codeInline">new Function()</span> 1,000 times
-            and reads each <span className="codeInline">computed()</span>. Real-world
-            expressions (
+            <span className="codeInline">new Function()</span> 1,000 times and
+            reads each <span className="codeInline">computed()</span>.
+            Real-world expressions (
             <span className="codeInline">price * quantity</span>,{' '}
             <span className="codeInline">isActive &amp;&amp; !isHidden</span>)
             have far fewer nodes and are much closer to the identifier-only
@@ -610,13 +631,13 @@ export default function AngularSignalsComparisonPage() {
             to match with purely code-defined reactivity.
           </p>
           <p className="cardText">
-            rs-x is designed to make reactivity <em>transparent</em>. You
-            define a model as a plain JavaScript object — no signals, no
-            decorators, no reactive wrappers. You write an expression string.
-            rs-x handles the rest: it detects which fields the expression reads,
-            watches them for changes, recomputes automatically, propagates the
-            result, and cleans up when the binding is released. Change detection
-            is not something you configure — it is solved for you.
+            rs-x is designed to make reactivity <em>transparent</em>. You define
+            a model as a plain JavaScript object — no signals, no decorators, no
+            reactive wrappers. You write an expression string. rs-x handles the
+            rest: it detects which fields the expression reads, watches them for
+            changes, recomputes automatically, propagates the result, and cleans
+            up when the binding is released. Change detection is not something
+            you configure — it is solved for you.
           </p>
           <p className="cardText">
             Observable and Promise fields are handled the same way. A field that
@@ -638,14 +659,14 @@ export default function AngularSignalsComparisonPage() {
             is worth it — native compiled functions are dramatically faster than
             AST evaluation. For typical SPA bindings (identifiers, member
             access, simple arithmetic), compiled rs-x is generally within
-            response-time limits users can feel, and rs-x can compensate with flexibility:
-            runtime expression strings, automatic dependency wiring, transparent
-            async handling, and framework-agnostic usage.
+            response-time limits users can feel, and rs-x can compensate with
+            flexibility: runtime expression strings, automatic dependency
+            wiring, transparent async handling, and framework-agnostic usage.
           </p>
           <p className="cardText">
-            Speed matters most when users notice latency. If a workload is
-            truly compute-bound and evaluated at very high frequency, Angular
-            Signals is the stronger raw-performance choice. If your priority is
+            Speed matters most when users notice latency. If a workload is truly
+            compute-bound and evaluated at very high frequency, Angular Signals
+            is the stronger raw-performance choice. If your priority is
             expressive runtime behavior with minimal reactive boilerplate,
             compiled rs-x gives strong performance with a broader feature set.
           </p>

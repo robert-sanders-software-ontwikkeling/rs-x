@@ -5,10 +5,7 @@ import {
   type IExpressionChangeTracker,
   type IExpressionChangeTrackerManager,
 } from '../lib/expression-change-tracker/expression-change-tracker-manager.interface';
-import {
-  type IExpression,
-  type IExpressionTree,
-} from '../lib/expressions/expression-parser.interface';
+import { type IExpressionTree } from '../lib/expressions/expression-parser.interface';
 import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
@@ -24,7 +21,7 @@ interface IModel {
 describe('ExpressionChangeTracker tests', () => {
   let expressionChangeTracker: IExpressionChangeTracker;
   let expressionChangeTrackerManager: IExpressionChangeTrackerManager;
-  let expression: IExpression;
+  let expression: IExpressionTree;
   let model: IModel;
 
   beforeAll(async () => {
@@ -44,7 +41,7 @@ describe('ExpressionChangeTracker tests', () => {
       b: 30,
     };
 
-    expression = rsx('a + b')(model);
+    expression = rsx('a + b')(model) as IExpressionTree;
 
     await new WaitForEvent(expression, 'changed').wait(emptyFunction);
   });
@@ -75,7 +72,7 @@ describe('ExpressionChangeTracker tests', () => {
         oldValue: undefined,
       },
       {
-        expression: expression,
+        expression: expression as IExpressionTree,
         value: 50,
         oldValue: undefined,
       },

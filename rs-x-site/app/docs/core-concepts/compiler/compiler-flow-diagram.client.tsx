@@ -1,6 +1,12 @@
 'use client';
 
-import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type CSSProperties,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 type NodeShape = 'rect' | 'diamond';
 type NodeTone = 'neutral' | 'build' | 'runtime';
@@ -46,27 +52,86 @@ const H_GAP = 34;
 const V_GAP = 56;
 const RECT_HEIGHT = 64;
 const DIAMOND_HEIGHT = 72;
-const PREFERRED_NODE_WIDTH = 300;
 const MIN_NODE_WIDTH = 220;
 const MAX_NODE_WIDTH = 340;
 
 const BUILD: DiagramDefinition = {
   title: 'Build Flow',
   nodes: [
-    { id: 'scan', label: 'Find expression declarations', shape: 'rect', tone: 'build' },
-    { id: 'validate', label: 'Validate expression', shape: 'rect', tone: 'build' },
+    {
+      id: 'scan',
+      label: 'Find expression declarations',
+      shape: 'rect',
+      tone: 'build',
+    },
+    {
+      id: 'validate',
+      label: 'Validate expression',
+      shape: 'rect',
+      tone: 'build',
+    },
     { id: 'valid', label: 'Valid?', shape: 'diamond', tone: 'build' },
-    { id: 'diagnostics', label: 'Emit diagnostics / fail', shape: 'rect', tone: 'neutral' },
-    { id: 'effective', label: 'Resolve effective options', shape: 'rect', tone: 'build' },
-    { id: 'preparse', label: 'Preparse enabled?', shape: 'diamond', tone: 'build' },
-    { id: 'emitPreparse', label: 'Generate preparsed cache entry', shape: 'rect', tone: 'build' },
-    { id: 'skipPreparse', label: 'Skip preparse output', shape: 'rect', tone: 'neutral' },
-    { id: 'compiled', label: 'Compiled enabled for site?', shape: 'diamond', tone: 'build' },
-    { id: 'emitCompiled', label: 'Generate compiled plan', shape: 'rect', tone: 'build' },
-    { id: 'skipCompiled', label: 'Skip compiled output', shape: 'rect', tone: 'neutral' },
+    {
+      id: 'diagnostics',
+      label: 'Emit diagnostics / fail',
+      shape: 'rect',
+      tone: 'neutral',
+    },
+    {
+      id: 'effective',
+      label: 'Resolve effective options',
+      shape: 'rect',
+      tone: 'build',
+    },
+    {
+      id: 'preparse',
+      label: 'Preparse enabled?',
+      shape: 'diamond',
+      tone: 'build',
+    },
+    {
+      id: 'emitPreparse',
+      label: 'Generate preparsed cache entry',
+      shape: 'rect',
+      tone: 'build',
+    },
+    {
+      id: 'skipPreparse',
+      label: 'Skip preparse output',
+      shape: 'rect',
+      tone: 'neutral',
+    },
+    {
+      id: 'compiled',
+      label: 'Compiled enabled for site?',
+      shape: 'diamond',
+      tone: 'build',
+    },
+    {
+      id: 'emitCompiled',
+      label: 'Generate compiled plan',
+      shape: 'rect',
+      tone: 'build',
+    },
+    {
+      id: 'skipCompiled',
+      label: 'Skip compiled output',
+      shape: 'rect',
+      tone: 'neutral',
+    },
     { id: 'lazy', label: 'Lazy enabled?', shape: 'diamond', tone: 'build' },
-    { id: 'emitLazy', label: 'Generate lazy manifest / preload', shape: 'rect', tone: 'build' },
-    { id: 'skipLazy', label: 'No lazy manifest entry', shape: 'rect', tone: 'neutral' },
+    {
+      id: 'emitLazy',
+      label: 'Generate lazy manifest / preload',
+      shape: 'rect',
+      tone: 'build',
+    },
+    {
+      id: 'skipLazy',
+      label: 'No lazy manifest entry',
+      shape: 'rect',
+      tone: 'neutral',
+    },
   ],
   edges: [
     { from: 'scan', to: 'validate' },
@@ -90,16 +155,61 @@ const BUILD: DiagramDefinition = {
 const RUNTIME: DiagramDefinition = {
   title: 'Runtime Flow',
   nodes: [
-    { id: 'create', label: 'create/bind request', shape: 'rect', tone: 'runtime' },
+    {
+      id: 'create',
+      label: 'create/bind request',
+      shape: 'rect',
+      tone: 'runtime',
+    },
     { id: 'lazy', label: 'lazy preloader?', shape: 'diamond', tone: 'runtime' },
-    { id: 'loadLazy', label: 'Load lazy entry (first use)', shape: 'rect', tone: 'runtime' },
-    { id: 'skipLazyLoad', label: 'Skip lazy load', shape: 'rect', tone: 'neutral' },
-    { id: 'compiled', label: 'compiled plan in cache?', shape: 'diamond', tone: 'runtime' },
-    { id: 'useCompiled', label: 'Use compiled evaluator', shape: 'rect', tone: 'runtime' },
-    { id: 'preparsed', label: 'preparsed AST in cache?', shape: 'diamond', tone: 'runtime' },
-    { id: 'clonePreparse', label: 'Clone preparsed AST', shape: 'rect', tone: 'runtime' },
-    { id: 'parse', label: 'Parse expression at runtime', shape: 'rect', tone: 'neutral' },
-    { id: 'bind', label: 'Bind watches + evaluate', shape: 'rect', tone: 'runtime' },
+    {
+      id: 'loadLazy',
+      label: 'Load lazy entry (first use)',
+      shape: 'rect',
+      tone: 'runtime',
+    },
+    {
+      id: 'skipLazyLoad',
+      label: 'Skip lazy load',
+      shape: 'rect',
+      tone: 'neutral',
+    },
+    {
+      id: 'compiled',
+      label: 'compiled plan in cache?',
+      shape: 'diamond',
+      tone: 'runtime',
+    },
+    {
+      id: 'useCompiled',
+      label: 'Use compiled evaluator',
+      shape: 'rect',
+      tone: 'runtime',
+    },
+    {
+      id: 'preparsed',
+      label: 'preparsed AST in cache?',
+      shape: 'diamond',
+      tone: 'runtime',
+    },
+    {
+      id: 'clonePreparse',
+      label: 'Clone preparsed AST',
+      shape: 'rect',
+      tone: 'runtime',
+    },
+    {
+      id: 'parse',
+      label: 'Parse expression at runtime',
+      shape: 'rect',
+      tone: 'neutral',
+    },
+    {
+      id: 'bind',
+      label: 'Bind watches + evaluate',
+      shape: 'rect',
+      tone: 'runtime',
+    },
   ],
   edges: [
     { from: 'create', to: 'lazy' },
@@ -123,7 +233,10 @@ function nodeHeight(shape: NodeShape): number {
 
 type Anchor = 'top' | 'right' | 'bottom' | 'left';
 
-function anchorPoint(node: PositionedNode, anchor: Anchor): { x: number; y: number } {
+function anchorPoint(
+  node: PositionedNode,
+  anchor: Anchor,
+): { x: number; y: number } {
   const cx = node.x + node.width / 2;
   const cy = node.y + node.height / 2;
   if (anchor === 'top') {
@@ -230,18 +343,30 @@ function buildTopology(definition: DiagramDefinition) {
   return { topo, outgoing, incoming, nodeIndex };
 }
 
-function chooseColumns(innerWidth: number): { cols: number; nodeWidth: number } {
-  const rawMaxCols = Math.max(1, Math.floor((innerWidth + H_GAP) / (MIN_NODE_WIDTH + H_GAP)));
+function chooseColumns(innerWidth: number): {
+  cols: number;
+  nodeWidth: number;
+} {
+  const rawMaxCols = Math.max(
+    1,
+    Math.floor((innerWidth + H_GAP) / (MIN_NODE_WIDTH + H_GAP)),
+  );
   const maxCols = Math.min(3, rawMaxCols);
 
   for (let cols = maxCols; cols >= 1; cols--) {
     const rawWidth = (innerWidth - (cols - 1) * H_GAP) / cols;
     if (rawWidth >= MIN_NODE_WIDTH) {
-      return { cols, nodeWidth: Math.min(MAX_NODE_WIDTH, Math.max(MIN_NODE_WIDTH, rawWidth)) };
+      return {
+        cols,
+        nodeWidth: Math.min(MAX_NODE_WIDTH, Math.max(MIN_NODE_WIDTH, rawWidth)),
+      };
     }
   }
 
-  return { cols: 1, nodeWidth: Math.min(MAX_NODE_WIDTH, Math.max(MIN_NODE_WIDTH, innerWidth)) };
+  return {
+    cols: 1,
+    nodeWidth: Math.min(MAX_NODE_WIDTH, Math.max(MIN_NODE_WIDTH, innerWidth)),
+  };
 }
 
 function layoutRuntimeDiagram(definition: DiagramDefinition, width: number) {
@@ -251,7 +376,10 @@ function layoutRuntimeDiagram(definition: DiagramDefinition, width: number) {
   }
 
   const innerWidth = safeWidth - PADDING_X * 2;
-  const nodeWidth = Math.min(MAX_NODE_WIDTH, Math.max(250, Math.floor((innerWidth - 2 * H_GAP) / 3)));
+  const nodeWidth = Math.min(
+    MAX_NODE_WIDTH,
+    Math.max(250, Math.floor((innerWidth - 2 * H_GAP) / 3)),
+  );
   const totalGridWidth = nodeWidth * 3 + H_GAP * 2;
   const gridStartX = PADDING_X + (innerWidth - totalGridWidth) / 2;
   const leftX = gridStartX;
@@ -315,7 +443,12 @@ function layoutRuntimeDiagram(definition: DiagramDefinition, width: number) {
   const splitPreparsedYesY = splitPreparsedY;
   const splitPreparsedNoY = splitPreparsedY;
   const routed: RoutedEdge[] = [];
-  const add = (edge: FlowEdge, points: Array<{ x: number; y: number }>, lx: number, ly: number) => {
+  const add = (
+    edge: FlowEdge,
+    points: Array<{ x: number; y: number }>,
+    lx: number,
+    ly: number,
+  ) => {
     routed.push({ ...edge, path: orthPath(points), labelX: lx, labelY: ly });
   };
 
@@ -355,7 +488,10 @@ function layoutRuntimeDiagram(definition: DiagramDefinition, width: number) {
     { from: 'loadLazy', to: 'compiled' },
     [
       anchorPoint(loadLazy, 'bottom'),
-      { x: anchorPoint(loadLazy, 'bottom').x, y: anchorPoint(compiled, 'left').y },
+      {
+        x: anchorPoint(loadLazy, 'bottom').x,
+        y: anchorPoint(compiled, 'left').y,
+      },
       anchorPoint(compiled, 'left'),
     ],
     0,
@@ -366,7 +502,10 @@ function layoutRuntimeDiagram(definition: DiagramDefinition, width: number) {
     { from: 'skipLazyLoad', to: 'compiled' },
     [
       anchorPoint(skipLazy, 'bottom'),
-      { x: anchorPoint(skipLazy, 'bottom').x, y: anchorPoint(compiled, 'right').y },
+      {
+        x: anchorPoint(skipLazy, 'bottom').x,
+        y: anchorPoint(compiled, 'right').y,
+      },
       anchorPoint(compiled, 'right'),
     ],
     0,
@@ -401,7 +540,10 @@ function layoutRuntimeDiagram(definition: DiagramDefinition, width: number) {
     { from: 'useCompiled', to: 'bind' },
     [
       anchorPoint(useCompiled, 'bottom'),
-      { x: anchorPoint(useCompiled, 'bottom').x, y: anchorPoint(bind, 'left').y },
+      {
+        x: anchorPoint(useCompiled, 'bottom').x,
+        y: anchorPoint(bind, 'left').y,
+      },
       anchorPoint(bind, 'left'),
     ],
     0,
@@ -445,10 +587,7 @@ function layoutRuntimeDiagram(definition: DiagramDefinition, width: number) {
 
   add(
     { from: 'parse', to: 'bind' },
-    [
-      anchorPoint(parse, 'bottom'),
-      anchorPoint(bind, 'top'),
-    ],
+    [anchorPoint(parse, 'bottom'), anchorPoint(bind, 'top')],
     0,
     0,
   );
@@ -471,7 +610,10 @@ function layoutBuildDiagram(definition: DiagramDefinition, width: number) {
   }
 
   const innerWidth = safeWidth - PADDING_X * 2;
-  const nodeWidth = Math.min(MAX_NODE_WIDTH, Math.max(250, Math.floor((innerWidth - 2 * H_GAP) / 3)));
+  const nodeWidth = Math.min(
+    MAX_NODE_WIDTH,
+    Math.max(250, Math.floor((innerWidth - 2 * H_GAP) / 3)),
+  );
   const centerX = PADDING_X + innerWidth / 2 - nodeWidth / 2;
   const leftX = PADDING_X + innerWidth * 0.22 - nodeWidth / 2;
   const rightX = PADDING_X + innerWidth * 0.78 - nodeWidth / 2;
@@ -485,7 +627,6 @@ function layoutBuildDiagram(definition: DiagramDefinition, width: number) {
   const y7 = y6 + 130;
   const y8 = y7 + 130;
   const y9 = y8 + 130;
-  const y10 = y9 + 130;
 
   const byId = new Map<string, PositionedNode>();
   const setNode = (id: string, x: number, y: number) => {
@@ -551,11 +692,21 @@ function layoutBuildDiagram(definition: DiagramDefinition, width: number) {
   const splitLazyNoY = splitLazyY;
 
   const routed: RoutedEdge[] = [];
-  const add = (edge: FlowEdge, points: Array<{ x: number; y: number }>, lx: number, ly: number) => {
+  const add = (
+    edge: FlowEdge,
+    points: Array<{ x: number; y: number }>,
+    lx: number,
+    ly: number,
+  ) => {
     routed.push({ ...edge, path: orthPath(points), labelX: lx, labelY: ly });
   };
 
-  add({ from: 'scan', to: 'validate' }, [anchorPoint(scan, 'bottom'), anchorPoint(validate, 'top')], 0, 0);
+  add(
+    { from: 'scan', to: 'validate' },
+    [anchorPoint(scan, 'bottom'), anchorPoint(validate, 'top')],
+    0,
+    0,
+  );
 
   add(
     { from: 'validate', to: 'valid' },
@@ -591,7 +742,10 @@ function layoutBuildDiagram(definition: DiagramDefinition, width: number) {
     { from: 'effective', to: 'preparse' },
     [
       anchorPoint(effective, 'bottom'),
-      { x: anchorPoint(effective, 'bottom').x, y: anchorPoint(preparse, 'left').y },
+      {
+        x: anchorPoint(effective, 'bottom').x,
+        y: anchorPoint(preparse, 'left').y,
+      },
       anchorPoint(preparse, 'left'),
     ],
     0,
@@ -625,8 +779,14 @@ function layoutBuildDiagram(definition: DiagramDefinition, width: number) {
     { from: 'emitPreparse', to: 'compiled' },
     [
       anchorPoint(emitPreparse, 'right'),
-      { x: anchorPoint(compiled, 'left').x - 18, y: anchorPoint(emitPreparse, 'right').y },
-      { x: anchorPoint(compiled, 'left').x - 18, y: anchorPoint(compiled, 'left').y },
+      {
+        x: anchorPoint(compiled, 'left').x - 18,
+        y: anchorPoint(emitPreparse, 'right').y,
+      },
+      {
+        x: anchorPoint(compiled, 'left').x - 18,
+        y: anchorPoint(compiled, 'left').y,
+      },
       anchorPoint(compiled, 'left'),
     ],
     0,
@@ -656,10 +816,15 @@ function layoutBuildDiagram(definition: DiagramDefinition, width: number) {
       anchorPoint(compiled, 'bottom'),
       { x: anchorPoint(compiled, 'bottom').x, y: splitCompiledYesY },
       { x: anchorPoint(emitCompiled, 'right').x + 16, y: splitCompiledYesY },
-      { x: anchorPoint(emitCompiled, 'right').x + 16, y: anchorPoint(emitCompiled, 'right').y },
+      {
+        x: anchorPoint(emitCompiled, 'right').x + 16,
+        y: anchorPoint(emitCompiled, 'right').y,
+      },
       anchorPoint(emitCompiled, 'right'),
     ],
-    (anchorPoint(compiled, 'bottom').x + (anchorPoint(emitCompiled, 'right').x + 16)) / 2,
+    (anchorPoint(compiled, 'bottom').x +
+      (anchorPoint(emitCompiled, 'right').x + 16)) /
+      2,
     splitCompiledYesY - 4,
   );
   add(
@@ -668,10 +833,15 @@ function layoutBuildDiagram(definition: DiagramDefinition, width: number) {
       anchorPoint(compiled, 'bottom'),
       { x: anchorPoint(compiled, 'bottom').x, y: splitCompiledNoY },
       { x: anchorPoint(skipCompiled, 'left').x - 16, y: splitCompiledNoY },
-      { x: anchorPoint(skipCompiled, 'left').x - 16, y: anchorPoint(skipCompiled, 'left').y },
+      {
+        x: anchorPoint(skipCompiled, 'left').x - 16,
+        y: anchorPoint(skipCompiled, 'left').y,
+      },
       anchorPoint(skipCompiled, 'left'),
     ],
-    (anchorPoint(compiled, 'bottom').x + (anchorPoint(skipCompiled, 'left').x - 16)) / 2,
+    (anchorPoint(compiled, 'bottom').x +
+      (anchorPoint(skipCompiled, 'left').x - 16)) /
+      2,
     splitCompiledNoY - 4,
   );
 
@@ -679,7 +849,10 @@ function layoutBuildDiagram(definition: DiagramDefinition, width: number) {
     { from: 'emitCompiled', to: 'lazy' },
     [
       anchorPoint(emitCompiled, 'right'),
-      { x: anchorPoint(lazy, 'left').x - 18, y: anchorPoint(emitCompiled, 'right').y },
+      {
+        x: anchorPoint(lazy, 'left').x - 18,
+        y: anchorPoint(emitCompiled, 'right').y,
+      },
       { x: anchorPoint(lazy, 'left').x - 18, y: anchorPoint(lazy, 'left').y },
       anchorPoint(lazy, 'left'),
     ],
@@ -690,8 +863,14 @@ function layoutBuildDiagram(definition: DiagramDefinition, width: number) {
     { from: 'skipCompiled', to: 'lazy' },
     [
       anchorPoint(skipCompiled, 'right'),
-      { x: anchorPoint(skipCompiled, 'right').x + 26, y: anchorPoint(skipCompiled, 'right').y },
-      { x: anchorPoint(skipCompiled, 'right').x + 26, y: anchorPoint(lazy, 'top').y - 18 },
+      {
+        x: anchorPoint(skipCompiled, 'right').x + 26,
+        y: anchorPoint(skipCompiled, 'right').y,
+      },
+      {
+        x: anchorPoint(skipCompiled, 'right').x + 26,
+        y: anchorPoint(lazy, 'top').y - 18,
+      },
       { x: anchorPoint(lazy, 'top').x, y: anchorPoint(lazy, 'top').y - 18 },
       anchorPoint(lazy, 'top'),
     ],
@@ -705,10 +884,14 @@ function layoutBuildDiagram(definition: DiagramDefinition, width: number) {
       anchorPoint(lazy, 'bottom'),
       { x: anchorPoint(lazy, 'bottom').x, y: splitLazyYesY },
       { x: anchorPoint(emitLazy, 'right').x + 16, y: splitLazyYesY },
-      { x: anchorPoint(emitLazy, 'right').x + 16, y: anchorPoint(emitLazy, 'right').y },
+      {
+        x: anchorPoint(emitLazy, 'right').x + 16,
+        y: anchorPoint(emitLazy, 'right').y,
+      },
       anchorPoint(emitLazy, 'right'),
     ],
-    (anchorPoint(lazy, 'bottom').x + (anchorPoint(emitLazy, 'right').x + 16)) / 2,
+    (anchorPoint(lazy, 'bottom').x + (anchorPoint(emitLazy, 'right').x + 16)) /
+      2,
     splitLazyYesY - 4,
   );
   add(
@@ -717,10 +900,15 @@ function layoutBuildDiagram(definition: DiagramDefinition, width: number) {
       anchorPoint(lazy, 'bottom'),
       { x: anchorPoint(lazy, 'bottom').x, y: splitLazyNoY },
       { x: anchorPoint(skipLazyNode, 'left').x - 32, y: splitLazyNoY },
-      { x: anchorPoint(skipLazyNode, 'left').x - 32, y: anchorPoint(skipLazyNode, 'left').y },
+      {
+        x: anchorPoint(skipLazyNode, 'left').x - 32,
+        y: anchorPoint(skipLazyNode, 'left').y,
+      },
       anchorPoint(skipLazyNode, 'left'),
     ],
-    (anchorPoint(lazy, 'bottom').x + (anchorPoint(skipLazyNode, 'left').x - 16)) / 2,
+    (anchorPoint(lazy, 'bottom').x +
+      (anchorPoint(skipLazyNode, 'left').x - 16)) /
+      2,
     splitLazyNoY - 4,
   );
 
@@ -798,7 +986,8 @@ function layoutDiagram(definition: DiagramDefinition, width: number) {
         continue;
       }
       const height = nodeHeight(node.shape);
-      const y = PADDING_Y + rowIndex * (RECT_HEIGHT + V_GAP) + (rowHeight - height) / 2;
+      const y =
+        PADDING_Y + rowIndex * (RECT_HEIGHT + V_GAP) + (rowHeight - height) / 2;
       nodesById.set(id, {
         ...node,
         x,
@@ -828,13 +1017,21 @@ function layoutDiagram(definition: DiagramDefinition, width: number) {
       continue;
     }
     const current = sourceMinTargetY.get(edge.from);
-    sourceMinTargetY.set(edge.from, current === undefined ? to.y : Math.min(current, to.y));
+    sourceMinTargetY.set(
+      edge.from,
+      current === undefined ? to.y : Math.min(current, to.y),
+    );
   }
   const sourceSplitY = new Map<string, number>();
-  const mobileTargetSideUsage = new Map<string, { left: number; right: number }>();
+  const mobileTargetSideUsage = new Map<
+    string,
+    { left: number; right: number }
+  >();
   const nodeListForBounds = Array.from(nodesById.values());
   const globalMinNodeX = Math.min(...nodeListForBounds.map((n) => n.x));
-  const globalMaxNodeX = Math.max(...nodeListForBounds.map((n) => n.x + n.width));
+  const globalMaxNodeX = Math.max(
+    ...nodeListForBounds.map((n) => n.x + n.width),
+  );
   const edges = definition.edges
     .map((edge, edgeIndex) => {
       const from = nodesById.get(edge.from);
@@ -850,13 +1047,18 @@ function layoutDiagram(definition: DiagramDefinition, width: number) {
       const sourceList = sourceEdges.get(from.id) ?? [];
       const listIndex = Math.max(
         0,
-        sourceList.findIndex((candidate) => candidate.to === edge.to && candidate.label === edge.label),
+        sourceList.findIndex(
+          (candidate) =>
+            candidate.to === edge.to && candidate.label === edge.label,
+        ),
       );
       const branchSlot =
         sourceOutCount <= 1
           ? 0
           : sourceOutCount === 2
-            ? (listIndex === 0 ? -1 : 1)
+            ? listIndex === 0
+              ? -1
+              : 1
             : listIndex - Math.floor(sourceOutCount / 2);
 
       const sx = from.x + from.width / 2;
@@ -890,7 +1092,10 @@ function layoutDiagram(definition: DiagramDefinition, width: number) {
                 ) {
                   const branchSplitY = sy + 24;
                   const targetSideY = to.y + to.height / 2;
-                  const laneX = Math.min(safeWidth - PADDING_X - 8, to.x + to.width + 26);
+                  const laneX = Math.min(
+                    safeWidth - PADDING_X - 8,
+                    to.x + to.width + 26,
+                  );
                   const targetSideX = to.x + to.width;
                   return `M ${centerX} ${sy} L ${centerX} ${branchSplitY} L ${laneX} ${branchSplitY} L ${laneX} ${targetSideY} L ${targetSideX} ${targetSideY}`;
                 }
@@ -906,7 +1111,10 @@ function layoutDiagram(definition: DiagramDefinition, width: number) {
                 const leftLaneX = leftLaneLimit + laneOffset;
                 const rightAvailable = rightLaneX >= rightOutsideMin;
                 const leftAvailable = leftLaneX <= leftOutsideMax;
-                const usage = mobileTargetSideUsage.get(edge.to) ?? { left: 0, right: 0 };
+                const usage = mobileTargetSideUsage.get(edge.to) ?? {
+                  left: 0,
+                  right: 0,
+                };
                 const forcedSide =
                   definition.title === 'Build Flow' && edge.to === 'skipLazy'
                     ? edge.from === 'lazy'
@@ -925,7 +1133,9 @@ function layoutDiagram(definition: DiagramDefinition, width: number) {
                     useRightSide = usage.right < usage.left;
                   }
                 } else {
-                  useRightSide = (preferredRight && rightAvailable) || (!leftAvailable && rightAvailable);
+                  useRightSide =
+                    (preferredRight && rightAvailable) ||
+                    (!leftAvailable && rightAvailable);
                 }
                 mobileTargetSideUsage.set(edge.to, {
                   left: usage.left + (useRightSide ? 0 : 1),
@@ -958,13 +1168,17 @@ function layoutDiagram(definition: DiagramDefinition, width: number) {
               }
 
               const laneOffsets = [0, 14, 28, 42, 56];
-              const laneOffset = laneOffsets[(edgeIndex + 1) % laneOffsets.length];
+              const laneOffset =
+                laneOffsets[(edgeIndex + 1) % laneOffsets.length];
               const preferredRight = edgeIndex % 2 === 1;
               const rightLaneX = rightLaneLimit - laneOffset;
               const leftLaneX = leftLaneLimit + laneOffset;
               const rightAvailable = rightLaneX >= rightOutsideMin;
               const leftAvailable = leftLaneX <= leftOutsideMax;
-              const usage = mobileTargetSideUsage.get(edge.to) ?? { left: 0, right: 0 };
+              const usage = mobileTargetSideUsage.get(edge.to) ?? {
+                left: 0,
+                right: 0,
+              };
               const forcedSide =
                 definition.title === 'Build Flow' && edge.to === 'skipLazy'
                   ? edge.from === 'lazy'
@@ -983,7 +1197,9 @@ function layoutDiagram(definition: DiagramDefinition, width: number) {
                   useRightSide = usage.right < usage.left;
                 }
               } else {
-                useRightSide = (preferredRight && rightAvailable) || (!leftAvailable && rightAvailable);
+                useRightSide =
+                  (preferredRight && rightAvailable) ||
+                  (!leftAvailable && rightAvailable);
               }
               mobileTargetSideUsage.set(edge.to, {
                 left: usage.left + (useRightSide ? 0 : 1),
@@ -997,8 +1213,14 @@ function layoutDiagram(definition: DiagramDefinition, width: number) {
             }
 
             const laneSpread = Math.floor(sourceIndex / 2) * 8;
-            const laneX = sx + branchSlot * 16 + (sourceIndex % 2 === 0 ? laneSpread : -laneSpread);
-            const channelY = Math.min(ty - 14, splitY + Math.abs(branchSlot) * 6);
+            const laneX =
+              sx +
+              branchSlot * 16 +
+              (sourceIndex % 2 === 0 ? laneSpread : -laneSpread);
+            const channelY = Math.min(
+              ty - 14,
+              splitY + Math.abs(branchSlot) * 6,
+            );
 
             return `M ${sx} ${sy} L ${sx} ${splitY - 6} L ${laneX} ${splitY} L ${laneX} ${channelY} L ${tx} ${channelY} L ${tx} ${ty}`;
           })();
@@ -1083,15 +1305,19 @@ export function CompilerFlowDiagram({ kind }: { kind: DiagramKind }) {
     return () => observer.disconnect();
   }, []);
 
-  const layout = useMemo(() => layoutDiagram(definition, width - 2), [definition, width]);
+  const layout = useMemo(
+    () => layoutDiagram(definition, width - 2),
+    [definition, width],
+  );
 
   const hostStyle = useMemo<CSSProperties>(
-    () => ({
-      '--flow-accent':
-        kind === 'build'
-          ? 'color-mix(in srgb, var(--brand) 64%, #8cc4ff)'
-          : 'color-mix(in srgb, var(--brand-2) 78%, #8df2e8)',
-    }) as CSSProperties,
+    () =>
+      ({
+        '--flow-accent':
+          kind === 'build'
+            ? 'color-mix(in srgb, var(--brand) 64%, #8cc4ff)'
+            : 'color-mix(in srgb, var(--brand-2) 78%, #8df2e8)',
+      }) as CSSProperties,
     [kind],
   );
 
@@ -1121,9 +1347,18 @@ export function CompilerFlowDiagram({ kind }: { kind: DiagramKind }) {
         <g className="compilerFlowEdges">
           {layout.edges.map((edge) => (
             <g key={`${edge.from}-${edge.to}`}>
-              <path d={edge.path} className="compilerFlowEdge" markerEnd={`url(#arrow-${kind})`} />
+              <path
+                d={edge.path}
+                className="compilerFlowEdge"
+                markerEnd={`url(#arrow-${kind})`}
+              />
               {edge.label ? (
-                <text x={edge.labelX} y={edge.labelY} className="compilerFlowEdgeLabel" textAnchor="middle">
+                <text
+                  x={edge.labelX}
+                  y={edge.labelY}
+                  className="compilerFlowEdgeLabel"
+                  textAnchor="middle"
+                >
                   {edge.label}
                 </text>
               ) : null}
@@ -1139,7 +1374,10 @@ export function CompilerFlowDiagram({ kind }: { kind: DiagramKind }) {
             const shift = textBlockHeight(lines.length) / 2;
 
             return (
-              <g key={node.id} className={`compilerFlowNode compilerFlowNode--${node.tone ?? 'neutral'}`}>
+              <g
+                key={node.id}
+                className={`compilerFlowNode compilerFlowNode--${node.tone ?? 'neutral'}`}
+              >
                 {node.shape === 'rect' ? (
                   <rect
                     x={node.x}
@@ -1157,9 +1395,18 @@ export function CompilerFlowDiagram({ kind }: { kind: DiagramKind }) {
                   />
                 )}
 
-                <text x={cx} y={cy - shift} className="compilerFlowNodeLabel" textAnchor="middle">
+                <text
+                  x={cx}
+                  y={cy - shift}
+                  className="compilerFlowNodeLabel"
+                  textAnchor="middle"
+                >
                   {lines.map((line, index) => (
-                    <tspan key={`${node.id}-${index}`} x={cx} dy={index === 0 ? 0 : 20}>
+                    <tspan
+                      key={`${node.id}-${index}`}
+                      x={cx}
+                      dy={index === 0 ? 0 : 20}
+                    >
                       {line}
                     </tspan>
                   ))}

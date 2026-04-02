@@ -8,7 +8,6 @@ import type {
   ChainExpression,
   ConditionalExpression as EstreeConditionalExpression,
   Expression,
-  ExpressionStatement,
   Identifier,
   Literal,
   LogicalExpression,
@@ -93,9 +92,7 @@ import { TemplateLiteralExpression } from './expressions/template-literal-expres
 import { TypeofExpression } from './expressions/typeof-expression';
 import { UnaryNegationExpression } from './expressions/unary-negation-expression';
 import { UnaryPlusExpression } from './expressions/unary-plus-expression';
-import {
-  type IJsExpressionAstParser,
-} from './js-expression-ast-parser';
+import { type IJsExpressionAstParser } from './js-expression-ast-parser';
 import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
 
 enum SyntaxExpressionType {
@@ -258,9 +255,8 @@ export class JsExpressionParser implements IExpressionParser {
   public parse(expressionString: string): AbstractExpression {
     this._currentExpressionSource = expressionString;
     try {
-      const espreeExpression = this._jsExpressionAstParser.parse(
-        expressionString,
-      );
+      const espreeExpression =
+        this._jsExpressionAstParser.parse(expressionString);
       return this.createExpression(espreeExpression);
     } catch (e) {
       if (e instanceof Error) {

@@ -14,18 +14,22 @@ import {
   RsXStateManagerModule,
 } from '@rs-x/state-manager';
 
-import { ExpressionCache } from './expression-cache/expression-cache';
-import type { IExpressionCache } from './expression-cache/expression-cache.type';
 import { CompiledExpressionCompiler } from './compiled-expression/compiled-expression.compiler';
 import type { ICompiledExpressionCompiler } from './compiled-expression/compiled-expression.compiler.interface';
-import { CompiledExpressionEngine } from './expression-engine/compiled-expression-engine';
-import { type ICompiledExpressionEngine, type IExpressionEngineSelector, type ITreeExpressionEngine } from './expression-engine/expression-engine.interface';
-import { ExpressionEngineSelector } from './expression-engine/expression-engine-selector';
-import { TreeExpressionEngine } from './expression-engine/tree-expression-engine';
+import { ExpressionCache } from './expression-cache/expression-cache';
+import type { IExpressionCache } from './expression-cache/expression-cache.type';
 import { ExpressionChangePlayback } from './expression-change-playback/expression-change-playback';
 import { type IExpressionChangePlayback } from './expression-change-playback/expression-change-playback.interface';
 import { ExpressionChangeTrackerManager } from './expression-change-tracker/expression-change-tracker-manager';
 import { type IExpressionChangeTrackerManager } from './expression-change-tracker/expression-change-tracker-manager.interface';
+import { CompiledExpressionEngine } from './expression-engine/compiled-expression-engine';
+import {
+  type ICompiledExpressionEngine,
+  type IExpressionEngineSelector,
+  type ITreeExpressionEngine,
+} from './expression-engine/expression-engine.interface';
+import { ExpressionEngineSelector } from './expression-engine/expression-engine-selector';
+import { TreeExpressionEngine } from './expression-engine/tree-expression-engine';
 import { ExpressionFactory } from './expression-factory/expression-factory';
 import type { IExpressionFactory } from './expression-factory/expression-factory.interface';
 import { ExpressionManager } from './expression-factory/expression-manager';
@@ -56,11 +60,11 @@ import {
   ExpressionEvaluateManager,
   type IExpressionEvaluateManager,
 } from './expression-evaluate-manager';
-import { JsExpressionParser } from './js-expression-parser';
 import {
-  JsExpressionAstParser,
   type IJsExpressionAstParser,
+  JsExpressionAstParser,
 } from './js-expression-ast-parser';
+import { JsExpressionParser } from './js-expression-parser';
 import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
 
 InjectionContainer.load(RsXStateManagerModule);

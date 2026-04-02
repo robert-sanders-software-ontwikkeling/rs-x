@@ -40,7 +40,11 @@ import { RsXStateManagerInjectionTokens } from '@rs-x/state-manager';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..', '..');
-const reportsDirectory = path.resolve(repoRoot, 'reports', 'compiled-tree-crossover');
+const reportsDirectory = path.resolve(
+  repoRoot,
+  'reports',
+  'compiled-tree-crossover',
+);
 const dateStamp = new Date().toISOString().slice(0, 10);
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -133,7 +137,8 @@ const results = {
     bindings: BINDINGS,
     bindRuns: BIND_RUNS,
     bindWarmup: BIND_WARMUP,
-    expressionShape: '"x + y + x + y + …" — N pairs → 4N−1 nodes, always 2 unique deps (x, y)',
+    expressionShape:
+      '"x + y + x + y + …" — N pairs → 4N−1 nodes, always 2 unique deps (x, y)',
     bindingShape: `${BINDINGS} unique model objects per run (same x+y values, different object identity)`,
     measurement:
       'Each timed run: create BINDINGS unique model objects, bind all, dispose all. ' +
@@ -146,7 +151,9 @@ const results = {
 
 console.log('rs-x compiled vs tree crossover benchmark (bind performance)');
 console.log(`Node ${process.version}  CPU: ${results.environment.cpuModel}`);
-console.log(`${BINDINGS} bindings  |  ${BIND_RUNS} bind runs  |  ${BIND_WARMUP} warmup`);
+console.log(
+  `${BINDINGS} bindings  |  ${BIND_RUNS} bind runs  |  ${BIND_WARMUP} warmup`,
+);
 console.log('Expression: "x + y + x + y + …" (2 deps, growing node count)\n');
 
 const measureMode = async (expression, mode) => {
@@ -170,17 +177,20 @@ for (const pairs of pairCounts) {
   const expression = makeExpression(pairs);
   const nodeCount = countNodes(expressionParser.parse(expression));
 
-  console.log(`\n── ${nodeCount} nodes (${pairs} pair${pairs === 1 ? '' : 's'}) ──`);
+  console.log(
+    `\n── ${nodeCount} nodes (${pairs} pair${pairs === 1 ? '' : 's'}) ──`,
+  );
 
   const tree = await measureMode(expression, 'tree');
   const compiled = await measureMode(expression, 'compiled');
 
   const speedup = tree.bindMs / compiled.bindMs;
-  const winner = speedup >= 1.05
-    ? `compiled ${speedup.toFixed(1)}× faster`
-    : compiled.bindMs / tree.bindMs >= 1.05
-      ? `tree ${(compiled.bindMs / tree.bindMs).toFixed(1)}× faster`
-      : 'equal';
+  const winner =
+    speedup >= 1.05
+      ? `compiled ${speedup.toFixed(1)}× faster`
+      : compiled.bindMs / tree.bindMs >= 1.05
+        ? `tree ${(compiled.bindMs / tree.bindMs).toFixed(1)}× faster`
+        : 'equal';
 
   console.log(
     `  bind:  tree ${tree.bindMs.toFixed(1).padStart(7)} ms   compiled ${compiled.bindMs.toFixed(1).padStart(7)} ms  → ${winner}`,
@@ -195,18 +205,27 @@ const findCrossover = () => {
   for (let i = 1; i < results.rows.length; i++) {
     const a = results.rows[i - 1];
     const b = results.rows[i];
-    if (a.tree.bindMs <= a.compiled.bindMs && b.compiled.bindMs < b.tree.bindMs) {
+    if (
+      a.tree.bindMs <= a.compiled.bindMs &&
+      b.compiled.bindMs < b.tree.bindMs
+    ) {
       const dN = b.nodeCount - a.nodeCount;
       const treeSlope = (b.tree.bindMs - a.tree.bindMs) / dN;
       const compSlope = (b.compiled.bindMs - a.compiled.bindMs) / dN;
       if (Math.abs(compSlope - treeSlope) > 1e-9) {
         const t = (a.tree.bindMs - a.compiled.bindMs) / (compSlope - treeSlope);
-        return { nodeCount: Math.round(a.nodeCount + t), between: [a.nodeCount, b.nodeCount] };
+        return {
+          nodeCount: Math.round(a.nodeCount + t),
+          between: [a.nodeCount, b.nodeCount],
+        };
       }
     }
   }
   // Check if compiled wins from the start
-  if (results.rows.length > 0 && results.rows[0].compiled.bindMs < results.rows[0].tree.bindMs) {
+  if (
+    results.rows.length > 0 &&
+    results.rows[0].compiled.bindMs < results.rows[0].tree.bindMs
+  ) {
     return { nodeCount: results.rows[0].nodeCount, compiledAlwaysWins: true };
   }
   return null;
@@ -215,16 +234,23 @@ const findCrossover = () => {
 const bindCrossover = findCrossover();
 results.crossover = bindCrossover;
 
-console.log('\n── Crossover summary ──────────────────────────────────────────');
+console.log(
+  '\n── Crossover summary ──────────────────────────────────────────',
+);
 const fmt = (c) =>
-  c === null ? 'not found in measured range'
-  : c.compiledAlwaysWins ? `compiled wins from the start (≤ ${c.nodeCount} nodes)`
-  : `~${c.nodeCount} nodes (between ${c.between[0]} and ${c.between[1]} nodes)`;
+  c === null
+    ? 'not found in measured range'
+    : c.compiledAlwaysWins
+      ? `compiled wins from the start (≤ ${c.nodeCount} nodes)`
+      : `~${c.nodeCount} nodes (between ${c.between[0]} and ${c.between[1]} nodes)`;
 console.log(`  Bind time crossover:  ${fmt(bindCrossover)}`);
 
 // ─── Save ─────────────────────────────────────────────────────────────────────
 
 await fs.mkdir(reportsDirectory, { recursive: true });
-const outputPath = path.join(reportsDirectory, `benchmark-${dateStamp}-bind.json`);
+const outputPath = path.join(
+  reportsDirectory,
+  `benchmark-${dateStamp}-bind.json`,
+);
 await fs.writeFile(outputPath, JSON.stringify(results, null, 2));
 console.log(`\nSaved → ${outputPath}`);

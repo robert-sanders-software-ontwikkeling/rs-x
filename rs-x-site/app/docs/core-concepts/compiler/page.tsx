@@ -5,6 +5,7 @@ import {
   type CoreConceptDoc,
   CoreConceptPageLayout,
 } from '../_template/core-concept-page';
+
 import { CompilerFlowDiagram } from './compiler-flow-diagram.client';
 
 const buildBasicsCode = dedent`
@@ -46,30 +47,29 @@ const lazyOptionCode = dedent`
 const doc: CoreConceptDoc = {
   title: 'Compiler',
   lead: 'Use the rs-x compiler to move expression parse/compile work to build time and improve runtime performance.',
-  whatItMeans:
-    (
-      <>
-        <p>
-          The rs-x compiler analyzes expression declaration sites in your source
-          (`rsx(...)` and `IExpressionFactory.create(...)`), validates expression
-          semantics, and can generate build-time artifacts (preparsed cache and
-          compiled plans). Runtime uses those artifacts to skip runtime parsing
-          and, in compiled mode, execute precompiled expression functions instead
-          of evaluating expression trees.
-        </p>
-        <div style={{ marginTop: 12 }}>
-          <CompilerFlowDiagram kind="build" />
-          <CompilerFlowDiagram kind="runtime" />
-        </div>
-      </>
-    ),
+  whatItMeans: (
+    <>
+      <p>
+        The rs-x compiler analyzes expression declaration sites in your source
+        (`rsx(...)` and `IExpressionFactory.create(...)`), validates expression
+        semantics, and can generate build-time artifacts (preparsed cache and
+        compiled plans). Runtime uses those artifacts to skip runtime parsing
+        and, in compiled mode, execute precompiled expression functions instead
+        of evaluating expression trees.
+      </p>
+      <div style={{ marginTop: 12 }}>
+        <CompilerFlowDiagram kind="build" />
+        <CompilerFlowDiagram kind="runtime" />
+      </div>
+    </>
+  ),
   whyItMatters:
     'Using the compiler reduces runtime parse pressure, improves startup consistency, and gives stronger feedback in CI/editor diagnostics. The tradeoff is build complexity, and generated output can become large when you have many unique long expressions.',
   keyPoints: [
     '`rsx build` scans your source for expression declarations, validates them, and generates configured AOT artifacts during build.',
     'There are two config levels: build-level defaults/gates in `package.json` (`rsx.build`) and per-expression options in `rsx(..., options)`.',
     '`preparse` means expression parsing is done at build time so runtime parser work is skipped for those expressions.',
-    '`lazy` controls loading strategy of generated entries: load on first use instead of eager registration.',
+    '`lazy` (requires `compiled: true`) defers loading the AOT-compiled plan module until the expression is first used instead of registering it at startup.',
     '`compiled` controls whether a specific expression site is emitted as a compiled plan (default true).',
     'Use `rsx typecheck` in CI to catch expression semantic issues early.',
     'Compiler options improve startup/runtime behavior, but can increase build time and output size for many long unique expressions.',
@@ -102,9 +102,10 @@ const doc: CoreConceptDoc = {
     {
       title: 'When to use lazy',
       paragraphs: [
+        '`lazy` only takes effect when `compiled: true` is also set. It controls whether the AOT-generated compiled plan module is loaded eagerly at startup or deferred until the expression is first used.',
         'Use `lazy: true` for expressions that are not needed at startup (feature-gated screens, rarely opened panels, admin/debug routes).',
-        'Use `lazy: false` for critical above-the-fold expressions where immediate availability matters more than deferred loading.',
-        'Lazy keeps initial registration smaller, but the first access pays the load cost of that generated entry.',
+        'Use `lazy: false` (the default) for critical above-the-fold expressions where the compiled plan must be ready immediately.',
+        'Lazy keeps the initial bundle smaller, but the first use pays the cost of loading the generated compiled plan module on demand.',
       ],
     },
     {
@@ -120,7 +121,7 @@ const doc: CoreConceptDoc = {
       paragraphs: [
         'Advantages: lower runtime parse work, faster startup/first-use paths, stronger compile-time diagnostics, and better control over precompute/defer tradeoffs.',
         'Disadvantages: longer build pipeline and larger generated output for many long unique expressions',
-        'A practical default is: production `--prod` with AOT enabled, preparse for stable repeated expressions, lazy for non-critical expressions.',
+        'A practical default is: production `--prod` with AOT enabled, preparse for stable repeated expressions, lazy (with compiled) for non-critical or rarely-used expression sites.',
       ],
     },
   ],
@@ -145,8 +146,7 @@ const doc: CoreConceptDoc = {
     },
     {
       title: 'Lazy example',
-      description:
-        'Defer generated entry loading for rarely used expressions.',
+      description: 'Defer generated entry loading for rarely used expressions.',
       code: lazyOptionCode,
     },
   ],

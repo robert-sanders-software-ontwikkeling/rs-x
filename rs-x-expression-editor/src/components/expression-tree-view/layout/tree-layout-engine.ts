@@ -1,19 +1,19 @@
 import { Type } from '@rs-x/core';
-import { type IExpression } from '@rs-x/expression-parser';
+import { type IExpressionTree } from '@rs-x/expression-parser';
 
 import { type LayoutEdge } from './layout-edge.interface';
 import { type LayoutNode } from './layout-node.interface';
 import { type LayoutResult } from './layout-result.interface';
 import { type NodeId, type TNode } from './node.interface';
 
-function isHiddenExpression(expr: IExpression): boolean {
+function isHiddenExpression(expr: IExpressionTree): boolean {
   return Type.cast<{ hidden?: boolean }>(expr).hidden === true;
 }
 
 export class TreeLayoutEngine {
   private _seq = 0;
 
-  public computeLayout(expression: IExpression): LayoutResult {
+  public computeLayout(expression: IExpressionTree): LayoutResult {
     if (!expression) {
       return { nodes: [], edges: [], maxX: -1, maxDepth: 0 };
     }
@@ -59,7 +59,7 @@ export class TreeLayoutEngine {
    * - Hidden nodes are NOT added to the layout
    * - Children of hidden nodes are "lifted" to the nearest visible parent
    */
-  private buildVisibleTNodeTree(rootExpr: IExpression): {
+  private buildVisibleTNodeTree(rootExpr: IExpressionTree): {
     root: TNode | null;
     nodes: TNode[];
   } {
@@ -68,7 +68,7 @@ export class TreeLayoutEngine {
     const nodes: TNode[] = [];
 
     const makeNode = (args: {
-      expression: IExpression;
+      expression: IExpressionTree;
       depth: number;
       parent?: TNode;
       number: number;
@@ -104,12 +104,12 @@ export class TreeLayoutEngine {
 
     const buildChildrenLiftHidden = (args: {
       parent: TNode;
-      expressions: readonly IExpression[];
+      expressions: readonly IExpressionTree[];
       depth: number;
     }): void => {
       const { parent, expressions, depth } = args;
 
-      const visibleChildren: IExpression[] = [];
+      const visibleChildren: IExpressionTree[] = [];
 
       for (const child of expressions ?? []) {
         if (!child) {
@@ -149,7 +149,9 @@ export class TreeLayoutEngine {
     };
 
     // Root handling: if root is hidden, lift until we find a visible root
-    const resolveVisibleRoot = (expr: IExpression): IExpression | null => {
+    const resolveVisibleRoot = (
+      expr: IExpressionTree,
+    ): IExpressionTree | null => {
       if (!expr) {
         return null;
       }

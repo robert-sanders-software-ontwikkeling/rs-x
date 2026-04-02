@@ -7,5 +7,6 @@ export interface IExpressionFactory {
     context: object,
     expression: string,
     leafIndexWatchRule?: IIndexWatchRule,
+    compiled?: boolean,
   ): IExpression<T>;
 }

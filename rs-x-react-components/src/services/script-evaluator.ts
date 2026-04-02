@@ -185,7 +185,8 @@ export class ScriptEvaluator {
         continue;
       }
 
-      const literalStartOffset = literalMatch.index + literalMatch[0].indexOf(literalMatch[2]);
+      const literalStartOffset =
+        literalMatch.index + literalMatch[0].indexOf(literalMatch[2]);
       const tokenOffset = literalStartOffset + token.index;
       return this._offsetToLineColumn(script, tokenOffset);
     }

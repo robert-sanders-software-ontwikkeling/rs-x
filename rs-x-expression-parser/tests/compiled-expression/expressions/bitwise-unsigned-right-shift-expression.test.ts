@@ -49,7 +49,8 @@ describe('BitwiseUnsignedRightShiftExpression tests', () => {
     const clonedExpression = expression.clone();
 
     try {
-      expectCompiledOrTreeInstanceOf(clonedExpression, 
+      expectCompiledOrTreeInstanceOf(
+        clonedExpression,
         BitwiseUnsignedRightShiftExpression,
       );
       expect(clonedExpression.type).toEqual(

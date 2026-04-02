@@ -93,10 +93,15 @@ export default function RsxFunctionDocsPage() {
         <article className="card docsApiCard">
           <h2 className="cardTitle">Description</h2>
           <p className="cardText">
-            Call shape: <span className="codeInline">rsx(expression, options?)(model, leafIndexWatchRule?)</span>.
+            Call shape:{' '}
+            <span className="codeInline">
+              rsx(expression, options?)(model, leafIndexWatchRule?)
+            </span>
+            .
           </p>
           <p className="cardText">
-            Step 1: <span className="codeInline">rsx(&apos;a + b&apos;, options?)</span>{' '}
+            Step 1:{' '}
+            <span className="codeInline">rsx(&apos;a + b&apos;, options?)</span>{' '}
             declares the expression and returns a binder.
           </p>
           <p className="cardText">
@@ -150,7 +155,8 @@ export default function RsxFunctionDocsPage() {
           <p className="cardText">
             <span className="codeInline">model</span> and{' '}
             <span className="codeInline">leafIndexWatchRule</span> are binder
-            arguments: <span className="codeInline">(model, leafIndexWatchRule?)</span>.
+            arguments:{' '}
+            <span className="codeInline">(model, leafIndexWatchRule?)</span>.
           </p>
           <p className="cardText">
             <span className="codeInline">model</span> is required and defines
@@ -237,7 +243,6 @@ export default function RsxFunctionDocsPage() {
             <div className="qsCodeTitle">rsx options</div>
           </div>
           <SyntaxCodeBlock code={rsxOptionsCode} />
-
         </aside>
       </div>
     </DocsPageTemplate>

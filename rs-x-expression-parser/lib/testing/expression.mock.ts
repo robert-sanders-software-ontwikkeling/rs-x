@@ -1,22 +1,19 @@
 import { Subject } from 'rxjs';
 
+import type { IExpressionBindConfiguration } from '../expressions/expression-bind-configuration.type';
 import {
   type ChangeHook,
   type ExpressionType,
   type IExpression,
 } from '../expressions/expression-parser.interface';
 
-declare const jest: {
-  fn: <T extends (...args: any[]) => any>(implementation?: T) => T;
-};
-
 export class ExpressionMock implements IExpression {
   public readonly id!: string;
-  public readonly changed = new Subject<IExpression<unknown, unknown>>();
+  public readonly changed = new Subject<IExpression<unknown>>();
   public readonly type!: ExpressionType;
   public readonly expressionString!: string;
-  public readonly parent!: IExpression<unknown, unknown> | undefined;
-  public readonly childExpressions!: readonly IExpression<unknown, unknown>[];
+  public readonly parent!: IExpression<unknown> | undefined;
+  public readonly childExpressions!: readonly IExpression<unknown>[];
   public readonly value!: unknown;
   public readonly isRoot!: boolean;
   public readonly isAsync!: boolean | undefined;
@@ -28,8 +25,10 @@ export class ExpressionMock implements IExpression {
   }
 
   public readonly changeHook?: ChangeHook | undefined;
-  public readonly toString = jest.fn();
-  public readonly clone = jest.fn();
-  public readonly bind = jest.fn();
-  public readonly dispose = jest.fn();
+  public readonly toString = (): string => '';
+  public readonly clone = (): this => this;
+  public readonly bind = (
+    _settings: IExpressionBindConfiguration,
+  ): IExpression<unknown> => this;
+  public readonly dispose = (): void => {};
 }

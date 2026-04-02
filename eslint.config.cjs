@@ -1,13 +1,13 @@
-import tseslint from '@typescript-eslint/eslint-plugin';
-import tsParser from '@typescript-eslint/parser';
-import importPlugin from 'eslint-plugin-import';
-import simpleSort from 'eslint-plugin-simple-import-sort';
-import globals from 'globals';
+const tseslint = require('@typescript-eslint/eslint-plugin');
+const tsParser = require('@typescript-eslint/parser');
+const importPlugin = require('eslint-plugin-import');
+const simpleSort = require('eslint-plugin-simple-import-sort');
+const globals = require('globals');
 
 /**
  * ESLint Flat Config for TypeScript (ESLint 9)
  */
-export default [
+module.exports = [
   // Ignore compiled and declaration files
   {
     ignores: [
@@ -18,6 +18,9 @@ export default [
       '**/dist/**',
       '**/build/**',
       '**/coverage/**',
+      '**/.tmp-*',
+      '**/tmp-*.ts',
+      '**/tmp-*.mjs',
     ],
   },
 

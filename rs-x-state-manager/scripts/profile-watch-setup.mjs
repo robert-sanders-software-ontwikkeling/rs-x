@@ -59,7 +59,7 @@ function summarize(times) {
   const median =
     sorted.length % 2 === 0
       ? (sorted[middle - 1] + sorted[middle]) / 2
-      : sorted[middle] ?? 0;
+      : (sorted[middle] ?? 0);
   return { min, max, mean, median };
 }
 

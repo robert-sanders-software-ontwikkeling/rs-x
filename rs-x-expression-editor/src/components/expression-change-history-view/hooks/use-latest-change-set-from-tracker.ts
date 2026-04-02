@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import type { Subscription } from 'rxjs';
 
 import type {
-  IExpression,
   IExpressionChangeHistory,
   IExpressionChangeTracker,
+  IExpressionTree,
 } from '@rs-x/expression-parser';
 
 function expressionItemKey(item: IExpressionChangeHistory): string {
@@ -17,8 +17,8 @@ function stackKey(stack: readonly IExpressionChangeHistory[]): string {
 }
 
 export function useLatestChangeSetFromTracker(args: {
-  expression: IExpression | null | undefined;
-  useTracker: (expr: IExpression) => IExpressionChangeTracker | null;
+  expression: IExpressionTree | null | undefined;
+  useTracker: (expr: IExpressionTree) => IExpressionChangeTracker | null;
 }): IExpressionChangeHistory[] {
   const { expression, useTracker } = args;
 

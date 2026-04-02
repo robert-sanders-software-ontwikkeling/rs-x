@@ -233,7 +233,10 @@ describe('FunctionExpression tests', () => {
     expect(model.a).toBe(2);
     expect(expression.value).toBeUndefined();
     expect(
-      Object.prototype.hasOwnProperty.call(expression as object, 'childExpressions'),
+      Object.prototype.hasOwnProperty.call(
+        expression as object,
+        'childExpressions',
+      ),
     ).toBe(false);
   });
 });

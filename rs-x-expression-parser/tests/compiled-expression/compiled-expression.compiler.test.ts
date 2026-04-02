@@ -1,6 +1,6 @@
 import { CompiledExpressionCompiler } from '../../lib/compiled-expression/compiled-expression.compiler';
-import { JsExpressionAstParser } from '../../lib/js-expression-ast-parser';
 import { ExpressionType } from '../../lib/expressions/expression-parser.interface';
+import { JsExpressionAstParser } from '../../lib/js-expression-ast-parser';
 
 describe('CompiledExpressionCompiler', () => {
   it('should bypass AST parser for simple identifier expressions and cache them', () => {
@@ -73,9 +73,24 @@ describe('CompiledExpressionCompiler', () => {
       ],
     });
     expect(plan?.watchDependencies).toEqual([
-      { name: 'a', ownerPath: [], isLeaf: false, isMemberExpressionSegment: true },
-      { name: 'b', ownerPath: ['a'], isLeaf: false, isMemberExpressionSegment: true },
-      { name: 'c', ownerPath: ['a', 'b'], isLeaf: true, isMemberExpressionSegment: true },
+      {
+        name: 'a',
+        ownerPath: [],
+        isLeaf: false,
+        isMemberExpressionSegment: true,
+      },
+      {
+        name: 'b',
+        ownerPath: ['a'],
+        isLeaf: false,
+        isMemberExpressionSegment: true,
+      },
+      {
+        name: 'c',
+        ownerPath: ['a', 'b'],
+        isLeaf: true,
+        isMemberExpressionSegment: true,
+      },
     ]);
     expect(parseSpy).not.toHaveBeenCalled();
   });

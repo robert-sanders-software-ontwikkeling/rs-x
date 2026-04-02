@@ -65,8 +65,8 @@ const contentProjectionExample = dedent`
 const roadmapItems: RoadmapItem[] = [
   {
     title: 'TS Transformer / Plugin',
-    status: 'planned',
-    statusLabel: 'Planned',
+    status: 'mostly-done',
+    statusLabel: 'Released V2',
     aim: 'Provide compile-time parsing and syntax validation for RS-X expressions.',
     goal: 'Offer IntelliSense/autocomplete for context properties, fail fast on invalid identifiers/expressions at compile time, and optimize runtime by removing expression parsing from execution paths.',
     objective:

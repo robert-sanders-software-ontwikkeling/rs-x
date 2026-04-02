@@ -1,13 +1,13 @@
-import ts from 'typescript';
+import type ts from 'typescript';
 
 import {
   CompiledExpressionCompiler,
-  JsExpressionAstParser,
   type ICompiledExpressionPlan,
   type ICompiledExpressionWatchDependency,
   type ICompiledMemberChainPlan,
   type ICompiledMemberChainSegment,
   type ICompiledSequenceOperandPlan,
+  JsExpressionAstParser,
 } from '@rs-x/expression-parser';
 
 import { detectExpressionSites } from './expression-site-detector';
@@ -52,8 +52,10 @@ export function generateAotCompiledExpressionsModule(
   uniqueExpressions.sort();
 
   const compiler = new CompiledExpressionCompiler(new JsExpressionAstParser());
-  const compiledPlans: Array<{ expression: string; plan: ICompiledExpressionPlan }> =
-    [];
+  const compiledPlans: Array<{
+    expression: string;
+    plan: ICompiledExpressionPlan;
+  }> = [];
   const skippedExpressions: string[] = [];
 
   for (let i = 0; i < uniqueExpressions.length; i++) {
@@ -75,7 +77,7 @@ export function generateAotCompiledExpressionsModule(
     .join(',\n');
 
   const code = [
-    'import { registerCompiledExpressionPlansInExpressionCache } from \'@rs-x/expression-parser\';',
+    "import { registerCompiledExpressionPlansInExpressionCache } from '@rs-x/expression-parser';",
     '',
     'const compactPlans = [',
     compactEntries,
@@ -179,8 +181,10 @@ export function generateAotParsedExpressionCacheModule(
   uniqueExpressions.sort();
 
   const parser = new JsExpressionAstParser();
-  const parsedExpressions: Array<{ expression: string; expressionAst: unknown }> =
-    [];
+  const parsedExpressions: Array<{
+    expression: string;
+    expressionAst: unknown;
+  }> = [];
   const skippedExpressions: string[] = [];
 
   for (let i = 0; i < uniqueExpressions.length; i++) {
@@ -240,7 +244,7 @@ export function generateAotLazyExpressionPreloadManifestModule(
     .join(',\n');
 
   const code = [
-    'import { registerLazyExpressionPreloader } from \'@rs-x/expression-parser\';',
+    "import { registerLazyExpressionPreloader } from '@rs-x/expression-parser';",
     '',
     `export const rsxAotLazyExpressionManifest: Record<string, true> = {${manifestObject ? `\n${manifestObject}\n` : ''}};`,
     '',
@@ -312,7 +316,9 @@ function serializeCompactMemberSegment(
   }
 
   return `["c",${JSON.stringify(segment.expressionString)},${serializeStringArray(segment.dependencyNames ?? [])},${
-    segment.evaluateIndex ? serializeFunction(segment.evaluateIndex) : 'undefined'
+    segment.evaluateIndex
+      ? serializeFunction(segment.evaluateIndex)
+      : 'undefined'
   },${
     segment.evaluateIndexByOwnDependencies
       ? serializeFunction(segment.evaluateIndexByOwnDependencies)
@@ -339,8 +345,6 @@ function serializeStringArray(values: readonly string[]): string {
   return `[${values.map((value) => JSON.stringify(value)).join(',')}]`;
 }
 
-function serializeFunction(
-  fn: (...args: unknown[]) => unknown,
-): string {
+function serializeFunction(fn: (...args: unknown[]) => unknown): string {
   return `(${fn.toString()})`;
 }

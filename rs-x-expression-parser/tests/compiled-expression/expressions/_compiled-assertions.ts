@@ -8,7 +8,7 @@ export function expectCompiledOrTreeInstanceOf<T>(
     return;
   }
 
-  expect((expression as { constructor?: { name?: string } }).constructor?.name).toBe(
-    'CompiledExpression',
-  );
+  expect(
+    (expression as { constructor?: { name?: string } }).constructor?.name,
+  ).toBe('CompiledExpression');
 }

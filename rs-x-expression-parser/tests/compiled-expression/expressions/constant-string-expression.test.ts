@@ -48,7 +48,10 @@ describe('ConstantStringExpression tests', () => {
     const clonedExpression = expression.clone();
 
     try {
-      expectCompiledOrTreeInstanceOf(clonedExpression, ConstantStringExpression);
+      expectCompiledOrTreeInstanceOf(
+        clonedExpression,
+        ConstantStringExpression,
+      );
       expect(clonedExpression.type).toEqual(ExpressionType.String);
       expect(clonedExpression.expressionString).toEqual('hi');
 

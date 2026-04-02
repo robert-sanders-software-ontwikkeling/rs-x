@@ -41,7 +41,11 @@ import { RsXStateManagerInjectionTokens } from '@rs-x/state-manager';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..', '..');
-const reportsDirectory = path.resolve(repoRoot, 'reports', 'compiled-tree-crossover');
+const reportsDirectory = path.resolve(
+  repoRoot,
+  'reports',
+  'compiled-tree-crossover',
+);
 const dateStamp = new Date().toISOString().slice(0, 10);
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -143,7 +147,8 @@ const results = {
     bindings: BINDINGS,
     updateRuns: UPDATE_RUNS,
     updateWarmup: UPDATE_WARMUP,
-    expressionShape: '"x + y + x + y + …" — N pairs → 4N−1 nodes, always 2 unique deps (x, y)',
+    expressionShape:
+      '"x + y + x + y + …" — N pairs → 4N−1 nodes, always 2 unique deps (x, y)',
     bindingShape: `${BINDINGS} unique model objects (same x+y values, different object identity)`,
     measurement:
       'Bindings are established and fully initialized before timing starts. ' +
@@ -156,7 +161,9 @@ const results = {
 
 console.log('rs-x compiled vs tree crossover benchmark (update performance)');
 console.log(`Node ${process.version}  CPU: ${results.environment.cpuModel}`);
-console.log(`${BINDINGS} bindings  |  ${UPDATE_RUNS} update runs  |  ${UPDATE_WARMUP} warmup`);
+console.log(
+  `${BINDINGS} bindings  |  ${UPDATE_RUNS} update runs  |  ${UPDATE_WARMUP} warmup`,
+);
 console.log('Expression: "x + y + x + y + …" (2 deps, growing node count)');
 console.log('Bindings are pre-established before any timing starts.\n');
 
@@ -210,7 +217,9 @@ for (const pairs of pairCounts) {
   const expression = makeExpression(pairs);
   const nodeCount = countNodes(expressionParser.parse(expression));
 
-  console.log(`\n── ${nodeCount} nodes (${pairs} pair${pairs === 1 ? '' : 's'}) ──`);
+  console.log(
+    `\n── ${nodeCount} nodes (${pairs} pair${pairs === 1 ? '' : 's'}) ──`,
+  );
 
   const tree = await measureMode(expression, 'tree');
   const compiled = await measureMode(expression, 'compiled');
@@ -241,21 +250,30 @@ const findCrossover = (metric) => {
   let firstCompiledWin = -1;
   for (let i = 0; i < results.rows.length; i++) {
     const { tree, compiled } = results.rows[i];
-    if (tree[metric] <= compiled[metric] && firstTreeWin === -1) firstTreeWin = i;
-    if (compiled[metric] < tree[metric] && firstCompiledWin === -1) firstCompiledWin = i;
+    if (tree[metric] <= compiled[metric] && firstTreeWin === -1)
+      firstTreeWin = i;
+    if (compiled[metric] < tree[metric] && firstCompiledWin === -1)
+      firstCompiledWin = i;
   }
 
   // Find the crossover: first index where compiled wins after tree was winning.
   for (let i = 1; i < results.rows.length; i++) {
     const a = results.rows[i - 1];
     const b = results.rows[i];
-    if (a.tree[metric] <= a.compiled[metric] && b.compiled[metric] < b.tree[metric]) {
+    if (
+      a.tree[metric] <= a.compiled[metric] &&
+      b.compiled[metric] < b.tree[metric]
+    ) {
       const dN = b.nodeCount - a.nodeCount;
       const treeSlope = (b.tree[metric] - a.tree[metric]) / dN;
       const compSlope = (b.compiled[metric] - a.compiled[metric]) / dN;
       if (Math.abs(compSlope - treeSlope) > 1e-9) {
-        const t = (a.tree[metric] - a.compiled[metric]) / (compSlope - treeSlope);
-        return { nodeCount: Math.round(a.nodeCount + t), between: [a.nodeCount, b.nodeCount] };
+        const t =
+          (a.tree[metric] - a.compiled[metric]) / (compSlope - treeSlope);
+        return {
+          nodeCount: Math.round(a.nodeCount + t),
+          between: [a.nodeCount, b.nodeCount],
+        };
       }
     }
   }
@@ -264,12 +282,18 @@ const findCrossover = (metric) => {
 
 const singleCrossover = findCrossover('singleUpdateMs');
 const bulkCrossover = findCrossover('bulkUpdateMs');
-results.crossovers = { singleUpdateMs: singleCrossover, bulkUpdateMs: bulkCrossover };
+results.crossovers = {
+  singleUpdateMs: singleCrossover,
+  bulkUpdateMs: bulkCrossover,
+};
 
-console.log('\n── Crossover summary ──────────────────────────────────────────');
+console.log(
+  '\n── Crossover summary ──────────────────────────────────────────',
+);
 const fmt = (c) =>
-  c === null ? 'not found in measured range'
-  : `~${c.nodeCount} nodes (between ${c.between[0]} and ${c.between[1]} nodes)`;
+  c === null
+    ? 'not found in measured range'
+    : `~${c.nodeCount} nodes (between ${c.between[0]} and ${c.between[1]} nodes)`;
 console.log(`  Single update crossover:  ${fmt(singleCrossover)}`);
 console.log(`  Bulk update crossover:    ${fmt(bulkCrossover)}`);
 

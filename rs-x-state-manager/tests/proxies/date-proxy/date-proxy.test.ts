@@ -1,8 +1,4 @@
-import {
-  type IPropertyChange,
-  utCDate,
-  WaitForEvent,
-} from '@rs-x/core';
+import { type IPropertyChange, utCDate, WaitForEvent } from '@rs-x/core';
 import { ProxyRegistryMock } from '@rs-x/core/testing';
 
 import type { IObserver } from '../../../lib/observer.interface';
@@ -10,15 +6,15 @@ import { DateProxyFactory } from '../../../lib/proxies/date-proxy/date-proxy.fac
 import { IndexWatchRuleMock } from '../../../lib/testing/watch-index-rule.mock';
 
 describe('DateProxy tests', () => {
-function expectDateParts(actual: Date, expected: Date): void {
-  expect(actual.getFullYear()).toEqual(expected.getFullYear());
-  expect(actual.getMonth()).toEqual(expected.getMonth());
-  expect(actual.getDate()).toEqual(expected.getDate());
-  expect(actual.getHours()).toEqual(expected.getHours());
-  expect(actual.getMinutes()).toEqual(expected.getMinutes());
-  expect(actual.getSeconds()).toEqual(expected.getSeconds());
-  expect(actual.getMilliseconds()).toEqual(expected.getMilliseconds());
-}
+  function expectDateParts(actual: Date, expected: Date): void {
+    expect(actual.getFullYear()).toEqual(expected.getFullYear());
+    expect(actual.getMonth()).toEqual(expected.getMonth());
+    expect(actual.getDate()).toEqual(expected.getDate());
+    expect(actual.getHours()).toEqual(expected.getHours());
+    expect(actual.getMinutes()).toEqual(expected.getMinutes());
+    expect(actual.getSeconds()).toEqual(expected.getSeconds());
+    expect(actual.getMilliseconds()).toEqual(expected.getMilliseconds());
+  }
 
   let indexWatchRule: IndexWatchRuleMock;
 
@@ -35,9 +31,7 @@ function expectDateParts(actual: Date, expected: Date): void {
   it('create will register the data proxy to the proxy registry', () => {
     const date = new Date();
     const proxyRegistry = new ProxyRegistryMock();
-    const setProxyFactory = new DateProxyFactory(
-      proxyRegistry,
-    );
+    const setProxyFactory = new DateProxyFactory(proxyRegistry);
     const { proxy } = setProxyFactory.createAndGetInstance({ date });
 
     expect(proxyRegistry.register).toHaveBeenCalledTimes(1);
@@ -48,9 +42,7 @@ function expectDateParts(actual: Date, expected: Date): void {
   it('dispose will unregister the data proxy to the proxy registry', () => {
     const date = new Date();
     const proxyRegistry = new ProxyRegistryMock();
-    const setProxyFactory = new DateProxyFactory(
-      proxyRegistry,
-    );
+    const setProxyFactory = new DateProxyFactory(proxyRegistry);
     const { observer } = setProxyFactory.createAndGetInstance({ date });
 
     observer.dispose();
@@ -60,9 +52,7 @@ function expectDateParts(actual: Date, expected: Date): void {
   });
 
   it('dispose will unregister proxy when all references are released', () => {
-    const dateProxyFactory = new DateProxyFactory(
-      new ProxyRegistryMock(),
-    );
+    const dateProxyFactory = new DateProxyFactory(new ProxyRegistryMock());
     const date = new Date();
 
     const { observer: observer1 } = dateProxyFactory.create({
@@ -89,9 +79,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
   describe('all date operation still work as before', () => {
     it('setFullYear', () => {
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
 
@@ -102,9 +90,7 @@ function expectDateParts(actual: Date, expected: Date): void {
     });
 
     it('setUTCFullYear', () => {
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
 
@@ -115,9 +101,7 @@ function expectDateParts(actual: Date, expected: Date): void {
     });
 
     it('setMonth', () => {
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
 
@@ -128,9 +112,7 @@ function expectDateParts(actual: Date, expected: Date): void {
     });
 
     it('setUTCMonth', () => {
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setUTCMonth(1);
@@ -140,9 +122,7 @@ function expectDateParts(actual: Date, expected: Date): void {
     });
 
     it('setDate', () => {
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setDate(4);
@@ -152,9 +132,7 @@ function expectDateParts(actual: Date, expected: Date): void {
     });
 
     it('setUTCDate', () => {
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setUTCDate(4);
@@ -164,9 +142,7 @@ function expectDateParts(actual: Date, expected: Date): void {
     });
 
     it('setHours', () => {
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setHours(3);
@@ -176,9 +152,7 @@ function expectDateParts(actual: Date, expected: Date): void {
     });
 
     it('setUTCHours', () => {
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setUTCHours(3);
@@ -188,9 +162,7 @@ function expectDateParts(actual: Date, expected: Date): void {
     });
 
     it('setMinutes', () => {
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setMinutes(3);
@@ -200,9 +172,7 @@ function expectDateParts(actual: Date, expected: Date): void {
     });
 
     it('setUTCMinutes', () => {
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setUTCMinutes(3);
@@ -212,9 +182,7 @@ function expectDateParts(actual: Date, expected: Date): void {
     });
 
     it('setSeconds', () => {
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setSeconds(3);
@@ -224,9 +192,7 @@ function expectDateParts(actual: Date, expected: Date): void {
     });
 
     it('setUTCSeconds', () => {
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setUTCSeconds(3);
@@ -236,9 +202,7 @@ function expectDateParts(actual: Date, expected: Date): void {
     });
 
     it('setMilliseconds', () => {
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setMilliseconds(3);
@@ -248,9 +212,7 @@ function expectDateParts(actual: Date, expected: Date): void {
     });
 
     it('setUTCMilliseconds', () => {
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setUTCMilliseconds(3);
@@ -260,9 +222,7 @@ function expectDateParts(actual: Date, expected: Date): void {
     });
 
     it('setTime', () => {
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2022, 1, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setTime(1612137600000);
@@ -273,9 +233,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('toString', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.toString()).toEqual(proxy.toString());
@@ -283,9 +241,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('toDateString', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.toDateString()).toEqual(proxy.toDateString());
@@ -293,9 +249,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('toTimeString', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.toTimeString()).toEqual(proxy.toTimeString());
@@ -303,9 +257,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('toLocaleString', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.toLocaleString()).toEqual(proxy.toLocaleString());
@@ -313,9 +265,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('toLocaleDateString', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.toLocaleDateString()).toEqual(proxy.toLocaleDateString());
@@ -323,9 +273,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('toLocaleTimeString', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.toLocaleTimeString()).toEqual(proxy.toLocaleTimeString());
@@ -333,9 +281,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('valueOf', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.valueOf()).toEqual(proxy.valueOf());
@@ -343,9 +289,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('getTime', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getTime()).toEqual(proxy.getTime());
@@ -353,9 +297,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('getFullYear', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getFullYear()).toEqual(proxy.getFullYear());
@@ -363,9 +305,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('getUTCFullYear', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
 
@@ -374,9 +314,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('getMonth', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getMonth()).toEqual(proxy.getMonth());
@@ -384,9 +322,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('getUTCMonth', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getUTCMonth()).toEqual(proxy.getUTCMonth());
@@ -394,9 +330,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('getDate', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getDate()).toEqual(proxy.getDate());
@@ -404,9 +338,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('getUTCDate', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getUTCDate()).toEqual(proxy.getUTCDate());
@@ -414,9 +346,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('getDay', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getDay()).toEqual(proxy.getDay());
@@ -424,9 +354,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('getUTCDay', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
 
@@ -435,9 +363,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('getHours', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getHours()).toEqual(proxy.getHours());
@@ -445,9 +371,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('getUTCHours', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getUTCHours()).toEqual(proxy.getUTCHours());
@@ -455,9 +379,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('getMinutes', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
 
@@ -466,9 +388,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('getUTCMinutes', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getUTCMinutes()).toEqual(proxy.getUTCMinutes());
@@ -476,9 +396,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('getSeconds', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getSeconds()).toEqual(proxy.getSeconds());
@@ -486,9 +404,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('getUTCSeconds', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getUTCSeconds()).toEqual(proxy.getUTCSeconds());
@@ -496,9 +412,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('getMilliseconds', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getMilliseconds()).toEqual(proxy.getMilliseconds());
@@ -506,9 +420,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('getUTCMilliseconds', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getUTCMilliseconds()).toEqual(proxy.getUTCMilliseconds());
@@ -516,9 +428,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('getTimezoneOffset', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getTimezoneOffset()).toEqual(proxy.getTimezoneOffset());
@@ -526,9 +436,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('toISOString', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
 
@@ -537,9 +445,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('toUTCString', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.toUTCString()).toEqual(proxy.toUTCString());
@@ -547,9 +453,7 @@ function expectDateParts(actual: Date, expected: Date): void {
 
     it('toJSON', () => {
       const date = utCDate(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.toJSON()).toEqual(proxy.toJSON());

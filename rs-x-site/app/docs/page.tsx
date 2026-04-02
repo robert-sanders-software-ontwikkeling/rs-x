@@ -35,14 +35,9 @@ const advancedLinks = [
     meta: 'Teach rs-x to observe any class — observer, proxy, index accessor, DI wiring',
   },
   {
-    href: '/docs/core-concepts/performance-report',
-    title: 'Performance report',
-    meta: 'Parse, bind, update, and memory benchmarks',
-  },
-  {
-    href: '/docs/core-concepts/compiled-vs-tree',
-    title: 'Compiled vs tree: the break-even point',
-    meta: 'At which expression complexity does compiled mode become faster than tree?',
+    href: '/docs/core-concepts/performance',
+    title: 'Performance',
+    meta: 'Engine modes, parsing, binding, updates, memory — and what changed in v2',
   },
 ];
 

@@ -17,10 +17,10 @@ import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-in
 import type {
   ICompiledExpressionCompiler,
   ICompiledExpressionPlan,
+  ICompiledExpressionWatchDependency,
   ICompiledMemberChainPlan,
   ICompiledMemberChainSegment,
   ICompiledSequenceOperandPlan,
-  ICompiledExpressionWatchDependency,
 } from './compiled-expression.compiler.interface';
 
 @Injectable()
@@ -29,8 +29,10 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
   private static readonly MAX_PLAN_CACHE_SIZE_ENV =
     'RSX_COMPILED_PLAN_CACHE_MAX';
 
-  private static readonly SIMPLE_IDENTIFIER_EXPRESSION_RE = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
-  private static readonly SIMPLE_MEMBER_CHAIN_EXPRESSION_RE = /^[A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)*$/;
+  private static readonly SIMPLE_IDENTIFIER_EXPRESSION_RE =
+    /^[A-Za-z_$][A-Za-z0-9_$]*$/;
+  private static readonly SIMPLE_MEMBER_CHAIN_EXPRESSION_RE =
+    /^[A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)*$/;
   private static readonly RESERVED_KEYWORD_EXPRESSIONS = new Set([
     // JS literals / globals treated as special values
     'true',
@@ -91,7 +93,9 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
     this._maxPlanCacheSize = this.resolveMaxPlanCacheSize();
   }
 
-  public tryCompile(expressionString: string): ICompiledExpressionPlan | undefined {
+  public tryCompile(
+    expressionString: string,
+  ): ICompiledExpressionPlan | undefined {
     const cached = this._planCache.get(expressionString);
     if (cached !== undefined || this._planCache.has(expressionString)) {
       if (cached !== undefined) {
@@ -128,9 +132,8 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
 
   private resolveMaxPlanCacheSize(): number {
     const processEnv = this.getProcessEnv();
-    const rawValue = processEnv?.[
-      CompiledExpressionCompiler.MAX_PLAN_CACHE_SIZE_ENV
-    ];
+    const rawValue =
+      processEnv?.[CompiledExpressionCompiler.MAX_PLAN_CACHE_SIZE_ENV];
     if (!rawValue) {
       return CompiledExpressionCompiler.DEFAULT_MAX_PLAN_CACHE_SIZE;
     }
@@ -151,8 +154,9 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
     return process.env as Record<string, string | undefined>;
   }
 
-  private createUnitExpressionPlan(expressionString: string): ICompiledExpressionPlan {
-
+  private createUnitExpressionPlan(
+    expressionString: string,
+  ): ICompiledExpressionPlan {
     const plan: ICompiledExpressionPlan = {
       expressionString,
       dependencyNames: [expressionString],
@@ -194,23 +198,32 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
           resolvedValue !== undefined
             ? resolvedValue
             : indexValueAccessor.getValue(ownerContext, expressionString);
-        const normalizedValue = normalizeDependencyValue(rawValue, ownerContext);
+        const normalizedValue = normalizeDependencyValue(
+          rawValue,
+          ownerContext,
+        );
         return wrapForRuntimeEvaluation(normalizedValue);
       },
     };
     return plan;
-
   }
 
-  private buildPlan(expressionString: string): ICompiledExpressionPlan | undefined {
+  private buildPlan(
+    expressionString: string,
+  ): ICompiledExpressionPlan | undefined {
     if (
-      CompiledExpressionCompiler.SIMPLE_IDENTIFIER_EXPRESSION_RE.test(expressionString) &&
-      !CompiledExpressionCompiler.RESERVED_KEYWORD_EXPRESSIONS.has(expressionString)
+      CompiledExpressionCompiler.SIMPLE_IDENTIFIER_EXPRESSION_RE.test(
+        expressionString,
+      ) &&
+      !CompiledExpressionCompiler.RESERVED_KEYWORD_EXPRESSIONS.has(
+        expressionString,
+      )
     ) {
       return this.createUnitExpressionPlan(expressionString);
     }
 
-    const simpleMemberChainPlan = this.tryBuildSimpleMemberChainPlan(expressionString);
+    const simpleMemberChainPlan =
+      this.tryBuildSimpleMemberChainPlan(expressionString);
     if (simpleMemberChainPlan !== undefined) {
       return simpleMemberChainPlan;
     }
@@ -227,12 +240,11 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
       return undefined;
     }
 
-    const dependencyNames = this.collectDependencies(expression, false);
+    const dependencyNames = this.collectDependencies(expression);
     const watchDependencies = this.collectWatchDependencies(expression);
-    const memberChain = this.tryBuildMemberChainPlan(
-      expression,
-      [...dependencyNames],
-    );
+    const memberChain = this.tryBuildMemberChainPlan(expression, [
+      ...dependencyNames,
+    ]);
     const sequenceOperands = this.tryBuildSequenceOperandPlans(expression);
     const orderedDependencies = [...dependencyNames];
 
@@ -242,7 +254,10 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
     );
 
     try {
-      if (expressionType === ExpressionType.Identifier && orderedDependencies.length === 1) {
+      if (
+        expressionType === ExpressionType.Identifier &&
+        orderedDependencies.length === 1
+      ) {
         const dependencyName = orderedDependencies[0];
         const evaluate = (value: unknown): unknown => value;
         const evaluateResolvedDependencies = (
@@ -270,7 +285,10 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
             resolvedValue !== undefined
               ? resolvedValue
               : indexValueAccessor.getValue(ownerContext, dependencyName);
-          const normalizedValue = normalizeDependencyValue(rawValue, ownerContext);
+          const normalizedValue = normalizeDependencyValue(
+            rawValue,
+            ownerContext,
+          );
           return wrapForRuntimeEvaluation(normalizedValue);
         };
 
@@ -354,7 +372,11 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
       return undefined;
     }
 
-    if (parts.some((part) => CompiledExpressionCompiler.RESERVED_KEYWORD_EXPRESSIONS.has(part))) {
+    if (
+      parts.some((part) =>
+        CompiledExpressionCompiler.RESERVED_KEYWORD_EXPRESSIONS.has(part),
+      )
+    ) {
       return undefined;
     }
 
@@ -400,18 +422,18 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
     return plan;
   }
 
-  private collectDependencies(
-    expression: Expression,
-    forWatching: boolean,
-  ): Set<string> {
-    return this.collectDependenciesAndWatchDependencies(expression).dependencies;
+  private collectDependencies(expression: Expression): Set<string> {
+    return this.collectDependenciesAndWatchDependencies(expression)
+      .dependencies;
   }
 
   private collectWatchDependencies(
     expression: Expression,
   ): ICompiledExpressionWatchDependency[] {
     return [
-      ...this.collectDependenciesAndWatchDependencies(expression).watchDependencies.values(),
+      ...this.collectDependenciesAndWatchDependencies(
+        expression,
+      ).watchDependencies.values(),
     ];
   }
 
@@ -420,7 +442,10 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
     watchDependencies: Map<string, ICompiledExpressionWatchDependency>;
   } {
     const dependencies = new Set<string>();
-    const watchDependencies = new Map<string, ICompiledExpressionWatchDependency>();
+    const watchDependencies = new Map<
+      string,
+      ICompiledExpressionWatchDependency
+    >();
 
     const visit = (
       node: unknown,
@@ -444,7 +469,9 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
           const isMemberObjectSegment =
             memberParent !== undefined && parentKey === 'object';
           const isMemberPropertySegment =
-            memberParent !== undefined && parentKey === 'property' && !memberParent.computed;
+            memberParent !== undefined &&
+            parentKey === 'property' &&
+            !memberParent.computed;
           const isStaticCalleeProperty =
             isMemberPropertySegment &&
             (grandParent?.type === 'CallExpression' ||
@@ -475,7 +502,12 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
         if (!Object.prototype.hasOwnProperty.call(recordNode, key)) {
           continue;
         }
-        if (key === 'loc' || key === 'range' || key === 'start' || key === 'end') {
+        if (
+          key === 'loc' ||
+          key === 'range' ||
+          key === 'start' ||
+          key === 'end'
+        ) {
           continue;
         }
 
@@ -534,7 +566,9 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
     return false;
   }
 
-  private mapExpressionType(expression: Expression): ExpressionType | undefined {
+  private mapExpressionType(
+    expression: Expression,
+  ): ExpressionType | undefined {
     switch (expression.type) {
       case 'Identifier':
         return ExpressionType.Identifier;
@@ -573,7 +607,10 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
     if (literal.value === null) {
       return ExpressionType.Null;
     }
-    if ('regex' in literal && (literal as { regex?: unknown }).regex !== undefined) {
+    if (
+      'regex' in literal &&
+      (literal as { regex?: unknown }).regex !== undefined
+    ) {
       return ExpressionType.RegExp;
     }
     switch (typeof literal.value) {
@@ -611,7 +648,10 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
     }
 
     if (expression.type === 'TemplateLiteral') {
-      if (expression.expressions.length === 0 && expression.quasis.length === 1) {
+      if (
+        expression.expressions.length === 0 &&
+        expression.quasis.length === 1
+      ) {
         return expression.quasis[0].value.raw;
       }
       return source;
@@ -625,7 +665,10 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
       return astToString(expression);
     }
 
-    if (expression.type === 'BinaryExpression' && expression.operator === 'in') {
+    if (
+      expression.type === 'BinaryExpression' &&
+      expression.operator === 'in'
+    ) {
       return astToString(expression);
     }
 
@@ -730,7 +773,8 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
 
   private hasHiddenArgumentArray(expression: Expression): boolean {
     return (
-      (expression.type === 'CallExpression' || expression.type === 'NewExpression') &&
+      (expression.type === 'CallExpression' ||
+        expression.type === 'NewExpression') &&
       expression.arguments.length === 0
     );
   }
@@ -745,7 +789,7 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
     const operands: ICompiledSequenceOperandPlan[] = [];
     for (let i = 0; i < expression.expressions.length; i++) {
       const operand = expression.expressions[i];
-      const dependencyNames = [...this.collectDependencies(operand, false)];
+      const dependencyNames = [...this.collectDependencies(operand)];
       const operandSource = astToString(operand);
       const evaluate = new Function(
         ...dependencyNames,
@@ -821,9 +865,7 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
         ...dependencyNames,
         `return (${indexExpressionSource});`,
       ) as (...args: unknown[]) => unknown;
-      const computedDependencyNames = [
-        ...this.collectDependencies(part, false),
-      ];
+      const computedDependencyNames = [...this.collectDependencies(part)];
       const evaluateIndexByOwnDependencies = new Function(
         ...computedDependencyNames,
         `return (${indexExpressionSource});`,
@@ -843,10 +885,11 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
     };
   }
 
-  private flattenMemberChain(
-    expression: Expression,
-  ):
-    | Array<{ expression: Expression | Super | PrivateIdentifier; computed: boolean }>
+  private flattenMemberChain(expression: Expression):
+    | Array<{
+        expression: Expression | Super | PrivateIdentifier;
+        computed: boolean;
+      }>
     | undefined {
     const result: Array<{
       expression: Expression | Super | PrivateIdentifier;
@@ -909,5 +952,4 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
 
     return [...objectPath, node.property.name];
   }
-
 }

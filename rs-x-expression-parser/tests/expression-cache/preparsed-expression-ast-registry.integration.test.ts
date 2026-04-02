@@ -2,17 +2,17 @@ import type { Expression } from 'estree';
 
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
-import type { IExpressionFactory } from '../../lib/expression-factory';
 import {
   clearPreparsedExpressionAsts,
   registerPreparsedExpressionAst,
 } from '../../lib/expression-cache/preparsed-expression-ast-registry';
+import type { IExpressionFactory } from '../../lib/expression-factory';
 import type { IExpressionParser } from '../../lib/expressions/expression-parser.interface';
-import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
 import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
+import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
 import { rsx } from '../../lib/rsx';
 
 function createAdditionAst(): Expression {

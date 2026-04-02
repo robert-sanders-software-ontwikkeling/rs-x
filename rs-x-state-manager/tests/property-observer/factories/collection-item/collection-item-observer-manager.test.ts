@@ -44,7 +44,9 @@ describe('ICollectionItemObserverManager tests', () => {
       const observer = collectionItemObserverManager
         .create(array)
         .instance.createAndGetInstance({ index: 0 });
-      collectionItemObserverManager.createAndGetInstance(array).create({ index: 1 });
+      collectionItemObserverManager
+        .createAndGetInstance(array)
+        .create({ index: 1 });
 
       observer.dispose();
 

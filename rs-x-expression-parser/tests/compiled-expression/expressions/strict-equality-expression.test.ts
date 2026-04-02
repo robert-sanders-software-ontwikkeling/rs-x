@@ -49,7 +49,10 @@ describe('StrictEqualityExpression tests', () => {
     const clonedExpression = expression.clone();
 
     try {
-      expectCompiledOrTreeInstanceOf(clonedExpression, StrictEqualityExpression);
+      expectCompiledOrTreeInstanceOf(
+        clonedExpression,
+        StrictEqualityExpression,
+      );
       expect(clonedExpression.type).toEqual(ExpressionType.StrictEquality);
       expect(clonedExpression.expressionString).toEqual('a === b');
 

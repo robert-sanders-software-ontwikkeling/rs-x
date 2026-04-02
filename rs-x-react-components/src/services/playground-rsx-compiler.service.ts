@@ -1,3 +1,5 @@
+import type * as TypeScriptModule from 'typescript';
+
 export interface IPlaygroundCompilerDiagnostic {
   category: 'semantic' | 'syntax' | 'unsupported';
   message: string;
@@ -7,11 +9,11 @@ export interface IPlaygroundCompilerDiagnostic {
   endColumn: number;
 }
 
-const SOURCE_NAME = 'rsx-playground-user-script.ts';
-const EXPRESSION_PARSER_DTS =
+export const SOURCE_NAME = 'rsx-playground-user-script.ts';
+export const EXPRESSION_PARSER_DTS =
   '/virtual/node_modules/@rs-x/expression-parser/index.d.ts';
 const PRELUDE_LINES = 1;
-const WRAPPER_HEADER = [
+export const WRAPPER_HEADER = [
   '"use strict";',
   '(async function (api: IPlaygroundApi) {',
   '  const rsx = __rsx_import;',
@@ -23,10 +25,37 @@ const WRAPPER_HEADER = [
   '  const ExpressionChangeTransactionManager = api.ExpressionChangeTransactionManager;',
   '  {',
 ];
-const WRAPPER_FOOTER = ['  }', '})'];
+export const WRAPPER_FOOTER = ['  }', '})'];
 const WRAPPER_LINE_OFFSET = PRELUDE_LINES + WRAPPER_HEADER.length;
 const EXPRESSION_PARSER_GLOBAL_DTS = `
 declare global {
+interface Array<T> {
+  readonly length: number;
+  [index: number]: T;
+}
+
+interface ReadonlyArray<T> {
+  readonly length: number;
+  readonly [index: number]: T;
+}
+
+interface Map<K, V> {
+  get(key: K): V | undefined;
+  has(key: K): boolean;
+}
+
+interface Set<T> {
+  has(value: T): boolean;
+}
+
+interface PromiseLike<T> {
+  then<TResult>(
+    onfulfilled?: (value: T) => TResult | PromiseLike<TResult>,
+  ): PromiseLike<TResult>;
+}
+
+interface Promise<T> extends PromiseLike<T> {}
+
 interface RsxPlaygroundSubscriptionLike {
   unsubscribe(): void;
   readonly closed?: boolean;
@@ -207,6 +236,7 @@ declare global {
 
   const api: IPlaygroundApi;
 }
+export declare const rsx: (expression: string) => (model: unknown) => unknown;
 export {};
 `;
 
@@ -268,12 +298,14 @@ function findWrappedExpressionLiteralRanges(
   return ranges;
 }
 
-function createInMemoryProgram(args: {
-  ts: typeof import('typescript');
+export { EXPRESSION_PARSER_GLOBAL_DTS };
+
+export function createInMemoryProgram(args: {
+  ts: typeof TypeScriptModule;
   sourceText: string;
-}): import('typescript').Program {
+}): TypeScriptModule.Program {
   const { ts, sourceText } = args;
-  const options: import('typescript').CompilerOptions = {
+  const options: TypeScriptModule.CompilerOptions = {
     target: ts.ScriptTarget.ES2020,
     module: ts.ModuleKind.ESNext,
     moduleResolution: ts.ModuleResolutionKind.NodeJs,
@@ -295,7 +327,7 @@ function createInMemoryProgram(args: {
     ts.ScriptKind.TS,
   );
 
-  const host: import('typescript').CompilerHost = {
+  const host: TypeScriptModule.CompilerHost = {
     getSourceFile: (fileName) => {
       if (fileName === SOURCE_NAME) {
         return sourceFile;
@@ -377,17 +409,16 @@ export function validatePlaygroundScriptWithRsxCompiler(
       const unresolvedIdentifier =
         diagnostic.message.match(
           /Identifier '([^']+)' does not exist on model type\./u,
-        )?.[1] ??
-        diagnostic.message.match(/index '([^']+)'/u)?.[1];
+        )?.[1] ?? diagnostic.message.match(/index '([^']+)'/u)?.[1];
 
       if (unresolvedIdentifier) {
         const containingLiteral = literalRanges.find(
-          (range) => range.start <= diagnostic.start && diagnostic.end <= range.end,
+          (range) =>
+            range.start <= diagnostic.start && diagnostic.end <= range.end,
         );
         if (containingLiteral) {
-          const offsetInExpression = containingLiteral.expression.indexOf(
-            unresolvedIdentifier,
-          );
+          const offsetInExpression =
+            containingLiteral.expression.indexOf(unresolvedIdentifier);
           if (offsetInExpression >= 0) {
             start = containingLiteral.start + offsetInExpression;
             end = start + unresolvedIdentifier.length;

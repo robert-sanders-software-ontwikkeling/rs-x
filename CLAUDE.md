@@ -6,28 +6,28 @@ rs-x is a reactive expression framework for TypeScript/JavaScript. The core prim
 
 ## Monorepo structure (pnpm workspaces)
 
-| Package | Purpose |
-|---|---|
-| `rs-x-core` | Core runtime types and utilities |
-| `rs-x-expression-parser` | Expression string parser (`rsx(...)`) — JS + compiled hot-path variants |
-| `rs-x-compiler` | TypeScript compiler integration: expression detection, validation, AOT code generation |
-| `rs-x-typescript-plugin` | TypeScript language service plugin — surfaces compiler diagnostics in IDEs |
-| `rs-x-vscode-extension` | VS Code extension — registers the TypeScript plugin, adds IntelliSense |
-| `rs-x-state-manager` | State management layer built on top of expressions |
-| `rs-x-angular` / `rs-x-react` | Framework adapters |
-| `rs-x-cli` | CLI tool (`rsx`) |
+| Package                       | Purpose                                                                                |
+| ----------------------------- | -------------------------------------------------------------------------------------- |
+| `rs-x-core`                   | Core runtime types and utilities                                                       |
+| `rs-x-expression-parser`      | Expression string parser (`rsx(...)`) — JS + compiled hot-path variants                |
+| `rs-x-compiler`               | TypeScript compiler integration: expression detection, validation, AOT code generation |
+| `rs-x-typescript-plugin`      | TypeScript language service plugin — surfaces compiler diagnostics in IDEs             |
+| `rs-x-vscode-extension`       | VS Code extension — registers the TypeScript plugin, adds IntelliSense                 |
+| `rs-x-state-manager`          | State management layer built on top of expressions                                     |
+| `rs-x-angular` / `rs-x-react` | Framework adapters                                                                     |
+| `rs-x-cli`                    | CLI tool (`rsx`)                                                                       |
 
 ## Expression syntax and runtime translation
 
 rsx expressions map to TypeScript/JS but with these runtime translations:
 
-| Expression syntax | Runtime translation | Type |
-|---|---|---|
-| `map[key]` | `map.get(key)` | `Map<K, V>` → value type `V` |
-| `set[key]` | `set.get(key)` | `Set<T>` → value type `T` |
-| `array[i]` | `array[i]` | `T[]` → element type `T` |
-| `record[key]` | `record[key]` | `Record<string, V>` → value type `V` |
-| `date.year` | `date.getFullYear()` | `Date` property accessor |
+| Expression syntax | Runtime translation  | Type                                 |
+| ----------------- | -------------------- | ------------------------------------ |
+| `map[key]`        | `map.get(key)`       | `Map<K, V>` → value type `V`         |
+| `set[key]`        | `set.get(key)`       | `Set<T>` → value type `T`            |
+| `array[i]`        | `array[i]`           | `T[]` → element type `T`             |
+| `record[key]`     | `record[key]`        | `Record<string, V>` → value type `V` |
+| `date.year`       | `date.getFullYear()` | `Date` property accessor             |
 
 **Key insight**: `Set` and `Map` use `[key]` bracket syntax in rsx even though they have no native index operator. The compiler/plugin must accept this and not report index-access errors.
 
@@ -77,11 +77,11 @@ The site's performance report page at `rs-x-site/app/docs/core-concepts/performa
 
 ### Benchmark scripts
 
-| Script | Output directory | Engine mode |
-|---|---|---|
-| `rs-x-expression-parser/scripts/benchmark-core-concepts-performance.mjs` | `reports/rsx-core-concepts-performance/` | N/A |
-| `rs-x-expression-parser/scripts/benchmark-angular-signals-comparison.mjs` | `reports/angular-signals-comparison/` | `compiled` (default) |
-| `RSX_EXPRESSION_ENGINE_MODE=tree node ... benchmark-angular-signals-comparison.mjs` | `reports/angular-signals-comparison/` | `tree` |
+| Script                                                                              | Output directory                         | Engine mode          |
+| ----------------------------------------------------------------------------------- | ---------------------------------------- | -------------------- |
+| `rs-x-expression-parser/scripts/benchmark-core-concepts-performance.mjs`            | `reports/rsx-core-concepts-performance/` | N/A                  |
+| `rs-x-expression-parser/scripts/benchmark-angular-signals-comparison.mjs`           | `reports/angular-signals-comparison/`    | `compiled` (default) |
+| `RSX_EXPRESSION_ENGINE_MODE=tree node ... benchmark-angular-signals-comparison.mjs` | `reports/angular-signals-comparison/`    | `tree`               |
 
 Output files are named `benchmark-{YYYY-MM-DD}.json` (core concepts) and `benchmark-{YYYY-MM-DD}-{mode}.json` (angular comparison).
 
@@ -103,6 +103,7 @@ RSX_EXPRESSION_ENGINE_MODE=tree node --expose-gc --max-old-space-size=8192 rs-x-
 ### Updating the site data
 
 After running benchmarks, update `performance-report.data.ts`:
+
 1. Update the three report path strings in `benchmarkMachine.newReport` and `expressionEngineModeBenchmark.{date,compiledReport,treeReport}`
 2. Replace all hardcoded numeric data rows from the new JSON files:
    - Core concepts JSON sections: `parseByNodeCount`, `parseCacheByNodeCount`, `bindingScale`, `bindingScaleInitialized`, `identifierOnlyBindingScale`

@@ -430,8 +430,8 @@ export default function IndexWatchRuleDocsPage() {
           </p>
           <p className="cardText">
             Current runtime behavior uses factory-managed rules keyed by
-            <span className="codeInline"> (context, index) </span> pairs to
-            keep watch-rule identity stable and disposable.
+            <span className="codeInline"> (context, index) </span> pairs to keep
+            watch-rule identity stable and disposable.
           </p>
         </article>
 
@@ -460,8 +460,8 @@ export default function IndexWatchRuleDocsPage() {
           <h2 className="cardTitle">Current Factory Implementation</h2>
           <p className="cardText">
             <span className="codeInline">IndexWatchRuleFactory</span> creates
-            lightweight rules that match exactly one context/index pair. This
-            is the default watch-rule implementation used by state-manager.
+            lightweight rules that match exactly one context/index pair. This is
+            the default watch-rule implementation used by state-manager.
           </p>
           <SyntaxCodeBlock code={currentImplementationCode} />
         </article>
@@ -496,8 +496,7 @@ export default function IndexWatchRuleDocsPage() {
               {
                 name: 'dispose',
                 type: '() => void',
-                description:
-                  'Releases rule resources when no longer needed.',
+                description: 'Releases rule resources when no longer needed.',
               },
             ]}
           />

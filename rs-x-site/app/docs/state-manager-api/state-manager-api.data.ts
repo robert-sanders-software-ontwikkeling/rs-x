@@ -355,7 +355,8 @@ export const stateManagerApiItems: StateManagerApiItem[] = [
     description:
       'Base grouped subscription manager that coordinates observers and subscription data per context.',
     sourcePath: 'grouped-change-subscriptions-for-context-manager.ts',
-    signature: 'export abstract class GroupedChangeSubscriptionsForContextManager<',
+    signature:
+      'export abstract class GroupedChangeSubscriptionsForContextManager<',
   },
   {
     symbol: 'IIndexChangeSubscriptionsForContextManager',
@@ -897,14 +898,14 @@ export const stateManagerApiItems: StateManagerApiItem[] = [
     description:
       'Disposable-owner contract used internally by watch instances.',
     sourcePath: 'state-manager/watch-factory/watch-factory.ts',
-    signature: 'export interface IWatchDispableOwner extends IDisposableOwner {}',
+    signature:
+      'export interface IWatchDispableOwner extends IDisposableOwner {}',
   },
   {
     symbol: 'IWatchId',
     kind: 'interface',
     module: 'state-manager/watch-factory',
-    description:
-      'Identity key for a watch registration `(context, index)`.',
+    description: 'Identity key for a watch registration `(context, index)`.',
     sourcePath: 'state-manager/watch-factory/watch-factory.ts',
     signature: 'export interface IWatchId {',
   },
@@ -921,8 +922,7 @@ export const stateManagerApiItems: StateManagerApiItem[] = [
     symbol: 'IWatchFactory',
     kind: 'type',
     module: 'state-manager/watch-factory',
-    description:
-      'Keyed watch factory contract used by runtime services.',
+    description: 'Keyed watch factory contract used by runtime services.',
     sourcePath: 'state-manager/watch-factory/watch-factory.ts',
     signature: 'export type IWatchFactory = IKeyedInstanceFactory<',
   },

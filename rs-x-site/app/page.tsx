@@ -66,9 +66,9 @@ export default function HomePage() {
               <div className="hSubhead">TypeScript Reactive Engine</div>
 
               <p className="hSub">
-                Declarative reactivity for runtime-bound expressions. Bind an
-                expression to a model and rs-x tracks fine-grained dependencies
-                automatically.
+                Strongly typed, declarative reactivity for runtime-bound
+                expressions. Bind an expression to a model, and RS-X
+                automatically tracks fine-grained dependencies.
               </p>
 
               <div className="heroActions">
@@ -119,6 +119,117 @@ export default function HomePage() {
                   </Link>
                 </article>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="toolingSection" aria-labelledby="tooling-title">
+        <div className="container">
+          <div className="toolingShell">
+            <header className="toolingHeader">
+              <h2 id="tooling-title" className="toolingTitle">
+                Built for production
+              </h2>
+              <p className="toolingLead">
+                rs-x expressions are not just runtime strings. The VS Code
+                extension gives you IDE support directly in expression strings,
+                and the compiler validates and optimizes them at build time.
+              </p>
+            </header>
+
+            <div className="toolingCards">
+              <article className="toolingCard">
+                <div className="toolingCardIcon" aria-hidden="true">
+                  <svg
+                    width="28"
+                    height="28"
+                    viewBox="0 0 28 28"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <rect
+                      x="2"
+                      y="2"
+                      width="24"
+                      height="24"
+                      rx="4"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                    <path
+                      d="M8 10l4 4-4 4M14 18h6"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div className="toolingCardBody">
+                  <h3 className="toolingCardTitle">
+                    Strongly typed in VS Code
+                  </h3>
+                  <p className="toolingCardText">
+                    The rs-x VS Code extension brings full IntelliSense to your
+                    expression strings. Identifiers are resolved against your
+                    model type, and invalid expressions are underlined in the
+                    editor — no runtime surprises.
+                  </p>
+                  <Link
+                    className="btn btnGhost toolingCardCta"
+                    href="/docs/core-concepts/cli"
+                  >
+                    VS Code extension <span aria-hidden="true">→</span>
+                  </Link>
+                </div>
+              </article>
+
+              <article className="toolingCard">
+                <div className="toolingCardIcon" aria-hidden="true">
+                  <svg
+                    width="28"
+                    height="28"
+                    viewBox="0 0 28 28"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M6 22l4-8 4 4 4-10 4 14"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <rect
+                      x="2"
+                      y="2"
+                      width="24"
+                      height="24"
+                      rx="4"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                </div>
+                <div className="toolingCardBody">
+                  <h3 className="toolingCardTitle">
+                    Compiler: optimise &amp; validate at build time
+                  </h3>
+                  <p className="toolingCardText">
+                    The rs-x compiler pre-compiles expressions into optimised
+                    JavaScript, eliminating parse overhead at runtime. It also
+                    catches type errors and invalid identifiers during your
+                    build — before they reach users.
+                  </p>
+                  <Link
+                    className="btn btnGhost toolingCardCta"
+                    href="/docs/core-concepts/compiler"
+                  >
+                    Learn about the compiler <span aria-hidden="true">→</span>
+                  </Link>
+                </div>
+              </article>
             </div>
           </div>
         </div>

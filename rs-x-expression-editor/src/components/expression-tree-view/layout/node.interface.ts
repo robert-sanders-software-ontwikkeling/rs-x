@@ -1,10 +1,10 @@
-import { type IExpression } from '@rs-x/expression-parser';
+import { type IExpressionTree } from '@rs-x/expression-parser';
 
 export type NodeId = string;
 
 export interface TNode {
   id: NodeId;
-  expr: IExpression;
+  expr: IExpressionTree;
   children: TNode[];
   parent?: TNode;
 

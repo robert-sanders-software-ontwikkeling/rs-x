@@ -23,8 +23,14 @@ const SINGLETON_SERVICE_BINDINGS: Record<string, SingletonBinding> = {
     token: 'IArrayProxyFactory',
     serviceType: 'IArrayProxyFactory',
   },
-  MapProxyFactory: { token: 'IMapProxyFactory', serviceType: 'IMapProxyFactory' },
-  SetProxyFactory: { token: 'ISetProxyFactory', serviceType: 'ISetProxyFactory' },
+  MapProxyFactory: {
+    token: 'IMapProxyFactory',
+    serviceType: 'IMapProxyFactory',
+  },
+  SetProxyFactory: {
+    token: 'ISetProxyFactory',
+    serviceType: 'ISetProxyFactory',
+  },
   DateProxyFactory: {
     token: 'IDateProxyFactory',
     serviceType: 'IDateProxyFactory',
@@ -384,8 +390,8 @@ function defaultExample(symbol: string, kind: string): string {
     const singletonBinding = SINGLETON_SERVICE_BINDINGS[symbol];
     if (singletonBinding) {
       const variableName =
-        symbol.charAt(0).toLowerCase() + symbol.slice(1).replace(/Factory$/, '') ||
-        'service';
+        symbol.charAt(0).toLowerCase() +
+          symbol.slice(1).replace(/Factory$/, '') || 'service';
       return dedent`
         import { InjectionContainer } from '@rs-x/core';
         import {

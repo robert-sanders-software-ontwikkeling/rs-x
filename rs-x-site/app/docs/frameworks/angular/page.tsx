@@ -67,9 +67,7 @@ const rsxPipeStringCode = dedent`
     selector: 'app-greeting',
     standalone: true,
     imports: [RsxPipe],
-    template: \`
-      <p>{{ 'firstName + " " + lastName' | rsx: model }}</p>
-    \`,
+    template: '<p>{{ \`\${firstName} \${lastName}\` | rsx: model }}</p>',
   })
   export class GreetingComponent {
     model = {
@@ -84,33 +82,36 @@ const rsxPipeStringCode = dedent`
 
 const rsxPipePrebuiltCode = dedent`
   // component.ts
-  import { Component } from '@angular/core';
+  import { ChangeDetectionStrategy, Component, OnDestroy } from '@angular/core';
+  import { FormsModule } from '@angular/forms';
   import { rsx } from '@rs-x/expression-parser';
   import { RsxPipe } from '@rs-x/angular';
-
-  const model = { price: 100, quantity: 3 };
 
   @Component({
     selector: 'app-order-total',
     standalone: true,
-    imports: [RsxPipe],
+    imports: [RsxPipe, FormsModule],
     template: \`
+      <input type="number" [(ngModel)]="model.quantity" />
       <span>Total: {{ totalExpr | rsx }}</span>
     \`,
+    changeDetection: ChangeDetectionStrategy.OnPush
   })
-  export class OrderTotalComponent {
-    // Build the expression once — share it across any number of templates
-    readonly totalExpr = rsx<number>('price * quantity')(model);
-  }
+  export class OrderTotalComponent implements OnDestroy {
+    private readonly model = { price: 100, quantity: 3 };
+    public readonly totalExpr = rsx('price * quantity')(this.model);
 
-  // Update the model anywhere — all bound templates re-render
-  model.quantity = 5;
+    public ngOnDestroy(): void {
+        this.totalExpr.dispose(); 
+    }
+  }
 `;
 
 const rsxPipeAsyncCode = dedent`
   // component.ts
-  import { Component } from '@angular/core';
+  import { ChangeDetectionStrategy, Component, OnDestroy } from '@angular/core';
   import { BehaviorSubject } from 'rxjs';
+  import { rsx } from '@rs-x/angular';
   import { RsxPipe } from '@rs-x/angular';
 
   @Component({
@@ -118,16 +119,23 @@ const rsxPipeAsyncCode = dedent`
     standalone: true,
     imports: [RsxPipe],
     template: \`
-      <p>Price (inc. tax): {{ 'base * (1 + taxRate)' | rsx: model }}</p>
+      <p>Price (inc. tax): {{ price | rsx }}</p>
     \`,
+    changeDetection: ChangeDetectionStrategy.OnPush
   })
-  export class LivePriceComponent {
-    model = {
+  export class LivePriceComponent implements OnDestroy {
+    private readonly model = {
       base: new BehaviorSubject(100),
       taxRate: 0.21,
     };
 
-    updatePrice(newBase: number) {
+    public readonly price = rsx('base * (1 + taxRate)' )(this.model);
+
+    public ngOnDestroy(): void {
+        this.price.dispose(); 
+    }
+
+    public updatePrice(newBase: number): void {
       this.model.base.next(newBase); // template updates automatically
     }
   }
@@ -149,25 +157,24 @@ const rsxPipeNullCode = dedent`
 
 const injectionTokensCode = dedent`
   import { inject, Component } from '@angular/core';
+  import { rsx } from '@rs-x/expression-parser';
   import {
-    IExpressionFactoryToken,
     IExpressionChangeTransactionManagerToken,
   } from '@rs-x/angular';
 
   @Component({ selector: 'app-manual', standalone: true, template: '' })
   export class ManualComponent {
-    private readonly factory = inject(IExpressionFactoryToken);
     private readonly txManager = inject(IExpressionChangeTransactionManagerToken);
 
-    ngOnInit() {
+    public ngOnInit() {
       const model = { a: 1, b: 2 };
-      const expr = this.factory.create<number>(model, 'a + b');
+      const expr = rsx('a + b')(model);
 
       // Batch multiple model mutations into a single change notification
-      this.txManager.begin();
+      this.txManager.suspend();
       model.a = 10;
       model.b = 20;
-      this.txManager.commit(); // expr fires changed once, not twice
+      this.txManager.continue(); // expr fires changed once, not twice
     }
   }
 `;
@@ -181,7 +188,7 @@ const doc: CoreConceptDoc = {
     'You write plain model mutations anywhere in your app — a service, a WebSocket handler, or a button click — and every template that reads that data updates automatically. No BehaviorSubjects, no ngrx actions, no manually managed subscriptions. The pipe is impure by design so Angular calls transform() on each change-detection cycle, but it only allocates a new expression when the input actually changes.',
   keyPoints: [
     'The pipe is impure (pure: false) — Angular checks it every change-detection cycle, but the pipe itself only recreates the expression when the expression string or context object changes.',
-    'Pass an expression string and a context object: {{ "a + b" | rsx: model }}. Or pass a pre-built IExpression and omit the context: {{ expr | rsx }}.',
+    'Pass an expression string and a context object: {{ "a + b" | rsx: model }}. Or pass a pre-built IExpression and omit the context: {{ expr | rsx }}. This is the preferred way, as RS-X does not yet support strongly typed expressions within HTML.',
     'When the pipe owns the expression (string input), it disposes the expression on ngOnDestroy. When you pass a pre-built IExpression, the pipe only subscribes — you own the lifecycle.',
     'providexRsx() registers three providers: an APP_INITIALIZER that loads the rs-x module, IExpressionFactoryToken, and IExpressionChangeTransactionManagerToken.',
     'Use IExpressionChangeTransactionManagerToken to batch multiple model mutations into a single change notification — important for performance when updating many fields at once.',
@@ -224,9 +231,9 @@ const doc: CoreConceptDoc = {
       code: rsxPipeNullCode,
     },
     {
-      title: 'Manual injection — factory and transaction manager',
+      title: 'Manual injection — transaction manager',
       description:
-        'Inject IExpressionFactoryToken and IExpressionChangeTransactionManagerToken directly to build expressions in services or use batched updates.',
+        'Inject IExpressionChangeTransactionManagerToken directly to use batched updates.',
       code: injectionTokensCode,
     },
     {
@@ -240,6 +247,16 @@ const doc: CoreConceptDoc = {
       href: '/docs/frameworks/react',
       title: 'React integration',
       meta: 'useRsxExpression and useRsxModel hooks for reactive components',
+    },
+    {
+      href: '/docs/frameworks/vue',
+      title: 'Vue integration',
+      meta: 'Composition API patterns with rs-x expressions',
+    },
+    {
+      href: '/docs/frameworks/rxjs',
+      title: 'RxJS integration',
+      meta: 'Observable values inside expressions',
     },
     {
       href: '/docs/core-concepts/async-operations',

@@ -3,8 +3,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 import {
   ExpressionType,
-  type IExpression,
   type IExpressionChangeHistory,
+  type IExpressionTree,
 } from '@rs-x/expression-parser';
 
 import { type IExpressionInfo } from '../../models/expression-info.interface';
@@ -121,7 +121,7 @@ function ValueDiff(props: {
   );
 }
 
-function getExpressionText(expression: IExpression): {
+function getExpressionText(expression: IExpressionTree): {
   expressionString: string;
   type: string;
 } {
@@ -159,7 +159,7 @@ export interface IExpressionChangeHistoryViewProps {
   version: number;
   modelIndex: number;
   expressionIndex: number;
-  expression: IExpression;
+  expression: IExpressionTree;
   changeHistory: IExpressionChangeHistory[][];
   changeHistoryIndex: number;
   onHistoryChange?: (

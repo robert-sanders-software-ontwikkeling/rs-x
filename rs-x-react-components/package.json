@@ -29,7 +29,7 @@
     "provenance": true
   },
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --external react react-dom --tsconfig tsconfig.build.json",
+    "build": "cross-env TSUP_DISABLE_SWC=1 tsup src/index.ts --format esm --dts --external react react-dom --tsconfig tsconfig.build.json",
     "test": "vitest",
     "clean": "rimraf dist"
   },

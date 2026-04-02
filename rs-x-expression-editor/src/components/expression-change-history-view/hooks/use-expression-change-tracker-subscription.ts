@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { type Subscription } from 'rxjs';
 
 import type {
-  IExpression,
   IExpressionChangeHistory,
   IExpressionChangeTracker,
+  IExpressionTree,
 } from '@rs-x/expression-parser';
 
 import { ExpressionChangeTrackerFactory } from '../../../services/expression-change-tracker.factory';
@@ -25,13 +25,13 @@ export type TrackerSubscriptionResult = {
 };
 
 export function useExpressionChangeTrackerSubscription(args: {
-  expression: IExpression | null | undefined;
+  expression: IExpressionTree | null | undefined;
 }): TrackerSubscriptionResult {
   const { expression } = args;
 
   const subscriptionRef = useRef<Subscription | null>(null);
   const trackerRef = useRef<IExpressionChangeTracker | null>(null);
-  const trackedExpressionRef = useRef<IExpression | null>(null);
+  const trackedExpressionRef = useRef<IExpressionTree | null>(null);
 
   const [latestStack, setLatestStack] = useState<
     IExpressionChangeHistory[] | null

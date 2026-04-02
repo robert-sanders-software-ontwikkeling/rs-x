@@ -20,7 +20,8 @@ export class ExpressionEngineSelector implements IExpressionEngineSelector {
 
   public create(expressionString: string) {
     if (this.getMode() === 'compiled') {
-      const compiledExpression = this._compiledEngine.tryCreate(expressionString);
+      const compiledExpression =
+        this._compiledEngine.tryCreate(expressionString);
       if (!compiledExpression) {
         throw new Error(
           `Compiled expression engine could not compile: ${expressionString}`,

@@ -16,6 +16,7 @@ const nodeLibFolders = [
   'rs-x-typescript-plugin',
   'rs-x-cli',
   'rs-x-react',
+  'rs-x-vue',
   'rs-x-react-components',
 ];
 const nodePackageFolders = [...nodeLibFolders, angularDist];

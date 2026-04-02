@@ -13,6 +13,15 @@ interface IUser {
   stats(): IUserStats;
 }
 
+interface ICartItem {
+  qty: number;
+}
+
+interface ICart {
+  items: ICartItem[];
+  first(): ICartItem | undefined;
+}
+
 interface IModel {
   user: IUser;
   exprUser: IExpression<IUser>;
@@ -24,6 +33,9 @@ interface IModel {
     c: number;
     d: number;
   };
+  invoiceDate: Date;
+  cart: ICart;
+  cartItems: ICartItem[];
 }
 
 declare const factory: IExpressionFactory;
@@ -41,3 +53,10 @@ rsx(`user.na`)(model);
 rsx(`a > 10 ? test(20) : new Date()`)(model);
 rsx(`a > 10 ? test(20, 'x') : new Date()`)(model);
 factory.create(model, 'user.name');
+rsx('invoiceDate.')(model);
+rsx('invoiceDate.mo')(model);
+rsx('cart.first().q')(model);
+rsx('cart.items[0].')(model);
+rsx('cart.items[0].q')(model);
+rsx('cartItems[0].')(model);
+rsx('cartItems[0].q')(model);

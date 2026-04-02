@@ -2,10 +2,7 @@
 
 import { useMemo } from 'react';
 
-import type {
-  IExpression,
-  IExpressionTree,
-} from '@rs-x/expression-parser';
+import type { IExpression, IExpressionTree } from '@rs-x/expression-parser';
 
 import type { NodeId } from '../layout/node.interface';
 
@@ -62,10 +59,7 @@ class NodeVmBuilder {
 
     for (const n of nodes) {
       // 🚀 skip hidden expressions
-      if (
-        this.isTreeExpression(n.expression) &&
-        n.expression.hidden === true
-      ) {
+      if (this.isTreeExpression(n.expression) && n.expression.hidden === true) {
         continue;
       }
 

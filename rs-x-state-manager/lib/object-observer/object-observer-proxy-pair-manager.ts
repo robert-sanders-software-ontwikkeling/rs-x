@@ -20,7 +20,11 @@ import type {
 
 @Injectable()
 export class ObjectObserverProxyPairManager
-  extends GroupedKeyedInstanceFactory<number, IProxyTarget<unknown>, IObserverProxyPair>
+  extends GroupedKeyedInstanceFactory<
+    number,
+    IProxyTarget<unknown>,
+    IObserverProxyPair
+  >
   implements IObjectObserverProxyPairManager
 {
   private _nextId = 0;

@@ -22,7 +22,7 @@ const getExpressionFactory = (): IExpressionFactory => {
 
 export function rsx<TReturn, TModel extends object = object>(
   expressionString: string,
-  _options?: IRsxOptions,
+  options?: IRsxOptions,
 ): (
   model: TModel,
   leafIndexWatchRule?: IIndexWatchRule,
@@ -34,6 +34,7 @@ export function rsx<TReturn, TModel extends object = object>(
       model,
       expressionString,
       leafIndexWatchRule,
+      options?.compiled,
     );
   };
 }

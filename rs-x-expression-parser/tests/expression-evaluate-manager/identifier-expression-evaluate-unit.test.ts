@@ -4,7 +4,6 @@ import { WatchFactoryMock, WatchMock } from '@rs-x/state-manager/testing';
 import { IdentifierExpressionEvaluateUnit } from '../../lib/expression-evaluate-manager/identifier-expression-evaluate-unit';
 import { ExpressionEvaluateChangeManagerMock } from '../../lib/testing/expression-evaluate-change-manager.mock';
 
-
 describe('IdentifierExpressionEvaluateUnit', () => {
   let watchFactory: WatchFactoryMock;
   let watch: WatchMock;

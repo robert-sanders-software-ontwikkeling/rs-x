@@ -49,7 +49,10 @@ describe('TemplateLiteralExpression tests', () => {
     const clonedExpression = expression.clone();
 
     try {
-      expectCompiledOrTreeInstanceOf(clonedExpression, TemplateLiteralExpression);
+      expectCompiledOrTreeInstanceOf(
+        clonedExpression,
+        TemplateLiteralExpression,
+      );
       expect(clonedExpression.type).toEqual(ExpressionType.TemplateLiteral);
       expect(clonedExpression.expressionString).toEqual('`Hello ${name}`');
 

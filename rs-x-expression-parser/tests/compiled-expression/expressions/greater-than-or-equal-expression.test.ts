@@ -49,7 +49,10 @@ describe('GreaterThanOrEqualExpression tests', () => {
     const clonedExpression = expression.clone();
 
     try {
-      expectCompiledOrTreeInstanceOf(clonedExpression, GreaterThanOrEqualExpression);
+      expectCompiledOrTreeInstanceOf(
+        clonedExpression,
+        GreaterThanOrEqualExpression,
+      );
       expect(clonedExpression.type).toEqual(ExpressionType.GreaterThanOrEqual);
       expect(clonedExpression.expressionString).toEqual('a >= b');
 

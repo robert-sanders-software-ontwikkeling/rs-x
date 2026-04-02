@@ -27,7 +27,8 @@ export const expressionEngineModeBenchmark = {
     'rs-x-expression-parser/scripts/benchmark-angular-signals-comparison.mjs',
   compiledReport:
     'reports/angular-signals-comparison/benchmark-2026-03-31-compiled.json',
-  treeReport: 'reports/angular-signals-comparison/benchmark-2026-03-31-tree.json',
+  treeReport:
+    'reports/angular-signals-comparison/benchmark-2026-03-31-tree.json',
 };
 
 export type ExpressionEngineModeComparisonRow = {
@@ -66,89 +67,108 @@ export type ExpressionEngineModeMemoryRow = {
 const toImprovementPercent = (compiledMs: number, treeMs: number): number =>
   ((treeMs - compiledMs) / treeMs) * 100;
 
-export const expressionEngineModeComparisonRows: ExpressionEngineModeComparisonRow[] = [
-  {
-    scenario: 'Sync identifier',
-    bindings: 1000,
-    metric: 'bind',
-    compiledMs: 30.12854199999998,
-    treeMs: 27.327291000000002,
-    improvementPercent: toImprovementPercent(30.12854199999998, 27.327291000000002),
-  },
-  {
-    scenario: 'Sync identifier',
-    bindings: 1000,
-    metric: 'single update',
-    compiledMs: 0.09468749999996362,
-    treeMs: 0.07191700000001333,
-    improvementPercent: toImprovementPercent(
-      0.09468749999996362,
-      0.07191700000001333,
-    ),
-  },
-  {
-    scenario: 'Sync identifier',
-    bindings: 1000,
-    metric: 'bulk update',
-    compiledMs: 5.1485625000000255,
-    treeMs: 4.60458349999999,
-    improvementPercent: toImprovementPercent(5.1485625000000255, 4.60458349999999),
-  },
-  {
-    scenario: 'Async identifier',
-    bindings: 1000,
-    metric: 'bind',
-    compiledMs: 32.376500000000306,
-    treeMs: 30.713917000000947,
-    improvementPercent: toImprovementPercent(
-      32.376500000000306,
-      30.713917000000947,
-    ),
-  },
-  {
-    scenario: 'Async identifier',
-    bindings: 1000,
-    metric: 'single update',
-    compiledMs: 0.04841699999997218,
-    treeMs: 0.04720799999904557,
-    improvementPercent: toImprovementPercent(
-      0.04841699999997218,
-      0.04720799999904557,
-    ),
-  },
-  {
-    scenario: 'Async identifier',
-    bindings: 1000,
-    metric: 'bulk update',
-    compiledMs: 6.487812499999563,
-    treeMs: 5.8583334999993895,
-    improvementPercent: toImprovementPercent(6.487812499999563, 5.8583334999993895),
-  },
-  {
-    scenario: 'Same-model generated expressions',
-    bindings: 1000,
-    metric: 'bind',
-    compiledMs: 11.883583999995608,
-    treeMs: 358.38666699999885,
-    improvementPercent: toImprovementPercent(11.883583999995608, 358.38666699999885),
-  },
-  {
-    scenario: 'Same-model generated expressions',
-    bindings: 1000,
-    metric: 'single update',
-    compiledMs: 5.559500000003027,
-    treeMs: 49.734292000001005,
-    improvementPercent: toImprovementPercent(5.559500000003027, 49.734292000001005),
-  },
-  {
-    scenario: 'Same-model generated expressions',
-    bindings: 1000,
-    metric: 'bulk update',
-    compiledMs: 34.88695800000278,
-    treeMs: 393.4380830000009,
-    improvementPercent: toImprovementPercent(34.88695800000278, 393.4380830000009),
-  },
-];
+export const expressionEngineModeComparisonRows: ExpressionEngineModeComparisonRow[] =
+  [
+    {
+      scenario: 'Sync identifier',
+      bindings: 1000,
+      metric: 'bind',
+      compiledMs: 30.12854199999998,
+      treeMs: 27.327291000000002,
+      improvementPercent: toImprovementPercent(
+        30.12854199999998,
+        27.327291000000002,
+      ),
+    },
+    {
+      scenario: 'Sync identifier',
+      bindings: 1000,
+      metric: 'single update',
+      compiledMs: 0.09468749999996362,
+      treeMs: 0.07191700000001333,
+      improvementPercent: toImprovementPercent(
+        0.09468749999996362,
+        0.07191700000001333,
+      ),
+    },
+    {
+      scenario: 'Sync identifier',
+      bindings: 1000,
+      metric: 'bulk update',
+      compiledMs: 5.1485625000000255,
+      treeMs: 4.60458349999999,
+      improvementPercent: toImprovementPercent(
+        5.1485625000000255,
+        4.60458349999999,
+      ),
+    },
+    {
+      scenario: 'Async identifier',
+      bindings: 1000,
+      metric: 'bind',
+      compiledMs: 32.376500000000306,
+      treeMs: 30.713917000000947,
+      improvementPercent: toImprovementPercent(
+        32.376500000000306,
+        30.713917000000947,
+      ),
+    },
+    {
+      scenario: 'Async identifier',
+      bindings: 1000,
+      metric: 'single update',
+      compiledMs: 0.04841699999997218,
+      treeMs: 0.04720799999904557,
+      improvementPercent: toImprovementPercent(
+        0.04841699999997218,
+        0.04720799999904557,
+      ),
+    },
+    {
+      scenario: 'Async identifier',
+      bindings: 1000,
+      metric: 'bulk update',
+      compiledMs: 6.487812499999563,
+      treeMs: 5.8583334999993895,
+      improvementPercent: toImprovementPercent(
+        6.487812499999563,
+        5.8583334999993895,
+      ),
+    },
+    {
+      scenario: 'Same-model generated expressions',
+      bindings: 1000,
+      metric: 'bind',
+      compiledMs: 11.883583999995608,
+      treeMs: 358.38666699999885,
+      improvementPercent: toImprovementPercent(
+        11.883583999995608,
+        358.38666699999885,
+      ),
+    },
+    {
+      scenario: 'Same-model generated expressions',
+      bindings: 1000,
+      metric: 'single update',
+      compiledMs: 5.559500000003027,
+      treeMs: 49.734292000001005,
+      improvementPercent: toImprovementPercent(
+        5.559500000003027,
+        49.734292000001005,
+      ),
+    },
+    {
+      scenario: 'Same-model generated expressions',
+      bindings: 1000,
+      metric: 'bulk update',
+      compiledMs: 34.88695800000278,
+      treeMs: 393.4380830000009,
+      improvementPercent: toImprovementPercent(
+        34.88695800000278,
+        393.4380830000009,
+      ),
+    },
+  ];
 
 export const expressionEngineModeSyncRows: ExpressionEngineModeScaleRow[] = [
   {
@@ -505,7 +525,7 @@ export const parsePerformanceRows: ParsePerformanceRow[] = [
   {
     nodeCount: 63,
     expressionShape: 'v0 + ... + v31',
-    medianMs: 178.090,
+    medianMs: 178.09,
     usPerOperation: 35.618,
     opsPerSecond: 28076,
   },
@@ -533,12 +553,12 @@ export const parseCachePerformanceRows: ParseCachePerformanceRow[] = [
     parseAndCloneMs: 23.535,
     parseAndCloneUsPerOperation: 4.707,
     cloneOnlyMs: 17.898,
-    cloneOnlyUsPerOperation: 3.580,
+    cloneOnlyUsPerOperation: 3.58,
   },
   {
     nodeCount: 15,
     parseAndCloneMs: 47.499,
-    parseAndCloneUsPerOperation: 9.500,
+    parseAndCloneUsPerOperation: 9.5,
     cloneOnlyMs: 37.934,
     cloneOnlyUsPerOperation: 7.587,
   },
@@ -562,7 +582,7 @@ export const parseCachePerformanceRows: ParseCachePerformanceRow[] = [
 export const bindingPerformanceRows: BindingPerformanceRow[] = [
   {
     bindings: 1000,
-    bindUniqueMs: 38.350,
+    bindUniqueMs: 38.35,
     bindSameExpressionMs: 43.373,
   },
   {
@@ -601,7 +621,7 @@ export const compiledBindingPerformanceRows: BindingPerformanceRow[] = [
   },
   {
     bindings: 10000,
-    bindUniqueMs: 561.750,
+    bindUniqueMs: 561.75,
     bindSameExpressionMs: 440.759,
   },
 ];
@@ -620,7 +640,7 @@ export const updatePerformanceRows: UpdatePerformanceRow[] = [
   },
   {
     bindings: 5000,
-    singleUpdateMs: 0.001750,
+    singleUpdateMs: 0.00175,
     bulkUpdateMs: 21.263,
   },
   {
@@ -645,7 +665,7 @@ export const compiledUpdatePerformanceRows: UpdatePerformanceRow[] = [
   {
     bindings: 5000,
     singleUpdateMs: 0.002313,
-    bulkUpdateMs: 28.310,
+    bulkUpdateMs: 28.31,
   },
   {
     bindings: 10000,
@@ -684,7 +704,7 @@ export const identifierOnlyBindingPerformanceRows: IdentifierOnlyBindingPerforma
       bindMs: 66.185,
       bindInitializedMs: 111.798,
       singleUpdateMs: 0.001771,
-      bulkUpdateMs: 3.010,
+      bulkUpdateMs: 3.01,
     },
     {
       bindings: 3000,
@@ -703,7 +723,7 @@ export const identifierOnlyBindingPerformanceRows: IdentifierOnlyBindingPerforma
     {
       bindings: 10000,
       bindMs: 758.932,
-      bindInitializedMs: 902.250,
+      bindInitializedMs: 902.25,
       singleUpdateMs: 0.001959,
       bulkUpdateMs: 55.082,
     },
@@ -786,45 +806,169 @@ export const memoryUsageRows: MemoryUsageRow[] = [
   { scenario: 'Parse (31 nodes)', medianHeapMb: 21.0, peakRssMb: 129.0 },
   { scenario: 'Parse (63 nodes)', medianHeapMb: 25.1, peakRssMb: 133.2 },
   { scenario: 'Bind unique (1,000)', medianHeapMb: 153.2, peakRssMb: 367.8 },
-  { scenario: 'Bind same expression (1,000)', medianHeapMb: 366.7, peakRssMb: 608.7 },
+  {
+    scenario: 'Bind same expression (1,000)',
+    medianHeapMb: 366.7,
+    peakRssMb: 608.7,
+  },
   { scenario: 'Single update (1,000)', medianHeapMb: 792.0, peakRssMb: 992.7 },
   { scenario: 'Bulk update (1,000)', medianHeapMb: 805.0, peakRssMb: 1028.1 },
   { scenario: 'Bind unique (3,000)', medianHeapMb: 1051.8, peakRssMb: 1485.4 },
-  { scenario: 'Bind same expression (3,000)', medianHeapMb: 1487.5, peakRssMb: 1702.3 },
-  { scenario: 'Single update (3,000)', medianHeapMb: 1720.9, peakRssMb: 2374.2 },
+  {
+    scenario: 'Bind same expression (3,000)',
+    medianHeapMb: 1487.5,
+    peakRssMb: 1702.3,
+  },
+  {
+    scenario: 'Single update (3,000)',
+    medianHeapMb: 1720.9,
+    peakRssMb: 2374.2,
+  },
   { scenario: 'Bulk update (3,000)', medianHeapMb: 1751.8, peakRssMb: 2391.2 },
   { scenario: 'Bind unique (5,000)', medianHeapMb: 2475.3, peakRssMb: 2739.4 },
-  { scenario: 'Bind same expression (5,000)', medianHeapMb: 3596.8, peakRssMb: 2872.2 },
-  { scenario: 'Single update (5,000)', medianHeapMb: 3949.8, peakRssMb: 2477.3 },
+  {
+    scenario: 'Bind same expression (5,000)',
+    medianHeapMb: 3596.8,
+    peakRssMb: 2872.2,
+  },
+  {
+    scenario: 'Single update (5,000)',
+    medianHeapMb: 3949.8,
+    peakRssMb: 2477.3,
+  },
   { scenario: 'Bulk update (5,000)', medianHeapMb: 3983.2, peakRssMb: 2366.6 },
   { scenario: 'Bind unique (10,000)', medianHeapMb: 4851.6, peakRssMb: 1859.7 },
-  { scenario: 'Bind same expression (10,000)', medianHeapMb: 5145.3, peakRssMb: 2527.2 },
-  { scenario: 'Single update (10,000)', medianHeapMb: 5920.6, peakRssMb: 2892.9 },
+  {
+    scenario: 'Bind same expression (10,000)',
+    medianHeapMb: 5145.3,
+    peakRssMb: 2527.2,
+  },
+  {
+    scenario: 'Single update (10,000)',
+    medianHeapMb: 5920.6,
+    peakRssMb: 2892.9,
+  },
   { scenario: 'Bulk update (10,000)', medianHeapMb: 5959.5, peakRssMb: 2705.5 },
-  { scenario: 'Bind+initialize unique (1,000)', medianHeapMb: 432.0, peakRssMb: 722.0 },
-  { scenario: 'Bind+initialize same expression (1,000)', medianHeapMb: 668.1, peakRssMb: 867.6 },
-  { scenario: 'Bind+initialize unique (3,000)', medianHeapMb: 2220.6, peakRssMb: 2306.7 },
-  { scenario: 'Bind+initialize same expression (3,000)', medianHeapMb: 1594.5, peakRssMb: 2316.0 },
-  { scenario: 'Bind+initialize unique (5,000)', medianHeapMb: 3467.5, peakRssMb: 2340.6 },
-  { scenario: 'Bind+initialize same expression (5,000)', medianHeapMb: 3378.9, peakRssMb: 2296.6 },
-  { scenario: 'Bind+initialize unique (10,000)', medianHeapMb: 4604.1, peakRssMb: 2416.9 },
-  { scenario: 'Bind+initialize same expression (10,000)', medianHeapMb: 5464.3, peakRssMb: 2708.2 },
-  { scenario: 'Identifier-only bind (1,000)', medianHeapMb: 4714.6, peakRssMb: 2832.6 },
-  { scenario: 'Identifier-only bind+initialize (1,000)', medianHeapMb: 5040.2, peakRssMb: 3274.8 },
-  { scenario: 'Identifier-only single update (1,000)', medianHeapMb: 5173.2, peakRssMb: 3705.7 },
-  { scenario: 'Identifier-only bulk update (1,000)', medianHeapMb: 5186.2, peakRssMb: 3691.3 },
-  { scenario: 'Identifier-only bind (3,000)', medianHeapMb: 5769.4, peakRssMb: 3528.1 },
-  { scenario: 'Identifier-only bind+initialize (3,000)', medianHeapMb: 4888.6, peakRssMb: 3551.0 },
-  { scenario: 'Identifier-only single update (3,000)', medianHeapMb: 5152.6, peakRssMb: 3297.3 },
-  { scenario: 'Identifier-only bulk update (3,000)', medianHeapMb: 5175.1, peakRssMb: 3222.8 },
-  { scenario: 'Identifier-only bind (5,000)', medianHeapMb: 5873.7, peakRssMb: 3095.1 },
-  { scenario: 'Identifier-only bind+initialize (5,000)', medianHeapMb: 5912.2, peakRssMb: 3370.8 },
-  { scenario: 'Identifier-only single update (5,000)', medianHeapMb: 4696.4, peakRssMb: 2678.9 },
-  { scenario: 'Identifier-only bulk update (5,000)', medianHeapMb: 4725.1, peakRssMb: 2944.6 },
-  { scenario: 'Identifier-only bind (10,000)', medianHeapMb: 5496.7, peakRssMb: 3042.3 },
-  { scenario: 'Identifier-only bind+initialize (10,000)', medianHeapMb: 5863.5, peakRssMb: 2969.7 },
-  { scenario: 'Identifier-only single update (10,000)', medianHeapMb: 6481.2, peakRssMb: 2809.4 },
-  { scenario: 'Identifier-only bulk update (10,000)', medianHeapMb: 4763.5, peakRssMb: 3118.3 },
+  {
+    scenario: 'Bind+initialize unique (1,000)',
+    medianHeapMb: 432.0,
+    peakRssMb: 722.0,
+  },
+  {
+    scenario: 'Bind+initialize same expression (1,000)',
+    medianHeapMb: 668.1,
+    peakRssMb: 867.6,
+  },
+  {
+    scenario: 'Bind+initialize unique (3,000)',
+    medianHeapMb: 2220.6,
+    peakRssMb: 2306.7,
+  },
+  {
+    scenario: 'Bind+initialize same expression (3,000)',
+    medianHeapMb: 1594.5,
+    peakRssMb: 2316.0,
+  },
+  {
+    scenario: 'Bind+initialize unique (5,000)',
+    medianHeapMb: 3467.5,
+    peakRssMb: 2340.6,
+  },
+  {
+    scenario: 'Bind+initialize same expression (5,000)',
+    medianHeapMb: 3378.9,
+    peakRssMb: 2296.6,
+  },
+  {
+    scenario: 'Bind+initialize unique (10,000)',
+    medianHeapMb: 4604.1,
+    peakRssMb: 2416.9,
+  },
+  {
+    scenario: 'Bind+initialize same expression (10,000)',
+    medianHeapMb: 5464.3,
+    peakRssMb: 2708.2,
+  },
+  {
+    scenario: 'Identifier-only bind (1,000)',
+    medianHeapMb: 4714.6,
+    peakRssMb: 2832.6,
+  },
+  {
+    scenario: 'Identifier-only bind+initialize (1,000)',
+    medianHeapMb: 5040.2,
+    peakRssMb: 3274.8,
+  },
+  {
+    scenario: 'Identifier-only single update (1,000)',
+    medianHeapMb: 5173.2,
+    peakRssMb: 3705.7,
+  },
+  {
+    scenario: 'Identifier-only bulk update (1,000)',
+    medianHeapMb: 5186.2,
+    peakRssMb: 3691.3,
+  },
+  {
+    scenario: 'Identifier-only bind (3,000)',
+    medianHeapMb: 5769.4,
+    peakRssMb: 3528.1,
+  },
+  {
+    scenario: 'Identifier-only bind+initialize (3,000)',
+    medianHeapMb: 4888.6,
+    peakRssMb: 3551.0,
+  },
+  {
+    scenario: 'Identifier-only single update (3,000)',
+    medianHeapMb: 5152.6,
+    peakRssMb: 3297.3,
+  },
+  {
+    scenario: 'Identifier-only bulk update (3,000)',
+    medianHeapMb: 5175.1,
+    peakRssMb: 3222.8,
+  },
+  {
+    scenario: 'Identifier-only bind (5,000)',
+    medianHeapMb: 5873.7,
+    peakRssMb: 3095.1,
+  },
+  {
+    scenario: 'Identifier-only bind+initialize (5,000)',
+    medianHeapMb: 5912.2,
+    peakRssMb: 3370.8,
+  },
+  {
+    scenario: 'Identifier-only single update (5,000)',
+    medianHeapMb: 4696.4,
+    peakRssMb: 2678.9,
+  },
+  {
+    scenario: 'Identifier-only bulk update (5,000)',
+    medianHeapMb: 4725.1,
+    peakRssMb: 2944.6,
+  },
+  {
+    scenario: 'Identifier-only bind (10,000)',
+    medianHeapMb: 5496.7,
+    peakRssMb: 3042.3,
+  },
+  {
+    scenario: 'Identifier-only bind+initialize (10,000)',
+    medianHeapMb: 5863.5,
+    peakRssMb: 2969.7,
+  },
+  {
+    scenario: 'Identifier-only single update (10,000)',
+    medianHeapMb: 6481.2,
+    peakRssMb: 2809.4,
+  },
+  {
+    scenario: 'Identifier-only bulk update (10,000)',
+    medianHeapMb: 4763.5,
+    peakRssMb: 3118.3,
+  },
 ];
 
 type ComparisonRow = {
@@ -901,7 +1045,7 @@ const comparisonRowsBase: ComparisonRow[] = [
     unit: 'us/op',
     oldValue: oldRows.parseAndCloneUsPerOp[5],
     newValue: parseCachePerformanceRows[5].parseAndCloneUsPerOperation,
-    compiledNewValue: 199.400,
+    compiledNewValue: 199.4,
     gainPercent: 0,
   },
   {

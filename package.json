@@ -16,6 +16,7 @@
     "rs-x-cli",
     "rs-x-angular/projects/rsx",
     "rs-x-react",
+    "rs-x-vue",
     "rs-x-react-components",
     "rs-x-dev-tools",
     "rs-x-expression-editor",
@@ -23,7 +24,7 @@
     "rs-x-ui"
   ],
   "scripts": {
-    "build:libs": "pnpm --filter '@rs-x/core' run build && pnpm --filter '@rs-x/state-manager' run build && pnpm --filter '@rs-x/expression-parser' run build &&  pnpm --filter '@rs-x/react' run build",
+    "build:libs": "pnpm --filter '@rs-x/core' run build && pnpm --filter '@rs-x/state-manager' run build && pnpm --filter '@rs-x/expression-parser' run build && pnpm --filter '@rs-x/react' run build && pnpm --filter '@rs-x/vue' run build",
     "build:angular": "pnpm --prefix rs-x-angular run build:angular",
     "clean": "pnpm -r exec rimraf node_modules dist && pnpm exec rimraf node_modules dist .pnpm-store",
     "reinstall": "pnpm run clean && pnpm install",
@@ -41,6 +42,8 @@
     "init:rsx": "node ./rs-x-cli/bin/rsx.cjs init --local",
     "setup:developer-tooling": "node ./rs-x-cli/bin/rsx.cjs setup --local",
     "build:react": "pnpm --filter @rs-x/react run build",
+    "build:vue": "pnpm --filter @rs-x/vue run build",
+    "build:react-components": "pnpm --filter @rs-x/react-components run build",
     "build:devtools": "pnpm --filter @rs-x/dev-tools run build",
     "build:expression-editor": "pnpm --filter @rs-x/expression-editor run build",
     "typecheck:rsx": "node ./rs-x-cli/bin/rsx.cjs typecheck --project tsconfig.json",
@@ -50,8 +53,10 @@
     "test:compiled-expression:per-file": "cross-env TZ=UTC NODE_OPTIONS='--max-old-space-size=4096' bash scripts/test-compiled-expression-per-file.sh",
     "test:angular": "pnpm --prefix rs-x-angular run test",
     "test:react": "pnpm --prefix rs-x-react run test",
+    "test:vue": "pnpm --filter @rs-x/vue run test",
     "test:coverage": "cross-env TZ=UTC pnpm jest --coverage",
     "test:strict": "pnpm typecheck:rsx && cross-env TZ=UTC pnpm jest --runInBand --no-cache --config jest.config.ts",
+    "ci:build": "pnpm -w run format:check && pnpm -w run lint && pnpm -w run build:libs && pnpm -w run build:compiler && pnpm -w run build:ts-plugin && pnpm -w run build:vscode-extension && pnpm --filter @rs-x/cli run build && pnpm -w run build:expression-editor && pnpm -w run build:angular && pnpm --filter @rs-x/react-components run build && pnpm --filter @rs-x/site run build && pnpm -w run test && pnpm -w run test:angular && pnpm -w run test:react && pnpm -w run test:vue",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --ext .ts",
@@ -103,6 +108,7 @@
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18",
+    "vue": "^3.5.0",
     "zone.js": "^0.16.1"
   },
   "dependencies": {

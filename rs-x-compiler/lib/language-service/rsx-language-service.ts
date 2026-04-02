@@ -1,7 +1,11 @@
 import ts from 'typescript';
 
 import { detectExpressionSitesInSourceFile } from '../compiler/expression-site-detector';
-import { validateExpressionSite } from '../compiler/expression-site-validator';
+import {
+  isDateLikeType,
+  supportedDateProperties,
+  validateExpressionSite,
+} from '../compiler/expression-site-validator';
 import type { CompilerDiagnosticCategory } from '../diagnostics';
 
 export interface IRsxExpressionRegion {
@@ -102,6 +106,13 @@ export function getRsxCompletionsAtPosition(
 
   if (!targetType) {
     return [];
+  }
+
+  if (isDateLikeType(targetType, context.checker)) {
+    const names = [...supportedDateProperties]
+      .filter((name) => name.startsWith(completionTarget.prefix))
+      .sort();
+    return names.map((name) => ({ name, kind: 'property' as const }));
   }
 
   const names = targetType
@@ -342,8 +353,11 @@ function resolveCompletionTarget(prefixSource: string): {
   chain: string[];
   prefix: string;
 } {
+  // A chain segment: identifier optionally followed by () or [digits]
+  // e.g. 'items', 'first()', 'items[0]'
+  // chain.prefix  — e.g. 'cart.first().q' → chain='cart.first()', prefix='q'
   const chainMatch = prefixSource.match(
-    /([A-Za-z_$][\w$]*(?:\(\))?(?:\.[A-Za-z_$][\w$]*(?:\(\))?)*)\.([A-Za-z_$][\w$]*)?$/u,
+    /([A-Za-z_$][\w$]*(?:(?:\(\))|(?:\[\d+\]))?(?:\.[A-Za-z_$][\w$]*(?:(?:\(\))|(?:\[\d+\]))?)*)\.([A-Za-z_$][\w$]*)?$/u,
   );
   if (chainMatch) {
     return {
@@ -352,8 +366,9 @@ function resolveCompletionTarget(prefixSource: string): {
     };
   }
 
+  // chain.  — trailing dot with no prefix yet, e.g. 'cart[0].'
   const trailingDotChainMatch = prefixSource.match(
-    /([A-Za-z_$][\w$]*(?:\(\))?(?:\.[A-Za-z_$][\w$]*(?:\(\))?)*)\.$/u,
+    /([A-Za-z_$][\w$]*(?:(?:\(\))|(?:\[\d+\]))?(?:\.[A-Za-z_$][\w$]*(?:(?:\(\))|(?:\[\d+\]))?)*)\.$/u,
   );
   if (trailingDotChainMatch) {
     return {
@@ -431,6 +446,48 @@ function resolveChainType(
     }
     currentType = unwrapRsxExpressionType(currentType, checker);
 
+    // Handle array index: 'items[0]' or 'cart[0]'
+    const arrayIndexMatch = segment.match(/^([A-Za-z_$][\w$]*)?\[(\d+)\]$/u);
+    if (arrayIndexMatch) {
+      const propName = arrayIndexMatch[1];
+      let typeToIndex = currentType;
+
+      if (propName) {
+        const property = typeToIndex.getProperty(propName);
+        if (!property) return null;
+        const declaration =
+          property.valueDeclaration ?? property.declarations?.[0];
+        if (!declaration) return null;
+        typeToIndex = checker.getNonNullableType(
+          unwrapRsxExpressionType(
+            checker.getTypeOfSymbolAtLocation(property, declaration),
+            checker,
+          ),
+        );
+      }
+
+      // Get element type via numeric index signature
+      const numberIndexType = typeToIndex.getNumberIndexType();
+      if (numberIndexType) {
+        currentType = checker.getNonNullableType(
+          unwrapRsxExpressionType(numberIndexType, checker),
+        );
+      } else {
+        // Fallback: first type argument of generic Array<T>
+        const typeArgs = checker.getTypeArguments(
+          typeToIndex as ts.TypeReference,
+        );
+        if (typeArgs.length > 0 && typeArgs[0]) {
+          currentType = checker.getNonNullableType(
+            unwrapRsxExpressionType(typeArgs[0], checker),
+          );
+        } else {
+          return null;
+        }
+      }
+      continue;
+    }
+
     const isMethodCall = segment.endsWith('()');
     const name = isMethodCall ? segment.slice(0, -2) : segment;
     const property = currentType.getProperty(name);
@@ -448,7 +505,9 @@ function resolveChainType(
       declaration,
     );
     if (!isMethodCall) {
-      currentType = unwrapRsxExpressionType(propertyType, checker);
+      currentType = checker.getNonNullableType(
+        unwrapRsxExpressionType(propertyType, checker),
+      );
       continue;
     }
 
@@ -457,9 +516,8 @@ function resolveChainType(
       return null;
     }
 
-    currentType = unwrapRsxExpressionType(
-      signatures[0].getReturnType(),
-      checker,
+    currentType = checker.getNonNullableType(
+      unwrapRsxExpressionType(signatures[0].getReturnType(), checker),
     );
   }
 

@@ -49,7 +49,10 @@ describe('BitwiseRightShiftExpression tests', () => {
     const clonedExpression = expression.clone();
 
     try {
-      expectCompiledOrTreeInstanceOf(clonedExpression, BitwiseRightShiftExpression);
+      expectCompiledOrTreeInstanceOf(
+        clonedExpression,
+        BitwiseRightShiftExpression,
+      );
       expect(clonedExpression.type).toEqual(ExpressionType.BitwiseRightShift);
       expect(clonedExpression.expressionString).toEqual('a >> b');
 

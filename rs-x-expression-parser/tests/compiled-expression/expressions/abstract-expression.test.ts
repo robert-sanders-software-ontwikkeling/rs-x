@@ -1,4 +1,3 @@
-import { expectCompiledOrTreeInstanceOf } from './_compiled-assertions';
 process.env.RSX_EXPRESSION_ENGINE_MODE = 'compiled';
 
 import { BehaviorSubject } from 'rxjs';

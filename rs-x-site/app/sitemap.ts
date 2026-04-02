@@ -130,6 +130,26 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
       changeFrequency: 'monthly',
     },
+    {
+      url: `${BASE_URL}/docs/frameworks/react`,
+      priority: 0.8,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/frameworks/angular`,
+      priority: 0.8,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/frameworks/vue`,
+      priority: 0.8,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/frameworks/rxjs`,
+      priority: 0.8,
+      changeFrequency: 'monthly',
+    },
 
     // Core API index + symbol pages
     {

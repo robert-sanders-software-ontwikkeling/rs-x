@@ -5,9 +5,7 @@ import { DateProxyFactory } from '../../../lib/proxies/date-proxy/date-proxy.fac
 describe('DateProxyFactory tests', () => {
   let dateProxyFactory: DateProxyFactory;
   beforeEach(() => {
-    dateProxyFactory = new DateProxyFactory(
-      new ProxyRegistryMock(),
-    );
+    dateProxyFactory = new DateProxyFactory(new ProxyRegistryMock());
   });
 
   it('will  create an instance of date proxy', () => {

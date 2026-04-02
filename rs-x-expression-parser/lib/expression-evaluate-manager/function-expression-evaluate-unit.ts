@@ -6,7 +6,8 @@ import type {
 } from './expression-evaluate-unit.interface';
 
 export class FunctionExpressionEvaluateUnit
-  implements IExpressionEvaluateUnit, IExpressionEvaluateChangeManager {
+  implements IExpressionEvaluateUnit, IExpressionEvaluateChangeManager
+{
   public readonly count = 1;
   private _value: unknown;
   private _context: unknown;
@@ -31,7 +32,16 @@ export class FunctionExpressionEvaluateUnit
     const beforeEval = this._value;
     this._value = this.evaluateSafely();
     if (typeof this.index === 'string' && this.index.includes('trackPrice')) {
-      console.log('[DEBUG FuncUnit.markDirty]', this.index.slice(0, 50), 'dep=', evaluateUnit.index, 'before=', beforeEval, 'after=', this._value);
+      console.log(
+        '[DEBUG FuncUnit.markDirty]',
+        this.index.slice(0, 50),
+        'dep=',
+        evaluateUnit.index,
+        'before=',
+        beforeEval,
+        'after=',
+        this._value,
+      );
     }
     this._changeManager.markDirty(this);
   }
@@ -85,7 +95,12 @@ export class FunctionExpressionEvaluateUnit
 
   public commitChange(): void {
     if (typeof this.index === 'string' && this.index.includes('trackPrice')) {
-      console.log('[DEBUG FuncUnit.commitChange]', this.index, '_value=', this._value);
+      console.log(
+        '[DEBUG FuncUnit.commitChange]',
+        this.index,
+        '_value=',
+        this._value,
+      );
     }
     if (this._value === undefined) {
       return;

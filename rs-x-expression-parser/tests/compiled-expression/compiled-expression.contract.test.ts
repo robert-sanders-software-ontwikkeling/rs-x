@@ -2,11 +2,11 @@ import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
 import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
 import { ExpressionType } from '../../lib/expressions/expression-parser.interface';
-import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
 import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
+import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
 import { rsx } from '../../lib/rsx';
 
 type Case = {

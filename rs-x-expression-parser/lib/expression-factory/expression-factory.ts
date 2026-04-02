@@ -18,9 +18,11 @@ export class ExpressionFactory implements IExpressionFactory {
     context: object,
     expressionString: string,
     leafIndexWatchRule?: IIndexWatchRule,
+    compiled?: boolean,
   ): IExpression<T> {
     return this._expressionManager
       .createAndGetInstance(context)
-      .create({ expressionString, leafIndexWatchRule }).instance as IExpression<T>;
+      .create({ expressionString, leafIndexWatchRule, compiled })
+      .instance as IExpression<T>;
   }
 }

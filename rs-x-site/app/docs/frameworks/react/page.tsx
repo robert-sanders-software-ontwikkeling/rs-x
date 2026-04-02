@@ -244,6 +244,16 @@ const doc: CoreConceptDoc = {
       meta: 'RsxPipe and providexRsx() for Angular templates',
     },
     {
+      href: '/docs/frameworks/vue',
+      title: 'Vue integration',
+      meta: 'Composition API patterns with rs-x expressions',
+    },
+    {
+      href: '/docs/frameworks/rxjs',
+      title: 'RxJS integration',
+      meta: 'Observable values inside expressions',
+    },
+    {
       href: '/docs/core-concepts/async-operations',
       title: 'Async operations',
       meta: 'Mix Promise/Observable/expression values with sync values',

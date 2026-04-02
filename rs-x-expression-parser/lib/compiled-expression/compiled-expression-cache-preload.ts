@@ -6,7 +6,10 @@ import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-in
 import { CompiledExpression } from './compiled-expression';
 import type { ICompiledExpressionPlan } from './compiled-expression.compiler.interface';
 
-const pendingCompiledExpressionPlans = new Map<string, ICompiledExpressionPlan>();
+const pendingCompiledExpressionPlans = new Map<
+  string,
+  ICompiledExpressionPlan
+>();
 
 export function registerCompiledExpressionPlansInExpressionCache(
   plans: Readonly<Record<string, ICompiledExpressionPlan>>,

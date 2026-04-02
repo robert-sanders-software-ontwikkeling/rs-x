@@ -200,7 +200,8 @@ async function waitForExpressionsToHaveValue(
       const expressionIndex = unresolvedIndexes[cursor];
       if (expressions[expressionIndex].value !== undefined) {
         resolvedCount += 1;
-        unresolvedIndexes[cursor] = unresolvedIndexes[unresolvedIndexes.length - 1];
+        unresolvedIndexes[cursor] =
+          unresolvedIndexes[unresolvedIndexes.length - 1];
         unresolvedIndexes.pop();
       }
     }
@@ -288,9 +289,10 @@ export default function Page() {
   const [shape, setShape] = useState<BenchmarkShape>('heavy');
   const [progressLabel, setProgressLabel] = useState('');
   const [cleanupMs, setCleanupMs] = useState<number | null>(null);
-  const [result, setResult] = useState<Omit<BenchmarkResult, 'expressions'> | null>(
-    null,
-  );
+  const [result, setResult] = useState<Omit<
+    BenchmarkResult,
+    'expressions'
+  > | null>(null);
 
   const run = async () => {
     let mode: BenchmarkMode = strictMode ? 'strict' : 'responsive';
@@ -362,8 +364,8 @@ export default function Page() {
     >
       <h1>RS-X Next Benchmark</h1>
       <p>
-        Runs static <code>rsx(&apos;...&apos;)(model)</code> expressions and reports
-        create, scheduler wait, bind-to-value, and cleanup timings.
+        Runs static <code>rsx(&apos;...&apos;)(model)</code> expressions and
+        reports create, scheduler wait, bind-to-value, and cleanup timings.
       </p>
 
       <label style={{ display: 'block', margin: '0.75rem 0' }}>
@@ -374,8 +376,7 @@ export default function Page() {
           checked={shape === 'heavy'}
           disabled={running}
           onChange={() => setShape('heavy')}
-        />
-        {' '}
+        />{' '}
         Heavy: 1000 unique 32-term expressions
       </label>
       <label style={{ display: 'block', margin: '0.75rem 0' }}>
@@ -386,8 +387,7 @@ export default function Page() {
           checked={shape === 'light'}
           disabled={running}
           onChange={() => setShape('light')}
-        />
-        {' '}
+        />{' '}
         Light: 1000 expressions of &quot;a + b&quot;
       </label>
       <label style={{ display: 'block', margin: '0.75rem 0' }}>
@@ -398,8 +398,7 @@ export default function Page() {
           checked={shape === 'identifier10k'}
           disabled={running}
           onChange={() => setShape('identifier10k')}
-        />
-        {' '}
+        />{' '}
         Identifier-only: 10000 expressions of &quot;a&quot;
       </label>
       <label style={{ display: 'block', margin: '0.75rem 0' }}>
@@ -410,8 +409,7 @@ export default function Page() {
           checked={shape === 'identifier10kDifferentModels'}
           disabled={running}
           onChange={() => setShape('identifier10kDifferentModels')}
-        />
-        {' '}
+        />{' '}
         Identifier-only: 10000 expressions of &quot;a&quot; (different models)
       </label>
       <label style={{ display: 'block', margin: '0.75rem 0' }}>
@@ -422,8 +420,7 @@ export default function Page() {
           checked={shape === 'addition10kDifferentModels'}
           disabled={running}
           onChange={() => setShape('addition10kDifferentModels')}
-        />
-        {' '}
+        />{' '}
         Addition: 10000 expressions of &quot;a + b&quot; (different models)
       </label>
 
@@ -433,12 +430,15 @@ export default function Page() {
           checked={strictMode}
           disabled={running || shape === 'identifier10k'}
           onChange={(event) => setStrictMode(event.target.checked)}
-        />
-        {' '}
+        />{' '}
         Strict mode (no UI yields/progress updates, cleanup measured separately)
       </label>
 
-      <button onClick={run} disabled={running} style={{ padding: '0.5rem 1rem' }}>
+      <button
+        onClick={run}
+        disabled={running}
+        style={{ padding: '0.5rem 1rem' }}
+      >
         {running ? progressLabel || 'Running benchmark...' : 'Run benchmark'}
       </button>
 
@@ -463,7 +463,10 @@ export default function Page() {
             {cleanupMs === null ? 'pending...' : `${cleanupMs.toFixed(2)} ms`}
           </p>
           <hr />
-          <p>Cache preloaded entries (all expressions): {result.cachePreloadedCount}</p>
+          <p>
+            Cache preloaded entries (all expressions):{' '}
+            {result.cachePreloadedCount}
+          </p>
           <p>Cache create() calls this run: {result.cacheCreateCalls}</p>
           <p>
             Precompiled cache creates this run: {result.cachePrecompiledCreates}

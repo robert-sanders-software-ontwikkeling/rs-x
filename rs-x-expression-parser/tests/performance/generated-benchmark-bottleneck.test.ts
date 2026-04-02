@@ -115,7 +115,10 @@ describe('Generated benchmark bottleneck profiling', () => {
 
   it('profiles create/bind bottlenecks for same-model expressions', async () => {
     const defaultCount = process.env.CI ? 300 : 1000;
-    const count = readPositiveIntegerEnv('RSX_BENCHMARK_MAX_COUNT', defaultCount);
+    const count = readPositiveIntegerEnv(
+      'RSX_BENCHMARK_MAX_COUNT',
+      defaultCount,
+    );
     const expressionStrings = loadGeneratedExpressionStrings(count);
     expect(expressionStrings.length).toBeGreaterThan(0);
 

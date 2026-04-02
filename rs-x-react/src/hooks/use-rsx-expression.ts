@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useState } from 'react';
 
 import { ArgumentException, Type } from '@rs-x/core';
 import { AbstractExpression, type IExpression } from '@rs-x/expression-parser';
@@ -21,32 +21,46 @@ export function useRsxExpression<T>(
       'model is required when expression is a string',
     );
   }
-  const [value, setValue] = useState<T | null>(null);
-  const expressionRef = useRef<IExpression<T> | null>(null);
-
-  useEffect(() => {
-    let expressionTree: IExpression<T>;
-    let ownsExpression = false;
-
+  const { expressionTree, ownsExpression } = useMemo(() => {
     if (Type.isString(expression)) {
       const factory = getExpressionFactory();
-      expressionTree = factory.create<T>(
-        model as object,
-        expression,
-        leafWatchRule,
-      );
-      ownsExpression = true;
-    } else if (expression instanceof AbstractExpression) {
-      expressionTree = expression;
-      ownsExpression = false;
-    } else {
-      throw new Error(
-        'useRsxExpression: expression must be a string or an IExpression',
-      );
+      return {
+        expressionTree: factory.create<T>(
+          model as object,
+          expression,
+          leafWatchRule,
+        ),
+        ownsExpression: true,
+      };
+    }
+    if (expression instanceof AbstractExpression) {
+      return { expressionTree: expression, ownsExpression: false };
+    }
+    throw new Error(
+      'useRsxExpression: expression must be a string or an IExpression',
+    );
+  }, [expression, model, leafWatchRule]);
+
+  const [value, setValue] = useState<T | null>(() => {
+    if (expressionTree.value !== undefined) {
+      return expressionTree.value ?? null;
     }
 
-    expressionRef.current = expressionTree;
+    const evaluator = expressionTree as unknown as {
+      evalateTopToBottom?: () => void;
+      evaluateBottomToTop?: () => boolean;
+    };
 
+    evaluator.evalateTopToBottom?.();
+    if (expressionTree.value !== undefined) {
+      return expressionTree.value ?? null;
+    }
+
+    evaluator.evaluateBottomToTop?.();
+    return expressionTree.value ?? null;
+  });
+
+  useLayoutEffect(() => {
     const changedSubscription = expressionTree.changed.subscribe(() => {
       setValue(expressionTree.value ?? null);
     });
@@ -58,7 +72,7 @@ export function useRsxExpression<T>(
         expressionTree.dispose(); // only dispose if we created it
       }
     };
-  }, [expression, model, leafWatchRule]); // recreate if expression string or model changes
+  }, [expressionTree, ownsExpression]); // recreate if expression string or model changes
 
   return value;
 }

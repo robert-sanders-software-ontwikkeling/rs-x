@@ -123,18 +123,18 @@ const helpAndVersionCode = dedent`
 
 const doc: CoreConceptDoc = {
   title: 'CLI',
-  lead: 'Use the rsx CLI to diagnose environments, create projects, wire framework bootstrap, install tooling, and run rs-x-aware build/typecheck workflows.',
+  lead: 'Use the RS-X CLI to diagnose environments, create projects, wire framework bootstrap, install tooling, and run rs-x-aware build/typecheck workflows.',
   whatItMeans:
-    'The rsx CLI is the main way to set up and operate rs-x in an application. Instead of manually wiring bootstrap files, transforms, and scripts, you run clear commands (`init`, `setup`, `project`, `build`, `typecheck`) that apply the same integration steps every time.',
+    'The RS-X CLI is the main way to set up and operate RS-X in an application. Instead of manually wiring bootstrap files, transforms, and scripts, you run clear commands (`init`, `setup`, `project`, `build`, `typecheck`) that apply the same integration steps every time.',
   whyItMatters:
-    'Using the CLI makes onboarding faster and keeps configuration consistent. Teams get the same project structure, bootstrap wiring, build flags, and diagnostics flow across Angular, Vue, React, Next.js, and Node.js projects.',
+    'Using the CLI simplifies setup and speeds up initial development and keeps configuration consistent. Teams get the same project structure, bootstrap wiring, build flags, and diagnostics flow across Angular, Vue, React, Next.js, and Node.js projects.',
   keyPoints: [
     'Every primary CLI command is covered here (`doctor`, `add`, `install`, `setup`, `init`, `project`, `build`, `typecheck`, `version`).',
     'Install once (`@rs-x/cli`) and use `rsx` commands in package scripts or `npx rsx ...`.',
     'Use `rsx init` for existing projects when you want automatic bootstrap wiring.',
     'Use `rsx setup` to auto-detect the framework and apply the correct integration.',
-    'Use `rsx project <template>` to create a full starter with rs-x already integrated.',
-    'Use `rsx build` and `rsx typecheck` in CI to enforce rs-x compile and expression semantics.',
+    'Use `rsx project <template>` to create a full starter with RS-X already integrated.',
+    'Use `rsx build` and `rsx typecheck` in CI to enforce RS-X compile and expression semantics.',
   ],
   deepDive: [
     {
@@ -156,7 +156,7 @@ const doc: CoreConceptDoc = {
       paragraphs: [
         'Installing `@rs-x/cli` adds the `rsx` command. During package postinstall, the CLI also attempts to install the bundled rs-x VS Code extension automatically when `code` is available on PATH.',
         '`rsx init` installs runtime packages (`@rs-x/core`, `@rs-x/state-manager`, `@rs-x/expression-parser`) and compiler tooling (`@rs-x/compiler`, `@rs-x/typescript-plugin`), then wires bootstrap.',
-        'Template/setup flows install framework-specific packages when needed (for example `@rs-x/angular` for Angular and `@rs-x/react` for React/Next.js).',
+        'Template/setup flows install framework-specific packages when needed (for example `@rs-x/angular` for Angular, `@rs-x/react` for React/Next.js, and `@rs-x/vue` for Vue).',
       ],
     },
     {
@@ -164,7 +164,7 @@ const doc: CoreConceptDoc = {
       paragraphs: [
         '`rsx project` supports `angular`, `vuejs`, `react`, `nextjs`, and `nodejs` templates.',
         'You can choose by full name, short alias, `--template`, or interactive prompt.',
-        'Template-specific extras are included (for example Angular installs `@rs-x/angular`, React/Next install `@rs-x/react`).',
+        'Template-specific extras are included (for example Angular installs `@rs-x/angular`, React/Next install `@rs-x/react`, Vue installs `@rs-x/vue`).',
       ],
     },
     {
@@ -177,10 +177,10 @@ const doc: CoreConceptDoc = {
     {
       title: '6) Build and validate with rs-x tooling',
       paragraphs: [
-        '`rsx build` runs the rs-x transform-aware compilation pipeline.',
+        '`rsx build` runs the RS-X transform-aware compilation pipeline.',
         'Use `--prod` with `rsx.build` config in `package.json` for generated AOT artifacts (preparse/compiled/registration).',
         'Compiled generation is controlled per expression by `rsx(expression, { compiled: true | false })` (default `true`).',
-        '`rsx typecheck` adds rs-x semantic validation on top of TypeScript checks for safer CI gates.',
+        '`rsx typecheck` adds RS-X semantic validation on top of TypeScript checks for safer CI gates.',
       ],
     },
     {
@@ -213,7 +213,7 @@ const doc: CoreConceptDoc = {
     {
       title: 'Create Template Project',
       description:
-        'Generate a new rs-x-ready app directly from CLI templates (full names or short aliases).',
+        'Generate a new RS-X-ready app directly from CLI templates (full names or short aliases).',
       code: createTemplateProjectCode,
     },
     {
@@ -225,7 +225,7 @@ const doc: CoreConceptDoc = {
     {
       title: 'Install VS Code Extension',
       description:
-        'Install or reinstall the rs-x VS Code extension from marketplace or local VSIX.',
+        'Install or reinstall the RS-X VS Code extension from marketplace or local VSIX.',
       code: installVsCodeCode,
     },
     {
@@ -236,8 +236,7 @@ const doc: CoreConceptDoc = {
     },
     {
       title: 'Install Compiler Tooling',
-      description:
-        'Install RS-X compiler packages into your current project.',
+      description: 'Install RS-X compiler packages into your current project.',
       code: installCompilerCode,
     },
     {
@@ -248,14 +247,12 @@ const doc: CoreConceptDoc = {
     },
     {
       title: 'Build and Typecheck',
-      description:
-        'Run rs-x build and semantic checks locally or in CI.',
+      description: 'Run rs-x build and semantic checks locally or in CI.',
       code: buildAndTypecheckCode,
     },
     {
       title: 'Help and Version',
-      description:
-        'Inspect command help and print the current CLI version.',
+      description: 'Inspect command help and print the current CLI version.',
       code: helpAndVersionCode,
     },
   ],
@@ -274,11 +271,6 @@ const doc: CoreConceptDoc = {
       href: '/docs/frameworks/angular',
       title: 'Angular integration',
       meta: 'Pipes/providers and Angular usage patterns',
-    },
-    {
-      href: '/docs/core-concepts/performance-report',
-      title: 'Performance report',
-      meta: 'Understand parse/bind/update behavior and tradeoffs',
     },
   ],
 };

@@ -48,7 +48,8 @@ class StateChangeSubscriptionsForContextManager
     data: IStateChangeSubscriptionInfo,
     id: number,
   ): { subscriptionData: undefined; observer: IObserver } {
-    const objectObserver = this._objectObserverManager.createAndGetInstance(context);
+    const objectObserver =
+      this._objectObserverManager.createAndGetInstance(context);
     const observer = objectObserver.createAndGetInstance({
       index: data.index,
       initializeManually: true,
@@ -63,7 +64,6 @@ class StateChangeSubscriptionsForContextManager
       subscriptionData: undefined,
     };
   }
-
 }
 
 export class StateChangeSubscriptionManager

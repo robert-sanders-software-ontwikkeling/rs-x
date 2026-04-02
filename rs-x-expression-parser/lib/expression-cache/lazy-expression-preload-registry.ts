@@ -1,7 +1,4 @@
-const lazyExpressionLoaders = new Map<
-  string,
-  () => void | Promise<void>
->();
+const lazyExpressionLoaders = new Map<string, () => void | Promise<void>>();
 const startedLazyExpressionLoads = new Set<string>();
 
 export function registerLazyExpressionPreloader(

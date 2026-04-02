@@ -17,8 +17,9 @@ import {
 import { ensureExpressionParserBootstrapped } from '../../services/expression-parser-bootstrap';
 import { validatePlaygroundScriptWithRsxCompiler } from '../../services/playground-rsx-compiler.service';
 import { downloadProjectZip } from '../../services/project-export.service';
-import { installRsxExpressionColorizer } from '../../services/rsx-expression-colorizer.service';
 import { installRsxCompilerMarkers } from '../../services/rsx-compiler-marker.service';
+import { installRsxCompletionProvider } from '../../services/rsx-completion-provider.service';
+import { installRsxExpressionColorizer } from '../../services/rsx-expression-colorizer.service';
 import { RxjsMonacoTypesLoader } from '../../services/rxjs-monaco-types-loader';
 import { ScriptEvaluator } from '../../services/script-evaluator';
 import { setupScriptModels } from '../../services/setup-script-models';
@@ -327,6 +328,7 @@ export const Playground: React.FC = () => {
     let cancelled = false;
     const loadingStart = Date.now();
     let disposeRsxCompilerMarkers: (() => void) | undefined;
+    let disposeRsxCompletionProvider: (() => void) | undefined;
     let disposeScriptModels: (() => void) | undefined;
     let disposeRsxExpressionColorizer: (() => void) | undefined;
     let disposeMonacoPlaceholder: (() => void) | undefined;
@@ -356,6 +358,10 @@ export const Playground: React.FC = () => {
           monaco: editorMount.monaco,
           model: scriptModels.userModel,
         });
+        disposeRsxCompletionProvider = installRsxCompletionProvider(
+          editorMount.monaco,
+          scriptModels.userModel,
+        );
 
         await yieldFrame();
         if (cancelled) {
@@ -408,6 +414,7 @@ export const Playground: React.FC = () => {
       cancelled = true;
       disposeMonacoPlaceholder?.();
       disposeRsxCompilerMarkers?.();
+      disposeRsxCompletionProvider?.();
       disposeRsxExpressionColorizer?.();
       disposeScriptModels?.();
     };

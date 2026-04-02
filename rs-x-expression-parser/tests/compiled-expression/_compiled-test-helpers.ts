@@ -1,12 +1,12 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
 import type { IExpressionServices } from '../../lib/expression-services/expression-services.interface';
-import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
+import type { IExpression } from '../../lib/expressions/expression-parser.interface';
 import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
 } from '../../lib/rs-x-expression-parser.module';
-import type { IExpression } from '../../lib/expressions/expression-parser.interface';
+import { RsXExpressionParserInjectionTokens } from '../../lib/rs-x-expression-parser-injection-tokes';
 
 export async function loadCompiledModule(): Promise<() => Promise<void>> {
   const previousMode = process.env.RSX_EXPRESSION_ENGINE_MODE;
@@ -29,7 +29,9 @@ export function getExpressionServices(): IExpressionServices {
   );
 }
 
-export async function waitForInitialEmission(expression: IExpression): Promise<void> {
+export async function waitForInitialEmission(
+  expression: IExpression,
+): Promise<void> {
   await new WaitForEvent(expression, 'changed').wait(() => {});
 }
 

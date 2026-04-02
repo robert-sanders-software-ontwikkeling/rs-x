@@ -8,9 +8,9 @@ import {
 } from '@rs-x/core';
 import {
   ExpressionNodeIdIndex,
-  type IExpression,
   type IExpressionChangeHistory,
   type IExpressionChangePlayback,
+  type IExpressionTree,
   RsXExpressionParserInjectionTokens,
 } from '@rs-x/expression-parser';
 
@@ -105,7 +105,7 @@ export class ExpressionEdtitorStateSerializer {
   }
 
   private async createAutoPlayTask(
-    expression: IExpression,
+    expression: IExpressionTree,
     selectedIndex: number,
     changeHistory: IExpressionChangeHistory[][],
   ): Promise<void> {
@@ -129,7 +129,7 @@ export class ExpressionEdtitorStateSerializer {
     ])[0];
 
     let changeHistory: IExpressionChangeHistory[][] = [];
-    let treeHighlight: IExpressionChangeHistory<IExpression>[] = [];
+    let treeHighlight: IExpressionChangeHistory<IExpressionTree>[] = [];
     let task: Promise<void> | undefined;
 
     if (result.expression) {

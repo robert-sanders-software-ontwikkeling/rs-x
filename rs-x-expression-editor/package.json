@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "copy:monaco-dts": "node ../scripts/copy-monaco-dts.mjs",
-    "dev": "npm run copy:monaco-dts && next dev",
-    "build": "npm run copy:monaco-dts && next build",
-    "prod": "npm run build && npx serve out"
+    "dev": "pnpm run copy:monaco-dts && next dev",
+    "build": "pnpm run copy:monaco-dts && next build",
+    "prod": "pnpm run build && npx serve out"
   },
   "dependencies": {
     "@rs-x/compiler": "workspace:*",

@@ -12,7 +12,8 @@ export const angularSignalsComparisonBenchmark = {
   date: '2026-03-29',
   compiledReport:
     'reports/angular-signals-comparison/benchmark-2026-03-29-compiled.json',
-  treeReport: 'reports/angular-signals-comparison/benchmark-2026-03-29-tree.json',
+  treeReport:
+    'reports/angular-signals-comparison/benchmark-2026-03-29-tree.json',
 };
 
 type RuntimeMetrics = {

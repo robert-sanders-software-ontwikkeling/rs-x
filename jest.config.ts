@@ -37,6 +37,7 @@ const jestConfig: Config.InitialOptions = {
   testPathIgnorePatterns: [
     '<rootDir>/rs-x-angular/',
     '<rootDir>/rs-x-react/',
+    '<rootDir>/rs-x-vue/',
     '<rootDir>/rs-x-vscode-extension/.vsix-stage/',
     ...(!includePerformanceTests
       ? ['<rootDir>/rs-x-expression-parser/tests/performance/']
@@ -46,6 +47,7 @@ const jestConfig: Config.InitialOptions = {
   modulePathIgnorePatterns: [
     '<rootDir>/rs-x-angular/',
     '<rootDir>/rs-x-react/',
+    '<rootDir>/rs-x-vue/',
     '<rootDir>/rs-x-vscode-extension/.vsix-stage/',
   ],
 

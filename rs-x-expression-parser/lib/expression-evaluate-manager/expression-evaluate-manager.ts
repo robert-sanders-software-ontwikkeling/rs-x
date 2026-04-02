@@ -14,7 +14,8 @@ import type {
 } from './expression-evaluate-unit.interface';
 
 class EvaluateManagerForExpression
-  implements IEvaluateManagerForExpression, IExpressionEvaluateChangeManager {
+  implements IEvaluateManagerForExpression, IExpressionEvaluateChangeManager
+{
   // Fast path: single evaluate unit is the common case — avoids array allocation.
   private _evaluateUnit: IExpressionEvaluateUnit | undefined;
   private _evaluateUnitsExtra: IExpressionEvaluateUnit[] | undefined;
@@ -33,13 +34,17 @@ class EvaluateManagerForExpression
    * the same (context, index) pair within this expression manager. Used to fan
    * out watch change notifications without each replica registering its own listener.
    */
-  private _primaryToReplicas: Map<IExpressionEvaluateUnit, IExpressionEvaluateUnit[]> | undefined;
+  private _primaryToReplicas:
+    | Map<IExpressionEvaluateUnit, IExpressionEvaluateUnit[]>
+    | undefined;
 
   /**
    * Temporary lookup used only during registration to find the existing primary
    * for a (context, index) pair. Cleared after initialize() to free memory.
    */
-  private _contextIndexToPrimary: Map<unknown, Map<unknown, IExpressionEvaluateUnit>> | undefined;
+  private _contextIndexToPrimary:
+    | Map<unknown, Map<unknown, IExpressionEvaluateUnit>>
+    | undefined;
 
   private readonly _onCommitted = () => this.commit(true);
 
@@ -59,8 +64,7 @@ class EvaluateManagerForExpression
   constructor(
     private readonly _expressionChangeTransactionManager: IExpressionChangeTransactionManager,
     private readonly commit: CommitHandler,
-  ) {
-  }
+  ) {}
 
   public dispose(): void {
     this._evaluateUnit?.dispose();
@@ -88,7 +92,10 @@ class EvaluateManagerForExpression
 
     // Group units watching the same (context, index) so only the first (primary)
     // registers a watch listener; replicas receive changes via fan-out in markDirty.
-    if (evaluateUnit.context !== undefined && evaluateUnit.watchAsReplica !== undefined) {
+    if (
+      evaluateUnit.context !== undefined &&
+      evaluateUnit.watchAsReplica !== undefined
+    ) {
       const groups = (this._contextIndexToPrimary ??= new Map());
       let indexMap = groups.get(evaluateUnit.context);
       if (indexMap === undefined) {
@@ -235,7 +242,9 @@ class EvaluateManagerForExpression
     }
 
     this._reevaluateScheduled = true;
-    this._expressionChangeTransactionManager.subscribeCommitted(this._onCommitted);
+    this._expressionChangeTransactionManager.subscribeCommitted(
+      this._onCommitted,
+    );
     this._expressionChangeTransactionManager.suspend();
     this._expressionChangeTransactionManager.scheduleDirtyFlush(this);
   }
@@ -308,7 +317,8 @@ export class ExpressionEvaluateManager
     CommitHandler,
     IEvaluateManagerForExpression
   >
-  implements IExpressionEvaluateManager {
+  implements IExpressionEvaluateManager
+{
   constructor(
     @Inject(
       RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager,

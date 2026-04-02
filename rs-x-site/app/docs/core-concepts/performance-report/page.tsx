@@ -6,17 +6,12 @@ import { DocsPageTemplate } from '../../../../components/DocsPageTemplate';
 import { MemoryUsageTabs } from './memory-usage-tabs.client';
 import {
   benchmarkMachine,
-  bindingStressGcEvidenceRows,
   bindingPerformanceRows,
-  compiledBindingPerformanceRows,
-  compiledUpdatePerformanceRows,
+  bindingStressGcEvidenceRows,
   comparisonRows,
-  expressionEngineModeBenchmark,
-  expressionEngineModeAsyncRows,
-  expressionEngineModeComparisonRows,
+  compiledUpdatePerformanceRows,
   expressionEngineModeMemoryRows,
   expressionEngineModeSameModelRow,
-  expressionEngineModeSyncRows,
   identifierOnlyBindingPerformanceRows,
   memoryUsageRows,
   parseCachePerformanceRows,
@@ -49,24 +44,6 @@ const parseCacheChartRows = parseCachePerformanceRows.map((row) => ({
   values: {
     parseAndCloneUs: row.parseAndCloneUsPerOperation,
     cloneOnlyUs: row.cloneOnlyUsPerOperation,
-  },
-}));
-
-const bindUniqueChartRows = bindingPerformanceRows.map((row, i) => ({
-  label: `${row.bindings.toLocaleString()} bindings`,
-  xValue: row.bindings,
-  values: {
-    treeMs: row.bindUniqueMs,
-    compiledMs: compiledBindingPerformanceRows[i].bindUniqueMs,
-  },
-}));
-
-const bindSameChartRows = bindingPerformanceRows.map((row, i) => ({
-  label: `${row.bindings.toLocaleString()} bindings`,
-  xValue: row.bindings,
-  values: {
-    treeMs: row.bindSameExpressionMs,
-    compiledMs: compiledBindingPerformanceRows[i].bindSameExpressionMs,
   },
 }));
 
@@ -105,30 +82,6 @@ const formatSpeedChange = (gainPercent: number): string =>
 
 const compiledVsTreePercent = (compiledMs: number, treeMs: number): number =>
   ((treeMs - compiledMs) / treeMs) * 100;
-
-const expressionEngineModeGroups = expressionEngineModeComparisonRows.reduce<
-  Array<{
-    scenario: string;
-    bindings: number;
-    rows: typeof expressionEngineModeComparisonRows;
-  }>
->((groups, row) => {
-  const key = `${row.scenario}-${row.bindings}`;
-  const existing = groups.find(
-    (group) => `${group.scenario}-${group.bindings}` === key,
-  );
-  if (existing) {
-    existing.rows.push(row);
-    return groups;
-  }
-
-  groups.push({
-    scenario: row.scenario,
-    bindings: row.bindings,
-    rows: [row],
-  });
-  return groups;
-}, []);
 
 const expressionEngineModeMemoryGroups = expressionEngineModeMemoryRows.reduce<
   Array<{
@@ -201,18 +154,19 @@ export default function PerformanceReportCoreConceptPage() {
           In {benchmarkMachine.oldVersion}, parsing a single identifier like{' '}
           <span className="codeInline">count</span> took 5.5 µs. In{' '}
           {benchmarkMachine.newVersion} it takes 0.7 µs. Small expressions gain
-          the most because the old parser had a fixed overhead that dominated the
-          tiny amount of actual work. Larger expressions still improve: a 63-node
-          formula drops from 44 µs to 36 µs, 20% faster. Both engine modes share
-          the same parser, so these numbers apply equally to compiled and tree.
+          the most because the old parser had a fixed overhead that dominated
+          the tiny amount of actual work. Larger expressions still improve: a
+          63-node formula drops from 44 µs to 36 µs, 20% faster. Both engine
+          modes share the same parser, so these numbers apply equally to
+          compiled and tree.
         </p>
         <ParsePerformanceTable rows={parsePerformanceRows} />
         <p className="cardText" style={{ marginTop: '0.75rem' }}>
           After the first parse, every binding that uses the same expression
           string clones the cached result. In tree mode, clone cost grows with
           expression size — more nodes to copy. In compiled mode, clone cost is
-          nearly flat regardless of size, because the compiled function is shared
-          and only lightweight binding metadata gets duplicated.
+          nearly flat regardless of size, because the compiled function is
+          shared and only lightweight binding metadata gets duplicated.
         </p>
         <ParseCachePerformanceTable rows={parseCachePerformanceRows} />
       </article>
@@ -226,8 +180,7 @@ export default function PerformanceReportCoreConceptPage() {
           Binding connects an expression to a model and starts watching for
           changes. It happens when you call{' '}
           <span className="codeInline">rsx(expression)(model)</span>. This is
-          where{' '}
-          {benchmarkMachine.newVersion} shows its main tradeoff.
+          where {benchmarkMachine.newVersion} shows its main tradeoff.
         </p>
         <p className="cardText">
           Take a data table with 1,000 rows, each bound to the same expression{' '}
@@ -241,15 +194,16 @@ export default function PerformanceReportCoreConceptPage() {
           first time each binding was read. Binding 1,000 rows was 1,000 cheap
           AST clones and little else. {benchmarkMachine.newVersion} does that
           setup synchronously at bind time — so 1,000 rows means 1,000 full
-          setups immediately at bind time. Each binding arrives fully initialised and
-          every subsequent update can start immediately without lazy-init checks.
+          setups immediately at bind time. Each binding arrives fully
+          initialised and every subsequent update can start immediately without
+          lazy-init checks.
         </p>
         <p className="cardText">
           <strong>The payback is fast.</strong> Bulk update at 1,000 bindings
           drops from 7.9 ms in {benchmarkMachine.oldVersion} to 2.4–2.9 ms —
           saving 5–5.5 ms on every update cycle. The 18 ms extra is recovered
-          after 3–4 updates. Any live table that re-renders when
-          data changes will cross that threshold within seconds.
+          after 3–4 updates. Any live table that re-renders when data changes
+          will cross that threshold within seconds.
         </p>
         <p className="cardText">
           At 10,000 rows, the picture changes further. Compiled mode bind same
@@ -257,8 +211,8 @@ export default function PerformanceReportCoreConceptPage() {
           shared compiled plan amortises per-binding setup cost at scale, and
           bind same is now{' '}
           <strong>31% faster than {benchmarkMachine.oldVersion}</strong>. Tree
-          mode at 10,000 is still slower to bind, but its bulk-update saving
-          (73 ms vs 146 ms) recovers that cost within two update cycles.
+          mode at 10,000 is still slower to bind, but its bulk-update saving (73
+          ms vs 146 ms) recovers that cost within two update cycles.
         </p>
         <BindingPerformanceTable rows={bindingPerformanceRows} />
         <p className="cardText" style={{ marginTop: '0.5rem' }}>
@@ -274,9 +228,10 @@ export default function PerformanceReportCoreConceptPage() {
           Updates: the 60–70% improvement that matters most
         </h2>
         <p className="cardText">
-          After binding, updates are where your application spends most of its time. A field
-          changes, rs-x notifies only the expressions that read that field, and
-          subscribers receive new values. Two scenarios to understand:
+          After binding, updates are where your application spends most of its
+          time. A field changes, rs-x notifies only the expressions that read
+          that field, and subscribers receive new values. Two scenarios to
+          understand:
         </p>
         <p className="cardText">
           <strong>One field on one row.</strong> The cost is O(1) — it does not
@@ -334,84 +289,13 @@ export default function PerformanceReportCoreConceptPage() {
               <tr key={`upd-${row.bindings}`}>
                 <td>{row.bindings.toLocaleString()}</td>
                 <td>{row.bulkUpdateMs.toFixed(3)}</td>
-                <td>{compiledUpdatePerformanceRows[i].bulkUpdateMs.toFixed(3)}</td>
+                <td>
+                  {compiledUpdatePerformanceRows[i].bulkUpdateMs.toFixed(3)}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </article>
-
-      {/* ── 4. Engine mode ─────────────────────────────── */}
-      <article className="card docsApiCard">
-        <h2 className="cardTitle">Compiled or tree mode — use compiled</h2>
-        <p className="cardText">
-          rs-x ships two runtime engine modes:{' '}
-          <span className="codeInline">compiled</span> (default) and{' '}
-          <span className="codeInline">tree</span>. For most applications the
-          choice is straightforward: compiled.
-        </p>
-        <p className="cardText">
-          For everyday bindings — a field name, a simple calculation, an async
-          value — the two modes are within a few percent of each other.
-          Sometimes tree is marginally faster, sometimes compiled is. The real
-          difference shows with <em>same-model generated expressions</em>: 1,000
-          unique, dynamically built expression strings all bound to the same
-          model. Compiled mode is 97% faster to bind (12 ms vs 358 ms) and 91%
-          faster on bulk update (35 ms vs 393 ms). Each unique expression is
-          compiled once to a native JS function; that function is then shared
-          across all bindings of that expression. Tree mode reconstructs a full
-          node tree per binding.
-        </p>
-        <table className="docsTable">
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left' }}>Scenario</th>
-              <th style={{ textAlign: 'left' }}>Bindings</th>
-              <th style={{ textAlign: 'left' }}>Metric</th>
-              <th style={{ textAlign: 'left' }}>Compiled (ms)</th>
-              <th style={{ textAlign: 'left' }}>Tree (ms)</th>
-              <th style={{ textAlign: 'left' }}>Compiled vs tree</th>
-            </tr>
-          </thead>
-          <tbody>
-            {expressionEngineModeGroups.flatMap((group) =>
-              group.rows.map((row, index) => (
-                <tr key={`mode-${group.scenario}-${group.bindings}-${row.metric}`}>
-                  {index === 0 && (
-                    <td rowSpan={group.rows.length}>{group.scenario}</td>
-                  )}
-                  {index === 0 && (
-                    <td rowSpan={group.rows.length}>
-                      {group.bindings.toLocaleString()}
-                    </td>
-                  )}
-                  <td>{row.metric}</td>
-                  <td>{row.compiledMs.toFixed(3)}</td>
-                  <td>{row.treeMs.toFixed(3)}</td>
-                  <td>{formatPercent(row.improvementPercent)}</td>
-                </tr>
-              )),
-            )}
-          </tbody>
-        </table>
-        <p className="cardText" style={{ marginTop: '0.75rem' }}>
-          Memory tells the same story. For simple identifier bindings both modes
-          use roughly the same amount of memory — there is no meaningful
-          difference. For generated expressions it is a different picture:
-          compiled mode uses 515 MB at 1,000 bindings, tree mode uses 1,500 MB.
-          Tree mode keeps a full copy of the expression node structure for every
-          binding. Compiled mode compiles each unique expression to a JS function
-          once and shares that function across all bindings of the same
-          expression — so memory does not grow proportionally with binding count.
-        </p>
-        <p className="cardText">
-          For a detailed breakdown of exactly where the two modes cross over as
-          expression complexity grows, see{' '}
-          <Link href="/docs/core-concepts/compiled-vs-tree">
-            Compiled vs tree: the break-even point
-          </Link>
-          .
-        </p>
       </article>
 
       {/* ── 5. Cleanup ─────────────────────────────────── */}
@@ -426,12 +310,12 @@ export default function PerformanceReportCoreConceptPage() {
         </p>
         <p className="cardText">
           Per-binding dispose cost holds at 0.03–0.04 ms across all measured
-          scales. Disposing 10,000 bindings takes around 300–400 ms in the
-          worst case — the worst case being the allocation-heavy
-          unique-expression scenario where every binding has its own independent
-          watcher. In a real table where many rows watch the same field, the
-          shared watcher is released once regardless of how many bindings used
-          it, so dispose is cheaper still.
+          scales. Disposing 10,000 bindings takes around 300–400 ms in the worst
+          case — the worst case being the allocation-heavy unique-expression
+          scenario where every binding has its own independent watcher. In a
+          real table where many rows watch the same field, the shared watcher is
+          released once regardless of how many bindings used it, so dispose is
+          cheaper still.
         </p>
         <table className="docsTable">
           <thead>
@@ -464,7 +348,8 @@ export default function PerformanceReportCoreConceptPage() {
           form or detail page has 20–100 bindings. A data table with 100 rows
           and 5 bound columns has 500 bindings. At those scales, bind cost is in
           single-digit milliseconds and update cost is sub-millisecond — both
-          comfortably inside the 100 ms threshold where users start to notice lag.
+          comfortably inside the 100 ms threshold where users start to notice
+          lag.
         </p>
         <p className="cardText">
           The bind-same regression scales proportionally with row count. The
@@ -501,8 +386,7 @@ export default function PerformanceReportCoreConceptPage() {
         <article className="card docsApiCard">
           <h2 className="cardTitle">Machine and run conditions</h2>
           <p className="cardText">
-            Machine:{' '}
-            <span className="codeInline">{benchmarkMachine.cpu}</span>,{' '}
+            Machine: <span className="codeInline">{benchmarkMachine.cpu}</span>,{' '}
             <span className="codeInline">{benchmarkMachine.memory}</span>,{' '}
             <span className="codeInline">{benchmarkMachine.platform}</span>, OS{' '}
             <span className="codeInline">{benchmarkMachine.os}</span>, Node{' '}
@@ -520,8 +404,7 @@ export default function PerformanceReportCoreConceptPage() {
             <span className="codeInline">
               node --expose-gc --max-old-space-size=4096
             </span>
-            .{' '}
-            <span className="codeInline">--expose-gc</span> lets the benchmark
+            . <span className="codeInline">--expose-gc</span> lets the benchmark
             force a full GC between samples so heap measurements reflect only
             the scenario under test.
           </p>
@@ -534,8 +417,8 @@ export default function PerformanceReportCoreConceptPage() {
 
         <article className="card docsApiCard">
           <h2 className="cardTitle">
-            {benchmarkMachine.oldVersion} vs {benchmarkMachine.newVersion} —
-            all comparison points
+            {benchmarkMachine.oldVersion} vs {benchmarkMachine.newVersion} — all
+            comparison points
           </h2>
           <p className="cardText">
             <strong>Parse</strong>
@@ -608,8 +491,7 @@ export default function PerformanceReportCoreConceptPage() {
                     <td>{formatSpeedChange(row.gainPercent)}</td>
                     <td>
                       {formatSpeedChange(
-                        ((row.oldValue - row.compiledNewValue) /
-                          row.oldValue) *
+                        ((row.oldValue - row.compiledNewValue) / row.oldValue) *
                           100,
                       )}
                     </td>
@@ -632,10 +514,10 @@ export default function PerformanceReportCoreConceptPage() {
               barClassName: 'isPrimary',
             },
           ]}
-          valueUnit="us"
+          valueUnit="µs"
           decimals={2}
           xAxisLabel="Expression size (node count)"
-          yAxisLabel="Cost (us/op)"
+          yAxisLabel="Cost (µs/op)"
           xScale="log"
           yScale="log"
         />
@@ -643,9 +525,7 @@ export default function PerformanceReportCoreConceptPage() {
       </article>
 
       <article className="card docsApiCard">
-        <h2 className="cardTitle">
-          Parse cache behavior — full chart
-        </h2>
+        <h2 className="cardTitle">Parse cache behavior — full chart</h2>
         <PerformanceBarChart
           ariaLabel="Parse cache behavior chart comparing parse plus clone versus clone only"
           rows={parseCacheChartRows}
@@ -661,169 +541,14 @@ export default function PerformanceReportCoreConceptPage() {
               barClassName: 'isSecondary',
             },
           ]}
-          valueUnit="us"
+          valueUnit="µs"
           decimals={2}
           xAxisLabel="Expression size (node count)"
-          yAxisLabel="Creation cost (us/op)"
+          yAxisLabel="Creation cost (µs/op)"
           xScale="log"
           yScale="log"
         />
         <ParseCachePerformanceTable rows={parseCachePerformanceRows} />
-      </article>
-
-      <article className="card docsApiCard">
-        <h2 className="cardTitle">
-          Bind unique — tree vs compiled
-        </h2>
-        <p className="cardText">
-          Every binding uses a different expression on its own model — no parse
-          cache hits, maximum allocation pressure. The stress case.
-        </p>
-        <PerformanceBarChart
-          ariaLabel="Bind unique performance — tree vs compiled"
-          rows={bindUniqueChartRows}
-          series={[
-            { key: 'treeMs', label: 'Tree', barClassName: 'isPrimary' },
-            { key: 'compiledMs', label: 'Compiled', barClassName: 'isSecondary' },
-          ]}
-          valueUnit="ms"
-          decimals={3}
-          xAxisLabel="Active bindings"
-          yAxisLabel="Bind time (ms)"
-          xScale="log"
-          yScale="log"
-        />
-        <table className="docsTable">
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left' }}>Bindings</th>
-              <th style={{ textAlign: 'left' }}>Tree (ms)</th>
-              <th style={{ textAlign: 'left' }}>Compiled (ms)</th>
-              <th style={{ textAlign: 'left' }}>Compiled vs tree</th>
-            </tr>
-          </thead>
-          <tbody>
-            {bindingPerformanceRows.map((row, i) => (
-              <tr key={`bu-${row.bindings}`}>
-                <td>{row.bindings.toLocaleString()}</td>
-                <td>{row.bindUniqueMs.toFixed(3)}</td>
-                <td>{compiledBindingPerformanceRows[i].bindUniqueMs.toFixed(3)}</td>
-                <td>
-                  {formatPercent(
-                    compiledVsTreePercent(
-                      compiledBindingPerformanceRows[i].bindUniqueMs,
-                      row.bindUniqueMs,
-                    ),
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </article>
-
-      <article className="card docsApiCard">
-        <h2 className="cardTitle">
-          Bind same — tree vs compiled
-        </h2>
-        <p className="cardText">
-          One expression string bound to N different row models — the realistic
-          table scenario. This is where the 10,000-row compiled crossover is
-          visible: compiled mode starts faster than v1 while tree mode is still
-          slower.
-        </p>
-        <PerformanceBarChart
-          ariaLabel="Bind same performance — tree vs compiled"
-          rows={bindSameChartRows}
-          series={[
-            { key: 'treeMs', label: 'Tree', barClassName: 'isPrimary' },
-            { key: 'compiledMs', label: 'Compiled', barClassName: 'isSecondary' },
-          ]}
-          valueUnit="ms"
-          decimals={3}
-          xAxisLabel="Active bindings"
-          yAxisLabel="Bind time (ms)"
-          xScale="log"
-          yScale="log"
-        />
-        <table className="docsTable">
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left' }}>Bindings</th>
-              <th style={{ textAlign: 'left' }}>Tree (ms)</th>
-              <th style={{ textAlign: 'left' }}>Compiled (ms)</th>
-              <th style={{ textAlign: 'left' }}>Compiled vs tree</th>
-            </tr>
-          </thead>
-          <tbody>
-            {bindingPerformanceRows.map((row, i) => (
-              <tr key={`bs-${row.bindings}`}>
-                <td>{row.bindings.toLocaleString()}</td>
-                <td>{row.bindSameExpressionMs.toFixed(3)}</td>
-                <td>{compiledBindingPerformanceRows[i].bindSameExpressionMs.toFixed(3)}</td>
-                <td>
-                  {formatPercent(
-                    compiledVsTreePercent(
-                      compiledBindingPerformanceRows[i].bindSameExpressionMs,
-                      row.bindSameExpressionMs,
-                    ),
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </article>
-
-      <article className="card docsApiCard">
-        <h2 className="cardTitle">Bulk update — tree vs compiled</h2>
-        <p className="cardText">
-          One field changes on every row simultaneously. This is the most
-          meaningful update metric for live data tables. Single update cost is
-          O(1) and approximately 0.5 µs regardless of binding count — too small
-          and too noisy to chart meaningfully.
-        </p>
-        <PerformanceBarChart
-          ariaLabel="Bulk update performance — tree vs compiled"
-          rows={bulkUpdateChartRows}
-          series={[
-            { key: 'treeMs', label: 'Tree', barClassName: 'isPrimary' },
-            { key: 'compiledMs', label: 'Compiled', barClassName: 'isSecondary' },
-          ]}
-          valueUnit="ms"
-          decimals={3}
-          xAxisLabel="Active bindings"
-          yAxisLabel="Bulk update time (ms)"
-          xScale="log"
-          yScale="log"
-        />
-        <table className="docsTable">
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left' }}>Bindings</th>
-              <th style={{ textAlign: 'left' }}>Tree bulk update (ms)</th>
-              <th style={{ textAlign: 'left' }}>Compiled bulk update (ms)</th>
-              <th style={{ textAlign: 'left' }}>Compiled vs tree</th>
-            </tr>
-          </thead>
-          <tbody>
-            {updatePerformanceRows.map((row, i) => (
-              <tr key={`bulk-${row.bindings}`}>
-                <td>{row.bindings.toLocaleString()}</td>
-                <td>{row.bulkUpdateMs.toFixed(3)}</td>
-                <td>{compiledUpdatePerformanceRows[i].bulkUpdateMs.toFixed(3)}</td>
-                <td>
-                  {formatPercent(
-                    compiledVsTreePercent(
-                      compiledUpdatePerformanceRows[i].bulkUpdateMs,
-                      row.bulkUpdateMs,
-                    ),
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </article>
 
       <article className="card docsApiCard">
@@ -833,8 +558,7 @@ export default function PerformanceReportCoreConceptPage() {
         <p className="cardText">
           This scenario binds 1,000 generated expressions to the same model
           object. Each expression is a long arithmetic chain — roughly 60–120+
-          nodes, repeatedly using{' '}
-          <span className="codeInline">x</span> and{' '}
+          nodes, repeatedly using <span className="codeInline">x</span> and{' '}
           <span className="codeInline">y</span>. Representative shape:{' '}
           <span className="codeInline">
             (((x + y) + ((x + y) + n) - a) * b) / ((x + y) + c)
@@ -854,14 +578,14 @@ export default function PerformanceReportCoreConceptPage() {
           </thead>
           <tbody>
             <tr>
-              <td>{expressionEngineModeSameModelRow.bindings.toLocaleString()}</td>
+              <td>
+                {expressionEngineModeSameModelRow.bindings.toLocaleString()}
+              </td>
               <td>Bind</td>
               <td>
                 {expressionEngineModeSameModelRow.compiled.bindMs.toFixed(3)}
               </td>
-              <td>
-                {expressionEngineModeSameModelRow.tree.bindMs.toFixed(3)}
-              </td>
+              <td>{expressionEngineModeSameModelRow.tree.bindMs.toFixed(3)}</td>
               <td>
                 {formatPercent(
                   compiledVsTreePercent(
@@ -872,7 +596,9 @@ export default function PerformanceReportCoreConceptPage() {
               </td>
             </tr>
             <tr>
-              <td>{expressionEngineModeSameModelRow.bindings.toLocaleString()}</td>
+              <td>
+                {expressionEngineModeSameModelRow.bindings.toLocaleString()}
+              </td>
               <td>Dispose</td>
               <td>
                 {expressionEngineModeSameModelRow.compiled.disposeMs.toFixed(3)}
@@ -890,7 +616,9 @@ export default function PerformanceReportCoreConceptPage() {
               </td>
             </tr>
             <tr>
-              <td>{expressionEngineModeSameModelRow.bindings.toLocaleString()}</td>
+              <td>
+                {expressionEngineModeSameModelRow.bindings.toLocaleString()}
+              </td>
               <td>Single update</td>
               <td>
                 {expressionEngineModeSameModelRow.compiled.singleUpdateMs.toFixed(
@@ -898,7 +626,9 @@ export default function PerformanceReportCoreConceptPage() {
                 )}
               </td>
               <td>
-                {expressionEngineModeSameModelRow.tree.singleUpdateMs.toFixed(3)}
+                {expressionEngineModeSameModelRow.tree.singleUpdateMs.toFixed(
+                  3,
+                )}
               </td>
               <td>
                 {formatPercent(
@@ -910,7 +640,9 @@ export default function PerformanceReportCoreConceptPage() {
               </td>
             </tr>
             <tr>
-              <td>{expressionEngineModeSameModelRow.bindings.toLocaleString()}</td>
+              <td>
+                {expressionEngineModeSameModelRow.bindings.toLocaleString()}
+              </td>
               <td>Bulk update</td>
               <td>
                 {expressionEngineModeSameModelRow.compiled.bulkUpdateMs.toFixed(
@@ -947,7 +679,9 @@ export default function PerformanceReportCoreConceptPage() {
           <tbody>
             {expressionEngineModeMemoryGroups.flatMap((group) =>
               group.rows.map((row, index) => (
-                <tr key={`heap-${group.scenario}-${group.bindings}-${row.metric}`}>
+                <tr
+                  key={`heap-${group.scenario}-${group.bindings}-${row.metric}`}
+                >
                   {index === 0 && (
                     <td rowSpan={group.rows.length}>{group.scenario}</td>
                   )}
@@ -980,7 +714,9 @@ export default function PerformanceReportCoreConceptPage() {
           <tbody>
             {expressionEngineModeMemoryGroups.flatMap((group) =>
               group.rows.map((row, index) => (
-                <tr key={`rss-${group.scenario}-${group.bindings}-${row.metric}`}>
+                <tr
+                  key={`rss-${group.scenario}-${group.bindings}-${row.metric}`}
+                >
                   {index === 0 && (
                     <td rowSpan={group.rows.length}>{group.scenario}</td>
                   )}

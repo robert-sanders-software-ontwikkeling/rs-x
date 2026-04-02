@@ -172,6 +172,134 @@ describe('rsx language service', () => {
     });
   });
 
+  it('returns rsx date property aliases as completions for Date-typed identifiers', () => {
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/language-service.fixture.ts',
+    );
+    const program = createProgram(fixturePath);
+    const sourceFile = program.getSourceFile(fixturePath)!;
+
+    // Trailing dot — all rsx Date aliases should be offered
+    const trailingDotPosition =
+      findPosition(sourceFile, "rsx('invoiceDate.')(model)") +
+      "rsx('invoiceDate.".length;
+    const allDateCompletions = getRsxCompletionsAtPosition(
+      program,
+      fixturePath,
+      trailingDotPosition,
+    );
+
+    const allNames = allDateCompletions.map((c) => c.name);
+    expect(allNames).toEqual(
+      expect.arrayContaining([
+        'date',
+        'hours',
+        'milliseconds',
+        'minutes',
+        'month',
+        'seconds',
+        'time',
+        'utcDate',
+        'utcHours',
+        'utcMilliseconds',
+        'utcMinutes',
+        'utcMonth',
+        'utcSeconds',
+        'utcYear',
+        'year',
+      ]),
+    );
+    expect(allNames).not.toContain('getFullYear');
+    expect(allNames).not.toContain('setMonth');
+    expect(allDateCompletions.every((c) => c.kind === 'property')).toBe(true);
+
+    // Partial prefix — only aliases starting with 'mo' should be offered
+    const prefixPosition =
+      findPosition(sourceFile, "rsx('invoiceDate.mo')(model)") +
+      "rsx('invoiceDate.mo".length;
+    const prefixCompletions = getRsxCompletionsAtPosition(
+      program,
+      fixturePath,
+      prefixPosition,
+    );
+
+    expect(prefixCompletions).toEqual([{ kind: 'property', name: 'month' }]);
+  });
+
+  it('returns completions after chained function call with nullable return type', () => {
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/language-service.fixture.ts',
+    );
+    const program = createProgram(fixturePath);
+    const sourceFile = program.getSourceFile(fixturePath)!;
+
+    const position =
+      findPosition(sourceFile, "rsx('cart.first().q')(model)") +
+      "rsx('cart.first().q".length;
+    const completions = getRsxCompletionsAtPosition(
+      program,
+      fixturePath,
+      position,
+    );
+
+    expect(completions).toEqual([{ kind: 'property', name: 'qty' }]);
+  });
+
+  it('returns completions after array index access chains', () => {
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/language-service.fixture.ts',
+    );
+    const program = createProgram(fixturePath);
+    const sourceFile = program.getSourceFile(fixturePath)!;
+
+    // cart.items[0]. — trailing dot, all ICartItem props
+    const trailingDotPosition =
+      findPosition(sourceFile, "rsx('cart.items[0].')(model)") +
+      "rsx('cart.items[0].".length;
+    const allCompletions = getRsxCompletionsAtPosition(
+      program,
+      fixturePath,
+      trailingDotPosition,
+    );
+    expect(allCompletions).toEqual([{ kind: 'property', name: 'qty' }]);
+
+    // cart.items[0].q — partial prefix
+    const prefixPosition =
+      findPosition(sourceFile, "rsx('cart.items[0].q')(model)") +
+      "rsx('cart.items[0].q".length;
+    const prefixCompletions = getRsxCompletionsAtPosition(
+      program,
+      fixturePath,
+      prefixPosition,
+    );
+    expect(prefixCompletions).toEqual([{ kind: 'property', name: 'qty' }]);
+
+    // cartItems[0]. — array at root level
+    const rootArrayPosition =
+      findPosition(sourceFile, "rsx('cartItems[0].')(model)") +
+      "rsx('cartItems[0].".length;
+    const rootArrayCompletions = getRsxCompletionsAtPosition(
+      program,
+      fixturePath,
+      rootArrayPosition,
+    );
+    expect(rootArrayCompletions).toEqual([{ kind: 'property', name: 'qty' }]);
+
+    // cartItems[0].q — partial prefix on root array
+    const rootPrefixPosition =
+      findPosition(sourceFile, "rsx('cartItems[0].q')(model)") +
+      "rsx('cartItems[0].q".length;
+    const rootPrefixCompletions = getRsxCompletionsAtPosition(
+      program,
+      fixturePath,
+      rootPrefixPosition,
+    );
+    expect(rootPrefixCompletions).toEqual([{ kind: 'property', name: 'qty' }]);
+  });
+
   it('returns diagnostics for syntax and semantic issues', () => {
     const fixturePath = path.resolve(
       __dirname,
@@ -205,6 +333,34 @@ describe('rsx language service', () => {
       {
         category: 'semantic',
         message: "Identifier 'na' does not exist on model type.",
+      },
+      {
+        category: 'syntax',
+        message: "Syntax error in expression 'invoiceDate.'.",
+      },
+      {
+        category: 'semantic',
+        message: "Identifier 'mo' does not exist on model type.",
+      },
+      {
+        category: 'semantic',
+        message: "Identifier 'q' does not exist on model type.",
+      },
+      {
+        category: 'syntax',
+        message: "Syntax error in expression 'cart.items[0].'.",
+      },
+      {
+        category: 'semantic',
+        message: "Identifier 'q' does not exist on model type.",
+      },
+      {
+        category: 'syntax',
+        message: "Syntax error in expression 'cartItems[0].'.",
+      },
+      {
+        category: 'semantic',
+        message: "Identifier 'q' does not exist on model type.",
       },
     ]);
   });

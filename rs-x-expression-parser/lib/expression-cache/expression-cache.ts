@@ -1,19 +1,20 @@
 import { Inject, Injectable, KeyedInstanceFactory } from '@rs-x/core';
 
-import type {
-  IExpression,
-} from '../expressions/expression-parser.interface';
-import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
-import type { IExpressionEngineSelector } from '../expression-engine/expression-engine.interface';
 import { hydrateExpressionCacheWithCompiledExpressionPlans } from '../compiled-expression/compiled-expression-cache-preload';
+import type { IExpressionEngineSelector } from '../expression-engine/expression-engine.interface';
+import type { IExpression } from '../expressions/expression-parser.interface';
+import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
 
-import type { IExpressionCache } from './expression-cache.type';
-import { hydrateExpressionCacheWithPreparsedAsts } from './preparsed-expression-ast-registry';
+import type {
+  IExpressionCache,
+  IExpressionCacheData,
+} from './expression-cache.type';
 import { triggerLazyExpressionPreload } from './lazy-expression-preload-registry';
+import { hydrateExpressionCacheWithPreparsedAsts } from './preparsed-expression-ast-registry';
 
 @Injectable()
 export class ExpressionCache
-  extends KeyedInstanceFactory<string, string, IExpression>
+  extends KeyedInstanceFactory<string, IExpressionCacheData, IExpression>
   implements IExpressionCache
 {
   private readonly _precompiledExpressions = new Map<string, IExpression>();
@@ -36,17 +37,17 @@ export class ExpressionCache
     this._hasPrecompiledExpressions = true;
   }
 
-  public override getId(expressionString: string): string | undefined {
-    return expressionString;
+  public override getId(data: IExpressionCacheData): string | undefined {
+    return data.expressionString;
   }
 
-  protected override createId(expressionString: string): string {
-    return expressionString;
+  protected override createId(data: IExpressionCacheData): string {
+    return data.expressionString;
   }
 
-  override create(data: string): {
+  override create(data: IExpressionCacheData): {
     referenceCount: number;
-    instance: IExpression<unknown, unknown>;
+    instance: IExpression<unknown>;
     id: string;
   } {
     const result = super.create(data);
@@ -62,7 +63,8 @@ export class ExpressionCache
     // directly; additional concurrent consumers still get clones.
     const isPrecompiledExpression =
       this._hasPrecompiledExpressions &&
-      this._precompiledExpressions.get(data) === result.instance;
+      this._precompiledExpressions.get(data.expressionString) ===
+        result.instance;
     const shouldClone = isPrecompiledExpression || result.referenceCount > 1;
 
     if (shouldClone) {
@@ -73,16 +75,21 @@ export class ExpressionCache
   }
 
   protected override createInstance(
-    expressionString: string,
-  ): IExpression<unknown, unknown> {
-    triggerLazyExpressionPreload(expressionString);
+    data: IExpressionCacheData,
+  ): IExpression<unknown> {
+    triggerLazyExpressionPreload(data.expressionString);
 
-    const precompiledExpression =
-      this._precompiledExpressions.get(expressionString);
-    if (precompiledExpression) {
-      return precompiledExpression;
+    // Precompiled AOT expressions are only served when compiled mode is active
+    // (either globally or explicitly via the compiled option).
+    if (data.compiled !== false) {
+      const precompiledExpression = this._precompiledExpressions.get(
+        data.expressionString,
+      );
+      if (precompiledExpression) {
+        return precompiledExpression;
+      }
     }
 
-    return this._expressionEngineSelector.create(expressionString);
+    return this._expressionEngineSelector.create(data.expressionString);
   }
 }

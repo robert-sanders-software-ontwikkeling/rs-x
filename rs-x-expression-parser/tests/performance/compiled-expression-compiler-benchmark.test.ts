@@ -41,7 +41,7 @@ function summarizeTimes(times: number[]): {
   const median =
     sorted.length % 2 === 0
       ? (sorted[middle - 1] + sorted[middle]) / 2
-      : sorted[middle] ?? 0;
+      : (sorted[middle] ?? 0);
   return { min, max, mean, median };
 }
 
@@ -108,10 +108,7 @@ describe('CompiledExpressionCompiler benchmark', () => {
   });
 
   it('profiles compile cost for identifier-only expressions', () => {
-    const maxCount = readPositiveIntegerEnv(
-      'RSX_BENCHMARK_IDENT_COUNT',
-      1000,
-    );
+    const maxCount = readPositiveIntegerEnv('RSX_BENCHMARK_IDENT_COUNT', 1000);
     const iterations = readIterations();
     const expressionStrings = loadIdentifierExpressions(maxCount);
     expect(expressionStrings.length).toBeGreaterThan(0);
@@ -138,10 +135,7 @@ describe('CompiledExpressionCompiler benchmark', () => {
   });
 
   it('profiles cache hit cost for repeated identifier compilation', () => {
-    const maxCount = readPositiveIntegerEnv(
-      'RSX_BENCHMARK_IDENT_COUNT',
-      1000,
-    );
+    const maxCount = readPositiveIntegerEnv('RSX_BENCHMARK_IDENT_COUNT', 1000);
     const iterations = readIterations();
     const expressionStrings = loadIdentifierExpressions(maxCount);
     expect(expressionStrings.length).toBeGreaterThan(0);

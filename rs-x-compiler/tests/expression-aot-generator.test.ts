@@ -151,7 +151,6 @@ rsx('d + a', { compiled: false })(model);
       expect(generated.skippedExpressions.length).toBe(0);
       expect(bytes).toBeGreaterThan(0);
 
-      // eslint-disable-next-line no-console
       console.info(
         `[aot-size] expressions=${generated.expressions.length} bytes=${bytes} mb=${megabytes.toFixed(2)}`,
       );
@@ -251,7 +250,6 @@ rsx('d + a', { compiled: false })(model);
       expect(generated.skippedExpressions.length).toBe(0);
       expect(bytes).toBeGreaterThan(0);
 
-      // eslint-disable-next-line no-console
       console.info(
         `[aot-size-parsed-cache] expressions=${generated.expressions.length} bytes=${bytes} mb=${megabytes.toFixed(2)}`,
       );

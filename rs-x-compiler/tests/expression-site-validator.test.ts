@@ -159,6 +159,10 @@ describe('expression-site validation', () => {
         messages: [],
       },
       {
+        expression: 'cart.first().qty',
+        messages: [],
+      },
+      {
         expression: 'multiply(count, 2)',
         messages: [],
       },

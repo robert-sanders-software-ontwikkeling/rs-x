@@ -7,6 +7,7 @@ packages:
   - 'rs-x-vscode-extension'
   - 'rs-x-cli'
   - 'rs-x-react'
+  - 'rs-x-vue'
   - 'rs-x-react-components'
   - 'rs-x-dev-tools'
   - 'rs-x-angular/projects/*'

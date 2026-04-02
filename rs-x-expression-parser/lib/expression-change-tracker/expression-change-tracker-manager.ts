@@ -2,7 +2,7 @@ import { Observable, ReplaySubject, Subscription } from 'rxjs';
 
 import { IDisposableOwner, Injectable, KeyedInstanceFactory } from '@rs-x/core';
 
-import { IExpression } from '../expressions/expression-parser.interface';
+import { IExpressionTree } from '../expressions/expression-parser.interface';
 
 import { IExpressionChangeHistory } from './expression-change-history.interface';
 import {
@@ -16,12 +16,12 @@ export class ExpressionChangeTracker implements IExpressionChangeTracker {
   private _isDisposed = false;
   private _paused = false;
   private readonly _changes: IExpressionChangeHistory[] = [];
-  private readonly _seen = new Set<IExpression>(); // dedupe nodes
+  private readonly _seen = new Set<IExpressionTree>(); // dedupe nodes
   private _flushScheduled = false;
 
   constructor(
     private readonly _owner: IDisposableOwner,
-    private readonly _expression: IExpression,
+    private readonly _expression: IExpressionTree,
   ) {
     if (this._expression.changeHook) {
       throw new Error(
@@ -69,7 +69,10 @@ export class ExpressionChangeTracker implements IExpressionChangeTracker {
     this._owner.release();
   }
 
-  private onChanged = (expression: IExpression, oldValue: unknown): void => {
+  private onChanged = (
+    expression: IExpressionTree,
+    oldValue: unknown,
+  ): void => {
     if (this._paused) {
       return;
     }
@@ -126,8 +129,8 @@ export class ExpressionChangeTracker implements IExpressionChangeTracker {
 @Injectable()
 export class ExpressionChangeTrackerManager
   extends KeyedInstanceFactory<
-    IExpression,
-    IExpression,
+    IExpressionTree,
+    IExpressionTree,
     IExpressionChangeTracker
   >
   implements IExpressionChangeTrackerManager
@@ -136,13 +139,13 @@ export class ExpressionChangeTrackerManager
     super();
   }
 
-  public override getId(expresion: IExpression) {
+  public override getId(expresion: IExpressionTree): IExpressionTree {
     return expresion;
   }
 
   protected override createInstance(
-    expresion: IExpression,
-    id: IExpression,
+    expresion: IExpressionTree,
+    id: IExpressionTree,
   ): IExpressionChangeTracker {
     return new ExpressionChangeTracker(
       {
@@ -153,7 +156,7 @@ export class ExpressionChangeTrackerManager
     );
   }
 
-  protected override createId(expresion: IExpression) {
+  protected override createId(expresion: IExpressionTree): IExpressionTree {
     return expresion;
   }
 }

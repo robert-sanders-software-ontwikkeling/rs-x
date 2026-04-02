@@ -24,7 +24,10 @@ const gcFlush = async (rounds = 3) => {
 };
 
 const mode = process.env.RSX_EXPRESSION_ENGINE_MODE ?? 'compiled';
-const bindings = Number.parseInt(process.env.RSX_PROFILE_BINDINGS ?? '10000', 10);
+const bindings = Number.parseInt(
+  process.env.RSX_PROFILE_BINDINGS ?? '10000',
+  10,
+);
 const rounds = Number.parseInt(process.env.RSX_PROFILE_ROUNDS ?? '8', 10);
 
 await InjectionContainer.load(RsXExpressionParserModule);

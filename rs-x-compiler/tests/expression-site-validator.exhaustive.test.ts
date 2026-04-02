@@ -6,9 +6,9 @@ import ts from 'typescript';
 
 import {
   ExpressionType,
-  JsExpressionAstParser,
-  JsEspreeExpressionParser,
   type IExpressionTree,
+  JsEspreeExpressionParser,
+  JsExpressionAstParser,
 } from '@rs-x/expression-parser';
 
 import { validateExpressionSites } from '../lib/compiler/expression-site-validator';
@@ -41,7 +41,9 @@ function createProgram(entryFile: string): ts.Program {
     ...program.getGlobalDiagnostics(),
     ...program.getSyntacticDiagnostics(),
     ...program.getSemanticDiagnostics(),
-  ].filter((diagnostic) => !diagnostic.file || diagnostic.file.fileName === entryFile);
+  ].filter(
+    (diagnostic) => !diagnostic.file || diagnostic.file.fileName === entryFile,
+  );
 
   if (diagnostics.length > 0) {
     const formatHost: ts.FormatDiagnosticsHost = {
@@ -127,7 +129,9 @@ function collectExpressionTypes(root: IExpressionTree): Set<ExpressionType> {
 describe('expression-site validation (exhaustive matrix)', () => {
   it('covers every ExpressionType in parsed ASTs and validates all without diagnostics', async () => {
     const parser = new JsEspreeExpressionParser(new JsExpressionAstParser());
-    const expressionCases = Object.entries(expressionByType).map(([, value]) => value);
+    const expressionCases = Object.entries(expressionByType).map(
+      ([, value]) => value,
+    );
     const seenTypes = new Set<ExpressionType>();
 
     for (const expression of expressionCases) {
@@ -138,9 +142,9 @@ describe('expression-site validation (exhaustive matrix)', () => {
       }
     }
 
-    const missingTypes = (Object.values(ExpressionType) as ExpressionType[]).filter(
-      (type) => !seenTypes.has(type),
-    );
+    const missingTypes = (
+      Object.values(ExpressionType) as ExpressionType[]
+    ).filter((type) => !seenTypes.has(type));
     expect(missingTypes).toEqual([]);
 
     const fixtureDir = await fs.mkdtemp(
@@ -179,7 +183,9 @@ ${expressionCases.map((expression) => `rsx(${JSON.stringify(expression)})(model)
 
     expect(validatedSites.length).toBe(expressionCases.length);
     expect(
-      validatedSites.flatMap((site) => site.diagnostics.map((diagnostic) => diagnostic.message)),
+      validatedSites.flatMap((site) =>
+        site.diagnostics.map((diagnostic) => diagnostic.message),
+      ),
     ).toEqual([]);
   });
 });

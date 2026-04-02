@@ -330,7 +330,6 @@ export abstract class AbstractExpression<
    * ancestor nodes wait for all dirty children before re-evaluating.
    */
   protected incrementAncestorPendingCounts(): void {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
     let node: AbstractExpression = this;
     while (node._parent !== undefined) {
       const parent = node._parent as AbstractExpression;
@@ -410,5 +409,4 @@ export abstract class AbstractExpression<
       this._changed?.next(this);
     }
   };
-
 }

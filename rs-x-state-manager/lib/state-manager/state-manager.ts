@@ -1,19 +1,21 @@
 import { Observable, Subject } from 'rxjs';
 
+import type {
+  IChainPart,
+  IEqualityService,
+  IErrorLog,
+  IIndexValueAccessor,
+  IPropertyChange,
+  IProxyRegistry,
+} from '@rs-x/core';
 import {
   Assertion,
-  type IChainPart,
-  type IEqualityService,
-  type IErrorLog,
-  type IIndexValueAccessor,
   Inject,
   Injectable,
-  type IPropertyChange,
   PENDING,
   RsXCoreInjectionTokens,
   truePredicate,
 } from '@rs-x/core';
-import type { IProxyRegistry } from '@rs-x/core';
 
 import { IIndexWatchRule } from '../index-watch-rule/index-watch-rule.interface';
 import type { IObjectPropertyObserverProxyPairManager } from '../object-property-observer-proxy-pair-manager.type';
@@ -125,7 +127,9 @@ export class StateManager implements IStateManager {
       index: index,
       indexWatchRule,
     });
-    return id !== undefined ? stateChangeSubscriptionsForContextManager.has(id) : false;
+    return id !== undefined
+      ? stateChangeSubscriptionsForContextManager.has(id)
+      : false;
   }
 
   public watchState(
@@ -373,7 +377,8 @@ export class StateManager implements IStateManager {
     ownerId: unknown,
   ): unknown {
     const state = this.getState(context, index);
-    const stateForContext = this._objectStateManager.createAndGetInstance(context);
+    const stateForContext =
+      this._objectStateManager.createAndGetInstance(context);
     stateForContext.create({ value: state, key: index, watched, ownerId });
     return state;
   }
@@ -386,25 +391,27 @@ export class StateManager implements IStateManager {
     transferedValue?: ITransferedValue,
     suppressInitialChangeEmit: boolean = false,
   ): void {
-    this._stateChangeSubscriptionManager.createAndGetInstance(context).createAndGetInstance({
-      index: index,
-      indexWatchRule,
-      onChanged: (change) => this.onChange(change, true, ownerId),
-      init: (observer) => {
-        if (observer.value !== undefined) {
-          this.setInitialValue(
-            context,
-            index,
-            observer.value,
-            transferedValue,
-            true,
-            ownerId,
-            suppressInitialChangeEmit,
-          );
-        }
-        observer.init();
-      },
-    });
+    this._stateChangeSubscriptionManager
+      .createAndGetInstance(context)
+      .createAndGetInstance({
+        index: index,
+        indexWatchRule,
+        onChanged: (change) => this.onChange(change, true, ownerId),
+        init: (observer) => {
+          if (observer.value !== undefined) {
+            this.setInitialValue(
+              context,
+              index,
+              observer.value,
+              transferedValue,
+              true,
+              ownerId,
+              suppressInitialChangeEmit,
+            );
+          }
+          observer.init();
+        },
+      });
   }
 
   private getValue(context: unknown, key: unknown): unknown {
@@ -668,7 +675,9 @@ export class StateManager implements IStateManager {
     }
   }
 
-  private emitStartChangeCycleEvents(changeCycleIndex: IChangeCycleIndex): void {
+  private emitStartChangeCycleEvents(
+    changeCycleIndex: IChangeCycleIndex,
+  ): void {
     const subscriptions = this._stateEventSubscriptionsByContext
       .get(changeCycleIndex.context)
       ?.get(changeCycleIndex.index);

@@ -21,7 +21,7 @@ function buildWrapper(userCode: string): {
 } {
   const header = `/* --- RS-X Demo Wrapper (generated) --- */
 
-        type __Result =  IExpression<any, any>;
+        type __Result =  IExpression<unknown>;
 
         async function __rsx_demo(): Promise<__Result> {
           const { rsx, rxjs, printValue, stateManager, IndexWatchRule, WaitForEvent, ExpressionChangeTransactionManager } = api;

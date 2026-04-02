@@ -21,9 +21,9 @@ declare const model: Model;
 // Valid composed expressions
 rsx('`hello ${user.name}`')(model);
 rsx('count > 0 ? user.multiplier(count).total : map[key]')(model);
-rsx('count > 0 && user.multiplier(count).total > 10 ? items[index] : lookup[key]')(
-  model,
-);
+rsx(
+  'count > 0 && user.multiplier(count).total > 10 ? items[index] : lookup[key]',
+)(model);
 rsx('lookup[key] ?? items[index]')(model);
 rsx('!isArchived || user.name == "admin"')(model);
 

@@ -44,7 +44,7 @@ class ExpressionForContextManager
 
   override create(expressionData: IExpressionData): {
     referenceCount: number;
-    instance: IExpression<unknown, unknown>;
+    instance: IExpression<unknown>;
     id: string;
   } {
     const result = super.create(expressionData);
@@ -72,8 +72,10 @@ class ExpressionForContextManager
   protected override createInstance(
     expressionData: IExpressionData,
   ): IExpression {
-    return this._expressionCache.create(expressionData.expressionString)
-      .instance;
+    return this._expressionCache.create({
+      expressionString: expressionData.expressionString,
+      compiled: expressionData.compiled,
+    }).instance;
   }
 
   protected override releaseInstance(instance: IExpression): void {

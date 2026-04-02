@@ -106,3 +106,6 @@ jobs:
 
       - name: Run React tests
         run: pnpm -w run test:react
+
+      - name: Run Vue tests
+        run: pnpm --filter @rs-x/vue run test
