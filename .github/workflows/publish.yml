@@ -33,6 +33,8 @@ jobs:
     name: Version, Build, Publish & Release
     runs-on: ubuntu-latest
     environment: npm-release
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       # ---------------- CHECKOUT ----------------
@@ -119,7 +121,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: rs-x-vscode-extension-vsix
-          path: rs-x-vscode-extension/rs-x-vscode-extension-*.vsix
+          path: rs-x-vscode-extension/dist/rs-x-vscode-extension-*.vsix
 
       # ---------------- ROLLBACK GUARD ----------------
       - name: Abort if versions already exist on npm
