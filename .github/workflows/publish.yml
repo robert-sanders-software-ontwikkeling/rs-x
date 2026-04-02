@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       dist_tag:
-        description: 'npm dist-tag (latest or next)'
+        description: 'npm dist-tag (auto, latest, next)'
         required: false
-        default: 'latest'
+        default: 'auto'
       promote_from_next:
         description: 'Promote already-published versions from next → latest'
         required: false
@@ -60,6 +60,35 @@ jobs:
       # ---------------- INSTALL ----------------
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # ---------------- DIST TAG ----------------
+      - name: Resolve dist-tag
+        run: |
+          DIST_TAG_INPUT='${{ github.event.inputs.dist_tag }}'
+          if [ -z "$DIST_TAG_INPUT" ] || [ "$DIST_TAG_INPUT" = "auto" ]; then
+            if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+              DIST_TAG_INPUT="latest"
+            else
+              DIST_TAG_INPUT="next"
+            fi
+          fi
+
+          if [ "$DIST_TAG_INPUT" = "latest" ] && [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            echo "Error: dist-tag 'latest' is only allowed on main."
+            exit 1
+          fi
+
+          echo "DIST_TAG=$DIST_TAG_INPUT" >> "$GITHUB_ENV"
+          echo "Resolved dist-tag: $DIST_TAG_INPUT"
+
+      # ---------------- PRE-RELEASE MODE ----------------
+      - name: Enter pre-release mode (next)
+        if: ${{ env.DIST_TAG == 'next' }}
+        run: pnpm changeset pre enter next
+
+      - name: Exit pre-release mode
+        if: ${{ env.DIST_TAG != 'next' }}
+        run: pnpm changeset pre exit || true
 
       # ---------------- VERSION ----------------
       - name: Version packages (Changesets)
@@ -125,7 +154,7 @@ jobs:
       - name: Publish all packages (atomic)
         if: ${{ github.event.inputs.promote_from_next != 'true' && github.event.inputs.dry_run != 'true' }}
         env:
-          DIST_TAG: ${{ github.event.inputs.dist_tag || 'latest' }}
+          DIST_TAG: ${{ env.DIST_TAG }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # Only for first-time publishes
         run: |
           set -e
@@ -133,7 +162,7 @@ jobs:
 
       # ---------------- COMMIT VERSION BUMP ----------------
       - name: Open PR for version bump
-        if: success()
+        if: success() && github.ref == 'refs/heads/main'
         id: create-pr
         uses: peter-evans/create-pull-request@v7
         with:
@@ -146,13 +175,14 @@ jobs:
           base: main
 
       - name: Auto-merge version bump PR
-        if: success() && steps.create-pr.outputs.pull-request-number != ''
+        if: success() && github.ref == 'refs/heads/main' && steps.create-pr.outputs.pull-request-number != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh pr merge ${{ steps.create-pr.outputs.pull-request-number }} --auto --squash --repo ${{ github.repository }}
 
       # ---------------- CREATE RELEASE ----------------
       - name: Create GitHub Release
+        if: ${{ env.DIST_TAG == 'latest' && github.ref == 'refs/heads/main' }}
         uses: actions/create-release@v1
         with:
           tag_name: v${{ github.run_number }}
