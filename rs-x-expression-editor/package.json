@@ -15,6 +15,14 @@
     "@rs-x/react": "workspace:*",
     "monaco-editor": "^0.55.1"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x"
+  },
+  "homepage": "https://github.com/robert-sanders-software-ontwikkeling/rs-x",
+  "bugs": {
+    "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x/issues"
+  },
   "devDependencies": {
     "@types/node": "^25.3.0",
     "globals": "^17.3.0",

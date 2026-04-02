@@ -11,6 +11,18 @@
     "*.vsix",
     "README.md"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x"
+  },
+  "homepage": "https://github.com/robert-sanders-software-ontwikkeling/rs-x",
+  "bugs": {
+    "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "node -e \"console.log('No build step required for @rs-x/cli')\"",
     "prepack": "node ./scripts/prepare-vsix.cjs",

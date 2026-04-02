@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { execSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import fs from 'fs';
 import path from 'path';
 
@@ -23,9 +23,27 @@ const nodePackageFolders = [...nodeLibFolders, angularDist];
 const changelogFolders = [...nodeLibFolders, 'rs-x-angular/projects/rsx'];
 
 // ---------------- UTILITIES ----------------
-function run(cmd, envOverrides = {}) {
-  console.log(`> ${cmd}`);
-  execSync(cmd, { stdio: 'inherit', env: { ...process.env, ...envOverrides } });
+function run(command, args, envOverrides = {}) {
+  const printable = [command, ...args].join(' ');
+  console.log(`> ${printable}`);
+  const result = spawnSync(command, args, {
+    stdio: 'pipe',
+    env: { ...process.env, ...envOverrides },
+  });
+  if (result.stdout?.length) {
+    process.stdout.write(result.stdout);
+  }
+  if (result.stderr?.length) {
+    process.stderr.write(result.stderr);
+  }
+  if (result.error) {
+    throw result.error;
+  }
+  if (typeof result.status === 'number' && result.status !== 0) {
+    const error = new Error(`Command failed: ${printable}`);
+    error.status = result.status;
+    throw error;
+  }
 }
 
 function getLocalPackageVersion(folder) {
@@ -85,6 +103,8 @@ function patchAngularPackage() {
 // ---------------- PUBLISH LOGIC ----------------
 function publishFolder(folder, pkgName) {
   const firstPublish = !pnpmInfoExists(pkgName);
+  const version = getLocalPackageVersion(folder);
+  console.log(`Publishing ${pkgName}@${version} (${firstPublish ? 'first' : 'existing'})`);
 
   if (firstPublish && !NODE_AUTH_TOKEN) {
     console.error(
@@ -96,18 +116,51 @@ function publishFolder(folder, pkgName) {
   if (firstPublish) {
     console.log(`🚀 First-time publish of ${pkgName}`);
     // Pass NODE_AUTH_TOKEN for first-time publish
-    run(
-      `pnpm publish ${folder} --tag ${DIST_TAG} --access public --no-git-checks`,
-      {
-        NODE_AUTH_TOKEN,
-      },
-    );
+    run('pnpm', [
+      'publish',
+      folder,
+      '--tag',
+      DIST_TAG,
+      '--access',
+      'public',
+      '--no-git-checks',
+    ], {
+      NODE_AUTH_TOKEN,
+    });
   } else {
     console.log(`🔐 OIDC publish with provenance for ${pkgName}`);
     // Do not pass NODE_AUTH_TOKEN for provenance
-    run(
-      `pnpm publish ${folder} --tag ${DIST_TAG} --access public --provenance --no-git-checks`,
-    );
+    try {
+      run('pnpm', [
+        'publish',
+        folder,
+        '--tag',
+        DIST_TAG,
+        '--access',
+        'public',
+        '--provenance',
+        '--no-git-checks',
+      ]);
+    } catch (error) {
+      console.error(
+        `⚠️  Provenance publish failed for ${pkgName}.`,
+      );
+      if (!NODE_AUTH_TOKEN) {
+        throw error;
+      }
+      console.log(`🔁 Retrying ${pkgName} publish with NODE_AUTH_TOKEN (no provenance).`);
+      run('pnpm', [
+        'publish',
+        folder,
+        '--tag',
+        DIST_TAG,
+        '--access',
+        'public',
+        '--no-git-checks',
+      ], {
+        NODE_AUTH_TOKEN,
+      });
+    }
   }
 }
 
@@ -122,16 +175,30 @@ function dryRun() {
     if (firstPublish) {
       console.log(`Dry-run for first-time publish: ${pkgJson.name}`);
       // Use NODE_AUTH_TOKEN only for first-time publish
-      run(
-        `pnpm publish ${folder} --dry-run --tag ${DIST_TAG} --access public --no-git-checks`,
-        { NODE_AUTH_TOKEN },
-      );
+      run('pnpm', [
+        'publish',
+        folder,
+        '--dry-run',
+        '--tag',
+        DIST_TAG,
+        '--access',
+        'public',
+        '--no-git-checks',
+      ], { NODE_AUTH_TOKEN });
     } else {
       console.log(`Dry-run with OIDC/provenance: ${pkgJson.name}`);
       // Unset NODE_AUTH_TOKEN for provenance
-      run(
-        `pnpm publish ${folder} --dry-run --tag ${DIST_TAG} --access public --provenance --no-git-checks`,
-      );
+      run('pnpm', [
+        'publish',
+        folder,
+        '--dry-run',
+        '--tag',
+        DIST_TAG,
+        '--access',
+        'public',
+        '--provenance',
+        '--no-git-checks',
+      ]);
     }
   }
 
