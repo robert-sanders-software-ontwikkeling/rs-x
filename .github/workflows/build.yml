@@ -37,6 +37,14 @@ jobs:
           cache: pnpm
 
       # ------------------------------
+      # Debug lockfile + package.json
+      # ------------------------------
+      - name: Debug lockfile hashes
+        run: |
+          git rev-parse HEAD
+          sha256sum pnpm-lock.yaml rs-x-compiler/package.json
+
+      # ------------------------------
       # Install dependencies
       # ------------------------------
       - name: Install dependencies

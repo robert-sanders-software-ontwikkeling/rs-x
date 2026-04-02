@@ -37,6 +37,11 @@ jobs:
           node-version: lts/*
           cache: pnpm
 
+      - name: Debug lockfile hashes
+        run: |
+          git rev-parse HEAD
+          sha256sum pnpm-lock.yaml rs-x-compiler/package.json
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
