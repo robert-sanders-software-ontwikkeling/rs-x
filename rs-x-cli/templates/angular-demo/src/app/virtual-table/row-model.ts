@@ -1,4 +1,4 @@
-import { type IExpression,rsx } from '@rs-x/expression-parser';
+import { type IExpression, rsx } from '@rs-x/expression-parser';
 
 import type { RowData } from './row-data';
 

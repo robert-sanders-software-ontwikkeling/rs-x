@@ -1,7 +1,7 @@
-import { type IExpression,rsx } from '@rs-x/expression-parser';
+import { type IExpression, rsx } from '@rs-x/expression-parser';
 
 import { type RowData, type SortDirection, type SortKey } from './row-data';
-import { createRowModel, type RowModel,updateRowModel } from './row-model';
+import { createRowModel, type RowModel, updateRowModel } from './row-model';
 import { VirtualTableDataService } from './virtual-table-data.service';
 
 export type RowView = {

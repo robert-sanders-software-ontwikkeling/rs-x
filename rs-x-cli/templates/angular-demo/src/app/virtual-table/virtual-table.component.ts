@@ -10,7 +10,7 @@ import {
 
 import { RsxPipe } from '@rs-x/angular';
 
-import { type RowView,VirtualTableModel } from './virtual-table-model';
+import { type RowView, VirtualTableModel } from './virtual-table-model';
 
 @Component({
   selector: 'rsx-virtual-table',
