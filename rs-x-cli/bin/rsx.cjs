@@ -671,6 +671,15 @@ function removeFileOrDirectoryWithDryRun(targetPath, dryRun) {
   fs.rmSync(targetPath, { recursive: true, force: true });
 }
 
+function resolveAngularProjectTsConfig(projectRoot) {
+  const appTsConfigPath = path.join(projectRoot, 'tsconfig.app.json');
+  if (fs.existsSync(appTsConfigPath)) {
+    return appTsConfigPath;
+  }
+
+  return path.join(projectRoot, 'tsconfig.json');
+}
+
 function toFileDependencySpec(fromDir, targetPath) {
   const relative = path.relative(fromDir, targetPath).replace(/\\/gu, '/');
   const normalized = relative.startsWith('.') ? relative : `./${relative}`;
@@ -1330,12 +1339,18 @@ function applyAngularDemoStarter(projectRoot, projectName, pm, flags) {
   }
 
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  const angularTsConfigPath = resolveAngularProjectTsConfig(projectRoot);
+  const angularTsConfigRelative = path
+    .relative(projectRoot, angularTsConfigPath)
+    .replace(/\\/gu, '/');
   packageJson.name = projectName;
   packageJson.private = true;
   packageJson.version = '0.1.0';
   packageJson.scripts = {
-    prebuild: 'rsx build --project tsconfig.json --no-emit --prod',
-    start: 'npm run build && ng serve',
+    'build:rsx': `rsx build --project ${angularTsConfigRelative} --no-emit --prod`,
+    'typecheck:rsx': `rsx typecheck --project ${angularTsConfigRelative}`,
+    prebuild: 'npm run build:rsx',
+    start: 'npm run build:rsx && ng serve',
     build: 'ng build',
   };
   packageJson.rsx = {
@@ -1417,6 +1432,10 @@ function applyAngularDemoStarter(projectRoot, projectName, pm, flags) {
   }
   buildOptions.polyfills = polyfills;
   build.options = buildOptions;
+
+  if (build.configurations?.production?.budgets) {
+    delete build.configurations.production.budgets;
+  }
 
   if (dryRun) {
     logInfo(`[dry-run] patch ${angularJsonPath}`);
@@ -2513,6 +2532,10 @@ function runSetupReact(flags) {
   const pm = detectPackageManager(flags.pm);
   const tag = resolveInstallTag(flags);
   const projectRoot = process.cwd();
+  const angularTsConfigPath = resolveAngularProjectTsConfig(projectRoot);
+  const angularTsConfigRelative = path
+    .relative(projectRoot, angularTsConfigPath)
+    .replace(/\\/gu, '/');
   const packageJsonPath = path.join(projectRoot, 'package.json');
   if (!fs.existsSync(packageJsonPath)) {
     logError(`package.json not found in ${projectRoot}`);
@@ -2627,13 +2650,13 @@ function runSetupAngular(flags) {
   upsertScriptInPackageJson(
     projectRoot,
     'build:rsx',
-    'rsx build --project tsconfig.json --no-emit --prod',
+    `rsx build --project ${angularTsConfigRelative} --no-emit --prod`,
     dryRun,
   );
   upsertScriptInPackageJson(
     projectRoot,
     'typecheck:rsx',
-    'rsx typecheck --project tsconfig.json',
+    `rsx typecheck --project ${angularTsConfigRelative}`,
     dryRun,
   );
 
@@ -2643,7 +2666,7 @@ function runSetupAngular(flags) {
   );
   ensureAngularPolyfillsContainsFile({
     projectRoot,
-    configPath: path.join(projectRoot, 'tsconfig.json'),
+    configPath: angularTsConfigPath,
     filePath: rsxRegistrationFile,
     dryRun,
   });

@@ -22,7 +22,7 @@ type ThemeMode = 'light' | 'dark';
 export class AppComponent implements OnInit {
   private readonly _document = inject(DOCUMENT);
   @HostBinding('class.theme-dark') public isDarkTheme = false;
-  public theme: ThemeMode = 'light';
+  public theme: ThemeMode = 'dark';
 
   public ngOnInit(): void {
     this.theme = this.getInitialTheme();
@@ -41,7 +41,7 @@ export class AppComponent implements OnInit {
       return storedTheme;
     }
 
-    return 'light';
+    return 'dark';
   }
 
   private applyTheme(theme: ThemeMode): void {
