@@ -35,10 +35,10 @@
     "provenance": true
   },
   "peerDependencies": {
-    "@angular/common": ">=21.1.0",
-    "@angular/core": ">=21.1.0",
-    "@rs-x/core": "workspace:*",
-    "@rs-x/expression-parser": "workspace:*",
+    "@angular/common": ">=20.0.0",
+    "@angular/core": ">=20.0.0",
+    "@rs-x/core": ">=2.0.0-0",
+    "@rs-x/expression-parser": ">=2.0.0-0",
     "rxjs": ">=7.8.0"
   },
   "peerDependenciesMeta": {
