@@ -7,6 +7,21 @@ import type * as ExpressionParser from '@rs-x/expression-parser';
 import { useRsxExpression } from '../hooks/use-rsx-expression';
 import { useRsxModel } from '../hooks/use-rsx-model';
 
+const { rsxMock } = vi.hoisted(() => ({
+  rsxMock: vi.fn(
+    (expressionString: string) => (model: Record<string, unknown>) =>
+      ({
+        id: `${expressionString}-id`,
+        expressionString,
+        value: model[expressionString],
+        dispose: () => {},
+        bind: () => undefined,
+        clone: () => undefined,
+        changed: { subscribe: () => ({ unsubscribe: () => {} }) },
+      }) as unknown,
+  ),
+}));
+
 vi.mock('../hooks/use-rsx-expression');
 vi.mock('@rs-x/expression-parser', async () => {
   const actual = await vi.importActual<ExpressionParser>(
@@ -14,12 +29,7 @@ vi.mock('@rs-x/expression-parser', async () => {
   );
   return {
     ...actual,
-    rsx: (expressionString: string) => (model: Record<string, unknown>) =>
-      ({
-        expressionString,
-        value: model[expressionString],
-        changed: { subscribe: () => ({ unsubscribe: () => {} }) },
-      }) as unknown,
+    rsx: rsxMock,
   };
 });
 
@@ -27,6 +37,7 @@ describe('useRsxForm', () => {
   type IExpression = ExpressionParser.IExpression;
   beforeEach(() => {
     vi.resetAllMocks();
+    rsxMock.mockClear();
   });
 
   it('throws UnsupportedException when model contains a collection', () => {
@@ -142,5 +153,19 @@ describe('useRsxForm', () => {
     expect(useRsxExpression).toHaveBeenCalledWith(
       expect.objectContaining({ value: 3 }),
     );
+  });
+
+  it('reuses cached expressions for the same model between renders', () => {
+    (useRsxExpression as unknown as vi.Mock).mockImplementation(
+      (expression: IExpression) => expression.value,
+    );
+
+    const model = { age: 30 };
+    const { rerender } = renderHook(() => useRsxModel(model));
+
+    rerender();
+
+    expect(rsxMock).toHaveBeenCalledTimes(1);
+    expect(rsxMock).toHaveBeenCalledWith('age');
   });
 });
