@@ -1,0 +1,49 @@
+<section class="table-toolbar">
+  <div class="toolbar-left">
+    <h2>Inventory Snapshot</h2>
+    <p>{{ state.totalRows }} rows • {{ state.poolSize }} pre-wired models</p>
+  </div>
+  <div class="toolbar-right">
+    <button type="button" (click)="toggleSort('price')">Sort by price</button>
+    <button type="button" (click)="toggleSort('quantity')">Sort by stock</button>
+    <button type="button" (click)="toggleSort('name')">Sort by name</button>
+  </div>
+</section>
+
+<div class="table-header">
+  <span>ID</span>
+  <span>Name</span>
+  <span>Category</span>
+  <span>Price</span>
+  <span>Qty</span>
+  <span>Total</span>
+  <span>Updated</span>
+</div>
+
+<div
+  #scrollViewport
+  class="table-viewport"
+  (scroll)="onScroll($event)"
+>
+  <div class="table-spacer" [style.height.px]="state.spacerHeight"></div>
+  <div
+    class="table-row"
+    *ngFor="let item of state.rowsExpression | rsx; trackBy: trackByIndex"
+    [style.transform]="'translateY(' + item.top + 'px)'"
+  >
+    <span data-label="ID">#{{ item.row.idExpr | rsx }}</span>
+    <span data-label="Name">{{ item.row.nameExpr | rsx }}</span>
+    <span data-label="Category">{{ item.row.categoryExpr | rsx }}</span>
+    <span data-label="Price">€{{ item.row.priceExpr | rsx }}</span>
+    <span data-label="Qty">{{ item.row.quantityExpr | rsx }}</span>
+    <span data-label="Total" class="total">€{{ item.row.totalExpr | rsx }}</span>
+    <span data-label="Updated">{{ item.row.updatedAtExpr | rsx }}</span>
+  </div>
+</div>
+
+<div class="table-footer">
+  <div>
+    Rows in view: {{ state.rowsInView }} • Loaded pages: {{ state.loadedPageCount }}
+  </div>
+  <div>Scroll to stream pages from a 1,000,000-row virtual dataset.</div>
+</div>

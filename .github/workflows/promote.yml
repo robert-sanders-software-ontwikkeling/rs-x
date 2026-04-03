@@ -4,6 +4,7 @@ on:
   workflow_dispatch: # Manual trigger
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   DIST_TAG_NEXT: 'next'
   DIST_TAG_LATEST: 'latest'
 

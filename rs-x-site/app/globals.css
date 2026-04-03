@@ -3346,8 +3346,11 @@ html[data-theme='dark'] .docsApiSection .advancedTopicList {
   white-space: nowrap;
 }
 
+.tableWrap .docsTable th,
 .tableWrap .docsTable td {
-  white-space: wrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .docsTable th {

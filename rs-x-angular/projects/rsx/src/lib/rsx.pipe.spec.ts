@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, runInInjectionContext } from '@angular/core';
+import { ChangeDetectorRef, NgZone, runInInjectionContext } from '@angular/core';
 import { BehaviorSubject, type Subscription } from 'rxjs';
 import { vi } from 'vitest';
 
@@ -17,6 +17,7 @@ import { IExpressionFactoryToken } from './rsx.providers';
 describe('RsxPipe', () => {
   let pipe: RsxPipe;
   let cdr: ChangeDetectorRef;
+  let ngZone: NgZone;
   let expressionFactory: IExpressionFactory;
 
   beforeAll(async () => {
@@ -34,12 +35,18 @@ describe('RsxPipe', () => {
     cdr = Type.cast({
       markForCheck: vi.fn(),
     });
+    ngZone = Type.cast({
+      run: (callback: () => void) => callback(),
+    });
 
     pipe = runInInjectionContext(
       {
         get: (token: unknown) => {
           if (token === ChangeDetectorRef) {
             return cdr;
+          }
+          if (token === NgZone) {
+            return ngZone;
           }
           if (token === IExpressionFactoryToken) {
             return expressionFactory;
@@ -66,6 +73,17 @@ describe('RsxPipe', () => {
     const actual = pipe.transform('x + 2', ctx);
 
     expect(actual).toEqual(12);
+  });
+
+  it('does not create an expression when context is missing', () => {
+    const createSpy = vi.spyOn(expressionFactory, 'create');
+
+    const actual = pipe.transform('x + 2');
+
+    expect(actual).toBeUndefined();
+    expect(createSpy).not.toHaveBeenCalled();
+
+    createSpy.mockRestore();
   });
 
   it('evaluates a simple expression', async () => {
@@ -198,7 +216,7 @@ describe('RsxPipe', () => {
     }
   });
 
-  it('disposeExpression will dispose expression if it owns it', () => {
+  it('disposeExpression disposes expression created by the pipe', () => {
     pipe.transform('x + 2', { x: 1 });
     const pipeWithExpression = Type.cast<{
       _expression: IExpression;
@@ -211,7 +229,7 @@ describe('RsxPipe', () => {
     expect(disposeSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('disposeExpression will not dispose expression if doesn not own it', () => {
+  it('disposeExpression does not dispose external expression', () => {
     const expression = expressionFactory.create({ x: 1 }, 'x + 2');
     try {
       pipe.transform(expression);
@@ -250,5 +268,63 @@ describe('RsxPipe', () => {
     pipe.ngOnDestroy();
 
     expect(disposeSpy).toHaveBeenCalled();
+  });
+
+  it('re-enters Angular zone when an expression emits outside the zone', async () => {
+    const runSpy = vi.fn((callback: () => void) => callback());
+    ngZone = Type.cast({
+      run: runSpy,
+    });
+
+    pipe = runInInjectionContext(
+      {
+        get: (token: unknown) => {
+          if (token === ChangeDetectorRef) {
+            return cdr;
+          }
+          if (token === NgZone) {
+            return ngZone;
+          }
+          if (token === IExpressionFactoryToken) {
+            return expressionFactory;
+          }
+          throw new Error(`No provider for ${token}`);
+        },
+      },
+      () => new RsxPipe(),
+    );
+
+    const zoneCheckSpy = vi
+      .spyOn(NgZone, 'isInAngularZone')
+      .mockReturnValue(false);
+
+    const expression = expressionFactory.create({ x: 1 }, 'x + 2');
+    try {
+      pipe.transform(expression);
+      await Promise.resolve();
+
+      expect(runSpy).toHaveBeenCalled();
+    } finally {
+      zoneCheckSpy.mockRestore();
+      expression.dispose();
+    }
+  });
+
+  it('marks for check directly when already inside Angular zone', async () => {
+    const zoneCheckSpy = vi
+      .spyOn(NgZone, 'isInAngularZone')
+      .mockReturnValue(true);
+    const markForCheckSpy = vi.spyOn(cdr, 'markForCheck');
+
+    const expression = expressionFactory.create({ x: 2 }, 'x + 2');
+    try {
+      pipe.transform(expression);
+      await Promise.resolve();
+
+      expect(markForCheckSpy).toHaveBeenCalled();
+    } finally {
+      zoneCheckSpy.mockRestore();
+      expression.dispose();
+    }
   });
 });

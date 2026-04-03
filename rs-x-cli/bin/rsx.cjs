@@ -7,6 +7,12 @@ const { spawnSync } = require('node:child_process');
 
 const CLI_VERSION = '0.2.0';
 const VS_CODE_EXTENSION_ID = 'rs-x.rs-x-vscode-extension';
+const ANGULAR_DEMO_TEMPLATE_DIR = path.join(
+  __dirname,
+  '..',
+  'templates',
+  'angular-demo',
+);
 const RUNTIME_PACKAGES = [
   '@rs-x/core',
   '@rs-x/state-manager',
@@ -585,6 +591,42 @@ function writeFileWithDryRun(filePath, content, dryRun) {
   fs.writeFileSync(filePath, content, 'utf8');
 }
 
+function copyPathWithDryRun(sourcePath, targetPath, dryRun) {
+  if (dryRun) {
+    logInfo(`[dry-run] copy ${sourcePath} -> ${targetPath}`);
+    return;
+  }
+
+  const stat = fs.statSync(sourcePath);
+  if (stat.isDirectory()) {
+    fs.mkdirSync(targetPath, { recursive: true });
+    for (const entry of fs.readdirSync(sourcePath, { withFileTypes: true })) {
+      copyPathWithDryRun(
+        path.join(sourcePath, entry.name),
+        path.join(targetPath, entry.name),
+        false,
+      );
+    }
+    return;
+  }
+
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  fs.copyFileSync(sourcePath, targetPath);
+}
+
+function removeFileOrDirectoryWithDryRun(targetPath, dryRun) {
+  if (!fs.existsSync(targetPath)) {
+    return;
+  }
+
+  if (dryRun) {
+    logInfo(`[dry-run] remove ${targetPath}`);
+    return;
+  }
+
+  fs.rmSync(targetPath, { recursive: true, force: true });
+}
+
 function toFileDependencySpec(fromDir, targetPath) {
   const relative = path.relative(fromDir, targetPath).replace(/\\/gu, '/');
   const normalized = relative.startsWith('.') ? relative : `./${relative}`;
@@ -642,7 +684,7 @@ function resolveProjectRsxSpecs(
     '@rs-x/compiler': versionSpec,
     '@rs-x/typescript-plugin': versionSpec,
     ...(includeAngularPackage ? { '@rs-x/angular': versionSpec } : {}),
-    '@rs-x/cli': null,
+    '@rs-x/cli': versionSpec,
   };
 
   const tarballSlugs = {
@@ -1182,6 +1224,168 @@ function scaffoldProjectTemplate(template, projectName, pm, flags) {
   process.exit(1);
 }
 
+function applyAngularDemoStarter(projectRoot, projectName, pm, flags) {
+  const dryRun = Boolean(flags['dry-run']);
+  const tag = resolveInstallTag(flags);
+  const tarballsDir =
+    typeof flags['tarballs-dir'] === 'string'
+      ? path.resolve(process.cwd(), flags['tarballs-dir'])
+      : typeof process.env.RSX_TARBALLS_DIR === 'string' &&
+          process.env.RSX_TARBALLS_DIR.trim().length > 0
+        ? path.resolve(process.cwd(), process.env.RSX_TARBALLS_DIR)
+        : null;
+  const workspaceRoot = findRepoRoot(projectRoot);
+  const rsxSpecs = resolveProjectRsxSpecs(
+    projectRoot,
+    workspaceRoot,
+    tarballsDir,
+    { tag, includeAngularPackage: true },
+  );
+
+  const templateFiles = ['README.md', 'src'];
+  for (const entry of templateFiles) {
+    copyPathWithDryRun(
+      path.join(ANGULAR_DEMO_TEMPLATE_DIR, entry),
+      path.join(projectRoot, entry),
+      dryRun,
+    );
+  }
+
+  const staleAngularFiles = [
+    path.join(projectRoot, 'src/app/app.ts'),
+    path.join(projectRoot, 'src/app/app.spec.ts'),
+    path.join(projectRoot, 'src/app/app.html'),
+    path.join(projectRoot, 'src/app/app.css'),
+    path.join(projectRoot, 'src/app/app.routes.ts'),
+    path.join(projectRoot, 'src/app/app.config.ts'),
+  ];
+  for (const stalePath of staleAngularFiles) {
+    removeFileOrDirectoryWithDryRun(stalePath, dryRun);
+  }
+
+  const readmePath = path.join(projectRoot, 'README.md');
+  if (fs.existsSync(readmePath)) {
+    const readmeSource = fs.readFileSync(readmePath, 'utf8');
+    const nextReadme = readmeSource.replace(
+      /^#\s+rsx-angular-example/mu,
+      `# ${projectName}`,
+    );
+    if (dryRun) {
+      logInfo(`[dry-run] patch ${readmePath}`);
+    } else {
+      fs.writeFileSync(readmePath, nextReadme, 'utf8');
+    }
+  }
+
+  const packageJsonPath = path.join(projectRoot, 'package.json');
+  if (!fs.existsSync(packageJsonPath)) {
+    logError(`package.json not found in generated Angular app: ${packageJsonPath}`);
+    process.exit(1);
+  }
+
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  packageJson.name = projectName;
+  packageJson.private = true;
+  packageJson.version = '0.1.0';
+  packageJson.scripts = {
+    prebuild: 'rsx build --project tsconfig.json --no-emit --prod',
+    start: 'npm run build && ng serve',
+    build: 'ng build',
+  };
+  packageJson.rsx = {
+    build: {
+      preparse: true,
+      preparseFile: 'src/rsx-generated/rsx-aot-preparsed.generated.ts',
+      compiled: true,
+      compiledFile: 'src/rsx-generated/rsx-aot-compiled.generated.ts',
+      registrationFile: 'src/rsx-generated/rsx-aot-registration.generated.ts',
+      compiledResolvedEvaluator: false,
+    },
+  };
+  packageJson.dependencies = {
+    ...(packageJson.dependencies ?? {}),
+    '@rs-x/angular': rsxSpecs['@rs-x/angular'],
+    '@rs-x/core': rsxSpecs['@rs-x/core'],
+    '@rs-x/state-manager': rsxSpecs['@rs-x/state-manager'],
+    '@rs-x/expression-parser': rsxSpecs['@rs-x/expression-parser'],
+  };
+  packageJson.devDependencies = {
+    ...(packageJson.devDependencies ?? {}),
+    '@rs-x/cli': rsxSpecs['@rs-x/cli'],
+    '@rs-x/compiler': rsxSpecs['@rs-x/compiler'],
+    '@rs-x/typescript-plugin': rsxSpecs['@rs-x/typescript-plugin'],
+  };
+
+  if (dryRun) {
+    logInfo(`[dry-run] patch ${packageJsonPath}`);
+  } else {
+    fs.writeFileSync(
+      packageJsonPath,
+      `${JSON.stringify(packageJson, null, 2)}\n`,
+      'utf8',
+    );
+  }
+
+  const angularJsonPath = path.join(projectRoot, 'angular.json');
+  if (!fs.existsSync(angularJsonPath)) {
+    logError(`angular.json not found in generated Angular app: ${angularJsonPath}`);
+    process.exit(1);
+  }
+
+  const angularJson = JSON.parse(fs.readFileSync(angularJsonPath, 'utf8'));
+  const projects = angularJson.projects ?? {};
+  const [angularProjectName] = Object.keys(projects);
+  if (!angularProjectName) {
+    logError('Generated angular.json does not define any projects.');
+    process.exit(1);
+  }
+
+  const angularProject = projects[angularProjectName];
+  const architect = angularProject.architect ?? angularProject.targets;
+  const build = architect?.build;
+  if (!build) {
+    logError('Generated Angular project is missing a build target.');
+    process.exit(1);
+  }
+
+  const buildOptions = build.options ?? {};
+  const styles = Array.isArray(buildOptions.styles) ? buildOptions.styles : [];
+  if (!styles.includes('src/styles.css')) {
+    styles.push('src/styles.css');
+  }
+  buildOptions.styles = styles;
+  buildOptions.preserveSymlinks = true;
+
+  const registrationFile = 'src/rsx-generated/rsx-aot-registration.generated.ts';
+  let polyfills = buildOptions.polyfills;
+  if (typeof polyfills === 'string') {
+    polyfills = [polyfills];
+  } else if (!Array.isArray(polyfills)) {
+    polyfills = [];
+  }
+  if (!polyfills.includes(registrationFile)) {
+    polyfills.push(registrationFile);
+  }
+  buildOptions.polyfills = polyfills;
+  build.options = buildOptions;
+
+  if (dryRun) {
+    logInfo(`[dry-run] patch ${angularJsonPath}`);
+  } else {
+    fs.writeFileSync(
+      angularJsonPath,
+      `${JSON.stringify(angularJson, null, 2)}\n`,
+      'utf8',
+    );
+  }
+
+  if (!Boolean(flags['skip-install'])) {
+    logInfo(`Refreshing ${pm} dependencies for the RS-X Angular starter...`);
+    run(pm, ['install'], { dryRun });
+    logOk('Angular starter dependencies are up to date.');
+  }
+}
+
 async function runProjectWithTemplate(template, flags) {
   const normalizedTemplate = normalizeProjectTemplate(template);
   if (!normalizedTemplate) {
@@ -1213,7 +1417,10 @@ async function runProjectWithTemplate(template, flags) {
 
   withWorkingDirectory(projectRoot, () => {
     if (normalizedTemplate === 'angular') {
-      runSetupAngular(flags);
+      applyAngularDemoStarter(projectRoot, projectName, pm, flags);
+      if (!Boolean(flags['skip-vscode'])) {
+        installVsCodeExtension(flags);
+      }
       return;
     }
     if (normalizedTemplate === 'react') {
@@ -1795,6 +2002,109 @@ function runInit(flags) {
   logOk('RS-X init completed.');
 }
 
+function upsertRsxBuildConfigInPackageJson(projectRoot, dryRun) {
+  const packageJsonPath = path.join(projectRoot, 'package.json');
+  if (!fs.existsSync(packageJsonPath)) {
+    return false;
+  }
+
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  const currentRsx = packageJson.rsx ?? {};
+  const currentBuild = currentRsx.build ?? {};
+  const nextBuild = {
+    preparse: true,
+    preparseFile: 'src/rsx-generated/rsx-aot-preparsed.generated.ts',
+    compiled: true,
+    compiledFile: 'src/rsx-generated/rsx-aot-compiled.generated.ts',
+    registrationFile: 'src/rsx-generated/rsx-aot-registration.generated.ts',
+    compiledResolvedEvaluator: false,
+    ...currentBuild,
+  };
+
+  const nextPackageJson = {
+    ...packageJson,
+    rsx: {
+      ...currentRsx,
+      build: nextBuild,
+    },
+  };
+
+  if (dryRun) {
+    logInfo(`[dry-run] patch ${packageJsonPath} (rsx.build)`);
+    return true;
+  }
+
+  fs.writeFileSync(
+    packageJsonPath,
+    `${JSON.stringify(nextPackageJson, null, 2)}\n`,
+    'utf8',
+  );
+  logOk(`Patched ${packageJsonPath} (rsx.build)`);
+  return true;
+}
+
+function ensureAngularProvidersInEntry(entryFile, dryRun) {
+  if (!fs.existsSync(entryFile)) {
+    return false;
+  }
+
+  const original = fs.readFileSync(entryFile, 'utf8');
+  if (original.includes('providexRsx')) {
+    logInfo(`Angular entry already includes providexRsx: ${entryFile}`);
+    return true;
+  }
+
+  if (!original.includes('bootstrapApplication(')) {
+    logWarn(
+      `Could not automatically patch Angular providers in ${entryFile}. Expected bootstrapApplication(...).`,
+    );
+    logInfo(
+      "Manual setup: import { providexRsx } from '@rs-x/angular' and add providers: [...providexRsx()] to bootstrapApplication(...).",
+    );
+    return false;
+  }
+
+  const sourceWithImport = injectImport(
+    original,
+    "import { providexRsx } from '@rs-x/angular';",
+  );
+
+  let updated = sourceWithImport;
+  if (/bootstrapApplication\([\s\S]*?,\s*\{[\s\S]*?providers\s*:/mu.test(updated)) {
+    updated = updated.replace(
+      /providers\s*:\s*\[/mu,
+      'providers: [...providexRsx(), ',
+    );
+  } else if (/bootstrapApplication\([\s\S]*?,\s*\{/mu.test(updated)) {
+    updated = updated.replace(
+      /bootstrapApplication\(([\s\S]*?),\s*\{/mu,
+      'bootstrapApplication($1, {\n  providers: [...providexRsx()],',
+    );
+  } else {
+    updated = updated.replace(
+      /bootstrapApplication\(([\s\S]*?)\)\s*(?:\.catch\([\s\S]*?\))?\s*;/mu,
+      "bootstrapApplication($1, {\n  providers: [...providexRsx()],\n}).catch((error) => {\n  console.error(error);\n});",
+    );
+  }
+
+  if (updated === sourceWithImport) {
+    logWarn(`Could not automatically inject providexRsx into ${entryFile}.`);
+    logInfo(
+      "Manual setup: import { providexRsx } from '@rs-x/angular' and add providers: [...providexRsx()] to bootstrapApplication(...).",
+    );
+    return false;
+  }
+
+  if (dryRun) {
+    logInfo(`[dry-run] patch ${entryFile} (providexRsx)`);
+    return true;
+  }
+
+  fs.writeFileSync(entryFile, updated, 'utf8');
+  logOk(`Patched ${entryFile} to include providexRsx.`);
+  return true;
+}
+
 function upsertScriptInPackageJson(
   projectRoot,
   scriptName,
@@ -2336,43 +2646,57 @@ function runSetupAngular(flags) {
   const dryRun = Boolean(flags['dry-run']);
   const pm = detectPackageManager(flags.pm);
   const tag = resolveInstallTag(flags);
-
-  runInit({
-    ...flags,
-    'skip-vscode': true,
-  });
+  const projectRoot = process.cwd();
 
   if (!Boolean(flags['skip-install'])) {
+    installRuntimePackages(pm, dryRun, tag);
+    installCompilerPackages(pm, dryRun, tag);
     installPackages(pm, ['@rs-x/angular'], {
       dev: false,
       dryRun,
       tag,
       label: 'RS-X Angular bindings',
     });
-    installPackages(pm, ['@angular-builders/custom-webpack'], {
-      dev: true,
-      dryRun,
-      label: 'Angular custom webpack builder',
-    });
   } else {
+    logInfo('Skipping package installation (--skip-install).');
+  }
+
+  const entryFile = resolveEntryFile(projectRoot, 'angular', flags.entry);
+  if (entryFile) {
+    logInfo(`Using Angular entry file: ${entryFile}`);
+    ensureAngularProvidersInEntry(entryFile, dryRun);
+  } else {
+    logWarn('Could not detect an Angular entry file automatically.');
     logInfo(
-      'Skipping Angular custom webpack builder install (--skip-install).',
+      "Manual setup: add providexRsx() to bootstrapApplication(...) in your main entry file.",
     );
   }
 
-  wireRsxAngularWebpack(process.cwd(), dryRun);
+  upsertRsxBuildConfigInPackageJson(projectRoot, dryRun);
+
   upsertScriptInPackageJson(
-    process.cwd(),
+    projectRoot,
     'build:rsx',
-    'rsx build --project tsconfig.json',
+    'rsx build --project tsconfig.json --no-emit --prod',
     dryRun,
   );
   upsertScriptInPackageJson(
-    process.cwd(),
+    projectRoot,
     'typecheck:rsx',
     'rsx typecheck --project tsconfig.json',
     dryRun,
   );
+
+  const rsxRegistrationFile = path.join(
+    projectRoot,
+    'src/rsx-generated/rsx-aot-registration.generated.ts',
+  );
+  ensureAngularPolyfillsContainsFile({
+    projectRoot,
+    configPath: path.join(projectRoot, 'tsconfig.json'),
+    filePath: rsxRegistrationFile,
+    dryRun,
+  });
 
   if (!Boolean(flags['skip-vscode'])) {
     installVsCodeExtension(flags);
@@ -3256,12 +3580,17 @@ function printProjectHelp() {
   console.log('What it does:');
   console.log('  - Creates a new project folder');
   console.log('  - Supports templates: angular, vuejs, react, nextjs, nodejs');
+  console.log(
+    '  - Angular generates the RS-X virtual-table demo starter on top of the latest Angular scaffold',
+  );
   console.log('  - Scaffolds framework app and wires RS-X bootstrap/setup');
   console.log('  - Writes package.json with RS-X dependencies');
   console.log(
     '  - Adds tsconfig + TypeScript plugin config for editor support',
   );
-  console.log('  - For Angular template: also installs @rs-x/angular');
+  console.log(
+    '  - For Angular template: uses the latest Angular CLI scaffold, then applies the RS-X demo starter',
+  );
   console.log('  - For React/Next templates: also installs @rs-x/react');
   console.log('  - For Vue template: also installs @rs-x/vue');
   console.log('  - Installs dependencies (unless --skip-install)');

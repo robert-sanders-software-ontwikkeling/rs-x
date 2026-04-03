@@ -28,13 +28,15 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   release:
     name: Version, Build, Publish & Release
     runs-on: ubuntu-latest
     environment: npm-release
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    env: {}
 
     steps:
       # ---------------- CHECKOUT ----------------

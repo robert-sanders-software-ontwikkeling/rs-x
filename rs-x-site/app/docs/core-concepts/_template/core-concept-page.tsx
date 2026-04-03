@@ -28,7 +28,7 @@ export type CoreConceptDoc = {
   keyPoints: ReactNode[];
   deepDive?: Array<{
     title: string;
-    paragraphs: string[];
+    paragraphs: ReactNode[];
   }>;
   exampleCode?: string;
   playgroundScript?: string;
@@ -93,11 +93,17 @@ export function CoreConceptPageLayout({
         {doc.deepDive?.map((section) => (
           <article key={section.title} className="card docsApiCard">
             <h2 className="cardTitle">{section.title}</h2>
-            {section.paragraphs.map((paragraph) => (
-              <p key={paragraph} className="cardText">
-                {paragraph}
-              </p>
-            ))}
+            {section.paragraphs.map((paragraph, index) =>
+              typeof paragraph === 'string' ? (
+                <p key={index} className="cardText">
+                  {paragraph}
+                </p>
+              ) : (
+                <div key={index} className="cardText">
+                  {paragraph}
+                </div>
+              ),
+            )}
           </article>
         ))}
 

@@ -18,6 +18,11 @@ RSX_SKIP_VSCODE_EXTENSION_INSTALL=true
 ## What gets installed
 
 Installing `@rs-x/cli` gives you the `rsx` command.
+For prerelease builds, install globally to make the `rsx` binary available:
+
+```bash
+npm install -g @rs-x/cli@next
+```
 
 Running `rsx init` installs:
 

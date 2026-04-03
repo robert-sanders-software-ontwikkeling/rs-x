@@ -1,6 +1,7 @@
 import {
   ChangeDetectorRef,
   inject,
+  NgZone,
   type OnDestroy,
   Pipe,
   type PipeTransform,
@@ -19,9 +20,11 @@ import { IExpressionFactoryToken } from './rsx.providers';
 @Pipe({
   name: 'rsx',
   pure: false,
+  standalone: true,
 })
 export class RsxPipe implements PipeTransform, OnDestroy {
   private readonly _changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly _ngZone = inject(NgZone);
   private readonly _expressionFactory = inject(IExpressionFactoryToken);
   private _expression?: IExpression<unknown>;
   private _changedSubscription?: Subscription;
@@ -70,7 +73,6 @@ export class RsxPipe implements PipeTransform, OnDestroy {
     }
 
     this._lastContext = context;
-
     this.tryToSubscribeToExpression();
   }
 
@@ -78,9 +80,22 @@ export class RsxPipe implements PipeTransform, OnDestroy {
     if (!this._expression) {
       return;
     }
+
     this._value = this._expression.value;
+    this.requestViewCheck();
     this._changedSubscription = this._expression.changed.subscribe(() => {
       this._value = this._expression!.value;
+      this.requestViewCheck();
+    });
+  }
+
+  private requestViewCheck(): void {
+    if (NgZone.isInAngularZone()) {
+      this._changeDetectorRef.markForCheck();
+      return;
+    }
+
+    this._ngZone.run(() => {
       this._changeDetectorRef.markForCheck();
     });
   }
@@ -89,10 +104,10 @@ export class RsxPipe implements PipeTransform, OnDestroy {
     if (this._ownsExpression) {
       this._expression?.dispose();
     }
-    this._ownsExpression = false;
     this._changedSubscription?.unsubscribe();
     this._changedSubscription = undefined;
     this._expression = undefined;
+    this._ownsExpression = false;
   }
 
   private isExpressionInstance(
@@ -101,6 +116,7 @@ export class RsxPipe implements PipeTransform, OnDestroy {
     if (!value || Type.isString(value)) {
       return false;
     }
+
     return (
       value instanceof AbstractExpression ||
       value instanceof CompiledExpression

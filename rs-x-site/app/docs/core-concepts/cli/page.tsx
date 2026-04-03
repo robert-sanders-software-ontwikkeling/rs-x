@@ -1,6 +1,7 @@
 import dedent from 'dedent';
 import type { Metadata } from 'next';
 
+import { SyntaxCodeBlock } from '../../../../components/SyntaxCodeBlock';
 import {
   type CoreConceptDoc,
   CoreConceptPageLayout,
@@ -20,6 +21,10 @@ const installCliCode = dedent`
 
   # pnpm
   pnpm add -g @rs-x/cli
+
+  # Prerelease (next) - global
+  npm install -g @rs-x/cli@next
+  pnpm add -g @rs-x/cli@next
 `;
 
 const bootstrapExistingProjectCode = dedent`
@@ -60,6 +65,21 @@ const buildAndTypecheckCode = dedent`
 
   # TypeScript + RS-X semantic checks
   npx rsx typecheck --project tsconfig.json
+`;
+
+const buildConfigurationCode = dedent`
+  {
+    "rsx": {
+      "build": {
+        "preparse": true,
+        "preparseFile": "src/rsx-generated/rsx-aot-preparsed.generated.ts",
+        "compiled": true,
+        "compiledFile": "src/rsx-generated/rsx-aot-compiled.generated.ts",
+        "registrationFile": "src/rsx-generated/rsx-aot-registration.generated.ts",
+        "compiledResolvedEvaluator": false
+      }
+    }
+  }
 `;
 
 const commandReferenceCode = dedent`
@@ -143,6 +163,7 @@ const doc: CoreConceptDoc = {
       paragraphs: [
         'Install `@rs-x/cli` as a dev dependency in your workspace (recommended). This provides the `rsx` command from local project scripts and keeps team environments version-aligned.',
         'Global install is optional. It is convenient for running `rsx` directly in any terminal, but local project install is usually better for reproducible CI/dev behavior.',
+        'If you install the prerelease (`@rs-x/cli@next`), use a global install to make `rsx` available on PATH.',
       ],
     },
     {
@@ -186,7 +207,92 @@ const doc: CoreConceptDoc = {
       ],
     },
     {
-      title: '7) Full command reference',
+      title: '7) Build configuration in package.json',
+      paragraphs: [
+        'You can configure the build pipeline with an `rsx.build` block in `package.json`. This is where you turn AOT preparse/compiled outputs on, choose where generated files are written, and control how aggressive compiled generation should be.',
+        <SyntaxCodeBlock
+          key="build-config-code"
+          code={buildConfigurationCode}
+        />,
+        <div key="build-config-table" className="tableWrap">
+          <table
+            className="docsTable"
+            style={{ tableLayout: 'fixed', width: '100%' }}
+          >
+            <thead>
+              <tr>
+                <th>Option</th>
+                <th>What it does</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <span className="codeInline">preparse</span>
+                </td>
+                <td>
+                  Enables generation of the preparsed AST cache during{' '}
+                  <span className="codeInline">rsx build --prod</span>.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span className="codeInline">preparseFile</span>
+                </td>
+                <td>Path for the generated preparsed AST cache module.</td>
+              </tr>
+              <tr>
+                <td>
+                  <span className="codeInline">compiled</span>
+                </td>
+                <td>Enables generation of the compiled-expression plan cache.</td>
+              </tr>
+              <tr>
+                <td>
+                  <span className="codeInline">compiledFile</span>
+                </td>
+                <td>Path for the generated compiled-plan cache module.</td>
+              </tr>
+              <tr>
+                <td>
+                  <span className="codeInline">registrationFile</span>
+                </td>
+                <td>
+                  Path for the generated registration module that loads the AOT
+                  outputs into the runtime cache.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span className="codeInline">compiledResolvedEvaluator</span>
+                </td>
+                <td>
+                  Controls whether the compiled AOT output also embeds the
+                  resolved-dependency evaluator function. When{' '}
+                  <span className="codeInline">false</span>, runtime still uses
+                  compiled plans, but more dependency resolution stays in the
+                  shared runtime path. When{' '}
+                  <span className="codeInline">true</span>, more of that work is
+                  pushed into the generated compiled evaluator.
+                  <br />
+                  <br />
+                  Tradeoff:
+                  <br />
+                  - <span className="codeInline">true</span>: less runtime
+                  indirection and potentially faster compiled evaluation paths,
+                  but larger generated output and a more aggressive AOT build.
+                  <br />- <span className="codeInline">false</span>: smaller
+                  generated output and simpler build artifacts, but more of the
+                  dependency-resolution work stays in shared runtime code.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>,
+      ],
+    },
+    {
+      title: '8) Full command reference',
       paragraphs: [
         'Use `rsx help` or `rsx help <command>` to print command-specific usage at any time.',
         'The command matrix below is the complete current surface of the CLI.',
