@@ -211,7 +211,29 @@ function applyTagToPackages(packages, tag) {
 }
 
 function resolveInstallTag(flags) {
-  return parseBooleanFlag(flags.next, false) ? 'next' : undefined;
+  if (parseBooleanFlag(flags.next, false)) {
+    return 'next';
+  }
+
+  if (CLI_VERSION.includes('-')) {
+    return 'next';
+  }
+
+  const checkoutRoot = findRepoRoot(__dirname);
+  if (!checkoutRoot) {
+    return undefined;
+  }
+
+  const branchResult = spawnSync('git', ['branch', '--show-current'], {
+    cwd: checkoutRoot,
+    encoding: 'utf8',
+  });
+  const branch = branchResult.status === 0 ? branchResult.stdout.trim() : '';
+  if (branch && branch !== 'main') {
+    return 'next';
+  }
+
+  return undefined;
 }
 
 function installPackages(pm, packages, options = {}) {
