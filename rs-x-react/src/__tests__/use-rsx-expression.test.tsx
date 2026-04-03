@@ -1,126 +1,114 @@
-import { act, renderHook } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { InjectionContainer } from '@rs-x/core';
+import {
+  CompiledExpression,
+  ExpressionType,
+  rsx,
+  RsXExpressionParserModule,
+} from '@rs-x/expression-parser';
 
 import { useRsxExpression } from '../hooks/use-rsx-expression';
-
-type MockExpression<T> = {
-  id: string;
-  expressionString: string;
-  dispose: () => void;
-  bind: () => unknown;
-  clone: () => unknown;
-  changed: {
-    subscribe: (callback: () => void) => { unsubscribe: () => void };
-  };
-  value: T | undefined;
-  evalateTopToBottom?: () => void;
-  evaluateBottomToTop?: () => boolean;
-};
-
-function createExpression<T>(value: T | undefined): MockExpression<T> {
-  let subscriber: (() => void) | undefined;
-  return {
-    id: 'expr-1',
-    expressionString: 'value',
-    dispose: vi.fn(),
-    bind: vi.fn(),
-    clone: vi.fn(),
-    changed: {
-      subscribe: vi.fn((callback: () => void) => {
-        subscriber = callback;
-        return { unsubscribe: vi.fn() };
-      }),
-    },
-    value,
-    triggerChanged: () => subscriber?.(),
-  };
-}
+import type { ICompiledExpressionPlan } from '../../../rs-x-expression-parser/lib/compiled-expression/compiled-expression.compiler.interface';
 
 describe('useRsxExpression', () => {
-  it('returns the current value for a valid expression object', () => {
-    const expression = createExpression<number>(42);
+  beforeEach(() => {
+    InjectionContainer.load(RsXExpressionParserModule);
+  });
 
-    const { result } = renderHook(() =>
-      useRsxExpression(expression as never),
-    );
+  afterEach(() => {
+    InjectionContainer.unload(RsXExpressionParserModule);
+  });
+
+  it('accepts AbstractExpression instances', () => {
+    const model = { total: 42 };
+    const expression = rsx<number>('total')(model);
+
+    const { result } = renderHook(() => useRsxExpression(expression));
 
     expect(result.current).toBe(42);
   });
 
-  it('returns null when the expression value is null', () => {
-    const expression = createExpression<null>(null);
+  it('returns null when an AbstractExpression starts with a null value', () => {
+    const model = { total: null as number | null };
+    const expression = rsx<number | null>('total')(model);
 
-    const { result } = renderHook(() =>
-      useRsxExpression(expression as never),
-    );
+    const { result } = renderHook(() => useRsxExpression(expression));
 
     expect(result.current).toBeNull();
   });
 
-  it('evaluates top-to-bottom when the initial value is undefined', () => {
-    const expression = createExpression<number>(undefined);
-    expression.evalateTopToBottom = vi.fn(() => {
-      expression.value = 12;
-    });
+  it('updates when an AbstractExpression emits a change', async () => {
+    const model = { total: 42 };
+    const expression = rsx<number>('total')(model);
+    const { result } = renderHook(() => useRsxExpression(expression));
 
-    const { result } = renderHook(() =>
-      useRsxExpression(expression as never),
-    );
-
-    expect(expression.evalateTopToBottom).toHaveBeenCalledTimes(1);
-    expect(result.current).toBe(12);
-  });
-
-  it('falls back to bottom-to-top evaluation when needed', () => {
-    const expression = createExpression<number>(undefined);
-    expression.evalateTopToBottom = vi.fn();
-    expression.evaluateBottomToTop = vi.fn(() => {
-      expression.value = 24;
-      return true;
-    });
-
-    const { result } = renderHook(() =>
-      useRsxExpression(expression as never),
-    );
-
-    expect(expression.evalateTopToBottom).toHaveBeenCalledTimes(1);
-    expect(expression.evaluateBottomToTop).toHaveBeenCalledTimes(1);
-    expect(result.current).toBe(24);
-  });
-
-  it('updates to null when the subscribed expression emits a nullish value', () => {
-    const expression = createExpression<number | null>(1) as MockExpression<
-      number | null
-    > & { triggerChanged: () => void };
-
-    const { result } = renderHook(() =>
-      useRsxExpression(expression as never),
-    );
-
-    expression.value = null;
     act(() => {
-      expression.triggerChanged();
+      model.total = null as unknown as number;
     });
+
+    await waitFor(() => {
+      expect(result.current).toBeNull();
+    });
+  });
+
+  it('updates from a null value to a concrete value', async () => {
+    const model = { total: null as number | null };
+    const expression = rsx<number | null>('total')(model);
+    const { result } = renderHook(() => useRsxExpression(expression));
+
+    act(() => {
+      model.total = 7;
+    });
+
+    await waitFor(() => {
+      expect(result.current).toBe(7);
+    });
+  });
+
+  it('accepts CompiledExpression instances', () => {
+    const plan: ICompiledExpressionPlan = {
+      expressionString: 'compiled',
+      dependencyNames: [],
+      watchDependencies: [],
+      expressionType: ExpressionType.Number,
+      hasHiddenArgumentArray: false,
+      evaluate: () => 5,
+    };
+    const expression = new CompiledExpression(plan);
+    (expression as { _value: unknown })._value = 5;
+
+    const { result } = renderHook(() => useRsxExpression(expression));
+
+    expect(result.current).toBe(5);
+  });
+
+  it('returns null when a CompiledExpression resolves to null during evaluation', () => {
+    const plan: ICompiledExpressionPlan = {
+      expressionString: 'compiled-null',
+      dependencyNames: [],
+      watchDependencies: [],
+      expressionType: ExpressionType.Number,
+      hasHiddenArgumentArray: false,
+      evaluate: () => undefined,
+    };
+    const expression = new CompiledExpression(plan) as CompiledExpression & {
+      _value: unknown;
+      evalateTopToBottom: () => void;
+    };
+    expression.evalateTopToBottom = () => {
+      expression._value = null;
+    };
+
+    const { result } = renderHook(() => useRsxExpression(expression));
 
     expect(result.current).toBeNull();
   });
 
-  it('returns null when top-to-bottom evaluation resolves to null', () => {
-    const expression = createExpression<number | null>(undefined);
-    expression.evalateTopToBottom = vi.fn(() => {
-      expression.value = null;
-    });
-
-    const { result } = renderHook(() =>
-      useRsxExpression(expression as never),
-    );
-
-    expect(result.current).toBeNull();
-  });
-
-  it('throws for an invalid expression object', () => {
+  it('throws for values that are not RS-X expressions', () => {
     expect(() =>
-      renderHook(() => useRsxExpression(null as never)),
+      renderHook(() => useRsxExpression({} as never)),
     ).toThrowError('useRsxExpression: expression must be an IExpression');
   });
 });
