@@ -14,6 +14,8 @@
             "index": "src/index.html",
             "main": "src/main.ts",
             "tsConfig": "tsconfig.json",
+            "styles": ["src/styles.css"],
+            "preserveSymlinks": true,
             "polyfills": ["src/rsx-generated/rsx-aot-registration.generated.ts"]
           }
         },

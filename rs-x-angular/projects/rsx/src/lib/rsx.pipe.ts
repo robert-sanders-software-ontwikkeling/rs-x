@@ -118,8 +118,7 @@ export class RsxPipe implements PipeTransform, OnDestroy {
     }
 
     return (
-      value instanceof AbstractExpression ||
-      value instanceof CompiledExpression
+      value instanceof AbstractExpression || value instanceof CompiledExpression
     );
   }
 }

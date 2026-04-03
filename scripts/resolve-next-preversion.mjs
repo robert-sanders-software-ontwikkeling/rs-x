@@ -30,7 +30,9 @@ function parseChangesetBumps() {
       if (!trimmed || trimmed.startsWith('#')) {
         continue;
       }
-      const match = trimmed.match(/^["']?([^"']+)["']?:\s*(major|minor|patch)$/);
+      const match = trimmed.match(
+        /^["']?([^"']+)["']?:\s*(major|minor|patch)$/,
+      );
       if (!match) {
         continue;
       }
@@ -47,7 +49,9 @@ function parseChangesetBumps() {
 }
 
 function bumpVersion(version, bump) {
-  const [major, minor, patch] = version.split('.').map((value) => Number(value));
+  const [major, minor, patch] = version
+    .split('.')
+    .map((value) => Number(value));
   if (![major, minor, patch].every((value) => Number.isInteger(value))) {
     throw new Error(`Invalid version: ${version}`);
   }

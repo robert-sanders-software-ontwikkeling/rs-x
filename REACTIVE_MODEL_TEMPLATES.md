@@ -7,16 +7,19 @@ This document captures a proposed optimization: use build-time knowledge of expr
 In SPA frameworks, the data shape is usually **known at build time** because bindings in templates or expressions define which properties are accessed. We can leverage that to pre-compute a **reactive shape plan** and instantiate models using a **template factory** rather than discovering/patching at runtime.
 
 Key idea:
+
 - Build time: analyze expressions → infer model shape and watcher needs
 - Runtime: instantiate models via a template (pre-wired) instead of `watchState` discovery
 
 ## Motivation
 
 Today, most runtime cost is in **watch setup**:
+
 - Proxies are created lazily, but **watchers are configured per instance**
 - Repeated, high-volume object creation (e.g., table rows) pays that cost every time
 
 If we know the shape from bindings, we can:
+
 - pre-plan watchers and patch points
 - avoid repeated discovery
 - reduce per-instance allocation and setup cost
@@ -24,6 +27,7 @@ If we know the shape from bindings, we can:
 ## What “Shape” Means
 
 A template “shape” describes:
+
 - which properties are accessed
 - which properties must be observed
 - which nodes are objects vs arrays vs dates vs maps
@@ -38,6 +42,7 @@ row.d?.e
 ```
 
 Implied shape plan (high level):
+
 - `row` is object
 - `row.a` is leaf
 - `row.b` is array-like
@@ -79,6 +84,7 @@ const row = template.instantiate();
 ```
 
 `instantiate()` creates:
+
 - a new object instance
 - a proxy (if configured)
 - watcher wiring based on the plan
@@ -114,16 +120,21 @@ We can extend that analysis to output “shape plans” without needing any runt
 ## Risks / Complexity
 
 ### 1) Identity + sharing
+
 Proxies are tied to object identity; templates must **create fresh instances**, not reuse proxy internals across models.
 
 ### 2) Mutable special types (Date, Array, Map, Set)
+
 These require specialized watchers or patching. Template needs to know which strategy is used (proxy vs patch).
 
 ### 3) Compatibility with current StateManager
+
 A template factory must preserve current semantics (events, ref counts, cleanup). It cannot silently skip hooks.
 
 ### 4) Schema drift
+
 If runtime model shape diverges from the template, behavior must be defined:
+
 - Ignore extra properties?
 - Fail fast?
 - Fallback to dynamic watch?
@@ -131,15 +142,18 @@ If runtime model shape diverges from the template, behavior must be defined:
 ## Suggested Phase Plan
 
 ### Phase 1: Spike
+
 - Build a minimal `ReactiveShapePlan`
 - Template factory for plain objects + arrays
 - Benchmark against baseline (watch setup time)
 
 ### Phase 2: Expand
+
 - Add Date/Map/Set watchers to shape plan
 - Add row pool and reset logic
 
 ### Phase 3: Compiler Integration
+
 - Generate plan automatically from expressions
 - Emit plan as AOT artifact
 - Hook into runtime factory
@@ -156,7 +170,7 @@ If runtime model shape diverges from the template, behavior must be defined:
 
 ## Open Questions
 
-- Do we infer shapes from *only* expressions or also from explicit type metadata?
+- Do we infer shapes from _only_ expressions or also from explicit type metadata?
 - How to combine multiple expressions into a shared template (union vs merge)?
 - How to version/serialize templates for compiler artifacts?
 - What’s the fallback behavior when runtime shape diverges?
@@ -164,6 +178,7 @@ If runtime model shape diverges from the template, behavior must be defined:
 ## Proposed Next Step (Concrete)
 
 Create a proof-of-concept:
+
 - Build a `ReactiveShapePlan` for a known row shape
 - Instantiate 200 rows via template
 - Measure time vs baseline `watchState`

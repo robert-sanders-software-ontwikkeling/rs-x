@@ -42,7 +42,11 @@ export class VirtualTableDataService {
     const items: RowData[] = [];
     const endIndex = Math.min(startIndex + pageSize, TOTAL_ROWS);
 
-    for (let visualIndex = startIndex; visualIndex < endIndex; visualIndex += 1) {
+    for (
+      let visualIndex = startIndex;
+      visualIndex < endIndex;
+      visualIndex += 1
+    ) {
       const id = this.getIdAtVisualIndex(visualIndex, sortKey, sortDirection);
       items.push(createRowData(id));
     }
@@ -120,7 +124,9 @@ export class VirtualTableDataService {
 
   private trimCache(): void {
     while (this._pageCache.size > MAX_CACHED_PAGES) {
-      const oldestKey = this._pageCache.keys().next().value as string | undefined;
+      const oldestKey = this._pageCache.keys().next().value as
+        | string
+        | undefined;
       if (!oldestKey) {
         return;
       }

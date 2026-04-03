@@ -5,7 +5,9 @@
   </div>
   <div class="toolbar-right">
     <button type="button" (click)="toggleSort('price')">Sort by price</button>
-    <button type="button" (click)="toggleSort('quantity')">Sort by stock</button>
+    <button type="button" (click)="toggleSort('quantity')">
+      Sort by stock
+    </button>
     <button type="button" (click)="toggleSort('name')">Sort by name</button>
   </div>
 </section>
@@ -20,11 +22,7 @@
   <span>Updated</span>
 </div>
 
-<div
-  #scrollViewport
-  class="table-viewport"
-  (scroll)="onScroll($event)"
->
+<div #scrollViewport class="table-viewport" (scroll)="onScroll($event)">
   <div class="table-spacer" [style.height.px]="state.spacerHeight"></div>
   <div
     class="table-row"
@@ -36,14 +34,17 @@
     <span data-label="Category">{{ item.row.categoryExpr | rsx }}</span>
     <span data-label="Price">€{{ item.row.priceExpr | rsx }}</span>
     <span data-label="Qty">{{ item.row.quantityExpr | rsx }}</span>
-    <span data-label="Total" class="total">€{{ item.row.totalExpr | rsx }}</span>
+    <span data-label="Total" class="total"
+      >€{{ item.row.totalExpr | rsx }}</span
+    >
     <span data-label="Updated">{{ item.row.updatedAtExpr | rsx }}</span>
   </div>
 </div>
 
 <div class="table-footer">
   <div>
-    Rows in view: {{ state.rowsInView }} • Loaded pages: {{ state.loadedPageCount }}
+    Rows in view: {{ state.rowsInView }} • Loaded pages:
+    {{ state.loadedPageCount }}
   </div>
   <div>Scroll to stream pages from a 1,000,000-row virtual dataset.</div>
 </div>

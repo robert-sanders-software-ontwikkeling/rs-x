@@ -1279,7 +1279,9 @@ function applyAngularDemoStarter(projectRoot, projectName, pm, flags) {
 
   const packageJsonPath = path.join(projectRoot, 'package.json');
   if (!fs.existsSync(packageJsonPath)) {
-    logError(`package.json not found in generated Angular app: ${packageJsonPath}`);
+    logError(
+      `package.json not found in generated Angular app: ${packageJsonPath}`,
+    );
     process.exit(1);
   }
 
@@ -1328,7 +1330,9 @@ function applyAngularDemoStarter(projectRoot, projectName, pm, flags) {
 
   const angularJsonPath = path.join(projectRoot, 'angular.json');
   if (!fs.existsSync(angularJsonPath)) {
-    logError(`angular.json not found in generated Angular app: ${angularJsonPath}`);
+    logError(
+      `angular.json not found in generated Angular app: ${angularJsonPath}`,
+    );
     process.exit(1);
   }
 
@@ -1356,7 +1360,8 @@ function applyAngularDemoStarter(projectRoot, projectName, pm, flags) {
   buildOptions.styles = styles;
   buildOptions.preserveSymlinks = true;
 
-  const registrationFile = 'src/rsx-generated/rsx-aot-registration.generated.ts';
+  const registrationFile =
+    'src/rsx-generated/rsx-aot-registration.generated.ts';
   let polyfills = buildOptions.polyfills;
   if (typeof polyfills === 'string') {
     polyfills = [polyfills];
@@ -2070,7 +2075,9 @@ function ensureAngularProvidersInEntry(entryFile, dryRun) {
   );
 
   let updated = sourceWithImport;
-  if (/bootstrapApplication\([\s\S]*?,\s*\{[\s\S]*?providers\s*:/mu.test(updated)) {
+  if (
+    /bootstrapApplication\([\s\S]*?,\s*\{[\s\S]*?providers\s*:/mu.test(updated)
+  ) {
     updated = updated.replace(
       /providers\s*:\s*\[/mu,
       'providers: [...providexRsx(), ',
@@ -2083,7 +2090,7 @@ function ensureAngularProvidersInEntry(entryFile, dryRun) {
   } else {
     updated = updated.replace(
       /bootstrapApplication\(([\s\S]*?)\)\s*(?:\.catch\([\s\S]*?\))?\s*;/mu,
-      "bootstrapApplication($1, {\n  providers: [...providexRsx()],\n}).catch((error) => {\n  console.error(error);\n});",
+      'bootstrapApplication($1, {\n  providers: [...providexRsx()],\n}).catch((error) => {\n  console.error(error);\n});',
     );
   }
 
@@ -2668,7 +2675,7 @@ function runSetupAngular(flags) {
   } else {
     logWarn('Could not detect an Angular entry file automatically.');
     logInfo(
-      "Manual setup: add providexRsx() to bootstrapApplication(...) in your main entry file.",
+      'Manual setup: add providexRsx() to bootstrapApplication(...) in your main entry file.',
     );
   }
 

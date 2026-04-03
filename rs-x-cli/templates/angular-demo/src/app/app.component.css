@@ -55,12 +55,11 @@
 
 .theme-toggle {
   border: 1px solid var(--border);
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--surface-solid) 92%, var(--brand) 8%),
-      color-mix(in srgb, var(--surface-solid) 92%, var(--brand-2) 8%)
-    );
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--surface-solid) 92%, var(--brand) 8%),
+    color-mix(in srgb, var(--surface-solid) 92%, var(--brand-2) 8%)
+  );
   color: var(--text);
   border-radius: 999px;
   padding: 10px 14px;

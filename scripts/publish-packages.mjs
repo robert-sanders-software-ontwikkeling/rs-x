@@ -107,7 +107,9 @@ function patchAngularPackage() {
 function publishFolder(folder, pkgName) {
   const firstPublish = !pnpmInfoExists(pkgName);
   const version = getLocalPackageVersion(folder);
-  console.log(`Publishing ${pkgName}@${version} (${firstPublish ? 'first' : 'existing'})`);
+  console.log(
+    `Publishing ${pkgName}@${version} (${firstPublish ? 'first' : 'existing'})`,
+  );
 
   if (firstPublish && !NODE_AUTH_TOKEN) {
     console.error(
@@ -119,17 +121,21 @@ function publishFolder(folder, pkgName) {
   if (firstPublish) {
     console.log(`🚀 First-time publish of ${pkgName}`);
     // Pass NODE_AUTH_TOKEN for first-time publish
-    run('pnpm', [
-      'publish',
-      folder,
-      '--tag',
-      DIST_TAG,
-      '--access',
-      'public',
-      '--no-git-checks',
-    ], {
-      NODE_AUTH_TOKEN,
-    });
+    run(
+      'pnpm',
+      [
+        'publish',
+        folder,
+        '--tag',
+        DIST_TAG,
+        '--access',
+        'public',
+        '--no-git-checks',
+      ],
+      {
+        NODE_AUTH_TOKEN,
+      },
+    );
   } else {
     console.log(`🔐 OIDC publish with provenance for ${pkgName}`);
     // Do not pass NODE_AUTH_TOKEN for provenance
@@ -145,24 +151,28 @@ function publishFolder(folder, pkgName) {
         '--no-git-checks',
       ]);
     } catch (error) {
-      console.error(
-        `⚠️  Provenance publish failed for ${pkgName}.`,
-      );
+      console.error(`⚠️  Provenance publish failed for ${pkgName}.`);
       if (!NODE_AUTH_TOKEN) {
         throw error;
       }
-      console.log(`🔁 Retrying ${pkgName} publish with NODE_AUTH_TOKEN (no provenance).`);
-      run('pnpm', [
-        'publish',
-        folder,
-        '--tag',
-        DIST_TAG,
-        '--access',
-        'public',
-        '--no-git-checks',
-      ], {
-        NODE_AUTH_TOKEN,
-      });
+      console.log(
+        `🔁 Retrying ${pkgName} publish with NODE_AUTH_TOKEN (no provenance).`,
+      );
+      run(
+        'pnpm',
+        [
+          'publish',
+          folder,
+          '--tag',
+          DIST_TAG,
+          '--access',
+          'public',
+          '--no-git-checks',
+        ],
+        {
+          NODE_AUTH_TOKEN,
+        },
+      );
     }
   }
 }
@@ -178,16 +188,20 @@ function dryRun() {
     if (firstPublish) {
       console.log(`Dry-run for first-time publish: ${pkgJson.name}`);
       // Use NODE_AUTH_TOKEN only for first-time publish
-      run('pnpm', [
-        'publish',
-        folder,
-        '--dry-run',
-        '--tag',
-        DIST_TAG,
-        '--access',
-        'public',
-        '--no-git-checks',
-      ], { NODE_AUTH_TOKEN });
+      run(
+        'pnpm',
+        [
+          'publish',
+          folder,
+          '--dry-run',
+          '--tag',
+          DIST_TAG,
+          '--access',
+          'public',
+          '--no-git-checks',
+        ],
+        { NODE_AUTH_TOKEN },
+      );
     } else {
       console.log(`Dry-run with OIDC/provenance: ${pkgJson.name}`);
       // Unset NODE_AUTH_TOKEN for provenance

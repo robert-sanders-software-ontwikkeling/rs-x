@@ -91,7 +91,8 @@ describe('providexRsx', () => {
       (provider) => provider.provide === IExpressionFactoryToken,
     );
     const transactionProvider = providers.find(
-      (provider) => provider.provide === IExpressionChangeTransactionManagerToken,
+      (provider) =>
+        provider.provide === IExpressionChangeTransactionManagerToken,
     );
 
     const factory = factoryProvider?.useFactory as (() => unknown) | undefined;

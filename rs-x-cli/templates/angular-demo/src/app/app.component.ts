@@ -1,11 +1,11 @@
+import { DOCUMENT } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   HostBinding,
-  OnInit,
   inject,
+  OnInit,
 } from '@angular/core';
-import { DOCUMENT } from '@angular/common';
 
 import { VirtualTableComponent } from './virtual-table/virtual-table.component';
 

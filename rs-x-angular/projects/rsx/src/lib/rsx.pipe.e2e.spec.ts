@@ -1,10 +1,10 @@
+import { CommonModule } from '@angular/common';
 import {
   ApplicationInitStatus,
   ChangeDetectionStrategy,
   Component,
   OnInit,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { rsx, unloadRsXExpressionParserModule } from '@rs-x/expression-parser';
@@ -109,7 +109,9 @@ class ReusedExternalExpressionHostComponent implements OnInit {
   private readonly sharedExpression = rsx<number>('value')(this.sharedModel);
 
   public ngOnInit(): void {
-    this.rowsExpression = rsx<typeof this.rowsModel.rows>('rows')(this.rowsModel);
+    this.rowsExpression = rsx<typeof this.rowsModel.rows>('rows')(
+      this.rowsModel,
+    );
   }
 
   public setVisible(isVisible: boolean): void {
@@ -235,9 +237,7 @@ describe('RsxPipe Integration with ngFor', () => {
     reusedFixture.detectChanges();
 
     expect(
-      reusedFixture.nativeElement
-        .querySelector('.value')
-        ?.textContent?.trim(),
+      reusedFixture.nativeElement.querySelector('.value')?.textContent?.trim(),
     ).toBe('1');
 
     reusedComponent.setVisible(false);
@@ -252,9 +252,7 @@ describe('RsxPipe Integration with ngFor', () => {
     reusedFixture.detectChanges();
 
     expect(
-      reusedFixture.nativeElement
-        .querySelector('.value')
-        ?.textContent?.trim(),
+      reusedFixture.nativeElement.querySelector('.value')?.textContent?.trim(),
     ).toBe('7');
   });
 });

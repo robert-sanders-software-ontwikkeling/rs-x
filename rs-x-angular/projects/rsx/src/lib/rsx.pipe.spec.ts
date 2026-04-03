@@ -1,4 +1,8 @@
-import { ChangeDetectorRef, NgZone, runInInjectionContext } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  NgZone,
+  runInInjectionContext,
+} from '@angular/core';
 import { BehaviorSubject, type Subscription } from 'rxjs';
 import { vi } from 'vitest';
 

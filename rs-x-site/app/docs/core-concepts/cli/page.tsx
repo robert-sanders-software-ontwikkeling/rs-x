@@ -245,7 +245,9 @@ const doc: CoreConceptDoc = {
                 <td>
                   <span className="codeInline">compiled</span>
                 </td>
-                <td>Enables generation of the compiled-expression plan cache.</td>
+                <td>
+                  Enables generation of the compiled-expression plan cache.
+                </td>
               </tr>
               <tr>
                 <td>
@@ -277,8 +279,7 @@ const doc: CoreConceptDoc = {
                   <br />
                   <br />
                   Tradeoff:
-                  <br />
-                  - <span className="codeInline">true</span>: less runtime
+                  <br />- <span className="codeInline">true</span>: less runtime
                   indirection and potentially faster compiled evaluation paths,
                   but larger generated output and a more aggressive AOT build.
                   <br />- <span className="codeInline">false</span>: smaller

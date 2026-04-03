@@ -1,3 +1,4 @@
+import { CommonModule } from '@angular/common';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -6,11 +7,10 @@ import {
   OnDestroy,
   ViewChild,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 import { RsxPipe } from '@rs-x/angular';
 
-import { VirtualTableModel, type RowView } from './virtual-table-model';
+import { type RowView,VirtualTableModel } from './virtual-table-model';
 
 @Component({
   selector: 'rsx-virtual-table',
