@@ -8,7 +8,11 @@ import {
 import { Subscription } from 'rxjs';
 
 import { Type, UnsupportedException } from '@rs-x/core';
-import { AbstractExpression, type IExpression } from '@rs-x/expression-parser';
+import {
+  AbstractExpression,
+  CompiledExpression,
+  type IExpression,
+} from '@rs-x/expression-parser';
 
 import { IExpressionFactoryToken } from './rsx.providers';
 
@@ -30,10 +34,10 @@ export class RsxPipe implements PipeTransform, OnDestroy {
     expression: string | IExpression<T> | null | undefined,
     context?: object,
   ): T {
+    const isExpression = this.isExpressionInstance(expression);
     if (
-      (expression instanceof AbstractExpression &&
-        this._expression !== expression) ||
-      expression !== this._lastExpressionString ||
+      (isExpression && this._expression !== expression) ||
+      (!isExpression && expression !== this._lastExpressionString) ||
       context !== this._lastContext
     ) {
       this.disposeExpression();
@@ -51,7 +55,7 @@ export class RsxPipe implements PipeTransform, OnDestroy {
     expression: string | IExpression | null | undefined,
     context?: object,
   ): void {
-    if (expression instanceof AbstractExpression) {
+    if (this.isExpressionInstance(expression)) {
       this._lastExpressionString = undefined;
       this._expression = expression;
       this._ownsExpression = false;
@@ -74,6 +78,7 @@ export class RsxPipe implements PipeTransform, OnDestroy {
     if (!this._expression) {
       return;
     }
+    this._value = this._expression.value;
     this._changedSubscription = this._expression.changed.subscribe(() => {
       this._value = this._expression!.value;
       this._changeDetectorRef.markForCheck();
@@ -88,5 +93,17 @@ export class RsxPipe implements PipeTransform, OnDestroy {
     this._changedSubscription?.unsubscribe();
     this._changedSubscription = undefined;
     this._expression = undefined;
+  }
+
+  private isExpressionInstance(
+    value: string | IExpression | null | undefined,
+  ): value is IExpression {
+    if (!value || Type.isString(value)) {
+      return false;
+    }
+    return (
+      value instanceof AbstractExpression ||
+      value instanceof CompiledExpression
+    );
   }
 }
