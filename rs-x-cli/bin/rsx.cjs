@@ -21,6 +21,12 @@ const ANGULAR_DEMO_TEMPLATE_DIR = path.join(
   'templates',
   'angular-demo',
 );
+const REACT_DEMO_TEMPLATE_DIR = path.join(
+  __dirname,
+  '..',
+  'templates',
+  'react-demo',
+);
 const RUNTIME_PACKAGES = [
   '@rs-x/core',
   '@rs-x/state-manager',
@@ -680,6 +686,40 @@ function resolveAngularProjectTsConfig(projectRoot) {
   return path.join(projectRoot, 'tsconfig.json');
 }
 
+function upsertTypescriptPluginInTsConfig(configPath, dryRun) {
+  if (!fs.existsSync(configPath)) {
+    logWarn(`TypeScript config not found: ${configPath}`);
+    return;
+  }
+
+  const tsConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  const compilerOptions = tsConfig.compilerOptions ?? {};
+  const plugins = Array.isArray(compilerOptions.plugins)
+    ? compilerOptions.plugins
+    : [];
+
+  if (
+    !plugins.some(
+      (plugin) =>
+        plugin &&
+        typeof plugin === 'object' &&
+        plugin.name === '@rs-x/typescript-plugin',
+    )
+  ) {
+    plugins.push({ name: '@rs-x/typescript-plugin' });
+  }
+
+  compilerOptions.plugins = plugins;
+  tsConfig.compilerOptions = compilerOptions;
+
+  if (dryRun) {
+    logInfo(`[dry-run] patch ${configPath}`);
+    return;
+  }
+
+  fs.writeFileSync(configPath, `${JSON.stringify(tsConfig, null, 2)}\n`, 'utf8');
+}
+
 function toFileDependencySpec(fromDir, targetPath) {
   const relative = path.relative(fromDir, targetPath).replace(/\\/gu, '/');
   const normalized = relative.startsWith('.') ? relative : `./${relative}`;
@@ -729,6 +769,7 @@ function resolveProjectRsxSpecs(
   options = {},
 ) {
   const includeAngularPackage = Boolean(options.includeAngularPackage);
+  const includeReactPackage = Boolean(options.includeReactPackage);
   const versionSpec = options.tag ? options.tag : RSX_PACKAGE_VERSION;
   const defaults = {
     '@rs-x/core': versionSpec,
@@ -737,6 +778,7 @@ function resolveProjectRsxSpecs(
     '@rs-x/compiler': versionSpec,
     '@rs-x/typescript-plugin': versionSpec,
     ...(includeAngularPackage ? { '@rs-x/angular': versionSpec } : {}),
+    ...(includeReactPackage ? { '@rs-x/react': versionSpec } : {}),
     '@rs-x/cli': versionSpec,
   };
 
@@ -747,6 +789,7 @@ function resolveProjectRsxSpecs(
     '@rs-x/compiler': 'rs-x-compiler',
     '@rs-x/typescript-plugin': 'rs-x-typescript-plugin',
     ...(includeAngularPackage ? { '@rs-x/angular': 'rs-x-angular' } : {}),
+    ...(includeReactPackage ? { '@rs-x/react': 'rs-x-react' } : {}),
     '@rs-x/cli': 'rs-x-cli',
   };
 
@@ -767,6 +810,11 @@ function resolveProjectRsxSpecs(
       ...(includeAngularPackage
         ? {
             'rs-x-angular': path.join(tarballsDir, 'rs-x-angular'),
+          }
+        : {}),
+      ...(includeReactPackage
+        ? {
+            'rs-x-react': path.join(tarballsDir, 'rs-x-react'),
           }
         : {}),
       'rs-x-cli': path.join(tarballsDir, 'rs-x-cli'),
@@ -810,6 +858,11 @@ function resolveProjectRsxSpecs(
             workspaceRoot,
             'rs-x-angular/projects/rsx',
           ),
+        }
+      : {}),
+    ...(includeReactPackage
+      ? {
+          '@rs-x/react': path.join(workspaceRoot, 'rs-x-react'),
         }
       : {}),
     '@rs-x/cli': path.join(workspaceRoot, 'rs-x-cli'),
@@ -1454,6 +1507,138 @@ function applyAngularDemoStarter(projectRoot, projectName, pm, flags) {
   }
 }
 
+function applyReactDemoStarter(projectRoot, projectName, pm, flags) {
+  const dryRun = Boolean(flags['dry-run']);
+  const tag = resolveInstallTag(flags);
+  const tarballsDir =
+    typeof flags['tarballs-dir'] === 'string'
+      ? path.resolve(process.cwd(), flags['tarballs-dir'])
+      : typeof process.env.RSX_TARBALLS_DIR === 'string' &&
+          process.env.RSX_TARBALLS_DIR.trim().length > 0
+        ? path.resolve(process.cwd(), process.env.RSX_TARBALLS_DIR)
+        : null;
+  const workspaceRoot = findRepoRoot(projectRoot);
+  const rsxSpecs = resolveProjectRsxSpecs(
+    projectRoot,
+    workspaceRoot,
+    tarballsDir,
+    { tag, includeReactPackage: true },
+  );
+
+  const templateFiles = [
+    'README.md',
+    'index.html',
+    'src',
+    'tsconfig.json',
+    'vite.config.ts',
+  ];
+  for (const entry of templateFiles) {
+    copyPathWithDryRun(
+      path.join(REACT_DEMO_TEMPLATE_DIR, entry),
+      path.join(projectRoot, entry),
+      dryRun,
+    );
+  }
+
+  const staleReactFiles = [
+    path.join(projectRoot, 'src/App.tsx'),
+    path.join(projectRoot, 'src/App.css'),
+    path.join(projectRoot, 'src/index.css'),
+    path.join(projectRoot, 'src/vite-env.d.ts'),
+    path.join(projectRoot, 'src/assets'),
+    path.join(projectRoot, 'public'),
+    path.join(projectRoot, 'eslint.config.js'),
+    path.join(projectRoot, 'eslint.config.ts'),
+    path.join(projectRoot, 'tsconfig.app.json'),
+    path.join(projectRoot, 'tsconfig.node.json'),
+  ];
+  for (const stalePath of staleReactFiles) {
+    removeFileOrDirectoryWithDryRun(stalePath, dryRun);
+  }
+
+  const readmePath = path.join(projectRoot, 'README.md');
+  if (fs.existsSync(readmePath)) {
+    const readmeSource = fs.readFileSync(readmePath, 'utf8');
+    const nextReadme = readmeSource.replace(
+      /^#\s+rsx-react-example/mu,
+      `# ${projectName}`,
+    );
+    if (dryRun) {
+      logInfo(`[dry-run] patch ${readmePath}`);
+    } else {
+      fs.writeFileSync(readmePath, nextReadme, 'utf8');
+    }
+  }
+
+  const packageJsonPath = path.join(projectRoot, 'package.json');
+  if (!fs.existsSync(packageJsonPath)) {
+    logError(`package.json not found in generated React app: ${packageJsonPath}`);
+    process.exit(1);
+  }
+
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  packageJson.name = projectName;
+  packageJson.private = true;
+  packageJson.version = '0.1.0';
+  packageJson.type = 'module';
+  packageJson.scripts = {
+    'build:rsx': 'rsx build --project tsconfig.json --no-emit --prod',
+    dev: 'npm run build:rsx && vite',
+    build: 'npm run build:rsx && vite build',
+    preview: 'vite preview',
+  };
+  packageJson.rsx = {
+    build: {
+      preparse: true,
+      preparseFile: 'src/rsx-generated/rsx-aot-preparsed.generated.ts',
+      compiled: true,
+      compiledFile: 'src/rsx-generated/rsx-aot-compiled.generated.ts',
+      compiledResolvedEvaluator: false,
+    },
+  };
+  packageJson.dependencies = {
+    react: packageJson.dependencies?.react ?? '^19.2.4',
+    'react-dom': packageJson.dependencies?.['react-dom'] ?? '^19.2.4',
+    '@rs-x/core': rsxSpecs['@rs-x/core'],
+    '@rs-x/state-manager': rsxSpecs['@rs-x/state-manager'],
+    '@rs-x/expression-parser': rsxSpecs['@rs-x/expression-parser'],
+    '@rs-x/react': rsxSpecs['@rs-x/react'],
+  };
+  packageJson.devDependencies = {
+    typescript: packageJson.devDependencies?.typescript ?? '^5.9.3',
+    vite: packageJson.devDependencies?.vite ?? '^7.3.1',
+    '@vitejs/plugin-react':
+      packageJson.devDependencies?.['@vitejs/plugin-react'] ?? '^5.1.4',
+    '@types/react': packageJson.devDependencies?.['@types/react'] ?? '^19.2.2',
+    '@types/react-dom':
+      packageJson.devDependencies?.['@types/react-dom'] ?? '^19.2.2',
+    '@rs-x/cli': rsxSpecs['@rs-x/cli'],
+    '@rs-x/compiler': rsxSpecs['@rs-x/compiler'],
+    '@rs-x/typescript-plugin': rsxSpecs['@rs-x/typescript-plugin'],
+  };
+
+  if (dryRun) {
+    logInfo(`[dry-run] patch ${packageJsonPath}`);
+  } else {
+    fs.writeFileSync(
+      packageJsonPath,
+      `${JSON.stringify(packageJson, null, 2)}\n`,
+      'utf8',
+    );
+  }
+
+  const tsConfigPath = path.join(projectRoot, 'tsconfig.json');
+  if (fs.existsSync(tsConfigPath)) {
+    upsertTypescriptPluginInTsConfig(tsConfigPath, dryRun);
+  }
+
+  if (!Boolean(flags['skip-install'])) {
+    logInfo(`Refreshing ${pm} dependencies for the RS-X React starter...`);
+    run(pm, ['install'], { dryRun });
+    logOk('React starter dependencies are up to date.');
+  }
+}
+
 async function runProjectWithTemplate(template, flags) {
   const normalizedTemplate = normalizeProjectTemplate(template);
   if (!normalizedTemplate) {
@@ -1489,10 +1674,7 @@ async function runProjectWithTemplate(template, flags) {
       return;
     }
     if (normalizedTemplate === 'react') {
-      runSetupReact({
-        ...flags,
-        entry: flags.entry ?? 'src/main.tsx',
-      });
+      applyReactDemoStarter(projectRoot, projectName, pm, flags);
       return;
     }
     if (normalizedTemplate === 'nextjs') {

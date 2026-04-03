@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "baseUrl": "./",
+    "plugins": [
+      {
+        "name": "@rs-x/typescript-plugin"
+      }
+    ]
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}
