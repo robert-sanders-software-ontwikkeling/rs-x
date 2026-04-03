@@ -68,13 +68,14 @@ function pnpmInfoExists(pkgName) {
 // ---------------- PATCH ANGULAR ----------------
 function toMajorRange(version) {
   const [major, minor] = version.split('.').map(Number);
+  const hasPrerelease = version.includes('-');
 
   if (major === 0) {
     // pre-1.0: minor is the breaking boundary
-    return `^0.${minor}.0`;
+    return hasPrerelease ? `>=0.${minor}.0-0` : `^0.${minor}.0`;
   }
 
-  return `^${major}.0.0`;
+  return hasPrerelease ? `>=${major}.0.0-0` : `^${major}.0.0`;
 }
 
 function patchAngularPackage() {
@@ -97,7 +98,9 @@ function patchAngularPackage() {
     toMajorRange(parserVersion);
 
   fs.writeFileSync(pkgJsonPath, JSON.stringify(pkgJson, null, 2));
-  console.log('✅ Patched Angular peerDependencies using MAJOR-only ranges');
+  console.log(
+    '✅ Patched Angular peerDependencies using MAJOR ranges (prerelease-aware)',
+  );
 }
 
 // ---------------- PUBLISH LOGIC ----------------
