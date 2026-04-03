@@ -5,7 +5,15 @@ const path = require('node:path');
 const readline = require('node:readline/promises');
 const { spawnSync } = require('node:child_process');
 
-const CLI_VERSION = '0.2.0';
+const CLI_VERSION = (() => {
+  try {
+    const packageJsonPath = path.join(__dirname, '..', 'package.json');
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    return packageJson.version ?? '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+})();
 const VS_CODE_EXTENSION_ID = 'rs-x.rs-x-vscode-extension';
 const ANGULAR_DEMO_TEMPLATE_DIR = path.join(
   __dirname,
@@ -268,14 +276,50 @@ function installVsCodeExtension(flags) {
     return;
   }
 
-  const args = ['--install-extension', VS_CODE_EXTENSION_ID];
+  installBundledVsix(dryRun, force);
+}
+
+function resolveBundledVsix() {
+  const packageRoot = path.resolve(__dirname, '..');
+  const candidates = fs
+    .readdirSync(packageRoot)
+    .filter((name) => /^rs-x-vscode-extension-.*\.vsix$/u.test(name))
+    .map((name) => path.join(packageRoot, name));
+
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  const latest = candidates
+    .map((fullPath) => ({
+      fullPath,
+      mtimeMs: fs.statSync(fullPath).mtimeMs,
+    }))
+    .sort((a, b) => b.mtimeMs - a.mtimeMs)[0];
+
+  return latest?.fullPath ?? null;
+}
+
+function installBundledVsix(dryRun, force) {
+  const bundledVsix = resolveBundledVsix();
+  if (!bundledVsix) {
+    logWarn(
+      'No bundled VSIX found in @rs-x/cli. Skipping VS Code extension install.',
+    );
+    logInfo(
+      'If you are developing in the rs-x repo, use `rsx install vscode --local` instead.',
+    );
+    return;
+  }
+
+  const args = ['--install-extension', bundledVsix];
   if (force) {
     args.push('--force');
   }
 
-  logInfo(`Installing ${VS_CODE_EXTENSION_ID} from VS Code marketplace...`);
+  logInfo(`Installing bundled VSIX from ${bundledVsix}...`);
   run('code', args, { dryRun });
-  logOk('VS Code extension installed.');
+  logOk('VS Code extension installed from bundled VSIX.');
 }
 
 function installLocalVsix(dryRun, force) {
@@ -1423,9 +1467,6 @@ async function runProjectWithTemplate(template, flags) {
   withWorkingDirectory(projectRoot, () => {
     if (normalizedTemplate === 'angular') {
       applyAngularDemoStarter(projectRoot, projectName, pm, flags);
-      if (!Boolean(flags['skip-vscode'])) {
-        installVsCodeExtension(flags);
-      }
       return;
     }
     if (normalizedTemplate === 'react') {
@@ -2000,10 +2041,6 @@ function runInit(flags) {
     }
   }
 
-  if (!skipVscode) {
-    installVsCodeExtension(flags);
-  }
-
   logOk('RS-X init completed.');
 }
 
@@ -2471,91 +2508,6 @@ ${patchBlock}
   logOk(`Patched ${nextConfigJs} with RS-X webpack loader.`);
 }
 
-function wireRsxAngularWebpack(projectRoot, dryRun) {
-  const angularJsonPath = path.join(projectRoot, 'angular.json');
-  if (!fs.existsSync(angularJsonPath)) {
-    logWarn('angular.json not found. Skipping Angular build integration.');
-    return;
-  }
-
-  createRsxWebpackLoaderFile(projectRoot, dryRun);
-
-  const webpackConfigPath = path.join(projectRoot, 'rsx-angular-webpack.cjs');
-  const webpackConfigSource = `const path = require('node:path');
-
-module.exports = {
-  module: {
-    rules: [
-      {
-        test: /\\.[jt]sx?$/u,
-        exclude: /node_modules/u,
-        use: [
-          {
-            loader: path.resolve(__dirname, './rsx-webpack-loader.cjs'),
-          },
-        ],
-      },
-    ],
-  },
-};
-`;
-
-  if (dryRun) {
-    logInfo(`[dry-run] create ${webpackConfigPath}`);
-  } else {
-    fs.writeFileSync(webpackConfigPath, webpackConfigSource, 'utf8');
-    logOk(`Created ${webpackConfigPath}`);
-  }
-
-  const angularJson = JSON.parse(fs.readFileSync(angularJsonPath, 'utf8'));
-  const projects = angularJson.projects ?? {};
-  const projectNames = Object.keys(projects);
-  if (projectNames.length === 0) {
-    logWarn('No Angular projects found in angular.json.');
-    return;
-  }
-
-  const patchPath = 'rsx-angular-webpack.cjs';
-  for (const projectName of projectNames) {
-    const project = projects[projectName];
-    const architect = project.architect ?? project.targets;
-    if (!architect?.build) {
-      continue;
-    }
-
-    const build = architect.build;
-    if (build.builder !== '@angular-builders/custom-webpack:browser') {
-      build.builder = '@angular-builders/custom-webpack:browser';
-    }
-    build.options = build.options ?? {};
-    build.options.customWebpackConfig = build.options.customWebpackConfig ?? {};
-    build.options.customWebpackConfig.path = patchPath;
-
-    if (architect.serve) {
-      const serve = architect.serve;
-      if (serve.builder !== '@angular-builders/custom-webpack:dev-server') {
-        serve.builder = '@angular-builders/custom-webpack:dev-server';
-      }
-      serve.options = serve.options ?? {};
-      serve.options.buildTarget =
-        serve.options.buildTarget ?? `${projectName}:build`;
-      serve.options.browserTarget =
-        serve.options.browserTarget ?? `${projectName}:build`;
-    }
-  }
-
-  if (dryRun) {
-    logInfo(`[dry-run] patch ${angularJsonPath}`);
-  } else {
-    fs.writeFileSync(
-      angularJsonPath,
-      `${JSON.stringify(angularJson, null, 2)}\n`,
-      'utf8',
-    );
-    logOk(`Patched ${angularJsonPath} for RS-X Angular webpack integration.`);
-  }
-}
-
 function runSetupReact(flags) {
   const dryRun = Boolean(flags['dry-run']);
   const pm = detectPackageManager(flags.pm);
@@ -2593,9 +2545,6 @@ function runSetupReact(flags) {
     logInfo('Skipping RS-X React bindings install (--skip-install).');
   }
   wireRsxVitePlugin(projectRoot, dryRun);
-  if (!Boolean(flags['skip-vscode'])) {
-    installVsCodeExtension(flags);
-  }
   logOk('RS-X React setup completed.');
 }
 
@@ -2618,9 +2567,6 @@ function runSetupNext(flags) {
     logInfo('Skipping RS-X React bindings install (--skip-install).');
   }
   wireRsxNextWebpack(process.cwd(), dryRun);
-  if (!Boolean(flags['skip-vscode'])) {
-    installVsCodeExtension(flags);
-  }
   logOk('RS-X Next.js setup completed.');
 }
 
@@ -2643,9 +2589,6 @@ function runSetupVue(flags) {
     logInfo('Skipping RS-X Vue bindings install (--skip-install).');
   }
   wireRsxVitePlugin(process.cwd(), dryRun);
-  if (!Boolean(flags['skip-vscode'])) {
-    installVsCodeExtension(flags);
-  }
   logOk('RS-X Vue setup completed.');
 }
 
@@ -2705,9 +2648,6 @@ function runSetupAngular(flags) {
     dryRun,
   });
 
-  if (!Boolean(flags['skip-vscode'])) {
-    installVsCodeExtension(flags);
-  }
   logOk('RS-X Angular setup completed.');
 }
 
@@ -2744,7 +2684,6 @@ function runSetupAuto(flags) {
   const pm = detectPackageManager(flags.pm);
   installRuntimePackages(pm, Boolean(flags['dry-run']), tag);
   installCompilerPackages(pm, Boolean(flags['dry-run']), tag);
-  installVsCodeExtension(flags);
 }
 
 function resolveProjectModule(projectRoot, moduleName) {
