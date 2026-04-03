@@ -178,11 +178,11 @@ importers:
         specifier: 21.1.5
         version: 21.1.5(@angular/compiler@21.1.1)(rxjs@7.8.2)(zone.js@0.16.1)
       '@rs-x/core':
-        specifier: workspace:*
-        version: link:../../../rs-x-core
+        specifier: '>=2.0.0-0'
+        version: 2.0.0-next.2(rxjs@7.8.2)
       '@rs-x/expression-parser':
-        specifier: workspace:*
-        version: link:../../../rs-x-expression-parser
+        specifier: '>=2.0.0-0'
+        version: 2.0.0-next.2(rxjs@7.8.2)
       rxjs:
         specifier: '>=7.8.0'
         version: 7.8.2
@@ -2064,6 +2064,24 @@ packages:
     resolution: {integrity: sha512-ecaoyItGmpj4hnabpa2D+oI6ME7t7hrqosQ2SA+qBGihoL0DuuoaXIfY8Oa1o7lWGtPpRZmt9EYe7oyivypsJg==}
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
+
+  '@rs-x/core@2.0.0-next.2':
+    resolution: {integrity: sha512-d2V3M3fgMSKJEmVpMVD83xAJfWjNbwWS23lXZNeBeEx4wZx2P2gqFJmVvvT4DIlfdCdubdhjeLz2f6AhLWSGxA==}
+    engines: {node: '>=24'}
+    peerDependencies:
+      rxjs: ^7.8.2
+
+  '@rs-x/expression-parser@2.0.0-next.2':
+    resolution: {integrity: sha512-LtBRM0NC1ReJdCDdxnz6jLsZNXjKKK0PUjA2KFNtv95IQG6+7juub3RSuAqKbE1hiTMIGS0SDH637Vg1RPj+Nw==}
+    engines: {node: '>=24'}
+    peerDependencies:
+      rxjs: ^7.8.0
+
+  '@rs-x/state-manager@2.0.0-next.2':
+    resolution: {integrity: sha512-yqowluPGnCHd4mwNNyjtMiRawxgNvkK4YFNT+I6dn0DynGvq5541F5fWxFcc/yyoCfjnOpBopIqIwCgw1lZ8Kg==}
+    engines: {node: '>=24'}
+    peerDependencies:
+      rxjs: ^7.8.0
 
   '@rtsao/scc@1.1.0':
     resolution: {integrity: sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==}
@@ -6401,7 +6419,7 @@ snapshots:
       '@babel/helper-compilation-targets': 7.28.6
       '@babel/helper-module-transforms': 7.28.6(@babel/core@7.28.5)
       '@babel/helpers': 7.28.6
-      '@babel/parser': 7.29.0
+      '@babel/parser': 7.29.2
       '@babel/template': 7.28.6
       '@babel/traverse': 7.29.0
       '@babel/types': 7.29.0
@@ -7744,6 +7762,27 @@ snapshots:
       '@types/estree': 1.0.8
     optionalDependencies:
       fsevents: 2.3.3
+
+  '@rs-x/core@2.0.0-next.2(rxjs@7.8.2)':
+    dependencies:
+      fast-equals: 5.3.3
+      inversify: 7.10.4(reflect-metadata@0.2.2)
+      lodash.clonedeepwith: 4.5.0
+      reflect-metadata: 0.2.2
+      rxjs: 7.8.2
+
+  '@rs-x/expression-parser@2.0.0-next.2(rxjs@7.8.2)':
+    dependencies:
+      '@rs-x/core': 2.0.0-next.2(rxjs@7.8.2)
+      '@rs-x/state-manager': 2.0.0-next.2(rxjs@7.8.2)
+      astring: 1.9.0
+      meriyah: 7.1.0
+      rxjs: 7.8.2
+
+  '@rs-x/state-manager@2.0.0-next.2(rxjs@7.8.2)':
+    dependencies:
+      '@rs-x/core': 2.0.0-next.2(rxjs@7.8.2)
+      rxjs: 7.8.2
 
   '@rtsao/scc@1.1.0': {}
 
