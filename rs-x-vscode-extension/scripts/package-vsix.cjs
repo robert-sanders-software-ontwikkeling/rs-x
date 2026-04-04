@@ -66,6 +66,10 @@ copyRecursive(
   path.join(stageRoot, 'syntaxes'),
 );
 copyRecursive(
+  path.join(extensionRoot, 'schemas'),
+  path.join(stageRoot, 'schemas'),
+);
+copyRecursive(
   path.join(extensionRoot, 'README.md'),
   path.join(stageRoot, 'README.md'),
 );
@@ -99,6 +103,7 @@ const stagedManifest = {
   },
   files: [
     'dist',
+    'schemas',
     'syntaxes',
     'node_modules/@rs-x/typescript-plugin/dist',
     'node_modules/@rs-x/typescript-plugin/package.json',

@@ -121,6 +121,7 @@ verify_framework() {
   local scaffold_log="$base_dir/${framework}-scaffold.log"
   local install_log="$base_dir/${framework}-install.log"
   local setup_log="$base_dir/${framework}-setup.log"
+  local setup_repeat_log="$base_dir/${framework}-setup-repeat.log"
   local build_log="$base_dir/${framework}-build.log"
 
   rm -rf "$project_dir"
@@ -164,6 +165,9 @@ verify_framework() {
 
   run_step_in_dir "$framework" "rsx setup" "$project_dir" "$setup_log" "${rsx_cmd[@]}" setup --pm "$pm" "$tag_flag" "$skip_vscode_flag" \
     || { summary_lines+=("$framework: rsx setup failed"); overall_status=1; return; }
+
+  run_step_in_dir "$framework" "rsx setup (repeat)" "$project_dir" "$setup_repeat_log" "${rsx_cmd[@]}" setup --pm "$pm" "$tag_flag" "$skip_vscode_flag" \
+    || { summary_lines+=("$framework: repeat rsx setup failed"); overall_status=1; return; }
 
   run_step_in_dir "$framework" "build" "$project_dir" "$build_log" "$pm" run build \
     || { summary_lines+=("$framework: build failed"); overall_status=1; return; }

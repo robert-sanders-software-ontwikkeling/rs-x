@@ -29,6 +29,8 @@ export type CoreConceptDoc = {
   deepDive?: Array<{
     title: string;
     paragraphs: ReactNode[];
+    code?: string;
+    codeLanguage?: string;
   }>;
   exampleCode?: string;
   playgroundScript?: string;
@@ -104,6 +106,7 @@ export function CoreConceptPageLayout({
                 </div>
               ),
             )}
+            {section.code && <SyntaxCodeBlock code={section.code} />}
           </article>
         ))}
 

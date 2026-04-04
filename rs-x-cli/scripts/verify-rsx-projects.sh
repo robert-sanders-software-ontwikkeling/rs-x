@@ -94,6 +94,7 @@ for entry in "${frameworks[@]}"; do
   template_name="${entry##*:}"
   project_dir="$work_base_dir/rsx-project-${display_name}-verify"
   scaffold_log="$base_dir/${display_name}-scaffold.log"
+  verify_log="$base_dir/${display_name}-verify.log"
   build_log="$base_dir/${display_name}-build.log"
 
   rm -rf "$project_dir"
@@ -108,6 +109,91 @@ for entry in "${frameworks[@]}"; do
     printf 'Scaffold failed.\n'
     print_log_tail "$scaffold_log"
     summary_lines+=("$display_name: scaffold failed")
+    overall_status=1
+    continue
+  fi
+
+  if ! run_in_dir_log "$project_dir" "$verify_log" node -e "
+const fs = require('node:fs');
+const path = require('node:path');
+const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+const scripts = pkg.scripts || {};
+const deps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
+const expectedByFramework = {
+  angular: {
+    scripts: ['build:rsx', 'start'],
+    deps: ['@rs-x/angular', '@rs-x/compiler', '@rs-x/typescript-plugin'],
+    files: ['src/main.ts', 'src/app/app.component.ts'],
+    config: {
+      buildPrefix: 'src/rsx-generated/',
+      defaultDirectory: 'src/expressions'
+    }
+  },
+  react: {
+    scripts: ['build:rsx', 'dev', 'build'],
+    deps: ['@rs-x/react', '@rs-x/compiler', '@rs-x/typescript-plugin'],
+    files: ['src/main.tsx', 'src/rsx-bootstrap.ts', 'src/app/app.tsx'],
+    config: {
+      buildPrefix: 'src/rsx-generated/',
+      defaultDirectory: 'src/expressions'
+    }
+  },
+  vue: {
+    scripts: ['build:rsx', 'dev', 'build'],
+    deps: ['@rs-x/vue', '@rs-x/compiler', '@rs-x/typescript-plugin'],
+    files: ['src/main.ts', 'src/App.vue', 'src/lib/rsx-bootstrap.ts'],
+    config: {
+      buildPrefix: 'src/rsx-generated/',
+      defaultDirectory: 'src/expressions'
+    }
+  },
+  next: {
+    scripts: ['build:rsx', 'dev', 'build'],
+    deps: ['@rs-x/react', '@rs-x/compiler', '@rs-x/typescript-plugin'],
+    files: ['app/layout.tsx', 'app/page.tsx', 'components/demo-app.tsx'],
+    config: {
+      buildPrefix: 'app/rsx-generated/',
+      defaultDirectory: 'app/expressions'
+    }
+  }
+};
+const expected = expectedByFramework['$display_name'];
+for (const key of expected.scripts) {
+  if (typeof scripts[key] !== 'string' || scripts[key].trim() === '') {
+    throw new Error('Missing script: ' + key);
+  }
+}
+for (const key of expected.deps) {
+  if (typeof deps[key] !== 'string') {
+    throw new Error('Missing dependency: ' + key);
+  }
+}
+for (const rel of expected.files) {
+  if (!fs.existsSync(path.join(process.cwd(), rel))) {
+    throw new Error('Missing file: ' + rel);
+  }
+}
+const rsxConfig = JSON.parse(fs.readFileSync('rsx.config.json', 'utf8'));
+if (!rsxConfig.build || typeof rsxConfig.build !== 'object') {
+  throw new Error('Missing rsx.config.json build section');
+}
+if (!rsxConfig.cli || !rsxConfig.cli.add || typeof rsxConfig.cli.add !== 'object') {
+  throw new Error('Missing rsx.config.json cli.add section');
+}
+if (typeof rsxConfig.build.preparseFile !== 'string' || !rsxConfig.build.preparseFile.startsWith(expected.config.buildPrefix)) {
+  throw new Error('Unexpected rsx.config.json build.preparseFile: ' + rsxConfig.build.preparseFile);
+}
+if (typeof rsxConfig.build.compiledFile !== 'string' || !rsxConfig.build.compiledFile.startsWith(expected.config.buildPrefix)) {
+  throw new Error('Unexpected rsx.config.json build.compiledFile: ' + rsxConfig.build.compiledFile);
+}
+if (rsxConfig.cli.add.defaultDirectory !== expected.config.defaultDirectory) {
+  throw new Error('Unexpected rsx.config.json cli.add.defaultDirectory: ' + rsxConfig.cli.add.defaultDirectory);
+}
+" 
+  then
+    printf 'Verification failed.\n'
+    print_log_tail "$verify_log"
+    summary_lines+=("$display_name: verify failed")
     overall_status=1
     continue
   fi

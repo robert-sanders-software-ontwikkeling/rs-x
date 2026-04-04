@@ -165,6 +165,27 @@ main();
 EOF
 }
 
+set_build_config_paths() {
+  local project_dir="$1"
+
+  node -e "
+const fs = require('node:fs');
+const path = require('node:path');
+const configPath = path.join(process.argv[1], 'rsx.config.json');
+const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+config.build = {
+  ...(config.build || {}),
+  preparse: true,
+  preparseFile: 'tmp/generated/custom-preparse.ts',
+  compiled: true,
+  compiledFile: 'tmp/generated/custom-compiled.ts',
+  registrationFile: 'tmp/generated/custom-registration.ts',
+  compiledResolvedEvaluator: false,
+};
+fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', 'utf8');
+" "$project_dir"
+}
+
 rm -rf "$base_dir"
 mkdir -p "$base_dir"
 
@@ -203,10 +224,10 @@ fi
 printf '\n== init-and-add ==\n'
 create_generic_project "$generic_dir"
 
-if ! run_step_in_dir "init-and-add" "npm install" "$generic_dir" "$base_dir/init-install.log" "$pm" install; then
-  summary_lines+=("init-and-add: npm install failed")
-  overall_status=1
-else
+  if ! run_step_in_dir "init-and-add" "npm install" "$generic_dir" "$base_dir/init-install.log" "$pm" install; then
+    summary_lines+=("init-and-add: npm install failed")
+    overall_status=1
+  else
   if ! run_step_in_dir "init-and-add" "rsx init" "$generic_dir" "$base_dir/init.log" \
     "${rsx_cmd[@]}" init --pm "$pm" "$tag_flag" "$skip_vscode_flag" --entry src/main.ts
   then
@@ -217,6 +238,23 @@ else
     "${rsx_cmd[@]}" add
   then
     summary_lines+=("init-and-add: add failed")
+    overall_status=1
+  elif [[ ! -f "$generic_dir/rsx.config.json" ]]; then
+    printf 'init-and-add: rsx.config.json was not created.\n'
+    summary_lines+=("init-and-add: missing rsx.config.json")
+    overall_status=1
+  elif ! set_build_config_paths "$generic_dir"; then
+    printf 'init-and-add: failed to patch rsx.config.json.\n'
+    summary_lines+=("init-and-add: config patch failed")
+    overall_status=1
+  elif ! run_step_in_dir "init-and-add" "rsx build" "$generic_dir" "$base_dir/build.log" \
+    "${rsx_cmd[@]}" build --project tsconfig.json --no-emit --prod
+  then
+    summary_lines+=("init-and-add: build failed")
+    overall_status=1
+  elif [[ ! -f "$generic_dir/tmp/generated/custom-preparse.ts" || ! -f "$generic_dir/tmp/generated/custom-compiled.ts" ]]; then
+    printf 'init-and-add: custom rsx.config.json build outputs were not generated.\n'
+    summary_lines+=("init-and-add: custom build outputs missing")
     overall_status=1
   elif ! run_step_in_dir "init-and-add" "rsx typecheck" "$generic_dir" "$base_dir/typecheck.log" \
     "${rsx_cmd[@]}" typecheck --project tsconfig.json

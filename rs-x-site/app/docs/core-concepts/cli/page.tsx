@@ -82,16 +82,46 @@ const buildConfigurationCode = dedent`
   }
 `;
 
+const cliConfigurationCode = dedent`
+  {
+    "build": {
+      "project": "tsconfig.app.json",
+      "outDir": "dist",
+      "preparse": true,
+      "preparseFile": "src/rsx-generated/rsx-aot-preparsed.generated.ts",
+      "compiled": true,
+      "compiledFile": "src/rsx-generated/rsx-aot-compiled.generated.ts",
+      "registrationFile": "src/rsx-generated/rsx-aot-registration.generated.ts",
+      "compiledResolvedEvaluator": false
+    },
+    "cli": {
+      "packageManager": "pnpm",
+      "installTag": "next",
+      "setup": {
+        "verify": true
+      },
+      "project": {
+        "verify": true
+      },
+      "add": {
+        "defaultDirectory": "src/expressions",
+        "searchRoots": ["src", "app", "expressions"]
+      }
+    }
+  }
+`;
+
 const commandReferenceCode = dedent`
   rsx doctor
   rsx add
   rsx install vscode [--force] [--local] [--dry-run]
   rsx install compiler [--pm <pnpm|npm|yarn|bun>] [--next] [--dry-run]
-  rsx setup [--pm <pnpm|npm|yarn|bun>] [--next] [--force] [--local] [--dry-run]
+  rsx setup [--pm <pnpm|npm|yarn|bun>] [--next] [--verify] [--force] [--local] [--dry-run]
   rsx init [--pm ...] [--entry <path>] [--next] [--skip-install] [--skip-vscode] [--force] [--local] [--dry-run]
-  rsx project [angular|vuejs|react|nextjs|nodejs] [--name <project-name>] [--template <...>] [--pm ...] [--next] [--skip-install] [--skip-vscode] [--dry-run]
+  rsx project [angular|vuejs|react|nextjs|nodejs] [--name <project-name>] [--template <...>] [--pm ...] [--next] [--skip-install] [--skip-vscode] [--verify] [--dry-run]
   rsx build [--project <tsconfig>] [--out-dir <path>] [--prod] [--aot-preparse <true|false>] [--aot-preparse-file <path>] [--aot-compiled <true|false>] [--aot-compiled-file <path>] [--compiled-resolved-evaluator <true|false>] [--no-emit] [--dry-run]
   rsx typecheck [--project <tsconfig>] [--dry-run]
+  rsx v
   rsx version
   rsx --version
 `;
@@ -135,10 +165,23 @@ const doctorAndAddCode = dedent`
   npx rsx add
 `;
 
+const initSetupProjectCode = dedent`
+  # init: wire bootstrap in the current app
+  npx rsx init
+
+  # setup: detect framework and apply framework-specific integration
+  npx rsx setup --verify
+
+  # project: scaffold a full RS-X starter
+  npx rsx project react --name my-rsx-react-app --verify
+`;
+
 const helpAndVersionCode = dedent`
   npx rsx help
   npx rsx help build
   npx rsx help project
+  npx rsx v
+  npx rsx version
   npx rsx --version
 `;
 
@@ -171,6 +214,10 @@ const doc: CoreConceptDoc = {
       paragraphs: [
         '`rsx init` focuses on package installation and bootstrap wiring based on detected context.',
         '`rsx setup` auto-detects framework context and applies the matching integration flow.',
+        'That now includes writing `rsx.config.json` plus `build:rsx` / `typecheck:rsx` scripts consistently for the framework setup, not only bootstrap patching.',
+        '`rsx init`, `rsx setup`, and `rsx project` also create an `rsx.config.json` file with default build and CLI settings that you can override later.',
+        'Use `--verify` with `rsx setup` when you want an explicit post-mutation sanity check of the resulting files and scripts.',
+        '`rsx project` goes further: it creates a new app and verifies the generated starter structure before reporting success. `--verify` can be passed when you want that verification step to be explicit in the command you run.',
       ],
     },
     {
@@ -179,6 +226,7 @@ const doc: CoreConceptDoc = {
         'Installing `@rs-x/cli` adds the `rsx` command. During package postinstall, the CLI also attempts to install the bundled rs-x VS Code extension automatically when `code` is available on PATH.',
         '`rsx init` installs runtime packages (`@rs-x/core`, `@rs-x/state-manager`, `@rs-x/expression-parser`) and compiler tooling (`@rs-x/compiler`, `@rs-x/typescript-plugin`), then wires bootstrap.',
         'Template/setup flows install framework-specific packages when needed (for example `@rs-x/angular` for Angular, `@rs-x/react` for React/Next.js, and `@rs-x/vue` for Vue).',
+        '`rsx init`, `rsx setup`, and `rsx project` do not automatically install the VS Code extension. Use `rsx install vscode` when you want to apply the bundled VSIX manually.',
         'Add `--next` to install prerelease versions (dist-tag `next`) when testing upcoming releases.',
       ],
     },
@@ -195,21 +243,37 @@ const doc: CoreConceptDoc = {
       paragraphs: [
         'The rs-x VS Code extension enables RS-X expression IntelliSense and diagnostics in TypeScript/JavaScript files. It also wires the `@rs-x/typescript-plugin` so expression errors show inside the editor.',
         'If automatic VSIX installation fails, verify the `code` CLI command is available, rerun `rsx install vscode --force`, or install the VSIX manually with `code --install-extension`.',
+        '`rsx doctor` is also a good first step when linked/local package setups behave strangely, because it now warns when multiple installed `@rs-x/*` versions are detected inside the current project.',
       ],
     },
     {
       title: '6) Build and validate with rs-x tooling',
       paragraphs: [
         '`rsx build` runs the RS-X transform-aware compilation pipeline.',
-        'Use `--prod` with `rsx.build` config in `package.json` for generated AOT artifacts (preparse/compiled/registration).',
+        'Use `--prod` with the `build` section in `rsx.config.json` for generated AOT artifacts (preparse/compiled/registration).',
         'Compiled generation is controlled per expression by `rsx(expression, { compiled: true | false })` (default `true`).',
         '`rsx typecheck` adds RS-X semantic validation on top of TypeScript checks for safer CI gates.',
       ],
     },
     {
-      title: '7) Build configuration in package.json',
+      title: '7) Add expressions interactively',
       paragraphs: [
-        'You can configure the build pipeline with an `rsx.build` block in `package.json`. This is where you turn AOT preparse/compiled outputs on, choose where generated files are written, and control how aggressive compiled generation should be.',
+        '`rsx add` walks you through creating or updating expression files without hand-writing the initial boilerplate.',
+        'The first prompt is now an explicit mode choice: create a new one-file expression, create a new expression with a separate model, or update an existing expression file.',
+        'The default flow keeps the model and expression in the same file, which is usually the simplest starting point.',
+        "It also asks for the initial expression string up front, defaulting to `'a'`, so the generated file is closer to what you actually want to evaluate.",
+        'When the expression contains simple top-level identifiers such as `price * quantity`, the generated model is seeded with those keys to reduce follow-up editing.',
+        'If you choose to update an existing file, the CLI shows matching RS-X expression files from the selected directory first, then falls back to the wider project only when needed.',
+        'That wider-project fallback prefers likely source roots such as `src/`, `app/`, and `expressions/` before showing less relevant matches elsewhere in the repository.',
+        'You can configure those defaults in `rsx.config.json` under `cli.add`.',
+        'You can still opt into a separate model file or reuse an existing model file when that better matches the structure of your app.',
+      ],
+    },
+    {
+      title: '8) Build configuration',
+      paragraphs: [
+        'You can configure the build pipeline in `rsx.config.json` under `build`.',
+        'Starter flows now generate `rsx.config.json` so CLI-specific settings and build settings live in one place.',
         <SyntaxCodeBlock
           key="build-config-code"
           code={buildConfigurationCode}
@@ -293,14 +357,34 @@ const doc: CoreConceptDoc = {
       ],
     },
     {
-      title: '8) Full command reference',
+      title: '9) Full command reference',
       paragraphs: [
         'Use `rsx help` or `rsx help <command>` to print command-specific usage at any time.',
         'The command matrix below is the complete current surface of the CLI.',
       ],
     },
+    {
+      title: '10) CLI configuration',
+      paragraphs: [
+        'The CLI can also read project-level configuration for build and interactive workflows.',
+        'Use a dedicated `rsx.config.json` in the project root as the single place for both CLI and build settings.',
+        'Useful defaults now include `build.project`, `build.outDir`, `cli.packageManager`, `cli.installTag`, `cli.setup.verify`, `cli.project.verify`, and `cli.add` settings.',
+        'The `cli.add` section lets you set a default directory and the preferred source roots used when `rsx add` suggests existing files.',
+        '`rsx init`, `rsx setup`, and `rsx project` now create `rsx.config.json` for you with both `build` and `cli.add` starter defaults, so the common path is to edit that file directly.',
+        'The CLI validates `rsx.config.json` at runtime, and the VS Code extension now contributes a schema for `rsx.config.json` so you get editor validation and completions while editing it.',
+        'That keeps build settings and interactive CLI defaults together in one predictable file.',
+      ],
+      code: cliConfigurationCode,
+      codeLanguage: 'json',
+    },
   ],
   examples: [
+    {
+      title: 'Init vs Setup vs Project',
+      description:
+        'Choose the right command depending on whether you are wiring an existing app or scaffolding a new starter.',
+      code: initSetupProjectCode,
+    },
     {
       title: 'Command Reference',
       description:
@@ -351,7 +435,7 @@ const doc: CoreConceptDoc = {
     {
       title: 'Doctor and Add',
       description:
-        'Run environment diagnostics and create expression files interactively.',
+        'Run diagnostics and use the improved add flow, which defaults to one-file expressions and can update existing RS-X files.',
       code: doctorAndAddCode,
     },
     {

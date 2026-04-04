@@ -19,6 +19,12 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "jsonValidation": [
+      {
+        "fileMatch": "rsx.config.json",
+        "url": "./schemas/rsx-config.schema.json"
+      }
+    ],
     "grammars": [
       {
         "scopeName": "rsx.expression.injection",
@@ -52,6 +58,7 @@
   },
   "files": [
     "dist",
+    "schemas",
     "syntaxes",
     "node_modules/@rs-x/typescript-plugin/dist",
     "node_modules/@rs-x/typescript-plugin/package.json",
