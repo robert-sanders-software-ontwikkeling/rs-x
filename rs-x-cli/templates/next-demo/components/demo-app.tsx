@@ -9,6 +9,10 @@ import { VirtualTableShell } from './virtual-table-shell';
 type ThemeMode = 'light' | 'dark';
 
 function getInitialTheme(): ThemeMode {
+  if (typeof window === 'undefined') {
+    return 'dark';
+  }
+
   const storedTheme = window.localStorage.getItem('rsx-theme');
   if (storedTheme === 'light' || storedTheme === 'dark') {
     return storedTheme;

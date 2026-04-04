@@ -3,6 +3,8 @@ import { effectScope, nextTick, reactive } from 'vue';
 
 import { InjectionContainer } from '@rs-x/core';
 import {
+  CompiledExpression,
+  ExpressionType,
   type IExpression,
   rsx,
   RsXExpressionParserModule,
@@ -60,5 +62,30 @@ describe('useRsxExpression (Vue)', () => {
     await nextTick();
     // valueRef should not update after scope stop
     expect(valueRef?.value).toBe(5);
+  });
+
+  it('binds a compiled expression', async () => {
+    const expr = new CompiledExpression({
+      expressionString: 'x + y',
+      dependencyNames: [],
+      watchDependencies: [],
+      expressionType: ExpressionType.Addition,
+      hasHiddenArgumentArray: false,
+      evaluate: () => 42,
+    });
+    Object.assign(expr as object, { _value: 42 });
+
+    const scope = effectScope();
+    let valueRef: ReturnType<typeof useRsxExpression<number>> | undefined;
+
+    scope.run(() => {
+      valueRef = useRsxExpression<number>(expr);
+    });
+
+    await nextTick();
+    expect(valueRef?.value).toBe(42);
+
+    scope.stop();
+    expr.dispose();
   });
 });

@@ -27,6 +27,12 @@ const REACT_DEMO_TEMPLATE_DIR = path.join(
   'templates',
   'react-demo',
 );
+const VUE_DEMO_TEMPLATE_DIR = path.join(
+  __dirname,
+  '..',
+  'templates',
+  'vue-demo',
+);
 const NEXT_DEMO_TEMPLATE_DIR = path.join(
   __dirname,
   '..',
@@ -669,6 +675,77 @@ function writeFileWithDryRun(filePath, content, dryRun) {
   fs.writeFileSync(filePath, content, 'utf8');
 }
 
+function stripJsonComments(content) {
+  let result = '';
+  let inString = false;
+  let stringDelimiter = '"';
+  let inLineComment = false;
+  let inBlockComment = false;
+
+  for (let index = 0; index < content.length; index += 1) {
+    const current = content[index];
+    const next = content[index + 1];
+
+    if (inLineComment) {
+      if (current === '\n') {
+        inLineComment = false;
+        result += current;
+      }
+      continue;
+    }
+
+    if (inBlockComment) {
+      if (current === '*' && next === '/') {
+        inBlockComment = false;
+        index += 1;
+      }
+      continue;
+    }
+
+    if (inString) {
+      result += current;
+      if (current === '\\') {
+        index += 1;
+        if (index < content.length) {
+          result += content[index];
+        }
+        continue;
+      }
+      if (current === stringDelimiter) {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (current === '"' || current === "'") {
+      inString = true;
+      stringDelimiter = current;
+      result += current;
+      continue;
+    }
+
+    if (current === '/' && next === '/') {
+      inLineComment = true;
+      index += 1;
+      continue;
+    }
+
+    if (current === '/' && next === '*') {
+      inBlockComment = true;
+      index += 1;
+      continue;
+    }
+
+    result += current;
+  }
+
+  return result;
+}
+
+function parseJsonc(content) {
+  return JSON.parse(stripJsonComments(content.replace(/^\uFEFF/u, '')));
+}
+
 function copyPathWithDryRun(sourcePath, targetPath, dryRun) {
   if (dryRun) {
     logInfo(`[dry-run] copy ${sourcePath} -> ${targetPath}`);
@@ -720,7 +797,7 @@ function upsertTypescriptPluginInTsConfig(configPath, dryRun) {
     return;
   }
 
-  const tsConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  const tsConfig = parseJsonc(fs.readFileSync(configPath, 'utf8'));
   const compilerOptions = tsConfig.compilerOptions ?? {};
   const plugins = Array.isArray(compilerOptions.plugins)
     ? compilerOptions.plugins
@@ -739,6 +816,26 @@ function upsertTypescriptPluginInTsConfig(configPath, dryRun) {
 
   compilerOptions.plugins = plugins;
   tsConfig.compilerOptions = compilerOptions;
+
+  if (dryRun) {
+    logInfo(`[dry-run] patch ${configPath}`);
+    return;
+  }
+
+  fs.writeFileSync(configPath, `${JSON.stringify(tsConfig, null, 2)}\n`, 'utf8');
+}
+
+function ensureTsConfigIncludePattern(configPath, pattern, dryRun) {
+  if (!fs.existsSync(configPath)) {
+    return;
+  }
+
+  const tsConfig = parseJsonc(fs.readFileSync(configPath, 'utf8'));
+  const include = Array.isArray(tsConfig.include) ? tsConfig.include : [];
+  if (!include.includes(pattern)) {
+    include.push(pattern);
+  }
+  tsConfig.include = include;
 
   if (dryRun) {
     logInfo(`[dry-run] patch ${configPath}`);
@@ -798,6 +895,7 @@ function resolveProjectRsxSpecs(
 ) {
   const includeAngularPackage = Boolean(options.includeAngularPackage);
   const includeReactPackage = Boolean(options.includeReactPackage);
+  const includeVuePackage = Boolean(options.includeVuePackage);
   const versionSpec = options.tag ? options.tag : RSX_PACKAGE_VERSION;
   const defaults = {
     '@rs-x/core': versionSpec,
@@ -807,6 +905,7 @@ function resolveProjectRsxSpecs(
     '@rs-x/typescript-plugin': versionSpec,
     ...(includeAngularPackage ? { '@rs-x/angular': versionSpec } : {}),
     ...(includeReactPackage ? { '@rs-x/react': versionSpec } : {}),
+    ...(includeVuePackage ? { '@rs-x/vue': versionSpec } : {}),
     '@rs-x/cli': versionSpec,
   };
 
@@ -818,6 +917,7 @@ function resolveProjectRsxSpecs(
     '@rs-x/typescript-plugin': 'rs-x-typescript-plugin',
     ...(includeAngularPackage ? { '@rs-x/angular': 'rs-x-angular' } : {}),
     ...(includeReactPackage ? { '@rs-x/react': 'rs-x-react' } : {}),
+    ...(includeVuePackage ? { '@rs-x/vue': 'rs-x-vue' } : {}),
     '@rs-x/cli': 'rs-x-cli',
   };
 
@@ -843,6 +943,11 @@ function resolveProjectRsxSpecs(
       ...(includeReactPackage
         ? {
             'rs-x-react': path.join(tarballsDir, 'rs-x-react'),
+          }
+        : {}),
+      ...(includeVuePackage
+        ? {
+            'rs-x-vue': path.join(tarballsDir, 'rs-x-vue'),
           }
         : {}),
       'rs-x-cli': path.join(tarballsDir, 'rs-x-cli'),
@@ -891,6 +996,11 @@ function resolveProjectRsxSpecs(
     ...(includeReactPackage
       ? {
           '@rs-x/react': path.join(workspaceRoot, 'rs-x-react'),
+        }
+      : {}),
+    ...(includeVuePackage
+      ? {
+          '@rs-x/vue': path.join(workspaceRoot, 'rs-x-vue'),
         }
       : {}),
     '@rs-x/cli': path.join(workspaceRoot, 'rs-x-cli'),
@@ -1687,6 +1797,118 @@ function applyReactDemoStarter(projectRoot, projectName, pm, flags) {
   }
 }
 
+function applyVueDemoStarter(projectRoot, projectName, pm, flags) {
+  const dryRun = Boolean(flags['dry-run']);
+  const tag = resolveInstallTag(flags);
+  const tarballsDir =
+    typeof flags['tarballs-dir'] === 'string'
+      ? path.resolve(process.cwd(), flags['tarballs-dir'])
+      : typeof process.env.RSX_TARBALLS_DIR === 'string' &&
+          process.env.RSX_TARBALLS_DIR.trim().length > 0
+        ? path.resolve(process.cwd(), process.env.RSX_TARBALLS_DIR)
+        : null;
+  const workspaceRoot = findRepoRoot(projectRoot);
+  const rsxSpecs = resolveProjectRsxSpecs(
+    projectRoot,
+    workspaceRoot,
+    tarballsDir,
+    { tag, includeVuePackage: true },
+  );
+
+  const templateFiles = ['README.md', 'src'];
+  for (const entry of templateFiles) {
+    copyPathWithDryRun(
+      path.join(VUE_DEMO_TEMPLATE_DIR, entry),
+      path.join(projectRoot, entry),
+      dryRun,
+    );
+  }
+
+  const staleVueFiles = [
+    path.join(projectRoot, 'public'),
+  ];
+  for (const stalePath of staleVueFiles) {
+    removeFileOrDirectoryWithDryRun(stalePath, dryRun);
+  }
+
+  const readmePath = path.join(projectRoot, 'README.md');
+  if (fs.existsSync(readmePath)) {
+    const readmeSource = fs.readFileSync(readmePath, 'utf8');
+    const nextReadme = readmeSource.replace(
+      /^#\s+rsx-vue-example/mu,
+      `# ${projectName}`,
+    );
+    if (dryRun) {
+      logInfo(`[dry-run] patch ${readmePath}`);
+    } else {
+      fs.writeFileSync(readmePath, nextReadme, 'utf8');
+    }
+  }
+
+  const packageJsonPath = path.join(projectRoot, 'package.json');
+  if (!fs.existsSync(packageJsonPath)) {
+    logError(`package.json not found in generated Vue app: ${packageJsonPath}`);
+    process.exit(1);
+  }
+
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  packageJson.name = projectName;
+  packageJson.private = true;
+  packageJson.version = '0.1.0';
+  packageJson.type = 'module';
+  packageJson.scripts = {
+    'build:rsx': 'rsx build --project tsconfig.app.json --no-emit --prod',
+    'typecheck:rsx': 'rsx typecheck --project tsconfig.app.json',
+    dev: 'npm run build:rsx && vite',
+    build: 'npm run build:rsx && vue-tsc -b && vite build',
+    preview: 'vite preview',
+  };
+  packageJson.rsx = {
+    build: {
+      preparse: true,
+      preparseFile: 'src/rsx-generated/rsx-aot-preparsed.generated.ts',
+      compiled: true,
+      compiledFile: 'src/rsx-generated/rsx-aot-compiled.generated.ts',
+      compiledResolvedEvaluator: false,
+    },
+  };
+  packageJson.dependencies = {
+    vue: packageJson.dependencies?.vue ?? '^3.5.30',
+    '@rs-x/core': rsxSpecs['@rs-x/core'],
+    '@rs-x/state-manager': rsxSpecs['@rs-x/state-manager'],
+    '@rs-x/expression-parser': rsxSpecs['@rs-x/expression-parser'],
+    '@rs-x/vue': rsxSpecs['@rs-x/vue'],
+  };
+  packageJson.devDependencies = {
+    ...(packageJson.devDependencies ?? {}),
+    '@rs-x/cli': rsxSpecs['@rs-x/cli'],
+    '@rs-x/compiler': rsxSpecs['@rs-x/compiler'],
+    '@rs-x/typescript-plugin': rsxSpecs['@rs-x/typescript-plugin'],
+  };
+
+  if (dryRun) {
+    logInfo(`[dry-run] patch ${packageJsonPath}`);
+  } else {
+    fs.writeFileSync(
+      packageJsonPath,
+      `${JSON.stringify(packageJson, null, 2)}\n`,
+      'utf8',
+    );
+  }
+
+  const tsConfigAppPath = path.join(projectRoot, 'tsconfig.app.json');
+  if (fs.existsSync(tsConfigAppPath)) {
+    upsertTypescriptPluginInTsConfig(tsConfigAppPath, dryRun);
+    ensureTsConfigIncludePattern(tsConfigAppPath, 'src/**/*.d.ts', dryRun);
+  }
+
+  if (!Boolean(flags['skip-install'])) {
+    logInfo(`Refreshing ${pm} dependencies for the RS-X Vue starter...`);
+    run(pm, ['install'], { dryRun });
+    logOk('Vue starter dependencies are up to date.');
+  }
+}
+
 function applyNextDemoStarter(projectRoot, projectName, pm, flags) {
   const dryRun = Boolean(flags['dry-run']);
   const tag = resolveInstallTag(flags);
@@ -1836,11 +2058,7 @@ async function runProjectWithTemplate(template, flags) {
       return;
     }
     if (normalizedTemplate === 'vuejs') {
-      runSetupVue({
-        ...flags,
-        entry: flags.entry ?? 'src/main.ts',
-      });
-      applyVueRsxTemplate(projectRoot, dryRun);
+      applyVueDemoStarter(projectRoot, projectName, pm, flags);
     }
   });
 
