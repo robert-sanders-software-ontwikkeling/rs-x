@@ -1826,6 +1826,8 @@ function applyVueDemoStarter(projectRoot, projectName, pm, flags) {
 
   const staleVueFiles = [
     path.join(projectRoot, 'public'),
+    path.join(projectRoot, 'src/components/HelloWorld.vue'),
+    path.join(projectRoot, 'src/assets'),
   ];
   for (const stalePath of staleVueFiles) {
     removeFileOrDirectoryWithDryRun(stalePath, dryRun);
