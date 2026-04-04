@@ -15,9 +15,13 @@ export function useRsxExpression<T>(expression: IExpression<T>) {
   }
 
   const expressionTree = expression as AbstractExpression | CompiledExpression;
-  const value = shallowRef<T | null>(expressionTree.value ?? null);
+  const getCurrentValue = (): T | null => {
+    return (expressionTree.value as T | null | undefined) ?? null;
+  };
+
+  const value = shallowRef<T | null>(getCurrentValue());
   const subscription = expressionTree.changed.subscribe(() => {
-    value.value = expressionTree.value ?? null;
+    value.value = getCurrentValue();
   });
 
   if (getCurrentScope()) {
