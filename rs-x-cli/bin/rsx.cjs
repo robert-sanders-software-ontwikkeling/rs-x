@@ -1310,16 +1310,36 @@ function scaffoldProjectTemplate(template, projectName, pm, flags) {
   }
 
   if (template === 'react') {
-    run('npx', ['create-vite@latest', projectName, '--template', 'react-ts'], {
-      dryRun,
-    });
+    run(
+      'npx',
+      [
+        'create-vite@latest',
+        projectName,
+        '--no-interactive',
+        '--template',
+        'react-ts',
+      ],
+      {
+        dryRun,
+      },
+    );
     return;
   }
 
   if (template === 'vuejs') {
-    run('npx', ['create-vite@latest', projectName, '--template', 'vue-ts'], {
-      dryRun,
-    });
+    run(
+      'npx',
+      [
+        'create-vite@latest',
+        projectName,
+        '--no-interactive',
+        '--template',
+        'vue-ts',
+      ],
+      {
+        dryRun,
+      },
+    );
     return;
   }
 
