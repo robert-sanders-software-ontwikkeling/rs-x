@@ -27,6 +27,12 @@ const REACT_DEMO_TEMPLATE_DIR = path.join(
   'templates',
   'react-demo',
 );
+const NEXT_DEMO_TEMPLATE_DIR = path.join(
+  __dirname,
+  '..',
+  'templates',
+  'next-demo',
+);
 const RUNTIME_PACKAGES = [
   '@rs-x/core',
   '@rs-x/state-manager',
@@ -1681,6 +1687,112 @@ function applyReactDemoStarter(projectRoot, projectName, pm, flags) {
   }
 }
 
+function applyNextDemoStarter(projectRoot, projectName, pm, flags) {
+  const dryRun = Boolean(flags['dry-run']);
+  const tag = resolveInstallTag(flags);
+  const tarballsDir =
+    typeof flags['tarballs-dir'] === 'string'
+      ? path.resolve(process.cwd(), flags['tarballs-dir'])
+      : typeof process.env.RSX_TARBALLS_DIR === 'string' &&
+          process.env.RSX_TARBALLS_DIR.trim().length > 0
+        ? path.resolve(process.cwd(), process.env.RSX_TARBALLS_DIR)
+        : null;
+  const workspaceRoot = findRepoRoot(projectRoot);
+  const rsxSpecs = resolveProjectRsxSpecs(
+    projectRoot,
+    workspaceRoot,
+    tarballsDir,
+    { tag, includeReactPackage: true },
+  );
+
+  const templateFiles = ['README.md', 'app', 'components', 'hooks', 'lib'];
+  for (const entry of templateFiles) {
+    copyPathWithDryRun(
+      path.join(NEXT_DEMO_TEMPLATE_DIR, entry),
+      path.join(projectRoot, entry),
+      dryRun,
+    );
+  }
+
+  const readmePath = path.join(projectRoot, 'README.md');
+  if (fs.existsSync(readmePath)) {
+    const readmeSource = fs.readFileSync(readmePath, 'utf8');
+    const nextReadme = readmeSource.replace(
+      /^#\s+rsx-next-example/mu,
+      `# ${projectName}`,
+    );
+    if (dryRun) {
+      logInfo(`[dry-run] patch ${readmePath}`);
+    } else {
+      fs.writeFileSync(readmePath, nextReadme, 'utf8');
+    }
+  }
+
+  const publicDir = path.join(projectRoot, 'public');
+  removeFileOrDirectoryWithDryRun(publicDir, dryRun);
+
+  const packageJsonPath = path.join(projectRoot, 'package.json');
+  if (!fs.existsSync(packageJsonPath)) {
+    logError(`package.json not found in generated Next.js app: ${packageJsonPath}`);
+    process.exit(1);
+  }
+
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  packageJson.name = projectName;
+  packageJson.private = true;
+  packageJson.version = '0.1.0';
+  packageJson.scripts = {
+    ...packageJson.scripts,
+    'build:rsx': 'rsx build --project tsconfig.json --no-emit --prod',
+    dev: 'npm run build:rsx && next dev',
+    build: 'npm run build:rsx && next build',
+    start: 'next start',
+  };
+  packageJson.rsx = {
+    build: {
+      preparse: true,
+      preparseFile: 'app/rsx-generated/rsx-aot-preparsed.generated.ts',
+      compiled: true,
+      compiledFile: 'app/rsx-generated/rsx-aot-compiled.generated.ts',
+      compiledResolvedEvaluator: false,
+    },
+  };
+  packageJson.dependencies = {
+    ...(packageJson.dependencies ?? {}),
+    '@rs-x/core': rsxSpecs['@rs-x/core'],
+    '@rs-x/state-manager': rsxSpecs['@rs-x/state-manager'],
+    '@rs-x/expression-parser': rsxSpecs['@rs-x/expression-parser'],
+    '@rs-x/react': rsxSpecs['@rs-x/react'],
+  };
+  packageJson.devDependencies = {
+    ...(packageJson.devDependencies ?? {}),
+    '@rs-x/cli': rsxSpecs['@rs-x/cli'],
+    '@rs-x/compiler': rsxSpecs['@rs-x/compiler'],
+    '@rs-x/typescript-plugin': rsxSpecs['@rs-x/typescript-plugin'],
+  };
+
+  if (dryRun) {
+    logInfo(`[dry-run] patch ${packageJsonPath}`);
+  } else {
+    fs.writeFileSync(
+      packageJsonPath,
+      `${JSON.stringify(packageJson, null, 2)}\n`,
+      'utf8',
+    );
+  }
+
+  const tsConfigPath = path.join(projectRoot, 'tsconfig.json');
+  if (fs.existsSync(tsConfigPath)) {
+    upsertTypescriptPluginInTsConfig(tsConfigPath, dryRun);
+  }
+
+  if (!Boolean(flags['skip-install'])) {
+    logInfo(`Refreshing ${pm} dependencies for the RS-X Next.js starter...`);
+    run(pm, ['install'], { dryRun });
+    logOk('Next.js starter dependencies are up to date.');
+  }
+}
+
 async function runProjectWithTemplate(template, flags) {
   const normalizedTemplate = normalizeProjectTemplate(template);
   if (!normalizedTemplate) {
@@ -1720,7 +1832,7 @@ async function runProjectWithTemplate(template, flags) {
       return;
     }
     if (normalizedTemplate === 'nextjs') {
-      runSetupNext(flags);
+      applyNextDemoStarter(projectRoot, projectName, pm, flags);
       return;
     }
     if (normalizedTemplate === 'vuejs') {
