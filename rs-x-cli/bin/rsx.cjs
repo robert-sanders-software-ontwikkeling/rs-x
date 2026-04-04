@@ -151,7 +151,7 @@ function parseArgs(argv) {
 }
 
 function run(command, args, options = {}) {
-  const { dryRun, cwd = process.cwd() } = options;
+  const { dryRun, cwd = process.cwd(), env } = options;
   const printable = [command, ...args].join(' ');
 
   if (dryRun) {
@@ -161,6 +161,7 @@ function run(command, args, options = {}) {
 
   const result = spawnSync(command, args, {
     cwd,
+    env: env ? { ...process.env, ...env } : process.env,
     stdio: 'inherit',
   });
 
@@ -249,7 +250,7 @@ function resolveInstallTag(flags) {
 }
 
 function installPackages(pm, packages, options = {}) {
-  const { dev = false, dryRun = false, label = 'packages', tag } = options;
+  const { dev = false, dryRun = false, label = 'packages', tag, cwd } = options;
   const resolvedPackages = tag ? applyTagToPackages(packages, tag) : packages;
   const argsByPm = {
     pnpm: dev
@@ -274,24 +275,59 @@ function installPackages(pm, packages, options = {}) {
 
   const tagInfo = tag ? ` (tag: ${tag})` : '';
   logInfo(`Installing ${label} with ${pm}${tagInfo}...`);
-  run(pm, installArgs, { dryRun });
+  run(pm, installArgs, { dryRun, cwd });
   logOk(`Installed ${label}.`);
 }
 
-function installRuntimePackages(pm, dryRun, tag) {
-  installPackages(pm, RUNTIME_PACKAGES, {
+function resolveLocalRsxSpecs(projectRoot, flags, options = {}) {
+  const tarballsDir =
+    typeof flags?.['tarballs-dir'] === 'string'
+      ? path.resolve(projectRoot, flags['tarballs-dir'])
+      : typeof process.env.RSX_TARBALLS_DIR === 'string' &&
+          process.env.RSX_TARBALLS_DIR.trim().length > 0
+        ? path.resolve(projectRoot, process.env.RSX_TARBALLS_DIR)
+        : null;
+  const workspaceRoot = findRepoRoot(projectRoot);
+  return resolveProjectRsxSpecs(projectRoot, workspaceRoot, tarballsDir, options);
+}
+
+function installResolvedPackages(pm, packageNames, options = {}) {
+  const { dryRun = false, label = 'packages', tag, cwd, specs, dev = false } =
+    options;
+  const resolvedPackages = packageNames.map((packageName) => {
+    const spec = specs?.[packageName];
+    return spec ? `${packageName}@${spec}` : packageName;
+  });
+
+  installPackages(pm, resolvedPackages, {
+    dev,
+    dryRun,
+    label,
+    tag: specs ? undefined : tag,
+    cwd,
+  });
+}
+
+function installRuntimePackages(pm, dryRun, tag, projectRoot, flags) {
+  const specs = resolveLocalRsxSpecs(projectRoot ?? process.cwd(), flags, { tag });
+  installResolvedPackages(pm, RUNTIME_PACKAGES, {
     dev: false,
     dryRun,
     tag,
+    specs,
+    cwd: projectRoot,
     label: 'runtime RS-X packages',
   });
 }
 
-function installCompilerPackages(pm, dryRun, tag) {
-  installPackages(pm, COMPILER_PACKAGES, {
+function installCompilerPackages(pm, dryRun, tag, projectRoot, flags) {
+  const specs = resolveLocalRsxSpecs(projectRoot ?? process.cwd(), flags, { tag });
+  installResolvedPackages(pm, COMPILER_PACKAGES, {
     dev: true,
     dryRun,
     tag,
+    specs,
+    cwd: projectRoot,
     label: 'compiler tooling',
   });
 }
@@ -845,6 +881,32 @@ function ensureTsConfigIncludePattern(configPath, pattern, dryRun) {
   fs.writeFileSync(configPath, `${JSON.stringify(tsConfig, null, 2)}\n`, 'utf8');
 }
 
+function ensureVueEnvTypes(projectRoot, dryRun) {
+  const envTypesPath = path.join(projectRoot, 'src', 'vite-env.d.ts');
+  const envTypesSource = `/// <reference types="vite/client" />
+
+declare module '*.vue' {
+  import type { DefineComponent } from 'vue';
+
+  const component: DefineComponent<{}, {}, any>;
+  export default component;
+}
+`;
+
+  if (fs.existsSync(envTypesPath)) {
+    return;
+  }
+
+  if (dryRun) {
+    logInfo(`[dry-run] create ${envTypesPath}`);
+    return;
+  }
+
+  fs.mkdirSync(path.dirname(envTypesPath), { recursive: true });
+  fs.writeFileSync(envTypesPath, envTypesSource, 'utf8');
+  logOk(`Created ${envTypesPath}`);
+}
+
 function toFileDependencySpec(fromDir, targetPath) {
   const relative = path.relative(fromDir, targetPath).replace(/\\/gu, '/');
   const normalized = relative.startsWith('.') ? relative : `./${relative}`;
@@ -987,10 +1049,11 @@ function resolveProjectRsxSpecs(
     ),
     ...(includeAngularPackage
       ? {
-          '@rs-x/angular': path.join(
-            workspaceRoot,
-            'rs-x-angular/projects/rsx',
-          ),
+          '@rs-x/angular': fs.existsSync(
+            path.join(workspaceRoot, 'rs-x-angular/dist/rsx'),
+          )
+            ? path.join(workspaceRoot, 'rs-x-angular/dist/rsx')
+            : path.join(workspaceRoot, 'rs-x-angular/projects/rsx'),
         }
       : {}),
     ...(includeReactPackage
@@ -1061,6 +1124,22 @@ function createProjectPackageJson(projectName, rsxSpecs) {
       2,
     ) + '\n'
   );
+}
+
+function resolveProjectRoot(projectName, flags) {
+  const parentDir =
+    typeof flags?.['project-parent-dir'] === 'string'
+      ? flags['project-parent-dir']
+      : typeof process.env.RSX_PROJECT_PARENT_DIR === 'string' &&
+          process.env.RSX_PROJECT_PARENT_DIR.trim().length > 0
+        ? process.env.RSX_PROJECT_PARENT_DIR
+        : null;
+
+  if (parentDir) {
+    return path.resolve(parentDir, projectName);
+  }
+
+  return path.resolve(process.cwd(), projectName);
 }
 
 function createProjectTsConfig() {
@@ -1247,7 +1326,7 @@ async function runProject(flags) {
     }
   }
 
-  const projectRoot = path.resolve(process.cwd(), projectName);
+  const projectRoot = resolveProjectRoot(projectName, flags);
   const tarballsDir =
     typeof flags['tarballs-dir'] === 'string'
       ? path.resolve(process.cwd(), flags['tarballs-dir'])
@@ -1401,9 +1480,18 @@ async function resolveProjectName(nameFromFlags, fallbackName) {
   }
 }
 
-function scaffoldProjectTemplate(template, projectName, pm, flags) {
+function scaffoldProjectTemplate(template, projectName, projectRoot, pm, flags) {
   const dryRun = Boolean(flags['dry-run']);
   const skipInstall = Boolean(flags['skip-install']);
+  const scaffoldCwd = path.dirname(projectRoot);
+  const scaffoldProjectArg = `./${projectName}`;
+  const scaffoldEnv = {
+    INIT_CWD: scaffoldCwd,
+    npm_config_local_prefix: scaffoldCwd,
+    npm_prefix: scaffoldCwd,
+    PWD: scaffoldCwd,
+    CI: 'true',
+  };
 
   if (template === 'angular') {
     const args = [
@@ -1411,6 +1499,8 @@ function scaffoldProjectTemplate(template, projectName, pm, flags) {
       '@angular/cli@latest',
       'new',
       projectName,
+      '--directory',
+      scaffoldProjectArg,
       '--defaults',
       '--standalone',
       '--routing',
@@ -1421,42 +1511,46 @@ function scaffoldProjectTemplate(template, projectName, pm, flags) {
     if (skipInstall) {
       args.push('--skip-install');
     }
-    run('npx', args, { dryRun });
+    run('npx', args, { dryRun, cwd: scaffoldCwd, env: scaffoldEnv });
     return;
   }
 
   if (template === 'react') {
     run(
-      'npx',
-      [
-        'create-vite@latest',
-        projectName,
-        '--no-interactive',
-        '--template',
-        'react-ts',
-      ],
-      {
-        dryRun,
-      },
-    );
-    return;
+        'npx',
+        [
+          'create-vite@latest',
+          scaffoldProjectArg,
+          '--no-interactive',
+          '--template',
+          'react-ts',
+        ],
+        {
+          dryRun,
+          cwd: scaffoldCwd,
+          env: scaffoldEnv,
+        },
+      );
+      return;
   }
 
   if (template === 'vuejs') {
     run(
-      'npx',
-      [
-        'create-vite@latest',
-        projectName,
-        '--no-interactive',
-        '--template',
-        'vue-ts',
-      ],
-      {
-        dryRun,
-      },
-    );
-    return;
+        'npx',
+        [
+          'create-vite@latest',
+          scaffoldProjectArg,
+          '--no-interactive',
+          '--template',
+          'vue-ts',
+        ],
+        {
+          dryRun,
+          cwd: scaffoldCwd,
+          env: scaffoldEnv,
+        },
+      );
+      return;
   }
 
   if (template === 'nextjs') {
@@ -1468,7 +1562,7 @@ function scaffoldProjectTemplate(template, projectName, pm, flags) {
     };
     const args = [
       'create-next-app@latest',
-      projectName,
+      scaffoldProjectArg,
       '--yes',
       '--ts',
       '--app',
@@ -1480,7 +1574,7 @@ function scaffoldProjectTemplate(template, projectName, pm, flags) {
     if (skipInstall) {
       args.push('--skip-install');
     }
-    run('npx', args, { dryRun });
+    run('npx', args, { dryRun, cwd: scaffoldCwd, env: scaffoldEnv });
     return;
   }
 
@@ -2033,13 +2127,19 @@ async function runProjectWithTemplate(template, flags) {
 
   const pm = detectPackageManager(flags.pm);
   const projectName = await resolveProjectName(flags.name, flags._nameHint);
-  const projectRoot = path.resolve(process.cwd(), projectName);
+  const projectRoot = resolveProjectRoot(projectName, flags);
   if (fs.existsSync(projectRoot) && fs.readdirSync(projectRoot).length > 0) {
     logError(`Target directory is not empty: ${projectRoot}`);
     process.exit(1);
   }
 
-  scaffoldProjectTemplate(normalizedTemplate, projectName, pm, flags);
+  scaffoldProjectTemplate(
+    normalizedTemplate,
+    projectName,
+    projectRoot,
+    pm,
+    flags,
+  );
   const dryRun = Boolean(flags['dry-run']);
   if (dryRun) {
     logInfo(`[dry-run] setup RS-X in ${projectRoot}`);
@@ -2335,12 +2435,12 @@ function ensureNextGateFile(gateFile, bootstrapFile, dryRun) {
   const content = useTypeScript
     ? `'use client';
 
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactElement, type ReactNode, useEffect, useState } from 'react';
 
 import { initRsx } from '${importPath}';
 
 // Generated by rsx init
-export function RsxBootstrapGate(props: { children: ReactNode }): JSX.Element | null {
+export function RsxBootstrapGate(props: { children: ReactNode }): ReactElement | null {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -2561,8 +2661,8 @@ function runInit(flags) {
   const projectRoot = process.cwd();
 
   if (!skipInstall) {
-    installRuntimePackages(pm, dryRun, tag);
-    installCompilerPackages(pm, dryRun, tag);
+    installRuntimePackages(pm, dryRun, tag, projectRoot, flags);
+    installCompilerPackages(pm, dryRun, tag, projectRoot, flags);
   } else {
     logInfo('Skipping package installation (--skip-install).');
   }
@@ -2687,7 +2787,12 @@ function ensureAngularProvidersInEntry(entryFile, dryRun) {
   );
 
   let updated = sourceWithImport;
-  if (
+  if (/bootstrapApplication\([\s\S]*?,\s*appConfig\s*\)/mu.test(updated)) {
+    updated = updated.replace(
+      /bootstrapApplication\(([\s\S]*?),\s*appConfig\s*\)/mu,
+      'bootstrapApplication($1, {\n  ...appConfig,\n  providers: [...(appConfig.providers ?? []), ...providexRsx()],\n})',
+    );
+  } else if (
     /bootstrapApplication\([\s\S]*?,\s*\{[\s\S]*?providers\s*:/mu.test(updated)
   ) {
     updated = updated.replace(
@@ -2835,109 +2940,6 @@ module.exports = function rsxWebpackLoader(source) {
 }
 
 function wireRsxVitePlugin(projectRoot, dryRun) {
-  const pluginFile = path.join(projectRoot, 'rsx-vite-plugin.mjs');
-  const pluginSource = `import path from 'node:path';
-
-import ts from 'typescript';
-
-import { createExpressionCachePreloadTransformer } from '@rs-x/compiler';
-
-function normalizeFileName(fileName) {
-  return path.resolve(fileName).replace(/\\\\/gu, '/');
-}
-
-function buildTransformedSourceMap(tsconfigPath) {
-  const configFile = ts.readConfigFile(tsconfigPath, ts.sys.readFile);
-  if (configFile.error) {
-    return new Map();
-  }
-
-  const parsed = ts.parseJsonConfigFileContent(
-    configFile.config,
-    ts.sys,
-    path.dirname(tsconfigPath),
-    undefined,
-    tsconfigPath,
-  );
-  if (parsed.errors.length > 0) {
-    return new Map();
-  }
-
-  const program = ts.createProgram({
-    rootNames: parsed.fileNames,
-    options: parsed.options,
-  });
-  const transformer = createExpressionCachePreloadTransformer(program);
-  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
-  const transformedByFile = new Map();
-
-  for (const sourceFile of program.getSourceFiles()) {
-    if (sourceFile.isDeclarationFile) {
-      continue;
-    }
-
-    if (sourceFile.fileName.includes('/node_modules/')) {
-      continue;
-    }
-
-    const transformed = ts.transform(sourceFile, [transformer]);
-    const transformedSource = transformed.transformed[0];
-    const transformedText = printer.printFile(transformedSource);
-    transformed.dispose();
-
-    transformedByFile.set(normalizeFileName(sourceFile.fileName), transformedText);
-  }
-
-  return transformedByFile;
-}
-
-export function rsxVitePlugin(tsconfigPath = 'tsconfig.json') {
-  let transformedByFile = new Map();
-  let resolvedTsConfigPath = '';
-
-  const refresh = () => {
-    transformedByFile = buildTransformedSourceMap(resolvedTsConfigPath);
-  };
-
-  return {
-    name: 'rsx-vite-transform',
-    enforce: 'pre',
-    configResolved(config) {
-      resolvedTsConfigPath = normalizeFileName(path.resolve(config.root, tsconfigPath));
-      refresh();
-    },
-    buildStart() {
-      if (!resolvedTsConfigPath) {
-        resolvedTsConfigPath = normalizeFileName(path.resolve(process.cwd(), tsconfigPath));
-      }
-      refresh();
-    },
-    handleHotUpdate() {
-      refresh();
-    },
-    transform(_code, id) {
-      const normalizedId = normalizeFileName(id.split('?')[0]);
-      const transformed = transformedByFile.get(normalizedId);
-      if (!transformed) {
-        return null;
-      }
-
-      return {
-        code: transformed,
-        map: null,
-      };
-    },
-  };
-}
-`;
-
-  if (dryRun) {
-    logInfo(`[dry-run] create ${pluginFile}`);
-  } else {
-    fs.writeFileSync(pluginFile, pluginSource, 'utf8');
-    logOk(`Created ${pluginFile}`);
-  }
-
   const viteConfigCandidates = [
     'vite.config.ts',
     'vite.config.mts',
@@ -2947,61 +2949,45 @@ export function rsxVitePlugin(tsconfigPath = 'tsconfig.json') {
   const viteConfigPath = viteConfigCandidates.find((candidate) =>
     fs.existsSync(candidate),
   );
+  const stalePluginFiles = [
+    path.join(projectRoot, 'rsx-vite-plugin.ts'),
+    path.join(projectRoot, 'rsx-vite-plugin.mjs'),
+    path.join(projectRoot, 'rsx-vite-plugin.d.ts'),
+  ];
+
   if (!viteConfigPath) {
-    logWarn(
-      'No vite.config.[ts|mts|js|mjs] found. RS-X Vite plugin file was created, but config patch was skipped.',
-    );
-    logInfo(
-      "Add it manually: import { rsxVitePlugin } from './rsx-vite-plugin.mjs' and include rsxVitePlugin() in plugins.",
-    );
+    for (const staleFile of stalePluginFiles) {
+      removeFileOrDirectoryWithDryRun(staleFile, dryRun);
+    }
     return;
   }
 
   const original = fs.readFileSync(viteConfigPath, 'utf8');
-  if (original.includes('rsxVitePlugin(')) {
-    logInfo(`Vite config already includes RS-X plugin: ${viteConfigPath}`);
-    return;
-  }
+  const updated = original
+    .replace(
+      /import\s+\{\s*rsxVitePlugin\s*\}\s+from\s+['"]\.\/rsx-vite-plugin(?:\.mjs)?['"];\n?/gu,
+      '',
+    )
+    .replace(/rsxVitePlugin\(\)\s*,\s*/gu, '')
+    .replace(/,\s*rsxVitePlugin\(\)/gu, '')
+    .replace(/\[\s*rsxVitePlugin\(\)\s*\]/gu, '[]');
 
-  let updated = original;
-  const importStatement =
-    "import { rsxVitePlugin } from './rsx-vite-plugin.mjs';";
-  if (!updated.includes(importStatement)) {
-    const lines = updated.split('\n');
-    let insertAt = 0;
-    while (
-      insertAt < lines.length &&
-      lines[insertAt].trim().startsWith('import ')
-    ) {
-      insertAt += 1;
+  if (updated !== original) {
+    if (dryRun) {
+      logInfo(
+        `[dry-run] patch ${viteConfigPath} (remove legacy RS-X Vite plugin)`,
+      );
+    } else {
+      fs.writeFileSync(viteConfigPath, updated, 'utf8');
+      logOk(`Patched ${viteConfigPath} (removed legacy RS-X Vite plugin).`);
     }
-    lines.splice(insertAt, 0, importStatement);
-    updated = lines.join('\n');
-  }
-
-  if (/plugins\s*:\s*\[/u.test(updated)) {
-    updated = updated.replace(
-      /plugins\s*:\s*\[/u,
-      'plugins: [rsxVitePlugin(), ',
-    );
-  } else if (/defineConfig\s*\(\s*\{/u.test(updated)) {
-    updated = updated.replace(
-      /defineConfig\s*\(\s*\{/u,
-      'defineConfig({\n  plugins: [rsxVitePlugin()],',
-    );
   } else {
-    logWarn(`Could not patch Vite config automatically: ${viteConfigPath}`);
-    logInfo('Add `rsxVitePlugin()` to your Vite plugins manually.');
-    return;
+    logInfo(`Vite config already uses the default plugin list: ${viteConfigPath}`);
   }
 
-  if (dryRun) {
-    logInfo(`[dry-run] patch ${viteConfigPath}`);
-    return;
+  for (const staleFile of stalePluginFiles) {
+    removeFileOrDirectoryWithDryRun(staleFile, dryRun);
   }
-
-  fs.writeFileSync(viteConfigPath, updated, 'utf8');
-  logOk(`Patched ${viteConfigPath} with RS-X Vite plugin.`);
 }
 
 function wireRsxNextWebpack(projectRoot, dryRun) {
@@ -3110,15 +3096,47 @@ function runSetupReact(flags) {
     'skip-vscode': true,
   });
   if (!Boolean(flags['skip-install'])) {
-    installPackages(pm, ['@rs-x/react'], {
+    const specs = resolveLocalRsxSpecs(projectRoot, flags, {
+      tag,
+      includeReactPackage: true,
+    });
+    installResolvedPackages(pm, ['@rs-x/react'], {
       dev: false,
       dryRun,
       tag,
+      specs,
+      cwd: projectRoot,
       label: 'RS-X React bindings',
+    });
+    installResolvedPackages(pm, ['@rs-x/cli'], {
+      dev: true,
+      dryRun,
+      tag,
+      specs,
+      cwd: projectRoot,
+      label: 'RS-X CLI',
     });
   } else {
     logInfo('Skipping RS-X React bindings install (--skip-install).');
   }
+  upsertScriptInPackageJson(
+    projectRoot,
+    'build:rsx',
+    'rsx build --project tsconfig.json --no-emit --prod',
+    dryRun,
+  );
+  upsertScriptInPackageJson(
+    projectRoot,
+    'dev',
+    'npm run build:rsx && vite',
+    dryRun,
+  );
+  upsertScriptInPackageJson(
+    projectRoot,
+    'build',
+    'npm run build:rsx && vite build',
+    dryRun,
+  );
   wireRsxVitePlugin(projectRoot, dryRun);
   logOk('RS-X React setup completed.');
 }
@@ -3127,21 +3145,28 @@ function runSetupNext(flags) {
   const dryRun = Boolean(flags['dry-run']);
   const pm = detectPackageManager(flags.pm);
   const tag = resolveInstallTag(flags);
+  const projectRoot = process.cwd();
   runInit({
     ...flags,
     'skip-vscode': true,
   });
   if (!Boolean(flags['skip-install'])) {
-    installPackages(pm, ['@rs-x/react'], {
+    const specs = resolveLocalRsxSpecs(projectRoot, flags, {
+      tag,
+      includeReactPackage: true,
+    });
+    installResolvedPackages(pm, ['@rs-x/react'], {
       dev: false,
       dryRun,
       tag,
+      specs,
+      cwd: projectRoot,
       label: 'RS-X React bindings',
     });
   } else {
     logInfo('Skipping RS-X React bindings install (--skip-install).');
   }
-  wireRsxNextWebpack(process.cwd(), dryRun);
+  wireRsxNextWebpack(projectRoot, dryRun);
   logOk('RS-X Next.js setup completed.');
 }
 
@@ -3149,21 +3174,64 @@ function runSetupVue(flags) {
   const dryRun = Boolean(flags['dry-run']);
   const pm = detectPackageManager(flags.pm);
   const tag = resolveInstallTag(flags);
+  const projectRoot = process.cwd();
   runInit({
     ...flags,
     'skip-vscode': true,
   });
   if (!Boolean(flags['skip-install'])) {
-    installPackages(pm, ['@rs-x/vue'], {
+    const specs = resolveLocalRsxSpecs(projectRoot, flags, {
+      tag,
+      includeVuePackage: true,
+    });
+    installResolvedPackages(pm, ['@rs-x/vue'], {
       dev: false,
       dryRun,
       tag,
+      specs,
+      cwd: projectRoot,
       label: 'RS-X Vue bindings',
+    });
+    installResolvedPackages(pm, ['@rs-x/cli'], {
+      dev: true,
+      dryRun,
+      tag,
+      specs,
+      cwd: projectRoot,
+      label: 'RS-X CLI',
     });
   } else {
     logInfo('Skipping RS-X Vue bindings install (--skip-install).');
   }
-  wireRsxVitePlugin(process.cwd(), dryRun);
+  upsertScriptInPackageJson(
+    projectRoot,
+    'build:rsx',
+    'rsx build --project tsconfig.app.json --no-emit --prod',
+    dryRun,
+  );
+  upsertScriptInPackageJson(
+    projectRoot,
+    'typecheck:rsx',
+    'rsx typecheck --project tsconfig.app.json',
+    dryRun,
+  );
+  upsertScriptInPackageJson(
+    projectRoot,
+    'dev',
+    'npm run build:rsx && vite',
+    dryRun,
+  );
+  upsertScriptInPackageJson(
+    projectRoot,
+    'build',
+    'npm run build:rsx && vue-tsc -b && vite build',
+    dryRun,
+  );
+  const vueTsConfigPath = path.join(projectRoot, 'tsconfig.app.json');
+  upsertTypescriptPluginInTsConfig(vueTsConfigPath, dryRun);
+  ensureTsConfigIncludePattern(vueTsConfigPath, 'src/**/*.d.ts', dryRun);
+  ensureVueEnvTypes(projectRoot, dryRun);
+  wireRsxVitePlugin(projectRoot, dryRun);
   logOk('RS-X Vue setup completed.');
 }
 
@@ -3178,13 +3246,27 @@ function runSetupAngular(flags) {
     .replace(/\\/gu, '/');
 
   if (!Boolean(flags['skip-install'])) {
-    installRuntimePackages(pm, dryRun, tag);
-    installCompilerPackages(pm, dryRun, tag);
-    installPackages(pm, ['@rs-x/angular'], {
+    installRuntimePackages(pm, dryRun, tag, projectRoot, flags);
+    installCompilerPackages(pm, dryRun, tag, projectRoot, flags);
+    const specs = resolveLocalRsxSpecs(projectRoot, flags, {
+      tag,
+      includeAngularPackage: true,
+    });
+    installResolvedPackages(pm, ['@rs-x/angular'], {
       dev: false,
       dryRun,
       tag,
+      specs,
+      cwd: projectRoot,
       label: 'RS-X Angular bindings',
+    });
+    installResolvedPackages(pm, ['@rs-x/cli'], {
+      dev: true,
+      dryRun,
+      tag,
+      specs,
+      cwd: projectRoot,
+      label: 'RS-X CLI',
     });
   } else {
     logInfo('Skipping package installation (--skip-install).');
@@ -3215,11 +3297,49 @@ function runSetupAngular(flags) {
     `rsx typecheck --project ${angularTsConfigRelative}`,
     dryRun,
   );
+  upsertScriptInPackageJson(
+    projectRoot,
+    'prebuild',
+    'npm run build:rsx',
+    dryRun,
+  );
+  upsertScriptInPackageJson(
+    projectRoot,
+    'start',
+    'npm run build:rsx && ng serve',
+    dryRun,
+  );
 
   const rsxRegistrationFile = path.join(
     projectRoot,
     'src/rsx-generated/rsx-aot-registration.generated.ts',
   );
+  const angularJsonPath = path.join(projectRoot, 'angular.json');
+  if (fs.existsSync(angularJsonPath)) {
+    const angularJson = JSON.parse(fs.readFileSync(angularJsonPath, 'utf8'));
+    const projects = angularJson.projects ?? {};
+    for (const projectConfig of Object.values(projects)) {
+      const buildOptions = projectConfig?.architect?.build?.options;
+      if (buildOptions && typeof buildOptions === 'object') {
+        buildOptions.preserveSymlinks = true;
+      }
+      if (projectConfig?.architect?.build?.configurations?.production?.budgets) {
+        delete projectConfig.architect.build.configurations.production.budgets;
+      }
+    }
+    if (dryRun) {
+      logInfo(
+        `[dry-run] patch ${angularJsonPath} (preserveSymlinks, production budgets)`,
+      );
+    } else {
+      fs.writeFileSync(
+        angularJsonPath,
+        `${JSON.stringify(angularJson, null, 2)}\n`,
+        'utf8',
+      );
+      logOk(`Patched ${angularJsonPath} (preserveSymlinks, production budgets).`);
+    }
+  }
   ensureAngularPolyfillsContainsFile({
     projectRoot,
     configPath: angularTsConfigPath,
@@ -3261,8 +3381,20 @@ function runSetupAuto(flags) {
 
   logInfo('No framework-specific setup detected; running generic setup.');
   const pm = detectPackageManager(flags.pm);
-  installRuntimePackages(pm, Boolean(flags['dry-run']), tag);
-  installCompilerPackages(pm, Boolean(flags['dry-run']), tag);
+  installRuntimePackages(
+    pm,
+    Boolean(flags['dry-run']),
+    tag,
+    projectRoot,
+    flags,
+  );
+  installCompilerPackages(
+    pm,
+    Boolean(flags['dry-run']),
+    tag,
+    projectRoot,
+    flags,
+  );
 }
 
 function resolveProjectModule(projectRoot, moduleName) {
@@ -3827,9 +3959,14 @@ function ensureAngularPolyfillsContainsFile({
   });
 
   const selectedEntries = targetEntries.length > 0 ? targetEntries : entries;
-  const polyfillsPath = path
+  const polyfillsRelativePath = path
     .relative(projectRoot, filePath)
     .replace(/\\/g, '/');
+  const polyfillsPath =
+    polyfillsRelativePath.startsWith('./') ||
+    polyfillsRelativePath.startsWith('../')
+      ? polyfillsRelativePath
+      : `./${polyfillsRelativePath}`;
 
   let changed = false;
   const isRsxAotRegistrationEntry = (entry) =>
@@ -4352,7 +4489,13 @@ function main() {
   if (command === 'install' && target === 'compiler') {
     const pm = detectPackageManager(flags.pm);
     const tag = resolveInstallTag(flags);
-    installCompilerPackages(pm, Boolean(flags['dry-run']), tag);
+    installCompilerPackages(
+      pm,
+      Boolean(flags['dry-run']),
+      tag,
+      process.cwd(),
+      flags,
+    );
     return;
   }
 
