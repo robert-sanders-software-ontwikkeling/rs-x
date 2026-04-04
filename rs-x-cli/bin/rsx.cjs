@@ -3088,10 +3088,6 @@ function runSetupReact(flags) {
   const pm = detectPackageManager(flags.pm);
   const tag = resolveInstallTag(flags);
   const projectRoot = process.cwd();
-  const angularTsConfigPath = resolveAngularProjectTsConfig(projectRoot);
-  const angularTsConfigRelative = path
-    .relative(projectRoot, angularTsConfigPath)
-    .replace(/\\/gu, '/');
   const packageJsonPath = path.join(projectRoot, 'package.json');
   if (!fs.existsSync(packageJsonPath)) {
     logError(`package.json not found in ${projectRoot}`);
@@ -3176,6 +3172,10 @@ function runSetupAngular(flags) {
   const pm = detectPackageManager(flags.pm);
   const tag = resolveInstallTag(flags);
   const projectRoot = process.cwd();
+  const angularTsConfigPath = resolveAngularProjectTsConfig(projectRoot);
+  const angularTsConfigRelative = path
+    .relative(projectRoot, angularTsConfigPath)
+    .replace(/\\/gu, '/');
 
   if (!Boolean(flags['skip-install'])) {
     installRuntimePackages(pm, dryRun, tag);
@@ -4192,6 +4192,7 @@ function printTypecheckHelp() {
 function printVersionHelp() {
   console.log('Usage:');
   console.log('  rsx version');
+  console.log('  rsx v');
   console.log('  rsx -v');
   console.log('  rsx -version');
   console.log('  rsx --version');
@@ -4203,6 +4204,7 @@ function isHelpToken(value) {
 
 function isVersionToken(value) {
   return (
+    value === 'v' ||
     value === '-v' ||
     value === '--version' ||
     value === '-version' ||
@@ -4263,6 +4265,7 @@ function printHelpFor(command, target) {
   }
 
   if (
+    command === 'v' ||
     command === 'version' ||
     command === '-v' ||
     command === '--version' ||
