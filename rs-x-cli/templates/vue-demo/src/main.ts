@@ -1,7 +1,8 @@
 import { createApp } from 'vue';
 
-import App from './App.vue';
 import { initRsx } from './lib/rsx-bootstrap';
+import App from './App.vue';
+
 import './style.css';
 
 async function bootstrap(): Promise<void> {

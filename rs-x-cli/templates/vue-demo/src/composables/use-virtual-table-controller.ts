@@ -1,8 +1,8 @@
 import {
   getCurrentScope,
   onScopeDispose,
-  shallowRef,
   type ShallowRef,
+  shallowRef,
 } from 'vue';
 
 import {

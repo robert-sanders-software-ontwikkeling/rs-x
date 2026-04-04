@@ -34,9 +34,9 @@ export const App: FC = () => {
                 Million-row scrolling with a fixed RS-X expression pool.
               </p>
               <p className="hSub">
-                This demo keeps rendering bounded while streaming pages on demand,
-                so scrolling stays smooth without growing expression memory with the
-                dataset.
+                This demo keeps rendering bounded while streaming pages on
+                demand, so scrolling stays smooth without growing expression
+                memory with the dataset.
               </p>
 
               <div className="heroActions">

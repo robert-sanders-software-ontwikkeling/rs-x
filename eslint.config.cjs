@@ -13,6 +13,7 @@ module.exports = [
     ignores: [
       '**/*.d.ts',
       '**/.next/**',
+      '**/.tests/**',
       '**/out/**',
       '**/node_modules/**',
       '**/dist/**',
@@ -21,6 +22,7 @@ module.exports = [
       '**/.tmp-*',
       '**/tmp-*.ts',
       '**/tmp-*.mjs',
+      'rs-x-cli/rsx-project-*-verify/**',
     ],
   },
 

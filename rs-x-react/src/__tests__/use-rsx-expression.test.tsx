@@ -9,8 +9,8 @@ import {
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
 
-import { useRsxExpression } from '../hooks/use-rsx-expression';
 import type { ICompiledExpressionPlan } from '../../../rs-x-expression-parser/lib/compiled-expression/compiled-expression.compiler.interface';
+import { useRsxExpression } from '../hooks/use-rsx-expression';
 
 describe('useRsxExpression', () => {
   beforeEach(() => {
@@ -107,8 +107,8 @@ describe('useRsxExpression', () => {
   });
 
   it('throws for values that are not RS-X expressions', () => {
-    expect(() =>
-      renderHook(() => useRsxExpression({} as never)),
-    ).toThrowError('useRsxExpression: expression must be an IExpression');
+    expect(() => renderHook(() => useRsxExpression({} as never))).toThrowError(
+      'useRsxExpression: expression must be an IExpression',
+    );
   });
 });

@@ -16,12 +16,20 @@ const visibleRows = computed(() => snapshot.value.visibleRows);
   <section class="table-toolbar">
     <div class="toolbar-left">
       <h2>Inventory Snapshot</h2>
-      <p>{{ snapshot.totalRows }} rows • {{ snapshot.poolSize }} pre-wired models</p>
+      <p>
+        {{ snapshot.totalRows }} rows • {{ snapshot.poolSize }} pre-wired models
+      </p>
     </div>
     <div class="toolbar-right">
-      <button type="button" @click="controller.toggleSort('price')">Sort by price</button>
-      <button type="button" @click="controller.toggleSort('quantity')">Sort by stock</button>
-      <button type="button" @click="controller.toggleSort('name')">Sort by name</button>
+      <button type="button" @click="controller.toggleSort('price')">
+        Sort by price
+      </button>
+      <button type="button" @click="controller.toggleSort('quantity')">
+        Sort by stock
+      </button>
+      <button type="button" @click="controller.toggleSort('name')">
+        Sort by name
+      </button>
     </div>
   </section>
 
@@ -38,9 +46,14 @@ const visibleRows = computed(() => snapshot.value.visibleRows);
   <div
     ref="viewport"
     class="table-viewport"
-    @scroll="controller.setScrollTop(($event.target as HTMLDivElement).scrollTop)"
+    @scroll="
+      controller.setScrollTop(($event.target as HTMLDivElement).scrollTop)
+    "
   >
-    <div class="table-spacer" :style="{ height: `${snapshot.spacerHeight}px` }" />
+    <div
+      class="table-spacer"
+      :style="{ height: `${snapshot.spacerHeight}px` }"
+    />
     <VirtualTableRow
       v-for="item in visibleRows"
       :key="item.index"

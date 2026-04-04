@@ -1,5 +1,5 @@
 import { type RowData, type SortDirection, type SortKey } from '@/lib/row-data';
-import { createRowModel, updateRowModel, type RowModel } from '@/lib/row-model';
+import { createRowModel, type RowModel, updateRowModel } from '@/lib/row-model';
 import { VirtualTableDataService } from '@/lib/virtual-table-data.service';
 
 export type RowView = {
@@ -36,7 +36,10 @@ export class VirtualTableController {
   private sortKey: SortKey = 'id';
   private sortDirection: SortDirection = 'asc';
   private spacerHeight: number;
-  private rowsInView = Math.max(1, Math.ceil(this.viewportHeight / this.rowHeight));
+  private rowsInView = Math.max(
+    1,
+    Math.ceil(this.viewportHeight / this.rowHeight),
+  );
   private visibleRows: RowView[] = [];
   private snapshot: VirtualTableSnapshot;
 
@@ -78,7 +81,10 @@ export class VirtualTableController {
 
   public setViewportHeight(height: number): void {
     this.viewportHeight = height;
-    this.rowsInView = Math.max(1, Math.ceil(this.viewportHeight / this.rowHeight));
+    this.rowsInView = Math.max(
+      1,
+      Math.ceil(this.viewportHeight / this.rowHeight),
+    );
     this.refresh();
   }
 
@@ -89,7 +95,10 @@ export class VirtualTableController {
 
     this.rowHeight = height;
     this.spacerHeight = this.totalRows * this.rowHeight;
-    this.rowsInView = Math.max(1, Math.ceil(this.viewportHeight / this.rowHeight));
+    this.rowsInView = Math.max(
+      1,
+      Math.ceil(this.viewportHeight / this.rowHeight),
+    );
     this.refresh();
   }
 
@@ -112,7 +121,10 @@ export class VirtualTableController {
 
   private refresh(): void {
     const scrollIndex = Math.floor(this.scrollTop / this.rowHeight);
-    const bufferTop = Math.max(0, Math.floor((this.poolSize - this.rowsInView) / 2));
+    const bufferTop = Math.max(
+      0,
+      Math.floor((this.poolSize - this.rowsInView) / 2),
+    );
     const maxStart = Math.max(0, this.totalRows - this.poolSize);
     const startIndex = Math.min(Math.max(scrollIndex - bufferTop, 0), maxStart);
     const endIndex = Math.min(startIndex + this.poolSize, this.totalRows);

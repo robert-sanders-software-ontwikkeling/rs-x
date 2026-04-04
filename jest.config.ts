@@ -38,6 +38,8 @@ const jestConfig: Config.InitialOptions = {
     '<rootDir>/rs-x-angular/',
     '<rootDir>/rs-x-react/',
     '<rootDir>/rs-x-vue/',
+    '<rootDir>/rs-x-cli/.tests/',
+    '<rootDir>/rs-x-cli/rsx-project-',
     '<rootDir>/rs-x-vscode-extension/.vsix-stage/',
     ...(!includePerformanceTests
       ? ['<rootDir>/rs-x-expression-parser/tests/performance/']
@@ -48,6 +50,8 @@ const jestConfig: Config.InitialOptions = {
     '<rootDir>/rs-x-angular/',
     '<rootDir>/rs-x-react/',
     '<rootDir>/rs-x-vue/',
+    '<rootDir>/rs-x-cli/.tests/',
+    '<rootDir>/rs-x-cli/rsx-project-',
     '<rootDir>/rs-x-vscode-extension/.vsix-stage/',
   ],
 

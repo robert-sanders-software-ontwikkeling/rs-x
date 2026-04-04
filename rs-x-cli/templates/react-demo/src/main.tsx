@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 
 import { App } from './app/app';
 import { initRsx } from './rsx-bootstrap';
+
 import './styles.css';
 
 async function start(): Promise<void> {

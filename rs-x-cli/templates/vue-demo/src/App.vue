@@ -42,8 +42,8 @@ function toggleTheme(): void {
             </p>
             <p class="hSub">
               This demo keeps rendering bounded while streaming pages on demand,
-              so scrolling stays smooth without growing expression memory with the
-              dataset.
+              so scrolling stays smooth without growing expression memory with
+              the dataset.
             </p>
 
             <div class="heroActions">
@@ -69,9 +69,9 @@ function toggleTheme(): void {
           <aside class="card heroNote">
             <h2 class="cardTitle">What This Shows</h2>
             <p class="cardText">
-              Only a small row-model pool stays alive while pages stream in around
-              the viewport. That means one million logical rows without one million
-              live bindings.
+              Only a small row-model pool stays alive while pages stream in
+              around the viewport. That means one million logical rows without
+              one million live bindings.
             </p>
           </aside>
         </div>

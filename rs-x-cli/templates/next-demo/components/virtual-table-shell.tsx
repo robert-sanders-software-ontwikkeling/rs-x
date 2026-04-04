@@ -2,10 +2,10 @@
 
 import { type FC } from 'react';
 
+import { VirtualTableRow } from './virtual-table-row';
+
 import { useVirtualTableController } from '@/hooks/use-virtual-table-controller';
 import { useVirtualTableViewport } from '@/hooks/use-virtual-table-viewport';
-
-import { VirtualTableRow } from './virtual-table-row';
 
 export const VirtualTableShell: FC = () => {
   const { controller, snapshot } = useVirtualTableController();

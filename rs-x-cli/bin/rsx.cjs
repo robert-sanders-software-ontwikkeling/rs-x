@@ -288,12 +288,23 @@ function resolveLocalRsxSpecs(projectRoot, flags, options = {}) {
         ? path.resolve(projectRoot, process.env.RSX_TARBALLS_DIR)
         : null;
   const workspaceRoot = findRepoRoot(projectRoot);
-  return resolveProjectRsxSpecs(projectRoot, workspaceRoot, tarballsDir, options);
+  return resolveProjectRsxSpecs(
+    projectRoot,
+    workspaceRoot,
+    tarballsDir,
+    options,
+  );
 }
 
 function installResolvedPackages(pm, packageNames, options = {}) {
-  const { dryRun = false, label = 'packages', tag, cwd, specs, dev = false } =
-    options;
+  const {
+    dryRun = false,
+    label = 'packages',
+    tag,
+    cwd,
+    specs,
+    dev = false,
+  } = options;
   const resolvedPackages = packageNames.map((packageName) => {
     const spec = specs?.[packageName];
     return spec ? `${packageName}@${spec}` : packageName;
@@ -309,7 +320,9 @@ function installResolvedPackages(pm, packageNames, options = {}) {
 }
 
 function installRuntimePackages(pm, dryRun, tag, projectRoot, flags) {
-  const specs = resolveLocalRsxSpecs(projectRoot ?? process.cwd(), flags, { tag });
+  const specs = resolveLocalRsxSpecs(projectRoot ?? process.cwd(), flags, {
+    tag,
+  });
   installResolvedPackages(pm, RUNTIME_PACKAGES, {
     dev: false,
     dryRun,
@@ -321,7 +334,9 @@ function installRuntimePackages(pm, dryRun, tag, projectRoot, flags) {
 }
 
 function installCompilerPackages(pm, dryRun, tag, projectRoot, flags) {
-  const specs = resolveLocalRsxSpecs(projectRoot ?? process.cwd(), flags, { tag });
+  const specs = resolveLocalRsxSpecs(projectRoot ?? process.cwd(), flags, {
+    tag,
+  });
   installResolvedPackages(pm, COMPILER_PACKAGES, {
     dev: true,
     dryRun,
@@ -858,7 +873,11 @@ function upsertTypescriptPluginInTsConfig(configPath, dryRun) {
     return;
   }
 
-  fs.writeFileSync(configPath, `${JSON.stringify(tsConfig, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(
+    configPath,
+    `${JSON.stringify(tsConfig, null, 2)}\n`,
+    'utf8',
+  );
 }
 
 function ensureTsConfigIncludePattern(configPath, pattern, dryRun) {
@@ -878,7 +897,11 @@ function ensureTsConfigIncludePattern(configPath, pattern, dryRun) {
     return;
   }
 
-  fs.writeFileSync(configPath, `${JSON.stringify(tsConfig, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(
+    configPath,
+    `${JSON.stringify(tsConfig, null, 2)}\n`,
+    'utf8',
+  );
 }
 
 function ensureVueEnvTypes(projectRoot, dryRun) {
@@ -1480,7 +1503,13 @@ async function resolveProjectName(nameFromFlags, fallbackName) {
   }
 }
 
-function scaffoldProjectTemplate(template, projectName, projectRoot, pm, flags) {
+function scaffoldProjectTemplate(
+  template,
+  projectName,
+  projectRoot,
+  pm,
+  flags,
+) {
   const dryRun = Boolean(flags['dry-run']);
   const skipInstall = Boolean(flags['skip-install']);
   const scaffoldCwd = path.dirname(projectRoot);
@@ -1517,40 +1546,40 @@ function scaffoldProjectTemplate(template, projectName, projectRoot, pm, flags) 
 
   if (template === 'react') {
     run(
-        'npx',
-        [
-          'create-vite@latest',
-          scaffoldProjectArg,
-          '--no-interactive',
-          '--template',
-          'react-ts',
-        ],
-        {
-          dryRun,
-          cwd: scaffoldCwd,
-          env: scaffoldEnv,
-        },
-      );
-      return;
+      'npx',
+      [
+        'create-vite@latest',
+        scaffoldProjectArg,
+        '--no-interactive',
+        '--template',
+        'react-ts',
+      ],
+      {
+        dryRun,
+        cwd: scaffoldCwd,
+        env: scaffoldEnv,
+      },
+    );
+    return;
   }
 
   if (template === 'vuejs') {
     run(
-        'npx',
-        [
-          'create-vite@latest',
-          scaffoldProjectArg,
-          '--no-interactive',
-          '--template',
-          'vue-ts',
-        ],
-        {
-          dryRun,
-          cwd: scaffoldCwd,
-          env: scaffoldEnv,
-        },
-      );
-      return;
+      'npx',
+      [
+        'create-vite@latest',
+        scaffoldProjectArg,
+        '--no-interactive',
+        '--template',
+        'vue-ts',
+      ],
+      {
+        dryRun,
+        cwd: scaffoldCwd,
+        env: scaffoldEnv,
+      },
+    );
+    return;
   }
 
   if (template === 'nextjs') {
@@ -1824,7 +1853,9 @@ function applyReactDemoStarter(projectRoot, projectName, pm, flags) {
 
   const packageJsonPath = path.join(projectRoot, 'package.json');
   if (!fs.existsSync(packageJsonPath)) {
-    logError(`package.json not found in generated React app: ${packageJsonPath}`);
+    logError(
+      `package.json not found in generated React app: ${packageJsonPath}`,
+    );
     process.exit(1);
   }
 
@@ -2051,7 +2082,9 @@ function applyNextDemoStarter(projectRoot, projectName, pm, flags) {
 
   const packageJsonPath = path.join(projectRoot, 'package.json');
   if (!fs.existsSync(packageJsonPath)) {
-    logError(`package.json not found in generated Next.js app: ${packageJsonPath}`);
+    logError(
+      `package.json not found in generated Next.js app: ${packageJsonPath}`,
+    );
     process.exit(1);
   }
 
@@ -2982,7 +3015,9 @@ function wireRsxVitePlugin(projectRoot, dryRun) {
       logOk(`Patched ${viteConfigPath} (removed legacy RS-X Vite plugin).`);
     }
   } else {
-    logInfo(`Vite config already uses the default plugin list: ${viteConfigPath}`);
+    logInfo(
+      `Vite config already uses the default plugin list: ${viteConfigPath}`,
+    );
   }
 
   for (const staleFile of stalePluginFiles) {
@@ -3323,7 +3358,9 @@ function runSetupAngular(flags) {
       if (buildOptions && typeof buildOptions === 'object') {
         buildOptions.preserveSymlinks = true;
       }
-      if (projectConfig?.architect?.build?.configurations?.production?.budgets) {
+      if (
+        projectConfig?.architect?.build?.configurations?.production?.budgets
+      ) {
         delete projectConfig.architect.build.configurations.production.budgets;
       }
     }
@@ -3337,7 +3374,9 @@ function runSetupAngular(flags) {
         `${JSON.stringify(angularJson, null, 2)}\n`,
         'utf8',
       );
-      logOk(`Patched ${angularJsonPath} (preserveSymlinks, production budgets).`);
+      logOk(
+        `Patched ${angularJsonPath} (preserveSymlinks, production budgets).`,
+      );
     }
   }
   ensureAngularPolyfillsContainsFile({
