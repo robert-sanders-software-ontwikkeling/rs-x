@@ -4383,8 +4383,8 @@ function runBuild(flags) {
   const projectArg =
     typeof flags.project === 'string'
       ? flags.project
-      : typeof invocationConfig.project === 'string'
-        ? invocationConfig.project
+      : typeof invocationConfig.tsconfig === 'string'
+        ? invocationConfig.tsconfig
         : 'tsconfig.json';
   const configPath = path.resolve(invocationRoot, projectArg);
   const projectRoot = path.dirname(configPath);
@@ -5038,7 +5038,7 @@ function validateRsxConfigShape(config, filePath) {
     }
 
     const stringKeys = ['preparseFile', 'compiledFile', 'registrationFile'];
-    const extraStringKeys = ['project', 'outDir'];
+    const extraStringKeys = ['tsconfig', 'outDir'];
     for (const key of extraStringKeys) {
       if (build[key] !== undefined && typeof build[key] !== 'string') {
         logError(

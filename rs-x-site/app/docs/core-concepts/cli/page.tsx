@@ -85,7 +85,7 @@ const buildConfigurationCode = dedent`
 const cliConfigurationCode = dedent`
   {
     "build": {
-      "project": "tsconfig.app.json",
+      "tsconfig": "tsconfig.app.json",
       "outDir": "dist",
       "preparse": true,
       "preparseFile": "src/rsx-generated/rsx-aot-preparsed.generated.ts",
@@ -112,18 +112,17 @@ const cliConfigurationCode = dedent`
 `;
 
 const commandReferenceCode = dedent`
+  rsx help [command]
   rsx doctor
-  rsx add
+  rsx add [-a]
   rsx install vscode [--force] [--local] [--dry-run]
   rsx install compiler [--pm <pnpm|npm|yarn|bun>] [--next] [--dry-run]
   rsx setup [--pm <pnpm|npm|yarn|bun>] [--next] [--verify] [--force] [--local] [--dry-run]
-  rsx init [--pm ...] [--entry <path>] [--next] [--skip-install] [--skip-vscode] [--force] [--local] [--dry-run]
-  rsx project [angular|vuejs|react|nextjs|nodejs] [--name <project-name>] [--template <...>] [--pm ...] [--next] [--skip-install] [--skip-vscode] [--verify] [--dry-run]
-  rsx build [--project <tsconfig>] [--out-dir <path>] [--prod] [--aot-preparse <true|false>] [--aot-preparse-file <path>] [--aot-compiled <true|false>] [--aot-compiled-file <path>] [--compiled-resolved-evaluator <true|false>] [--no-emit] [--dry-run]
+  rsx init [--pm <pnpm|npm|yarn|bun>] [--entry <path>] [--next] [--skip-install] [--skip-vscode] [--force] [--local] [--dry-run]
+  rsx project <angular|a|vuejs|v|react|r|nextjs|nx|nodejs|js> [--name <n>] [--template <...>] [--pm <pnpm|npm|yarn|bun>] [--next] [--skip-install] [--skip-vscode] [--verify] [--dry-run]
+  rsx build [--project <tsconfig>] [--out-dir <path>] [--prod] [--no-emit] [--aot-preparse <true|false>] [--aot-preparse-file <path>] [--aot-compiled <true|false>] [--aot-compiled-file <path>] [--compiled-resolved-evaluator <true|false>] [--dry-run]
   rsx typecheck [--project <tsconfig>] [--dry-run]
-  rsx v
-  rsx version
-  rsx --version
+  rsx version | v | -v | --version
 `;
 
 const installVsCodeCode = dedent`
@@ -364,15 +363,20 @@ const doc: CoreConceptDoc = {
       ],
     },
     {
-      title: '10) CLI configuration',
+      title: '10) CLI configuration (rsx.config.json)',
       paragraphs: [
-        'The CLI can also read project-level configuration for build and interactive workflows.',
-        'Use a dedicated `rsx.config.json` in the project root as the single place for both CLI and build settings.',
-        'Useful defaults now include `build.project`, `build.outDir`, `cli.packageManager`, `cli.installTag`, `cli.setup.verify`, `cli.project.verify`, and `cli.add` settings.',
-        'The `cli.add` section lets you set a default directory and the preferred source roots used when `rsx add` suggests existing files.',
-        '`rsx init`, `rsx setup`, and `rsx project` now create `rsx.config.json` for you with both `build` and `cli.add` starter defaults, so the common path is to edit that file directly.',
-        'The CLI validates `rsx.config.json` at runtime, and the VS Code extension now contributes a schema for `rsx.config.json` so you get editor validation and completions while editing it.',
-        'That keeps build settings and interactive CLI defaults together in one predictable file.',
+        'The CLI reads `rsx.config.json` from the project root for build and interactive workflow defaults.',
+        'Both the `build` section (tsconfig path, AOT output paths, preparse/compiled flags) and the `cli` section (package manager, install tag, add defaults) live in the same file.',
+        '`rsx init`, `rsx setup`, and `rsx project` generate a starter `rsx.config.json` automatically.',
+        'The CLI validates the file at runtime. The VS Code extension contributes a JSON schema for editor validation and completions.',
+        <span key="config-link">
+          See the{' '}
+          <a className="cardLink" href="/docs/core-concepts/rsx-config">
+            rsx.config.json reference
+          </a>{' '}
+          for a description of every field, its type, default, and when to use
+          it.
+        </span>,
       ],
       code: cliConfigurationCode,
       codeLanguage: 'json',
@@ -450,6 +454,16 @@ const doc: CoreConceptDoc = {
     },
   ],
   related: [
+    {
+      href: '/docs/core-concepts/rsx-config',
+      title: 'rsx.config.json',
+      meta: 'Full reference for every build and CLI config field',
+    },
+    {
+      href: '/docs/core-concepts/compiler',
+      title: 'Compiler',
+      meta: 'How rsx build preparse/compiled/lazy options affect runtime',
+    },
     {
       href: '/docs/core-concepts/dependency-injection',
       title: 'Dependency injection',

@@ -8,6 +8,9 @@ import {
 
 const demoLinks = (
   <div className="docsApiActions" style={{ marginTop: '1rem' }}>
+    <a className="btn btnPrimary" href="/get-started?track=angular">
+      Angular setup <span aria-hidden="true">→</span>
+    </a>
     <a
       className="btn btnGhost"
       href="https://stackblitz.com/~/github.com/robert-sanders-software-ontwikkeling/rs-x-angular-demo"

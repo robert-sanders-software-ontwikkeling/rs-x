@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 
 export type SeoLandingKey =
   | 'react'
+  | 'nextjs'
   | 'vue'
   | 'angular'
   | 'rxjs'
@@ -55,7 +56,7 @@ export const seoLandingPages: Record<SeoLandingKey, SeoLandingContent> = {
       'Reactive forms and computed values across many fields.',
     ],
     primaryCta: { label: 'React integration', href: '/docs/frameworks/react' },
-    secondaryCta: { label: 'Get started', href: '/get-started' },
+    secondaryCta: { label: 'Get started', href: '/get-started?track=react' },
     relatedLinks: [
       {
         label: 'Expressions 101',
@@ -74,6 +75,45 @@ export const seoLandingPages: Record<SeoLandingKey, SeoLandingContent> = {
     metaTitle: 'rs-x for React — fine-grained reactivity',
     metaDescription:
       'Use rs-x with React for fine-grained change detection and typed reactive expressions.',
+  },
+  nextjs: {
+    slug: 'nextjs',
+    title: 'rs-x for Next.js',
+    lead: 'Fine-grained reactivity for Next.js apps — expressions that update only what changed, with full TypeScript support.',
+    overview:
+      'Use rs-x in Next.js to bind reactive expressions to your model state. rs-x tracks fine-grained dependencies and updates only the parts of the UI that depend on what changed.',
+    highlights: [
+      'Works with Next.js app router and server components — bootstrap runs client-side.',
+      'Webpack plugin integration via rsx setup for seamless build support.',
+      'Full TypeScript support with the rs-x VS Code extension and compiler.',
+    ],
+    useCases: [
+      'Reactive client components with precise update control.',
+      'Shared expression models across multiple components.',
+      'Data-heavy pages where reducing re-renders matters.',
+    ],
+    primaryCta: { label: 'Next.js setup', href: '/get-started?track=next' },
+    secondaryCta: { label: 'CLI docs', href: '/docs/core-concepts/cli' },
+    relatedLinks: [
+      {
+        label: 'Expressions 101',
+        href: '/docs/core-concepts/first-expression',
+      },
+      { label: 'Compiler guide', href: '/docs/core-concepts/compiler' },
+      { label: 'rsx.config.json', href: '/docs/core-concepts/rsx-config' },
+    ],
+    keywords: [
+      'next.js',
+      'nextjs reactivity',
+      'nextjs change detection',
+      'nextjs state management',
+      'fine-grained reactivity',
+      'typescript',
+      'react',
+    ],
+    metaTitle: 'rs-x for Next.js — fine-grained reactive expressions',
+    metaDescription:
+      'Use rs-x with Next.js for fine-grained, typed change detection and reactive expressions in client components.',
   },
   vue: {
     slug: 'vue',
@@ -204,7 +244,7 @@ export const seoLandingPages: Record<SeoLandingKey, SeoLandingContent> = {
       'Cache invalidation for derived data.',
       'Backend services that react to model changes.',
     ],
-    primaryCta: { label: 'Get started', href: '/get-started' },
+    primaryCta: { label: 'Get started', href: '/get-started?track=node' },
     secondaryCta: {
       label: 'Core concepts',
       href: '/docs/core-concepts/first-expression',

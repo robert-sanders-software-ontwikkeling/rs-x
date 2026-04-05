@@ -1937,8 +1937,9 @@ html[data-theme='dark'] .homePage .hTitle {
 /* =========================================================
    Tooling Section (home page)
 ========================================================= */
-.toolingSection {
-  padding: var(--sp-9) 0 var(--sp-10);
+.toolingSection,
+.frameworksSection {
+  padding: var(--sp-5) 0 var(--sp-6);
 }
 
 .seoGlossarySection {

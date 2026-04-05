@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 
 import { type ITabItem, Tabs } from '@rs-x/react-components';
 
@@ -27,23 +28,25 @@ const tracks: readonly Track[] = [
       'Best if you already have an app and want rs-x setup with minimal changes.',
     steps: [
       <>
-        Install the CLI in your project. See the{' '}
+        Install the CLI globally with npm. See the{' '}
         <Link href="/docs/core-concepts/cli">CLI page</Link>.
       </>,
       'Run `rsx setup` to auto-detect the framework and apply the right integration.',
       'Run build/typecheck to verify setup.',
     ],
     commands: [
-      '# 1) Install CLI (local)',
-      'npm install -D @rs-x/cli',
+      '# 1) Install CLI (global)',
+      'npm install -g @rs-x/cli',
       '',
       '# 2) Auto-detect framework and setup',
-      'npx rsx setup',
+      'rsx setup',
       '',
       '# 3) Verify',
-      'npx rsx typecheck --project tsconfig.json',
-      'npx rsx build --project tsconfig.json --prod',
+      'rsx typecheck --project tsconfig.json',
+      'rsx build --project tsconfig.json --prod',
     ].join('\n'),
+    docsHref: '/docs/core-concepts/cli',
+    docsLabel: 'CLI docs',
   },
   {
     value: 'react',
@@ -52,7 +55,7 @@ const tracks: readonly Track[] = [
     description:
       'Creates a Vite + React + TypeScript starter and applies rs-x React integration.',
     steps: [
-      'Install the CLI in your project or use npx.',
+      'Install the CLI globally with npm.',
       'Generate the project from the React template.',
       'Start the dev server.',
       <>
@@ -62,11 +65,11 @@ const tracks: readonly Track[] = [
       </>,
     ],
     commands: [
-      '# 1) Install CLI (optional when using npx)',
-      'npm install -D @rs-x/cli',
+      '# 1) Install CLI (global)',
+      'npm install -g @rs-x/cli',
       '',
       '# 2) Generate project',
-      'npx rsx project react --name my-rsx-react-app',
+      'rsx project react --name my-rsx-react-app',
       '',
       '# 3) Enter project directory',
       'cd my-rsx-react-app',
@@ -76,7 +79,7 @@ const tracks: readonly Track[] = [
       '# Verify: app loads without errors in terminal/browser.',
     ].join('\n'),
     docsHref: '/docs/frameworks/react',
-    docsLabel: 'Open React framework docs',
+    docsLabel: 'React docs',
   },
   {
     value: 'angular',
@@ -85,7 +88,7 @@ const tracks: readonly Track[] = [
     description:
       'Generates an Angular starter and includes rs-x Angular setup and dependencies.',
     steps: [
-      'Install the CLI in your project or use npx.',
+      'Install the CLI globally with npm.',
       'Generate the project from the Angular template.',
       'Start the Angular dev server.',
       'Create your first template binding with the `rsx` pipe.',
@@ -96,11 +99,11 @@ const tracks: readonly Track[] = [
       </>,
     ],
     commands: [
-      '# 1) Install CLI (optional when using npx)',
-      'npm install -D @rs-x/cli',
+      '# 1) Install CLI (global)',
+      'npm install -g @rs-x/cli',
       '',
       '# 2) Generate project',
-      'npx rsx project angular --name my-rsx-angular-app',
+      'rsx project angular --name my-rsx-angular-app',
       '',
       '# 3) Enter project directory',
       'cd my-rsx-angular-app',
@@ -113,7 +116,7 @@ const tracks: readonly Track[] = [
       "{{ 'a + b' | rsx: model }}",
     ].join('\n'),
     docsHref: '/docs/frameworks/angular',
-    docsLabel: 'Open Angular framework docs',
+    docsLabel: 'Angular docs',
   },
   {
     value: 'vue',
@@ -122,17 +125,17 @@ const tracks: readonly Track[] = [
     description:
       'Creates a Vue + TypeScript starter and wires rs-x setup with an `@rs-x/vue` example.',
     steps: [
-      'Install the CLI in your project or use npx.',
+      'Install the CLI globally with npm.',
       'Generate the project from the Vue template.',
       'Start the dev server.',
       'Review the generated @rs-x/vue example in the starter app.',
     ],
     commands: [
-      '# 1) Install CLI (optional when using npx)',
-      'npm install -D @rs-x/cli',
+      '# 1) Install CLI (global)',
+      'npm install -g @rs-x/cli',
       '',
       '# 2) Generate project',
-      'npx rsx project vuejs --name my-rsx-vue-app',
+      'rsx project vuejs --name my-rsx-vue-app',
       '',
       '# 3) Enter project directory',
       'cd my-rsx-vue-app',
@@ -144,6 +147,8 @@ const tracks: readonly Track[] = [
       '# 5) Review generated example (uses @rs-x/vue)',
       '# src/App.vue',
     ].join('\n'),
+    docsHref: '/docs/frameworks/vue',
+    docsLabel: 'Vue docs',
   },
   {
     value: 'next',
@@ -152,17 +157,17 @@ const tracks: readonly Track[] = [
     description:
       'Generates a Next.js starter with rs-x setup and webpack integration.',
     steps: [
-      'Install the CLI in your project or use npx.',
+      'Install the CLI globally with npm.',
       'Generate the project from the Next.js template.',
       'Start the dev server.',
       'Use the generated app-router integration as your baseline pattern.',
     ],
     commands: [
-      '# 1) Install CLI (optional when using npx)',
-      'npm install -D @rs-x/cli',
+      '# 1) Install CLI (global)',
+      'npm install -g @rs-x/cli',
       '',
       '# 2) Generate project',
-      'npx rsx project nextjs --name my-rsx-next-app',
+      'rsx project nextjs --name my-rsx-next-app',
       '',
       '# 3) Enter project directory',
       'cd my-rsx-next-app',
@@ -174,6 +179,8 @@ const tracks: readonly Track[] = [
       '# 5) Review generated integration',
       '# app/layout.tsx',
     ].join('\n'),
+    docsHref: '/docs/core-concepts/cli',
+    docsLabel: 'CLI docs',
   },
   {
     value: 'node',
@@ -182,17 +189,17 @@ const tracks: readonly Track[] = [
     description:
       'Creates a framework-agnostic TypeScript starter for backend/services usage.',
     steps: [
-      'Install the CLI in your project or use npx.',
+      'Install the CLI globally with npm.',
       'Generate the Node.js template project.',
       'Build once.',
       'Run the app.',
     ],
     commands: [
-      '# 1) Install CLI (optional when using npx)',
-      'npm install -D @rs-x/cli',
+      '# 1) Install CLI (global)',
+      'npm install -g @rs-x/cli',
       '',
       '# 2) Generate project',
-      'npx rsx project nodejs --name my-rsx-node-app',
+      'rsx project nodejs --name my-rsx-node-app',
       '',
       '# 3) Enter project directory',
       'cd my-rsx-node-app',
@@ -201,13 +208,23 @@ const tracks: readonly Track[] = [
       'npm run build',
       'npm run start',
     ].join('\n'),
+    docsHref: '/docs/core-concepts/first-expression',
+    docsLabel: 'First expression guide',
   },
 ];
 
-export function GetStartedTracksTabs(): React.ReactElement {
-  const [activeTrack, setActiveTrack] = useState<string>(
-    tracks[0]?.value ?? '',
-  );
+function GetStartedTracksTabsInner(): React.ReactElement {
+  const searchParams = useSearchParams();
+  const trackParam = searchParams.get('track');
+  const resolvedTrack =
+    (trackParam && tracks.find((t) => t.value === trackParam)?.value) ??
+    tracks[0]?.value ??
+    '';
+  const [activeTrack, setActiveTrack] = useState<string>(resolvedTrack);
+
+  useEffect(() => {
+    if (resolvedTrack) setActiveTrack(resolvedTrack);
+  }, [resolvedTrack]);
   const tabItems = useMemo<ITabItem<string>[]>(() => {
     return tracks.map((track) => ({ value: track.value, label: track.label }));
   }, []);
@@ -247,13 +264,19 @@ export function GetStartedTracksTabs(): React.ReactElement {
           <SyntaxCodeBlock code={active.commands} />
           {active.docsHref ? (
             <p className="cardText">
-              <Link href={active.docsHref}>
-                {active.docsLabel ?? 'Open framework docs'}
-              </Link>
+              <Link href={active.docsHref}>{active.docsLabel ?? 'Docs'}</Link>
             </p>
           ) : null}
         </div>
       </div>
     </article>
+  );
+}
+
+export function GetStartedTracksTabs(): React.ReactElement {
+  return (
+    <Suspense fallback={null}>
+      <GetStartedTracksTabsInner />
+    </Suspense>
   );
 }

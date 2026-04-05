@@ -74,6 +74,11 @@ const coreConceptLinks: DocsLinkItem[] = [
     meta: 'Scaffold, setup, build, and typecheck workflows with rsx commands',
   },
   {
+    href: '/docs/core-concepts/rsx-config',
+    title: 'rsx.config.json',
+    meta: 'Build and CLI configuration reference — all fields, types, and defaults',
+  },
+  {
     href: '/docs/core-concepts/compiler',
     title: 'Compiler',
     meta: 'How build-time preparse/compiled/lazy options affect runtime tradeoffs',

@@ -13,7 +13,7 @@
           "type": "boolean",
           "description": "Enable generation of the preparsed AST cache during rsx build --prod."
         },
-        "project": {
+        "tsconfig": {
           "type": "string",
           "description": "Default tsconfig path used by rsx build and rsx typecheck when --project is omitted."
         },

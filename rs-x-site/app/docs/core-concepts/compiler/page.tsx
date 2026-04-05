@@ -28,11 +28,14 @@ const perExpressionOptionsCode = dedent`
 
 const productionConfigCode = dedent`
   {
-    "rsx": {
-      "build": {
-        "aotPreparse": true,
-        "compiledResolvedEvaluator": true
-      }
+    "build": {
+      "tsconfig": "tsconfig.app.json",
+      "preparse": true,
+      "preparseFile": "src/rsx-generated/rsx-aot-preparsed.generated.ts",
+      "compiled": true,
+      "compiledFile": "src/rsx-generated/rsx-aot-compiled.generated.ts",
+      "registrationFile": "src/rsx-generated/rsx-aot-registration.generated.ts",
+      "compiledResolvedEvaluator": false
     }
   }
 `;
@@ -67,7 +70,7 @@ const doc: CoreConceptDoc = {
     'Using the compiler reduces runtime parse pressure, improves startup consistency, and gives stronger feedback in CI/editor diagnostics. The tradeoff is build complexity, and generated output can become large when you have many unique long expressions.',
   keyPoints: [
     '`rsx build` scans your source for expression declarations, validates them, and generates configured AOT artifacts during build.',
-    'There are two config levels: build-level defaults/gates in `package.json` (`rsx.build`) and per-expression options in `rsx(..., options)`.',
+    'There are two config levels: build-level defaults in `rsx.config.json` (`build` section) and per-expression options in `rsx(..., options)`.',
     '`preparse` means expression parsing is done at build time so runtime parser work is skipped for those expressions.',
     '`lazy` (requires `compiled: true`) defers loading the AOT-compiled plan module until the expression is first used instead of registering it at startup.',
     '`compiled` controls whether a specific expression site is emitted as a compiled plan (default true).',
@@ -85,9 +88,9 @@ const doc: CoreConceptDoc = {
     {
       title: 'Build config vs expression options',
       paragraphs: [
-        'Use `rsx.build` in `package.json` for build-level defaults/gates (for example enabling AOT preparse generation for the build profile).',
+        'Use `rsx.config.json` (`build` section) for project-level build defaults — for example enabling AOT preparse generation for the production build profile and setting output file paths.',
         'Use `rsx(..., { preparse, lazy, compiled })` for per-expression behavior. This is where you opt a specific declaration in/out.',
-        'Practical rule: set your global build defaults once, then override only exceptional expression sites.',
+        'Practical rule: set your global build defaults in `rsx.config.json` once, then override only exceptional expression sites inline.',
       ],
     },
     {
@@ -141,7 +144,7 @@ const doc: CoreConceptDoc = {
     {
       title: 'Production config',
       description:
-        'Typical production-oriented compiler settings in package config.',
+        'Typical production-oriented compiler settings in rsx.config.json.',
       code: productionConfigCode,
     },
     {
@@ -152,9 +155,14 @@ const doc: CoreConceptDoc = {
   ],
   related: [
     {
+      href: '/docs/core-concepts/rsx-config',
+      title: 'rsx.config.json',
+      meta: 'Full reference for every build and CLI config field',
+    },
+    {
       href: '/docs/core-concepts/cli',
       title: 'CLI',
-      meta: 'How `rsx build` and `rsx typecheck` are executed',
+      meta: 'How rsx build and rsx typecheck are executed',
     },
     {
       href: '/docs/core-concepts/performance-report',
@@ -169,7 +177,7 @@ const doc: CoreConceptDoc = {
     {
       href: '/docs/irsx-options',
       title: 'IRsxOptions',
-      meta: 'Option details for `preparse`, `lazy`, and `compiled`',
+      meta: 'Option details for preparse, lazy, and compiled',
     },
   ],
 };

@@ -21,14 +21,6 @@ export default function GetStartedPage() {
                 <p className="docsApiEyebrow">Guide</p>
                 <h1 className="sectionTitle">Get started</h1>
               </div>
-              <div className="docsApiActions getStartedHeroActions">
-                <Link className="btn btnGhost" href="/docs">
-                  Docs <span aria-hidden="true">→</span>
-                </Link>
-                <Link className="btn btnPrimary" href="/playground">
-                  Open Playground <span aria-hidden="true">→</span>
-                </Link>
-              </div>
             </div>
             <p className="sectionLead">
               Start from the track that matches your stack: React, Angular, Vue,
@@ -65,8 +57,8 @@ export default function GetStartedPage() {
             <Card header="Next steps">
               <ul className="advancedTopicList">
                 <li>
-                  <Link href="/docs">Open docs</Link> — browse all guides,
-                  framework pages, and API references.
+                  <Link href="/docs">Docs</Link> — browse all guides, framework
+                  pages, and API references.
                 </li>
                 <li>
                   <Link href="/docs/core-concepts/first-expression">

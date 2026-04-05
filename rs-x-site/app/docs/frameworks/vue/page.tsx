@@ -207,6 +207,14 @@ export const metadata: Metadata = {
   description: doc.lead,
 };
 
+const headerNote = (
+  <div className="docsApiActions" style={{ marginTop: '1rem' }}>
+    <a className="btn btnPrimary" href="/get-started?track=vue">
+      Vue setup <span aria-hidden="true">→</span>
+    </a>
+  </div>
+);
+
 export default function Page() {
-  return <CoreConceptPageLayout doc={doc} />;
+  return <CoreConceptPageLayout doc={doc} headerNote={headerNote} />;
 }

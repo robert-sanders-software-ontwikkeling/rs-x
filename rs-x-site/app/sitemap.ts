@@ -46,6 +46,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
     },
     {
+      url: `${BASE_URL}/nextjs`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
       url: `${BASE_URL}/vue`,
       priority: 0.7,
       changeFrequency: 'monthly',
@@ -104,6 +109,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${BASE_URL}/docs/core-concepts/compiler`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/core-concepts/rsx-config`,
       priority: 0.7,
       changeFrequency: 'monthly',
     },

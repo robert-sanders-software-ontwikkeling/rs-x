@@ -272,10 +272,10 @@ export default function HomePage() {
               Framework-ready reactivity
             </h2>
             <p className="toolingLead">
-              rs-x delivers fine-grained change detection across React, Vue, and
-              Angular, while pairing naturally with RxJS and Node.js — ideal for
-              SPA frameworks and backend services that need precise, type-safe
-              updates.
+              rs-x delivers fine-grained change detection across React, Next.js,
+              Vue, and Angular, while pairing naturally with RxJS and Node.js —
+              ideal for SPA frameworks and backend services that need precise,
+              type-safe updates.
             </p>
           </header>
 
@@ -292,6 +292,22 @@ export default function HomePage() {
                   href="/docs/frameworks/react"
                 >
                   React integration <span aria-hidden="true">→</span>
+                </Link>
+              </div>
+            </article>
+
+            <article className="toolingCard">
+              <div className="toolingCardBody">
+                <h3 className="toolingCardTitle">Next.js</h3>
+                <p className="toolingCardText">
+                  Integrate rs-x into Next.js with webpack plugin support and
+                  server-compatible bootstrap wiring.
+                </p>
+                <Link
+                  className="btn btnGhost toolingCardCta"
+                  href="/get-started?track=next"
+                >
+                  Next.js setup <span aria-hidden="true">→</span>
                 </Link>
               </div>
             </article>
@@ -353,7 +369,7 @@ export default function HomePage() {
                 </p>
                 <Link
                   className="btn btnGhost toolingCardCta"
-                  href="/get-started"
+                  href="/get-started?track=node"
                 >
                   Node.js setup <span aria-hidden="true">→</span>
                 </Link>
