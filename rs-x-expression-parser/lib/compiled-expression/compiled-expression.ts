@@ -511,16 +511,6 @@ export class CompiledExpression implements IExpressionTree {
   }
 
   private commitValue = (): void => {
-    if (this._plan.expressionString.includes('trackPrice')) {
-      console.log(
-        '[DEBUG commitValue called]',
-        this._plan.expressionString,
-        'funcUnitVal=',
-        this._evaluateUnit?.value,
-        'dirtyDeps=',
-        [...this._dirtyDependencyNames],
-      );
-    }
     let forceDirty = false;
     for (let i = 0; i < this._dependencyUnits.length; i++) {
       if (this._dependencyUnits[i].consumeForceDirtyCommit()) {
@@ -997,20 +987,6 @@ export class CompiledExpression implements IExpressionTree {
 
   private evaluateBottomToTop(): boolean {
     const value = this.evaluateCompiledValue();
-    if (this._plan.expressionString.includes('trackPrice')) {
-      console.log(
-        '[DEBUG evaluateBottomToTop]',
-        this._plan.expressionString,
-        'value=',
-        value,
-        'old=',
-        this._value,
-        'dirty=',
-        this._isDirty,
-        'dirtyDeps=',
-        [...this._dirtyDependencyNames],
-      );
-    }
     if (value === PENDING) {
       return false;
     }

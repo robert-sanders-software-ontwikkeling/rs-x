@@ -164,7 +164,8 @@ describe('Compiled expression contract tests', () => {
       await new WaitForEvent(expression, 'changed').wait(() => {});
       expect(expression.value).toBe(3);
       expect(
-        (expression as { constructor?: { name?: string } }).constructor?.name,
+        (expression as unknown as { constructor?: { name?: string } })
+          ?.constructor?.name,
       ).toBe('CompiledExpression');
     } finally {
       expression.dispose();

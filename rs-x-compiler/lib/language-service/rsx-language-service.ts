@@ -839,7 +839,10 @@ function unwrapRsxExpressionType(
   checker: ts.TypeChecker,
 ): ts.Type {
   const symbol = type.aliasSymbol ?? type.getSymbol();
-  if (symbol?.getName() === 'IExpression') {
+  if (
+    symbol?.getName() === 'IExpression' ||
+    symbol?.getName() === 'IExpressionTree'
+  ) {
     const typeArguments = checker.getTypeArguments(type as ts.TypeReference);
     if (typeArguments.length > 0) {
       return typeArguments[0];

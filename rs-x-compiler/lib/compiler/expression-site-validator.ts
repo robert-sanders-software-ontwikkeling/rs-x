@@ -1034,6 +1034,7 @@ function tryUnwrapRsxExpressionType(
   const hasSubscribe = Boolean(type.getProperty('subscribe'));
   const isKnownExpressionWrapper =
     symbolName === 'IExpression' ||
+    symbolName === 'IExpressionTree' ||
     symbolName === 'Promise' ||
     symbolName === 'Observable' ||
     symbolName === 'Subject' ||

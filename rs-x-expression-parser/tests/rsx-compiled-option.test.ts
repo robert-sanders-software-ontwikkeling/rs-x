@@ -1,5 +1,8 @@
-import { InjectionContainer } from '@rs-x/core';
+import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
+import { CompiledExpression } from '../lib/compiled-expression/compiled-expression';
+import { AbstractExpression } from '../lib/expressions/abstract-expression';
+import { type IExpressionTree } from '../lib/expressions/expression-parser.interface';
 import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
@@ -96,5 +99,135 @@ describe('rsx compiled option', () => {
 
     exprA.dispose();
     exprB.dispose();
+  });
+});
+
+describe('rsx return type structure (tree mode)', () => {
+  const previousMode = process.env.RSX_EXPRESSION_ENGINE_MODE;
+
+  beforeAll(async () => {
+    delete process.env.RSX_EXPRESSION_ENGINE_MODE;
+    await InjectionContainer.load(RsXExpressionParserModule);
+  });
+
+  afterAll(async () => {
+    if (previousMode === undefined) {
+      delete process.env.RSX_EXPRESSION_ENGINE_MODE;
+    } else {
+      process.env.RSX_EXPRESSION_ENGINE_MODE = previousMode;
+    }
+    await unloadRsXExpressionParserModule();
+  });
+
+  it('rsx() returns AbstractExpression (IExpressionTree) by default', async () => {
+    const model = { a: 1, b: 2 };
+    const expression = rsx<number>('a + b')(model);
+    try {
+      expect(expression).toBeInstanceOf(AbstractExpression);
+    } finally {
+      expression.dispose();
+    }
+  });
+
+  it('rsx({ compiled: false }) returns AbstractExpression (IExpressionTree)', async () => {
+    const model = { a: 1, b: 2 };
+    const expression = rsx<number>('a + b', { compiled: false })(model);
+    try {
+      expect(expression).toBeInstanceOf(AbstractExpression);
+    } finally {
+      expression.dispose();
+    }
+  });
+
+  it('rsx() result exposes childExpressions (IExpressionTree structure)', async () => {
+    const model = { a: 1, b: 2 };
+    const expression = rsx<number>('a + b')(model);
+    try {
+      await new WaitForEvent(expression, 'changed').wait(() => {});
+      const tree = expression as IExpressionTree<number>;
+      expect(Array.isArray(tree.childExpressions)).toBe(true);
+      expect(tree.childExpressions.length).toBeGreaterThan(0);
+    } finally {
+      expression.dispose();
+    }
+  });
+
+  it('rsx() result has parent undefined at root', async () => {
+    const model = { a: 1 };
+    const expression = rsx<number>('a')(model);
+    try {
+      await new WaitForEvent(expression, 'changed').wait(() => {});
+      const tree = expression as IExpressionTree<number>;
+      expect(tree.parent).toBeUndefined();
+      expect(tree.hidden).toBe(false);
+    } finally {
+      expression.dispose();
+    }
+  });
+});
+
+describe('rsx return type structure (compiled mode)', () => {
+  const previousMode = process.env.RSX_EXPRESSION_ENGINE_MODE;
+
+  beforeAll(async () => {
+    process.env.RSX_EXPRESSION_ENGINE_MODE = 'compiled';
+    await InjectionContainer.load(RsXExpressionParserModule);
+  });
+
+  afterAll(async () => {
+    if (previousMode === undefined) {
+      delete process.env.RSX_EXPRESSION_ENGINE_MODE;
+    } else {
+      process.env.RSX_EXPRESSION_ENGINE_MODE = previousMode;
+    }
+    await unloadRsXExpressionParserModule();
+  });
+
+  it('rsx({ compiled: true }) returns CompiledExpression in compiled mode', async () => {
+    const model = { a: 1, b: 2 };
+    const expression = rsx<number>('a + b', { compiled: true })(model);
+    try {
+      expect(expression).toBeInstanceOf(CompiledExpression);
+    } finally {
+      expression.dispose();
+    }
+  });
+
+  it('rsx() returns CompiledExpression in compiled mode (global default)', async () => {
+    const model = { a: 1, b: 2 };
+    const expression = rsx<number>('a + b')(model);
+    try {
+      expect(expression).toBeInstanceOf(CompiledExpression);
+    } finally {
+      expression.dispose();
+    }
+  });
+
+  it('rsx({ compiled: false }) still uses the global engine mode (compiled flag only controls AOT precompiled lookup)', async () => {
+    const model = { a: 1, b: 2 };
+    // compiled: false skips AOT precompiled cache; the engine selector still
+    // applies RSX_EXPRESSION_ENGINE_MODE=compiled → CompiledExpression.
+    const expression = rsx<number>('a + b', { compiled: false })(model);
+    try {
+      expect(expression).toBeInstanceOf(CompiledExpression);
+    } finally {
+      expression.dispose();
+    }
+  });
+
+  it('CompiledExpression stubs: childExpressions is empty, parent is undefined, hidden is false', async () => {
+    const model = { a: 1, b: 2 };
+    const expression = rsx<number>('a + b', { compiled: true })(model);
+    try {
+      await new WaitForEvent(expression, 'changed').wait(() => {});
+      // Cast to IExpressionTree to inspect the internal stubs.
+      // These properties intentionally have no tree semantics on CompiledExpression.
+      const asTree = expression as unknown as IExpressionTree<number>;
+      expect(asTree.childExpressions).toEqual([]);
+      expect(asTree.parent).toBeUndefined();
+      expect(asTree.hidden).toBe(false);
+    } finally {
+      expression.dispose();
+    }
   });
 });
