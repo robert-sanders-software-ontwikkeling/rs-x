@@ -6,6 +6,7 @@ import {
   type IExpressionTree,
 } from './expressions/expression-parser.interface';
 import { type IExpressionFactory } from './expression-factory';
+import { RsXExpressionParserModule } from './rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
 
 let cachedExpressionFactory: IExpressionFactory | undefined;
@@ -44,21 +45,35 @@ type DefaultRsxReturn<TReturn> = IsCompiledByDefault extends true
   ? IExpression<TReturn>
   : IExpressionTree<TReturn>;
 
-const getExpressionFactory = (): IExpressionFactory => {
-  if (!cachedExpressionFactory) {
+const ensureExpressionFactory = (): void => {
+  if (
+    !InjectionContainer.isBound(
+      RsXExpressionParserInjectionTokens.IExpressionFactory,
+    )
+  ) {
+    InjectionContainer.load(RsXExpressionParserModule);
+
     if (
       !InjectionContainer.isBound(
         RsXExpressionParserInjectionTokens.IExpressionFactory,
       )
     ) {
       throw new Error(
-        'RS-X: InjectionContainer is not loaded yet. Call await InjectionContainer.load(RsXExpressionParserModule) before creating expressions.',
+        'RS-X: Failed to initialize ExpressionFactory. RsXExpressionParserModule no loaded.',
       );
     }
+  }
+};
+
+export const getExpressionFactory = (): IExpressionFactory => {
+  if (!cachedExpressionFactory) {
+    ensureExpressionFactory();
+
     cachedExpressionFactory = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionFactory,
     ) as IExpressionFactory;
   }
+
   return cachedExpressionFactory;
 };
 
