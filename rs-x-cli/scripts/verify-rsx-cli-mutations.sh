@@ -212,7 +212,7 @@ then
   summary_lines+=("install-compiler: failed")
   overall_status=1
 else
-  if rg -q '"@rs-x/compiler"|"@rs-x/typescript-plugin"' "$install_dir/package.json"; then
+  if grep -qE '"@rs-x/compiler"|"@rs-x/typescript-plugin"' "$install_dir/package.json"; then
     summary_lines+=("install-compiler: pass")
   else
     printf 'install-compiler: package.json missing expected deps.\n'

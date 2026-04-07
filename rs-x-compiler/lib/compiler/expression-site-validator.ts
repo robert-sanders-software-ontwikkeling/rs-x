@@ -1,4 +1,7 @@
-import ts from 'typescript';
+import type ts from 'typescript';
+
+import { effectiveTypeFlags as _typeFlags } from './effective-typescript';
+export { setEffectiveTypeScript } from './effective-typescript';
 
 import type { AbstractExpression } from '@rs-x/expression-parser';
 import {
@@ -257,7 +260,7 @@ function resolveIdentifierType(
   );
   // If the context resolved to any/unknown (e.g. inferred from unresolved `this`
   // in a JS object literal inside an in-memory program), allow any identifier.
-  if (contextType.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) {
+  if (contextType.flags & (_typeFlags.Any | _typeFlags.Unknown)) {
     return {};
   }
   const property = contextType.getProperty(normalizedIdentifier);
@@ -513,7 +516,7 @@ function resolveIndexedType(
   const isNumberIndexType =
     indexType.primitive === 'number' ||
     (indexType.tsType
-      ? tsTypeMatches(indexType.tsType, ts.TypeFlags.NumberLike, checker)
+      ? tsTypeMatches(indexType.tsType, _typeFlags.NumberLike, checker)
       : false);
 
   if (isNumberIndexType) {
@@ -591,7 +594,7 @@ function resolveFunctionTypeFromKnownContext(
 ): IResolvedType {
   objectType = unwrapRsxExpressionType(objectType, checker);
   // If the object resolved to any/unknown we cannot inspect its properties.
-  if (objectType.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) {
+  if (objectType.flags & (_typeFlags.Any | _typeFlags.Unknown)) {
     return {};
   }
   const fnExpression =
@@ -743,15 +746,15 @@ function isPrimitiveAssignable(
 
   switch (primitive) {
     case 'string':
-      return (parameterType.flags & ts.TypeFlags.StringLike) !== 0;
+      return (parameterType.flags & _typeFlags.StringLike) !== 0;
     case 'number':
-      return (parameterType.flags & ts.TypeFlags.NumberLike) !== 0;
+      return (parameterType.flags & _typeFlags.NumberLike) !== 0;
     case 'boolean':
-      return (parameterType.flags & ts.TypeFlags.BooleanLike) !== 0;
+      return (parameterType.flags & _typeFlags.BooleanLike) !== 0;
     case 'bigint':
-      return (parameterType.flags & ts.TypeFlags.BigIntLike) !== 0;
+      return (parameterType.flags & _typeFlags.BigIntLike) !== 0;
     case 'null':
-      return (parameterType.flags & ts.TypeFlags.Null) !== 0;
+      return (parameterType.flags & _typeFlags.Null) !== 0;
     default:
       return false;
   }
@@ -915,10 +918,10 @@ function isNumberLike(type: IResolvedType, checker: ts.TypeChecker): boolean {
     return false;
   }
   const unwrappedType = unwrapRsxExpressionType(type.tsType, checker);
-  if ((unwrappedType.flags & ts.TypeFlags.Any) !== 0) {
+  if ((unwrappedType.flags & _typeFlags.Any) !== 0) {
     return true;
   }
-  return tsTypeMatches(unwrappedType, ts.TypeFlags.NumberLike, checker);
+  return tsTypeMatches(unwrappedType, _typeFlags.NumberLike, checker);
 }
 
 function isStringLike(type: IResolvedType, checker: ts.TypeChecker): boolean {
@@ -929,10 +932,10 @@ function isStringLike(type: IResolvedType, checker: ts.TypeChecker): boolean {
     return false;
   }
   const unwrappedType = unwrapRsxExpressionType(type.tsType, checker);
-  if ((unwrappedType.flags & ts.TypeFlags.Any) !== 0) {
+  if ((unwrappedType.flags & _typeFlags.Any) !== 0) {
     return true;
   }
-  return tsTypeMatches(unwrappedType, ts.TypeFlags.StringLike, checker);
+  return tsTypeMatches(unwrappedType, _typeFlags.StringLike, checker);
 }
 
 function pickIncompatibleOperandToken(args: {

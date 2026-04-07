@@ -6,7 +6,7 @@
     "jsx": "react-jsx",
     "strict": true,
     "skipLibCheck": true,
-    "baseUrl": "./",
+    "rootDir": "src",
     "plugins": [
       {
         "name": "@rs-x/typescript-plugin"

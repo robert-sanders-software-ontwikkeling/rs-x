@@ -1,5 +1,7 @@
 import ts from 'typescript';
 
+import { effectiveTypeFlags as _typeFlags } from './effective-typescript';
+
 export type ExpressionEntryPointKind = 'rsx' | 'factory-create';
 
 export interface IExpressionSiteDetection {
@@ -386,7 +388,7 @@ function isExpressionFactoryByCreateSignature(
       parameterDeclaration,
     );
     const secondParameterIsString =
-      (secondParameterType.flags & ts.TypeFlags.StringLike) !== 0;
+      (secondParameterType.flags & _typeFlags.StringLike) !== 0;
     if (!secondParameterIsString) {
       return false;
     }
