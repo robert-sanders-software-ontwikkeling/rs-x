@@ -3016,9 +3016,7 @@ function verifySetupOutput(projectRoot, template) {
     angular: {
       scripts: ['build:rsx', 'typecheck:rsx', 'prebuild', 'start'],
       files: ['src/main.ts', 'angular.json'],
-      fileContains: {
-        'src/main.ts': ['isBound', 'RsXExpressionParserInjectionTokens'],
-      },
+      fileContains: { 'src/main.ts': ['providexRsx'] },
     },
   };
 
@@ -3700,45 +3698,56 @@ function runInit(flags) {
     logInfo(`Detected context: ${effectiveContext}`);
     logInfo(`Using entry file: ${entryFile}`);
 
-    const isAsyncBootstrapContext =
-      effectiveContext === 'react' || effectiveContext === 'vuejs';
-    let bootstrapFile = null;
-    if (!isAsyncBootstrapContext) {
-      bootstrapFile = rsxBootstrapFilePath(entryFile);
-      ensureRsxBootstrapFile(bootstrapFile, dryRun);
-    }
+    if (effectiveContext === 'angular') {
+      const patched = ensureAngularProvidersInEntry(entryFile, dryRun);
+      if (!patched) {
+        logInfo('Manual fallback snippet:');
+        console.log("  import { providexRsx } from '@rs-x/angular';");
+        console.log(
+          "  // Add ...providexRsx() to providers in bootstrapApplication(...)",
+        );
+      }
+    } else {
+      const isAsyncBootstrapContext =
+        effectiveContext === 'react' || effectiveContext === 'vuejs';
+      let bootstrapFile = null;
+      if (!isAsyncBootstrapContext) {
+        bootstrapFile = rsxBootstrapFilePath(entryFile);
+        ensureRsxBootstrapFile(bootstrapFile, dryRun);
+      }
 
-    const patched = patchEntryFileForRsx(
-      entryFile,
-      bootstrapFile,
-      effectiveContext,
-      dryRun,
-    );
+      const patched = patchEntryFileForRsx(
+        entryFile,
+        bootstrapFile,
+        effectiveContext,
+        dryRun,
+      );
 
-    if (!patched) {
-      logInfo('Manual fallback snippet:');
-      if (isAsyncBootstrapContext) {
-        console.log('  // Wrap your entry in an async bootstrap function:');
-        console.log("  import { InjectionContainer } from '@rs-x/core';");
-        console.log(
-          "  import { RsXExpressionParserInjectionTokens, RsXExpressionParserModule } from '@rs-x/expression-parser';",
-        );
-        console.log('  async function rsxBootstrap() {');
-        console.log(
-          '    if (!InjectionContainer.isBound(RsXExpressionParserInjectionTokens.IExpressionFactory)) {',
-        );
-        console.log(
-          '      await InjectionContainer.load(RsXExpressionParserModule);',
-        );
-        console.log('    }');
-        console.log("    const { default: App } = await import('./App');");
-        console.log('    // render / mount here');
-        console.log('  }');
-        console.log('  rsxBootstrap();');
-      } else {
-        console.log(
-          "  import './rsx-bootstrap'; // must be the first import in your entry file",
-        );
+      if (!patched) {
+        logInfo('Manual fallback snippet:');
+        if (isAsyncBootstrapContext) {
+          console.log('  // Wrap your entry in an async bootstrap function:');
+          console.log("  import { InjectionContainer } from '@rs-x/core';");
+          console.log(
+            "  import { RsXExpressionParserInjectionTokens, RsXExpressionParserModule } from '@rs-x/expression-parser';",
+          );
+          console.log('  async function rsxBootstrap() {');
+          console.log(
+            '    if (!InjectionContainer.isBound(RsXExpressionParserInjectionTokens.IExpressionFactory)) {',
+          );
+          console.log(
+            '      await InjectionContainer.load(RsXExpressionParserModule);',
+          );
+          console.log('    }');
+          console.log("    const { default: App } = await import('./App');");
+          console.log('    // render / mount here');
+          console.log('  }');
+          console.log('  rsxBootstrap();');
+        } else {
+          console.log(
+            "  import './rsx-bootstrap'; // must be the first import in your entry file",
+          );
+        }
       }
     }
   }
@@ -3840,17 +3849,8 @@ function ensureAngularProvidersInEntry(entryFile, dryRun) {
 
     const rewritten = `${importLines.join('\n')}
 import { providexRsx } from '@rs-x/angular';
-import { InjectionContainer } from '@rs-x/core';
-import { RsXExpressionParserInjectionTokens, RsXExpressionParserModule } from '@rs-x/expression-parser';
 
 const bootstrap = async (): Promise<void> => {
-  if (
-    !InjectionContainer.isBound(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
-    )
-  ) {
-    await InjectionContainer.load(RsXExpressionParserModule);
-  }
   ${bootstrapConfigExpression}
 };
 

@@ -7,6 +7,9 @@
     "strict": true,
     "skipLibCheck": true,
     "rootDir": "src",
+    "types": [
+      "vite/client"
+    ],
     "plugins": [
       {
         "name": "@rs-x/typescript-plugin"
