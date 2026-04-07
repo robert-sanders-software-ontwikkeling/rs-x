@@ -1,7 +1,11 @@
-import { IDisposableOwner, Injectable, KeyedInstanceFactory } from '@rs-x/core';
+import {
+  type IDisposableOwner,
+  Injectable,
+  KeyedInstanceFactory,
+} from '@rs-x/core';
 
-import { IIndexWatchRuleFactory } from './index-watch-rule.factory.interface';
-import { IIndexWatchRule } from './index-watch-rule.interface';
+import type { IIndexWatchRuleFactory } from './index-watch-rule.factory.interface';
+import type { IIndexWatchRule } from './index-watch-rule.interface';
 
 class IndexWatchRule implements IIndexWatchRule {
   private _isDisposed = false;

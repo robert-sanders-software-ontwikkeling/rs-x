@@ -62,7 +62,6 @@ export class RxjsMonacoTypesLoader {
       target: ts.ScriptTarget.ES2020,
       module: ts.ModuleKind.ESNext,
       moduleResolution: ts.ModuleResolutionKind.NodeJs,
-      baseUrl: 'file:///',
       paths: {
         rxjs: ['node_modules/rxjs/dist/types/index.d.ts'],
         'rxjs/*': ['node_modules/rxjs/dist/types/*'],

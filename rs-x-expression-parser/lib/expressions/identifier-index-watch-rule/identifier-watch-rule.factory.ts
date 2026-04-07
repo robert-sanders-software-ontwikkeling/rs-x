@@ -1,8 +1,9 @@
-import type { IIndexValueAccessor, IValueMetadata } from '@rs-x/core';
 import {
-  IDisposableOwner,
+  type IDisposableOwner,
+  type IIndexValueAccessor,
   Inject,
   Injectable,
+  type IValueMetadata,
   KeyedInstanceFactory,
   RsXCoreInjectionTokens,
 } from '@rs-x/core';

@@ -7,7 +7,7 @@ import {
   UnsupportedException,
 } from '@rs-x/core';
 
-import { IIndexWatchRule } from './index-watch-rule/index-watch-rule.interface';
+import type { IIndexWatchRule } from './index-watch-rule/index-watch-rule.interface';
 import type { IIndexObserverProxyPairFactory } from './property-observer/index-observer-proxy-pair.factory.interface';
 import type {
   IIndexInfo,

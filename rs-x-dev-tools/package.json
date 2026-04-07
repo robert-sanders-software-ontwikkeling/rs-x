@@ -4,13 +4,17 @@
   "description": "RS-X DevTools for inspecting reactive state and expressions",
   "type": "module",
   "main": "./dist/index.js",
-  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./panel": {
+      "default": "./dist/panel"
+    },
+    "./package.json": "./package.json"
   },
   "sideEffects": false,
   "files": [

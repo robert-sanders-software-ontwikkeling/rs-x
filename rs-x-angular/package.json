@@ -11,11 +11,11 @@
     "lint": "ng lint"
   },
   "devDependencies": {
-    "@angular/cli": "^21.1.4",
-    "@angular/compiler-cli": "^21.1.5",
+    "@angular/cli": "^21.2.0",
+    "@angular/compiler-cli": "^21.2.7",
     "@vitest/coverage-v8": "4.0.18",
-    "ng-packagr": "^21.1.0",
-    "typescript": "~5.9.3",
+    "ng-packagr": "^21.2.0",
+    "typescript": "^6.0.2",
     "vitest": "^4.0.18",
     "rimraf": "^6.1.3"
   }

@@ -1,6 +1,6 @@
 const isGhPages = process.env.GH_PAGES === 'true';
 
-module.exports = {
+export default {
   output: 'export',
   basePath: isGhPages ? '/rs-x' : '',
   assetPrefix: isGhPages ? '/rs-x/' : '',

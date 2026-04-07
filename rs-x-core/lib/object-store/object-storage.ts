@@ -1,10 +1,10 @@
-import { lastValueFrom, Observable, Observer, of } from 'rxjs';
+import { lastValueFrom, Observable, type Observer, of } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 
 import { Inject, Injectable } from '../dependency-injection';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
 
-import { IObjectStorage } from './object-storage.interface';
+import type { IObjectStorage } from './object-storage.interface';
 
 const indexedDbName = 'objectStore_6a46e952c07d42629cd8fca03b21ce30';
 const storeName = 'objects';

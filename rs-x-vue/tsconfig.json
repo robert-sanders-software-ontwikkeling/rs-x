@@ -3,10 +3,14 @@
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true
+    "rootDir": "./src",
+    "noEmit": true,
+    "types": [],
+    "allowJs": false,
+    "skipLibCheck": true
   },
+
+  "files": [],
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
 }

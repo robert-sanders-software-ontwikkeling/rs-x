@@ -2,8 +2,16 @@
   "name": "@rs-x/cli",
   "version": "1.0.2",
   "description": "CLI for installing RS-X compiler tooling and VS Code integration",
+  "type": "commonjs",
+  "main": "./bin/rsx.cjs",
   "bin": {
     "rsx": "./bin/rsx.cjs"
+  },
+  "exports": {
+    ".": {
+      "default": "./bin/rsx.cjs"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "bin",

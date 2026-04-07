@@ -3,5 +3,6 @@
   "compilerOptions": {
     "types": [],
     "emitDecoratorMetadata": false
-  }
+  },
+  "include": ["src/**/*", "../types/declarations.d.ts"]
 }

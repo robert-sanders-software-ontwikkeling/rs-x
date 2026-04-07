@@ -5,11 +5,15 @@
   "icon": "icon.png",
   "version": "1.0.2",
   "publisher": "RobertSanders",
+  "type": "commonjs",
   "engines": {
     "vscode": "^1.90.0"
   },
   "categories": [
     "Programming Languages"
+  ],
+  "extensionKind": [
+    "workspace"
   ],
   "keywords": [
     "rs-x",
@@ -30,6 +34,7 @@
     "onLanguage:javascriptreact"
   ],
   "main": "./dist/extension.js",
+  "browser": "./dist/extension.js",
   "contributes": {
     "jsonValidation": [
       {
@@ -66,7 +71,7 @@
     ]
   },
   "scripts": {
-    "build": "tsup lib/extension.ts --format cjs --dts --tsconfig ../tsconfig.build.json --out-dir dist",
+    "build": "tsup lib/extension.ts --format cjs --out-dir dist",
     "clean": "rimraf dist",
     "prepare:plugin": "node ./scripts/prepare-plugin.cjs",
     "vscode:prepublish": "pnpm --filter @rs-x/expression-parser run build && pnpm --filter @rs-x/compiler run build && pnpm --filter @rs-x/typescript-plugin run build && pnpm run build",
@@ -89,7 +94,7 @@
     "@vscode/vsce": "^3.6.2",
     "rimraf": "^6.1.2",
     "tsup": "^8.5.1",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.2"
   },
   "files": [
     "dist",

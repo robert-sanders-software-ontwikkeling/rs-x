@@ -10,8 +10,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
+      "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "import": "./dist/testing/index.js",
+      "default": "./dist/testing/index.js"
+    },
+    "./package.json": "./package.json"
   },
   "sideEffects": false,
   "files": [
@@ -30,13 +36,13 @@
     "provenance": true
   },
   "scripts": {
-    "build": "tsup lib/index.ts --format esm,cjs --dts --tsconfig ../tsconfig.build.json",
+    "build": "tsup lib/index.ts --format esm,cjs --dts",
     "clean": "rimraf dist",
     "test": "cross-env TZ=UTC pnpm jest --runInBand --no-cache --config ../jest.config.ts rs-x-compiler/tests"
   },
   "dependencies": {
     "@rs-x/expression-parser": "workspace:*",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.2"
   },
   "devDependencies": {
     "globals": "^17.3.0",

@@ -3,12 +3,17 @@
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
     "jsx": "react-jsx",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "noEmit": true
   },
-  "include": ["next-env.d.ts", "src/**/*", "app/**/*", "types/**/*.d.ts"],
+  "include": [
+    "next-env.d.ts",
+    "src/**/*",
+    "app/**/*",
+    "providers/**/*",
+    "types/**/*.d.ts",
+    "../types/declarations.d.ts"
+  ],
   "exclude": ["node_modules", "dist", "lib/testing", ".next"]
 }

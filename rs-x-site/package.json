@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.1.2",
   "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "copy:monaco-dts": "node ../scripts/copy-monaco-dts.mjs rs-x-site",
     "prod": "pnpm run build && next start",
@@ -33,5 +36,13 @@
     "eslint": "^9.0.0",
     "eslint-config-next": "^15.1.0",
     "typescript": "^5.7.0"
-  }
+  },
+  "keywords": [
+    "rs-x",
+    "website",
+    "react",
+    "nextjs",
+    "monaco",
+    "typescript"
+  ]
 }

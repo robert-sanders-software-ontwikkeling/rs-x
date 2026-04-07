@@ -3704,7 +3704,7 @@ function runInit(flags) {
         logInfo('Manual fallback snippet:');
         console.log("  import { providexRsx } from '@rs-x/angular';");
         console.log(
-          "  // Add ...providexRsx() to providers in bootstrapApplication(...)",
+          '  // Add ...providexRsx() to providers in bootstrapApplication(...)',
         );
       }
     } else {

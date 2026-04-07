@@ -3,9 +3,9 @@ import { type Observable } from 'rxjs';
 import {
   Dispatcher,
   GroupedKeyedInstanceFactory,
-  IDisposable,
-  IDisposableOwner,
-  IKeyedInstanceFactory,
+  type IDisposable,
+  type IDisposableOwner,
+  type IKeyedInstanceFactory,
   Inject,
   Injectable,
   Type,

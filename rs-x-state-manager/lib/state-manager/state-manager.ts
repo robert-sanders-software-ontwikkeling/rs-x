@@ -17,7 +17,7 @@ import {
   truePredicate,
 } from '@rs-x/core';
 
-import { IIndexWatchRule } from '../index-watch-rule/index-watch-rule.interface';
+import type { IIndexWatchRule } from '../index-watch-rule/index-watch-rule.interface';
 import type { IObjectPropertyObserverProxyPairManager } from '../object-property-observer-proxy-pair-manager.type';
 import { RsXStateManagerInjectionTokens } from '../rs-x-state-manager-injection-tokens';
 

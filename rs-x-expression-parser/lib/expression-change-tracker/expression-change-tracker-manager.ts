@@ -1,11 +1,15 @@
 import { Observable, ReplaySubject, Subscription } from 'rxjs';
 
-import { IDisposableOwner, Injectable, KeyedInstanceFactory } from '@rs-x/core';
-
-import { IExpressionTree } from '../expressions/expression-parser.interface';
-
-import { IExpressionChangeHistory } from './expression-change-history.interface';
 import {
+  type IDisposableOwner,
+  Injectable,
+  KeyedInstanceFactory,
+} from '@rs-x/core';
+
+import type { IExpressionTree } from '../expressions/expression-parser.interface';
+
+import type { IExpressionChangeHistory } from './expression-change-history.interface';
+import type {
   IExpressionChangeTracker,
   IExpressionChangeTrackerManager,
 } from './expression-change-tracker-manager.interface';

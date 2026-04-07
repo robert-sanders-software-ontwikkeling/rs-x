@@ -19,7 +19,20 @@
       "Bash(node -e \":*)",
       "Bash(node --prof scripts/benchmark-core-concepts-performance.mjs)",
       "Bash(ls -t /Users/robertsanders/projects/rs-x/rs-x-expression-parser/isolate-*.log)",
-      "Bash(node --prof-process /Users/robertsanders/projects/rs-x/rs-x-expression-parser/isolate-0x130018000-38157-v8.log)"
+      "Bash(node --prof-process /Users/robertsanders/projects/rs-x/rs-x-expression-parser/isolate-0x130018000-38157-v8.log)",
+      "Bash(pnpm build:libs)",
+      "Bash(tsup lib/index.ts --format esm --experimental-dts)",
+      "Bash(pnpm add:*)",
+      "Bash(grep -rn \"baseUrl\" /Users/robertsanders/projects/rs-x/node_modules/rollup-plugin-dts/dist/*.cjs)",
+      "Bash(pnpm patch:*)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(printf '\\\\n')",
+      "Bash(printf '\\\\nN\\\\n')",
+      "Read(//dev/**)",
+      "Read(//private/tmp/**)",
+      "Bash(npm pack:*)",
+      "Bash(tar xzf:*)",
+      "Bash(pnpm format:*)"
     ]
   }
 }

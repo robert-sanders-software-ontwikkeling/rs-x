@@ -1,8 +1,18 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "allowJs": true
+    "rootDir": "./lib",
+    "types": [],
+    "allowJs": false,
+    "skipLibCheck": true
   },
+  "files": [],
   "include": ["lib/**/*"],
-  "exclude": ["lib/testing"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "lib/testing"
+  ]
 }

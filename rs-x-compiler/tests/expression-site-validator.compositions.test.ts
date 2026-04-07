@@ -12,17 +12,16 @@ function createProgram(entryFile: string): ts.Program {
     options: {
       target: ts.ScriptTarget.ES2022,
       module: ts.ModuleKind.ES2022,
-      moduleResolution: ts.ModuleResolutionKind.NodeJs,
+      moduleResolution: ts.ModuleResolutionKind.Bundler,
       strict: true,
       skipLibCheck: true,
       esModuleInterop: true,
       allowSyntheticDefaultImports: true,
-      baseUrl: workspaceRoot,
       types: ['node'],
       paths: {
-        '@rs-x/core': ['rs-x-core/lib/index.ts'],
-        '@rs-x/state-manager': ['rs-x-state-manager/lib/index.ts'],
-        '@rs-x/expression-parser': ['rs-x-expression-parser/lib/index.ts'],
+        '@rs-x/core': ['./rs-x-core/lib/index.ts'],
+        '@rs-x/state-manager': ['./rs-x-state-manager/lib/index.ts'],
+        '@rs-x/expression-parser': ['./rs-x-expression-parser/lib/index.ts'],
       },
     },
   });

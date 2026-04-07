@@ -23,6 +23,20 @@ module.exports = [
       '**/tmp-*.ts',
       '**/tmp-*.mjs',
       'rs-x-cli/rsx-project-*-verify/**',
+      'rs-x-cli/templates/**',
+      // Test/mock/config files not included in package tsconfigs
+      '**/*.test.ts',
+      '**/*.test.tsx',
+      '**/*.spec.ts',
+      '**/*.spec.tsx',
+      '**/tests/**',
+      '**/testing/**',
+      '**/vitest.config.ts',
+      '**/tsup.config.ts',
+      'jest.config.ts',
+      'jest.*.ts',
+      'custom-matchers.ts',
+      'demo/**',
     ],
   },
 
@@ -32,7 +46,7 @@ module.exports = [
     languageOptions: {
       parser: tsParser,
       parserOptions: {
-        project: ['./tsconfig.json'],
+        projectService: true,
         tsconfigRootDir: process.cwd(),
         ecmaVersion: 'latest',
         sourceType: 'module',

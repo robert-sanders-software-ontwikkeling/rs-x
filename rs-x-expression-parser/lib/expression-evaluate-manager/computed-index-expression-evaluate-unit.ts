@@ -1,6 +1,5 @@
+import { emptyFunction } from '@rs-x/core';
 import type { IIndexWatchRule, IWatchFactory } from '@rs-x/state-manager';
-
-import { emptyFunction } from '../../../rs-x-core/lib';
 
 import {
   type IExpressionEvaluateChangeManager,

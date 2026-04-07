@@ -13,7 +13,7 @@ import {
 } from '@rs-x/core';
 
 import { AbstractObserver } from '../../abstract-observer';
-import { IIndexWatchRule } from '../../index-watch-rule/index-watch-rule.interface';
+import type { IIndexWatchRule } from '../../index-watch-rule/index-watch-rule.interface';
 
 import type {
   IDateObserverProxyPair,
