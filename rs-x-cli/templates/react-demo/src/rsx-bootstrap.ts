@@ -1,6 +1,3 @@
-import { InjectionContainer } from '@rs-x/core';
-import { RsXExpressionParserModule } from '@rs-x/expression-parser';
-
 let initialized = false;
 
 type RsxCompiledModule = {
@@ -43,6 +40,5 @@ export async function initRsx(): Promise<void> {
 
   preparsedModule.registerRsxAotParsedExpressionCache?.();
   compiledModule.registerRsxAotCompiledExpressions?.();
-  await InjectionContainer.load(RsXExpressionParserModule);
   initialized = true;
 }
