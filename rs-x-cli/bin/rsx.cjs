@@ -4305,7 +4305,7 @@ function runSetupReact(flags) {
     dryRun,
   );
   wireRsxVitePlugin(projectRoot, dryRun);
-  if (resolveCliVerifyFlag(projectRoot, flags, 'setup')) {
+  if (resolveCliVerifyFlag(projectRoot, flags, 'init')) {
     verifySetupOutput(projectRoot, 'react');
   }
   logOk('RS-X React setup completed.');
@@ -4366,7 +4366,7 @@ function runSetupNext(flags) {
     dryRun,
   );
   wireRsxNextWebpack(projectRoot, dryRun);
-  if (resolveCliVerifyFlag(projectRoot, flags, 'setup')) {
+  if (resolveCliVerifyFlag(projectRoot, flags, 'init')) {
     verifySetupOutput(projectRoot, 'next');
   }
   logOk('RS-X Next.js setup completed.');
@@ -4377,7 +4377,7 @@ function runSetupVue(flags) {
   const projectRoot = process.cwd();
   const pm = resolveCliPackageManager(projectRoot, flags.pm);
   const tag = resolveConfiguredInstallTag(projectRoot, flags);
-  runInit({
+  runBootstrapInit({
     ...flags,
     'skip-vscode': true,
   });
@@ -4435,7 +4435,7 @@ function runSetupVue(flags) {
   ensureTsConfigIncludePattern(vueTsConfigPath, 'src/**/*.d.ts', dryRun);
   ensureVueEnvTypes(projectRoot, dryRun);
   wireRsxVitePlugin(projectRoot, dryRun);
-  if (resolveCliVerifyFlag(projectRoot, flags, 'setup')) {
+  if (resolveCliVerifyFlag(projectRoot, flags, 'init')) {
     verifySetupOutput(projectRoot, 'vuejs');
   }
   logOk('RS-X Vue setup completed.');
@@ -4557,7 +4557,7 @@ function runSetupAngular(flags) {
     dryRun,
   });
 
-  if (resolveCliVerifyFlag(projectRoot, flags, 'setup')) {
+  if (resolveCliVerifyFlag(projectRoot, flags, 'init')) {
     verifySetupOutput(projectRoot, 'angular');
   }
 
