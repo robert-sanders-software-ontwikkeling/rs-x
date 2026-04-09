@@ -345,6 +345,53 @@ run_framework_init_case() {
   summary_lines+=("$label: pass")
 }
 
+create_react_custom_paths_project() {
+  local project_dir="$1"
+
+  rm -rf "$project_dir"
+  mkdir -p "$project_dir/src"
+
+  cat >"$project_dir/package.json" <<'EOF'
+{
+  "name": "rsx-react-custom-paths-verify",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
+EOF
+
+  cat >"$project_dir/src/main.tsx" <<'EOF'
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+
+function App() {
+  return <div>react custom paths smoke test</div>;
+}
+
+createRoot(document.getElementById('root')!).render(<App />);
+EOF
+
+  # Pre-seed rsx.config.json with custom dist/ output paths
+  cat >"$project_dir/rsx.config.json" <<'EOF'
+{
+  "build": {
+    "preparse": true,
+    "preparseFile": "dist/rsx-generated/rsx-aot-preparsed.generated.ts",
+    "compiled": true,
+    "compiledFile": "dist/rsx-generated/rsx-aot-compiled.generated.ts",
+    "registrationFile": "dist/rsx-generated/rsx-aot-registration.generated.ts",
+    "compiledResolvedEvaluator": false
+  }
+}
+EOF
+}
+
 set_build_config_paths() {
   local project_dir="$1"
 
@@ -379,6 +426,7 @@ react_init_dir="$base_dir/react-init-verify"
 next_init_dir="$base_dir/next-init-verify"
 vue_init_dir="$base_dir/vue-init-verify"
 angular_init_dir="$base_dir/angular-init-verify"
+react_custom_paths_dir="$base_dir/react-custom-paths-verify"
 
 printf '\n== install-compiler ==\n'
 rm -rf "$install_dir"
@@ -477,6 +525,31 @@ run_framework_init_case \
   "@rs-x/angular" \
   "src/main.ts" \
   create_angular_project
+
+printf '\n== init-react-custom-paths ==\n'
+create_react_custom_paths_project "$react_custom_paths_dir"
+if ! run_step_in_dir "init-react-custom-paths" "rsx init" "$react_custom_paths_dir" "$base_dir/init-react-custom-paths.log" \
+  "${rsx_cmd[@]}" init --pm "$pm" "$tag_flag" "$skip_vscode_flag" --entry src/main.tsx
+then
+  summary_lines+=("init-react-custom-paths: init failed")
+  overall_status=1
+elif [[ ! -f "$react_custom_paths_dir/src/rsx-bootstrap.ts" ]]; then
+  printf 'init-react-custom-paths: rsx-bootstrap.ts was not created.\n'
+  summary_lines+=("init-react-custom-paths: missing rsx-bootstrap.ts")
+  overall_status=1
+elif ! grep -qF "'../dist/rsx-generated/' + 'rsx-aot-compiled.generated'" "$react_custom_paths_dir/src/rsx-bootstrap.ts"; then
+  printf 'init-react-custom-paths: rsx-bootstrap.ts does not use configured compiledFile path.\n'
+  printf 'Contents:\n'
+  cat "$react_custom_paths_dir/src/rsx-bootstrap.ts"
+  summary_lines+=("init-react-custom-paths: wrong bootstrap import path for compiledFile")
+  overall_status=1
+elif ! grep -qF "'../dist/rsx-generated/' + 'rsx-aot-preparsed.generated'" "$react_custom_paths_dir/src/rsx-bootstrap.ts"; then
+  printf 'init-react-custom-paths: rsx-bootstrap.ts does not use configured preparseFile path.\n'
+  summary_lines+=("init-react-custom-paths: wrong bootstrap import path for preparseFile")
+  overall_status=1
+else
+  summary_lines+=("init-react-custom-paths: pass")
+fi
 
 printf '\n== project ==\n'
 if ! run_step "project" "smoke" "$base_dir/project-smoke.log" \
