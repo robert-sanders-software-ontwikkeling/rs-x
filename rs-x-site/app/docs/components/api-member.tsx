@@ -5,18 +5,10 @@ import Link from 'next/link';
 import { type ReactNode } from 'react';
 
 import { type ApiParameterItem } from '../../../components/ApiParameterList';
+import { type ApiItem } from '../core-api/core-api.types';
 
 import { renderTypeWithLinks } from './render-type-with-links';
 import { splitTopLevelCommaList } from './split-top-level-comma-list';
-
-export interface ApiItem {
-  symbol: string;
-  kind: string;
-  module: string;
-  description: string;
-  sourcePath: string;
-  signature: string;
-}
 
 export type SymbolDocumentation = {
   summary?: string;

@@ -21,7 +21,18 @@ Object.keys(compilerOptions.paths ?? {}).forEach((alias) => {
 });
 
 // ESM dependencies that need Babel transform
-const esModules = ['rxjs', 'resize-observer-polyfill', 'superjson'].join('|');
+const esModules = [
+  'rxjs',
+  'resize-observer-polyfill',
+  'superjson',
+  'inversify',
+  '@inversifyjs/common',
+  '@inversifyjs/container',
+  '@inversifyjs/core',
+  '@inversifyjs/plugin',
+  '@inversifyjs/prototype-utils',
+  '@inversifyjs/reflect-metadata-utils',
+].join('|');
 const includePerformanceTests =
   process.env.RSX_INCLUDE_PERFORMANCE_TESTS === 'true';
 
@@ -57,8 +68,8 @@ const jestConfig: Config.InitialOptions = {
 
   // Transforms
   transform: {
-    // TypeScript via ts-jest (ESM)
-    '^.+\\.tsx?$': [
+    // TypeScript and selected JavaScript via ts-jest (ESM)
+    '^.+\\.[jt]sx?$': [
       'ts-jest',
       {
         tsconfig: '<rootDir>/tsconfig.test.json',
@@ -68,15 +79,11 @@ const jestConfig: Config.InitialOptions = {
       },
     ],
 
-    // ESM dependencies via Babel
-    [`(${esModules}).+\\.js$`]: [
-      'babel-jest',
-      { configFile: '<rootDir>/babel.config.js' },
-    ],
-
     // Styles / templates
     '^.+\\.(scss|css|html)$': 'jest-transform-stub',
   },
+
+  transformIgnorePatterns: [`/node_modules/(?!(${esModules})/)`],
 
   setupFiles: ['<rootDir>/jest.idb.setup.ts'],
 

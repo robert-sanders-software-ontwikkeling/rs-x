@@ -28,20 +28,14 @@ type DemoResult = {
   columnExpressions: string[];
 };
 
-let loadModulePromise: Promise<void> | undefined;
-
-function ensureExpressionModuleLoaded(): Promise<void> {
+function ensureExpressionModuleLoaded(): void {
   if (
-    InjectionContainer.isBound(
+    !InjectionContainer.isBound(
       RsXExpressionParserInjectionTokens.IExpressionParser,
     )
   ) {
-    return Promise.resolve();
+    InjectionContainer.load(RsXExpressionParserModule);
   }
-  if (!loadModulePromise) {
-    loadModulePromise = InjectionContainer.load(RsXExpressionParserModule);
-  }
-  return loadModulePromise;
 }
 
 function toFixed(value: number, digits: number = 3): string {
@@ -97,15 +91,8 @@ export function PerformanceDemoClient() {
   const [result, setResult] = useState<DemoResult | null>(null);
 
   useEffect(() => {
-    void ensureExpressionModuleLoaded()
-      .then(() => setIsReady(true))
-      .catch((exception) => {
-        setError(
-          exception instanceof Error
-            ? exception.message
-            : 'Failed to initialize expression module',
-        );
-      });
+    ensureExpressionModuleLoaded();
+    setIsReady(true);
   }, []);
 
   const bindings = useMemo(() => rows * columns, [rows, columns]);
@@ -132,7 +119,7 @@ export function PerformanceDemoClient() {
     setIsRunning(true);
 
     try {
-      await ensureExpressionModuleLoaded();
+      ensureExpressionModuleLoaded();
 
       const safeRows = Math.max(1, Math.min(MAX_ROWS, Math.floor(rows)));
       const safeColumns = Math.max(

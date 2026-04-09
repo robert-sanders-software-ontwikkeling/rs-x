@@ -1,4 +1,4 @@
-import { type ApiItem } from '../components/api-member';
+import { type ApiItem } from './core-api.types';
 
 export const coreApiItems: ApiItem[] = [
   {

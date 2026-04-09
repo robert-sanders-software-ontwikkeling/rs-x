@@ -90,9 +90,9 @@
     "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x/issues"
   },
   "devDependencies": {
-    "@types/vscode": "^1.90.0",
-    "@vscode/vsce": "^3.6.2",
-    "rimraf": "^6.1.2",
+    "@types/vscode": "^1.110.0",
+    "@vscode/vsce": "^3.7.1",
+    "rimraf": "^6.1.3",
     "tsup": "^8.5.1",
     "typescript": "^6.0.2"
   },

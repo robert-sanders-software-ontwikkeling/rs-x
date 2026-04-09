@@ -291,28 +291,8 @@ export const Playground: React.FC = () => {
   });
 
   useEffect(() => {
-    let cancelled = false;
-
-    ensureExpressionParserBootstrapped()
-      .then(() => {
-        if (!cancelled) {
-          setIsBootstrapReady(true);
-        }
-      })
-      .catch((error) => {
-        console.error('Failed to bootstrap expression parser module', error);
-        if (!cancelled) {
-          setErrors([
-            error instanceof Error
-              ? error.message
-              : 'Failed to initialize expression parser module',
-          ]);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    ensureExpressionParserBootstrapped();
+    setIsBootstrapReady(true);
   }, []);
 
   const handleMount: OnMount = (editor, monaco) => {
@@ -491,7 +471,7 @@ export const Playground: React.FC = () => {
     setScript(nextScript);
 
     try {
-      await ensureExpressionParserBootstrapped();
+      ensureExpressionParserBootstrapped();
       setIsBootstrapReady(true);
 
       const compilerDiagnostics =

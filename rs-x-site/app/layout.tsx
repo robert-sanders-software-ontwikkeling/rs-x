@@ -5,6 +5,7 @@ import { SiteFooter } from '../components/Footer';
 import { NavigationHistoryTracker } from '../components/NavigationHistoryTracker';
 import { SiteHeader } from '../components/SiteHeader';
 
+import '@rs-x/react-components/styles.css';
 import './globals.css';
 
 export const metadata: Metadata = {
