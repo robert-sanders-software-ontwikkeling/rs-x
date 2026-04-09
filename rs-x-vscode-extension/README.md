@@ -10,6 +10,7 @@ Website: [https://www.rsxjs.com/](https://www.rsxjs.com/)
 - Highlights and reports invalid expressions directly in the editor
 - Helps you catch expression issues early, before runtime
 - Supports JavaScript and TypeScript projects (`.js`, `.jsx`, `.ts`, `.tsx`)
+- Supports Vue single-file components when RS-X expressions live inside TypeScript-enabled `<script>` blocks
 
 ## Where It Works
 

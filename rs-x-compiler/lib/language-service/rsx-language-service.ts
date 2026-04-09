@@ -7,6 +7,7 @@ import {
   validateExpressionSite,
 } from '../compiler/expression-site-validator';
 import type { CompilerDiagnosticCategory } from '../diagnostics';
+import { createVueBackedProgramForFile } from '../vue';
 
 export interface IRsxExpressionRegion {
   readonly expression: string;
@@ -134,12 +135,13 @@ export function getRsxDiagnosticsForFile(
   program: ts.Program,
   fileName: string,
 ): IRsxDiagnostic[] {
-  const sourceFile = program.getSourceFile(fileName);
+  const resolved = resolveProgramForFile(program, fileName);
+  const sourceFile = resolved.program.getSourceFile(resolved.fileName);
   if (!sourceFile) {
     return [];
   }
 
-  const checker = program.getTypeChecker();
+  const checker = resolved.program.getTypeChecker();
   const sites = detectExpressionSitesInSourceFile(sourceFile, checker);
   return sites.flatMap((site) => {
     const result = validateExpressionSite(site, checker);
@@ -316,12 +318,13 @@ function resolveExpressionContext(
   fileName: string,
   position: number,
 ): IRsxExpressionContext | null {
-  const sourceFile = program.getSourceFile(fileName);
+  const resolved = resolveProgramForFile(program, fileName);
+  const sourceFile = resolved.program.getSourceFile(resolved.fileName);
   if (!sourceFile) {
     return null;
   }
 
-  const checker = program.getTypeChecker();
+  const checker = resolved.program.getTypeChecker();
   const sites = detectExpressionSitesInSourceFile(sourceFile, checker);
 
   for (const site of sites) {
@@ -347,6 +350,18 @@ function resolveExpressionContext(
   }
 
   return null;
+}
+
+function resolveProgramForFile(
+  program: ts.Program,
+  fileName: string,
+): { program: ts.Program; fileName: string } {
+  return (
+    createVueBackedProgramForFile(program, fileName) ?? {
+      program,
+      fileName,
+    }
+  );
 }
 
 function resolveCompletionTarget(prefixSource: string): {

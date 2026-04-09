@@ -1,5 +1,7 @@
 import ts from 'typescript';
 
+import { createVueBackedProgramForFile, isVueFileName } from '../vue';
+
 import { effectiveTypeFlags as _typeFlags } from './effective-typescript';
 
 export type ExpressionEntryPointKind = 'rsx' | 'factory-create';
@@ -20,6 +22,7 @@ export function detectExpressionSites(
 ): IExpressionSiteDetection[] {
   const checker = program.getTypeChecker();
   const detections: IExpressionSiteDetection[] = [];
+  const seenVueRoots = new Set<string>();
 
   for (const sourceFile of program.getSourceFiles()) {
     if (sourceFile.isDeclarationFile) {
@@ -27,6 +30,30 @@ export function detectExpressionSites(
     }
 
     detections.push(...detectExpressionSitesInSourceFile(sourceFile, checker));
+  }
+
+  for (const rootFileName of program.getRootFileNames()) {
+    if (!isVueFileName(rootFileName) || seenVueRoots.has(rootFileName)) {
+      continue;
+    }
+    seenVueRoots.add(rootFileName);
+
+    const vueProgram = createVueBackedProgramForFile(program, rootFileName);
+    if (!vueProgram) {
+      continue;
+    }
+
+    const vueSourceFile = vueProgram.program.getSourceFile(vueProgram.fileName);
+    if (!vueSourceFile || vueSourceFile.isDeclarationFile) {
+      continue;
+    }
+
+    detections.push(
+      ...detectExpressionSitesInSourceFile(
+        vueSourceFile,
+        vueProgram.program.getTypeChecker(),
+      ),
+    );
   }
 
   return detections;

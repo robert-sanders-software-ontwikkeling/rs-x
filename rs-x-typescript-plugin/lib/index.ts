@@ -2,6 +2,7 @@ import type tsModule from 'typescript/lib/tsserverlibrary';
 
 import {
   detectExpressionSitesInSourceFile,
+  extractVueEmbeddedTypeScriptFile,
   findRsxExpressionRegionAtPosition,
   getRsxCompletionsAtPosition,
   getRsxDiagnosticsForFile,
@@ -49,9 +50,16 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
         return baseCompletions;
       }
 
-      const rsxRegion = findRsxExpressionRegionAtPosition(
+      const rsxProgram = resolveRsxProgramForFile({
+        ts,
+        info,
         program,
         fileName,
+      });
+
+      const rsxRegion = findRsxExpressionRegionAtPosition(
+        rsxProgram.program,
+        rsxProgram.fileName,
         position,
       );
       if (!rsxRegion) {
@@ -59,8 +67,8 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
       }
 
       const rsxCompletions = getRsxCompletionsAtPosition(
-        program,
-        fileName,
+        rsxProgram.program,
+        rsxProgram.fileName,
         position,
       );
       const pluginEntries = rsxCompletions.map(
@@ -92,12 +100,25 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
         return languageService.getQuickInfoAtPosition(fileName, position);
       }
 
-      const hover = getRsxHoverAtPosition(program, fileName, position);
+      const rsxProgram = resolveRsxProgramForFile({
+        ts,
+        info,
+        program,
+        fileName,
+      });
+
+      const hover = getRsxHoverAtPosition(
+        rsxProgram.program,
+        rsxProgram.fileName,
+        position,
+      );
       if (!hover) {
         return languageService.getQuickInfoAtPosition(fileName, position);
       }
 
-      const sourceFile = program.getSourceFile(fileName);
+      const sourceFile =
+        program.getSourceFile(fileName) ??
+        rsxProgram.program.getSourceFile(rsxProgram.fileName);
       const hoveredIdentifier =
         sourceFile?.text.slice(hover.start, hover.end) ?? '';
       const hoverLabel =
@@ -130,9 +151,16 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
         return baseSignatureHelp;
       }
 
-      const rsxRegion = findRsxExpressionRegionAtPosition(
+      const rsxProgram = resolveRsxProgramForFile({
+        ts,
+        info,
         program,
         fileName,
+      });
+
+      const rsxRegion = findRsxExpressionRegionAtPosition(
+        rsxProgram.program,
+        rsxProgram.fileName,
         position,
       );
       if (!rsxRegion) {
@@ -140,8 +168,8 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
       }
 
       const rsxSignatureHelp = getRsxSignatureHelpAtPosition(
-        program,
-        fileName,
+        rsxProgram.program,
+        rsxProgram.fileName,
         position,
       );
       if (!rsxSignatureHelp) {
@@ -198,10 +226,17 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
         return base;
       }
 
-      const pluginSpans = getRsxEncodedClassifications({
+      const rsxProgram = resolveRsxProgramForFile({
         ts,
+        info,
         program,
         fileName,
+      });
+
+      const pluginSpans = getRsxEncodedClassifications({
+        ts,
+        program: rsxProgram.program,
+        fileName: rsxProgram.fileName,
         span,
         format,
       });
@@ -223,12 +258,24 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
         return baseDiagnostics;
       }
 
-      const sourceFile = program.getSourceFile(fileName);
+      const rsxProgram = resolveRsxProgramForFile({
+        ts,
+        info,
+        program,
+        fileName,
+      });
+
+      const sourceFile =
+        program.getSourceFile(fileName) ??
+        rsxProgram.program.getSourceFile(rsxProgram.fileName);
       if (!sourceFile) {
         return baseDiagnostics;
       }
 
-      const rsxDiagnostics = getRsxDiagnosticsForFile(program, fileName).map(
+      const rsxDiagnostics = getRsxDiagnosticsForFile(
+        rsxProgram.program,
+        rsxProgram.fileName,
+      ).map(
         (diagnostic): tsModule.Diagnostic => ({
           file: sourceFile,
           start: diagnostic.start,
@@ -261,6 +308,104 @@ function dedupeCompletionEntries(
     seen.add(entry.name);
     return true;
   });
+}
+
+function resolveRsxProgramForFile(args: {
+  ts: typeof tsModule;
+  info: tsModule.server.PluginCreateInfo;
+  program: tsModule.Program;
+  fileName: string;
+}): { program: tsModule.Program; fileName: string } {
+  const { ts, info, program, fileName } = args;
+
+  if (!fileName.endsWith('.vue')) {
+    return { program, fileName };
+  }
+
+  const existingSourceFile = program.getSourceFile(fileName);
+  if (existingSourceFile && !existingSourceFile.text.includes('<script')) {
+    return { program, fileName };
+  }
+
+  const snapshot = info.languageServiceHost.getScriptSnapshot?.(fileName);
+  if (!snapshot) {
+    return { program, fileName };
+  }
+
+  const sourceText = snapshot.getText(0, snapshot.getLength());
+  const virtualFile = extractVueEmbeddedTypeScriptFile(sourceText, fileName);
+  if (!virtualFile) {
+    return { program, fileName };
+  }
+
+  const compilerOptions =
+    info.project.getCompilationSettings?.() ?? program.getCompilerOptions();
+  const target = compilerOptions.target ?? ts.ScriptTarget.Latest;
+  const defaultHost = ts.createCompilerHost(compilerOptions, true);
+  const virtualSourceFile = ts.createSourceFile(
+    virtualFile.virtualFileName,
+    virtualFile.text,
+    target,
+    true,
+    virtualFile.scriptKind,
+  );
+
+  const rootNames = [
+    ...program
+      .getRootFileNames()
+      .filter((rootFileName) => rootFileName !== fileName),
+    virtualFile.virtualFileName,
+  ];
+
+  const host: tsModule.CompilerHost = {
+    ...defaultHost,
+    fileExists(candidateFileName) {
+      if (candidateFileName === virtualFile.virtualFileName) {
+        return true;
+      }
+      if (candidateFileName === fileName) {
+        return true;
+      }
+      return defaultHost.fileExists(candidateFileName);
+    },
+    readFile(candidateFileName) {
+      if (candidateFileName === virtualFile.virtualFileName) {
+        return virtualFile.text;
+      }
+      if (candidateFileName === fileName) {
+        return sourceText;
+      }
+      return defaultHost.readFile(candidateFileName);
+    },
+    getSourceFile(
+      candidateFileName,
+      languageVersion,
+      onError,
+      shouldCreateNewSourceFile,
+    ) {
+      if (candidateFileName === virtualFile.virtualFileName) {
+        return virtualSourceFile;
+      }
+      if (candidateFileName === fileName) {
+        return undefined;
+      }
+      return defaultHost.getSourceFile(
+        candidateFileName,
+        languageVersion,
+        onError,
+        shouldCreateNewSourceFile,
+      );
+    },
+  };
+
+  return {
+    program: ts.createProgram({
+      rootNames,
+      options: compilerOptions,
+      host,
+    }),
+    fileName: virtualFile.virtualFileName,
+  };
 }
 
 function getRsxEncodedClassifications(args: {
