@@ -597,7 +597,7 @@ function runDoctor() {
     for (const check of failingChecks) {
       if (check.name === 'Node.js >= 20') {
         console.log(
-          '  - Install Node.js 20 or newer before running `rsx setup` or `rsx project`.',
+          '  - Install Node.js 20 or newer before running `rsx init` or `rsx project`.',
         );
       } else if (check.name === 'VS Code CLI (code)') {
         console.log(
@@ -622,7 +622,7 @@ function runDoctor() {
   console.log('');
   console.log('Suggested next steps:');
   console.log(
-    '  - Run `rsx project <framework>` to scaffold a starter, or `rsx setup` inside an existing app.',
+    '  - Run `rsx project <framework>` to scaffold a starter, or `rsx init` inside an existing app.',
   );
   console.log('  - Use `rsx add` to create your first expression file.');
 }
@@ -3683,7 +3683,7 @@ function patchEntryFileForRsx(entryFile, bootstrapFile, context, dryRun) {
   return true;
 }
 
-function runInit(flags) {
+function runBootstrapInit(flags) {
   const dryRun = Boolean(flags['dry-run']);
   const skipInstall = Boolean(flags['skip-install']);
   const projectRoot = process.cwd();
@@ -3786,7 +3786,7 @@ function runInit(flags) {
 
   ensureRsxConfigFile(projectRoot, effectiveContext, dryRun);
 
-  logOk('RS-X init completed.');
+  logOk('RS-X bootstrap wiring completed.');
 }
 
 function ensureAngularProvidersInEntry(entryFile, dryRun) {
@@ -4217,7 +4217,7 @@ function runSetupReact(flags) {
     );
   }
 
-  runInit({
+  runBootstrapInit({
     ...flags,
     'skip-vscode': true,
   });
@@ -4286,7 +4286,7 @@ function runSetupNext(flags) {
   const nextTsConfigRelative = path
     .relative(projectRoot, nextTsConfigPath)
     .replace(/\\/gu, '/');
-  runInit({
+  runBootstrapInit({
     ...flags,
     'skip-vscode': true,
   });
@@ -4530,7 +4530,7 @@ function runSetupAngular(flags) {
   logOk('RS-X Angular setup completed.');
 }
 
-function runSetupAuto(flags) {
+function runInit(flags) {
   const projectRoot = process.cwd();
   const context = detectProjectContext(projectRoot);
   const tag = resolveConfiguredInstallTag(projectRoot, flags);
@@ -4559,22 +4559,8 @@ function runSetupAuto(flags) {
     return;
   }
 
-  logInfo('No framework-specific setup detected; running generic setup.');
-  const pm = resolveCliPackageManager(projectRoot, flags.pm);
-  installRuntimePackages(
-    pm,
-    Boolean(flags['dry-run']),
-    tag,
-    projectRoot,
-    flags,
-  );
-  installCompilerPackages(
-    pm,
-    Boolean(flags['dry-run']),
-    tag,
-    projectRoot,
-    flags,
-  );
+  logInfo('No framework-specific setup detected; running generic init.');
+  runBootstrapInit(flags);
 }
 
 function resolveProjectModule(projectRoot, moduleName) {
@@ -5322,7 +5308,7 @@ function validateRsxConfigShape(config, filePath) {
       process.exit(1);
     }
 
-    const cliBooleanSections = ['setup', 'project'];
+    const cliBooleanSections = ['init', 'project'];
     for (const key of cliBooleanSections) {
       if (cli[key] !== undefined) {
         if (
@@ -5435,7 +5421,7 @@ function defaultCliConfigForTemplate(template) {
   return {
     packageManager: 'npm',
     installTag: 'next',
-    setup: {
+    init: {
       verify: false,
     },
     project: {
@@ -5556,9 +5542,8 @@ function printGeneralHelp() {
   console.log('  install vscode          Install VS Code extension');
   console.log('  install compiler        Install compiler tooling packages');
   console.log(
-    '  setup                   Install RS-X tooling (or setup framework integration)',
+    '  init                    Install RS-X tooling and apply framework integration',
   );
-  console.log('  init                    Setup packages and bootstrap wiring');
   console.log(
     '  project                 Create RS-X starter project (angular/vuejs/react/nextjs/nodejs)',
   );
@@ -5657,10 +5642,10 @@ function printInstallHelp(target) {
   );
 }
 
-function printSetupHelp() {
+function printInitHelp() {
   console.log('Usage:');
   console.log(
-    '  rsx setup [--pm <pnpm|npm|yarn|bun>] [--next] [--verify] [--force] [--local] [--dry-run]',
+    '  rsx init [--pm <pnpm|npm|yarn|bun>] [--entry <path>] [--next] [--skip-install] [--skip-vscode] [--verify] [--force] [--local] [--dry-run]',
   );
   console.log('');
   console.log('What it does:');
@@ -5669,36 +5654,12 @@ function printSetupHelp() {
   );
   console.log('  - Installs runtime packages');
   console.log('  - Installs compiler tooling packages');
-  console.log('  - Writes rsx.build config plus build/typecheck scripts');
+  console.log(
+    '  - Detects project context and wires RS-X bootstrap in the entry file',
+  );
+  console.log('  - Writes rsx build config plus build/typecheck scripts');
   console.log('  - Creates rsx.config.json with CLI defaults you can override');
   console.log('  - Applies framework-specific transform/build integration');
-  console.log('  - Does not install the VS Code extension automatically');
-  console.log('');
-  console.log('Options:');
-  console.log('  --pm        Explicit package manager');
-  console.log('  --next      Install prerelease versions (dist-tag next)');
-  console.log(
-    '  --verify    Validate the resulting setup output before returning',
-  );
-  console.log('  --force     Reinstall extension if already installed');
-  console.log('  --local     Build/install local VSIX from repo workspace');
-  console.log('  --dry-run   Print commands without executing them');
-}
-
-function printInitHelp() {
-  console.log('Usage:');
-  console.log(
-    '  rsx init [--pm <pnpm|npm|yarn|bun>] [--entry <path>] [--next] [--skip-install] [--skip-vscode] [--force] [--local] [--dry-run]',
-  );
-  console.log('');
-  console.log('What it does:');
-  console.log(
-    '  - Installs runtime and compiler tooling (unless --skip-install)',
-  );
-  console.log(
-    '  - Detects project context and wires RS-X bootstrap in entry file',
-  );
-  console.log('  - Creates rsx.config.json with CLI defaults you can override');
   console.log('  - Does not install the VS Code extension automatically');
   console.log('');
   console.log('Options:');
@@ -5708,6 +5669,9 @@ function printInitHelp() {
   console.log('  --skip-install  Skip npm/pnpm/yarn/bun package installation');
   console.log(
     '  --skip-vscode   Accepted for compatibility; VS Code is not auto-installed',
+  );
+  console.log(
+    '  --verify        Validate the resulting setup output before returning',
   );
   console.log('  --force         Reinstall extension if already installed');
   console.log('  --local         Build/install local VSIX from repo workspace');
@@ -5866,11 +5830,6 @@ function printHelpFor(command, target) {
     return;
   }
 
-  if (command === 'setup') {
-    printSetupHelp();
-    return;
-  }
-
   if (command === 'init') {
     printInitHelp();
     return;
@@ -5990,19 +5949,14 @@ function main() {
     return;
   }
 
-  if (command === 'setup') {
+  if (command === 'init') {
     if (target) {
       logError(
-        'Framework argument is not supported for `rsx setup`. The framework is auto-detected.',
+        'Framework argument is not supported for `rsx init`. The framework is auto-detected.',
       );
-      logInfo('Use: `rsx setup`');
+      logInfo('Use: `rsx init`');
       process.exit(1);
     }
-    runSetupAuto(flags);
-    return;
-  }
-
-  if (command === 'init') {
     runInit(flags);
     return;
   }

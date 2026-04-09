@@ -25,21 +25,21 @@ const tracks: readonly Track[] = [
     label: 'Existing project',
     title: 'Add rs-x to an existing project',
     description:
-      'Best if you already have an app and want rs-x setup with minimal changes.',
+      'Best if you already have an app and want rs-x integration with minimal changes.',
     steps: [
       <>
         Install the CLI globally with npm. See the{' '}
         <Link href="/docs/core-concepts/cli">CLI page</Link>.
       </>,
-      'Run `rsx setup` to auto-detect the framework and apply the right integration.',
-      'Run build/typecheck to verify setup.',
+      'Run `rsx init` to auto-detect the framework and apply the right integration.',
+      'Run build/typecheck to verify the integration.',
     ],
     commands: [
       '# 1) Install CLI (global)',
       'npm install -g @rs-x/cli',
       '',
-      '# 2) Auto-detect framework and setup',
-      'rsx setup',
+      '# 2) Auto-detect framework and initialize integration',
+      'rsx init',
       '',
       '# 3) Verify',
       'rsx typecheck --project tsconfig.json',
@@ -86,7 +86,7 @@ const tracks: readonly Track[] = [
     label: 'Angular',
     title: 'Create a new Angular project',
     description:
-      'Generates an Angular starter and includes rs-x Angular setup and dependencies.',
+      'Generates an Angular starter and includes rs-x Angular integration and dependencies.',
     steps: [
       'Install the CLI globally with npm.',
       'Generate the project from the Angular template.',
@@ -123,7 +123,7 @@ const tracks: readonly Track[] = [
     label: 'Vue',
     title: 'Create a new Vue project',
     description:
-      'Creates a Vue + TypeScript starter and wires rs-x setup with an `@rs-x/vue` example.',
+      'Creates a Vue + TypeScript starter and wires rs-x integration with an `@rs-x/vue` example.',
     steps: [
       'Install the CLI globally with npm.',
       'Generate the project from the Vue template.',
@@ -155,7 +155,7 @@ const tracks: readonly Track[] = [
     label: 'Next.js',
     title: 'Create a new Next.js project',
     description:
-      'Generates a Next.js starter with rs-x setup and webpack integration.',
+      'Generates a Next.js starter with rs-x integration and webpack integration.',
     steps: [
       'Install the CLI globally with npm.',
       'Generate the project from the Next.js template.',

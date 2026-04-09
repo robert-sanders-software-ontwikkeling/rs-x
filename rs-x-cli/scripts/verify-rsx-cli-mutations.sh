@@ -26,7 +26,7 @@ pm="${RSX_PM:-npm}"
 tag_flag="${RSX_TAG_FLAG:---next}"
 skip_vscode_flag="${RSX_SKIP_VSCODE_FLAG:---skip-vscode}"
 project_smoke_dir="${RSX_PROJECT_VERIFY_DIR:-$base_dir/project-smoke}"
-setup_smoke_dir="${RSX_SETUP_VERIFY_DIR:-$base_dir/setup-smoke}"
+setup_smoke_dir="${RSX_SETUP_VERIFY_DIR:-$base_dir/init-smoke}"
 
 typeset -a summary_lines
 overall_status=0
@@ -489,15 +489,15 @@ else
   summary_lines+=("project: pass")
 fi
 
-printf '\n== setup ==\n'
-if ! run_step "setup" "smoke" "$base_dir/setup-smoke.log" \
+printf '\n== init ==\n'
+if ! run_step "init" "smoke" "$base_dir/init-smoke.log" \
   env RSX_SETUP_VERIFY_DIR="$setup_smoke_dir" RSX_PM="$pm" RSX_TAG_FLAG="$tag_flag" RSX_SKIP_VSCODE_FLAG="$skip_vscode_flag" \
   zsh "$script_dir/verify-rsx-setup.sh"
 then
-  summary_lines+=("setup: failed")
+  summary_lines+=("init: failed")
   overall_status=1
 else
-  summary_lines+=("setup: pass")
+  summary_lines+=("init: pass")
 fi
 
 printf '\nSummary\n'

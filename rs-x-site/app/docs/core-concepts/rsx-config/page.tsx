@@ -21,7 +21,7 @@ const fullConfigExample = dedent`
     "cli": {
       "packageManager": "pnpm",
       "installTag": "latest",
-      "setup": {
+      "init": {
         "verify": true
       },
       "project": {
@@ -77,7 +77,7 @@ const doc: CoreConceptDoc = {
         <span className="codeInline">rsx build</span> and{' '}
         <span className="codeInline">rsx typecheck</span> generate) and{' '}
         <span className="codeInline">cli</span> (controls defaults for{' '}
-        <span className="codeInline">rsx setup</span>,{' '}
+        <span className="codeInline">rsx init</span>,{' '}
         <span className="codeInline">rsx project</span>,{' '}
         <span className="codeInline">rsx add</span>, and package manager
         selection).
@@ -93,9 +93,9 @@ const doc: CoreConceptDoc = {
     'Having one config file per project keeps build settings and interactive CLI defaults together and version-controlled. Every teammate and CI run uses the same tsconfig path, AOT output locations, package manager, and add defaults — without command-line flags.',
   keyPoints: [
     'Place rsx.config.json in the project root alongside package.json.',
-    'rsx init, rsx setup, and rsx project generate a starter rsx.config.json automatically.',
+    'rsx init and rsx project generate a starter rsx.config.json automatically.',
     'The build section mirrors rsx build/typecheck flags and sets per-project defaults.',
-    'The cli section sets defaults for package manager, install channel, setup/project verification, and rsx add behavior.',
+    'The cli section sets defaults for package manager, install channel, init/project verification, and rsx add behavior.',
     'The CLI validates the file on every command that reads config — bad config fails early with a clear message.',
     'The VS Code extension contributes a JSON schema so rsx.config.json gets red squiggles, completions, and hover docs.',
   ],
@@ -184,7 +184,7 @@ const doc: CoreConceptDoc = {
       title: 'cli.packageManager',
       paragraphs: [
         'Type: "pnpm" | "npm" | "yarn" | "bun" | Default: auto-detected',
-        'Default package manager used for install, rsx setup, and rsx project flows.',
+        'Default package manager used for install, rsx init, and rsx project flows.',
         'When not set, the CLI detects the package manager from the lockfile in the current project.',
         'Override per-command with --pm <manager>.',
       ],
@@ -199,11 +199,11 @@ const doc: CoreConceptDoc = {
       ],
     },
     {
-      title: 'cli.setup.verify',
+      title: 'cli.init.verify',
       paragraphs: [
         'Type: boolean | Default: false',
-        'When true, rsx setup runs a post-mutation sanity check automatically — as if --verify was always passed.',
-        'Useful in team or CI environments where you want to confirm the setup output is correct on every run.',
+        'When true, rsx init runs a post-mutation sanity check automatically — as if --verify was always passed.',
+        'Useful in team or CI environments where you want to confirm the integration output is correct on every run.',
       ],
     },
     {
@@ -251,7 +251,7 @@ const doc: CoreConceptDoc = {
       paragraphs: [
         'The RS-X VS Code extension contributes a JSON schema for rsx.config.json.',
         'Once the extension is installed, VS Code will validate the file as you type, report unknown properties, and show completion suggestions and hover descriptions for every field.',
-        'Install the extension with: npx rsx install vscode',
+        'Install the extension with: rsx install vscode',
       ],
     },
   ],

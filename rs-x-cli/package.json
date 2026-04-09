@@ -36,7 +36,7 @@
     "build": "node -e \"console.log('No build step required for @rs-x/cli')\"",
     "verify:cli-mutations": "zsh ./scripts/verify-rsx-cli-mutations.sh",
     "verify:project-smoke": "zsh ./scripts/verify-rsx-projects.sh",
-    "verify:setup-smoke": "zsh ./scripts/verify-rsx-setup.sh",
+    "verify:init-smoke": "zsh ./scripts/verify-rsx-setup.sh",
     "prepack": "node ./scripts/prepare-vsix.cjs",
     "postinstall": "node ./scripts/postinstall.cjs"
   },

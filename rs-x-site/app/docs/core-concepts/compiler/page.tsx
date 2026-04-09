@@ -10,10 +10,10 @@ import { CompilerFlowDiagram } from './compiler-flow-diagram.client';
 
 const buildBasicsCode = dedent`
   # Development build
-  npx rsx build --project tsconfig.json
+  rsx build --project tsconfig.json
 
   # Production build (AOT-focused profile)
-  npx rsx build --project tsconfig.json --prod
+  rsx build --project tsconfig.json --prod
 `;
 
 const perExpressionOptionsCode = dedent`

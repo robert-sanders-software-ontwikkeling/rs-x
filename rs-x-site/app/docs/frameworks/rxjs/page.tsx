@@ -8,7 +8,7 @@ import {
 
 const installCode = dedent`
   # CLI (recommended)
-  npx rsx init
+  rsx init
   npm install rxjs
 
   # Manual

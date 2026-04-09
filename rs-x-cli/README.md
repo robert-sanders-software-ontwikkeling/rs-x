@@ -43,7 +43,7 @@ The rs-x VS Code extension provides:
 1. Make sure the VS Code CLI is available:
    - `code --version`
 2. Retry install:
-   - `npx rsx install vscode --force`
+   - `rsx install vscode --force`
 3. Install manually from a VSIX path if needed:
    - `code --install-extension "/absolute/path/to/rs-x-vscode-extension-<version>.vsix"`
 4. In CI/restricted shells, disable auto-install:
@@ -55,29 +55,28 @@ The rs-x VS Code extension provides:
 - `rsx add` (aliases: `rsx -a`, `rsx -add`)
 - `rsx install vscode [--force] [--local] [--dry-run]`
 - `rsx install compiler [--pm <pnpm|npm|yarn|bun>] [--next] [--dry-run]`
-- `rsx setup [--pm <pnpm|npm|yarn|bun>] [--next] [--force] [--local] [--dry-run]`
-- `rsx init [--pm <pnpm|npm|yarn|bun>] [--entry <path>] [--next] [--skip-install] [--skip-vscode] [--force] [--local] [--dry-run]`
+- `rsx init [--pm <pnpm|npm|yarn|bun>] [--entry <path>] [--next] [--skip-install] [--skip-vscode] [--verify] [--force] [--local] [--dry-run]`
 - `rsx project [angular|vuejs|react|nextjs|nodejs] [--name <project-name>] [--template <...>] [--pm <pnpm|npm|yarn|bun>] [--next] [--skip-install] [--skip-vscode] [--dry-run]`
 - `rsx build [--project <path-to-tsconfig>] [--out-dir <path>] [--dry-run]`
 - `rsx typecheck [--project <path-to-tsconfig>] [--dry-run]`
 
 `rsx init` does:
 
+- auto-detect framework (`angular`, `react`, `vuejs`, `next`, fallback generic`) and run matching integration flow
 - install runtime packages: `@rs-x/core`, `@rs-x/state-manager`, `@rs-x/expression-parser`
 - install compiler tooling: `@rs-x/compiler`, `@rs-x/typescript-plugin`
-- detect project context (`angular`, `react`, `vuejs`, `generic`, `next`)
-- create `rsx-bootstrap.ts` (or `.js`) with async module loading
-- patch startup file to `await initRsx()` before app bootstrap:
+- patch startup file to preload RS-X before app bootstrap:
   - React: wraps `createRoot(...).render(...)`
   - Angular: wraps `bootstrapApplication(...)` / `bootstrapModule(...)`
   - Generic: wraps `main();`-style startup call
   - Vue: wraps `createApp(...).mount(...)`
   - Next.js: creates `RsxBootstrapGate` client component and wraps app children (`app/layout.*`) or `<Component />` (`pages/_app.*`)
-- install VS Code extension (unless `--skip-vscode`)
-
-`rsx setup` behavior:
-
-- `rsx setup` auto-detects framework (`angular`, `react`, `vuejs`, `next`, fallback generic) and runs matching setup flow.
+- add framework-specific integration when detected:
+  - Angular: installs `@rs-x/angular`, updates Angular scripts/config, and wires providers
+  - React / Next.js: installs `@rs-x/react`, wires build scripts, and applies Vite/Next integration
+  - Vue: installs `@rs-x/vue`, wires build scripts, and applies Vite/TS integration
+- create `rsx.config.json` with CLI defaults you can override
+- does not install VS Code automatically (`--skip-vscode` is accepted for compatibility)
 
 `rsx project` template extras:
 
@@ -90,7 +89,6 @@ The rs-x VS Code extension provides:
 ```bash
 npx @rs-x/cli init
 npx @rs-x/cli init --entry src/main.ts --skip-vscode
-npx @rs-x/cli setup
 npx @rs-x/cli install vscode --force
 npx @rs-x/cli install compiler --pm pnpm
 npx @rs-x/cli install compiler --next

@@ -7,7 +7,7 @@ import { GetStartedTracksTabs } from './get-started-tracks-tabs.client';
 export const metadata = {
   title: 'Get started',
   description:
-    'Choose your framework and follow step-by-step rs-x setup instructions.',
+    'Choose your framework and follow step-by-step rs-x integration instructions.',
 };
 
 export default function GetStartedPage() {
@@ -34,8 +34,8 @@ export default function GetStartedPage() {
             <Card header="What you should know first">
               <ul className="advancedTopicList">
                 <li>
-                  <span className="codeInline">rsx setup</span> auto-detects
-                  your framework and applies the right integration flow.
+                  <span className="codeInline">rsx init</span> auto-detects your
+                  framework and applies the right integration flow.
                 </li>
                 <li>
                   <span className="codeInline">rsx project</span> creates a new

@@ -19,7 +19,7 @@ export CI=true
 script_dir="${0:A:h}"
 package_root="${script_dir:h}"
 rsx_cmd=(node "$package_root/bin/rsx.cjs")
-default_base_dir="$package_root/.tests/rsx-setup-smoke"
+default_base_dir="$package_root/.tests/rsx-init-smoke"
 prebuild_script="$script_dir/prepare-local-rsx-packages.sh"
 
 base_dir="${RSX_SETUP_VERIFY_DIR:-$default_base_dir}"
@@ -95,7 +95,7 @@ mkdir -p "$base_dir"
 mkdir -p "$work_base_dir"
 cat > "$work_base_dir/package.json" <<'EOF'
 {
-  "name": "rsx-setup-smoke-workspace",
+  "name": "rsx-init-smoke-workspace",
   "private": true
 }
 EOF
@@ -115,13 +115,13 @@ fi
 
 verify_framework() {
   local framework="$1"
-  local project_name="rsx-setup-${framework}-verify"
+  local project_name="rsx-init-${framework}-verify"
   local project_dir="$work_base_dir/$project_name"
   local project_arg="./$project_name"
   local scaffold_log="$base_dir/${framework}-scaffold.log"
   local install_log="$base_dir/${framework}-install.log"
-  local setup_log="$base_dir/${framework}-setup.log"
-  local setup_repeat_log="$base_dir/${framework}-setup-repeat.log"
+  local setup_log="$base_dir/${framework}-init.log"
+  local setup_repeat_log="$base_dir/${framework}-init-repeat.log"
   local build_log="$base_dir/${framework}-build.log"
 
   rm -rf "$project_dir"
@@ -163,11 +163,11 @@ verify_framework() {
       ;;
   esac
 
-  run_step_in_dir "$framework" "rsx setup" "$project_dir" "$setup_log" "${rsx_cmd[@]}" setup --pm "$pm" "$tag_flag" "$skip_vscode_flag" \
-    || { summary_lines+=("$framework: rsx setup failed"); overall_status=1; return; }
+  run_step_in_dir "$framework" "rsx init" "$project_dir" "$setup_log" "${rsx_cmd[@]}" init --pm "$pm" "$tag_flag" "$skip_vscode_flag" \
+    || { summary_lines+=("$framework: rsx init failed"); overall_status=1; return; }
 
-  run_step_in_dir "$framework" "rsx setup (repeat)" "$project_dir" "$setup_repeat_log" "${rsx_cmd[@]}" setup --pm "$pm" "$tag_flag" "$skip_vscode_flag" \
-    || { summary_lines+=("$framework: repeat rsx setup failed"); overall_status=1; return; }
+  run_step_in_dir "$framework" "rsx init (repeat)" "$project_dir" "$setup_repeat_log" "${rsx_cmd[@]}" init --pm "$pm" "$tag_flag" "$skip_vscode_flag" \
+    || { summary_lines+=("$framework: repeat rsx init failed"); overall_status=1; return; }
 
   run_step_in_dir "$framework" "build" "$project_dir" "$build_log" "$pm" run build \
     || { summary_lines+=("$framework: build failed"); overall_status=1; return; }

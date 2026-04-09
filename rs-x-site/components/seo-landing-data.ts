@@ -84,7 +84,7 @@ export const seoLandingPages: Record<SeoLandingKey, SeoLandingContent> = {
       'Use rs-x in Next.js to bind reactive expressions to your model state. rs-x tracks fine-grained dependencies and updates only the parts of the UI that depend on what changed.',
     highlights: [
       'Works with Next.js app router and server components — bootstrap runs client-side.',
-      'Webpack plugin integration via rsx setup for seamless build support.',
+      'Webpack plugin integration via rsx init for seamless build support.',
       'Full TypeScript support with the rs-x VS Code extension and compiler.',
     ],
     useCases: [
