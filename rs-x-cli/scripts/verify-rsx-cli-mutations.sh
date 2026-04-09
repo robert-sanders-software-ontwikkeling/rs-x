@@ -165,6 +165,186 @@ main();
 EOF
 }
 
+create_react_project() {
+  local project_dir="$1"
+
+  rm -rf "$project_dir"
+  mkdir -p "$project_dir/src"
+
+  cat >"$project_dir/package.json" <<'EOF'
+{
+  "name": "rsx-react-init-verify",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
+EOF
+
+  cat >"$project_dir/src/main.tsx" <<'EOF'
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+
+function App() {
+  return <div>react init smoke test</div>;
+}
+
+createRoot(document.getElementById('root')!).render(<App />);
+EOF
+}
+
+create_next_project() {
+  local project_dir="$1"
+
+  rm -rf "$project_dir"
+  mkdir -p "$project_dir/app"
+
+  cat >"$project_dir/package.json" <<'EOF'
+{
+  "name": "rsx-next-init-verify",
+  "private": true,
+  "dependencies": {
+    "next": "^16.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
+EOF
+
+  cat >"$project_dir/app/layout.tsx" <<'EOF'
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}
+EOF
+}
+
+create_vue_project() {
+  local project_dir="$1"
+
+  rm -rf "$project_dir"
+  mkdir -p "$project_dir/src"
+
+  cat >"$project_dir/package.json" <<'EOF'
+{
+  "name": "rsx-vue-init-verify",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
+EOF
+
+  cat >"$project_dir/src/main.ts" <<'EOF'
+import { createApp } from 'vue';
+
+const App = {
+  template: '<div>vue init smoke test</div>',
+};
+
+createApp(App).mount('#app');
+EOF
+}
+
+create_angular_project() {
+  local project_dir="$1"
+
+  rm -rf "$project_dir"
+  mkdir -p "$project_dir/src"
+
+  cat >"$project_dir/package.json" <<'EOF'
+{
+  "name": "rsx-angular-init-verify",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@angular/core": "^20.3.5",
+    "@angular/platform-browser": "^20.3.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
+EOF
+
+  cat >"$project_dir/src/main.ts" <<'EOF'
+import { Component } from '@angular/core';
+import { bootstrapApplication } from '@angular/platform-browser';
+
+@Component({
+  selector: 'app-root',
+  template: '<main>angular init smoke test</main>',
+})
+class AppComponent {}
+
+bootstrapApplication(AppComponent).catch((error) => console.error(error));
+EOF
+}
+
+verify_manifest_has_dep() {
+  local manifest_path="$1"
+  local package_name="$2"
+
+  node -e "
+const fs = require('node:fs');
+const manifest = JSON.parse(fs.readFileSync(process.argv[1], 'utf8'));
+const deps = {
+  ...(manifest.dependencies || {}),
+  ...(manifest.devDependencies || {}),
+};
+if (!Object.prototype.hasOwnProperty.call(deps, process.argv[2])) {
+  process.exit(1);
+}
+" "$manifest_path" "$package_name"
+}
+
+run_framework_init_case() {
+  local label="$1"
+  local project_dir="$2"
+  local expected_dep="$3"
+  local entry_path="$4"
+  local create_fn="$5"
+
+  printf '\n== %s ==\n' "$label"
+  "$create_fn" "$project_dir"
+
+  if ! run_step_in_dir "$label" "rsx init" "$project_dir" "$base_dir/$label.log" \
+    "${rsx_cmd[@]}" init --pm "$pm" "$tag_flag" "$skip_vscode_flag" --entry "$entry_path"
+  then
+    summary_lines+=("$label: init failed")
+    overall_status=1
+    return
+  fi
+
+  if ! verify_manifest_has_dep "$project_dir/package.json" "$expected_dep"; then
+    printf '%s: package.json missing %s.\n' "$label" "$expected_dep"
+    summary_lines+=("$label: missing $expected_dep")
+    overall_status=1
+    return
+  fi
+
+  summary_lines+=("$label: pass")
+}
+
 set_build_config_paths() {
   local project_dir="$1"
 
@@ -195,6 +375,10 @@ printf 'Using tag flag: %s\n' "$tag_flag"
 
 install_dir="$base_dir/install-compiler-verify"
 generic_dir="$base_dir/init-add-verify"
+react_init_dir="$base_dir/react-init-verify"
+next_init_dir="$base_dir/next-init-verify"
+vue_init_dir="$base_dir/vue-init-verify"
+angular_init_dir="$base_dir/angular-init-verify"
 
 printf '\n== install-compiler ==\n'
 rm -rf "$install_dir"
@@ -265,6 +449,34 @@ create_generic_project "$generic_dir"
     summary_lines+=("init-and-add: pass")
   fi
 fi
+
+run_framework_init_case \
+  "init-react" \
+  "$react_init_dir" \
+  "@rs-x/react" \
+  "src/main.tsx" \
+  create_react_project
+
+run_framework_init_case \
+  "init-next" \
+  "$next_init_dir" \
+  "@rs-x/react" \
+  "app/layout.tsx" \
+  create_next_project
+
+run_framework_init_case \
+  "init-vue" \
+  "$vue_init_dir" \
+  "@rs-x/vue" \
+  "src/main.ts" \
+  create_vue_project
+
+run_framework_init_case \
+  "init-angular" \
+  "$angular_init_dir" \
+  "@rs-x/angular" \
+  "src/main.ts" \
+  create_angular_project
 
 printf '\n== project ==\n'
 if ! run_step "project" "smoke" "$base_dir/project-smoke.log" \

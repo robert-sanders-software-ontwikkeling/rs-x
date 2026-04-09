@@ -19,6 +19,7 @@ module.exports = [
       '**/dist/**',
       '**/build/**',
       '**/coverage/**',
+      '**/.tmp/**',
       '**/.tmp-*',
       '**/tmp-*.ts',
       '**/tmp-*.mjs',

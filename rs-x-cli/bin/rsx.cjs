@@ -371,22 +371,30 @@ function installResolvedPackages(pm, packageNames, options = {}) {
 }
 
 function installRuntimePackages(pm, dryRun, tag, projectRoot, flags) {
+  const context = detectProjectContext(projectRoot ?? process.cwd());
   const specs = resolveLocalRsxSpecs(projectRoot ?? process.cwd(), flags, {
     tag,
+    ...resolveFrameworkPackageOptions(context),
   });
-  installResolvedPackages(pm, RUNTIME_PACKAGES, {
-    dev: false,
-    dryRun,
-    tag,
-    specs,
-    cwd: projectRoot,
-    label: 'runtime RS-X packages',
-  });
+  installResolvedPackages(
+    pm,
+    [...RUNTIME_PACKAGES, ...resolveFrameworkBindingPackageNames(context)],
+    {
+      dev: false,
+      dryRun,
+      tag,
+      specs,
+      cwd: projectRoot,
+      label: 'runtime RS-X packages',
+    },
+  );
 }
 
 function installCompilerPackages(pm, dryRun, tag, projectRoot, flags) {
+  const context = detectProjectContext(projectRoot ?? process.cwd());
   const specs = resolveLocalRsxSpecs(projectRoot ?? process.cwd(), flags, {
     tag,
+    ...resolveFrameworkPackageOptions(context),
   });
   installResolvedPackages(pm, COMPILER_PACKAGES, {
     dev: true,
@@ -3127,6 +3135,30 @@ function detectProjectContext(projectRoot) {
   return 'generic';
 }
 
+function resolveFrameworkPackageOptions(context) {
+  return {
+    includeAngularPackage: context === 'angular',
+    includeReactPackage: context === 'react' || context === 'next',
+    includeVuePackage: context === 'vuejs',
+  };
+}
+
+function resolveFrameworkBindingPackageNames(context) {
+  if (context === 'angular') {
+    return ['@rs-x/angular'];
+  }
+
+  if (context === 'react' || context === 'next') {
+    return ['@rs-x/react'];
+  }
+
+  if (context === 'vuejs') {
+    return ['@rs-x/vue'];
+  }
+
+  return [];
+}
+
 function resolveEntryFile(projectRoot, context, explicitEntry) {
   if (explicitEntry) {
     const resolved = path.resolve(projectRoot, explicitEntry);
@@ -3657,6 +3689,7 @@ function runInit(flags) {
   const projectRoot = process.cwd();
   const pm = resolveCliPackageManager(projectRoot, flags.pm);
   const tag = resolveConfiguredInstallTag(projectRoot, flags);
+  const context = detectProjectContext(projectRoot);
 
   if (!skipInstall) {
     installRuntimePackages(pm, dryRun, tag, projectRoot, flags);
@@ -3665,7 +3698,6 @@ function runInit(flags) {
     logInfo('Skipping package installation (--skip-install).');
   }
 
-  const context = detectProjectContext(projectRoot);
   const entryFile = resolveEntryFile(projectRoot, context, flags.entry);
   const effectiveContext = flags.entry
     ? (inferContextFromEntryFile(entryFile) ?? context)
