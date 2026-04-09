@@ -4578,12 +4578,15 @@ function runBuild(flags) {
   const noEmit = Boolean(flags['no-emit']);
   const prodMode = parseBooleanFlag(flags.prod, false);
   const invocationConfig = resolveRsxBuildConfig(invocationRoot);
+  const defaultProjectConfig = resolveProjectTsConfig(invocationRoot);
   const projectArg =
     typeof flags.project === 'string'
       ? flags.project
       : typeof invocationConfig.tsconfig === 'string'
         ? invocationConfig.tsconfig
-        : 'tsconfig.json';
+        : path
+            .relative(invocationRoot, defaultProjectConfig)
+            .replace(/\\/gu, '/');
   const configPath = path.resolve(invocationRoot, projectArg);
   const projectRoot = path.dirname(configPath);
   const context = detectProjectContext(projectRoot);
@@ -5741,7 +5744,9 @@ function printBuildHelp() {
   console.log('  - Emits JavaScript output to tsconfig outDir (or --out-dir)');
   console.log('');
   console.log('Options:');
-  console.log('  --project   Path to tsconfig file (default: tsconfig.json)');
+  console.log(
+    '  --project   Path to tsconfig file (default: auto-detect tsconfig.app.json, else tsconfig.json)',
+  );
   console.log('  --out-dir   Override output directory');
   console.log(
     '  --prod              Production profile (enables configured AOT outputs)',
@@ -5776,7 +5781,9 @@ function printTypecheckHelp() {
   console.log('  - Does not emit build output');
   console.log('');
   console.log('Options:');
-  console.log('  --project   Path to tsconfig file (default: tsconfig.json)');
+  console.log(
+    '  --project   Path to tsconfig file (default: auto-detect tsconfig.app.json, else tsconfig.json)',
+  );
   console.log('  --dry-run   Print typecheck plan without executing emit');
 }
 
