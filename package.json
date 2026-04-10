@@ -39,6 +39,8 @@
     "install:vscode-extension": "node ./rs-x-cli/bin/rsx.cjs install vscode --local",
     "cli:install:global": "./scripts/install-local-cli.sh",
     "cli:install:global:dry-run": "./scripts/install-local-cli.sh --dry-run",
+    "test:a11y": "pnpm --filter @rs-x/site run test:a11y",
+    "test:a11y:report": "pnpm --filter @rs-x/site run test:a11y:report",
     "verify:cli-mutations": "zsh ./rs-x-cli/scripts/verify-rsx-cli-mutations.sh",
     "verify:project-smoke": "zsh ./rs-x-cli/scripts/verify-rsx-projects.sh",
     "verify:setup-smoke": "zsh ./rs-x-cli/scripts/verify-rsx-setup.sh",

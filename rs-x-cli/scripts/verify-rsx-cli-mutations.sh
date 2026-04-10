@@ -345,6 +345,17 @@ run_framework_init_case() {
   summary_lines+=("$label: pass")
 }
 
+CUSTOM_PATHS_CONFIG='{
+  "build": {
+    "preparse": true,
+    "preparseFile": "dist/rsx-generated/rsx-aot-preparsed.generated.ts",
+    "compiled": true,
+    "compiledFile": "dist/rsx-generated/rsx-aot-compiled.generated.ts",
+    "registrationFile": "dist/rsx-generated/rsx-aot-registration.generated.ts",
+    "compiledResolvedEvaluator": false
+  }
+}'
+
 create_react_custom_paths_project() {
   local project_dir="$1"
 
@@ -377,19 +388,125 @@ function App() {
 createRoot(document.getElementById('root')!).render(<App />);
 EOF
 
-  # Pre-seed rsx.config.json with custom dist/ output paths
-  cat >"$project_dir/rsx.config.json" <<'EOF'
+  printf '%s\n' "$CUSTOM_PATHS_CONFIG" >"$project_dir/rsx.config.json"
+}
+
+create_vue_custom_paths_project() {
+  local project_dir="$1"
+
+  rm -rf "$project_dir"
+  mkdir -p "$project_dir/src"
+
+  cat >"$project_dir/package.json" <<'EOF'
 {
-  "build": {
-    "preparse": true,
-    "preparseFile": "dist/rsx-generated/rsx-aot-preparsed.generated.ts",
-    "compiled": true,
-    "compiledFile": "dist/rsx-generated/rsx-aot-compiled.generated.ts",
-    "registrationFile": "dist/rsx-generated/rsx-aot-registration.generated.ts",
-    "compiledResolvedEvaluator": false
+  "name": "rsx-vue-custom-paths-verify",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
   }
 }
 EOF
+
+  cat >"$project_dir/src/main.ts" <<'EOF'
+import { createApp } from 'vue';
+
+const App = { template: '<div>vue custom paths smoke test</div>' };
+createApp(App).mount('#app');
+EOF
+
+  printf '%s\n' "$CUSTOM_PATHS_CONFIG" >"$project_dir/rsx.config.json"
+}
+
+create_next_custom_paths_project() {
+  local project_dir="$1"
+
+  rm -rf "$project_dir"
+  mkdir -p "$project_dir/app"
+
+  cat >"$project_dir/package.json" <<'EOF'
+{
+  "name": "rsx-next-custom-paths-verify",
+  "private": true,
+  "dependencies": {
+    "next": "^16.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
+EOF
+
+  cat >"$project_dir/app/layout.tsx" <<'EOF'
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return <html lang="en"><body>{children}</body></html>;
+}
+EOF
+
+  printf '%s\n' "$CUSTOM_PATHS_CONFIG" >"$project_dir/rsx.config.json"
+}
+
+create_angular_custom_paths_project() {
+  local project_dir="$1"
+
+  rm -rf "$project_dir"
+  mkdir -p "$project_dir/src"
+
+  cat >"$project_dir/package.json" <<'EOF'
+{
+  "name": "rsx-angular-custom-paths-verify",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@angular/core": "^20.3.5",
+    "@angular/platform-browser": "^20.3.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
+EOF
+
+  cat >"$project_dir/src/main.ts" <<'EOF'
+import { Component } from '@angular/core';
+import { bootstrapApplication } from '@angular/platform-browser';
+
+@Component({ selector: 'app-root', template: '<main>angular custom paths smoke test</main>' })
+class AppComponent {}
+
+bootstrapApplication(AppComponent).catch((error) => console.error(error));
+EOF
+
+  cat >"$project_dir/tsconfig.json" <<'EOF'
+{
+  "compilerOptions": { "target": "ES2022", "experimentalDecorators": true }
+}
+EOF
+
+  cat >"$project_dir/angular.json" <<'EOF'
+{
+  "version": 1,
+  "projects": {
+    "app": {
+      "architect": {
+        "build": {
+          "options": {
+            "tsConfig": "tsconfig.json",
+            "polyfills": []
+          }
+        }
+      }
+    }
+  }
+}
+EOF
+
+  printf '%s\n' "$CUSTOM_PATHS_CONFIG" >"$project_dir/rsx.config.json"
 }
 
 set_build_config_paths() {
@@ -413,6 +530,105 @@ fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', 'utf8');
 " "$project_dir"
 }
 
+set_preparse_disabled_config() {
+  local project_dir="$1"
+
+  node -e "
+const fs = require('node:fs');
+const path = require('node:path');
+const configPath = path.join(process.argv[1], 'rsx.config.json');
+const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+config.build = {
+  ...(config.build || {}),
+  preparse: false,
+  preparseFile: 'tmp/generated/custom-preparse.ts',
+  compiled: true,
+  compiledFile: 'tmp/generated/custom-compiled.ts',
+  registrationFile: 'tmp/generated/custom-registration.ts',
+  compiledResolvedEvaluator: false,
+};
+fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', 'utf8');
+" "$project_dir"
+}
+
+set_compiled_disabled_config() {
+  local project_dir="$1"
+
+  node -e "
+const fs = require('node:fs');
+const path = require('node:path');
+const configPath = path.join(process.argv[1], 'rsx.config.json');
+const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+config.build = {
+  ...(config.build || {}),
+  preparse: true,
+  preparseFile: 'tmp/generated/custom-preparse.ts',
+  compiled: false,
+  compiledFile: 'tmp/generated/custom-compiled.ts',
+  registrationFile: 'tmp/generated/custom-registration.ts',
+  compiledResolvedEvaluator: false,
+};
+fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', 'utf8');
+" "$project_dir"
+}
+
+create_add_default_directory_project() {
+  local project_dir="$1"
+
+  rm -rf "$project_dir"
+  mkdir -p "$project_dir/src"
+
+  cat >"$project_dir/package.json" <<'EOF'
+{
+  "name": "rsx-add-default-dir-verify",
+  "private": true
+}
+EOF
+
+  cat >"$project_dir/rsx.config.json" <<'EOF'
+{
+  "cli": {
+    "add": {
+      "defaultDirectory": "src/custom-expressions",
+      "searchRoots": ["src"]
+    }
+  }
+}
+EOF
+}
+
+create_add_search_roots_project() {
+  local project_dir="$1"
+
+  rm -rf "$project_dir"
+  mkdir -p "$project_dir/src/expressions"
+  mkdir -p "$project_dir/custom-root/expressions"
+
+  cat >"$project_dir/package.json" <<'EOF'
+{
+  "name": "rsx-add-search-roots-verify",
+  "private": true
+}
+EOF
+
+  # Expression file only in the configured custom searchRoot, not in defaultDirectory
+  cat >"$project_dir/custom-root/expressions/existing.expression.ts" <<'EOF'
+import { rsx } from '@rs-x/expression-parser';
+export const existingExpression = rsx('a + b')({ a: 1, b: 2 });
+EOF
+
+  cat >"$project_dir/rsx.config.json" <<'EOF'
+{
+  "cli": {
+    "add": {
+      "defaultDirectory": "src/expressions",
+      "searchRoots": ["custom-root"]
+    }
+  }
+}
+EOF
+}
+
 rm -rf "$base_dir"
 mkdir -p "$base_dir"
 
@@ -427,6 +643,11 @@ next_init_dir="$base_dir/next-init-verify"
 vue_init_dir="$base_dir/vue-init-verify"
 angular_init_dir="$base_dir/angular-init-verify"
 react_custom_paths_dir="$base_dir/react-custom-paths-verify"
+vue_custom_paths_dir="$base_dir/vue-custom-paths-verify"
+next_custom_paths_dir="$base_dir/next-custom-paths-verify"
+angular_custom_paths_dir="$base_dir/angular-custom-paths-verify"
+add_default_dir_project_dir="$base_dir/add-default-dir-verify"
+add_search_roots_project_dir="$base_dir/add-search-roots-verify"
 
 printf '\n== install-compiler ==\n'
 rm -rf "$install_dir"
@@ -498,6 +719,99 @@ create_generic_project "$generic_dir"
   fi
 fi
 
+printf '\n== preparse-disabled ==\n'
+if [[ -d "$generic_dir" && -f "$generic_dir/rsx.config.json" ]]; then
+  rm -f "$generic_dir/tmp/generated/custom-preparse.ts" "$generic_dir/tmp/generated/custom-compiled.ts"
+  if ! set_preparse_disabled_config "$generic_dir"; then
+    printf 'preparse-disabled: failed to patch rsx.config.json.\n'
+    summary_lines+=("preparse-disabled: config patch failed")
+    overall_status=1
+  elif ! run_step_in_dir "preparse-disabled" "rsx build" "$generic_dir" "$base_dir/build-preparse-disabled.log" \
+    "${rsx_cmd[@]}" build --project tsconfig.json --no-emit --prod
+  then
+    summary_lines+=("preparse-disabled: build failed")
+    overall_status=1
+  elif [[ -f "$generic_dir/tmp/generated/custom-preparse.ts" ]]; then
+    printf 'preparse-disabled: preparse file was generated despite preparse: false.\n'
+    summary_lines+=("preparse-disabled: preparse file should not exist")
+    overall_status=1
+  elif [[ ! -f "$generic_dir/tmp/generated/custom-compiled.ts" ]]; then
+    printf 'preparse-disabled: compiled file was not generated.\n'
+    summary_lines+=("preparse-disabled: compiled file missing")
+    overall_status=1
+  else
+    summary_lines+=("preparse-disabled: pass")
+  fi
+else
+  printf 'preparse-disabled: skipped (init-and-add did not complete).\n'
+  summary_lines+=("preparse-disabled: skipped")
+fi
+
+printf '\n== compiled-disabled ==\n'
+if [[ -d "$generic_dir" && -f "$generic_dir/rsx.config.json" ]]; then
+  rm -f "$generic_dir/tmp/generated/custom-preparse.ts" "$generic_dir/tmp/generated/custom-compiled.ts"
+  if ! set_compiled_disabled_config "$generic_dir"; then
+    printf 'compiled-disabled: failed to patch rsx.config.json.\n'
+    summary_lines+=("compiled-disabled: config patch failed")
+    overall_status=1
+  elif ! run_step_in_dir "compiled-disabled" "rsx build" "$generic_dir" "$base_dir/build-compiled-disabled.log" \
+    "${rsx_cmd[@]}" build --project tsconfig.json --no-emit --prod
+  then
+    summary_lines+=("compiled-disabled: build failed")
+    overall_status=1
+  elif [[ ! -f "$generic_dir/tmp/generated/custom-preparse.ts" ]]; then
+    printf 'compiled-disabled: preparse file was not generated.\n'
+    summary_lines+=("compiled-disabled: preparse file missing")
+    overall_status=1
+  elif [[ -f "$generic_dir/tmp/generated/custom-compiled.ts" ]]; then
+    printf 'compiled-disabled: compiled file was generated despite compiled: false.\n'
+    summary_lines+=("compiled-disabled: compiled file should not exist")
+    overall_status=1
+  else
+    summary_lines+=("compiled-disabled: pass")
+  fi
+else
+  printf 'compiled-disabled: skipped (init-and-add did not complete).\n'
+  summary_lines+=("compiled-disabled: skipped")
+fi
+
+printf '\n== add-default-directory ==\n'
+create_add_default_directory_project "$add_default_dir_project_dir"
+# Input: name, source (default), no-kebab, dir (accept default from config), mode 1 (create-inline)
+if ! run_step_in_dir_with_input "add-default-directory" "rsx add" "$add_default_dir_project_dir" "$base_dir/add-default-dir.log" \
+  $'myExpr\n\nn\n\n1\n' \
+  "${rsx_cmd[@]}" add
+then
+  summary_lines+=("add-default-directory: rsx add failed")
+  overall_status=1
+elif [[ ! -f "$add_default_dir_project_dir/src/custom-expressions/myExpr.ts" ]]; then
+  printf 'add-default-directory: file not created in configured defaultDirectory.\n'
+  summary_lines+=("add-default-directory: file not in configured defaultDirectory")
+  overall_status=1
+else
+  summary_lines+=("add-default-directory: pass")
+fi
+
+printf '\n== add-search-roots ==\n'
+create_add_search_roots_project "$add_search_roots_project_dir"
+# Input: name, source (default), no-kebab, dir (accept default = src/expressions, which is empty),
+#        mode 3 (update-existing), keepModel (default Y), file 1 (first from fallback search)
+if ! run_step_in_dir_with_input "add-search-roots" "rsx add" "$add_search_roots_project_dir" "$base_dir/add-search-roots.log" \
+  $'newExpr\n\nn\n\n3\n\n1\n' \
+  "${rsx_cmd[@]}" add
+then
+  summary_lines+=("add-search-roots: rsx add failed")
+  overall_status=1
+elif ! grep -q 'custom-root/expressions/existing.expression.ts' "$base_dir/add-search-roots.log"; then
+  printf 'add-search-roots: file from configured searchRoot not found in fallback search.\n'
+  printf 'Log output:\n'
+  cat "$base_dir/add-search-roots.log"
+  summary_lines+=("add-search-roots: searchRoot file not listed")
+  overall_status=1
+else
+  summary_lines+=("add-search-roots: pass")
+fi
+
 run_framework_init_case \
   "init-react" \
   "$react_init_dir" \
@@ -526,6 +840,29 @@ run_framework_init_case \
   "src/main.ts" \
   create_angular_project
 
+verify_bootstrap_custom_paths() {
+  local label="$1"
+  local bootstrap_file="$2"
+  local expected_compiled_dir="$3"
+  local expected_preparse_dir="$4"
+
+  if [[ ! -f "$bootstrap_file" ]]; then
+    printf '%s: rsx-bootstrap.ts was not created at %s.\n' "$label" "$bootstrap_file"
+    return 1
+  fi
+  if ! grep -qF "'${expected_compiled_dir}' + 'rsx-aot-compiled.generated'" "$bootstrap_file"; then
+    printf '%s: rsx-bootstrap.ts does not use configured compiledFile path (expected %s).\n' "$label" "$expected_compiled_dir"
+    printf 'Contents:\n'
+    cat "$bootstrap_file"
+    return 1
+  fi
+  if ! grep -qF "'${expected_preparse_dir}' + 'rsx-aot-preparsed.generated'" "$bootstrap_file"; then
+    printf '%s: rsx-bootstrap.ts does not use configured preparseFile path (expected %s).\n' "$label" "$expected_preparse_dir"
+    return 1
+  fi
+  return 0
+}
+
 printf '\n== init-react-custom-paths ==\n'
 create_react_custom_paths_project "$react_custom_paths_dir"
 if ! run_step_in_dir "init-react-custom-paths" "rsx init" "$react_custom_paths_dir" "$base_dir/init-react-custom-paths.log" \
@@ -533,22 +870,73 @@ if ! run_step_in_dir "init-react-custom-paths" "rsx init" "$react_custom_paths_d
 then
   summary_lines+=("init-react-custom-paths: init failed")
   overall_status=1
-elif [[ ! -f "$react_custom_paths_dir/src/rsx-bootstrap.ts" ]]; then
-  printf 'init-react-custom-paths: rsx-bootstrap.ts was not created.\n'
-  summary_lines+=("init-react-custom-paths: missing rsx-bootstrap.ts")
-  overall_status=1
-elif ! grep -qF "'../dist/rsx-generated/' + 'rsx-aot-compiled.generated'" "$react_custom_paths_dir/src/rsx-bootstrap.ts"; then
-  printf 'init-react-custom-paths: rsx-bootstrap.ts does not use configured compiledFile path.\n'
-  printf 'Contents:\n'
-  cat "$react_custom_paths_dir/src/rsx-bootstrap.ts"
-  summary_lines+=("init-react-custom-paths: wrong bootstrap import path for compiledFile")
-  overall_status=1
-elif ! grep -qF "'../dist/rsx-generated/' + 'rsx-aot-preparsed.generated'" "$react_custom_paths_dir/src/rsx-bootstrap.ts"; then
-  printf 'init-react-custom-paths: rsx-bootstrap.ts does not use configured preparseFile path.\n'
-  summary_lines+=("init-react-custom-paths: wrong bootstrap import path for preparseFile")
+elif ! verify_bootstrap_custom_paths "init-react-custom-paths" \
+  "$react_custom_paths_dir/src/rsx-bootstrap.ts" \
+  "../dist/rsx-generated/" "../dist/rsx-generated/"; then
+  summary_lines+=("init-react-custom-paths: wrong bootstrap import paths")
   overall_status=1
 else
   summary_lines+=("init-react-custom-paths: pass")
+fi
+
+printf '\n== init-vue-custom-paths ==\n'
+create_vue_custom_paths_project "$vue_custom_paths_dir"
+if ! run_step_in_dir "init-vue-custom-paths" "rsx init" "$vue_custom_paths_dir" "$base_dir/init-vue-custom-paths.log" \
+  "${rsx_cmd[@]}" init --pm "$pm" "$tag_flag" "$skip_vscode_flag" --entry src/main.ts
+then
+  summary_lines+=("init-vue-custom-paths: init failed")
+  overall_status=1
+elif ! verify_bootstrap_custom_paths "init-vue-custom-paths" \
+  "$vue_custom_paths_dir/src/rsx-bootstrap.ts" \
+  "../dist/rsx-generated/" "../dist/rsx-generated/"; then
+  summary_lines+=("init-vue-custom-paths: wrong bootstrap import paths")
+  overall_status=1
+else
+  summary_lines+=("init-vue-custom-paths: pass")
+fi
+
+printf '\n== init-next-custom-paths ==\n'
+create_next_custom_paths_project "$next_custom_paths_dir"
+if ! run_step_in_dir "init-next-custom-paths" "rsx init" "$next_custom_paths_dir" "$base_dir/init-next-custom-paths.log" \
+  "${rsx_cmd[@]}" init --pm "$pm" "$tag_flag" "$skip_vscode_flag" --entry app/layout.tsx
+then
+  summary_lines+=("init-next-custom-paths: init failed")
+  overall_status=1
+elif ! verify_bootstrap_custom_paths "init-next-custom-paths" \
+  "$next_custom_paths_dir/app/rsx-bootstrap.ts" \
+  "../dist/rsx-generated/" "../dist/rsx-generated/"; then
+  summary_lines+=("init-next-custom-paths: wrong bootstrap import paths")
+  overall_status=1
+else
+  summary_lines+=("init-next-custom-paths: pass")
+fi
+
+printf '\n== init-angular-custom-paths ==\n'
+create_angular_custom_paths_project "$angular_custom_paths_dir"
+if ! run_step_in_dir "init-angular-custom-paths" "rsx init" "$angular_custom_paths_dir" "$base_dir/init-angular-custom-paths.log" \
+  "${rsx_cmd[@]}" init --pm "$pm" "$tag_flag" "$skip_vscode_flag" --entry src/main.ts
+then
+  summary_lines+=("init-angular-custom-paths: init failed")
+  overall_status=1
+elif ! node -e "
+const fs = require('node:fs');
+const angularJson = JSON.parse(fs.readFileSync(process.argv[1], 'utf8'));
+const projects = angularJson.projects ?? {};
+const allPolyfills = Object.values(projects).flatMap((p) => {
+  const polyfills = p?.architect?.build?.options?.polyfills ?? [];
+  return Array.isArray(polyfills) ? polyfills : [polyfills];
+});
+const expected = './dist/rsx-generated/rsx-aot-registration.generated.ts';
+if (!allPolyfills.some((p) => p === expected || p.replace(/\\\\/g, '/').endsWith('dist/rsx-generated/rsx-aot-registration.generated.ts'))) {
+  console.error('angular.json polyfills does not contain configured registrationFile path.');
+  console.error('Found polyfills:', JSON.stringify(allPolyfills));
+  process.exit(1);
+}
+" "$angular_custom_paths_dir/angular.json"; then
+  summary_lines+=("init-angular-custom-paths: wrong registrationFile in angular.json polyfills")
+  overall_status=1
+else
+  summary_lines+=("init-angular-custom-paths: pass")
 fi
 
 printf '\n== project ==\n'

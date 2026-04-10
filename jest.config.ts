@@ -52,6 +52,7 @@ const jestConfig: Config.InitialOptions = {
     '<rootDir>/rs-x-cli/.tests/',
     '<rootDir>/rs-x-cli/rsx-project-',
     '<rootDir>/rs-x-vscode-extension/.vsix-stage/',
+    '<rootDir>/rs-x-site/a11y/',
     ...(!includePerformanceTests
       ? ['<rootDir>/rs-x-expression-parser/tests/performance/']
       : []),
@@ -64,6 +65,7 @@ const jestConfig: Config.InitialOptions = {
     '<rootDir>/rs-x-cli/.tests/',
     '<rootDir>/rs-x-cli/rsx-project-',
     '<rootDir>/rs-x-vscode-extension/.vsix-stage/',
+    '<rootDir>/rs-x-site/a11y/',
   ],
 
   // Transforms

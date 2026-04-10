@@ -146,6 +146,10 @@
   --flow-soft: var(--heroFlowSoft);
   --onBrand: var(--heroOnBrand);
   --onBrandSoft: var(--heroOnBrandSoft);
+
+  /* Semantic status colors — WCAG AA contrast on light backgrounds */
+  --color-success: #166c30;
+  --color-error: #b91c2c;
 }
 
 html[data-theme='dark'] {
@@ -231,6 +235,10 @@ html[data-theme='dark'] {
   --flow-soft: var(--heroFlowSoft);
   --onBrand: var(--heroOnBrand);
   --onBrandSoft: var(--heroOnBrandSoft);
+
+  /* Semantic status colors — WCAG AA contrast on dark backgrounds */
+  --color-success: #3fb950;
+  --color-error: #ff7b89;
 }
 
 /* =========================================================
@@ -263,6 +271,19 @@ a {
 
 a:hover {
   text-decoration: underline;
+}
+
+/* WCAG 1.4.1 — links inside prose text must be distinguishable without color alone */
+.cardText a,
+.sectionLead a,
+.getStartedFlowList a,
+.advancedTopicList a,
+.advancedTopicLinks a,
+.docsApiLead a,
+.docsApiSection p a,
+.docsApiSection li a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 :focus-visible {
@@ -2612,7 +2633,9 @@ html[data-theme='dark'] .comparisonTable tbody td:first-child {
 }
 
 html[data-theme='dark'] .comparisonTable tbody td a {
-  color: color-mix(in srgb, var(--link) 56%, var(--muted) 44%);
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .expressionTypesDataTable {

@@ -20,7 +20,7 @@ export function DocsBreadcrumbs({ items }: DocsBreadcrumbsProps) {
               {item.label}
             </Link>
           ) : (
-            <span>{item.label}</span>
+            <span aria-current="page">{item.label}</span>
           )}
         </span>
       ))}

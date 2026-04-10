@@ -177,43 +177,45 @@ function MemberItem({ member, ownerName }: MemberItemProps) {
           <div className="apiMemberMetaBlock">
             <p className="apiMemberSectionTitle">Parameters</p>
 
-            <dl
+            <table
               className="apiMemberParamList"
-              role="table"
               aria-label={`${member.name} parameters`}
             >
-              <div className="apiMemberParamHeader" role="row">
-                <dt role="columnheader">Name</dt>
-                <dt role="columnheader">Type</dt>
-                <dt role="columnheader">Required</dt>
-              </div>
+              <thead>
+                <tr className="apiMemberParamHeader">
+                  <th scope="col">Name</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Required</th>
+                </tr>
+              </thead>
+              <tbody>
+                {member.parameters.map((param) => (
+                  <tr
+                    key={`${member.name}-${param.name}`}
+                    className="apiMemberParamItem"
+                  >
+                    <th scope="row" className="apiMemberParamName">
+                      <span className="codeInline">
+                        {param.name}
+                        {param.optional ? '?' : ''}
+                      </span>
+                    </th>
 
-              {member.parameters.map((param) => (
-                <div
-                  key={`${member.name}-${param.name}`}
-                  className="apiMemberParamItem"
-                >
-                  <dt className="apiMemberParamName">
-                    <span className="codeInline">
-                      {param.name}
-                      {param.optional ? '?' : ''}
-                    </span>
-                  </dt>
+                    <td className="apiMemberParamType">
+                      {renderTypeWithLinks(param.type, ownerName)}
+                    </td>
 
-                  <dd className="apiMemberParamType">
-                    {renderTypeWithLinks(param.type, ownerName)}
-                  </dd>
-
-                  <dd className="apiMemberParamRequirement">
-                    {param.rest
-                      ? 'variadic'
-                      : param.optional
-                        ? 'optional'
-                        : 'required'}
-                  </dd>
-                </div>
-              ))}
-            </dl>
+                    <td className="apiMemberParamRequirement">
+                      {param.rest
+                        ? 'variadic'
+                        : param.optional
+                          ? 'optional'
+                          : 'required'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

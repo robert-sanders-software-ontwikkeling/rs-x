@@ -44,6 +44,7 @@ export default function Image() {
         src={logoSrc}
         width={120}
         height={120}
+        alt=""
         style={{ marginBottom: 32 }}
       />
       {/* Title */}
