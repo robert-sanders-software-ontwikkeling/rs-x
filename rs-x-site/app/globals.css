@@ -1456,8 +1456,8 @@ html[data-theme='dark'] .docsLandingSection .docsCards .card {
 }
 
 .docsApiPackageTab:focus-visible {
-  border-color: color-mix(in srgb, var(--border) 78%, var(--border-soft));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--surface-2) 74%, transparent);
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
 }
 
 .docsApiPackageTab.isActive {
