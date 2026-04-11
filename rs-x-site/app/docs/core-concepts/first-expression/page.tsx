@@ -177,14 +177,17 @@ export default function FirstExpressionPage() {
               <tbody>
                 <tr>
                   <td>
-                    <span className="codeInline">leafIndexWatchRule</span>
+                    <Link href="/docs/index-watch-rule">
+                      <span className="codeInline">leafIndexWatchRule</span>
+                    </Link>
                   </td>
                   <td>
-                    You need custom runtime tracking behavior for leaf nodes
+                    You need to control which property changes on the
+                    expression&apos;s resolved value trigger re-evaluation
                   </td>
                   <td>
                     <span className="codeInline">
-                      rsx(...)(model, leafIndexWatchRule?)
+                      rsx(&apos;expr&apos;)(model, watchRule)
                     </span>
                   </td>
                 </tr>

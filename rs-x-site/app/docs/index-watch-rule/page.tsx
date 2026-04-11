@@ -28,7 +28,7 @@ const rsxUsageCode = dedent`
   import type { IIndexWatchRule } from '@rs-x/state-manager';
 
   const watchRule: IIndexWatchRule = {
-    id: 'leaf-allow-list',
+    id: 'my-watch-rule',
     context: { allow: new Set(['a', 'b']) },
     test(index) {
       return this.context.allow.has(String(index));
@@ -542,6 +542,13 @@ export default function IndexWatchRuleDocsPage() {
           <div className="qsCodeHeader">
             <div className="qsCodeTitle">Watch everything under the leaf</div>
           </div>
+          <p className="cardText">
+            Use the pre-built{' '}
+            <Link href="/docs/watch-index-recursive-rule">
+              <span className="codeInline">watchIndexRecursiveRule</span>
+            </Link>{' '}
+            to enable recursive observation without writing a custom rule.
+          </p>
           <SyntaxCodeBlock code={fullRecursiveShortcutCode} />
         </article>
 

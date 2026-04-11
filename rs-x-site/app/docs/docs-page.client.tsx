@@ -124,6 +124,16 @@ const coreConceptLinks: DocsLinkItem[] = [
     meta: 'Pluggable strategy for resolving identifier owners',
   },
   {
+    href: '/docs/core-concepts/leaf-identifier',
+    title: 'Leaf identifier watching',
+    meta: 'Default watch behavior for leaf properties and how to control it with IIndexWatchRule',
+  },
+  {
+    href: '/docs/watch-index-recursive-rule',
+    title: 'watchIndexRecursiveRule',
+    meta: 'Pre-built rule that enables full recursive observation of any identifier value',
+  },
+  {
     href: '/docs/core-concepts/member-expressions',
     title: 'Member expressions',
     meta: 'Nested property and member access',

@@ -345,6 +345,8 @@ export class RxjsMonacoTypesLoader {
           test(index: unknown, target: unknown): boolean;
         }
 
+        const watchIndexRecursiveRule: IIndexWatchRule;
+
         interface IExpression<TReturn = unknown> {
           readonly changed: Observable<IExpression<TReturn>>;
           readonly value: TReturn | undefined;

@@ -760,6 +760,52 @@ function ensureTsExtension(fileName) {
   return `${fileName}.ts`;
 }
 
+async function createPromptSession() {
+  if (process.stdin.isTTY) {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+    return {
+      question(prompt) {
+        return rl.question(prompt);
+      },
+      close() {
+        rl.close();
+      },
+    };
+  }
+
+  const chunks = [];
+  for await (const chunk of process.stdin) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)));
+  }
+
+  const bufferedInput = Buffer.concat(chunks).toString('utf8');
+  const answers = bufferedInput.split(/\r?\n/u);
+  if (
+    answers.length > 0 &&
+    answers[answers.length - 1] === '' &&
+    /(?:\r?\n)$/u.test(bufferedInput)
+  ) {
+    answers.pop();
+  }
+
+  let answerIndex = 0;
+  return {
+    async question(prompt) {
+      if (prompt) {
+        process.stdout.write(prompt);
+      }
+      const answer = answerIndex < answers.length ? answers[answerIndex] : '';
+      answerIndex += 1;
+      process.stdout.write('\n');
+      return answer;
+    },
+    close() {},
+  };
+}
+
 async function askUntilNonEmpty(rl, prompt) {
   while (true) {
     const answer = (await rl.question(prompt)).trim();
@@ -1188,10 +1234,7 @@ async function askForAddMode(rl) {
 }
 
 async function runAdd() {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+  const rl = await createPromptSession();
 
   try {
     const projectRoot = process.cwd();
@@ -1897,10 +1940,7 @@ function normalizeProjectTemplate(value) {
 }
 
 async function promptProjectTemplate() {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+  const rl = await createPromptSession();
   try {
     console.log('Choose a project template:');
     PROJECT_TEMPLATES.forEach((template, index) => {
@@ -2006,10 +2046,7 @@ async function runProject(flags) {
   let projectName = typeof flags.name === 'string' ? flags.name.trim() : '';
 
   if (!projectName) {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
+    const rl = await createPromptSession();
     try {
       projectName = await askUntilNonEmpty(rl, 'Project name: ');
     } finally {
@@ -2189,10 +2226,7 @@ async function resolveProjectName(nameFromFlags, fallbackName) {
     return fromFallback;
   }
 
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+  const rl = await createPromptSession();
   try {
     return await askUntilNonEmpty(rl, 'Project name: ');
   } finally {

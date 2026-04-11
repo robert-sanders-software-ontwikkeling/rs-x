@@ -8,6 +8,7 @@ import {
   IndexWatchRule,
   type IStateManager,
   RsXStateManagerInjectionTokens,
+  watchIndexRecursiveRule,
 } from '@rs-x/state-manager';
 
 import { rxjsScope } from './rxjs-scope';
@@ -39,7 +40,7 @@ export class ScriptEvaluator {
     const wrapperHeaderLines = [
       '"use strict";',
       '(async function (api) {',
-      '  const { rsx, rxjs, printValue, stateManager, IndexWatchRule, WaitForEvent, ExpressionChangeTransactionManager } = api;',
+      '  const { rsx, rxjs, printValue, stateManager, IndexWatchRule, watchIndexRecursiveRule, WaitForEvent, ExpressionChangeTransactionManager } = api;',
       '  {',
     ];
 
@@ -248,6 +249,7 @@ export class ScriptEvaluator {
     printValue: typeof printValue;
     stateManager: IStateManager;
     IndexWatchRule: typeof IndexWatchRule;
+    watchIndexRecursiveRule: typeof watchIndexRecursiveRule;
     WaitForEvent: typeof WaitForEvent;
     ExpressionChangeTransactionManager: IExpressionChangeTransactionManager;
   } {
@@ -259,6 +261,7 @@ export class ScriptEvaluator {
         RsXStateManagerInjectionTokens.IStateManager,
       ),
       IndexWatchRule,
+      watchIndexRecursiveRule,
       WaitForEvent,
       ExpressionChangeTransactionManager:
         InjectionContainer.get<IExpressionChangeTransactionManager>(

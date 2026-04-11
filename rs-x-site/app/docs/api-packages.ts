@@ -41,7 +41,9 @@ function formatModuleLabel(moduleName: string): string {
   return moduleName.replace(/\.ts$/i, '').replace(/\./g, '-');
 }
 
-const coreLinks = Array.from(new Set(coreApiItems.map((item) => item.module)))
+export const coreLinks = Array.from(
+  new Set(coreApiItems.map((item) => item.module)),
+)
   .sort((a, b) => a.localeCompare(b))
   .map((moduleName) => {
     const count = coreApiItems.filter(
@@ -54,7 +56,7 @@ const coreLinks = Array.from(new Set(coreApiItems.map((item) => item.module)))
     };
   });
 
-const expressionParserLinks: DocsLinkItem[] = [
+export const expressionParserLinks: DocsLinkItem[] = [
   {
     href: '/docs/expression-change-transaction-manager',
     title: 'Change transaction manager',
@@ -137,7 +139,7 @@ const expressionParserLinks: DocsLinkItem[] = [
   },
 ];
 
-const stateManagerLinks: DocsLinkItem[] = [
+export const stateManagerLinks: DocsLinkItem[] = [
   ...stateManagerApiGroupEntries.map((group) => ({
     href: `/docs/state-manager-api#${group.key}`,
     title: group.title,
