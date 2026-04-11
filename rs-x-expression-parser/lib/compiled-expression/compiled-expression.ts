@@ -120,7 +120,8 @@ export class CompiledExpression implements IExpressionTree {
       _plan.expressionType === ExpressionType.Identifier ||
       _plan.memberChain !== undefined ||
       (_plan.sequenceOperands !== undefined &&
-        _plan.sequenceOperands.length > 0);
+        _plan.sequenceOperands.length > 0) ||
+      _plan.evaluateResolvedDependencies === undefined;
 
     const isIdentifier = _plan.expressionType === ExpressionType.Identifier;
     const isSingle = _plan.dependencyNames.length === 1;
@@ -476,11 +477,6 @@ export class CompiledExpression implements IExpressionTree {
       return this.evaluateMemberChain(memberChain, dependencyNames, args);
     }
 
-    const args = this.resolveDependencyArguments(dependencyNames, false);
-    if (args === PENDING) {
-      return PENDING;
-    }
-
     try {
       if (this._plan.evaluateResolvedDependencies) {
         return this._plan.evaluateResolvedDependencies(
@@ -493,6 +489,10 @@ export class CompiledExpression implements IExpressionTree {
         );
       }
 
+      const args = this.resolveDependencyArguments(dependencyNames, false);
+      if (args === PENDING) {
+        return PENDING;
+      }
       return this._plan.evaluate(...args);
     } catch (error) {
       if (error instanceof PendingDependencyValueError) {
@@ -719,7 +719,7 @@ export class CompiledExpression implements IExpressionTree {
       }
     }
 
-    if (rawValue === PENDING) {
+    if (rawValue === PENDING || this._isDeferredValue(rawValue)) {
       return { value: UNRESOLVED, ownerContext };
     }
 

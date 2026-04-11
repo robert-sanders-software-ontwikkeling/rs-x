@@ -168,6 +168,7 @@ function buildProjectSource(script: string): ProjectSource {
 ${expressionParserImportBlock}
 ${stateManagerImportBlock ? `${stateManagerImportBlock}\n` : ''}\
 ${rxjsImportBlock ? `${rxjsImportBlock}` : ''}
+import { initRsx } from './rsx-bootstrap.js';
 
 ${createExpressionSignature} {
 ${userScript
@@ -177,14 +178,13 @@ ${userScript
 }
 
 async function main(): Promise<void> {
+  await initRsx();
   await InjectionContainer.load(RsXExpressionParserModule);
 
   const expression = ${createExpressionInvocation};
   expression.changed.subscribe(() => {
     console.log('Expression changed:', expression.value);
   });
-
-  console.log('Initial value:', expression.value);
 }
 
 void main();
@@ -214,12 +214,40 @@ function toPackageJson(usesRxjs: boolean): string {
       version: '0.1.0',
       type: 'module',
       scripts: {
-        build: 'tsc -p tsconfig.json',
+        build: 'rsx build --project tsconfig.json',
+        'build:prod': 'rsx build --project tsconfig.json --prod',
+        'typecheck:rsx': 'rsx typecheck --project tsconfig.json',
         start: 'node dist/main.js',
       },
       dependencies,
       devDependencies: {
-        typescript: '^5.9.0',
+        '@rs-x/compiler': 'latest',
+        '@rs-x/typescript-plugin': 'latest',
+        typescript: '^5.9.3',
+      },
+    },
+    null,
+    2,
+  );
+}
+
+function toRsxConfig(): string {
+  return JSON.stringify(
+    {
+      build: {
+        preparse: true,
+        preparseFile: 'src/rsx-generated/rsx-aot-preparsed.generated.ts',
+        compiled: true,
+        compiledFile: 'src/rsx-generated/rsx-aot-compiled.generated.ts',
+        registrationFile: 'src/rsx-generated/rsx-aot-registration.generated.ts',
+        compiledResolvedEvaluator: false,
+      },
+      cli: {
+        packageManager: 'npm',
+        add: {
+          defaultDirectory: 'src/expressions',
+          searchRoots: ['src', 'app', 'expressions'],
+        },
       },
     },
     null,
@@ -234,9 +262,18 @@ function toTsConfig(): string {
         target: 'ES2022',
         module: 'NodeNext',
         moduleResolution: 'NodeNext',
-        noImplicitAny: false,
-        outDir: 'dist',
+        strict: true,
+        esModuleInterop: true,
         skipLibCheck: true,
+        experimentalDecorators: true,
+        emitDecoratorMetadata: true,
+        outDir: 'dist',
+        rootDir: 'src',
+        plugins: [
+          {
+            name: '@rs-x/typescript-plugin',
+          },
+        ],
       },
       include: ['src/**/*.ts'],
     },
@@ -245,55 +282,101 @@ function toTsConfig(): string {
   );
 }
 
+function toRsxBootstrap(): string {
+  return `type RsxCompiledModule = {
+  registerRsxAotCompiledExpressions?: () => void;
+};
+
+type RsxPreparsedModule = {
+  registerRsxAotParsedExpressionCache?: () => void;
+};
+
+async function loadCompiledModule(): Promise<RsxCompiledModule> {
+  try {
+    return (await import(
+      './rsx-generated/' + 'rsx-aot-compiled.generated.js'
+    )) as RsxCompiledModule;
+  } catch {
+    return {};
+  }
+}
+
+async function loadPreparsedModule(): Promise<RsxPreparsedModule> {
+  try {
+    return (await import(
+      './rsx-generated/' + 'rsx-aot-preparsed.generated.js'
+    )) as RsxPreparsedModule;
+  } catch {
+    return {};
+  }
+}
+
+export async function initRsx(): Promise<void> {
+  const preparsedModule = await loadPreparsedModule();
+  const compiledModule = await loadCompiledModule();
+
+  preparsedModule.registerRsxAotParsedExpressionCache?.();
+  compiledModule.registerRsxAotCompiledExpressions?.();
+}
+`;
+}
+
 function toReadme(): string {
   return `# rs-x Playground Export
 
-This project was exported from the [rs-x playground](https://rsxjs.com/docs/playground).
-It contains a self-contained TypeScript demo that you can run locally with Node.js.
+This project was exported from the [rs-x playground](https://rsxjs.com/playground).
+It is a Node.js TypeScript project with full rs-x build integration.
 
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) v18 or later
-- [pnpm](https://pnpm.io/) — install with \`npm install -g pnpm\`
+- [rs-x CLI](https://rsxjs.com/docs/core-concepts/cli) — install with \`npm install -g @rs-x/cli\`
 
 ## Getting started
 
 **1. Install dependencies**
 
 \`\`\`bash
-pnpm install
+npm install
 \`\`\`
 
-**2. Build the project**
-
-Compiles \`src/main.ts\` to JavaScript in the \`dist/\` folder.
+**2. Build**
 
 \`\`\`bash
-pnpm build
+npm run build
 \`\`\`
 
-**3. Run the demo**
+Runs the rs-x compiler (validates expressions, generates AOT files) and compiles TypeScript.
+Any expression errors are reported and the build fails — fix them before proceeding.
 
-Executes the compiled output and prints the expression's initial value and any
-subsequent changes to the console.
+**Production build (fully compiled, no runtime parsing):**
 
 \`\`\`bash
-pnpm start
+npm run build:prod
+\`\`\`
+
+**3. Run**
+
+\`\`\`bash
+npm run start
 \`\`\`
 
 ## Project structure
 
 \`\`\`
 src/
-  main.ts        # Expression definition and entry point
-package.json     # Dependencies and scripts
-tsconfig.json    # TypeScript compiler settings
+  main.ts              # Expression definition and entry point
+  rsx-bootstrap.ts     # Loads AOT-compiled/preparsed expression modules
+  rsx-generated/       # Generated by rsx build (do not edit manually)
+package.json           # Dependencies and scripts
+tsconfig.json          # TypeScript + rs-x plugin configuration
+rsx.config.json        # rs-x build and CLI configuration
 \`\`\`
 
 ## Learn more
 
 - [rs-x documentation](https://rsxjs.com/docs)
-- [Expression parser API](https://rsxjs.com/docs/core-api/module/expression-parser)
+- [CLI reference](https://rsxjs.com/docs/core-concepts/cli)
 `;
 }
 
@@ -303,7 +386,10 @@ export function downloadProjectZip(script: string): void {
   const files: Record<string, string> = {
     'package.json': toPackageJson(project.usesRxjs),
     'tsconfig.json': toTsConfig(),
+    'rsx.config.json': toRsxConfig(),
+    '.gitignore': 'node_modules\ndist\n',
     'README.md': toReadme(),
+    'src/rsx-bootstrap.ts': toRsxBootstrap(),
     'src/main.ts': project.source,
   };
 

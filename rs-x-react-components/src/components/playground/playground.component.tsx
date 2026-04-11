@@ -514,13 +514,16 @@ export const Playground: React.FC = () => {
     void compileScriptInternal(nextScript);
   };
 
-  // auto compile once per mounted/active playground session
+  // auto compile once per mounted/active playground session — only when a
+  // pre-existing script was loaded from the URL. Reading from scriptRef avoids
+  // re-firing on every keystroke (script state changes), which would compile
+  // partial input and show spurious "a is not defined" errors.
   useEffect(() => {
     if (!isBootstrapReady) {
       return;
     }
 
-    if (script.trim().length === 0) {
+    if (scriptRef.current.trim().length === 0) {
       return;
     }
 
@@ -529,8 +532,8 @@ export const Playground: React.FC = () => {
     }
     didAutoCompileRef.current = true;
 
-    compileScript(script);
-  }, [isBootstrapReady, script]);
+    compileScript(scriptRef.current);
+  }, [isBootstrapReady]);
 
   useEffect(() => {
     if (pathname !== '/playground') {
