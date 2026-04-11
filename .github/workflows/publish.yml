@@ -40,13 +40,13 @@ jobs:
 
     steps:
       # ---------------- CHECKOUT ----------------
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           persist-credentials: false
 
       # ---------------- NODE ----------------
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: lts/*
           registry-url: https://registry.npmjs.org/
@@ -139,7 +139,7 @@ jobs:
         run: pnpm --filter rs-x-vscode-extension run package
 
       - name: Upload VSIX artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: rs-x-vscode-extension-vsix
           path: rs-x-vscode-extension/dist/rs-x-vscode-extension-*.vsix
