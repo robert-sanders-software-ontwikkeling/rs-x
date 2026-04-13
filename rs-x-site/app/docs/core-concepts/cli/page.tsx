@@ -68,6 +68,62 @@ const buildAndTypecheckCode = dedent`
   rsx typecheck --project tsconfig.json
 `;
 
+const lazyGroupUsageCode = dedent`
+  import { rsx } from '@rs-x/expression-parser';
+
+  // All Page1 expressions are bundled into one payload file.
+  // That file is only downloaded when any Page1 expression is first used.
+  // Setting lazyGroup implicitly sets lazy: true — no need to add it separately.
+  rsx<number>('price * quantity', { lazyGroup: 'Page1' })(model);
+  rsx<string>('user.firstName + " " + user.lastName', { lazyGroup: 'Page1' })(model);
+
+  // A separate group file for Page2 expressions.
+  rsx<boolean>('total > budget', { lazyGroup: 'Page2' })(model);
+
+  // Ungrouped lazy expression — lands in the shared lazy payload file.
+  rsx<number>('a + b', { lazy: true })(model);
+`;
+
+const lazyGroupOutputCode = dedent`
+  # rsx build --prod emits one .mjs file per lazyGroup into public/rsx-generated/
+  # plus the shared ungrouped payload and the manifest:
+
+  public/rsx-generated/
+    rsx-aot-lazy-group-Page1.generated.mjs   # Page1 group payload
+    rsx-aot-lazy-group-Page2.generated.mjs   # Page2 group payload
+    rsx-aot-lazy.generated.mjs               # ungrouped lazy expressions
+
+  src/rsx-generated/
+    rsx-aot-lazy-manifest.generated.ts       # registers all group loaders at startup
+    rsx-aot-preparsed.generated.ts
+    rsx-aot-compiled.generated.ts
+    rsx-aot-registration.generated.ts        # imported in main.ts; loads all of the above
+`;
+
+const lazyGroupAngularCode = dedent`
+  // In Angular: lazyGroup expressions are typically placed inside
+  // lazy-loaded route components. The group payload is downloaded
+  // when the component is first rendered — not at app startup.
+
+  // page1.component.ts
+  import { rsx } from '@rs-x/expression-parser';
+
+  const page1Price = rsx<number>('price * qty', { lazyGroup: 'Page1' });
+
+  @Component({ ... })
+  export class Page1Component {
+    result$ = page1Price(this.model);
+  }
+
+  // page2.component.ts
+  const page2Check = rsx<boolean>('total > budget', { lazyGroup: 'Page2' });
+
+  @Component({ ... })
+  export class Page2Component {
+    result$ = page2Check(this.model);
+  }
+`;
+
 const buildConfigurationCode = dedent`
   {
     "rsx": {
@@ -236,6 +292,7 @@ const doc: CoreConceptDoc = {
     'Use `rsx init` for existing projects when you want automatic framework detection, bootstrap wiring, and integration.',
     'Use `rsx project <template>` to create a full starter with RS-X already integrated.',
     'Use `rsx build` and `rsx typecheck` in CI to enforce RS-X compile and expression semantics.',
+    'Use `lazyGroup` on `rsx()` calls to split expressions into on-demand payload files — setting `lazyGroup` implicitly enables `lazy: true`.',
   ],
   deepDive: [
     {
@@ -398,14 +455,83 @@ const doc: CoreConceptDoc = {
       ],
     },
     {
-      title: '9) Full command reference',
+      title: '9) Lazy group code splitting',
+      paragraphs: [
+        'Passing `lazyGroup` to an `rsx()` call assigns that expression to a named code-split group. All expressions sharing the same group name are bundled into a single `.mjs` payload file that the browser only downloads when an expression from that group is first used.',
+        'Setting `lazyGroup` implicitly enables `lazy: true`. You do not need to set both.',
+        <SyntaxCodeBlock key="lazy-group-usage" code={lazyGroupUsageCode} />,
+        'During `rsx build --prod`, the CLI emits one `.mjs` file per group into `public/rsx-generated/`, plus a shared payload for ungrouped lazy expressions and a manifest file that registers all group loaders at app startup:',
+        <SyntaxCodeBlock key="lazy-group-output" code={lazyGroupOutputCode} />,
+        <div key="lazy-group-table" className="tableWrap">
+          <table
+            className="docsTable"
+            style={{ tableLayout: 'fixed', width: '100%' }}
+          >
+            <thead>
+              <tr>
+                <th>File</th>
+                <th>What it contains</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <span className="codeInline">
+                    rsx-aot-lazy-group-{'{'}GroupName{'}'}.generated.mjs
+                  </span>
+                </td>
+                <td>
+                  All preparsed ASTs and compiled evaluators for that group. One
+                  file per unique <span className="codeInline">lazyGroup</span>{' '}
+                  value. Served as a static asset from{' '}
+                  <span className="codeInline">public/</span>.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span className="codeInline">rsx-aot-lazy.generated.mjs</span>
+                </td>
+                <td>
+                  All expressions marked{' '}
+                  <span className="codeInline">{'{ lazy: true }'}</span> without
+                  a <span className="codeInline">lazyGroup</span>. Downloaded
+                  when any ungrouped lazy expression is first used.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span className="codeInline">
+                    rsx-aot-lazy-manifest.generated.ts
+                  </span>
+                </td>
+                <td>
+                  Registers a dynamic-import loader for every group and for the
+                  shared lazy payload. Imported by the registration file so all
+                  loaders are ready before the first expression is evaluated.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>,
+        'Group names are sanitized for the file system: non-alphanumeric characters are replaced with `-`. Expressions from different source files can share the same group name — they will all land in the same payload file.',
+        'The payload files are plain JavaScript (`.mjs`) with no bare npm specifiers. Registration functions are injected by the manifest at runtime, so the files can be fetched and executed directly by the browser without a bundler or import map.',
+        "When an expression from a group is first evaluated, the runtime calls `startLazyGroupPreload`, which fires the dynamic import for that group's `.mjs` file and resolves the preparsed ASTs and compiled plans into the expression cache. Subsequent evaluations in the same group reuse the in-flight or already-resolved result.",
+        'The recommended pattern for Angular is to place `lazyGroup` expressions inside lazy-loaded route components. The group payload is only fetched when the route is first activated:',
+        <SyntaxCodeBlock
+          key="lazy-group-angular"
+          code={lazyGroupAngularCode}
+        />,
+      ],
+    },
+    {
+      title: '10) Full command reference',
       paragraphs: [
         'Use `rsx help` or `rsx help <command>` to print command-specific usage at any time.',
         'The command matrix below is the complete current surface of the CLI.',
       ],
     },
     {
-      title: '10) CLI configuration (rsx.config.json)',
+      title: '11) CLI configuration (rsx.config.json)',
       paragraphs: [
         'The CLI reads `rsx.config.json` from the project root for build and interactive workflow defaults.',
         'Both the `build` section (tsconfig path, AOT output paths, preparse/compiled flags) and the `cli` section (package manager, install tag, add defaults) live in the same file.',
@@ -424,7 +550,7 @@ const doc: CoreConceptDoc = {
       codeLanguage: 'json',
     },
     {
-      title: '11) Help and version',
+      title: '12) Help and version',
       paragraphs: [
         'Use `rsx help` to print the main command list, or `rsx help <command>` to print command-specific usage and flags.',
         'Use `rsx version`, `rsx v`, `rsx -v`, or `rsx --version` to print the current CLI version.',
@@ -433,7 +559,7 @@ const doc: CoreConceptDoc = {
       code: helpAndVersionReferenceCode,
     },
     {
-      title: '12) doctor',
+      title: '13) doctor',
       paragraphs: [
         '`rsx doctor` runs environment checks before you mutate a project.',
         'It validates Node.js >= 20, the VS Code CLI (`code`), and the presence of a supported package manager (`pnpm`, `npm`, `yarn`, or `bun`).',
@@ -442,7 +568,7 @@ const doc: CoreConceptDoc = {
       code: doctorReferenceCode,
     },
     {
-      title: '13) add',
+      title: '14) add',
       paragraphs: [
         '`rsx add` is the interactive scaffolder for expression files. It also supports the aliases `rsx -a` and `rsx -add`.',
         'The flow prompts for the export name, the initial expression string, whether to use kebab-case, the output directory, and whether you want a one-file expression, a separate model file, or an update to an existing file.',
@@ -451,7 +577,7 @@ const doc: CoreConceptDoc = {
       code: addReferenceCode,
     },
     {
-      title: '14) install vscode',
+      title: '15) install vscode',
       paragraphs: [
         'Use `rsx install vscode` to install the bundled RS-X VS Code extension manually.',
         '`--force` reinstalls the extension even if it is already present.',
@@ -461,7 +587,7 @@ const doc: CoreConceptDoc = {
       code: installVsCodeReferenceCode,
     },
     {
-      title: '15) install compiler',
+      title: '16) install compiler',
       paragraphs: [
         'Use `rsx install compiler` when you only want to install the RS-X compiler tooling into the current project.',
         '`--pm` forces the package manager instead of letting the CLI infer it from the project.',
@@ -471,7 +597,7 @@ const doc: CoreConceptDoc = {
       code: installCompilerReferenceCode,
     },
     {
-      title: '16) init',
+      title: '17) init',
       paragraphs: [
         '`rsx init` is the main command for integrating RS-X into an existing app.',
         'It auto-detects the framework context, installs runtime and compiler packages, wires bootstrap, writes `rsx.config.json`, and applies framework-specific integration for Angular, React, Next.js, and Vue when detected.',
@@ -482,7 +608,7 @@ const doc: CoreConceptDoc = {
       code: initReferenceCode,
     },
     {
-      title: '17) project',
+      title: '18) project',
       paragraphs: [
         '`rsx project` scaffolds a brand-new starter project instead of mutating an existing one.',
         'It supports `angular`, `vuejs`, `react`, `nextjs`, and `nodejs`, plus their short aliases shown in the examples on this page.',
@@ -493,18 +619,19 @@ const doc: CoreConceptDoc = {
       code: projectReferenceCode,
     },
     {
-      title: '18) build',
+      title: '19) build',
       paragraphs: [
         '`rsx build` runs the RS-X-aware compilation pipeline for a TypeScript project.',
         '`--project` selects the tsconfig file. `--out-dir` overrides the output directory for the build.',
         '`--prod` enables the production profile and the configured AOT outputs. `--no-emit` performs the analysis without writing JavaScript output.',
         '`--aot-preparse` and `--aot-preparse-file` control generation of the preparse cache module. `--aot-compiled` and `--aot-compiled-file` control generation of the compiled-expression cache module.',
         '`--compiled-resolved-evaluator` controls whether the compiled AOT output also embeds the resolved-dependency evaluator function. `--dry-run` prints the build plan without emitting files.',
+        'When `preparse` is enabled and any expression uses `lazyGroup`, `rsx build --prod` also emits one `.mjs` payload file per group and an updated lazy manifest. No extra flags are needed — lazy group files are generated automatically.',
       ],
       code: buildReferenceCode,
     },
     {
-      title: '19) typecheck',
+      title: '20) typecheck',
       paragraphs: [
         '`rsx typecheck` validates both TypeScript correctness and RS-X expression semantics without emitting build output.',
         '`--project` selects the tsconfig file to analyze.',
@@ -573,6 +700,24 @@ const doc: CoreConceptDoc = {
       description:
         'Run diagnostics and use the improved add flow, which defaults to one-file expressions and can update existing RS-X files.',
       code: doctorAndAddCode,
+    },
+    {
+      title: 'Lazy Group — Expression Usage',
+      description:
+        'Assign expressions to named groups with lazyGroup. Setting lazyGroup implicitly enables lazy: true.',
+      code: lazyGroupUsageCode,
+    },
+    {
+      title: 'Lazy Group — Build Output',
+      description:
+        'rsx build --prod emits one .mjs payload per group into public/rsx-generated/. Each file is downloaded on demand the first time an expression from that group is evaluated.',
+      code: lazyGroupOutputCode,
+    },
+    {
+      title: 'Lazy Group — Angular Route Components',
+      description:
+        'Place lazyGroup expressions inside lazy-loaded Angular route components so each group payload is fetched only when that route activates.',
+      code: lazyGroupAngularCode,
     },
     {
       title: 'Build and Typecheck',

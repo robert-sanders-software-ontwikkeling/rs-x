@@ -497,7 +497,7 @@ EOF
         "build": {
           "options": {
             "tsConfig": "tsconfig.json",
-            "polyfills": []
+            "browser": "src/main.ts"
           }
         }
       }
@@ -920,20 +920,14 @@ then
   overall_status=1
 elif ! node -e "
 const fs = require('node:fs');
-const angularJson = JSON.parse(fs.readFileSync(process.argv[1], 'utf8'));
-const projects = angularJson.projects ?? {};
-const allPolyfills = Object.values(projects).flatMap((p) => {
-  const polyfills = p?.architect?.build?.options?.polyfills ?? [];
-  return Array.isArray(polyfills) ? polyfills : [polyfills];
-});
-const expected = './dist/rsx-generated/rsx-aot-registration.generated.ts';
-if (!allPolyfills.some((p) => p === expected || p.replace(/\\\\/g, '/').endsWith('dist/rsx-generated/rsx-aot-registration.generated.ts'))) {
-  console.error('angular.json polyfills does not contain configured registrationFile path.');
-  console.error('Found polyfills:', JSON.stringify(allPolyfills));
+const mainTs = fs.readFileSync(process.argv[1], 'utf8');
+if (!mainTs.includes('dist/rsx-generated/rsx-aot-registration.generated')) {
+  console.error('main.ts does not contain configured registrationFile import.');
+  console.error('Contents:', mainTs);
   process.exit(1);
 }
-" "$angular_custom_paths_dir/angular.json"; then
-  summary_lines+=("init-angular-custom-paths: wrong registrationFile in angular.json polyfills")
+" "$angular_custom_paths_dir/src/main.ts"; then
+  summary_lines+=("init-angular-custom-paths: registrationFile import missing from main.ts")
   overall_status=1
 else
   summary_lines+=("init-angular-custom-paths: pass")
