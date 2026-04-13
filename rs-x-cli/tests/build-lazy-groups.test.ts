@@ -128,6 +128,20 @@ rsx<number>('m - n', { lazy: true })(ungroupedModel);
       expect(manifest).toContain('rsx-aot-lazy-group-Page2.generated');
       expect(manifest).toContain('"Page1"');
       expect(manifest).toContain('"Page2"');
+      expect(manifest).toContain('function importLazyModule(specifier)');
+      expect(manifest).toContain('@vite-ignore');
+      expect(manifest).toContain(
+        "importLazyModule('./' + 'rsx-aot-lazy-group-Page1.generated')",
+      );
+      expect(manifest).toContain(
+        "importLazyModule('./' + 'rsx-aot-lazy-group-Page2.generated')",
+      );
+      expect(manifest).not.toContain(
+        "import('./' + 'rsx-aot-lazy-group-Page1.generated')",
+      );
+      expect(manifest).not.toContain(
+        "import('./' + 'rsx-aot-lazy-group-Page2.generated')",
+      );
 
       expect(ungrouped).toContain('m - n');
       expect(ungrouped).not.toContain('a + b');
