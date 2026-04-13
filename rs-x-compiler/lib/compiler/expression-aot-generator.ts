@@ -654,13 +654,7 @@ export function generateAotLazyExpressionsModule(
     parsedAsts: Array<{ expression: string; expressionAst: unknown }>,
     compiledPlans: Array<{ expression: string; plan: ICompiledExpressionPlan }>,
   ): string => {
-    const sections: string[] = [
-      'import {',
-      '  registerCompiledExpressionPlansInExpressionCache,',
-      '  registerPreparsedExpressionAsts,',
-      "} from '@rs-x/expression-parser';",
-      '',
-    ];
+    const sections: string[] = [];
     if (compiledPlans.length > 0) {
       sections.push(...DESERIALIZE_HELPERS, '');
     }
@@ -693,7 +687,7 @@ export function generateAotLazyExpressionsModule(
       '',
       'let registered = false;',
       '',
-      'export function registerRsxAotLazyExpressions() {',
+      'export function registerRsxAotLazyExpressions(registerPreparsedExpressionAsts, registerCompiledExpressionPlansInExpressionCache) {',
       '  if (registered) { return; }',
       '  registered = true;',
       '  registerPreparsedExpressionAsts(preparsedExpressionAsts);',
