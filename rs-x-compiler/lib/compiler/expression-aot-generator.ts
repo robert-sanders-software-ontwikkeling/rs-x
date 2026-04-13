@@ -666,10 +666,7 @@ export function generateAotLazyExpressionsModule(
     }
 
     if (parsedAsts.length === 0 && compiledPlans.length === 0) {
-      sections.push(
-        'export function registerRsxAotLazyExpressions(): void {}',
-        '',
-      );
+      sections.push('export function registerRsxAotLazyExpressions() {}', '');
       return sections.join('\n');
     }
 
@@ -686,7 +683,7 @@ export function generateAotLazyExpressionsModule(
       .join(',\n');
 
     sections.push(
-      'const preparsedExpressionAsts: Record<string, unknown> = {',
+      'const preparsedExpressionAsts = {',
       astObject,
       '};',
       '',
@@ -696,10 +693,10 @@ export function generateAotLazyExpressionsModule(
       '',
       'let registered = false;',
       '',
-      'export function registerRsxAotLazyExpressions(): void {',
+      'export function registerRsxAotLazyExpressions() {',
       '  if (registered) { return; }',
       '  registered = true;',
-      '  registerPreparsedExpressionAsts(preparsedExpressionAsts as any);',
+      '  registerPreparsedExpressionAsts(preparsedExpressionAsts);',
       `  registerCompiledExpressionPlansInExpressionCache(expandCompiledPlans(compactPlans, ${String(includeResolvedEvaluator)}));`,
       '}',
       '',
