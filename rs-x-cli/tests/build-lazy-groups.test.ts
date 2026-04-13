@@ -13,6 +13,7 @@ describe('rsx cli build lazy groups', () => {
 
     try {
       await fs.mkdir(path.join(fixtureRoot, 'src'), { recursive: true });
+      await fs.mkdir(path.join(fixtureRoot, 'public'), { recursive: true });
 
       await fs.writeFile(
         path.join(fixtureRoot, 'tsconfig.json'),
@@ -98,17 +99,22 @@ rsx<number>('m - n', { lazy: true })(ungroupedModel);
         generatedDir,
         'rsx-aot-lazy-manifest.generated.ts',
       );
+      const publicGeneratedDir = path.join(
+        fixtureRoot,
+        'public',
+        'rsx-generated',
+      );
       const ungroupedPath = path.join(
-        generatedDir,
-        'rsx-aot-lazy.generated.ts',
+        publicGeneratedDir,
+        'rsx-aot-lazy.generated.mjs',
       );
       const page1Path = path.join(
-        generatedDir,
-        'rsx-aot-lazy-group-Page1.generated.ts',
+        publicGeneratedDir,
+        'rsx-aot-lazy-group-Page1.generated.mjs',
       );
       const page2Path = path.join(
-        generatedDir,
-        'rsx-aot-lazy-group-Page2.generated.ts',
+        publicGeneratedDir,
+        'rsx-aot-lazy-group-Page2.generated.mjs',
       );
 
       await expect(fs.stat(manifestPath)).resolves.toBeDefined();
@@ -123,18 +129,22 @@ rsx<number>('m - n', { lazy: true })(ungroupedModel);
         fs.readFile(page2Path, 'utf8'),
       ]);
 
-      expect(manifest).toContain('rsx-aot-lazy.generated');
-      expect(manifest).toContain('rsx-aot-lazy-group-Page1.generated');
-      expect(manifest).toContain('rsx-aot-lazy-group-Page2.generated');
+      expect(manifest).toContain('/rsx-generated/rsx-aot-lazy.generated.mjs');
+      expect(manifest).toContain(
+        '/rsx-generated/rsx-aot-lazy-group-Page1.generated.mjs',
+      );
+      expect(manifest).toContain(
+        '/rsx-generated/rsx-aot-lazy-group-Page2.generated.mjs',
+      );
       expect(manifest).toContain('"Page1"');
       expect(manifest).toContain('"Page2"');
       expect(manifest).toContain('function importLazyModule(specifier)');
       expect(manifest).toContain('@vite-ignore');
       expect(manifest).toContain(
-        "importLazyModule('./' + 'rsx-aot-lazy-group-Page1.generated')",
+        "importLazyModule('/rsx-generated/rsx-aot-lazy-group-Page1.generated.mjs')",
       );
       expect(manifest).toContain(
-        "importLazyModule('./' + 'rsx-aot-lazy-group-Page2.generated')",
+        "importLazyModule('/rsx-generated/rsx-aot-lazy-group-Page2.generated.mjs')",
       );
       expect(manifest).not.toContain(
         "import('./' + 'rsx-aot-lazy-group-Page1.generated')",
