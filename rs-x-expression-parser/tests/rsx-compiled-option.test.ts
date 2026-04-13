@@ -5,6 +5,7 @@ import { CompiledExpressionCompiler } from '../lib/compiled-expression/compiled-
 import { CompiledExpression } from '../lib/compiled-expression/compiled-expression';
 import {
   clearLazyExpressionPreloaders,
+  registerLazyExpressionGroupPreloader,
   registerLazyExpressionPreloader,
 } from '../lib/expression-cache/lazy-expression-preload-registry';
 import { AbstractExpression } from '../lib/expressions/abstract-expression';
@@ -336,6 +337,69 @@ describe('rsx return type structure (compiled mode)', () => {
 
     expect(expressionA.value).toBe(5);
     expect(expressionB.value).toBe(15);
+    expressionA.dispose();
+    expressionB.dispose();
+  });
+
+  it('lazyGroup compiled instances share one in-flight group load', async () => {
+    const expressionString = 'lazyGroupA + lazyGroupB';
+    let resolveLoad!: () => void;
+    const loadStarted = new Promise<void>((resolve) => {
+      resolveLoad = resolve;
+    });
+    const plan = createCompiledPlan(expressionString);
+    let loaderCalls = 0;
+
+    registerLazyExpressionGroupPreloader('page1', async () => {
+      loaderCalls += 1;
+      await loadStarted;
+      registerCompiledExpressionPlanInExpressionCache(expressionString, plan);
+    });
+
+    const modelA = { lazyGroupA: 1, lazyGroupB: 4 };
+    const modelB = { lazyGroupA: 10, lazyGroupB: 5 };
+    const expressionA = rsx<number>(expressionString, {
+      lazyGroup: 'page1',
+      compiled: true,
+    })(modelA);
+    const expressionB = rsx<number>(expressionString, {
+      lazyGroup: 'page1',
+      compiled: true,
+    })(modelB);
+
+    expect(expressionA).toBeInstanceOf(CompiledExpression);
+    expect(expressionB).toBeInstanceOf(CompiledExpression);
+    expect(expressionA.value).toBeUndefined();
+    expect(expressionB.value).toBeUndefined();
+    expect(loaderCalls).toBe(1);
+
+    let changedA = false;
+    let changedB = false;
+    const changedAPromise = new WaitForEvent(expressionA, 'changed').wait(
+      () => {},
+    );
+    const changedBPromise = new WaitForEvent(expressionB, 'changed').wait(
+      () => {},
+    );
+    void changedAPromise.then(() => {
+      changedA = true;
+    });
+    void changedBPromise.then(() => {
+      changedB = true;
+    });
+
+    await Promise.resolve();
+    expect(changedA).toBe(false);
+    expect(changedB).toBe(false);
+
+    resolveLoad();
+    await Promise.all([changedAPromise, changedBPromise]);
+
+    expect(loaderCalls).toBe(1);
+    expect(expressionA.value).toBe(5);
+    expect(expressionB.value).toBe(15);
+    expect(changedA).toBe(true);
+    expect(changedB).toBe(true);
     expressionA.dispose();
     expressionB.dispose();
   });

@@ -363,18 +363,28 @@ rsx('a + c', { lazy: true })(model);
       admin: ['d + a'],
       panel: ['b + c', 'c + d'],
     });
+    expect(Object.keys(generated.groupModules).sort()).toEqual([
+      'admin',
+      'panel',
+    ]);
     // ungrouped expressions are in the lazy block
     expect(generated.code).toContain('registerRsxAotLazyExpressions');
     expect(generated.code).toContain('a + c');
-    // group functions
-    expect(generated.code).toContain('registerRsxAotLazyGroupPreloaders');
-    expect(generated.code).toContain('_registerGroup_panel');
-    expect(generated.code).toContain('_registerGroup_admin');
-    expect(generated.code).toContain('"panel"');
-    expect(generated.code).toContain('"admin"');
-    expect(generated.code).toContain('b + c');
-    expect(generated.code).toContain('c + d');
-    expect(generated.code).toContain('d + a');
+    expect(generated.code).not.toContain('b + c');
+    expect(generated.code).not.toContain('c + d');
+    expect(generated.code).not.toContain('d + a');
+    // grouped expressions move into their own payload modules
+    expect(generated.groupModules.panel.code).toContain(
+      'registerRsxAotLazyExpressions',
+    );
+    expect(generated.groupModules.panel.code).toContain('b + c');
+    expect(generated.groupModules.panel.code).toContain('c + d');
+    expect(generated.groupModules.panel.code).not.toContain('a + c');
+    expect(generated.groupModules.admin.code).toContain(
+      'registerRsxAotLazyExpressions',
+    );
+    expect(generated.groupModules.admin.code).toContain('d + a');
+    expect(generated.groupModules.admin.code).not.toContain('a + c');
     // non-lazy not included
     expect(generated.code).not.toContain('a + b');
   });
