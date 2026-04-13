@@ -320,6 +320,7 @@ rsx('a + c', { lazy: true, preparse: false })(model);
     expect(generated.compiledExpressions).toEqual(['b + c', 'c + d']);
     expect(generated.skippedCompiledExpressions).toEqual([]);
     expect(generated.skippedPreparsedExpressions).toEqual([]);
+    expect(generated.groups).toEqual({});
     expect(generated.code).toContain('registerRsxAotLazyExpressions');
     expect(generated.code).toContain('registerPreparsedExpressionAsts');
     expect(generated.code).toContain(
@@ -330,5 +331,51 @@ rsx('a + c', { lazy: true, preparse: false })(model);
     expect(generated.code).toContain('d + a');
     expect(generated.code).not.toContain('a + b');
     expect(generated.code).not.toContain('a + c');
+  });
+
+  it('emits per-group registration functions for lazyGroup expressions', async () => {
+    const fixtureDir = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'rsx-aot-generator-lazy-group-'),
+    );
+    const fixturePath = path.join(fixtureDir, 'lazy-group.fixture.ts');
+
+    await fs.writeFile(
+      fixturePath,
+      `
+import { rsx } from '@rs-x/expression-parser';
+const model = { a: 1, b: 2, c: 3, d: 4 };
+rsx('a + b')(model);
+rsx('b + c', { lazyGroup: 'panel' })(model);
+rsx('c + d', { lazyGroup: 'panel' })(model);
+rsx('d + a', { lazyGroup: 'admin' })(model);
+rsx('a + c', { lazy: true })(model);
+`,
+      'utf8',
+    );
+
+    const program = createProgram(fixturePath);
+    const generated = generateAotLazyExpressionsModule(program);
+
+    // ungrouped lazy
+    expect(generated.expressions).toEqual(['a + c']);
+    // groups
+    expect(generated.groups).toEqual({
+      admin: ['d + a'],
+      panel: ['b + c', 'c + d'],
+    });
+    // ungrouped expressions are in the lazy block
+    expect(generated.code).toContain('registerRsxAotLazyExpressions');
+    expect(generated.code).toContain('a + c');
+    // group functions
+    expect(generated.code).toContain('registerRsxAotLazyGroupPreloaders');
+    expect(generated.code).toContain('_registerGroup_panel');
+    expect(generated.code).toContain('_registerGroup_admin');
+    expect(generated.code).toContain('"panel"');
+    expect(generated.code).toContain('"admin"');
+    expect(generated.code).toContain('b + c');
+    expect(generated.code).toContain('c + d');
+    expect(generated.code).toContain('d + a');
+    // non-lazy not included
+    expect(generated.code).not.toContain('a + b');
   });
 });

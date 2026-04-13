@@ -8,6 +8,13 @@ export interface IExpressionCacheData {
   compiled?: boolean;
   /** When true, defer AOT readiness until the lazy preloader resolves. */
   lazy?: boolean;
+  /**
+   * When set, the expression belongs to this named lazy group.
+   * On first use, the entire group's manifest is loaded — not just this
+   * expression — keeping the number of dynamic imports small.
+   * Implies lazy: true.
+   */
+  lazyGroup?: string;
 }
 
 export interface IExpressionCache extends IKeyedInstanceFactory<

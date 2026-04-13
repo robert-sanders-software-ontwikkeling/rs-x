@@ -11,8 +11,12 @@ import type {
   IExpressionCacheData,
 } from './expression-cache.type';
 import {
+  getLazyExpressionGroup,
   hasLazyExpressionPreloader,
+  hasLazyGroupPreloader,
+  registerLazyExpressionInGroup,
   startLazyExpressionPreload,
+  startLazyGroupPreload,
   triggerLazyExpressionPreload,
 } from './lazy-expression-preload-registry';
 import { hydrateExpressionCacheWithPreparsedAsts } from './preparsed-expression-ast-registry';
@@ -82,8 +86,16 @@ export class ExpressionCache
   protected override createInstance(
     data: IExpressionCacheData,
   ): IExpression<unknown> {
-    if (!data.lazy) {
+    const isLazy = data.lazy || data.lazyGroup !== undefined;
+
+    if (!isLazy) {
       triggerLazyExpressionPreload(data.expressionString);
+    }
+
+    // Register the expression → group mapping so the group loader fires when
+    // this expression is triggered (whether from here or elsewhere).
+    if (data.lazyGroup) {
+      registerLazyExpressionInGroup(data.expressionString, data.lazyGroup);
     }
 
     // Precompiled AOT expressions are only served when compiled mode is active
@@ -96,12 +108,22 @@ export class ExpressionCache
         return precompiledExpression;
       }
 
-      if (data.lazy && hasLazyExpressionPreloader(data.expressionString)) {
-        return new CompiledExpression(undefined, {
-          expressionString: data.expressionString,
-          startLazyLoad: () =>
-            startLazyExpressionPreload(data.expressionString),
-        });
+      if (isLazy) {
+        const groupName =
+          data.lazyGroup ?? getLazyExpressionGroup(data.expressionString);
+        const hasPreloader = groupName
+          ? hasLazyGroupPreloader(groupName)
+          : hasLazyExpressionPreloader(data.expressionString);
+
+        if (hasPreloader) {
+          return new CompiledExpression(undefined, {
+            expressionString: data.expressionString,
+            startLazyLoad: () =>
+              groupName
+                ? startLazyGroupPreload(groupName)
+                : startLazyExpressionPreload(data.expressionString),
+          });
+        }
       }
     }
 

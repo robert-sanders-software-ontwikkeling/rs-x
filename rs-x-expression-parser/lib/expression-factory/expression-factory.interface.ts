@@ -9,5 +9,6 @@ export interface IExpressionFactory {
     leafIndexWatchRule?: IIndexWatchRule,
     compiled?: boolean,
     lazy?: boolean,
+    lazyGroup?: string,
   ): IExpression<T>;
 }

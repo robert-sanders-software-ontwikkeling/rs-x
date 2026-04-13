@@ -76,6 +76,7 @@ class ExpressionForContextManager
       expressionString: expressionData.expressionString,
       compiled: expressionData.compiled,
       lazy: expressionData.lazy,
+      lazyGroup: expressionData.lazyGroup,
     }).instance;
   }
 

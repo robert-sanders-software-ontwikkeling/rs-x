@@ -14,6 +14,13 @@ let cachedExpressionFactory: IExpressionFactory | undefined;
 export interface IRsxOptions {
   readonly preparse?: boolean;
   readonly lazy?: boolean;
+  /**
+   * Named lazy group. When set, the expression belongs to this group and the
+   * entire group's manifest is loaded on first use — not just this expression.
+   * Implies lazy: true. Use this to batch related lazy expressions so a single
+   * dynamic import covers all of them.
+   */
+  readonly lazyGroup?: string;
   readonly compiled?: boolean;
 }
 
@@ -129,6 +136,7 @@ export function rsx<TReturn, TModel extends object = object>(
       leafIndexWatchRule,
       options?.compiled,
       options?.lazy,
+      options?.lazyGroup,
     );
   };
 }

@@ -35,10 +35,13 @@ export interface IGeneratedAotLazyExpressionPreloadManifestModule {
 
 export interface IGeneratedAotLazyExpressionsModule {
   readonly code: string;
+  /** Ungrouped lazy expressions (loaded all at once via registerRsxAotLazyExpressions). */
   readonly expressions: readonly string[];
   readonly compiledExpressions: readonly string[];
   readonly skippedCompiledExpressions: readonly string[];
   readonly skippedPreparsedExpressions: readonly string[];
+  /** Grouped lazy expressions keyed by group name. */
+  readonly groups: Readonly<Record<string, readonly string[]>>;
 }
 
 export function generateAotCompiledExpressionsModule(
@@ -441,89 +444,132 @@ export function generateAotLazyExpressionsModule(
 ): IGeneratedAotLazyExpressionsModule {
   const includeResolvedEvaluator = options.includeResolvedEvaluator === true;
   const detections = detectExpressionSites(program);
-  const lazyPreparsedExpressions = [
-    ...new Set(
-      detections
-        .filter((detection) => detection.preparse && detection.lazy)
-        .map((detection) => detection.expression),
-    ),
-  ];
-  lazyPreparsedExpressions.sort();
 
-  const lazyCompiledExpressions = [
+  // ── Separate ungrouped vs grouped lazy detections ────────────────────────
+  const ungroupedDetections = detections.filter((d) => d.lazy && !d.lazyGroup);
+  const groupedDetections = detections.filter((d) => d.lazy && d.lazyGroup);
+
+  // ── Ungrouped: preparsed + compiled ──────────────────────────────────────
+  const ungroupedPreparsed = [
     ...new Set(
-      detections
-        .filter(
-          (detection) =>
-            detection.preparse && detection.lazy && detection.compiled,
-        )
-        .map((detection) => detection.expression),
+      ungroupedDetections.filter((d) => d.preparse).map((d) => d.expression),
     ),
-  ];
-  lazyCompiledExpressions.sort();
+  ].sort();
+
+  const ungroupedCompiled = [
+    ...new Set(
+      ungroupedDetections
+        .filter((d) => d.preparse && d.compiled)
+        .map((d) => d.expression),
+    ),
+  ].sort();
 
   const parser = new JsExpressionAstParser();
-  const parsedExpressions: Array<{
+  const compiler = new CompiledExpressionCompiler(new JsExpressionAstParser());
+
+  const skippedPreparsedExpressions: string[] = [];
+  const skippedCompiledExpressions: string[] = [];
+
+  const ungroupedParsedAsts: Array<{
     expression: string;
     expressionAst: unknown;
   }> = [];
-  const skippedPreparsedExpressions: string[] = [];
-
-  for (let i = 0; i < lazyPreparsedExpressions.length; i += 1) {
-    const expression = lazyPreparsedExpressions[i];
+  for (const expression of ungroupedPreparsed) {
     try {
-      const expressionAst = parser.parse(expression);
-      parsedExpressions.push({ expression, expressionAst });
+      ungroupedParsedAsts.push({
+        expression,
+        expressionAst: parser.parse(expression),
+      });
     } catch {
       skippedPreparsedExpressions.push(expression);
     }
   }
 
-  const compiler = new CompiledExpressionCompiler(new JsExpressionAstParser());
-  const compiledPlans: Array<{
+  const ungroupedCompiledPlans: Array<{
     expression: string;
     plan: ICompiledExpressionPlan;
   }> = [];
-  const skippedCompiledExpressions: string[] = [];
-
-  for (let i = 0; i < lazyCompiledExpressions.length; i += 1) {
-    const expression = lazyCompiledExpressions[i];
+  for (const expression of ungroupedCompiled) {
     const plan = compiler.tryCompile(expression);
     if (!plan) {
       skippedCompiledExpressions.push(expression);
       continue;
     }
-    compiledPlans.push({ expression, plan });
+    ungroupedCompiledPlans.push({ expression, plan });
   }
 
-  const astObject = parsedExpressions
-    .map(
-      ({ expression, expressionAst }) =>
-        `${JSON.stringify(expression)}: ${JSON.stringify(expressionAst)}`,
-    )
-    .join(',\n');
-  const compactEntries = compiledPlans
-    .map(({ plan }) =>
-      serializeCompactPlanEntry(plan, {
-        includeResolvedEvaluator,
-      }),
-    )
-    .join(',\n');
+  // ── Groups: collect per-group data ───────────────────────────────────────
+  const groupNames = [
+    ...new Set(groupedDetections.map((d) => d.lazyGroup as string)),
+  ].sort();
+  const groups: Record<string, readonly string[]> = {};
 
-  const code = [
-    'import {',
-    '  registerCompiledExpressionPlansInExpressionCache,',
-    '  registerPreparsedExpressionAsts,',
-    "} from '@rs-x/expression-parser';",
-    '',
-    'const preparsedExpressionAsts: Record<string, unknown> = {',
-    astObject,
-    '};',
-    '',
-    'const compactPlans = [',
-    compactEntries,
-    '];',
-    '',
+  type GroupData = {
+    parsedAsts: Array<{ expression: string; expressionAst: unknown }>;
+    compiledPlans: Array<{ expression: string; plan: ICompiledExpressionPlan }>;
+    expressions: string[];
+  };
+  const groupDataMap = new Map<string, GroupData>();
+
+  for (const groupName of groupNames) {
+    const groupDetections = groupedDetections.filter(
+      (d) => d.lazyGroup === groupName,
+    );
+
+    const preparsedExprs = [
+      ...new Set(
+        groupDetections.filter((d) => d.preparse).map((d) => d.expression),
+      ),
+    ].sort();
+    const compiledExprs = [
+      ...new Set(
+        groupDetections
+          .filter((d) => d.preparse && d.compiled)
+          .map((d) => d.expression),
+      ),
+    ].sort();
+
+    const parsedAsts: Array<{ expression: string; expressionAst: unknown }> =
+      [];
+    for (const expression of preparsedExprs) {
+      try {
+        parsedAsts.push({
+          expression,
+          expressionAst: parser.parse(expression),
+        });
+      } catch {
+        // skip
+      }
+    }
+
+    const compiledPlans: Array<{
+      expression: string;
+      plan: ICompiledExpressionPlan;
+    }> = [];
+    for (const expression of compiledExprs) {
+      const plan = compiler.tryCompile(expression);
+      if (plan) {
+        compiledPlans.push({ expression, plan });
+      }
+    }
+
+    const allExpressions = [
+      ...new Set([
+        ...parsedAsts.map((a) => a.expression),
+        ...compiledPlans.map((c) => c.expression),
+      ]),
+    ].sort();
+
+    groupDataMap.set(groupName, {
+      parsedAsts,
+      compiledPlans,
+      expressions: allExpressions,
+    });
+    groups[groupName] = allExpressions;
+  }
+
+  // ── Code generation helpers ───────────────────────────────────────────────
+  const DESERIALIZE_HELPERS = [
     'function deserializeMemberChain(memberChain) {',
     '  if (!memberChain) return undefined;',
     '  const segments = new Array(memberChain[1].length);',
@@ -592,28 +638,157 @@ export function generateAotLazyExpressionsModule(
     '  }',
     '  return expanded;',
     '}',
+  ];
+
+  // ── Build code sections ───────────────────────────────────────────────────
+  const sections: string[] = [
+    'import {',
+    '  registerCompiledExpressionPlansInExpressionCache,',
+    '  registerLazyExpressionGroupPreloader,',
+    '  registerLazyExpressionInGroup,',
+    '  registerPreparsedExpressionAsts,',
+    "} from '@rs-x/expression-parser';",
     '',
-    'let hasRegisteredRsxAotLazyExpressions = false;',
-    '',
-    'export function registerRsxAotLazyExpressions(): void {',
-    '  if (hasRegisteredRsxAotLazyExpressions) {',
-    '    return;',
-    '  }',
-    '  hasRegisteredRsxAotLazyExpressions = true;',
-    '  registerPreparsedExpressionAsts(preparsedExpressionAsts as any);',
-    `  registerCompiledExpressionPlansInExpressionCache(expandCompiledPlans(compactPlans, ${String(
-      includeResolvedEvaluator,
-    )}));`,
-    '}',
-    '',
-  ].join('\n');
+  ];
+
+  const needsHelpers =
+    ungroupedCompiledPlans.length > 0 ||
+    groupNames.some(
+      (g) => (groupDataMap.get(g)?.compiledPlans.length ?? 0) > 0,
+    );
+
+  if (needsHelpers) {
+    sections.push(...DESERIALIZE_HELPERS, '');
+  }
+
+  // Ungrouped lazy expressions block
+  if (ungroupedParsedAsts.length > 0 || ungroupedCompiledPlans.length > 0) {
+    const astObject = ungroupedParsedAsts
+      .map(
+        ({ expression, expressionAst }) =>
+          `${JSON.stringify(expression)}: ${JSON.stringify(expressionAst)}`,
+      )
+      .join(',\n');
+    const compactEntries = ungroupedCompiledPlans
+      .map(({ plan }) =>
+        serializeCompactPlanEntry(plan, { includeResolvedEvaluator }),
+      )
+      .join(',\n');
+
+    sections.push(
+      'const _ungroupedAsts: Record<string, unknown> = {',
+      astObject,
+      '};',
+      '',
+      'const _ungroupedPlans = [',
+      compactEntries,
+      '];',
+      '',
+      'let _ungroupedRegistered = false;',
+      '',
+      'export function registerRsxAotLazyExpressions(): void {',
+      '  if (_ungroupedRegistered) { return; }',
+      '  _ungroupedRegistered = true;',
+      '  registerPreparsedExpressionAsts(_ungroupedAsts as any);',
+      `  registerCompiledExpressionPlansInExpressionCache(expandCompiledPlans(_ungroupedPlans, ${String(includeResolvedEvaluator)}));`,
+      '}',
+      '',
+    );
+  } else {
+    sections.push(
+      'export function registerRsxAotLazyExpressions(): void {}',
+      '',
+    );
+  }
+
+  // Per-group blocks
+  for (const groupName of groupNames) {
+    const {
+      parsedAsts,
+      compiledPlans: gPlans,
+      expressions,
+    } = groupDataMap.get(groupName)!;
+    const safeName = groupName.replace(/[^a-zA-Z0-9_]/g, '_');
+
+    const astObject = parsedAsts
+      .map(
+        ({ expression, expressionAst }) =>
+          `${JSON.stringify(expression)}: ${JSON.stringify(expressionAst)}`,
+      )
+      .join(',\n');
+    const compactEntries = gPlans
+      .map(({ plan }) =>
+        serializeCompactPlanEntry(plan, { includeResolvedEvaluator }),
+      )
+      .join(',\n');
+
+    sections.push(
+      `// ── Lazy group: ${groupName} ──────────────────────────────────────────`,
+      `const _group_${safeName}_asts: Record<string, unknown> = {`,
+      astObject,
+      '};',
+      '',
+      `const _group_${safeName}_plans = [`,
+      compactEntries,
+      '];',
+      '',
+      `function _registerGroup_${safeName}(): void {`,
+      `  registerPreparsedExpressionAsts(_group_${safeName}_asts as any);`,
+      `  registerCompiledExpressionPlansInExpressionCache(expandCompiledPlans(_group_${safeName}_plans, ${String(includeResolvedEvaluator)}));`,
+      '}',
+      '',
+    );
+
+    // Expression membership declarations
+    for (const expression of expressions) {
+      sections.push(
+        `// registerLazyExpressionInGroup called at preloader registration time`,
+      );
+      void expression; // referenced below
+    }
+  }
+
+  // registerRsxAotLazyGroupPreloaders
+  if (groupNames.length > 0) {
+    const groupRegistrations = groupNames.flatMap((groupName) => {
+      const { expressions } = groupDataMap.get(groupName)!;
+      const safeName = groupName.replace(/[^a-zA-Z0-9_]/g, '_');
+      return [
+        ...expressions.map(
+          (expr) =>
+            `  registerLazyExpressionInGroup(${JSON.stringify(expr)}, ${JSON.stringify(groupName)});`,
+        ),
+        `  registerLazyExpressionGroupPreloader(${JSON.stringify(groupName)}, _registerGroup_${safeName});`,
+      ];
+    });
+
+    sections.push(
+      'export function registerRsxAotLazyGroupPreloaders(): void {',
+      ...groupRegistrations,
+      '}',
+      '',
+    );
+  } else {
+    sections.push(
+      'export function registerRsxAotLazyGroupPreloaders(): void {}',
+      '',
+    );
+  }
+
+  // Remove the stray comment lines we added above, replace with clean code
+  const code = sections
+    .filter(
+      (line) => !line.startsWith('// registerLazyExpressionInGroup called'),
+    )
+    .join('\n');
 
   return {
     code,
-    expressions: parsedExpressions.map((item) => item.expression),
-    compiledExpressions: compiledPlans.map((item) => item.expression),
+    expressions: ungroupedParsedAsts.map((item) => item.expression),
+    compiledExpressions: ungroupedCompiledPlans.map((item) => item.expression),
     skippedCompiledExpressions,
     skippedPreparsedExpressions,
+    groups,
   };
 }
 

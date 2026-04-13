@@ -11,6 +11,8 @@ export interface IExpressionSiteDetection {
   readonly expression: string;
   readonly preparse: boolean;
   readonly lazy: boolean;
+  /** Named lazy group. When set, implies lazy: true. */
+  readonly lazyGroup: string | undefined;
   readonly compiled: boolean;
   readonly expressionLiteral: ts.StringLiteralLike;
   readonly callExpression: ts.CallExpression;
@@ -119,6 +121,7 @@ function tryDetectRsxEntryPoint(
     expression: expressionLiteral.text,
     preparse: rsxOptions.preparse,
     lazy: rsxOptions.lazy,
+    lazyGroup: rsxOptions.lazyGroup,
     compiled: rsxOptions.compiled,
     expressionLiteral,
     callExpression,
@@ -252,6 +255,7 @@ function tryDetectFactoryEntryPoint(
     expression: expressionLiteral.text,
     preparse: true,
     lazy: false,
+    lazyGroup: undefined,
     compiled: true,
     expressionLiteral,
     callExpression,
@@ -262,14 +266,16 @@ function tryDetectFactoryEntryPoint(
 function resolveRsxOptions(optionArgument?: ts.Expression): {
   preparse: boolean;
   lazy: boolean;
+  lazyGroup: string | undefined;
   compiled: boolean;
 } {
   let preparse = true;
   let lazy = false;
+  let lazyGroup: string | undefined;
   let compiled = true;
 
   if (!optionArgument || !ts.isObjectLiteralExpression(optionArgument)) {
-    return { preparse, lazy, compiled };
+    return { preparse, lazy, lazyGroup, compiled };
   }
 
   for (let i = 0; i < optionArgument.properties.length; i += 1) {
@@ -298,6 +304,14 @@ function resolveRsxOptions(optionArgument?: ts.Expression): {
       continue;
     }
 
+    if (isPropertyName(property.name, 'lazyGroup')) {
+      if (ts.isStringLiteral(property.initializer)) {
+        lazyGroup = property.initializer.text;
+        lazy = true; // lazyGroup implies lazy
+      }
+      continue;
+    }
+
     if (isPropertyName(property.name, 'compiled')) {
       if (property.initializer.kind === ts.SyntaxKind.TrueKeyword) {
         compiled = true;
@@ -308,7 +322,7 @@ function resolveRsxOptions(optionArgument?: ts.Expression): {
     }
   }
 
-  return { preparse, lazy, compiled };
+  return { preparse, lazy, lazyGroup, compiled };
 }
 
 function isPropertyName(
