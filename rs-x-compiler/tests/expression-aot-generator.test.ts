@@ -6,6 +6,7 @@ import ts from 'typescript';
 
 import {
   generateAotCompiledExpressionsModule,
+  generateAotLazyExpressionsModule,
   generateAotLazyExpressionPreloadManifestModule,
   generateAotParsedExpressionCacheModule,
 } from '../lib/compiler/expression-aot-generator';
@@ -16,6 +17,8 @@ function createProgram(entryFile: string): ts.Program {
   return ts.createProgram({
     rootNames: [entryFile],
     options: {
+      baseUrl: workspaceRoot,
+      ignoreDeprecations: '6.0',
       target: ts.ScriptTarget.ES2022,
       module: ts.ModuleKind.ES2022,
       moduleResolution: ts.ModuleResolutionKind.Bundler,
@@ -286,5 +289,46 @@ rsx('d + a', { preparse: false, lazy: true })(model);
     expect(generated.code).toContain('c + d');
     expect(generated.code).not.toContain('a + b');
     expect(generated.code).not.toContain('d + a');
+  });
+});
+
+describe('AOT lazy expression payload generator', () => {
+  it('emits lazy preparsed and compiled payloads for lazy rsx calls', async () => {
+    const fixtureDir = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'rsx-aot-generator-lazy-payload-'),
+    );
+    const fixturePath = path.join(fixtureDir, 'lazy-payload.fixture.ts');
+
+    await fs.writeFile(
+      fixturePath,
+      `
+import { rsx } from '@rs-x/expression-parser';
+const model = { a: 1, b: 2, c: 3, d: 4 };
+rsx('a + b')(model);
+rsx('b + c', { lazy: true })(model);
+rsx('c + d', { lazy: true, preparse: true })(model);
+rsx('d + a', { lazy: true, compiled: false })(model);
+rsx('a + c', { lazy: true, preparse: false })(model);
+`,
+      'utf8',
+    );
+
+    const program = createProgram(fixturePath);
+    const generated = generateAotLazyExpressionsModule(program);
+
+    expect(generated.expressions).toEqual(['b + c', 'c + d', 'd + a']);
+    expect(generated.compiledExpressions).toEqual(['b + c', 'c + d']);
+    expect(generated.skippedCompiledExpressions).toEqual([]);
+    expect(generated.skippedPreparsedExpressions).toEqual([]);
+    expect(generated.code).toContain('registerRsxAotLazyExpressions');
+    expect(generated.code).toContain('registerPreparsedExpressionAsts');
+    expect(generated.code).toContain(
+      'registerCompiledExpressionPlansInExpressionCache',
+    );
+    expect(generated.code).toContain('b + c');
+    expect(generated.code).toContain('c + d');
+    expect(generated.code).toContain('d + a');
+    expect(generated.code).not.toContain('a + b');
+    expect(generated.code).not.toContain('a + c');
   });
 });

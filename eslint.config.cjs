@@ -23,7 +23,7 @@ module.exports = [
       '**/.tmp-*',
       '**/tmp-*.ts',
       '**/tmp-*.mjs',
-      'rs-x-cli/rsx-project-*-verify/**',
+      '**/*.generated.ts',
       'rs-x-cli/templates/**',
       // Test/mock/config files not included in package tsconfigs
       '**/*.test.ts',

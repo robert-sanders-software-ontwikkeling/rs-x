@@ -14,3 +14,4 @@ packages:
   - 'rs-x-expression-editor'
   - 'rs-x-site'
   - 'rs-x-ui'
+  - 'rs-x-compiler-demo'

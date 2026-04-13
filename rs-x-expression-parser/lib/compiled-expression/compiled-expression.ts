@@ -19,6 +19,7 @@ import {
 
 import { CompiledDependencyEvaluateUnit } from './compiled-dependency-evaluate-unit';
 import type { ICompiledExpressionPlan } from './compiled-expression.compiler.interface';
+import { getRegisteredCompiledExpressionPlan } from './compiled-expression-cache-preload';
 
 class PendingDependencyValueError extends Error {}
 const UNRESOLVED = Symbol('compiled-expression-unresolved');
@@ -55,16 +56,16 @@ export class CompiledExpression implements IExpressionTree {
   private _evaluateUnit: IExpressionEvaluateUnit | undefined;
   private _dependencyUnits: CompiledDependencyEvaluateUnit[] = [];
   private _watchDependencies: ICompiledExpressionPlan['watchDependencies'] = [];
-  private readonly _hasOwnerPathDependencies: boolean;
-  private readonly _needsResolvedMemberProxyInPlan: boolean;
-  private readonly _isSingleRootIdentifierExpression: boolean;
-  private readonly _requiresDependencyUnitByName: boolean;
-  private readonly _identifierDependencyName: string | undefined;
+  private _hasOwnerPathDependencies = false;
+  private _needsResolvedMemberProxyInPlan = false;
+  private _isSingleRootIdentifierExpression = false;
+  private _requiresDependencyUnitByName = false;
+  private _identifierDependencyName: string | undefined;
   private _identifierDependencyUnit: CompiledDependencyEvaluateUnit | undefined;
   // Pre-computed per-dependency flags (index-aligned with _plan.watchDependencies).
-  private readonly _depIsRootIdentifierDependency: readonly boolean[];
-  private readonly _depShouldForceDirty: readonly boolean[];
-  private readonly _depRequiresWatchRuleStatically: readonly boolean[];
+  private _depIsRootIdentifierDependency: readonly boolean[] = [];
+  private _depShouldForceDirty: readonly boolean[] = [];
+  private _depRequiresWatchRuleStatically: readonly boolean[] = [];
   private _dependencyUnitByName = new Map<
     string,
     CompiledDependencyEvaluateUnit
@@ -99,47 +100,68 @@ export class CompiledExpression implements IExpressionTree {
   private _cachedValueMetadata:
     | IExpressionServices['valueMetadata']
     | undefined;
+  private readonly _lazyExpressionString: string | undefined;
+  private readonly _startLazyLoad:
+    | (() => Promise<void> | undefined)
+    | undefined;
+  private _pendingBindSettings: IExpressionBindConfiguration | undefined;
+  private _lazyBindStarted = false;
 
-  constructor(private readonly _plan: ICompiledExpressionPlan) {
-    this._watchDependencies = _plan.watchDependencies;
-    this._hasOwnerPathDependencies = _plan.watchDependencies.some(
+  constructor(
+    private _plan: ICompiledExpressionPlan | undefined,
+    lazyOptions?: {
+      expressionString: string;
+      startLazyLoad: () => Promise<void> | undefined;
+    },
+  ) {
+    this._lazyExpressionString = lazyOptions?.expressionString;
+    this._startLazyLoad = lazyOptions?.startLazyLoad;
+    if (!this._plan) {
+      return;
+    }
+    this.applyPlanState(this._plan);
+  }
+
+  private applyPlanState(plan: ICompiledExpressionPlan): void {
+    this._watchDependencies = plan.watchDependencies;
+    this._hasOwnerPathDependencies = plan.watchDependencies.some(
       (dependency) => dependency.ownerPath.length > 0,
     );
-    this._needsResolvedMemberProxyInPlan = _plan.watchDependencies.some(
+    this._needsResolvedMemberProxyInPlan = plan.watchDependencies.some(
       (dependency) =>
         dependency.ownerPath.length > 0 || dependency.isMemberExpressionSegment,
     );
     this._isSingleRootIdentifierExpression =
-      _plan.expressionType === ExpressionType.Identifier &&
-      _plan.watchDependencies.length === 1 &&
-      _plan.watchDependencies[0].ownerPath.length === 0;
+      plan.expressionType === ExpressionType.Identifier &&
+      plan.watchDependencies.length === 1 &&
+      plan.watchDependencies[0].ownerPath.length === 0;
     this._identifierDependencyName = this._isSingleRootIdentifierExpression
-      ? _plan.dependencyNames[0]
+      ? plan.dependencyNames[0]
       : undefined;
     this._requiresDependencyUnitByName =
-      _plan.expressionType === ExpressionType.Identifier ||
-      _plan.memberChain !== undefined ||
-      (_plan.sequenceOperands !== undefined &&
-        _plan.sequenceOperands.length > 0) ||
-      _plan.evaluateResolvedDependencies === undefined;
+      plan.expressionType === ExpressionType.Identifier ||
+      plan.memberChain !== undefined ||
+      (plan.sequenceOperands !== undefined &&
+        plan.sequenceOperands.length > 0) ||
+      plan.evaluateResolvedDependencies === undefined;
 
-    const isIdentifier = _plan.expressionType === ExpressionType.Identifier;
-    const isSingle = _plan.dependencyNames.length === 1;
+    const isIdentifier = plan.expressionType === ExpressionType.Identifier;
+    const isSingle = plan.dependencyNames.length === 1;
     const expressionTypeRequiresWatchRule =
-      _plan.expressionType === ExpressionType.Array ||
-      _plan.expressionType === ExpressionType.Object ||
-      _plan.expressionType === ExpressionType.Member ||
-      _plan.expressionType === ExpressionType.Function ||
-      _plan.expressionType === ExpressionType.Sequence;
-    const memberChain = _plan.memberChain;
+      plan.expressionType === ExpressionType.Array ||
+      plan.expressionType === ExpressionType.Object ||
+      plan.expressionType === ExpressionType.Member ||
+      plan.expressionType === ExpressionType.Function ||
+      plan.expressionType === ExpressionType.Sequence;
+    const memberChain = plan.memberChain;
     const memberChainLastIsStatic =
-      _plan.expressionType === ExpressionType.Member &&
+      plan.expressionType === ExpressionType.Member &&
       memberChain !== undefined &&
       memberChain.segments.length > 0 &&
       memberChain.segments[memberChain.segments.length - 1].kind === 'static';
     const memberChainRoot = memberChain?.rootIdentifier;
 
-    const deps = _plan.watchDependencies;
+    const deps = plan.watchDependencies;
     const depCount = deps.length;
     const depIsRootIdentifier = new Array<boolean>(depCount);
     const depShouldForceDirty = new Array<boolean>(depCount);
@@ -166,11 +188,11 @@ export class CompiledExpression implements IExpressionTree {
   }
 
   public get type(): ExpressionType {
-    return this._plan.expressionType;
+    return this._plan?.expressionType ?? ExpressionType.Identifier;
   }
 
   public get expressionString(): string {
-    return this._plan.expressionString;
+    return this._plan?.expressionString ?? this._lazyExpressionString ?? '';
   }
 
   public get id(): string {
@@ -206,7 +228,15 @@ export class CompiledExpression implements IExpressionTree {
   }
 
   public clone(): this {
-    return new CompiledExpression(this._plan) as this;
+    return new CompiledExpression(
+      this._plan,
+      this._startLazyLoad
+        ? {
+            expressionString: this.expressionString,
+            startLazyLoad: this._startLazyLoad,
+          }
+        : undefined,
+    ) as this;
   }
 
   public get isAsync(): boolean | undefined {
@@ -220,7 +250,7 @@ export class CompiledExpression implements IExpressionTree {
 
     if (!this._isAsyncComputed) {
       this._isAsyncComputed = true;
-      const dependencyName = this._plan.dependencyNames[0];
+      const dependencyName = this._plan!.dependencyNames[0];
       if (dependencyName) {
         const rawValue = this.readDependencyRawValue(
           dependencyName,
@@ -242,6 +272,21 @@ export class CompiledExpression implements IExpressionTree {
   }
 
   public bind(settings: IExpressionBindConfiguration): IExpression {
+    if (!this._plan && this._startLazyLoad) {
+      this.initializeRuntimeBinding(settings);
+      this._pendingBindSettings = settings;
+      this.startLazyBinding();
+      return this;
+    }
+
+    if (!this._plan) {
+      return this;
+    }
+
+    return this.bindResolved(settings);
+  }
+
+  private bindResolved(settings: IExpressionBindConfiguration): IExpression {
     this.initializeRuntimeBinding(settings);
     this.resetBindState();
 
@@ -263,6 +308,36 @@ export class CompiledExpression implements IExpressionTree {
     this._evaluateManagerForExpression.register(this._evaluateUnit);
     this._evaluateManagerForExpression.initialize();
     return this;
+  }
+
+  private startLazyBinding(): void {
+    if (this._lazyBindStarted) {
+      return;
+    }
+
+    this._lazyBindStarted = true;
+    const loadPromise = this._startLazyLoad?.();
+    if (!loadPromise) {
+      return;
+    }
+
+    void loadPromise.then(() => {
+      if (this._isDisposed) {
+        return;
+      }
+
+      const resolvedPlan = getRegisteredCompiledExpressionPlan(
+        this.expressionString,
+      );
+      if (!resolvedPlan || !this._pendingBindSettings) {
+        return;
+      }
+
+      this._plan = resolvedPlan;
+      this.applyPlanState(resolvedPlan);
+      this.bindResolved(this._pendingBindSettings);
+      this._pendingBindSettings = undefined;
+    });
   }
 
   private initializeRuntimeBinding(
@@ -289,7 +364,7 @@ export class CompiledExpression implements IExpressionTree {
       this._dependencyUnitByPath.clear();
     }
     this._dependencyWatchRules = [];
-    this._watchDependencies = this._plan.watchDependencies;
+    this._watchDependencies = this._plan!.watchDependencies;
     this._dirtyDependencyNames.clear();
     this._sequenceOperandValues = undefined;
     this._sequenceDependencySnapshot.clear();
@@ -303,7 +378,7 @@ export class CompiledExpression implements IExpressionTree {
 
   private bindDependencyUnits(context: unknown): void {
     if (this._isSingleRootIdentifierExpression) {
-      const dependency = this._plan.watchDependencies[0];
+      const dependency = this._plan!.watchDependencies[0];
       const dependencyUnit = this.createDependencyUnit(dependency, 0, context);
       this._dependencyUnits.push(dependencyUnit);
       this._dependencyUnitByName.set(dependency.name, dependencyUnit);
@@ -311,8 +386,8 @@ export class CompiledExpression implements IExpressionTree {
       return;
     }
 
-    for (let i = 0; i < this._plan.watchDependencies.length; i++) {
-      const dependency = this._plan.watchDependencies[i];
+    for (let i = 0; i < this._plan!.watchDependencies.length; i++) {
+      const dependency = this._plan!.watchDependencies[i];
       const dependencyUnit = this.createDependencyUnit(dependency, i, context);
       this._dependencyUnits.push(dependencyUnit);
       if (this._hasOwnerPathDependencies) {
@@ -462,13 +537,13 @@ export class CompiledExpression implements IExpressionTree {
       }
     }
 
-    const sequenceOperands = this._plan.sequenceOperands;
+    const sequenceOperands = this._plan!.sequenceOperands;
     if (sequenceOperands !== undefined && sequenceOperands.length > 0) {
       return this.evaluateSequence(sequenceOperands);
     }
 
-    const dependencyNames = this._plan.dependencyNames;
-    const memberChain = this._plan.memberChain;
+    const dependencyNames = this._plan!.dependencyNames;
+    const memberChain = this._plan!.memberChain;
     if (memberChain !== undefined) {
       const args = this.resolveDependencyArguments(dependencyNames, false);
       if (args === PENDING) {
@@ -478,8 +553,8 @@ export class CompiledExpression implements IExpressionTree {
     }
 
     try {
-      if (this._plan.evaluateResolvedDependencies) {
-        return this._plan.evaluateResolvedDependencies(
+      if (this._plan!.evaluateResolvedDependencies) {
+        return this._plan!.evaluateResolvedDependencies(
           this._bindContext,
           this.runtimeIdentifierOwnerResolver,
           this.runtimeIndexValueAccessor,
@@ -493,7 +568,7 @@ export class CompiledExpression implements IExpressionTree {
       if (args === PENDING) {
         return PENDING;
       }
-      return this._plan.evaluate(...args);
+      return this._plan!.evaluate(...args);
     } catch (error) {
       if (error instanceof PendingDependencyValueError) {
         return PENDING;
@@ -781,7 +856,7 @@ export class CompiledExpression implements IExpressionTree {
   private evaluateSequence(
     sequenceOperands: NonNullable<ICompiledExpressionPlan['sequenceOperands']>,
   ): unknown {
-    const dependencyNames = this._plan.dependencyNames;
+    const dependencyNames = this._plan!.dependencyNames;
     const initialRun = this._sequenceOperandValues === undefined;
 
     if (initialRun) {
@@ -861,7 +936,7 @@ export class CompiledExpression implements IExpressionTree {
   private trackSequenceDependencyMutations(
     changedDependencies: Set<string>,
   ): void {
-    const dependencyNames = this._plan.dependencyNames;
+    const dependencyNames = this._plan!.dependencyNames;
     for (let i = 0; i < dependencyNames.length; i++) {
       const dependencyName = dependencyNames[i];
       const nextValue = this.readDependencyRawValue(dependencyName, true).value;

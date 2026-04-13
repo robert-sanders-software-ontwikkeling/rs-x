@@ -163,6 +163,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
     },
     {
+      url: `${BASE_URL}/docs/core-concepts/leaf-identifier`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
       url: `${BASE_URL}/docs/core-concepts/member-expressions`,
       priority: 0.7,
       changeFrequency: 'monthly',
@@ -173,12 +178,47 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
     },
     {
+      url: `${BASE_URL}/docs/core-concepts/performance`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
       url: `${BASE_URL}/docs/core-concepts/performance-demo`,
       priority: 0.6,
       changeFrequency: 'monthly',
     },
     {
+      url: `${BASE_URL}/docs/core-concepts/performance-identifiers`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/core-concepts/performance-memory`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/core-concepts/performance-parse`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
       url: `${BASE_URL}/docs/core-concepts/performance-report`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/core-concepts/performance-v1-v2`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/core-concepts/angular-signals-comparison`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/core-concepts/compiled-vs-tree`,
       priority: 0.6,
       changeFrequency: 'monthly',
     },
@@ -189,6 +229,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${BASE_URL}/docs/core-concepts/side-effects`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/watch-index-recursive-rule`,
       priority: 0.7,
       changeFrequency: 'monthly',
     },

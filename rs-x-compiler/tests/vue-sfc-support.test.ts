@@ -10,10 +10,14 @@ import {
   getRsxDiagnosticsForFile,
 } from '../lib/language-service';
 
+const workspaceRoot = path.resolve(__dirname, '../..');
+
 function createProgram(rootNames: string[]): ts.Program {
   return ts.createProgram({
     rootNames,
     options: {
+      baseUrl: workspaceRoot,
+      ignoreDeprecations: '6.0',
       target: ts.ScriptTarget.ES2022,
       module: ts.ModuleKind.ES2022,
       moduleResolution: ts.ModuleResolutionKind.Bundler,

@@ -117,4 +117,50 @@ describe('ExpressionCache', () => {
     expect(first.instance).toBe(precompiledClone);
     expect(second.instance).toBe(precompiledClone);
   });
+
+  it('does not parse when an async lazy-preloaded compiled expression is pending', async () => {
+    const parsedExpression = new ExpressionMock({
+      expressionString: 'a / b',
+      type: ExpressionType.Division,
+    });
+    const parsedClone = new ExpressionMock({
+      expressionString: 'a / b',
+      type: ExpressionType.Division,
+    });
+    (parsedExpression as unknown as { clone: jest.Mock }).clone = jest.fn(
+      () => parsedClone,
+    );
+
+    const expressionEngineSelector = {
+      create: jest.fn(() => parsedExpression),
+      getMode: jest.fn(() => 'compiled'),
+    } as unknown as IExpressionEngineSelector;
+    const cache = new ExpressionCache(expressionEngineSelector);
+
+    const precompiledExpression = new ExpressionMock({
+      expressionString: 'a / b',
+      type: ExpressionType.Division,
+    });
+    const precompiledClone = new ExpressionMock({
+      expressionString: 'a / b',
+      type: ExpressionType.Division,
+    });
+    (precompiledExpression as unknown as { clone: jest.Mock }).clone = jest.fn(
+      () => precompiledClone,
+    );
+
+    registerLazyExpressionPreloader('a / b', async () => {
+      await Promise.resolve();
+      cache.registerExpressionTree('a / b', precompiledExpression);
+    });
+
+    const first = cache.create({ expressionString: 'a / b', lazy: true });
+    await Promise.resolve();
+    await Promise.resolve();
+    const second = cache.create({ expressionString: 'a / b', lazy: true });
+
+    expect(expressionEngineSelector.create).not.toHaveBeenCalled();
+    expect(first.instance.expressionString).toBe('a / b');
+    expect(second.instance.expressionString).toBe('a / b');
+  });
 });

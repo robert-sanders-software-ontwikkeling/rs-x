@@ -1,5 +1,6 @@
 import { Inject, Injectable, KeyedInstanceFactory } from '@rs-x/core';
 
+import { CompiledExpression } from '../compiled-expression';
 import { hydrateExpressionCacheWithCompiledExpressionPlans } from '../compiled-expression/compiled-expression-cache-preload';
 import type { IExpressionEngineSelector } from '../expression-engine/expression-engine.interface';
 import type { IExpression } from '../expressions/expression-parser.interface';
@@ -9,7 +10,11 @@ import type {
   IExpressionCache,
   IExpressionCacheData,
 } from './expression-cache.type';
-import { triggerLazyExpressionPreload } from './lazy-expression-preload-registry';
+import {
+  hasLazyExpressionPreloader,
+  startLazyExpressionPreload,
+  triggerLazyExpressionPreload,
+} from './lazy-expression-preload-registry';
 import { hydrateExpressionCacheWithPreparsedAsts } from './preparsed-expression-ast-registry';
 
 @Injectable()
@@ -77,7 +82,9 @@ export class ExpressionCache
   protected override createInstance(
     data: IExpressionCacheData,
   ): IExpression<unknown> {
-    triggerLazyExpressionPreload(data.expressionString);
+    if (!data.lazy) {
+      triggerLazyExpressionPreload(data.expressionString);
+    }
 
     // Precompiled AOT expressions are only served when compiled mode is active
     // (either globally or explicitly via the compiled option).
@@ -87,6 +94,14 @@ export class ExpressionCache
       );
       if (precompiledExpression) {
         return precompiledExpression;
+      }
+
+      if (data.lazy && hasLazyExpressionPreloader(data.expressionString)) {
+        return new CompiledExpression(undefined, {
+          expressionString: data.expressionString,
+          startLazyLoad: () =>
+            startLazyExpressionPreload(data.expressionString),
+        });
       }
     }
 

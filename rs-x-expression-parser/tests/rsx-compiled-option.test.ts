@@ -1,8 +1,15 @@
 import { InjectionContainer, WaitForEvent } from '@rs-x/core';
 
+import { registerCompiledExpressionPlanInExpressionCache } from '../lib/compiled-expression/compiled-expression-cache-preload';
+import { CompiledExpressionCompiler } from '../lib/compiled-expression/compiled-expression.compiler';
 import { CompiledExpression } from '../lib/compiled-expression/compiled-expression';
+import {
+  clearLazyExpressionPreloaders,
+  registerLazyExpressionPreloader,
+} from '../lib/expression-cache/lazy-expression-preload-registry';
 import { AbstractExpression } from '../lib/expressions/abstract-expression';
 import { type IExpressionTree } from '../lib/expressions/expression-parser.interface';
+import { JsExpressionAstParser } from '../lib/js-expression-ast-parser';
 import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
@@ -17,6 +24,15 @@ async function waitForValue(
     if (expression.value !== undefined) return;
     await Promise.resolve();
   }
+}
+
+function createCompiledPlan(expressionString: string) {
+  const compiler = new CompiledExpressionCompiler(new JsExpressionAstParser());
+  const plan = compiler.tryCompile(expressionString);
+  if (!plan) {
+    throw new Error(`Failed to compile expression: ${expressionString}`);
+  }
+  return plan;
 }
 
 describe('rsx compiled option', () => {
@@ -183,6 +199,10 @@ describe('rsx return type structure (compiled mode)', () => {
     await unloadRsXExpressionParserModule();
   });
 
+  afterEach(() => {
+    clearLazyExpressionPreloaders();
+  });
+
   it('rsx({ compiled: true }) returns CompiledExpression in compiled mode', async () => {
     const model = { a: 1, b: 2 };
     const expression = rsx<number>('a + b', { compiled: true })(model);
@@ -229,5 +249,94 @@ describe('rsx return type structure (compiled mode)', () => {
     } finally {
       expression.dispose();
     }
+  });
+
+  it('rsx({ lazy: true, compiled: true }) returns immediately and delays changed until the shared lazy load resolves', async () => {
+    const expressionString = 'lazyFirstA + lazyFirstB';
+    let resolveLoad!: () => void;
+    const loadStarted = new Promise<void>((resolve) => {
+      resolveLoad = resolve;
+    });
+    const plan = createCompiledPlan(expressionString);
+    let loaderCalls = 0;
+
+    registerLazyExpressionPreloader(expressionString, async () => {
+      loaderCalls += 1;
+      await loadStarted;
+      registerCompiledExpressionPlanInExpressionCache(expressionString, plan);
+    });
+
+    const model = { lazyFirstA: 2, lazyFirstB: 3 };
+    const expression = rsx<number>(expressionString, {
+      lazy: true,
+      compiled: true,
+    })(model);
+
+    expect(expression).toBeInstanceOf(CompiledExpression);
+    expect(expression.value).toBeUndefined();
+    expect(loaderCalls).toBe(1);
+
+    let changed = false;
+    const changedPromise = new WaitForEvent(expression, 'changed').wait(
+      () => {},
+    );
+    void changedPromise.then((value) => {
+      if (value) {
+        changed = true;
+      }
+    });
+
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(changed).toBe(false);
+
+    resolveLoad();
+    await changedPromise;
+
+    expect(expression.value).toBe(5);
+    expect(changed).toBe(true);
+    expression.dispose();
+  });
+
+  it('multiple lazy compiled instances share one in-flight load', async () => {
+    const expressionString = 'lazySharedA + lazySharedB';
+    let resolveLoad!: () => void;
+    const loadStarted = new Promise<void>((resolve) => {
+      resolveLoad = resolve;
+    });
+    const plan = createCompiledPlan(expressionString);
+    let loaderCalls = 0;
+
+    registerLazyExpressionPreloader(expressionString, async () => {
+      loaderCalls += 1;
+      await loadStarted;
+      registerCompiledExpressionPlanInExpressionCache(expressionString, plan);
+    });
+
+    const modelA = { lazySharedA: 1, lazySharedB: 4 };
+    const modelB = { lazySharedA: 10, lazySharedB: 5 };
+    const expressionA = rsx<number>(expressionString, {
+      lazy: true,
+      compiled: true,
+    })(modelA);
+    const expressionB = rsx<number>(expressionString, {
+      lazy: true,
+      compiled: true,
+    })(modelB);
+
+    expect(expressionA).toBeInstanceOf(CompiledExpression);
+    expect(expressionB).toBeInstanceOf(CompiledExpression);
+    expect(loaderCalls).toBe(1);
+
+    const changedA = new WaitForEvent(expressionA, 'changed').wait(() => {});
+    const changedB = new WaitForEvent(expressionB, 'changed').wait(() => {});
+
+    resolveLoad();
+    await Promise.all([changedA, changedB]);
+
+    expect(expressionA.value).toBe(5);
+    expect(expressionB.value).toBe(15);
+    expressionA.dispose();
+    expressionB.dispose();
   });
 });

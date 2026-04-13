@@ -19,6 +19,8 @@ function createProgram(entryFile: string): ts.Program {
   const program = ts.createProgram({
     rootNames: [entryFile],
     options: {
+      baseUrl: workspaceRoot,
+      ignoreDeprecations: '6.0',
       target: ts.ScriptTarget.ES2022,
       module: ts.ModuleKind.ES2022,
       moduleResolution: ts.ModuleResolutionKind.Bundler,
@@ -41,7 +43,9 @@ function createProgram(entryFile: string): ts.Program {
     ...program.getSyntacticDiagnostics(),
     ...program.getSemanticDiagnostics(),
   ].filter(
-    (diagnostic) => !diagnostic.file || diagnostic.file.fileName === entryFile,
+    (diagnostic) =>
+      diagnostic.code !== 5101 &&
+      (!diagnostic.file || diagnostic.file.fileName === entryFile),
   );
 
   if (diagnostics.length > 0) {

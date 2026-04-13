@@ -128,6 +128,7 @@ export function rsx<TReturn, TModel extends object = object>(
       expressionString,
       leafIndexWatchRule,
       options?.compiled,
+      options?.lazy,
     );
   };
 }

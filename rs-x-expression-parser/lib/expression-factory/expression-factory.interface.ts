@@ -8,5 +8,6 @@ export interface IExpressionFactory {
     expression: string,
     leafIndexWatchRule?: IIndexWatchRule,
     compiled?: boolean,
+    lazy?: boolean,
   ): IExpression<T>;
 }

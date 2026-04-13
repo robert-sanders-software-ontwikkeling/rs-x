@@ -10,6 +10,10 @@ const pendingCompiledExpressionPlans = new Map<
   string,
   ICompiledExpressionPlan
 >();
+const registeredCompiledExpressionPlans = new Map<
+  string,
+  ICompiledExpressionPlan
+>();
 
 export function registerCompiledExpressionPlansInExpressionCache(
   plans: Readonly<Record<string, ICompiledExpressionPlan>>,
@@ -23,6 +27,7 @@ export function registerCompiledExpressionPlanInExpressionCache(
   expressionString: string,
   plan: ICompiledExpressionPlan,
 ): void {
+  registeredCompiledExpressionPlans.set(expressionString, plan);
   if (
     !InjectionContainer.isBound(
       RsXExpressionParserInjectionTokens.IExpressionCache,
@@ -39,6 +44,12 @@ export function registerCompiledExpressionPlanInExpressionCache(
     expressionString,
     new CompiledExpression(plan),
   );
+}
+
+export function getRegisteredCompiledExpressionPlan(
+  expressionString: string,
+): ICompiledExpressionPlan | undefined {
+  return registeredCompiledExpressionPlans.get(expressionString);
 }
 
 export function hydrateExpressionCacheWithCompiledExpressionPlans(

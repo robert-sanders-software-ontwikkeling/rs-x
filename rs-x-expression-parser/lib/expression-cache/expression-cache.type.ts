@@ -6,6 +6,8 @@ export interface IExpressionCacheData {
   expressionString: string;
   /** When set, overrides the global engine mode for this expression. */
   compiled?: boolean;
+  /** When true, defer AOT readiness until the lazy preloader resolves. */
+  lazy?: boolean;
 }
 
 export interface IExpressionCache extends IKeyedInstanceFactory<

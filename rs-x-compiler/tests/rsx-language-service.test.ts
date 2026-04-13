@@ -16,6 +16,8 @@ function createProgram(entryFile: string): ts.Program {
   return ts.createProgram({
     rootNames: [entryFile],
     options: {
+      baseUrl: workspaceRoot,
+      ignoreDeprecations: '6.0',
       target: ts.ScriptTarget.ES2022,
       module: ts.ModuleKind.ES2022,
       moduleResolution: ts.ModuleResolutionKind.Bundler,

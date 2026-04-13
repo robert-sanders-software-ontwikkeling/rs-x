@@ -75,6 +75,7 @@ class ExpressionForContextManager
     return this._expressionCache.create({
       expressionString: expressionData.expressionString,
       compiled: expressionData.compiled,
+      lazy: expressionData.lazy,
     }).instance;
   }
 
