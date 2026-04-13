@@ -87,15 +87,25 @@ export class ExpressionCache
     data: IExpressionCacheData,
   ): IExpression<unknown> {
     const isLazy = data.lazy || data.lazyGroup !== undefined;
-
-    if (!isLazy) {
-      triggerLazyExpressionPreload(data.expressionString);
-    }
+    let lazyGroupName: string | undefined;
 
     // Register the expression → group mapping so the group loader fires when
     // this expression is triggered (whether from here or elsewhere).
     if (data.lazyGroup) {
       registerLazyExpressionInGroup(data.expressionString, data.lazyGroup);
+      lazyGroupName = data.lazyGroup;
+    } else if (isLazy) {
+      lazyGroupName = getLazyExpressionGroup(data.expressionString);
+    }
+
+    if (isLazy) {
+      if (lazyGroupName) {
+        void startLazyGroupPreload(lazyGroupName);
+      } else {
+        void startLazyExpressionPreload(data.expressionString);
+      }
+    } else {
+      triggerLazyExpressionPreload(data.expressionString);
     }
 
     // Precompiled AOT expressions are only served when compiled mode is active
@@ -109,18 +119,16 @@ export class ExpressionCache
       }
 
       if (isLazy) {
-        const groupName =
-          data.lazyGroup ?? getLazyExpressionGroup(data.expressionString);
-        const hasPreloader = groupName
-          ? hasLazyGroupPreloader(groupName)
+        const hasPreloader = lazyGroupName
+          ? hasLazyGroupPreloader(lazyGroupName)
           : hasLazyExpressionPreloader(data.expressionString);
 
         if (hasPreloader) {
           return new CompiledExpression(undefined, {
             expressionString: data.expressionString,
             startLazyLoad: () =>
-              groupName
-                ? startLazyGroupPreload(groupName)
+              lazyGroupName
+                ? startLazyGroupPreload(lazyGroupName)
                 : startLazyExpressionPreload(data.expressionString),
           });
         }

@@ -1,6 +1,7 @@
 import { ExpressionCache } from '../../lib/expression-cache';
 import {
   clearLazyExpressionPreloaders,
+  registerLazyExpressionGroupPreloader,
   registerLazyExpressionPreloader,
 } from '../../lib/expression-cache/lazy-expression-preload-registry';
 import type { IExpressionEngineSelector } from '../../lib/expression-engine/expression-engine.interface';
@@ -162,5 +163,89 @@ describe('ExpressionCache', () => {
     expect(expressionEngineSelector.create).not.toHaveBeenCalled();
     expect(first.instance.expressionString).toBe('a / b');
     expect(second.instance.expressionString).toBe('a / b');
+  });
+
+  it('starts lazy group preload on first use even when expression falls through to the runtime engine', async () => {
+    const parsedExpression = new ExpressionMock({
+      expressionString: 'a + b',
+      type: ExpressionType.Addition,
+    });
+    const expressionEngineSelector = {
+      create: jest.fn(() => parsedExpression),
+      getMode: jest.fn(() => 'tree'),
+    } as unknown as IExpressionEngineSelector;
+    const cache = new ExpressionCache(expressionEngineSelector);
+
+    let loaderCalls = 0;
+    registerLazyExpressionGroupPreloader('Page1', async () => {
+      loaderCalls += 1;
+      await Promise.resolve();
+    });
+
+    const result = cache.create({
+      expressionString: 'a + b',
+      lazyGroup: 'Page1',
+      compiled: false,
+    });
+    await Promise.resolve();
+
+    expect(loaderCalls).toBe(1);
+    expect(expressionEngineSelector.create).toHaveBeenCalledTimes(1);
+    expect(result.instance).toBe(parsedExpression);
+  });
+
+  it('starts a lazy group preload only once when different expressions in the same group are used during an in-flight load', async () => {
+    const parsedExpressionA = new ExpressionMock({
+      expressionString: 'a + b',
+      type: ExpressionType.Addition,
+    });
+    const parsedExpressionB = new ExpressionMock({
+      expressionString: 'x * y',
+      type: ExpressionType.Multiplication,
+    });
+    const expressionEngineSelector = {
+      create: jest.fn((expressionString: string) => {
+        if (expressionString === 'a + b') {
+          return parsedExpressionA;
+        }
+        if (expressionString === 'x * y') {
+          return parsedExpressionB;
+        }
+        throw new Error(`Unexpected expression: ${expressionString}`);
+      }),
+      getMode: jest.fn(() => 'tree'),
+    } as unknown as IExpressionEngineSelector;
+    const cache = new ExpressionCache(expressionEngineSelector);
+
+    let resolveLoad!: () => void;
+    const loadStarted = new Promise<void>((resolve) => {
+      resolveLoad = resolve;
+    });
+    let loaderCalls = 0;
+    registerLazyExpressionGroupPreloader('shared-page', async () => {
+      loaderCalls += 1;
+      await loadStarted;
+    });
+
+    const first = cache.create({
+      expressionString: 'a + b',
+      lazyGroup: 'shared-page',
+      compiled: false,
+    });
+    const second = cache.create({
+      expressionString: 'x * y',
+      lazyGroup: 'shared-page',
+      compiled: false,
+    });
+    await Promise.resolve();
+
+    expect(loaderCalls).toBe(1);
+    expect(expressionEngineSelector.create).toHaveBeenCalledTimes(2);
+    expect(first.instance).toBe(parsedExpressionA);
+    expect(second.instance).toBe(parsedExpressionB);
+
+    resolveLoad();
+    await loadStarted;
+    expect(loaderCalls).toBe(1);
   });
 });
