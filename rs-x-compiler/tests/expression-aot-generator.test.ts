@@ -88,8 +88,10 @@ rsx('a + b')(model);
     });
 
     expect(generated.expressions).toEqual(['a + b']);
-    expect(generated.code).toContain('includeResolvedEvaluator');
-    expect(generated.code).toContain('evaluateResolvedDependencies');
+    expect(generated.code).toContain(
+      'expandCompactCompiledPlans(compactPlans, true)',
+    );
+    expect(generated.code).toContain('wrapForRuntimeEvaluation');
   });
 
   it('skips expressions with rsx preparse disabled', async () => {
@@ -363,6 +365,8 @@ rsx('a + c', { lazy: true, preparse: false })(model);
     expect(generated.code).toContain(
       'registerCompiledExpressionPlansInExpressionCache',
     );
+    expect(generated.code).toContain('expandCompactCompiledPlans');
+    expect(generated.code).not.toContain('function deserializeMemberChain');
     expect(generated.code).toContain('b + c');
     expect(generated.code).toContain('c + d');
     expect(generated.code).toContain('d + a');
@@ -436,11 +440,23 @@ rsx('a + c', { lazy: true })(model);
     expect(generated.groupModules.panel.code).toContain(
       'registerRsxAotLazyExpressions',
     );
+    expect(generated.groupModules.panel.code).toContain(
+      'expandCompactCompiledPlans',
+    );
+    expect(generated.groupModules.panel.code).not.toContain(
+      'function deserializeMemberChain',
+    );
     expect(generated.groupModules.panel.code).toContain('b + c');
     expect(generated.groupModules.panel.code).toContain('c + d');
     expect(generated.groupModules.panel.code).not.toContain('a + c');
     expect(generated.groupModules.admin.code).toContain(
       'registerRsxAotLazyExpressions',
+    );
+    expect(generated.groupModules.admin.code).toContain(
+      'expandCompactCompiledPlans',
+    );
+    expect(generated.groupModules.admin.code).not.toContain(
+      'function deserializeMemberChain',
     );
     expect(generated.groupModules.admin.code).toContain('d + a');
     expect(generated.groupModules.admin.code).not.toContain('a + c');
