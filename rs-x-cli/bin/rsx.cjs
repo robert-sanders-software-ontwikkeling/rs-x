@@ -2517,16 +2517,12 @@ function applyAngularDemoStarter(projectRoot, projectName, pm, flags) {
     projectRoot,
     'src/rsx-generated/rsx-aot-registration.generated.ts',
   );
-  const demoBrowserEntry =
-    typeof buildOptions.browser === 'string'
-      ? buildOptions.browser
-      : 'src/main.ts';
-  const demoMainFilePath = path.join(projectRoot, demoBrowserEntry);
-  ensureMainHasRegistrationImport(
-    demoMainFilePath,
-    demoRegistrationFile,
+  ensureAngularBuildHasRegistrationPolyfill({
+    projectRoot,
+    configPath: path.join(projectRoot, 'tsconfig.app.json'),
+    registrationFile: demoRegistrationFile,
     dryRun,
-  );
+  });
 
   if (!Boolean(flags['skip-install'])) {
     logInfo(`Refreshing ${pm} dependencies for the RS-X Angular starter...`);
@@ -4754,7 +4750,7 @@ function runSetupAngular(flags) {
       );
     }
   }
-  ensureAngularMainHasRegistrationImport({
+  ensureAngularBuildHasRegistrationPolyfill({
     projectRoot,
     configPath: angularTsConfigPath,
     registrationFile: rsxRegistrationFile,
@@ -5530,7 +5526,7 @@ function runRsxAngularAotRegistrationInjection({
     );
   }
 
-  ensureAngularMainHasRegistrationImport({
+  ensureAngularBuildHasRegistrationPolyfill({
     projectRoot,
     configPath,
     registrationFile,
@@ -5562,37 +5558,7 @@ function splitDynamicImport(importSpecifier) {
   ];
 }
 
-function ensureMainHasRegistrationImport(
-  mainFilePath,
-  registrationFile,
-  dryRun,
-) {
-  const importSpecifier = toImportSpecifier(mainFilePath, registrationFile);
-  const importLine = `import '${importSpecifier}';`;
-
-  if (!fs.existsSync(mainFilePath)) {
-    return;
-  }
-
-  const currentContent = fs.readFileSync(mainFilePath, 'utf8');
-  if (currentContent.includes(importLine)) {
-    return;
-  }
-
-  const newContent = `${importLine}\n${currentContent}`;
-
-  if (dryRun) {
-    logInfo(
-      `[dry-run] inject RS-X AOT registration import into ${mainFilePath}`,
-    );
-    return;
-  }
-
-  fs.writeFileSync(mainFilePath, newContent, 'utf8');
-  logOk(`Injected RS-X AOT registration import into ${mainFilePath}.`);
-}
-
-function ensureAngularMainHasRegistrationImport({
+function ensureAngularBuildHasRegistrationPolyfill({
   projectRoot,
   configPath,
   registrationFile,
@@ -5600,7 +5566,9 @@ function ensureAngularMainHasRegistrationImport({
 }) {
   const angularJsonPath = path.join(projectRoot, 'angular.json');
   if (!fs.existsSync(angularJsonPath)) {
-    logWarn('angular.json not found. Skipping RS-X AOT runtime injection.');
+    logWarn(
+      'angular.json not found. Skipping RS-X AOT registration polyfill wiring.',
+    );
     return;
   }
 
@@ -5609,7 +5577,7 @@ function ensureAngularMainHasRegistrationImport({
     angularJson = JSON.parse(fs.readFileSync(angularJsonPath, 'utf8'));
   } catch {
     logWarn(
-      'Failed to parse angular.json. Skipping RS-X AOT runtime injection.',
+      'Failed to parse angular.json. Skipping RS-X AOT registration polyfill wiring.',
     );
     return;
   }
@@ -5630,6 +5598,7 @@ function ensureAngularMainHasRegistrationImport({
   });
 
   const selectedEntries = targetEntries.length > 0 ? targetEntries : entries;
+  let changed = false;
 
   for (const [, projectConfig] of selectedEntries) {
     const buildOptions = projectConfig?.architect?.build?.options;
@@ -5637,14 +5606,83 @@ function ensureAngularMainHasRegistrationImport({
       continue;
     }
 
-    const browserEntry = buildOptions.browser;
-    if (typeof browserEntry !== 'string') {
-      continue;
+    const registrationPath = path
+      .relative(projectRoot, registrationFile)
+      .replace(/\\/gu, '/');
+    const polyfills = Array.isArray(buildOptions.polyfills)
+      ? [...buildOptions.polyfills]
+      : typeof buildOptions.polyfills === 'string'
+        ? [buildOptions.polyfills]
+        : [];
+
+    if (!polyfills.includes(registrationPath)) {
+      polyfills.push(registrationPath);
+      buildOptions.polyfills = polyfills;
+      changed = true;
     }
 
-    const mainFilePath = path.resolve(projectRoot, browserEntry);
-    ensureMainHasRegistrationImport(mainFilePath, registrationFile, dryRun);
+    const browserEntry = buildOptions.browser;
+    if (typeof browserEntry === 'string') {
+      const browserEntryPath = path.resolve(projectRoot, browserEntry);
+      if (
+        removeMainRegistrationImport(
+          browserEntryPath,
+          registrationFile,
+          dryRun,
+        )
+      ) {
+        changed = true;
+      }
+    }
   }
+
+  if (!changed) {
+    return;
+  }
+
+  if (dryRun) {
+    logInfo(
+      `[dry-run] patch ${angularJsonPath} (RS-X AOT registration polyfills)`,
+    );
+    return;
+  }
+
+  fs.writeFileSync(angularJsonPath, `${JSON.stringify(angularJson, null, 2)}\n`);
+  logOk(
+    `Patched ${angularJsonPath} (RS-X AOT registration wired via polyfills).`,
+  );
+}
+
+function removeMainRegistrationImport(mainFilePath, registrationFile, dryRun) {
+  if (!fs.existsSync(mainFilePath)) {
+    return false;
+  }
+
+  const importSpecifier = toImportSpecifier(mainFilePath, registrationFile);
+  const registrationImportPattern = new RegExp(
+    `^\\s*import\\s+['"]${escapeRegExp(importSpecifier)}['"];?\\s*\\n?`,
+    'mu',
+  );
+  const currentContent = fs.readFileSync(mainFilePath, 'utf8');
+  if (!registrationImportPattern.test(currentContent)) {
+    return false;
+  }
+
+  const newContent = currentContent.replace(registrationImportPattern, '');
+  if (dryRun) {
+    logInfo(
+      `[dry-run] remove RS-X AOT registration import from ${mainFilePath}`,
+    );
+    return true;
+  }
+
+  fs.writeFileSync(mainFilePath, newContent, 'utf8');
+  logOk(`Removed RS-X AOT registration import from ${mainFilePath}.`);
+  return true;
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
 }
 
 function readJsonFileIfPresent(filePath) {
