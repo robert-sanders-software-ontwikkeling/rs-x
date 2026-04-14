@@ -98,7 +98,7 @@ export function generateAotCompiledExpressionsModule(
     .join(',\n');
 
   const code = [
-    "import { registerCompiledExpressionPlansInExpressionCache } from '@rs-x/expression-parser';",
+    "import { registerCompiledExpressionPlansInExpressionCache } from '@rs-x/expression-parser/aot-runtime';",
     '',
     'const compactPlans = [',
     compactEntries,
@@ -228,7 +228,7 @@ export function generateAotParsedExpressionCacheModule(
   const code = [
     'import {',
     '  registerPreparsedExpressionAsts,',
-    "} from '@rs-x/expression-parser';",
+    "} from '@rs-x/expression-parser/aot-runtime';",
     '',
     'const preparsedExpressionAsts: Record<string, unknown> = {',
     astObject,
@@ -325,7 +325,7 @@ export function generateAotLazyExpressionPreloadManifestModule(
     '  registerLazyExpressionGroupPreloader,',
     '  registerLazyExpressionInGroup,',
     '  registerPreparsedExpressionAst,',
-    "} from '@rs-x/expression-parser';",
+    "} from '@rs-x/expression-parser/aot-runtime';",
     '',
     'const preparsedExpressionAsts: Record<string, unknown> = {',
     astObject,

@@ -11,6 +11,11 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./aot-runtime": {
+      "types": "./dist/aot-runtime/index.d.ts",
+      "import": "./dist/aot-runtime/index.js",
+      "default": "./dist/aot-runtime/index.js"
+    },
     "./testing": {
       "types": "./dist/testing/index.d.ts",
       "import": "./dist/testing/index.js",
@@ -35,7 +40,7 @@
     "provenance": true
   },
   "scripts": {
-    "build": "tsup lib/index.ts --format esm --dts",
+    "build": "tsup lib/index.ts lib/aot-runtime/index.ts lib/testing/index.ts --format esm --dts",
     "clean": "rimraf dist",
     "test:expressions:tree": "pnpm jest --runInBand --config ../jest.config.ts ../rs-x-expression-parser/tests/expressions",
     "test:expressions:compiled": "RSX_EXPRESSION_ENGINE_MODE=compiled pnpm jest --runInBand --config ../jest.config.ts ../rs-x-expression-parser/tests/compiled-expression",

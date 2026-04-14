@@ -188,6 +188,7 @@ rsx('a * b')(model);
     expect(generated.skippedExpressions).toEqual([]);
     expect(generated.code).toContain('registerRsxAotParsedExpressionCache');
     expect(generated.code).toContain('registerPreparsedExpressionAsts');
+    expect(generated.code).toContain('@rs-x/expression-parser/aot-runtime');
     expect(generated.code).toContain('BinaryExpression');
   });
 
@@ -320,6 +321,7 @@ rsx('d + a', { preparse: false, lazy: true })(model);
 
     expect(generated.expressions).toEqual(['b + c', 'c + d']);
     expect(generated.code).toContain('registerRsxAotLazyExpressionPreloaders');
+    expect(generated.code).toContain('@rs-x/expression-parser/aot-runtime');
     expect(generated.code).toContain('b + c');
     expect(generated.code).toContain('c + d');
     expect(generated.code).not.toContain('a + b');

@@ -1,4 +1,3 @@
-export * from './benchmark';
 export * from './compiled-expression';
 export * from './expresion-change-transaction-manager';
 export * from './expresion-change-transaction-manager.interface';
@@ -19,4 +18,3 @@ export * from './js-expression-parser';
 export * from './rs-x-expression-parser.module';
 export * from './rs-x-expression-parser-injection-tokes';
 export * from './rsx';
-export * from './testing';

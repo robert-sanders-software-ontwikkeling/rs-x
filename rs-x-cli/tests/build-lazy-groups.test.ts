@@ -40,6 +40,9 @@ describe('rsx cli build lazy groups', () => {
                 '@rs-x/expression-parser': [
                   '../rs-x-expression-parser/lib/index.ts',
                 ],
+                '@rs-x/expression-parser/aot-runtime': [
+                  '../rs-x-expression-parser/lib/aot-runtime/index.ts',
+                ],
               },
             },
             include: ['src/**/*.ts'],
@@ -130,6 +133,7 @@ rsx<number>('m - n', { lazy: true })(ungroupedModel);
       ]);
 
       expect(manifest).toContain('/rsx-generated/rsx-aot-lazy.generated.mjs');
+      expect(manifest).toContain('@rs-x/expression-parser/aot-runtime');
       expect(manifest).toContain(
         '/rsx-generated/rsx-aot-lazy-group-Page1.generated.mjs',
       );

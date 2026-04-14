@@ -5298,19 +5298,26 @@ function runRsxAotLazyGeneration({
     payloadOutputFile,
   );
   const hasUngroupedExpressions = payloadGenerated.expressions.length > 0;
+  const hasAnyLazyExpressions =
+    hasUngroupedExpressions || groupEntries.length > 0;
   const manifestLines = [
     'import {',
     '  registerCompiledExpressionPlansInExpressionCache,',
     '  registerLazyExpressionGroupPreloader,',
     '  registerLazyExpressionInGroup,',
     '  registerPreparsedExpressionAsts,',
-    "} from '@rs-x/expression-parser';",
-    '',
-    'function importLazyModule(specifier) {',
-    '  return import(/* @vite-ignore */ new URL(specifier, import.meta.url).href);',
-    '}',
+    "} from '@rs-x/expression-parser/aot-runtime';",
     '',
   ];
+
+  if (hasAnyLazyExpressions) {
+    manifestLines.push(
+      'function importLazyModule(specifier) {',
+      '  return import(/* webpackIgnore: true */ /* @vite-ignore */ new URL(specifier, import.meta.url).href);',
+      '}',
+      '',
+    );
+  }
 
   if (hasUngroupedExpressions) {
     manifestLines.push(
