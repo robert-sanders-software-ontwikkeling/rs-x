@@ -5118,6 +5118,18 @@ function runTypecheck(flags) {
 }
 
 function resolveRsxCompilerModule(projectRoot) {
+  const siblingCompilerPath = path.resolve(
+    __dirname,
+    '..',
+    '..',
+    'rs-x-compiler',
+    'dist',
+    'index.cjs',
+  );
+  if (fs.existsSync(siblingCompilerPath)) {
+    return require(siblingCompilerPath);
+  }
+
   let compilerModule = resolveProjectModule(projectRoot, '@rs-x/compiler');
   if (compilerModule) {
     return compilerModule;

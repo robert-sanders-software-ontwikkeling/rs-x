@@ -263,6 +263,32 @@ rsx('d + a', { compiled: false })(model);
   );
 });
 
+describe('AOT lazy expression generator', () => {
+  it('emits self-contained lazy payload modules without bare package imports', async () => {
+    const fixtureDir = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'rsx-aot-generator-lazy-self-contained-'),
+    );
+    const fixturePath = path.join(fixtureDir, 'lazy.fixture.ts');
+
+    await fs.writeFile(
+      fixturePath,
+      `
+import { rsx } from '@rs-x/expression-parser';
+const model = { a: 1, b: 2 };
+rsx('a + b', { lazy: true })(model);
+`,
+      'utf8',
+    );
+
+    const program = createProgram(fixturePath);
+    const generated = generateAotLazyExpressionsModule(program);
+
+    expect(generated.code).toContain('expandCompactCompiledPlans');
+    expect(generated.code).toContain('deserializeCompactMemberChain');
+    expect(generated.code).not.toContain('@rs-x/expression-parser/aot-runtime');
+  });
+});
+
 describe('AOT lazy expression preload manifest generator', () => {
   it('registers ungrouped lazy expressions via the group mechanism with __rsx_ungrouped__ sentinel', async () => {
     const fixtureDir = await fs.mkdtemp(

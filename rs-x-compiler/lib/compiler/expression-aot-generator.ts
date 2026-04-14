@@ -54,6 +54,95 @@ export interface IGeneratedAotLazyExpressionsModule {
   >;
 }
 
+const LAZY_COMPACT_PLAN_HELPERS = `
+function deserializeCompactMemberChain(memberChain) {
+  if (!memberChain) {
+    return undefined;
+  }
+
+  const segments = new Array(memberChain[1].length);
+  for (let i = 0; i < memberChain[1].length; i += 1) {
+    const segment = memberChain[1][i];
+    if (segment[0] === 's') {
+      segments[i] = { kind: 'static', key: segment[1] };
+      continue;
+    }
+
+    segments[i] = {
+      kind: 'computed',
+      key: undefined,
+      expressionString: segment[1],
+      dependencyNames: segment[2],
+      evaluateIndex: segment[3],
+      evaluateIndexByOwnDependencies: segment[4],
+    };
+  }
+
+  return {
+    rootIdentifier: memberChain[0],
+    segments,
+  };
+}
+
+function deserializeCompactSequenceOperands(sequenceOperands) {
+  if (!sequenceOperands) {
+    return undefined;
+  }
+
+  const operands = new Array(sequenceOperands.length);
+  for (let i = 0; i < sequenceOperands.length; i += 1) {
+    const operand = sequenceOperands[i];
+    operands[i] = {
+      expressionString: operand[0],
+      dependencyNames: operand[1],
+      evaluate: operand[2],
+    };
+  }
+
+  return operands;
+}
+
+function expandCompactCompiledPlans(compact, includeResolvedEvaluator) {
+  const expanded = {};
+
+  for (let i = 0; i < compact.length; i += 1) {
+    const entry = compact[i];
+    const expressionString = entry[0];
+    const watchDependenciesCompact = entry[2];
+    const watchDependencies = new Array(watchDependenciesCompact.length);
+
+    for (let j = 0; j < watchDependenciesCompact.length; j += 1) {
+      const watchDependency = watchDependenciesCompact[j];
+      watchDependencies[j] = {
+        name: watchDependency[0],
+        ownerPath: watchDependency[1],
+        isLeaf: watchDependency[2],
+        isMemberExpressionSegment: watchDependency[3],
+      };
+    }
+
+    const expandedPlan = {
+      expressionString,
+      dependencyNames: entry[1],
+      watchDependencies,
+      expressionType: entry[3],
+      hasHiddenArgumentArray: entry[4],
+      memberChain: deserializeCompactMemberChain(entry[5]),
+      sequenceOperands: deserializeCompactSequenceOperands(entry[6]),
+      evaluate: entry[7],
+    };
+
+    if (includeResolvedEvaluator && entry[8]) {
+      expandedPlan.evaluateResolvedDependencies = entry[8];
+    }
+
+    expanded[expressionString] = expandedPlan;
+  }
+
+  return expanded;
+}
+`.trim();
+
 export function generateAotCompiledExpressionsModule(
   program: ts.Program,
   options: IAotCompiledExpressionGenerationOptions = {},
@@ -460,10 +549,7 @@ export function generateAotLazyExpressionsModule(
   ): string => {
     const sections: string[] = [];
     if (compiledPlans.length > 0) {
-      sections.push(
-        "import { expandCompactCompiledPlans } from '@rs-x/expression-parser/aot-runtime';",
-        '',
-      );
+      sections.push(LAZY_COMPACT_PLAN_HELPERS, '');
     }
 
     if (parsedAsts.length === 0 && compiledPlans.length === 0) {

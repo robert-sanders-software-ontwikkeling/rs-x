@@ -159,19 +159,22 @@ rsx<number>('m - n', { lazy: true })(ungroupedModel);
 
       expect(ungrouped).toContain('m - n');
       expect(ungrouped).toContain('expandCompactCompiledPlans');
-      expect(ungrouped).not.toContain('function deserializeMemberChain');
+      expect(ungrouped).toContain('function deserializeCompactMemberChain');
+      expect(ungrouped).not.toContain('@rs-x/expression-parser/aot-runtime');
       expect(ungrouped).not.toContain('a + b');
       expect(ungrouped).not.toContain('x * y');
 
       expect(page1).toContain('a + b');
       expect(page1).toContain('expandCompactCompiledPlans');
-      expect(page1).not.toContain('function deserializeMemberChain');
+      expect(page1).toContain('function deserializeCompactMemberChain');
+      expect(page1).not.toContain('@rs-x/expression-parser/aot-runtime');
       expect(page1).not.toContain('x * y');
       expect(page1).not.toContain('m - n');
 
       expect(page2).toContain('x * y');
       expect(page2).toContain('expandCompactCompiledPlans');
-      expect(page2).not.toContain('function deserializeMemberChain');
+      expect(page2).toContain('function deserializeCompactMemberChain');
+      expect(page2).not.toContain('@rs-x/expression-parser/aot-runtime');
       expect(page2).not.toContain('a + b');
       expect(page2).not.toContain('m - n');
     } finally {
