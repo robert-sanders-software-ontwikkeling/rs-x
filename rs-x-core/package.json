@@ -41,7 +41,6 @@
   "dependencies": {
     "fast-equals": "^6.0.0",
     "inversify": "^8.1.0",
-    "lodash.clonedeepwith": "^4.5.0",
     "reflect-metadata": "^0.2.2"
   },
   "peerDependencies": {

@@ -1552,6 +1552,27 @@ function resolveAngularProjectTsConfig(projectRoot) {
   return resolveProjectTsConfig(projectRoot);
 }
 
+const ANGULAR_ALLOWED_COMMON_JS_DEPENDENCIES = [
+  'reflect-metadata',
+  'reflect-metadata/lite',
+  'lodash.clonedeepwith',
+];
+
+function ensureAngularAllowedCommonJsDependencies(buildOptions) {
+  const existing = Array.isArray(buildOptions.allowedCommonJsDependencies)
+    ? buildOptions.allowedCommonJsDependencies
+    : [];
+  const merged = [...existing];
+
+  for (const dependency of ANGULAR_ALLOWED_COMMON_JS_DEPENDENCIES) {
+    if (!merged.includes(dependency)) {
+      merged.push(dependency);
+    }
+  }
+
+  buildOptions.allowedCommonJsDependencies = merged;
+}
+
 function upsertTypescriptPluginInTsConfig(configPath, dryRun) {
   if (!fs.existsSync(configPath)) {
     logWarn(`TypeScript config not found: ${configPath}`);
@@ -2474,6 +2495,7 @@ function applyAngularDemoStarter(projectRoot, projectName, pm, flags) {
   }
   buildOptions.styles = styles;
   buildOptions.preserveSymlinks = true;
+  ensureAngularAllowedCommonJsDependencies(buildOptions);
 
   build.options = buildOptions;
 
@@ -4709,6 +4731,7 @@ function runSetupAngular(flags) {
       const buildOptions = projectConfig?.architect?.build?.options;
       if (buildOptions && typeof buildOptions === 'object') {
         buildOptions.preserveSymlinks = true;
+        ensureAngularAllowedCommonJsDependencies(buildOptions);
       }
       if (
         projectConfig?.architect?.build?.configurations?.production?.budgets
@@ -4718,7 +4741,7 @@ function runSetupAngular(flags) {
     }
     if (dryRun) {
       logInfo(
-        `[dry-run] patch ${angularJsonPath} (preserveSymlinks, production budgets)`,
+        `[dry-run] patch ${angularJsonPath} (preserveSymlinks, allowedCommonJsDependencies, production budgets)`,
       );
     } else {
       fs.writeFileSync(
@@ -4727,7 +4750,7 @@ function runSetupAngular(flags) {
         'utf8',
       );
       logOk(
-        `Patched ${angularJsonPath} (preserveSymlinks, production budgets).`,
+        `Patched ${angularJsonPath} (preserveSymlinks, allowedCommonJsDependencies, production budgets).`,
       );
     }
   }

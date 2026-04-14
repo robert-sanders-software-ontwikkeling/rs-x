@@ -12,8 +12,6 @@ import {
   unmanaged,
 } from 'inversify';
 
-import 'reflect-metadata';
-
 declare global {
   interface Window {
     RSX_INJECTION_CONTAINER?: Container;
