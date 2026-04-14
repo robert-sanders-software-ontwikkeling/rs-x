@@ -120,10 +120,11 @@ bootstrapApplication(class AppComponent {}).catch(console.error);
           'lodash.clonedeepwith',
         ]),
       );
-      expect(buildOptions.polyfills).toEqual(
-        expect.arrayContaining([
-          'src/rsx-generated/rsx-aot-registration.generated.ts',
-        ]),
+      expect(buildOptions.browser).toBe(
+        'src/rsx-generated/rsx-angular-browser-entry.generated.ts',
+      );
+      expect(buildOptions.polyfills ?? []).not.toContain(
+        'src/rsx-generated/rsx-aot-registration.generated.ts',
       );
       expect(
         angularJson.projects.app.architect.build.configurations.production

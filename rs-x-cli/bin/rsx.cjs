@@ -2517,7 +2517,7 @@ function applyAngularDemoStarter(projectRoot, projectName, pm, flags) {
     projectRoot,
     'src/rsx-generated/rsx-aot-registration.generated.ts',
   );
-  ensureAngularBuildHasRegistrationPolyfill({
+  ensureAngularBuildUsesRegistrationWrapper({
     projectRoot,
     configPath: path.join(projectRoot, 'tsconfig.app.json'),
     registrationFile: demoRegistrationFile,
@@ -4750,7 +4750,7 @@ function runSetupAngular(flags) {
       );
     }
   }
-  ensureAngularBuildHasRegistrationPolyfill({
+  ensureAngularBuildUsesRegistrationWrapper({
     projectRoot,
     configPath: angularTsConfigPath,
     registrationFile: rsxRegistrationFile,
@@ -5641,7 +5641,7 @@ function runRsxAngularAotRegistrationInjection({
     );
   }
 
-  ensureAngularBuildHasRegistrationPolyfill({
+  ensureAngularBuildUsesRegistrationWrapper({
     projectRoot,
     configPath,
     registrationFile,
@@ -5673,7 +5673,7 @@ function splitDynamicImport(importSpecifier) {
   ];
 }
 
-function ensureAngularBuildHasRegistrationPolyfill({
+function ensureAngularBuildUsesRegistrationWrapper({
   projectRoot,
   configPath,
   registrationFile,
@@ -5682,7 +5682,7 @@ function ensureAngularBuildHasRegistrationPolyfill({
   const angularJsonPath = path.join(projectRoot, 'angular.json');
   if (!fs.existsSync(angularJsonPath)) {
     logWarn(
-      'angular.json not found. Skipping RS-X AOT registration polyfill wiring.',
+      'angular.json not found. Skipping RS-X Angular registration wrapper wiring.',
     );
     return;
   }
@@ -5692,7 +5692,7 @@ function ensureAngularBuildHasRegistrationPolyfill({
     angularJson = JSON.parse(fs.readFileSync(angularJsonPath, 'utf8'));
   } catch {
     logWarn(
-      'Failed to parse angular.json. Skipping RS-X AOT registration polyfill wiring.',
+      'Failed to parse angular.json. Skipping RS-X Angular registration wrapper wiring.',
     );
     return;
   }
@@ -5721,26 +5721,61 @@ function ensureAngularBuildHasRegistrationPolyfill({
       continue;
     }
 
-    const registrationPath = path
-      .relative(projectRoot, registrationFile)
-      .replace(/\\/gu, '/');
-    const polyfills = Array.isArray(buildOptions.polyfills)
-      ? [...buildOptions.polyfills]
-      : typeof buildOptions.polyfills === 'string'
-        ? [buildOptions.polyfills]
-        : [];
-
-    if (!polyfills.includes(registrationPath)) {
-      polyfills.push(registrationPath);
-      buildOptions.polyfills = polyfills;
-      changed = true;
-    }
-
     const browserEntry = buildOptions.browser;
     if (typeof browserEntry === 'string') {
       const browserEntryPath = path.resolve(projectRoot, browserEntry);
+      const wrapperFilePath =
+        resolveAngularRegistrationWrapperPath(registrationFile);
+      const originalBrowserEntryPath = resolveAngularOriginalBrowserEntryPath(
+        projectRoot,
+        browserEntryPath,
+        wrapperFilePath,
+      );
+
+      if (originalBrowserEntryPath) {
+        if (
+          ensureAngularRegistrationWrapperFile(
+            projectRoot,
+            registrationFile,
+            originalBrowserEntryPath,
+            wrapperFilePath,
+            dryRun,
+          )
+        ) {
+          changed = true;
+        }
+
+        const wrapperRelativePath = path
+          .relative(projectRoot, wrapperFilePath)
+          .replace(/\\/gu, '/');
+        if (buildOptions.browser !== wrapperRelativePath) {
+          buildOptions.browser = wrapperRelativePath;
+          changed = true;
+        }
+      }
+
+      const registrationPath = path
+        .relative(projectRoot, registrationFile)
+        .replace(/\\/gu, '/');
+      const polyfills = Array.isArray(buildOptions.polyfills)
+        ? [...buildOptions.polyfills]
+        : typeof buildOptions.polyfills === 'string'
+          ? [buildOptions.polyfills]
+          : [];
+      const filteredPolyfills = polyfills.filter(
+        (entry) => entry !== registrationPath,
+      );
+      if (filteredPolyfills.length !== polyfills.length) {
+        buildOptions.polyfills = filteredPolyfills;
+        changed = true;
+      }
+
       if (
-        removeMainRegistrationImport(browserEntryPath, registrationFile, dryRun)
+        removeMainRegistrationImport(
+          originalBrowserEntryPath ?? browserEntryPath,
+          registrationFile,
+          dryRun,
+        )
       ) {
         changed = true;
       }
@@ -5753,7 +5788,7 @@ function ensureAngularBuildHasRegistrationPolyfill({
 
   if (dryRun) {
     logInfo(
-      `[dry-run] patch ${angularJsonPath} (RS-X AOT registration polyfills)`,
+      `[dry-run] patch ${angularJsonPath} (RS-X Angular registration wrapper)`,
     );
     return;
   }
@@ -5763,8 +5798,80 @@ function ensureAngularBuildHasRegistrationPolyfill({
     `${JSON.stringify(angularJson, null, 2)}\n`,
   );
   logOk(
-    `Patched ${angularJsonPath} (RS-X AOT registration wired via polyfills).`,
+    `Patched ${angularJsonPath} (RS-X registration wired via browser wrapper).`,
   );
+}
+
+function resolveAngularRegistrationWrapperPath(registrationFile) {
+  return path.join(
+    path.dirname(registrationFile),
+    'rsx-angular-browser-entry.generated.ts',
+  );
+}
+
+function resolveAngularOriginalBrowserEntryPath(
+  projectRoot,
+  browserEntryPath,
+  wrapperFilePath,
+) {
+  if (path.resolve(browserEntryPath) !== path.resolve(wrapperFilePath)) {
+    return browserEntryPath;
+  }
+
+  if (!fs.existsSync(wrapperFilePath)) {
+    return null;
+  }
+
+  const wrapperContent = fs.readFileSync(wrapperFilePath, 'utf8');
+  const match = wrapperContent.match(
+    /RS-X original browser entry:\s*([^\n*]+?)\s*$/mu,
+  );
+  if (!match?.[1]) {
+    return null;
+  }
+
+  return path.resolve(projectRoot, match[1].trim());
+}
+
+function ensureAngularRegistrationWrapperFile(
+  projectRoot,
+  registrationFile,
+  originalBrowserEntryPath,
+  wrapperFilePath,
+  dryRun,
+) {
+  const originalBrowserRelativePath = path
+    .relative(projectRoot, originalBrowserEntryPath)
+    .replace(/\\/gu, '/');
+  const wrapperContent = [
+    '// @ts-nocheck',
+    '/* eslint-disable */',
+    '/* This file is auto-generated by rsx build. Do not edit manually. */',
+    `/* RS-X original browser entry: ${originalBrowserRelativePath} */`,
+    '',
+    `import '${toImportSpecifier(wrapperFilePath, registrationFile)}';`,
+    `import '${toImportSpecifier(wrapperFilePath, originalBrowserEntryPath)}';`,
+    '',
+  ].join('\n');
+
+  if (
+    fs.existsSync(wrapperFilePath) &&
+    fs.readFileSync(wrapperFilePath, 'utf8') === wrapperContent
+  ) {
+    return false;
+  }
+
+  if (dryRun) {
+    logInfo(`[dry-run] generate Angular RS-X wrapper ${wrapperFilePath}`);
+    return true;
+  }
+
+  fs.mkdirSync(path.dirname(wrapperFilePath), { recursive: true });
+  fs.writeFileSync(wrapperFilePath, wrapperContent, 'utf8');
+  logOk(
+    `Generated Angular RS-X browser wrapper: ${path.relative(projectRoot, wrapperFilePath)}`,
+  );
+  return true;
 }
 
 function removeMainRegistrationImport(mainFilePath, registrationFile, dryRun) {

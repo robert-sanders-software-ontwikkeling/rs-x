@@ -7,7 +7,7 @@ const cliPath = path.join(workspaceRoot, 'rs-x-cli', 'bin', 'rsx.cjs');
 const tempRoot = path.join(workspaceRoot, 'dist', 'jest', 'rs-x-cli');
 
 describe('rsx cli angular build registration wiring', () => {
-  it('wires generated Angular registration through angular.json polyfills without rewriting main.ts', async () => {
+  it('wires generated Angular registration through an Angular browser wrapper without rewriting main.ts', async () => {
     await fs.mkdir(tempRoot, { recursive: true });
     const fixtureRoot = await fs.mkdtemp(
       path.join(tempRoot, 'angular-build-polyfills-'),
@@ -117,17 +117,22 @@ rsx<number>('a + b')(model);
       ]);
       const angularJson = JSON.parse(angularJsonContents);
       const buildOptions = angularJson.projects.app.architect.build.options;
-      const registrationPolyfill = buildOptions.polyfills.find(
-        (entry: string) => entry.includes('rsx-aot-registration.generated.ts'),
+      const wrapperPath = buildOptions.browser as string;
+      const wrapperContents = await fs.readFile(
+        path.join(fixtureRoot, wrapperPath),
+        'utf8',
       );
 
       expect(mainContents).toBe(originalMain);
       expect(mainContents).not.toContain('rsx-aot-registration.generated');
-      expect(registrationPolyfill).toBeTruthy();
-
-      await expect(
-        fs.stat(path.join(fixtureRoot, registrationPolyfill as string)),
-      ).resolves.toBeDefined();
+      expect(wrapperPath).toBe('src/rsx-angular-browser-entry.generated.ts');
+      expect(buildOptions.polyfills ?? []).not.toContain(
+        'src/rsx-aot-registration.generated.ts',
+      );
+      expect(wrapperContents).toContain(
+        "import './rsx-aot-registration.generated';",
+      );
+      expect(wrapperContents).toContain("import './main';");
     } finally {
       await fs.rm(fixtureRoot, { recursive: true, force: true });
     }
