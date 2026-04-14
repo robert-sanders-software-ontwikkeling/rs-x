@@ -5516,7 +5516,7 @@ function runRsxAngularAotRegistrationInjection({
 
   if (enableExecutionLogging) {
     registrationLines.push(
-      "import { CompiledExpression, DeferredTreeExpression, ExpressionCache, ExpressionEngineSelector } from '@rs-x/expression-parser';",
+      "import { CompiledExpression, ExpressionCache, ExpressionEngineSelector } from '@rs-x/expression-parser';",
     );
   }
 
@@ -5598,16 +5598,6 @@ function runRsxAngularAotRegistrationInjection({
       '      return result;',
       '    };',
       '    selectorProto.__rsxExecutionLoggingInstalled = true;',
-      '  }',
-      '',
-      '  const deferredTreeProto = DeferredTreeExpression?.prototype;',
-      '  if (deferredTreeProto && !deferredTreeProto.__rsxExecutionLoggingInstalled) {',
-      '    const originalBind = deferredTreeProto.bind;',
-      '    deferredTreeProto.bind = function(settings) {',
-      "      debug('runtime-tree-load-start', this.expressionString);",
-      '      return originalBind.call(this, settings);',
-      '    };',
-      '    deferredTreeProto.__rsxExecutionLoggingInstalled = true;',
       '  }',
       '}',
       '',
@@ -5769,16 +5759,6 @@ function ensureAngularBuildUsesRegistrationWrapper({
         buildOptions.polyfills = filteredPolyfills;
         changed = true;
       }
-
-      if (
-        removeMainRegistrationImport(
-          originalBrowserEntryPath ?? browserEntryPath,
-          registrationFile,
-          dryRun,
-        )
-      ) {
-        changed = true;
-      }
     }
   }
 
@@ -5824,7 +5804,7 @@ function resolveAngularOriginalBrowserEntryPath(
 
   const wrapperContent = fs.readFileSync(wrapperFilePath, 'utf8');
   const match = wrapperContent.match(
-    /RS-X original browser entry:\s*([^\n*]+?)\s*$/mu,
+    /RS-X original browser entry:\s*([^\n*]+?)\s*\*\//u,
   );
   if (!match?.[1]) {
     return null;
@@ -5872,38 +5852,6 @@ function ensureAngularRegistrationWrapperFile(
     `Generated Angular RS-X browser wrapper: ${path.relative(projectRoot, wrapperFilePath)}`,
   );
   return true;
-}
-
-function removeMainRegistrationImport(mainFilePath, registrationFile, dryRun) {
-  if (!fs.existsSync(mainFilePath)) {
-    return false;
-  }
-
-  const importSpecifier = toImportSpecifier(mainFilePath, registrationFile);
-  const registrationImportPattern = new RegExp(
-    `^\\s*import\\s+['"]${escapeRegExp(importSpecifier)}['"];?\\s*\\n?`,
-    'mu',
-  );
-  const currentContent = fs.readFileSync(mainFilePath, 'utf8');
-  if (!registrationImportPattern.test(currentContent)) {
-    return false;
-  }
-
-  const newContent = currentContent.replace(registrationImportPattern, '');
-  if (dryRun) {
-    logInfo(
-      `[dry-run] remove RS-X AOT registration import from ${mainFilePath}`,
-    );
-    return true;
-  }
-
-  fs.writeFileSync(mainFilePath, newContent, 'utf8');
-  logOk(`Removed RS-X AOT registration import from ${mainFilePath}.`);
-  return true;
-}
-
-function escapeRegExp(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
 }
 
 function readJsonFileIfPresent(filePath) {

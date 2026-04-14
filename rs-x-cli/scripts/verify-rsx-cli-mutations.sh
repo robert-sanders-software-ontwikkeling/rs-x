@@ -922,7 +922,7 @@ elif ! node -e "
 const fs = require('node:fs');
 const angularJson = JSON.parse(fs.readFileSync(process.argv[1], 'utf8'));
 const buildOptions = angularJson.projects?.app?.architect?.build?.options ?? {};
-if (buildOptions.browser !== 'tmp/generated/rsx-angular-browser-entry.generated.ts') {
+if (buildOptions.browser !== 'dist/rsx-generated/rsx-angular-browser-entry.generated.ts') {
   console.error('angular.json browser is not wired to the generated RS-X wrapper.');
   console.error('browser:', buildOptions.browser);
   process.exit(1);
@@ -933,7 +933,7 @@ if (Array.isArray(buildOptions.polyfills) && buildOptions.polyfills.length > 0) 
   process.exit(1);
 }
 const wrapperContents = fs.readFileSync(process.argv[2], 'utf8');
-if (!wrapperContents.includes(\"import './custom-registration';\")) {
+if (!wrapperContents.includes(\"import './rsx-aot-registration.generated';\")) {
   console.error('wrapper does not contain configured registrationFile import.');
   console.error('Contents:', wrapperContents);
   process.exit(1);
@@ -949,7 +949,7 @@ if (mainTs.includes('custom-registration')) {
   console.error('Contents:', mainTs);
   process.exit(1);
 }
-" "$angular_custom_paths_dir/angular.json" "$angular_custom_paths_dir/tmp/generated/rsx-angular-browser-entry.generated.ts" "$angular_custom_paths_dir/src/main.ts"; then
+" "$angular_custom_paths_dir/angular.json" "$angular_custom_paths_dir/dist/rsx-generated/rsx-angular-browser-entry.generated.ts" "$angular_custom_paths_dir/src/main.ts"; then
   summary_lines+=("init-angular-custom-paths: Angular wrapper wiring incorrect")
   overall_status=1
 else

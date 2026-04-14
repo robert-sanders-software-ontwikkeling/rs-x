@@ -113,11 +113,10 @@ rsx<number>('a + b')(model);
 
       expect(registration).toContain('function installRsxExecutionLogging()');
       expect(registration).toContain(
-        "import { CompiledExpression, DeferredTreeExpression, ExpressionCache, ExpressionEngineSelector } from '@rs-x/expression-parser';",
+        "import { CompiledExpression, ExpressionCache, ExpressionEngineSelector } from '@rs-x/expression-parser';",
       );
       expect(registration).toContain('ExpressionCache?.prototype');
       expect(registration).toContain('ExpressionEngineSelector?.prototype');
-      expect(registration).toContain('DeferredTreeExpression?.prototype');
       expect(registration).toContain('installRsxExecutionLogging();');
     } finally {
       await fs.rm(fixtureRoot, { recursive: true, force: true });
