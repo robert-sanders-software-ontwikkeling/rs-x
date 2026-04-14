@@ -30,7 +30,12 @@ export {
   registerPreparsedExpressionAsts,
 } from '../expression-cache/preparsed-expression-ast-registry';
 
-type ICompactWatchDependency = readonly [string, readonly string[], boolean, boolean];
+type ICompactWatchDependency = readonly [
+  string,
+  readonly string[],
+  boolean,
+  boolean,
+];
 
 type ICompactStaticMemberSegment = readonly ['s', string | number];
 type ICompactComputedMemberSegment = readonly [

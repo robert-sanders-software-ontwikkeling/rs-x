@@ -6,18 +6,19 @@ const workspaceRoot = path.resolve(__dirname, '../..');
 const cliPath = path.join(workspaceRoot, 'rs-x-cli', 'bin', 'rsx.cjs');
 const tempRoot = path.join(workspaceRoot, 'dist', 'jest', 'rs-x-cli');
 
-describe('rsx cli angular build registration wiring', () => {
-  it('wires generated Angular registration through angular.json polyfills without rewriting main.ts', async () => {
+describe('rsx cli build lazy groups --log', () => {
+  it('injects lazy manifest import logging into the generated manifest', async () => {
     await fs.mkdir(tempRoot, { recursive: true });
     const fixtureRoot = await fs.mkdtemp(
-      path.join(tempRoot, 'angular-build-polyfills-'),
+      path.join(tempRoot, 'lazy-groups-log-'),
     );
 
     try {
       await fs.mkdir(path.join(fixtureRoot, 'src'), { recursive: true });
+      await fs.mkdir(path.join(fixtureRoot, 'public'), { recursive: true });
 
       await fs.writeFile(
-        path.join(fixtureRoot, 'tsconfig.app.json'),
+        path.join(fixtureRoot, 'tsconfig.json'),
         JSON.stringify(
           {
             compilerOptions: {
@@ -29,8 +30,11 @@ describe('rsx cli angular build registration wiring', () => {
               skipLibCheck: true,
               esModuleInterop: true,
               allowSyntheticDefaultImports: true,
+              experimentalDecorators: true,
+              emitDecoratorMetadata: true,
               ignoreDeprecations: '6.0',
-              rootDir: '.',
+              rootDir: '..',
+              types: ['node'],
               baseUrl: '.',
               paths: {
                 '@rs-x/core': ['../rs-x-core/lib/index.ts'],
@@ -47,47 +51,38 @@ describe('rsx cli angular build registration wiring', () => {
           },
           null,
           2,
-        ) + '\n',
+        ),
       );
 
       await fs.writeFile(
-        path.join(fixtureRoot, 'angular.json'),
+        path.join(fixtureRoot, 'rsx.config.json'),
         JSON.stringify(
           {
-            version: 1,
-            projects: {
-              app: {
-                architect: {
-                  build: {
-                    options: {
-                      tsConfig: 'tsconfig.app.json',
-                      browser: 'src/main.ts',
-                    },
-                  },
-                },
-              },
+            build: {
+              preparse: true,
+              compiled: true,
+              preparseFile: 'tmp/generated/custom-preparse.ts',
+              compiledFile: 'tmp/generated/custom-compiled.ts',
+              registrationFile: 'tmp/generated/custom-registration.ts',
             },
           },
           null,
           2,
-        ) + '\n',
-      );
-
-      const originalMain = `export function main(): void {\n  console.log('hello');\n}\n\nmain();\n`;
-      const staleMain = `import './rsx-aot-registration.generated';\n${originalMain}`;
-      await fs.writeFile(path.join(fixtureRoot, 'src', 'main.ts'), staleMain);
-      await fs.writeFile(
-        path.join(fixtureRoot, 'src', 'rsx-aot-registration.generated.ts'),
-        'export {};\n',
+        ),
       );
 
       await fs.writeFile(
-        path.join(fixtureRoot, 'src', 'expr.ts'),
+        path.join(fixtureRoot, 'src', 'page.ts'),
         `
 import { rsx } from '@rs-x/expression-parser';
 
-const model = { a: 1, b: 2 };
-rsx<number>('a + b')(model);
+const page1Model = { a: 1, b: 2 };
+const page2Model = { x: 3, y: 4 };
+const ungroupedModel = { m: 10, n: 5 };
+
+rsx<number>('a + b', { lazyGroup: 'Page1' })(page1Model);
+rsx<number>('x * y', { lazyGroup: 'Page2' })(page2Model);
+rsx<number>('m - n', { lazy: true })(ungroupedModel);
 `,
       );
 
@@ -97,9 +92,10 @@ rsx<number>('a + b')(model);
           cliPath,
           'build',
           '--project',
-          'tsconfig.app.json',
+          'tsconfig.json',
           '--no-emit',
           '--prod',
+          '--log',
         ],
         {
           cwd: fixtureRoot,
@@ -111,23 +107,28 @@ rsx<number>('a + b')(model);
         },
       );
 
-      const [mainContents, angularJsonContents] = await Promise.all([
-        fs.readFile(path.join(fixtureRoot, 'src', 'main.ts'), 'utf8'),
-        fs.readFile(path.join(fixtureRoot, 'angular.json'), 'utf8'),
-      ]);
-      const angularJson = JSON.parse(angularJsonContents);
-      const buildOptions = angularJson.projects.app.architect.build.options;
-      const registrationPolyfill = buildOptions.polyfills.find(
-        (entry: string) => entry.includes('rsx-aot-registration.generated.ts'),
+      const manifest = await fs.readFile(
+        path.join(
+          fixtureRoot,
+          'tmp',
+          'generated',
+          'rsx-aot-lazy-manifest.generated.ts',
+        ),
+        'utf8',
       );
 
-      expect(mainContents).toBe(originalMain);
-      expect(mainContents).not.toContain('rsx-aot-registration.generated');
-      expect(registrationPolyfill).toBeTruthy();
-
-      await expect(
-        fs.stat(path.join(fixtureRoot, registrationPolyfill as string)),
-      ).resolves.toBeDefined();
+      expect(manifest).toContain('const debugLazy = (message) => {');
+      expect(manifest).toContain('lazy-manifest registered 3 expressions');
+      expect(manifest).toContain(
+        'lazy-manifest import-start __rsx_ungrouped__',
+      );
+      expect(manifest).toContain(
+        'lazy-manifest import-resolved __rsx_ungrouped__',
+      );
+      expect(manifest).toContain('lazy-manifest import-start Page1');
+      expect(manifest).toContain('lazy-manifest import-resolved Page1');
+      expect(manifest).toContain('lazy-manifest import-start Page2');
+      expect(manifest).toContain('lazy-manifest import-resolved Page2');
     } finally {
       await fs.rm(fixtureRoot, { recursive: true, force: true });
     }

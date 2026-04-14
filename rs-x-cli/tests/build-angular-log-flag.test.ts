@@ -6,12 +6,10 @@ const workspaceRoot = path.resolve(__dirname, '../..');
 const cliPath = path.join(workspaceRoot, 'rs-x-cli', 'bin', 'rsx.cjs');
 const tempRoot = path.join(workspaceRoot, 'dist', 'jest', 'rs-x-cli');
 
-describe('rsx cli angular build registration wiring', () => {
-  it('wires generated Angular registration through angular.json polyfills without rewriting main.ts', async () => {
+describe('rsx cli angular build --log', () => {
+  it('enables runtime execution logging from the generated Angular registration file', async () => {
     await fs.mkdir(tempRoot, { recursive: true });
-    const fixtureRoot = await fs.mkdtemp(
-      path.join(tempRoot, 'angular-build-polyfills-'),
-    );
+    const fixtureRoot = await fs.mkdtemp(path.join(tempRoot, 'angular-log-'));
 
     try {
       await fs.mkdir(path.join(fixtureRoot, 'src'), { recursive: true });
@@ -73,14 +71,10 @@ describe('rsx cli angular build registration wiring', () => {
         ) + '\n',
       );
 
-      const originalMain = `export function main(): void {\n  console.log('hello');\n}\n\nmain();\n`;
-      const staleMain = `import './rsx-aot-registration.generated';\n${originalMain}`;
-      await fs.writeFile(path.join(fixtureRoot, 'src', 'main.ts'), staleMain);
       await fs.writeFile(
-        path.join(fixtureRoot, 'src', 'rsx-aot-registration.generated.ts'),
+        path.join(fixtureRoot, 'src', 'main.ts'),
         'export {};\n',
       );
-
       await fs.writeFile(
         path.join(fixtureRoot, 'src', 'expr.ts'),
         `
@@ -100,6 +94,7 @@ rsx<number>('a + b')(model);
           'tsconfig.app.json',
           '--no-emit',
           '--prod',
+          '--log',
         ],
         {
           cwd: fixtureRoot,
@@ -111,23 +106,19 @@ rsx<number>('a + b')(model);
         },
       );
 
-      const [mainContents, angularJsonContents] = await Promise.all([
-        fs.readFile(path.join(fixtureRoot, 'src', 'main.ts'), 'utf8'),
-        fs.readFile(path.join(fixtureRoot, 'angular.json'), 'utf8'),
-      ]);
-      const angularJson = JSON.parse(angularJsonContents);
-      const buildOptions = angularJson.projects.app.architect.build.options;
-      const registrationPolyfill = buildOptions.polyfills.find(
-        (entry: string) => entry.includes('rsx-aot-registration.generated.ts'),
+      const registration = await fs.readFile(
+        path.join(fixtureRoot, 'src', 'rsx-aot-registration.generated.ts'),
+        'utf8',
       );
 
-      expect(mainContents).toBe(originalMain);
-      expect(mainContents).not.toContain('rsx-aot-registration.generated');
-      expect(registrationPolyfill).toBeTruthy();
-
-      await expect(
-        fs.stat(path.join(fixtureRoot, registrationPolyfill as string)),
-      ).resolves.toBeDefined();
+      expect(registration).toContain('function installRsxExecutionLogging()');
+      expect(registration).toContain(
+        "import { CompiledExpression, DeferredTreeExpression, ExpressionCache, ExpressionEngineSelector } from '@rs-x/expression-parser';",
+      );
+      expect(registration).toContain('ExpressionCache?.prototype');
+      expect(registration).toContain('ExpressionEngineSelector?.prototype');
+      expect(registration).toContain('DeferredTreeExpression?.prototype');
+      expect(registration).toContain('installRsxExecutionLogging();');
     } finally {
       await fs.rm(fixtureRoot, { recursive: true, force: true });
     }
