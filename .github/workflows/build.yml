@@ -124,8 +124,9 @@ jobs:
       # =====================================================
       # 5️⃣ ACCESSIBILITY
       # =====================================================
-      # Note: Chromium is installed automatically via the postinstall script
-      # in rs-x-site/package.json during the "Install dependencies" step above.
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @rs-x/site exec playwright install chromium --with-deps
 
       - name: Run axe accessibility tests
         run: pnpm --filter @rs-x/site run test:a11y

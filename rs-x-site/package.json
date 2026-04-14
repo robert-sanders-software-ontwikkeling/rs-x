@@ -13,7 +13,6 @@
     "build": "pnpm run copy:monaco-dts && next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "pnpm exec playwright install chromium --with-deps",
     "test:a11y": "pnpm exec playwright test",
     "test:a11y:report": "pnpm exec playwright show-report a11y-report"
   },
