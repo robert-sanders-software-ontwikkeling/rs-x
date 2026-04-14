@@ -261,6 +261,41 @@ rsx('d + a', { compiled: false })(model);
 });
 
 describe('AOT lazy expression preload manifest generator', () => {
+  it('registers ungrouped lazy expressions via the group mechanism with __rsx_ungrouped__ sentinel', async () => {
+    const fixtureDir = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'rsx-aot-generator-lazy-manifest-group-'),
+    );
+    const fixturePath = path.join(fixtureDir, 'lazy-manifest-group.fixture.ts');
+
+    await fs.writeFile(
+      fixturePath,
+      `
+import { rsx } from '@rs-x/expression-parser';
+const model = { a: 1, b: 2, c: 3 };
+rsx('a + b')(model);
+rsx('b + c', { lazy: true })(model);
+rsx('a + c', { lazy: true })(model);
+`,
+      'utf8',
+    );
+
+    const program = createProgram(fixturePath);
+    const generated = generateAotLazyExpressionPreloadManifestModule(program);
+
+    // Both lazy expressions should be in the manifest
+    expect(generated.expressions).toEqual(['a + c', 'b + c']);
+    // Uses group-based registration, not per-expression preloaders
+    expect(generated.code).toContain('registerLazyExpressionInGroup');
+    expect(generated.code).toContain("'__rsx_ungrouped__'");
+    expect(generated.code).toContain('registerLazyExpressionGroupPreloader');
+    expect(generated.code).not.toContain('registerLazyExpressionPreloader');
+    // Each expression registered into the group
+    expect(generated.code).toContain('"a + c"');
+    expect(generated.code).toContain('"b + c"');
+    // Non-lazy not in manifest
+    expect(generated.code).not.toContain('"a + b"');
+  });
+
   it('emits lazy manifest entries only for rsx calls with lazy: true', async () => {
     const fixtureDir = await fs.mkdtemp(
       path.join(os.tmpdir(), 'rsx-aot-generator-lazy-manifest-'),
@@ -331,6 +366,28 @@ rsx('a + c', { lazy: true, preparse: false })(model);
     expect(generated.code).toContain('d + a');
     expect(generated.code).not.toContain('a + b');
     expect(generated.code).not.toContain('a + c');
+  });
+
+  it('throws when lazyGroup is set to the reserved __rsx_ungrouped__ sentinel', async () => {
+    const fixtureDir = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'rsx-aot-generator-reserved-group-'),
+    );
+    const fixturePath = path.join(fixtureDir, 'reserved-group.fixture.ts');
+
+    await fs.writeFile(
+      fixturePath,
+      `
+import { rsx } from '@rs-x/expression-parser';
+const model = { a: 1, b: 2 };
+rsx('a + b', { lazyGroup: '__rsx_ungrouped__' })(model);
+`,
+      'utf8',
+    );
+
+    const program = createProgram(fixturePath);
+    expect(() => generateAotLazyExpressionsModule(program)).toThrow(
+      '__rsx_ungrouped__',
+    );
   });
 
   it('emits per-group registration functions for lazyGroup expressions', async () => {

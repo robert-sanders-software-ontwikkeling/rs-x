@@ -322,7 +322,8 @@ export function generateAotLazyExpressionPreloadManifestModule(
   const code = [
     'import {',
     '  registerCompiledExpressionPlanInExpressionCache,',
-    '  registerLazyExpressionPreloader,',
+    '  registerLazyExpressionGroupPreloader,',
+    '  registerLazyExpressionInGroup,',
     '  registerPreparsedExpressionAst,',
     "} from '@rs-x/expression-parser';",
     '',
@@ -422,7 +423,10 @@ export function generateAotLazyExpressionPreloadManifestModule(
     '',
     'export function registerRsxAotLazyExpressionPreloaders(): void {',
     '  for (const expressionString of Object.keys(rsxAotLazyExpressionManifest)) {',
-    '    registerLazyExpressionPreloader(expressionString, () => {',
+    "    registerLazyExpressionInGroup(expressionString, '__rsx_ungrouped__');",
+    '  }',
+    "  registerLazyExpressionGroupPreloader('__rsx_ungrouped__', () => {",
+    '    for (const expressionString of Object.keys(rsxAotLazyExpressionManifest)) {',
     '      const expressionAst = preparsedExpressionAsts[expressionString];',
     '      if (expressionAst) {',
     '        registerPreparsedExpressionAst(expressionString, expressionAst as any);',
@@ -431,8 +435,8 @@ export function generateAotLazyExpressionPreloadManifestModule(
     '      if (compiledPlan) {',
     '        registerCompiledExpressionPlanInExpressionCache(expressionString, compiledPlan);',
     '      }',
-    '    });',
-    '  }',
+    '    }',
+    '  });',
     '}',
     '',
   ].join('\n');
@@ -512,6 +516,15 @@ export function generateAotLazyExpressionsModule(
   const groupNames = [
     ...new Set(groupedDetections.map((d) => d.lazyGroup as string)),
   ].sort();
+
+  for (const groupName of groupNames) {
+    if (groupName === '__rsx_ungrouped__') {
+      throw new Error(
+        `rsx lazyGroup name "__rsx_ungrouped__" is reserved for internal use. ` +
+          `Please choose a different group name.`,
+      );
+    }
+  }
   const groups: Record<string, readonly string[]> = {};
 
   type GroupData = {

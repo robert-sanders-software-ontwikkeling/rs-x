@@ -5297,31 +5297,36 @@ function runRsxAotLazyGeneration({
     manifestOutputFile,
     payloadOutputFile,
   );
+  const hasUngroupedExpressions = payloadGenerated.expressions.length > 0;
   const manifestLines = [
     'import {',
     '  registerCompiledExpressionPlansInExpressionCache,',
     '  registerLazyExpressionGroupPreloader,',
     '  registerLazyExpressionInGroup,',
-    '  registerLazyExpressionPreloader,',
     '  registerPreparsedExpressionAsts,',
     "} from '@rs-x/expression-parser';",
-    '',
-    'let ungroupedModulePromise;',
     '',
     'function importLazyModule(specifier) {',
     '  return import(/* @vite-ignore */ new URL(specifier, import.meta.url).href);',
     '}',
     '',
-    'function loadUngroupedModule() {',
-    '  if (!ungroupedModulePromise) {',
-    `    ungroupedModulePromise = importLazyModule('${ungroupedSpecifier}').then((lazyModule) => {`,
-    '      lazyModule.registerRsxAotLazyExpressions?.(registerPreparsedExpressionAsts, registerCompiledExpressionPlansInExpressionCache);',
-    '    });',
-    '  }',
-    '  return ungroupedModulePromise;',
-    '}',
-    '',
   ];
+
+  if (hasUngroupedExpressions) {
+    manifestLines.push(
+      'let ungroupedModulePromise;',
+      '',
+      'function loadUngroupedModule() {',
+      '  if (!ungroupedModulePromise) {',
+      `    ungroupedModulePromise = importLazyModule('${ungroupedSpecifier}').then((lazyModule) => {`,
+      '      lazyModule.registerRsxAotLazyExpressions?.(registerPreparsedExpressionAsts, registerCompiledExpressionPlansInExpressionCache);',
+      '    });',
+      '  }',
+      '  return ungroupedModulePromise;',
+      '}',
+      '',
+    );
+  }
 
   for (const [groupName] of groupEntries) {
     const groupFilePath = resolveLazyGroupAotFilePath(
@@ -5354,7 +5359,12 @@ function runRsxAotLazyGeneration({
   );
   for (const expressionString of payloadGenerated.expressions) {
     manifestLines.push(
-      `  registerLazyExpressionPreloader(${JSON.stringify(expressionString)}, loadUngroupedModule);`,
+      `  registerLazyExpressionInGroup(${JSON.stringify(expressionString)}, '__rsx_ungrouped__');`,
+    );
+  }
+  if (hasUngroupedExpressions) {
+    manifestLines.push(
+      `  registerLazyExpressionGroupPreloader('__rsx_ungrouped__', loadUngroupedModule);`,
     );
   }
   for (const [groupName, groupModule] of groupEntries) {
