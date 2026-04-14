@@ -5799,7 +5799,7 @@ function resolveAngularOriginalBrowserEntryPath(
   }
 
   if (!fs.existsSync(wrapperFilePath)) {
-    return null;
+    return resolveEntryFile(projectRoot, 'angular', undefined);
   }
 
   const wrapperContent = fs.readFileSync(wrapperFilePath, 'utf8');
@@ -5807,7 +5807,7 @@ function resolveAngularOriginalBrowserEntryPath(
     /RS-X original browser entry:\s*([^\n*]+?)\s*\*\//u,
   );
   if (!match?.[1]) {
-    return null;
+    return resolveEntryFile(projectRoot, 'angular', undefined);
   }
 
   return path.resolve(projectRoot, match[1].trim());
