@@ -2,17 +2,11 @@ import type { Expression } from 'estree';
 
 import { InjectionContainer } from '@rs-x/core';
 
-import type {
-  IExpression,
-  IExpressionParser,
-} from '../expressions/expression-parser.interface';
+import { type ExpressionTreeBuilder } from '../expression-tree-builder';
+import type { IExpression } from '../expressions/expression-parser.interface';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
 
 import type { IExpressionCache } from './expression-cache.type';
-
-type IAstExpressionParser = IExpressionParser & {
-  parseAst(expressionAst: Expression, expressionSource?: string): IExpression;
-};
 
 const preparsedExpressionAsts = new Map<string, Expression>();
 
@@ -85,15 +79,9 @@ function createExpressionTreeFromAst(
   expressionString: string,
   expressionAst: Expression,
 ): IExpression {
-  const expressionParser = InjectionContainer.get<IExpressionParser>(
-    RsXExpressionParserInjectionTokens.IExpressionParser,
-  ) as IAstExpressionParser;
-
-  if (typeof expressionParser.parseAst !== 'function') {
-    throw new Error(
-      'IExpressionParser implementation does not support parseAst()',
-    );
-  }
+  const expressionParser = InjectionContainer.get<ExpressionTreeBuilder>(
+    RsXExpressionParserInjectionTokens.IExpressionTreeBuilder,
+  );
 
   return expressionParser.parseAst(expressionAst, expressionString);
 }

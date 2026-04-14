@@ -11,7 +11,7 @@ export function getExpressionFactory() {
   if (!factoryInstance) {
     if (
       !InjectionContainer.isBound(
-        RsXExpressionParserInjectionTokens.IExpressionFactory,
+        RsXExpressionParserInjectionTokens.IExpressionParser,
       )
     ) {
       InjectionContainer.load(RsXExpressionParserModule);

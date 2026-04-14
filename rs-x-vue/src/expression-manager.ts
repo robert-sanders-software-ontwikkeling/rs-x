@@ -11,7 +11,7 @@ export function getExpressionManager() {
   if (!expressionManager) {
     if (
       !InjectionContainer.isBound(
-        RsXExpressionParserInjectionTokens.IExpressionManager,
+        RsXExpressionParserInjectionTokens.IExpressionParser,
       )
     ) {
       InjectionContainer.load(RsXExpressionParserModule);

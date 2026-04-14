@@ -35,7 +35,7 @@ describe('providexRsx', () => {
     await initFactory!()();
 
     expect(isBoundSpy).toHaveBeenCalledWith(
-      RsXExpressionParserInjectionTokens.IExpressionFactory,
+      RsXExpressionParserInjectionTokens.IExpressionParser,
     );
     expect(loadSpy).toHaveBeenCalledWith(RsXExpressionParserModule);
 

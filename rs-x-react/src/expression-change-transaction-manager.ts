@@ -11,7 +11,7 @@ export function getExpressionChangeTransactionManager() {
   if (!transactionManager) {
     if (
       !InjectionContainer.isBound(
-        RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager,
+        RsXExpressionParserInjectionTokens.IExpressionParser,
       )
     ) {
       InjectionContainer.load(RsXExpressionParserModule);

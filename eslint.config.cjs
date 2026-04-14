@@ -25,6 +25,7 @@ module.exports = [
       '**/tmp-*.mjs',
       '**/*.generated.ts',
       'rs-x-cli/templates/**',
+
       // Test/mock/config files not included in package tsconfigs
       '**/*.test.ts',
       '**/*.test.tsx',
@@ -77,6 +78,7 @@ module.exports = [
         {
           prefer: 'type-imports',
           fixStyle: 'inline-type-imports',
+          disallowTypeAnnotations: false, // ✅ allow typeof import(...)
         },
       ],
 
@@ -90,20 +92,27 @@ module.exports = [
           groups: [
             // Node.js built-ins
             ['^node:'],
+
             // External packages
             ['^@?\\w'],
+
             // Internal packages (your @rs-x scope)
             ['^(@rs-x)(/.*|$)'],
+
             // Parent imports
             ['^\\.\\.(?!/?$)', '^\\.\\./?$'],
+
             // Relative imports
             ['^\\./(?=.*/)(?!/?$)', '^\\.(?!/?$)', '^\\./?$'],
+
             // Style imports
             ['^.+\\.s?css$'],
           ],
         },
       ],
       'simple-import-sort/exports': 'error',
+
+      // --- Style ---
       semi: ['error', 'always'],
     },
   },

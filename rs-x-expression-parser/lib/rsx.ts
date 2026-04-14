@@ -6,8 +6,8 @@ import {
   type IExpressionTree,
 } from './expressions/expression-parser.interface';
 import { type IExpressionFactory } from './expression-factory';
-import { RsXExpressionParserModule } from './rs-x-expression-parser.module';
 import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
+import { RsXExpressionRuntimeModule } from './rs-x-expression-runtime.module';
 
 let cachedExpressionFactory: IExpressionFactory | undefined;
 
@@ -58,7 +58,7 @@ const ensureExpressionFactory = (): void => {
       RsXExpressionParserInjectionTokens.IExpressionFactory,
     )
   ) {
-    InjectionContainer.load(RsXExpressionParserModule);
+    InjectionContainer.load(RsXExpressionRuntimeModule);
 
     if (
       !InjectionContainer.isBound(
