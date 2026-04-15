@@ -1548,6 +1548,82 @@ function resolveProjectTsConfig(projectRoot) {
   return path.join(projectRoot, 'tsconfig.json');
 }
 
+function ensureNextTypeScriptConfig(projectRoot, dryRun) {
+  const tsConfigPath = path.join(projectRoot, 'tsconfig.json');
+  if (fs.existsSync(tsConfigPath)) {
+    return tsConfigPath;
+  }
+
+  const jsConfigPath = path.join(projectRoot, 'jsconfig.json');
+  const jsConfig = fs.existsSync(jsConfigPath)
+    ? parseJsonc(fs.readFileSync(jsConfigPath, 'utf8'))
+    : {};
+  const jsCompilerOptions =
+    typeof jsConfig.compilerOptions === 'object' && jsConfig.compilerOptions
+      ? jsConfig.compilerOptions
+      : {};
+
+  const tsConfig = {
+    compilerOptions: {
+      ...jsCompilerOptions,
+      allowJs: true,
+      skipLibCheck: true,
+      strict: false,
+      noEmit: true,
+      esModuleInterop: true,
+      module: 'esnext',
+      moduleResolution: 'bundler',
+      resolveJsonModule: true,
+      isolatedModules: true,
+      jsx: 'preserve',
+      incremental: true,
+      plugins: [{ name: 'next' }],
+    },
+    include: [
+      'next-env.d.ts',
+      '**/*.js',
+      '**/*.jsx',
+      '**/*.ts',
+      '**/*.tsx',
+      '.next/types/**/*.ts',
+      '.next/dev/types/**/*.ts',
+    ],
+    exclude: ['node_modules'],
+  };
+
+  const nextEnvPath = path.join(projectRoot, 'next-env.d.ts');
+  const nextEnvSource = `/// <reference types="next" />\n/// <reference types="next/image-types/global" />\n\n// NOTE: This file should not be edited\n// see https://nextjs.org/docs/app/api-reference/config/typescript for more information.\n`;
+
+  if (dryRun) {
+    logInfo(`[dry-run] create ${tsConfigPath}`);
+    if (!fs.existsSync(nextEnvPath)) {
+      logInfo(`[dry-run] create ${nextEnvPath}`);
+    }
+    return tsConfigPath;
+  }
+
+  fs.writeFileSync(
+    tsConfigPath,
+    `${JSON.stringify(tsConfig, null, 2)}\n`,
+    'utf8',
+  );
+  logOk(`Created ${tsConfigPath} from jsconfig.json for RS-X tooling.`);
+
+  if (!fs.existsSync(nextEnvPath)) {
+    fs.writeFileSync(nextEnvPath, nextEnvSource, 'utf8');
+    logOk(`Created ${nextEnvPath}`);
+  }
+
+  return tsConfigPath;
+}
+
+function shouldProvisionNextJsTypePackages(projectRoot) {
+  return (
+    !fs.existsSync(path.join(projectRoot, 'tsconfig.json')) &&
+    fs.existsSync(path.join(projectRoot, 'jsconfig.json'))
+  );
+}
+
 function resolveAngularProjectTsConfig(projectRoot) {
   return resolveProjectTsConfig(projectRoot);
 }
@@ -3250,8 +3326,13 @@ function resolveEntryFile(projectRoot, context, explicitEntry) {
     next: [
       'app/layout.tsx',
       'app/layout.jsx',
+      'app/layout.js',
+      'src/app/layout.tsx',
+      'src/app/layout.jsx',
+      'src/app/layout.js',
       'pages/_app.tsx',
       'pages/_app.jsx',
+      'pages/_app.js',
     ],
     generic: [
       'src/main.ts',
@@ -3441,8 +3522,19 @@ export async function initRsx() {
 
   if (fs.existsSync(bootstrapFile)) {
     const existing = fs.readFileSync(bootstrapFile, 'utf8');
-    if (existing.includes('export async function initRsx')) {
+    if (existing === content) {
       logInfo(`Bootstrap module already exists: ${bootstrapFile}`);
+      return;
+    }
+
+    if (existing.includes('export async function initRsx')) {
+      if (dryRun) {
+        logInfo(`[dry-run] patch ${bootstrapFile}`);
+        return;
+      }
+
+      fs.writeFileSync(bootstrapFile, content, 'utf8');
+      logOk(`Patched ${bootstrapFile}`);
       return;
     }
 
@@ -3922,7 +4014,10 @@ function runBootstrapInit(flags) {
     : context;
 
   const rsxBuildConfig = resolveRsxBuildConfig(projectRoot);
-  const defaultBuildConfig = defaultRsxBuildConfigForTemplate(effectiveContext);
+  const defaultBuildConfig =
+    effectiveContext === 'next'
+      ? resolveNextRsxBuildConfig(projectRoot, entryFile)
+      : defaultRsxBuildConfigForTemplate(effectiveContext);
   const resolvedPreparseFile =
     typeof rsxBuildConfig.preparseFile === 'string'
       ? path.resolve(projectRoot, rsxBuildConfig.preparseFile)
@@ -4349,14 +4444,6 @@ function wireRsxNextWebpack(projectRoot, dryRun) {
   const nextConfigMjs = path.join(projectRoot, 'next.config.mjs');
   const nextConfigTs = path.join(projectRoot, 'next.config.ts');
 
-  if (fs.existsSync(nextConfigMjs) || fs.existsSync(nextConfigTs)) {
-    logWarn(
-      'Detected next.config.mjs/ts. Automatic RS-X patch currently supports next.config.js only.',
-    );
-    logInfo(`Add webpack rule manually with loader: ${loaderPath}`);
-    return;
-  }
-
   const patchBlock = `
 const __rsxWebpackLoaderPath = require('node:path').resolve(__dirname, './rsx-webpack-loader.cjs');
 const __rsxApply = (nextConfigOrFactory) => {
@@ -4390,6 +4477,113 @@ const __rsxApply = (nextConfigOrFactory) => {
 
 module.exports = __rsxApply(module.exports);
 `;
+  const esmPatchBlock = `
+import path from 'node:path';
+
+const __rsxWebpackLoaderPath = path.resolve(process.cwd(), './rsx-webpack-loader.cjs');
+function __rsxApply(nextConfigOrFactory) {
+  if (typeof nextConfigOrFactory === 'function') {
+    return (...args) => __rsxApply(nextConfigOrFactory(...args));
+  }
+
+  const nextConfig = nextConfigOrFactory ?? {};
+  const previousWebpack = nextConfig.webpack;
+  return {
+    ...nextConfig,
+    webpack(config, options) {
+      config.module.rules.unshift({
+        test: /\\.[jt]sx?$/u,
+        exclude: /node_modules/u,
+        use: [
+          {
+            loader: __rsxWebpackLoaderPath,
+          },
+        ],
+      });
+
+      if (typeof previousWebpack === 'function') {
+        return previousWebpack(config, options);
+      }
+
+      return config;
+    },
+  };
+}
+`;
+  const tsPatchBlock = `
+import path from 'node:path';
+
+const __rsxWebpackLoaderPath = path.resolve(process.cwd(), './rsx-webpack-loader.cjs');
+function __rsxApply(nextConfigOrFactory: any): any {
+  if (typeof nextConfigOrFactory === 'function') {
+    return (...args: any[]) => __rsxApply(nextConfigOrFactory(...args));
+  }
+
+  const nextConfig = nextConfigOrFactory ?? {};
+  const previousWebpack = nextConfig.webpack;
+  return {
+    ...nextConfig,
+    webpack(config: any, options: any) {
+      config.module.rules.unshift({
+        test: /\\.[jt]sx?$/u,
+        exclude: /node_modules/u,
+        use: [
+          {
+            loader: __rsxWebpackLoaderPath,
+          },
+        ],
+      });
+
+      if (typeof previousWebpack === 'function') {
+        return previousWebpack(config, options);
+      }
+
+      return config;
+    },
+  };
+}
+`;
+
+  const nextConfigEsm = fs.existsSync(nextConfigTs)
+    ? nextConfigTs
+    : fs.existsSync(nextConfigMjs)
+      ? nextConfigMjs
+      : null;
+
+  if (nextConfigEsm) {
+    const original = fs.readFileSync(nextConfigEsm, 'utf8');
+    if (original.includes('__rsxWebpackLoaderPath')) {
+      logInfo(
+        `Next config already includes RS-X webpack loader: ${nextConfigEsm}`,
+      );
+      return;
+    }
+
+    if (!original.includes('export default nextConfig;')) {
+      logWarn(
+        `Could not automatically patch ${nextConfigEsm}. Expected "export default nextConfig;".`,
+      );
+      logInfo(`Add webpack rule manually with loader: ${loaderPath}`);
+      return;
+    }
+
+    const patchBlock = nextConfigEsm.endsWith('.ts')
+      ? tsPatchBlock
+      : esmPatchBlock;
+    const updated = original.replace(
+      'export default nextConfig;',
+      `${patchBlock}\nexport default __rsxApply(nextConfig);`,
+    );
+
+    if (dryRun) {
+      logInfo(`[dry-run] patch ${nextConfigEsm}`);
+      return;
+    }
+
+    fs.writeFileSync(nextConfigEsm, updated, 'utf8');
+    logOk(`Patched ${nextConfigEsm} with RS-X webpack loader.`);
+    return;
+  }
 
   if (!fs.existsSync(nextConfigJs)) {
     const source = `/** @type {import('next').NextConfig} */
@@ -4513,7 +4707,8 @@ function runSetupNext(flags) {
   const projectRoot = process.cwd();
   const pm = resolveCliPackageManager(projectRoot, flags.pm);
   const tag = resolveConfiguredInstallTag(projectRoot, flags);
-  const nextTsConfigPath = resolveProjectTsConfig(projectRoot);
+  const shouldInstallNextTypes = shouldProvisionNextJsTypePackages(projectRoot);
+  const nextTsConfigPath = ensureNextTypeScriptConfig(projectRoot, dryRun);
   const nextTsConfigRelative = path
     .relative(projectRoot, nextTsConfigPath)
     .replace(/\\/gu, '/');
@@ -4534,8 +4729,42 @@ function runSetupNext(flags) {
       cwd: projectRoot,
       label: 'RS-X React bindings',
     });
+    installResolvedPackages(pm, ['@rs-x/cli'], {
+      dev: true,
+      dryRun,
+      tag,
+      specs,
+      cwd: projectRoot,
+      label: 'RS-X CLI',
+    });
   } else {
     logInfo('Skipping RS-X React bindings install (--skip-install).');
+  }
+  const packageJsonPath = path.join(projectRoot, 'package.json');
+  if (fs.existsSync(packageJsonPath)) {
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    const allDependencies = {
+      ...(packageJson.dependencies ?? {}),
+      ...(packageJson.devDependencies ?? {}),
+    };
+    if (!allDependencies.typescript) {
+      installResolvedPackages(pm, ['typescript'], {
+        dev: true,
+        dryRun,
+        specs: undefined,
+        cwd: projectRoot,
+        label: 'TypeScript',
+      });
+    }
+    if (shouldInstallNextTypes) {
+      installResolvedPackages(pm, ['@types/react', '@types/node'], {
+        dev: true,
+        dryRun,
+        specs: undefined,
+        cwd: projectRoot,
+        label: 'Next.js TypeScript support packages',
+      });
+    }
   }
   ensureRsxConfigFile(projectRoot, 'next', dryRun);
   upsertScriptInPackageJson(
@@ -4562,7 +4791,6 @@ function runSetupNext(flags) {
     'npm run build:rsx && next build',
     dryRun,
   );
-  wireRsxNextWebpack(projectRoot, dryRun);
   if (resolveCliVerifyFlag(projectRoot, flags, 'init')) {
     verifySetupOutput(projectRoot, 'next');
   }
@@ -5356,7 +5584,7 @@ function runRsxAotLazyGeneration({
           ]
         : []),
       'function importLazyModule(specifier) {',
-      '  return import(/* webpackIgnore: true */ /* @vite-ignore */ new URL(specifier, import.meta.url).href);',
+      '  return import(/* webpackIgnore: true */ /* @vite-ignore */ specifier);',
       '}',
       '',
     );
@@ -6107,15 +6335,58 @@ function defaultRsxBuildConfigForTemplate(template) {
   };
 }
 
+function resolveNextRsxBuildConfig(projectRoot, entryFile) {
+  const normalizedEntryFile = entryFile?.replace(/\\/gu, '/');
+  const useSrcApp =
+    (typeof normalizedEntryFile === 'string' &&
+      normalizedEntryFile.includes('/src/app/')) ||
+    fs.existsSync(path.join(projectRoot, 'src', 'app'));
+
+  if (useSrcApp) {
+    return {
+      preparse: true,
+      preparseFile: 'src/app/rsx-generated/rsx-aot-preparsed.generated.ts',
+      compiled: true,
+      compiledFile: 'src/app/rsx-generated/rsx-aot-compiled.generated.ts',
+      registrationFile:
+        'src/app/rsx-generated/rsx-aot-registration.generated.ts',
+      compiledResolvedEvaluator: false,
+    };
+  }
+
+  return defaultRsxBuildConfigForTemplate('next');
+}
+
 function ensureRsxConfigFile(projectRoot, template, dryRun) {
   const configPath = path.join(projectRoot, 'rsx.config.json');
+  const nextDefaultBuildConfig = defaultRsxBuildConfigForTemplate('next');
+  const nextSrcAppBuildConfig = resolveNextRsxBuildConfig(projectRoot);
   const defaultConfig = {
-    build: defaultRsxBuildConfigForTemplate(template),
+    build:
+      template === 'next' || template === 'nextjs'
+        ? nextSrcAppBuildConfig
+        : defaultRsxBuildConfigForTemplate(template),
     cli: defaultCliConfigForTemplate(template),
   };
 
   const existingConfig = readJsonFileIfPresent(configPath);
   const nextConfig = mergeRsxConfig(defaultConfig, existingConfig ?? {});
+
+  if (
+    (template === 'next' || template === 'nextjs') &&
+    nextSrcAppBuildConfig.preparseFile.startsWith('src/app/') &&
+    nextConfig.build?.preparseFile === nextDefaultBuildConfig.preparseFile &&
+    nextConfig.build?.compiledFile === nextDefaultBuildConfig.compiledFile &&
+    nextConfig.build?.registrationFile ===
+      nextDefaultBuildConfig.registrationFile
+  ) {
+    nextConfig.build = {
+      ...nextConfig.build,
+      preparseFile: nextSrcAppBuildConfig.preparseFile,
+      compiledFile: nextSrcAppBuildConfig.compiledFile,
+      registrationFile: nextSrcAppBuildConfig.registrationFile,
+    };
+  }
 
   if (
     existingConfig &&
