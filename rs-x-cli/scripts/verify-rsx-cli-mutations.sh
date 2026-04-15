@@ -220,15 +220,62 @@ create_next_project() {
 EOF
 
   cat >"$project_dir/app/layout.tsx" <<'EOF'
+import type { Metadata, ReactNode } from 'react';
+
+export const metadata: Metadata = {
+  title: 'RS-X smoke test',
+};
+
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="app-shell">
+        {children}
+        <div id="portal-root" />
+      </body>
     </html>
+  );
+}
+EOF
+}
+
+create_next_pages_project() {
+  local project_dir="$1"
+
+  rm -rf "$project_dir"
+  mkdir -p "$project_dir/pages"
+
+  cat >"$project_dir/package.json" <<'EOF'
+{
+  "name": "rsx-next-pages-init-verify",
+  "private": true,
+  "dependencies": {
+    "next": "^16.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
+EOF
+
+  cat >"$project_dir/pages/_app.tsx" <<'EOF'
+import type { AppProps } from 'next/app';
+
+function Shell(props: { children: React.ReactNode }) {
+  return <main data-shell="true">{props.children}</main>;
+}
+
+export default function App({ Component, pageProps }: AppProps) {
+  return (
+    <Shell>
+      <Component {...pageProps} />
+    </Shell>
   );
 }
 EOF
@@ -323,6 +370,8 @@ run_framework_init_case() {
   local expected_dep="$3"
   local entry_path="$4"
   local create_fn="$5"
+  local expected_marker="$6"
+  local expected_marker_two="${7:-}"
 
   printf '\n== %s ==\n' "$label"
   "$create_fn" "$project_dir"
@@ -338,6 +387,53 @@ run_framework_init_case() {
   if ! verify_manifest_has_dep "$project_dir/package.json" "$expected_dep"; then
     printf '%s: package.json missing %s.\n' "$label" "$expected_dep"
     summary_lines+=("$label: missing $expected_dep")
+    overall_status=1
+    return
+  fi
+
+  if [[ -n "$expected_marker" ]] && ! grep -qF "$expected_marker" "$project_dir/$entry_path"; then
+    printf '%s: entry file missing expected marker %s.\n' "$label" "$expected_marker"
+    printf 'Contents:\n'
+    cat "$project_dir/$entry_path"
+    summary_lines+=("$label: entry not wired")
+    overall_status=1
+    return
+  fi
+
+  if [[ -n "$expected_marker_two" ]] && ! grep -qF "$expected_marker_two" "$project_dir/$entry_path"; then
+    printf '%s: entry file missing expected marker %s.\n' "$label" "$expected_marker_two"
+    printf 'Contents:\n'
+    cat "$project_dir/$entry_path"
+    summary_lines+=("$label: entry lost existing structure")
+    overall_status=1
+    return
+  fi
+
+  if ! node -e "
+const fs = require('node:fs');
+const path = require('node:path');
+const ts = require('typescript');
+const filePath = process.argv[1];
+const source = fs.readFileSync(filePath, 'utf8');
+const ext = path.extname(filePath).toLowerCase();
+const scriptKind =
+  ext === '.tsx' ? ts.ScriptKind.TSX :
+  ext === '.jsx' ? ts.ScriptKind.JSX :
+  ext === '.js' || ext === '.mjs' || ext === '.cjs' ? ts.ScriptKind.JS :
+  ts.ScriptKind.TS;
+const sourceFile = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true, scriptKind);
+if ((sourceFile.parseDiagnostics || []).length > 0) {
+  console.error('parse diagnostics found');
+  for (const diagnostic of sourceFile.parseDiagnostics) {
+    console.error(ts.flattenDiagnosticMessageText(diagnostic.messageText, '\\n'));
+  }
+  process.exit(1);
+}
+" "$project_dir/$entry_path"; then
+    printf '%s: entry file no longer parses after init.\n' "$label"
+    printf 'Contents:\n'
+    cat "$project_dir/$entry_path"
+    summary_lines+=("$label: entry parse failed")
     overall_status=1
     return
   fi
@@ -817,28 +913,45 @@ run_framework_init_case \
   "$react_init_dir" \
   "@rs-x/react" \
   "src/main.tsx" \
-  create_react_project
+  create_react_project \
+  "await initRsx();" \
+  "createRoot(document.getElementById('root')!).render(<App />);"
 
 run_framework_init_case \
   "init-next" \
   "$next_init_dir" \
   "@rs-x/react" \
   "app/layout.tsx" \
-  create_next_project
+  create_next_project \
+  "<RsxBootstrapGate>" \
+  "className=\"app-shell\""
+
+run_framework_init_case \
+  "init-next-pages" \
+  "$base_dir/next-pages-init-verify" \
+  "@rs-x/react" \
+  "pages/_app.tsx" \
+  create_next_pages_project \
+  "<RsxBootstrapGate>" \
+  "data-shell=\"true\""
 
 run_framework_init_case \
   "init-vue" \
   "$vue_init_dir" \
   "@rs-x/vue" \
   "src/main.ts" \
-  create_vue_project
+  create_vue_project \
+  "await initRsx();" \
+  "createApp(App).mount('#app');"
 
 run_framework_init_case \
   "init-angular" \
   "$angular_init_dir" \
   "@rs-x/angular" \
   "src/main.ts" \
-  create_angular_project
+  create_angular_project \
+  "providexRsx" \
+  "bootstrapApplication(AppComponent, {"
 
 verify_bootstrap_custom_paths() {
   local label="$1"

@@ -32,6 +32,9 @@
     "access": "public",
     "provenance": true
   },
+  "dependencies": {
+    "typescript": "^6.0.2"
+  },
   "scripts": {
     "build": "node -e \"console.log('No build step required for @rs-x/cli')\"",
     "verify:cli-mutations": "zsh ./scripts/verify-rsx-cli-mutations.sh",

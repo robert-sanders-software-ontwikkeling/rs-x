@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const readline = require('node:readline/promises');
 const { spawnSync } = require('node:child_process');
+let typescriptModule;
 
 const CLI_VERSION = (() => {
   try {
@@ -3657,7 +3658,101 @@ function indentBlock(text, spaces) {
     .join('\n');
 }
 
-function wrapAngularEntry(source) {
+function getTypeScript() {
+  if (typescriptModule !== undefined) {
+    return typescriptModule;
+  }
+
+  try {
+    typescriptModule = require('typescript');
+  } catch {
+    typescriptModule = null;
+    logWarn(
+      'TypeScript parser is unavailable; falling back to legacy source patching.',
+    );
+  }
+
+  return typescriptModule;
+}
+
+function resolveScriptKindForEntryFile(filePath, ts) {
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === '.tsx') {
+    return ts.ScriptKind.TSX;
+  }
+  if (ext === '.jsx') {
+    return ts.ScriptKind.JSX;
+  }
+  if (ext === '.js' || ext === '.cjs' || ext === '.mjs') {
+    return ts.ScriptKind.JS;
+  }
+  return ts.ScriptKind.TS;
+}
+
+function createAstSourceFile(filePath, source) {
+  const ts = getTypeScript();
+  if (!ts) {
+    return null;
+  }
+
+  return ts.createSourceFile(
+    filePath,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    resolveScriptKindForEntryFile(filePath, ts),
+  );
+}
+
+function walkAst(node, visitor) {
+  visitor(node);
+  node.forEachChild((child) => walkAst(child, visitor));
+}
+
+function lineIndentAt(source, position) {
+  const lineStart = source.lastIndexOf('\n', Math.max(0, position - 1)) + 1;
+  const linePrefix = source.slice(lineStart, position);
+  const match = linePrefix.match(/^\s*/u);
+  return match?.[0] ?? '';
+}
+
+function indentText(text, indent) {
+  return text
+    .split('\n')
+    .map((line) => (line.length > 0 ? `${indent}${line}` : line))
+    .join('\n');
+}
+
+function validatePatchedSource(filePath, source) {
+  const sourceFile = createAstSourceFile(filePath, source);
+  if (!sourceFile) {
+    return true;
+  }
+
+  if ((sourceFile.parseDiagnostics?.length ?? 0) > 0) {
+    logWarn(`Patched source did not parse cleanly: ${filePath}`);
+    return false;
+  }
+
+  return true;
+}
+
+function writeValidatedPatch(entryFile, updated, dryRun, dryRunLabel, successLabel) {
+  if (!validatePatchedSource(entryFile, updated)) {
+    return false;
+  }
+
+  if (dryRun) {
+    logInfo(`[dry-run] patch ${entryFile}${dryRunLabel ? ` ${dryRunLabel}` : ''}`);
+    return true;
+  }
+
+  fs.writeFileSync(entryFile, updated, 'utf8');
+  logOk(successLabel ?? `Patched ${entryFile}`);
+  return true;
+}
+
+function wrapAngularEntryLegacy(source) {
   const angularBootstrapPattern =
     /bootstrapApplication\([\s\S]*?\)(?:\s*\.\s*catch\([\s\S]*?\))?\s*;/mu;
   const angularModulePattern =
@@ -3678,7 +3773,7 @@ function wrapAngularEntry(source) {
   return source.replace(pattern, replacement);
 }
 
-function wrapGenericEntry(source) {
+function wrapGenericEntryLegacy(source) {
   const startCallPattern = /^\s*([A-Za-z_$][\w$]*)\(\);\s*$/mu;
   const match = source.match(startCallPattern);
   if (!match) {
@@ -3688,6 +3783,87 @@ function wrapGenericEntry(source) {
   const startCall = match[0].trim();
   const replacement = `const __rsxBootstrap = async () => {\n  await initRsx();\n${indentBlock(startCall, 2)}\n};\n\nvoid __rsxBootstrap();`;
   return source.replace(startCallPattern, replacement);
+}
+
+function findBootstrapExpressionStatement(sourceFile, predicate) {
+  const ts = getTypeScript();
+  if (!ts) {
+    return null;
+  }
+
+  let match = null;
+  walkAst(sourceFile, (node) => {
+    if (match || !ts.isExpressionStatement(node)) {
+      return;
+    }
+
+    if (predicate(node.expression, ts)) {
+      match = node;
+    }
+  });
+  return match;
+}
+
+function wrapStatementWithBootstrap(source, statement, invocationName) {
+  const statementText = source.slice(statement.getStart(), statement.getEnd());
+  const statementIndent = lineIndentAt(source, statement.getStart());
+  const indentedStatement = indentText(statementText, `${statementIndent}  `);
+  return `${source.slice(0, statement.getStart())}${statementIndent}const __rsxBootstrap = async () => {\n${statementIndent}  await initRsx();\n${indentedStatement}\n${statementIndent}};\n\n${statementIndent}void __rsxBootstrap();${source.slice(statement.getEnd())}`;
+}
+
+function wrapAngularEntry(source, entryFile) {
+  const sourceFile = createAstSourceFile(entryFile, source);
+  if (!sourceFile) {
+    return wrapAngularEntryLegacy(source);
+  }
+
+  const statement = findBootstrapExpressionStatement(
+    sourceFile,
+    (expression, ts) => {
+      if (!ts.isCallExpression(expression)) {
+        return false;
+      }
+
+      if (
+        ts.isIdentifier(expression.expression) &&
+        expression.expression.text === 'bootstrapApplication'
+      ) {
+        return true;
+      }
+
+      return (
+        ts.isPropertyAccessExpression(expression.expression) &&
+        ts.isIdentifier(expression.expression.expression) &&
+        expression.expression.expression.text === 'platformBrowserDynamic' &&
+        expression.expression.name.text === 'bootstrapModule'
+      );
+    },
+  );
+
+  if (!statement) {
+    return wrapAngularEntryLegacy(source);
+  }
+
+  return wrapStatementWithBootstrap(source, statement, '__rsxBootstrap');
+}
+
+function wrapGenericEntry(source, entryFile) {
+  const sourceFile = createAstSourceFile(entryFile, source);
+  if (!sourceFile) {
+    return wrapGenericEntryLegacy(source);
+  }
+
+  const statement = findBootstrapExpressionStatement(
+    sourceFile,
+    (expression, ts) =>
+      ts.isCallExpression(expression) && ts.isIdentifier(expression.expression),
+  );
+
+  if (!statement) {
+    return wrapGenericEntryLegacy(source);
+  }
+
+  return wrapStatementWithBootstrap(source, statement, '__rsxBootstrap');
 }
 
 function nextGateFilePath(entryFile) {
@@ -3785,7 +3961,7 @@ export function RsxBootstrapGate(props) {
   logOk(`Created ${gateFile}`);
 }
 
-function patchNextLayoutEntry(source) {
+function patchNextLayoutEntryLegacy(source) {
   if (source.includes('<RsxBootstrapGate>')) {
     return source;
   }
@@ -3807,7 +3983,7 @@ function patchNextLayoutEntry(source) {
   return updated;
 }
 
-function patchNextPagesAppEntry(source) {
+function patchNextPagesAppEntryLegacy(source) {
   if (source.includes('<RsxBootstrapGate>')) {
     return source;
   }
@@ -3821,6 +3997,82 @@ function patchNextPagesAppEntry(source) {
   const componentRender = match[0];
   const wrapped = `<RsxBootstrapGate>\n      ${componentRender}\n    </RsxBootstrapGate>`;
   return source.replace(componentRenderPattern, wrapped);
+}
+
+function patchNextLayoutEntry(source, entryFile) {
+  if (source.includes('<RsxBootstrapGate>')) {
+    return source;
+  }
+
+  const ts = getTypeScript();
+  const sourceFile = createAstSourceFile(entryFile, source);
+  if (!ts || !sourceFile) {
+    return patchNextLayoutEntryLegacy(source);
+  }
+
+  let bodyElement = null;
+  walkAst(sourceFile, (node) => {
+    if (
+      bodyElement ||
+      !ts.isJsxElement(node) ||
+      node.openingElement.tagName.getText(sourceFile) !== 'body'
+    ) {
+      return;
+    }
+
+    bodyElement = node;
+  });
+
+  if (!bodyElement) {
+    return patchNextLayoutEntryLegacy(source);
+  }
+
+  const bodyIndent = lineIndentAt(source, bodyElement.closingElement.getStart());
+  const innerSource = source.slice(
+    bodyElement.openingElement.end,
+    bodyElement.closingElement.getStart(),
+  );
+  const wrapped = `\n${bodyIndent}  <RsxBootstrapGate>${innerSource}\n${bodyIndent}  </RsxBootstrapGate>`;
+  return `${source.slice(0, bodyElement.openingElement.end)}${wrapped}${source.slice(bodyElement.closingElement.getStart())}`;
+}
+
+function patchNextPagesAppEntry(source, entryFile) {
+  if (source.includes('<RsxBootstrapGate>')) {
+    return source;
+  }
+
+  const ts = getTypeScript();
+  const sourceFile = createAstSourceFile(entryFile, source);
+  if (!ts || !sourceFile) {
+    return patchNextPagesAppEntryLegacy(source);
+  }
+
+  let componentNode = null;
+  walkAst(sourceFile, (node) => {
+    if (componentNode) {
+      return;
+    }
+
+    const isComponentSelfClosing =
+      ts.isJsxSelfClosingElement(node) && node.tagName.getText(sourceFile) === 'Component';
+    const isComponentElement =
+      ts.isJsxElement(node) && node.openingElement.tagName.getText(sourceFile) === 'Component';
+
+    if (isComponentSelfClosing || isComponentElement) {
+      componentNode = node;
+    }
+  });
+
+  if (!componentNode) {
+    return patchNextPagesAppEntryLegacy(source);
+  }
+
+  const nodeStart = componentNode.getStart(sourceFile);
+  const nodeEnd = componentNode.getEnd();
+  const nodeIndent = lineIndentAt(source, nodeStart);
+  const originalNode = source.slice(nodeStart, nodeEnd);
+  const wrapped = `<RsxBootstrapGate>\n${indentText(originalNode, `${nodeIndent}  `)}\n${nodeIndent}</RsxBootstrapGate>`;
+  return `${source.slice(0, nodeStart)}${wrapped}${source.slice(nodeEnd)}`;
 }
 
 function patchNextEntryFile(entryFile, gateFile, dryRun) {
@@ -3843,13 +4095,13 @@ function patchNextEntryFile(entryFile, gateFile, dryRun) {
 
   let updated = null;
   if (isAppLayout) {
-    updated = patchNextLayoutEntry(sourceWithImport);
+    updated = patchNextLayoutEntry(sourceWithImport, entryFile);
     if (!updated) {
       logWarn(`Could not patch Next app router layout at ${entryFile}.`);
       return false;
     }
   } else if (isPagesApp) {
-    updated = patchNextPagesAppEntry(sourceWithImport);
+    updated = patchNextPagesAppEntry(sourceWithImport, entryFile);
     if (!updated) {
       logWarn(`Could not patch Next pages router app file at ${entryFile}.`);
       return false;
@@ -3859,17 +4111,10 @@ function patchNextEntryFile(entryFile, gateFile, dryRun) {
     return false;
   }
 
-  if (dryRun) {
-    logInfo(`[dry-run] patch ${entryFile}`);
-    return true;
-  }
-
-  fs.writeFileSync(entryFile, updated, 'utf8');
-  logOk(`Patched ${entryFile}`);
-  return true;
+  return writeValidatedPatch(entryFile, updated, dryRun, '', `Patched ${entryFile}`);
 }
 
-function wrapAppEntry(source, bootstrapFile, entryFile) {
+function wrapAppEntryLegacy(source, bootstrapFile, entryFile) {
   // Find the last capitalized default import — that's the app root component
   const defaultImportRe =
     /^import\s+([A-Z]\w*)\s+from\s+(['"][^'"]+['"])\s*;?\s*\n/gm;
@@ -3927,6 +4172,105 @@ rsxBootstrap();
 `;
 }
 
+function wrapReactEntry(source, entryFile) {
+  const ts = getTypeScript();
+  const sourceFile = createAstSourceFile(entryFile, source);
+  if (!ts || !sourceFile) {
+    return null;
+  }
+
+  const statement = findBootstrapExpressionStatement(
+    sourceFile,
+    (expression, tsInstance) => {
+      if (!tsInstance.isCallExpression(expression)) {
+        return false;
+      }
+
+      const callee = expression.expression;
+      if (
+        tsInstance.isPropertyAccessExpression(callee) &&
+        callee.name.text === 'render'
+      ) {
+        return true;
+      }
+
+      return (
+        tsInstance.isPropertyAccessExpression(callee) &&
+        tsInstance.isIdentifier(callee.expression) &&
+        callee.expression.text === 'ReactDOM' &&
+        callee.name.text === 'render'
+      );
+    },
+  );
+
+  if (!statement) {
+    return null;
+  }
+
+  return wrapStatementWithBootstrap(source, statement, 'rsxBootstrap');
+}
+
+function wrapVueEntry(source, entryFile) {
+  const ts = getTypeScript();
+  const sourceFile = createAstSourceFile(entryFile, source);
+  if (!ts || !sourceFile) {
+    return null;
+  }
+
+  const statement = findBootstrapExpressionStatement(
+    sourceFile,
+    (expression, tsInstance) => {
+      if (!tsInstance.isCallExpression(expression)) {
+        return false;
+      }
+
+      const callee = expression.expression;
+      if (
+        !tsInstance.isPropertyAccessExpression(callee) ||
+        callee.name.text !== 'mount'
+      ) {
+        return false;
+      }
+
+      return (
+        tsInstance.isCallExpression(callee.expression) &&
+        (
+          (tsInstance.isIdentifier(callee.expression.expression) &&
+            callee.expression.expression.text === 'createApp') ||
+          (tsInstance.isPropertyAccessExpression(callee.expression.expression) &&
+            callee.expression.expression.name.text === 'createApp')
+        )
+      );
+    },
+  );
+
+  if (!statement) {
+    return null;
+  }
+
+  return wrapStatementWithBootstrap(source, statement, 'rsxBootstrap');
+}
+
+function wrapAppEntry(source, bootstrapFile, entryFile, context) {
+  const bootstrapImportPath = toModuleImportPath(entryFile, bootstrapFile);
+  const sourceWithImport = injectImport(
+    source,
+    `import { initRsx } from '${bootstrapImportPath}';`,
+  );
+
+  if (context === 'react') {
+    return wrapReactEntry(sourceWithImport, entryFile) ??
+      wrapAppEntryLegacy(source, bootstrapFile, entryFile);
+  }
+
+  if (context === 'vuejs') {
+    return wrapVueEntry(sourceWithImport, entryFile) ??
+      wrapAppEntryLegacy(source, bootstrapFile, entryFile);
+  }
+
+  return wrapAppEntryLegacy(source, bootstrapFile, entryFile);
+}
+
 function patchEntryFileForRsx(entryFile, bootstrapFile, context, dryRun) {
   const original = fs.readFileSync(entryFile, 'utf8');
 
@@ -3936,20 +4280,13 @@ function patchEntryFileForRsx(entryFile, bootstrapFile, context, dryRun) {
       return true;
     }
 
-    const updated = wrapAppEntry(original, bootstrapFile, entryFile);
+    const updated = wrapAppEntry(original, bootstrapFile, entryFile, context);
     if (!updated) {
       logWarn(`Could not find app component default import in ${entryFile}.`);
       return false;
     }
 
-    if (dryRun) {
-      logInfo(`[dry-run] patch ${entryFile}`);
-      return true;
-    }
-
-    fs.writeFileSync(entryFile, updated, 'utf8');
-    logOk(`Patched ${entryFile}`);
-    return true;
+    return writeValidatedPatch(entryFile, updated, dryRun, '', `Patched ${entryFile}`);
   }
 
   if (original.includes('rsx-bootstrap')) {
@@ -3962,14 +4299,14 @@ function patchEntryFileForRsx(entryFile, bootstrapFile, context, dryRun) {
 
   if (context === 'angular') {
     updated = injectImport(updated, `import { initRsx } from '${importPath}';`);
-    updated = wrapAngularEntry(updated);
+    updated = wrapAngularEntry(updated, entryFile);
     if (!updated) {
       logWarn(`Could not find Angular bootstrap call in ${entryFile}.`);
       return false;
     }
   } else if (context === 'generic') {
     updated = injectImport(updated, `import { initRsx } from '${importPath}';`);
-    updated = wrapGenericEntry(updated);
+    updated = wrapGenericEntry(updated, entryFile);
     if (!updated) {
       logWarn(
         `Could not find a generic startup call (for example main();) in ${entryFile}.`,
@@ -3983,14 +4320,7 @@ function patchEntryFileForRsx(entryFile, bootstrapFile, context, dryRun) {
     return false;
   }
 
-  if (dryRun) {
-    logInfo(`[dry-run] patch ${entryFile}`);
-    return true;
-  }
-
-  fs.writeFileSync(entryFile, updated, 'utf8');
-  logOk(`Patched ${entryFile}`);
-  return true;
+  return writeValidatedPatch(entryFile, updated, dryRun, '', `Patched ${entryFile}`);
 }
 
 function runBootstrapInit(flags) {
@@ -4217,14 +4547,13 @@ void bootstrap().catch((error) => {
 });
 `;
 
-    if (dryRun) {
-      logInfo(`[dry-run] patch ${entryFile} (providexRsx + preload)`);
-      return true;
-    }
-
-    fs.writeFileSync(entryFile, rewritten, 'utf8');
-    logOk(`Patched ${entryFile} to preload RS-X and include providexRsx.`);
-    return true;
+    return writeValidatedPatch(
+      entryFile,
+      rewritten,
+      dryRun,
+      '(providexRsx + preload)',
+      `Patched ${entryFile} to preload RS-X and include providexRsx.`,
+    );
   }
 
   const sourceWithImport = injectImport(
@@ -4265,14 +4594,13 @@ void bootstrap().catch((error) => {
     return false;
   }
 
-  if (dryRun) {
-    logInfo(`[dry-run] patch ${entryFile} (providexRsx)`);
-    return true;
-  }
-
-  fs.writeFileSync(entryFile, updated, 'utf8');
-  logOk(`Patched ${entryFile} to include providexRsx.`);
-  return true;
+  return writeValidatedPatch(
+    entryFile,
+    updated,
+    dryRun,
+    '(providexRsx)',
+    `Patched ${entryFile} to include providexRsx.`,
+  );
 }
 
 function upsertScriptInPackageJson(
