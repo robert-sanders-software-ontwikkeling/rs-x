@@ -519,6 +519,10 @@ export class CompiledExpression implements IExpressionTree {
   }
 
   private evaluateCompiledValue = (): unknown => {
+    if (!this._plan) {
+      return undefined;
+    }
+
     if (this._shouldRefreshDependencyContexts) {
       this.refreshDependencyContexts();
       this._shouldRefreshDependencyContexts = false;

@@ -403,4 +403,37 @@ describe('rsx return type structure (compiled mode)', () => {
     expressionA.dispose();
     expressionB.dispose();
   });
+
+  it('pending lazy compiled expressions can be evaluated before the plan resolves without throwing', async () => {
+    const expressionString = 'lazyEvalA + lazyEvalB';
+    let resolveLoad!: () => void;
+    const loadStarted = new Promise<void>((resolve) => {
+      resolveLoad = resolve;
+    });
+    const plan = createCompiledPlan(expressionString);
+
+    registerLazyExpressionGroupPreloader('page-eval', async () => {
+      await loadStarted;
+      registerCompiledExpressionPlanInExpressionCache(expressionString, plan);
+    });
+
+    const model = { lazyEvalA: 2, lazyEvalB: 5 };
+    const expression = rsx<number>(expressionString, {
+      lazyGroup: 'page-eval',
+      compiled: true,
+    })(model) as CompiledExpression;
+    const internalExpression = expression as any;
+
+    expect(() => internalExpression.evalateTopToBottom?.()).not.toThrow();
+    expect(expression.value).toBeUndefined();
+
+    const changedPromise = new WaitForEvent(expression, 'changed').wait(
+      () => {},
+    );
+    resolveLoad();
+    await changedPromise;
+
+    expect(expression.value).toBe(7);
+    expression.dispose();
+  });
 });

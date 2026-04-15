@@ -5,6 +5,9 @@ import { InjectionContainer } from '@rs-x/core';
 import {
   CompiledExpression,
   ExpressionType,
+  clearLazyExpressionPreloaders,
+  registerCompiledExpressionPlanInExpressionCache,
+  registerLazyExpressionGroupPreloader,
   rsx,
   RsXExpressionParserModule,
 } from '@rs-x/expression-parser';
@@ -15,9 +18,11 @@ import { useRsxExpression } from '../hooks/use-rsx-expression';
 describe('useRsxExpression', () => {
   beforeEach(() => {
     InjectionContainer.load(RsXExpressionParserModule);
+    clearLazyExpressionPreloaders();
   });
 
   afterEach(() => {
+    clearLazyExpressionPreloaders();
     InjectionContainer.unload(RsXExpressionParserModule);
   });
 
@@ -104,6 +109,58 @@ describe('useRsxExpression', () => {
     const { result } = renderHook(() => useRsxExpression(expression));
 
     expect(result.current).toBeNull();
+  });
+
+  it('does not throw when useRsxExpression evaluates a pending lazy compiled expression before its plan resolves', async () => {
+    const expressionString = 'a + b';
+    const plan: ICompiledExpressionPlan = {
+      expressionString,
+      dependencyNames: ['a', 'b'],
+      watchDependencies: [
+        {
+          name: 'a',
+          ownerPath: [],
+          isLeaf: true,
+          isMemberExpressionSegment: false,
+        },
+        {
+          name: 'b',
+          ownerPath: [],
+          isLeaf: true,
+          isMemberExpressionSegment: false,
+        },
+      ],
+      expressionType: ExpressionType.Binary,
+      hasHiddenArgumentArray: false,
+      evaluate: (a: number, b: number) => a + b,
+    };
+
+    let resolveLoader: (() => void) | undefined;
+    registerLazyExpressionGroupPreloader('page1', async () => {
+      await new Promise<void>((resolve) => {
+        resolveLoader = resolve;
+      });
+      registerCompiledExpressionPlanInExpressionCache(expressionString, plan);
+    });
+
+    const model = { a: 3, b: 2 };
+    const expression = rsx<number>(expressionString, {
+      lazyGroup: 'page1',
+      compiled: true,
+    })(model);
+
+    const { result } = renderHook(() => useRsxExpression(expression));
+
+    expect(result.current).toBeNull();
+
+    await act(async () => {
+      resolveLoader?.();
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(result.current).toBe(5);
+    });
   });
 
   it('throws for values that are not RS-X expressions', () => {
