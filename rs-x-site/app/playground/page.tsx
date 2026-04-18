@@ -3,6 +3,9 @@ import { Playground } from '@rs-x/react-components';
 export const metadata = {
   title: 'Playground',
   description: 'Try rs-x concepts in an interactive sandbox.',
+  alternates: {
+    canonical: '/playground',
+  },
 };
 
 export default function PlaygroundPage() {

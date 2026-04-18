@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { type DependencyList, useLayoutEffect, useMemo, useState } from 'react';
 
 import {
   AbstractExpression,
@@ -6,16 +6,36 @@ import {
   type IExpression,
 } from '@rs-x/expression-parser';
 
-export function useRsxExpression<T>(expression: IExpression<T>): T | null {
+function ensureExpression<T>(expression: IExpression<T>): IExpression<T> {
+  if (
+    expression instanceof AbstractExpression ||
+    expression instanceof CompiledExpression
+  ) {
+    return expression;
+  }
+
+  throw new Error('useRsxExpression: expression must be an IExpression');
+}
+
+export function useRsxExpression<T>(expression: IExpression<T>): T | null;
+export function useRsxExpression<T>(
+  expressionFactory: () => IExpression<T>,
+  deps?: DependencyList,
+): T | null;
+export function useRsxExpression<T>(
+  expressionOrFactory: IExpression<T> | (() => IExpression<T>),
+  deps?: DependencyList,
+): T | null {
+  const ownsExpression = typeof expressionOrFactory === 'function';
   const expressionTree = useMemo(() => {
-    if (
-      expression instanceof AbstractExpression ||
-      expression instanceof CompiledExpression
-    ) {
-      return expression;
+    if (ownsExpression) {
+      return ensureExpression(
+        (expressionOrFactory as () => IExpression<T>)(),
+      );
     }
-    throw new Error('useRsxExpression: expression must be an IExpression');
-  }, [expression]);
+
+    return ensureExpression(expressionOrFactory as IExpression<T>);
+  }, ownsExpression ? (deps ?? []) : [expressionOrFactory]);
 
   const [value, setValue] = useState<T | null>(() => {
     if (expressionTree.value !== undefined) {
@@ -44,8 +64,11 @@ export function useRsxExpression<T>(expression: IExpression<T>): T | null {
 
     return () => {
       changedSubscription.unsubscribe();
+      if (ownsExpression) {
+        expressionTree.dispose();
+      }
     };
-  }, [expressionTree]); // recreate if expression changes
+  }, [expressionTree, ownsExpression]); // recreate if expression changes
 
   return value;
 }

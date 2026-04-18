@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 import { CodeViewer, type ITabItem, Tabs } from '@rs-x/react-components';
 
 export type MemberExpressionExampleTab = {
   value: string;
   label: string;
-  description: string;
+  description: ReactNode;
   code: string;
   playgroundHref?: string;
 };
@@ -159,7 +159,7 @@ export const MemberExpressionExamplesTabs: React.FC<
       >
         <div className="docsMemberExampleSummary">
           <h2 className="cardTitle">{activeTab.label} example</h2>
-          <p className="cardText">{activeTab.description}</p>
+          <div className="cardText">{activeTab.description}</div>
         </div>
 
         {activeTab.playgroundHref ? (

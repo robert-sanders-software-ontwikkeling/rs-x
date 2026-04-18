@@ -305,9 +305,9 @@ export default function HomePage() {
                 </p>
                 <Link
                   className="btn btnGhost toolingCardCta"
-                  href="/get-started?track=next"
+                  href="/docs/frameworks/nextjs"
                 >
-                  Next.js setup <span aria-hidden="true">→</span>
+                  Next.js integration <span aria-hidden="true">→</span>
                 </Link>
               </div>
             </article>

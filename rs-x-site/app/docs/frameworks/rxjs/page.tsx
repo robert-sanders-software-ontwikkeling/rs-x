@@ -174,6 +174,9 @@ const doc: CoreConceptDoc = {
 export const metadata: Metadata = {
   title: doc.title,
   description: doc.lead,
+  alternates: {
+    canonical: '/docs/frameworks/rxjs',
+  },
 };
 
 const headerNote = (

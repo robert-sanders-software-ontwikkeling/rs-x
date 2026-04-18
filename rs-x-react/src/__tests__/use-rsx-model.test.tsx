@@ -14,7 +14,7 @@ const { rsxMock } = vi.hoisted(() => ({
         id: `${expressionString}-id`,
         expressionString,
         value: model[expressionString],
-        dispose: () => {},
+        dispose: vi.fn(),
         bind: () => undefined,
         clone: () => undefined,
         changed: { subscribe: () => ({ unsubscribe: () => {} }) },
@@ -167,5 +167,24 @@ describe('useRsxForm', () => {
 
     expect(rsxMock).toHaveBeenCalledTimes(1);
     expect(rsxMock).toHaveBeenCalledWith('age');
+  });
+
+  it('disposes the expressions it creates when the hook unmounts', () => {
+    (useRsxExpression as unknown as vi.Mock).mockImplementation(
+      (expression: IExpression) => expression.value,
+    );
+
+    const model = { age: 30, score: 99 };
+    const { unmount } = renderHook(() => useRsxModel(model));
+    const createdExpressions = (useRsxExpression as unknown as vi.Mock).mock.calls.map(
+      ([expression]: [IExpression]) => expression,
+    );
+
+    unmount();
+
+    expect(createdExpressions).toHaveLength(2);
+    for (const expression of createdExpressions) {
+      expect(expression.dispose).toHaveBeenCalledTimes(1);
+    }
   });
 });

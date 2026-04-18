@@ -8,6 +8,9 @@ export const metadata = {
   title: 'Get started',
   description:
     'Choose your framework and follow step-by-step rs-x integration instructions.',
+  alternates: {
+    canonical: '/get-started',
+  },
 };
 
 export default function GetStartedPage() {
@@ -18,41 +21,17 @@ export default function GetStartedPage() {
           <div className="getStartedHero">
             <div className="getStartedHeroTitleRow">
               <div>
-                <p className="docsApiEyebrow">Guide</p>
                 <h1 className="sectionTitle">Get started</h1>
               </div>
             </div>
             <p className="sectionLead">
               Start from the track that matches your stack: React, Angular, Vue,
-              Next.js, Node.js, or an existing project.
+              Next.js, or Node.js.
             </p>
           </div>
 
           <section className="getStartedLinear">
             <GetStartedTracksTabs />
-
-            <Card header="What you should know first">
-              <ul className="advancedTopicList">
-                <li>
-                  <span className="codeInline">rsx init</span> auto-detects your
-                  framework and applies the right integration flow.
-                </li>
-                <li>
-                  <span className="codeInline">rsx project</span> creates a new
-                  starter project from templates:
-                  <span className="codeInline">
-                    {' '}
-                    angular | vuejs | react | nextjs | nodejs
-                  </span>
-                  .
-                </li>
-                <li>
-                  Always run
-                  <span className="codeInline"> rsx typecheck </span>
-                  in CI to include rs-x semantic diagnostics.
-                </li>
-              </ul>
-            </Card>
 
             <Card header="Next steps">
               <ul className="advancedTopicList">

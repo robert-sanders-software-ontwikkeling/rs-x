@@ -168,4 +168,49 @@ describe('useRsxExpression', () => {
       'useRsxExpression: expression must be an IExpression',
     );
   });
+
+  it('disposes expressions created through the factory overload on unmount', () => {
+    const model = { total: 42 };
+    const expression = rsx<number>('total')(model);
+    const disposeSpy = vi.spyOn(expression, 'dispose');
+
+    const { unmount } = renderHook(() => useRsxExpression(() => expression));
+
+    unmount();
+
+    expect(disposeSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('disposes the previous expression when the factory overload creates a new one', async () => {
+    const firstModel = { total: 42 };
+    const secondModel = { total: 7 };
+    const firstExpression = rsx<number>('total')(firstModel);
+    const secondExpression = rsx<number>('total')(secondModel);
+    const firstDisposeSpy = vi.spyOn(firstExpression, 'dispose');
+    const secondDisposeSpy = vi.spyOn(secondExpression, 'dispose');
+
+    let useSecondExpression = false;
+    const { rerender, result, unmount } = renderHook(() =>
+      useRsxExpression(
+        () => (useSecondExpression ? secondExpression : firstExpression),
+        [useSecondExpression],
+      ),
+    );
+
+    expect(result.current).toBe(42);
+
+    useSecondExpression = true;
+    rerender();
+
+    await waitFor(() => {
+      expect(result.current).toBe(7);
+    });
+
+    expect(firstDisposeSpy).toHaveBeenCalledTimes(1);
+    expect(secondDisposeSpy).toHaveBeenCalledTimes(0);
+
+    unmount();
+
+    expect(secondDisposeSpy).toHaveBeenCalledTimes(1);
+  });
 });

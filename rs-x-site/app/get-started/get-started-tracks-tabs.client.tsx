@@ -15,39 +15,36 @@ type Track = {
   description: string;
   steps: React.ReactNode[];
   commands: string;
+  existingTitle?: string;
+  existingDescription?: string;
+  existingSteps?: React.ReactNode[];
+  existingCommands?: string;
   docsHref?: string;
   docsLabel?: string;
 };
 
+const existingProjectSteps: React.ReactNode[] = [
+  <>
+    Install the CLI globally with npm. See the{' '}
+    <Link href="/docs/core-concepts/cli">CLI page</Link>.
+  </>,
+  'Run `rsx init` to auto-detect the framework and apply the right integration.',
+  'Run build/typecheck to verify the integration.',
+];
+
+const existingProjectCommands = [
+  '# 1) Install CLI (global)',
+  'npm install -g @rs-x/cli',
+  '',
+  '# 2) Auto-detect framework and initialize integration',
+  'rsx init',
+  '',
+  '# 3) Verify',
+  'rsx typecheck --project tsconfig.json',
+  'rsx build --project tsconfig.json --prod',
+].join('\n');
+
 const tracks: readonly Track[] = [
-  {
-    value: 'existing',
-    label: 'Existing project',
-    title: 'Add rs-x to an existing project',
-    description:
-      'Best if you already have an app and want rs-x integration with minimal changes.',
-    steps: [
-      <>
-        Install the CLI globally with npm. See the{' '}
-        <Link href="/docs/core-concepts/cli">CLI page</Link>.
-      </>,
-      'Run `rsx init` to auto-detect the framework and apply the right integration.',
-      'Run build/typecheck to verify the integration.',
-    ],
-    commands: [
-      '# 1) Install CLI (global)',
-      'npm install -g @rs-x/cli',
-      '',
-      '# 2) Auto-detect framework and initialize integration',
-      'rsx init',
-      '',
-      '# 3) Verify',
-      'rsx typecheck --project tsconfig.json',
-      'rsx build --project tsconfig.json --prod',
-    ].join('\n'),
-    docsHref: '/docs/core-concepts/cli',
-    docsLabel: 'CLI docs',
-  },
   {
     value: 'react',
     label: 'React',
@@ -61,7 +58,8 @@ const tracks: readonly Track[] = [
       <>
         Open the <Link href="/docs/frameworks/react">React framework docs</Link>{' '}
         for integration patterns, including `useRsxExpression` and
-        `useRsxModel`.
+        `useRsxModel`. Keep expressions stable: create them at module scope or
+        create them with `useMemo`.
       </>,
     ],
     commands: [
@@ -78,6 +76,11 @@ const tracks: readonly Track[] = [
       'npm run dev',
       '# Verify: app loads without errors in terminal/browser.',
     ].join('\n'),
+    existingTitle: 'Initialize existing project',
+    existingDescription:
+      'Use this path when you already have a React app and want rs-x added with minimal changes.',
+    existingSteps: existingProjectSteps,
+    existingCommands: existingProjectCommands,
     docsHref: '/docs/frameworks/react',
     docsLabel: 'React docs',
   },
@@ -115,6 +118,11 @@ const tracks: readonly Track[] = [
       '# 5) First Angular binding (@rs-x/angular pipe)',
       "{{ 'a + b' | rsx: model }}",
     ].join('\n'),
+    existingTitle: 'Initialize existing project',
+    existingDescription:
+      'Use this path when you already have an Angular app and want rs-x added with minimal changes.',
+    existingSteps: existingProjectSteps,
+    existingCommands: existingProjectCommands,
     docsHref: '/docs/frameworks/angular',
     docsLabel: 'Angular docs',
   },
@@ -147,6 +155,11 @@ const tracks: readonly Track[] = [
       '# 5) Review generated example (uses @rs-x/vue)',
       '# src/App.vue',
     ].join('\n'),
+    existingTitle: 'Initialize existing project',
+    existingDescription:
+      'Use this path when you already have a Vue app and want rs-x added with minimal changes.',
+    existingSteps: existingProjectSteps,
+    existingCommands: existingProjectCommands,
     docsHref: '/docs/frameworks/vue',
     docsLabel: 'Vue docs',
   },
@@ -160,7 +173,7 @@ const tracks: readonly Track[] = [
       'Install the CLI globally with npm.',
       'Generate the project from the Next.js template.',
       'Start the dev server.',
-      'Use the generated app-router integration as your baseline pattern.',
+      'Use the generated app-router integration as your baseline pattern, and keep useRsxExpression inputs stable by creating expressions at module scope or creating them with useMemo.',
     ],
     commands: [
       '# 1) Install CLI (global)',
@@ -179,8 +192,13 @@ const tracks: readonly Track[] = [
       '# 5) Review generated integration',
       '# app/layout.tsx',
     ].join('\n'),
-    docsHref: '/docs/core-concepts/cli',
-    docsLabel: 'CLI docs',
+    existingTitle: 'Initialize existing project',
+    existingDescription:
+      'Use this path when you already have a Next.js app and want rs-x added with minimal changes.',
+    existingSteps: existingProjectSteps,
+    existingCommands: existingProjectCommands,
+    docsHref: '/docs/frameworks/nextjs',
+    docsLabel: 'Next.js integration',
   },
   {
     value: 'node',
@@ -208,6 +226,11 @@ const tracks: readonly Track[] = [
       'npm run build',
       'npm run start',
     ].join('\n'),
+    existingTitle: 'Initialize existing project',
+    existingDescription:
+      'Use this path when you already have a Node.js project and want rs-x added with minimal changes.',
+    existingSteps: existingProjectSteps,
+    existingCommands: existingProjectCommands,
     docsHref: '/docs/core-concepts/first-expression',
     docsLabel: 'First expression guide',
   },
@@ -236,7 +259,7 @@ function GetStartedTracksTabsInner(): React.ReactElement {
     <article className="card docsApiCard">
       <h2 className="cardTitle">Choose your setup path</h2>
       <p className="cardText">
-        Pick your framework (or existing project) and follow the exact steps.
+        Pick your framework and follow the exact steps.
       </p>
 
       <div className="docsApiTabbedShell">
@@ -262,6 +285,26 @@ function GetStartedTracksTabsInner(): React.ReactElement {
             ))}
           </ol>
           <SyntaxCodeBlock code={active.commands} />
+          {active.existingTitle ? (
+            <>
+              <h3 className="docsApiTabHeading" style={{ marginTop: '2rem' }}>
+                {active.existingTitle}
+              </h3>
+              {active.existingDescription ? (
+                <p className="cardText">{active.existingDescription}</p>
+              ) : null}
+              {active.existingSteps ? (
+                <ol className="advancedTopicList">
+                  {active.existingSteps.map((step, index) => (
+                    <li key={`${active.value}-existing-step-${index}`}>{step}</li>
+                  ))}
+                </ol>
+              ) : null}
+              {active.existingCommands ? (
+                <SyntaxCodeBlock code={active.existingCommands} />
+              ) : null}
+            </>
+          ) : null}
           {active.docsHref ? (
             <p className="cardText">
               <Link href={active.docsHref}>{active.docsLabel ?? 'Docs'}</Link>

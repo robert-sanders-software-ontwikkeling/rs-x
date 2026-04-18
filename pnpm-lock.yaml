@@ -50,7 +50,7 @@ importers:
         version: 21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1)
       '@angular/platform-browser-dynamic':
         specifier: 21.2.7
-        version: 21.2.7(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/compiler@21.2.7)(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(@angular/platform-browser@21.1.0(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1)))
+        version: 21.2.7(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/compiler@21.2.7)(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(@angular/platform-browser@21.2.7(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1)))
       '@babel/plugin-proposal-decorators':
         specifier: ^7.29.0
         version: 7.29.0(@babel/core@7.29.0)
@@ -427,6 +427,12 @@ importers:
 
   rs-x-react-components:
     dependencies:
+      '@monaco-editor/react':
+        specifier: ^4.7.0
+        version: 4.7.0(monaco-editor@0.55.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@rs-x/angular':
+        specifier: workspace:*
+        version: link:../rs-x-angular/projects/rsx
       '@rs-x/compiler':
         specifier: workspace:*
         version: link:../rs-x-compiler
@@ -436,12 +442,21 @@ importers:
       '@rs-x/expression-parser':
         specifier: workspace:*
         version: link:../rs-x-expression-parser
+      '@rs-x/react':
+        specifier: workspace:*
+        version: link:../rs-x-react
       '@rs-x/state-manager':
         specifier: workspace:*
         version: link:../rs-x-state-manager
+      '@rs-x/vue':
+        specifier: workspace:*
+        version: link:../rs-x-vue
       monaco-editor:
         specifier: ^0.55.1
         version: 0.55.1
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.2
     devDependencies:
       '@testing-library/react':
         specifier: ^16.3.2
@@ -476,9 +491,6 @@ importers:
       tsup:
         specifier: ^8.5.1
         version: 8.5.1(patch_hash=99553218472ba84091dfd92b4d0e9fc93d6cda44eae2e3eff00ab4b267286f89)(@microsoft/api-extractor@7.58.1(@types/node@25.5.2))(@swc/core@1.15.24)(jiti@2.6.1)(postcss@8.5.9)(tsx@4.21.0)(typescript@6.0.2)
-      typescript:
-        specifier: ^6.0.2
-        version: 6.0.2
       vite:
         specifier: ^8.0.7
         version: 8.0.7(@types/node@25.5.2)(esbuild@0.27.7)(jiti@2.6.1)(less@4.6.4)(sass@1.99.0)(terser@5.44.1)(tsx@4.21.0)
@@ -488,24 +500,76 @@ importers:
       vitest:
         specifier: ^4.1.3
         version: 4.1.3(@types/node@25.5.2)(@vitest/coverage-v8@4.1.3)(jsdom@29.0.2)(vite@8.0.7(@types/node@25.5.2)(esbuild@0.27.7)(jiti@2.6.1)(less@4.6.4)(sass@1.99.0)(terser@5.44.1)(tsx@4.21.0))
+    optionalDependencies:
+      '@angular/common':
+        specifier: 21.2.7
+        version: 21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2)
+      '@angular/compiler':
+        specifier: 21.2.7
+        version: 21.2.7
+      '@angular/core':
+        specifier: 21.2.7
+        version: 21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1)
+      '@angular/forms':
+        specifier: ^20.3.6
+        version: 20.3.18(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(@angular/platform-browser@21.2.7(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1)))(rxjs@7.8.2)
+      '@angular/platform-browser':
+        specifier: 21.2.7
+        version: 21.2.7(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))
+      vue:
+        specifier: ^3.5.22
+        version: 3.5.32(typescript@6.0.2)
+      zone.js:
+        specifier: 0.16.1
+        version: 0.16.1
 
   rs-x-site:
     dependencies:
+      '@angular/common':
+        specifier: 21.2.7
+        version: 21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2)
+      '@angular/compiler':
+        specifier: 21.2.7
+        version: 21.2.7
+      '@angular/core':
+        specifier: 21.2.7
+        version: 21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1)
+      '@angular/forms':
+        specifier: 21.2.7
+        version: 21.2.7(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(@angular/platform-browser@21.2.7(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1)))(rxjs@7.8.2)
+      '@angular/platform-browser':
+        specifier: 21.2.7
+        version: 21.2.7(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))
+      '@rs-x/angular':
+        specifier: workspace:*
+        version: link:../rs-x-angular/projects/rsx
       '@rs-x/core':
         specifier: workspace:*
         version: link:../rs-x-core
       '@rs-x/expression-parser':
         specifier: workspace:*
         version: link:../rs-x-expression-parser
+      '@rs-x/react':
+        specifier: workspace:*
+        version: link:../rs-x-react
       '@rs-x/react-components':
         specifier: workspace:*
         version: link:../rs-x-react-components
       '@rs-x/state-manager':
         specifier: workspace:*
         version: link:../rs-x-state-manager
+      '@rs-x/vue':
+        specifier: workspace:*
+        version: link:../rs-x-vue
       monaco-editor:
         specifier: ^0.55.1
         version: 0.55.1
+      vue:
+        specifier: ^3.5.32
+        version: 3.5.32(typescript@6.0.2)
+      zone.js:
+        specifier: 0.16.1
+        version: 0.16.1
     devDependencies:
       '@axe-core/playwright':
         specifier: ^4.10.1
@@ -682,6 +746,24 @@ packages:
       zone.js:
         optional: true
 
+  '@angular/forms@20.3.18':
+    resolution: {integrity: sha512-x6/99LfxolyZIFUL3Wr0OrtuXHEDwEz/rwx+WzE7NL+n35yO40t3kp0Sn5uMFwI94i91QZJmXHltMpZhrVLuYg==}
+    engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
+    peerDependencies:
+      '@angular/common': 21.2.7
+      '@angular/core': 21.2.7
+      '@angular/platform-browser': 21.2.7
+      rxjs: ^6.5.3 || ^7.4.0
+
+  '@angular/forms@21.2.7':
+    resolution: {integrity: sha512-YD/h07cdEeAUs41ysTk6820T0lG/XiQmFiq02d3IsiHYI5Vaj2pg9Ti1wWZYEBM//hVAPTzV0dwdV7Q1Gxju1w==}
+    engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
+    peerDependencies:
+      '@angular/common': 21.2.7
+      '@angular/core': 21.2.7
+      '@angular/platform-browser': 21.2.7
+      rxjs: ^6.5.3 || ^7.4.0
+
   '@angular/platform-browser-dynamic@21.2.7':
     resolution: {integrity: sha512-P7s9ABgJqRyUS5HNRJFRr15xaXbWfSH9KjSxkBYYJbXIA986uGb6qjnHepu+2xMyZDlt2nd9Ms+t4M60/GM+FQ==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
@@ -691,11 +773,11 @@ packages:
       '@angular/core': 21.2.7
       '@angular/platform-browser': 21.2.7
 
-  '@angular/platform-browser@21.1.0':
-    resolution: {integrity: sha512-Drkal25x+OuRQosAE/cL4uM5WDmgFehanCpsjQ1jGp6Rxoad6Q5Do1uQAE3qgMKHL1aqCPZ+uWzcVVG+Bn1ddg==}
+  '@angular/platform-browser@21.2.7':
+    resolution: {integrity: sha512-nklVhstRZL4wpYg9Cyae/Eyfa7LMpgb0TyD/F//qCuohhM8nM7F+O0ekykGD6H+I34jsvqx6yLS7MicndWVz7Q==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
     peerDependencies:
-      '@angular/animations': 21.1.0
+      '@angular/animations': 21.2.7
       '@angular/common': 21.2.7
       '@angular/core': 21.2.7
     peerDependenciesMeta:
@@ -6554,15 +6636,33 @@ snapshots:
       '@angular/compiler': 21.2.7
       zone.js: 0.16.1
 
-  '@angular/platform-browser-dynamic@21.2.7(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/compiler@21.2.7)(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(@angular/platform-browser@21.1.0(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1)))':
+  '@angular/forms@20.3.18(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(@angular/platform-browser@21.2.7(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1)))(rxjs@7.8.2)':
+    dependencies:
+      '@angular/common': 21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2)
+      '@angular/core': 21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1)
+      '@angular/platform-browser': 21.2.7(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))
+      rxjs: 7.8.2
+      tslib: 2.8.1
+    optional: true
+
+  '@angular/forms@21.2.7(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(@angular/platform-browser@21.2.7(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1)))(rxjs@7.8.2)':
+    dependencies:
+      '@angular/common': 21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2)
+      '@angular/core': 21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1)
+      '@angular/platform-browser': 21.2.7(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))
+      '@standard-schema/spec': 1.1.0
+      rxjs: 7.8.2
+      tslib: 2.8.1
+
+  '@angular/platform-browser-dynamic@21.2.7(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/compiler@21.2.7)(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(@angular/platform-browser@21.2.7(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1)))':
     dependencies:
       '@angular/common': 21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2)
       '@angular/compiler': 21.2.7
       '@angular/core': 21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1)
-      '@angular/platform-browser': 21.1.0(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))
+      '@angular/platform-browser': 21.2.7(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))
       tslib: 2.8.1
 
-  '@angular/platform-browser@21.1.0(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))':
+  '@angular/platform-browser@21.2.7(@angular/common@21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2))(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))':
     dependencies:
       '@angular/common': 21.2.7(@angular/core@21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1))(rxjs@7.8.2)
       '@angular/core': 21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1)

@@ -13,14 +13,23 @@ export function useRsxModel<
 >(model: TModel, mustWath?: FieldFilter): TRsolvedModel {
   const resolvedModel = {};
   const expressionCacheRef = useRef(
-    new WeakMap<object, Map<string, IExpression<unknown>>>(),
+    new Map<object, Map<string, IExpression<unknown>>>(),
   );
 
   const _mustWath = mustWath ?? truePredicate;
 
   useEffect(() => {
+    const disposeExpressions = () => {
+      for (const fieldMap of expressionCacheRef.current.values()) {
+        for (const expression of fieldMap.values()) {
+          expression.dispose();
+        }
+      }
+    };
+
     return () => {
-      expressionCacheRef.current = new WeakMap();
+      disposeExpressions();
+      expressionCacheRef.current = new Map();
     };
   }, [model]);
 

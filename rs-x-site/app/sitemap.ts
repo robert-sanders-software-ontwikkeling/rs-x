@@ -20,7 +20,9 @@ const OBSERVATION_KINDS = [
 ] as const;
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return [
+  const lastModified = new Date();
+
+  const entries: MetadataRoute.Sitemap = [
     // Top-level pages
     { url: `${BASE_URL}/`, priority: 1.0, changeFrequency: 'weekly' },
     {
@@ -244,6 +246,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${BASE_URL}/docs/frameworks/angular`,
+      priority: 0.8,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/frameworks/nextjs`,
       priority: 0.8,
       changeFrequency: 'monthly',
     },
@@ -516,4 +523,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
     },
   ];
+
+  return Array.from(new Map(entries.map((entry) => [entry.url, entry])).values())
+    .map((entry) => ({
+      ...entry,
+      lastModified,
+    }));
 }

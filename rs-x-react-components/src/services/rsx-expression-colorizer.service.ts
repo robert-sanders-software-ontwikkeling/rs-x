@@ -20,8 +20,20 @@ export function installRsxExpressionColorizer(
   model: Monaco.editor.ITextModel,
 ): () => void {
   let decorationIds: string[] = [];
+  let disposed = false;
+
+  const isModelDisposed = () => {
+    return (
+      disposed ||
+      (typeof model.isDisposed === 'function' && model.isDisposed())
+    );
+  };
 
   const update = () => {
+    if (isModelDisposed()) {
+      return;
+    }
+
     const text = model.getValue();
     const ranges = findRsxExpressionLiteralRanges(text);
     const decorations: Monaco.editor.IModelDeltaDecoration[] = [];
@@ -43,6 +55,10 @@ export function installRsxExpressionColorizer(
       }
     }
 
+    if (isModelDisposed()) {
+      return;
+    }
+
     decorationIds = model.deltaDecorations(decorationIds, decorations);
   };
 
@@ -50,7 +66,10 @@ export function installRsxExpressionColorizer(
   update();
 
   return () => {
+    disposed = true;
     sub.dispose();
-    decorationIds = model.deltaDecorations(decorationIds, []);
+    if (!isModelDisposed()) {
+      decorationIds = model.deltaDecorations(decorationIds, []);
+    }
   };
 }

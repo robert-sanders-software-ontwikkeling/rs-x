@@ -7,6 +7,9 @@ export const metadata = {
   title: 'Sponsor',
   description:
     'Support rs-x maintenance through GitHub Sponsors and help fund ongoing development, docs, and support.',
+  alternates: {
+    canonical: '/sponsor',
+  },
 };
 
 export default function SponsorPage() {

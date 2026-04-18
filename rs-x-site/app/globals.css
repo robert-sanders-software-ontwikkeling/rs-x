@@ -1660,6 +1660,15 @@ html[data-theme='dark'] .docsLandingSection .docsCards .card {
   min-height: 72px;
 }
 
+.docsApiLinkItem,
+.docsApiLinkItem:hover,
+.docsApiLinkItem .docsApiLinkTitle,
+.docsApiLinkItem .docsApiLinkMeta,
+.docsApiLinkItem .docsApiLinkDescription,
+.docsApiLinkItem .docsApiLinkArrow {
+  text-decoration: none !important;
+}
+
 .docsApiLinkItem:hover {
   text-decoration: none;
   border-color: color-mix(in srgb, var(--border-soft) 92%, var(--border));
@@ -1695,9 +1704,13 @@ html[data-theme='dark'] .docsLandingSection .docsCards .card {
 .docsApiLinkArrow {
   grid-column: 2;
   grid-row: 1 / span 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 780;
   color: color-mix(in srgb, var(--text) 40%, var(--muted));
   opacity: 0.75;
+  text-decoration: none;
 }
 
 /* =========================================================
@@ -2051,12 +2064,13 @@ html[data-theme='dark'] .homePage .hTitle {
 }
 
 html[data-theme='dark'] .homePage .toolingCard {
-  border-color: color-mix(in srgb, var(--border-soft) 64%, transparent);
+  border-color: color-mix(in srgb, var(--border) 90%, transparent);
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--surface-solid) 90%, var(--surface-2)),
-    color-mix(in srgb, var(--surface-2) 94%, var(--surface-solid))
+    color-mix(in srgb, var(--surface-solid) 100%, #14203a),
+    color-mix(in srgb, var(--surface-solid) 94%, #101a30)
   );
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.24);
 }
 
 html[data-theme='dark'] .homePage .toolingCardTitle {
@@ -2076,12 +2090,13 @@ html[data-theme='dark'] .homePage .heroCards .cardTitle {
 }
 
 html[data-theme='dark'] .homePage .heroCards .card {
-  border-color: color-mix(in srgb, var(--border-soft) 64%, transparent);
+  border-color: color-mix(in srgb, var(--border) 90%, transparent);
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--surface-solid) 90%, var(--surface-2)),
-    color-mix(in srgb, var(--surface-2) 94%, var(--surface-solid))
+    color-mix(in srgb, var(--surface-solid) 100%, #14203a),
+    color-mix(in srgb, var(--surface-solid) 94%, #101a30)
   );
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.24);
 }
 
 html[data-theme='dark'] .homePage .homeQuickstartSection .quickstartShell {
@@ -3234,9 +3249,13 @@ html[data-theme='dark'] .expressionTypesTable thead th {
 
 html[data-theme='dark'] .docsApiSection .docsApiCard,
 html[data-theme='dark'] .docsApiSection .docsApiCode {
-  border-color: color-mix(in srgb, var(--border-soft) 62%, transparent);
-  background: color-mix(in srgb, var(--surface-solid) 94%, transparent);
-  box-shadow: none;
+  border-color: color-mix(in srgb, var(--border) 88%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-solid) 98%, var(--surface-2)),
+    color-mix(in srgb, var(--surface-solid) 94%, var(--surface))
+  );
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
 }
 
 .docsApiSection .sectionTitle {
@@ -3891,6 +3910,122 @@ html[data-theme='dark'] .docsTable tbody td:first-child {
   color: var(--text);
   border-style: double;
   border-width: 3px;
+}
+
+.roadmapDiagram {
+  margin-top: var(--sp-3);
+  border-radius: 22px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--surface-2) 88%, var(--surface-solid));
+  border: 1px solid color-mix(in srgb, var(--border-soft) 72%, transparent);
+}
+
+.roadmapDiagram svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.roadmapDiagramTitle {
+  fill: #f8fafc;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.roadmapDiagramMeta {
+  fill: rgba(226, 232, 240, 0.82);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.roadmapDiagramLegend {
+  fill: rgba(226, 232, 240, 0.82);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.roadmapDiagramLegend.isWarm {
+  fill: #fbbf24;
+}
+
+.roadmapDiagramLayer {
+  stroke: rgba(148, 163, 184, 0.24);
+  stroke-width: 1.5;
+}
+
+.roadmapDiagramLayer.isData {
+  fill: rgba(22, 101, 52, 0.24);
+}
+
+.roadmapDiagramLayer.isMonitor {
+  fill: rgba(91, 33, 182, 0.22);
+}
+
+.roadmapDiagramLayer.isOrchestration {
+  fill: rgba(2, 132, 199, 0.2);
+}
+
+.roadmapDiagramLayer.isBinding {
+  fill: rgba(15, 118, 110, 0.2);
+}
+
+.roadmapDiagramLayer.isAuth {
+  fill: rgba(29, 78, 216, 0.22);
+}
+
+.roadmapDiagramLayer.isTransform {
+  fill: rgba(202, 138, 4, 0.22);
+}
+
+.roadmapDiagramLayer.isTransport {
+  fill: rgba(190, 24, 93, 0.22);
+}
+
+.roadmapDiagramLayerTitle {
+  fill: #f8fafc;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.roadmapDiagramLayerMeta {
+  fill: rgba(226, 232, 240, 0.8);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.roadmapDiagramArrow {
+  fill: none;
+  stroke: #7dd3fc;
+  stroke-width: 2;
+  stroke-linecap: round;
+  marker-end: url(#serverBindingArrow);
+}
+
+.roadmapDiagramArrow.isReturn {
+  stroke: #c4b5fd;
+}
+
+.roadmapDiagramClientBox {
+  fill: rgba(255, 255, 255, 0.06);
+  stroke: rgba(148, 163, 184, 0.24);
+  stroke-width: 1.5;
+}
+
+.roadmapDiagramClientTitle {
+  fill: #f8fafc;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.roadmapDiagramCaption {
+  fill: rgba(226, 232, 240, 0.88);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+html[data-theme='light'] .roadmapDiagram {
+  background: color-mix(in srgb, white 86%, var(--surface-2));
+  border-color: color-mix(in srgb, var(--border-soft) 88%, transparent);
 }
 
 .aboutGrid {

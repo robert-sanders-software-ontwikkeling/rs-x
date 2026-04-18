@@ -7,6 +7,9 @@ export const metadata = {
   title: 'Features',
   description:
     'Compare RS-X features with other reactive libraries and frameworks.',
+  alternates: {
+    canonical: '/features',
+  },
 };
 
 const RSX_KEY = 'RS-X';

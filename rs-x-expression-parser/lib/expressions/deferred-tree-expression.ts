@@ -29,7 +29,11 @@ export class DeferredTreeExpression extends AbstractExpression {
   }
 
   public override get value(): unknown {
-    return this._resolvedExpression?.value;
+    return this._resolvedExpression?.value ?? super.value;
+  }
+
+  protected override set value(value: unknown) {
+    super.value = value;
   }
 
   public override get childExpressions(): readonly AbstractExpression[] {

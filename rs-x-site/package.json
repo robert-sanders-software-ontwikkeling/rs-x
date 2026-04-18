@@ -17,11 +17,21 @@
     "test:a11y:report": "pnpm exec playwright show-report a11y-report"
   },
   "dependencies": {
+    "@angular/common": "21.2.7",
+    "@angular/compiler": "21.2.7",
+    "@angular/core": "21.2.7",
+    "@angular/forms": "21.2.7",
+    "@angular/platform-browser": "21.2.7",
     "@rs-x/core": "workspace:*",
+    "@rs-x/angular": "workspace:*",
     "@rs-x/expression-parser": "workspace:*",
+    "@rs-x/react": "workspace:*",
     "@rs-x/react-components": "workspace:*",
     "@rs-x/state-manager": "workspace:*",
-    "monaco-editor": "^0.55.1"
+    "@rs-x/vue": "workspace:*",
+    "monaco-editor": "^0.55.1",
+    "vue": "^3.5.32",
+    "zone.js": "0.16.1"
   },
   "repository": {
     "type": "git",

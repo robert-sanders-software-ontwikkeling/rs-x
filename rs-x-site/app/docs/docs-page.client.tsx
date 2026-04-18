@@ -46,6 +46,11 @@ const frameworkLinks: DocsLinkItem[] = [
     meta: 'useRsxExpression and useRsxModel hooks for reactive components',
   },
   {
+    href: '/docs/frameworks/nextjs',
+    title: 'Next.js',
+    meta: 'Client component patterns for useRsxExpression in app-router projects',
+  },
+  {
     href: '/docs/frameworks/angular',
     title: 'Angular',
     meta: 'RsxPipe and providexRsx() for reactive Angular templates',

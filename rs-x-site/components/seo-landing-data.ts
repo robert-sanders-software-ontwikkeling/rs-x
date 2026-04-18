@@ -42,9 +42,9 @@ export const seoLandingPages: Record<SeoLandingKey, SeoLandingContent> = {
   react: {
     slug: 'react',
     title: 'rs-x for React',
-    lead: 'Fine-grained reactivity for React apps that need precise, typed change detection.',
+    lead: 'Reactive expressions for React apps that need precise, typed change detection.',
     overview:
-      'Bind expressions directly to your model and let rs-x trigger React updates only when the identifiers you used actually change.',
+      'Bind reactive expressions directly to your model and let rs-x trigger React updates only when the identifiers you used actually change.',
     highlights: [
       'Use hooks to keep UI and expressions in sync without extra boilerplate.',
       'Fine-grained dependency tracking avoids component-wide re-renders.',
@@ -66,24 +66,28 @@ export const seoLandingPages: Record<SeoLandingKey, SeoLandingContent> = {
     ],
     keywords: [
       'react',
+      'reactive react',
+      'react reactive expressions',
       'react reactivity',
       'react change detection',
       'react state management',
+      'react reactive state',
       'fine-grained reactivity',
       'typescript',
     ],
-    metaTitle: 'rs-x for React — fine-grained reactivity',
+    metaTitle: 'Reactive expressions for React | rs-x',
     metaDescription:
-      'Use rs-x with React for fine-grained change detection and typed reactive expressions.',
+      'Use rs-x with React for reactive expressions, fine-grained change detection, and typed reactive state.',
   },
   nextjs: {
     slug: 'nextjs',
     title: 'rs-x for Next.js',
-    lead: 'Fine-grained reactivity for Next.js apps — expressions that update only what changed, with full TypeScript support.',
+    lead: 'Reactive expressions for Next.js apps, where the UI changes only when the relevant data changes.',
     overview:
-      'Use rs-x in Next.js to bind reactive expressions to your model state. rs-x tracks fine-grained dependencies and updates only the parts of the UI that depend on what changed.',
+      'Use rs-x in Next.js client components to bind reactive expressions to your model state. Keep the expression stable by creating it at module scope or with useMemo. rs-x tracks fine-grained dependencies and updates only the parts of the UI that depend on what changed.',
     highlights: [
       'Works with Next.js app router and server components — bootstrap runs client-side.',
+      'useRsxExpression should receive a stable pre-built expression, not a freshly bound expression created during render.',
       'Webpack plugin integration via rsx init for seamless build support.',
       'Full TypeScript support with the rs-x VS Code extension and compiler.',
     ],
@@ -92,8 +96,8 @@ export const seoLandingPages: Record<SeoLandingKey, SeoLandingContent> = {
       'Shared expression models across multiple components.',
       'Data-heavy pages where reducing re-renders matters.',
     ],
-    primaryCta: { label: 'Next.js setup', href: '/get-started?track=next' },
-    secondaryCta: { label: 'CLI docs', href: '/docs/core-concepts/cli' },
+    primaryCta: { label: 'Next.js integration', href: '/docs/frameworks/nextjs' },
+    secondaryCta: { label: 'Get started', href: '/get-started?track=next' },
     relatedLinks: [
       {
         label: 'Expressions 101',
@@ -104,23 +108,26 @@ export const seoLandingPages: Record<SeoLandingKey, SeoLandingContent> = {
     ],
     keywords: [
       'next.js',
+      'nextjs reactive',
+      'nextjs reactive expressions',
       'nextjs reactivity',
       'nextjs change detection',
       'nextjs state management',
+      'nextjs reactive state',
       'fine-grained reactivity',
       'typescript',
       'react',
     ],
-    metaTitle: 'rs-x for Next.js — fine-grained reactive expressions',
+    metaTitle: 'Reactive expressions for Next.js | rs-x',
     metaDescription:
-      'Use rs-x with Next.js for fine-grained, typed change detection and reactive expressions in client components.',
+      'Use rs-x with Next.js for reactive expressions, fine-grained change detection, and typed reactive state in client components.',
   },
   vue: {
     slug: 'vue',
     title: 'rs-x for Vue',
-    lead: 'Reactive expressions that plug into Vue without extra boilerplate.',
+    lead: 'Reactive expressions for Vue without extra boilerplate.',
     overview:
-      'Use the rs-x Vue composable to bind expressions to reactive state and trigger updates when dependencies change.',
+      'Use the rs-x Vue composable to bind reactive expressions to model state and trigger updates when dependencies change.',
     highlights: [
       'Composition API friendly with a minimal API surface.',
       'Fine-grained dependencies keep updates fast and predictable.',
@@ -142,22 +149,25 @@ export const seoLandingPages: Record<SeoLandingKey, SeoLandingContent> = {
     ],
     keywords: [
       'vue',
+      'reactive vue',
+      'vue reactive expressions',
       'vue reactivity',
       'vue change detection',
       'vue composition api',
+      'vue reactive state',
       'fine-grained reactivity',
       'typescript',
     ],
-    metaTitle: 'rs-x for Vue — fine-grained change detection',
+    metaTitle: 'Reactive expressions for Vue | rs-x',
     metaDescription:
-      'Bind rs-x expressions to Vue state for fine-grained updates and typed reactivity.',
+      'Bind rs-x reactive expressions to Vue state for fine-grained updates, typed reactivity, and reactive state.',
   },
   angular: {
     slug: 'angular',
     title: 'rs-x for Angular',
-    lead: 'Predictable, fine-grained change detection for Angular templates and services.',
+    lead: 'Reactive expressions for Angular templates and services with predictable, fine-grained change detection.',
     overview:
-      'Use rs-x in Angular to bind expressions to model state and update views only when identifiers change.',
+      'Use rs-x in Angular to bind reactive expressions to model state and update views only when identifiers change.',
     highlights: [
       'Drop-in integration with Angular templates and services.',
       'Avoid full-component checks with identifier-level tracking.',
@@ -182,14 +192,17 @@ export const seoLandingPages: Record<SeoLandingKey, SeoLandingContent> = {
     ],
     keywords: [
       'angular',
+      'reactive angular',
+      'angular reactive expressions',
       'angular change detection',
       'angular reactivity',
+      'angular reactive state',
       'fine-grained change detection',
       'typescript',
     ],
-    metaTitle: 'rs-x for Angular — fine-grained change detection',
+    metaTitle: 'Reactive expressions for Angular | rs-x',
     metaDescription:
-      'Use rs-x with Angular to get fine-grained, typed change detection and reactive expressions.',
+      'Use rs-x with Angular for reactive expressions, fine-grained change detection, and typed reactive state.',
   },
   rxjs: {
     slug: 'rxjs',
@@ -231,9 +244,9 @@ export const seoLandingPages: Record<SeoLandingKey, SeoLandingContent> = {
   nodejs: {
     slug: 'nodejs',
     title: 'rs-x for Node.js',
-    lead: 'Bring reactive expressions to Node.js services and data pipelines.',
+    lead: 'Bring reactive expressions to Node.js services, workers, and data pipelines.',
     overview:
-      'Use rs-x in Node.js for reactive computations, cache invalidation, and model-driven updates.',
+      'Use rs-x in Node.js for reactive computations, cache invalidation, model-driven updates, and server-side reactive data flows.',
     highlights: [
       'Fine-grained change tracking for service logic.',
       'Great for reactive pipelines and computed caching.',
@@ -265,15 +278,19 @@ export const seoLandingPages: Record<SeoLandingKey, SeoLandingContent> = {
     ],
     keywords: [
       'nodejs',
+      'reactive nodejs',
+      'nodejs reactive expressions',
       'node.js reactivity',
+      'nodejs reactivity',
       'server side reactivity',
+      'reactive node',
       'typescript',
       'javascript',
       'fine-grained change detection',
     ],
-    metaTitle: 'rs-x for Node.js — reactive expressions on the server',
+    metaTitle: 'Reactive expressions for Node.js | rs-x',
     metaDescription:
-      'Use rs-x in Node.js services for fine-grained reactive expressions and predictable updates.',
+      'Use rs-x in Node.js services for reactive expressions, server-side reactivity, and predictable fine-grained updates.',
   },
   typescript: {
     slug: 'typescript',

@@ -10,6 +10,9 @@ import { DocsPageClient } from './docs-page.client';
 export const metadata = {
   title: 'Docs',
   description: 'Documentation and concepts for rs-x declarative reactivity.',
+  alternates: {
+    canonical: '/docs',
+  },
 };
 
 const advancedLinks = [

@@ -1,5 +1,6 @@
 import dedent from 'dedent';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { SyntaxCodeBlock } from '../../components/SyntaxCodeBlock';
 
@@ -13,6 +14,7 @@ type RoadmapItem = {
   impact: string[];
   exampleTitle?: string;
   exampleCode?: string;
+  exampleVisual?: ReactNode;
   notes?: string[];
 };
 
@@ -270,12 +272,14 @@ export default function RoadmapPage() {
                     ))}
                   </ul>
 
-                  {item.exampleCode && (
+                  {(item.exampleCode || item.exampleVisual) && (
                     <>
                       <h3 className="coreInlineCodeTitle">
                         {item.exampleTitle ?? 'Example'}
                       </h3>
-                      <SyntaxCodeBlock code={item.exampleCode} />
+                      {item.exampleVisual ?? (
+                        <SyntaxCodeBlock code={item.exampleCode!} />
+                      )}
                     </>
                   )}
 
