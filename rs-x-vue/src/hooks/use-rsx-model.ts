@@ -1,12 +1,12 @@
-import { truePredicate, Type, UnsupportedException } from '@rs-x/core';
-
-import { type IExpression, rsx } from '@rs-x/expression-parser';
 import {
   getCurrentInstance,
   getCurrentScope,
   markRaw,
   onScopeDispose,
 } from 'vue';
+
+import { truePredicate, Type, UnsupportedException } from '@rs-x/core';
+import { type IExpression, rsx } from '@rs-x/expression-parser';
 
 export type FieldFilter = (model: object, field: string) => boolean;
 
@@ -59,9 +59,7 @@ export function useRsxModel<TModel extends object>(
     });
   }
 
-  const bindObject = (
-    sourceObject: Record<string, unknown>,
-  ) => {
+  const bindObject = (sourceObject: Record<string, unknown>) => {
     for (const [field, value] of Object.entries(sourceObject)) {
       if (
         !shouldWatch(sourceObject, field) ||

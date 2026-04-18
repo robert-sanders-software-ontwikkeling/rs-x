@@ -1,12 +1,13 @@
 import dedent from 'dedent';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { SyntaxCodeBlock } from '../../../../components/SyntaxCodeBlock';
 
+import { SyntaxCodeBlock } from '../../../../components/SyntaxCodeBlock';
 import {
   type CoreConceptDoc,
   CoreConceptPageLayout,
 } from '../../core-concepts/_template/core-concept-page';
+
 import { VueCompiledFrameworkExample } from './vue-runtime-lab.client';
 
 const installCode = dedent`
@@ -351,9 +352,9 @@ const doc: CoreConceptDoc = {
       title: 'Installation',
       description: (
         <>
-          Run <code>rsx init</code> in your Vue project to detect the
-          framework, install the right packages, and apply the setup
-          automatically. See the <Link href="/docs/core-concepts/cli">CLI docs</Link>.
+          Run <code>rsx init</code> in your Vue project to detect the framework,
+          install the right packages, and apply the setup automatically. See the{' '}
+          <Link href="/docs/core-concepts/cli">CLI docs</Link>.
         </>
       ),
       code: installCode,
@@ -422,7 +423,9 @@ export default function Page() {
       examplesSlot={
         <>
           <article className="card docsApiCard">
-            <h2 className="cardTitle">useRsxExpression — pre-built IExpression example</h2>
+            <h2 className="cardTitle">
+              useRsxExpression — pre-built IExpression example
+            </h2>
             <p className="cardText">
               Build the expression once at module scope and reuse it. The Vue
               composable subscribes to those pre-built expressions and keeps the
@@ -434,7 +437,9 @@ export default function Page() {
             />
           </article>
           <article className="card docsApiCard">
-            <h2 className="cardTitle">useRsxModel — component-owned model example</h2>
+            <h2 className="cardTitle">
+              useRsxModel — component-owned model example
+            </h2>
             <p className="cardText">
               Use <code>useRsxModel(model)</code> when you want Vue to keep the
               template in sync with an rs-x model. Define the model, call the
@@ -447,7 +452,9 @@ export default function Page() {
             />
           </article>
           <article className="card docsApiCard">
-            <h2 className="cardTitle">Expression change transactions example</h2>
+            <h2 className="cardTitle">
+              Expression change transactions example
+            </h2>
             <p className="cardText">
               Run the same two async updates with and without a transaction and
               compare the emitted updates.
@@ -476,8 +483,8 @@ export default function Page() {
           <article className="card docsApiCard">
             <h2 className="cardTitle">Installation example</h2>
             <p className="cardText">
-              Run rsx init in your Vue project to install the right packages
-              and apply the setup automatically. See the{' '}
+              Run rsx init in your Vue project to install the right packages and
+              apply the setup automatically. See the{' '}
               <Link href="/docs/core-concepts/cli">CLI docs</Link>.
             </p>
             <SyntaxCodeBlock code={installCode} />

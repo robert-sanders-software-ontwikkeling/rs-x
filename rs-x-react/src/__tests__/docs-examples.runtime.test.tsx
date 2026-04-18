@@ -118,9 +118,8 @@ describe('docs examples runtime', () => {
       price: 100,
       quantity: 3,
     };
-    const moduleScopedTotalExpression = rsx<number>('price * quantity')(
-      moduleScopedModel,
-    );
+    const moduleScopedTotalExpression =
+      rsx<number>('price * quantity')(moduleScopedModel);
 
     render(
       <ModuleScopedExample

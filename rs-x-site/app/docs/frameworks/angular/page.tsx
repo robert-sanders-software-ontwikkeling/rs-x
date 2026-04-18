@@ -1,15 +1,14 @@
 import dedent from 'dedent';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { SyntaxCodeBlock } from '../../../../components/SyntaxCodeBlock';
 
+import { SyntaxCodeBlock } from '../../../../components/SyntaxCodeBlock';
 import {
   type CoreConceptDoc,
   CoreConceptPageLayout,
 } from '../../core-concepts/_template/core-concept-page';
-import {
-  AngularCompiledFrameworkExample,
-} from './angular-runtime-lab.client';
+
+import { AngularCompiledFrameworkExample } from './angular-runtime-lab.client';
 
 const demoLinks = (
   <div className="docsApiActions" style={{ marginTop: '1rem' }}>
@@ -344,7 +343,8 @@ const doc: CoreConceptDoc = {
         <>
           Run <code>rsx init</code> in your Angular project to detect the
           framework, install the right packages, and apply the setup
-          automatically. See the <Link href="/docs/core-concepts/cli">CLI docs</Link>.
+          automatically. See the{' '}
+          <Link href="/docs/core-concepts/cli">CLI docs</Link>.
         </>
       ),
       code: installCode,
@@ -405,7 +405,9 @@ export default function Page() {
       examplesSlot={
         <>
           <article className="card docsApiCard">
-            <h2 className="cardTitle">RsxPipe — pre-built IExpression example</h2>
+            <h2 className="cardTitle">
+              RsxPipe — pre-built IExpression example
+            </h2>
             <p className="cardText">
               Build the expression once in the component class and pass it to
               the pipe. The pipe subscribes to changes, while the component owns
@@ -430,7 +432,9 @@ export default function Page() {
           </article>
 
           <article className="card docsApiCard">
-            <h2 className="cardTitle">Expression change transactions example</h2>
+            <h2 className="cardTitle">
+              Expression change transactions example
+            </h2>
             <p className="cardText">
               Run the same two async updates with and without a transaction and
               compare the emitted updates.
@@ -484,7 +488,8 @@ export default function Page() {
             <p className="cardText">
               Run <code>rsx init</code> in your Angular project to detect the
               framework, install the right packages, and apply the setup
-              automatically. See the <Link href="/docs/core-concepts/cli">CLI docs</Link>.
+              automatically. See the{' '}
+              <Link href="/docs/core-concepts/cli">CLI docs</Link>.
             </p>
             <SyntaxCodeBlock code={installCode} />
           </article>

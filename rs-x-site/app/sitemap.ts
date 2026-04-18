@@ -524,9 +524,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
-  return Array.from(new Map(entries.map((entry) => [entry.url, entry])).values())
-    .map((entry) => ({
-      ...entry,
-      lastModified,
-    }));
+  return Array.from(
+    new Map(entries.map((entry) => [entry.url, entry])).values(),
+  ).map((entry) => ({
+    ...entry,
+    lastModified,
+  }));
 }

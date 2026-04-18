@@ -3737,13 +3737,21 @@ function validatePatchedSource(filePath, source) {
   return true;
 }
 
-function writeValidatedPatch(entryFile, updated, dryRun, dryRunLabel, successLabel) {
+function writeValidatedPatch(
+  entryFile,
+  updated,
+  dryRun,
+  dryRunLabel,
+  successLabel,
+) {
   if (!validatePatchedSource(entryFile, updated)) {
     return false;
   }
 
   if (dryRun) {
-    logInfo(`[dry-run] patch ${entryFile}${dryRunLabel ? ` ${dryRunLabel}` : ''}`);
+    logInfo(
+      `[dry-run] patch ${entryFile}${dryRunLabel ? ` ${dryRunLabel}` : ''}`,
+    );
     return true;
   }
 
@@ -4027,7 +4035,10 @@ function patchNextLayoutEntry(source, entryFile) {
     return patchNextLayoutEntryLegacy(source);
   }
 
-  const bodyIndent = lineIndentAt(source, bodyElement.closingElement.getStart());
+  const bodyIndent = lineIndentAt(
+    source,
+    bodyElement.closingElement.getStart(),
+  );
   const innerSource = source.slice(
     bodyElement.openingElement.end,
     bodyElement.closingElement.getStart(),
@@ -4054,9 +4065,11 @@ function patchNextPagesAppEntry(source, entryFile) {
     }
 
     const isComponentSelfClosing =
-      ts.isJsxSelfClosingElement(node) && node.tagName.getText(sourceFile) === 'Component';
+      ts.isJsxSelfClosingElement(node) &&
+      node.tagName.getText(sourceFile) === 'Component';
     const isComponentElement =
-      ts.isJsxElement(node) && node.openingElement.tagName.getText(sourceFile) === 'Component';
+      ts.isJsxElement(node) &&
+      node.openingElement.tagName.getText(sourceFile) === 'Component';
 
     if (isComponentSelfClosing || isComponentElement) {
       componentNode = node;
@@ -4111,7 +4124,13 @@ function patchNextEntryFile(entryFile, gateFile, dryRun) {
     return false;
   }
 
-  return writeValidatedPatch(entryFile, updated, dryRun, '', `Patched ${entryFile}`);
+  return writeValidatedPatch(
+    entryFile,
+    updated,
+    dryRun,
+    '',
+    `Patched ${entryFile}`,
+  );
 }
 
 function wrapAppEntryLegacy(source, bootstrapFile, entryFile) {
@@ -4234,12 +4253,12 @@ function wrapVueEntry(source, entryFile) {
 
       return (
         tsInstance.isCallExpression(callee.expression) &&
-        (
-          (tsInstance.isIdentifier(callee.expression.expression) &&
-            callee.expression.expression.text === 'createApp') ||
-          (tsInstance.isPropertyAccessExpression(callee.expression.expression) &&
-            callee.expression.expression.name.text === 'createApp')
-        )
+        ((tsInstance.isIdentifier(callee.expression.expression) &&
+          callee.expression.expression.text === 'createApp') ||
+          (tsInstance.isPropertyAccessExpression(
+            callee.expression.expression,
+          ) &&
+            callee.expression.expression.name.text === 'createApp'))
       );
     },
   );
@@ -4259,13 +4278,17 @@ function wrapAppEntry(source, bootstrapFile, entryFile, context) {
   );
 
   if (context === 'react') {
-    return wrapReactEntry(sourceWithImport, entryFile) ??
-      wrapAppEntryLegacy(source, bootstrapFile, entryFile);
+    return (
+      wrapReactEntry(sourceWithImport, entryFile) ??
+      wrapAppEntryLegacy(source, bootstrapFile, entryFile)
+    );
   }
 
   if (context === 'vuejs') {
-    return wrapVueEntry(sourceWithImport, entryFile) ??
-      wrapAppEntryLegacy(source, bootstrapFile, entryFile);
+    return (
+      wrapVueEntry(sourceWithImport, entryFile) ??
+      wrapAppEntryLegacy(source, bootstrapFile, entryFile)
+    );
   }
 
   return wrapAppEntryLegacy(source, bootstrapFile, entryFile);
@@ -4286,7 +4309,13 @@ function patchEntryFileForRsx(entryFile, bootstrapFile, context, dryRun) {
       return false;
     }
 
-    return writeValidatedPatch(entryFile, updated, dryRun, '', `Patched ${entryFile}`);
+    return writeValidatedPatch(
+      entryFile,
+      updated,
+      dryRun,
+      '',
+      `Patched ${entryFile}`,
+    );
   }
 
   if (original.includes('rsx-bootstrap')) {
@@ -4320,7 +4349,13 @@ function patchEntryFileForRsx(entryFile, bootstrapFile, context, dryRun) {
     return false;
   }
 
-  return writeValidatedPatch(entryFile, updated, dryRun, '', `Patched ${entryFile}`);
+  return writeValidatedPatch(
+    entryFile,
+    updated,
+    dryRun,
+    '',
+    `Patched ${entryFile}`,
+  );
 }
 
 function runBootstrapInit(flags) {

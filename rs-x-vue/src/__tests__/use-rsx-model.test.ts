@@ -151,9 +151,7 @@ describe('useRsxModel (Vue)', () => {
           quantity: number | null;
         }
       | undefined;
-    let total:
-      | ReturnType<typeof useRsxExpression<number>>
-      | undefined;
+    let total: ReturnType<typeof useRsxExpression<number>> | undefined;
 
     scope.run(() => {
       boundModel = useRsxModel(model);
@@ -190,9 +188,7 @@ describe('useRsxModel (Vue)', () => {
           quantity: number | null;
         }
       | undefined;
-    let total:
-      | ReturnType<typeof useRsxExpression<number>>
-      | undefined;
+    let total: ReturnType<typeof useRsxExpression<number>> | undefined;
 
     scope.run(() => {
       model = useRsxModel(sourceModel);
@@ -223,9 +219,7 @@ describe('useRsxModel (Vue)', () => {
     const totalExpr = rsx<number>('price * quantity')(model);
 
     const scope = effectScope();
-    let total:
-      | ReturnType<typeof useRsxExpression<number>>
-      | undefined;
+    let total: ReturnType<typeof useRsxExpression<number>> | undefined;
 
     scope.run(() => {
       useRsxModel(model);

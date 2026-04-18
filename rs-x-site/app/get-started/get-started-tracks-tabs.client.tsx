@@ -296,7 +296,9 @@ function GetStartedTracksTabsInner(): React.ReactElement {
               {active.existingSteps ? (
                 <ol className="advancedTopicList">
                   {active.existingSteps.map((step, index) => (
-                    <li key={`${active.value}-existing-step-${index}`}>{step}</li>
+                    <li key={`${active.value}-existing-step-${index}`}>
+                      {step}
+                    </li>
                   ))}
                 </ol>
               ) : null}

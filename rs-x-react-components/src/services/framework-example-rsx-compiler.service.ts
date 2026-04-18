@@ -1,5 +1,3 @@
-import ts from 'typescript';
-
 export type FrameworkKey = 'react' | 'nextjs' | 'vue' | 'angular';
 
 export type FrameworkCompilerDiagnostic = {
@@ -12,13 +10,19 @@ export type FrameworkCompilerDiagnostic = {
 };
 
 const MONACO_FRAMEWORK_TYPES = `
+type FrameworkRenderable = unknown;
+type FrameworkComponentFactory<P = unknown> = (props: P) => FrameworkRenderable;
+type FrameworkElementFactory = (
+  ...args: readonly unknown[]
+) => FrameworkRenderable;
+
 declare module 'react' {
-  export type ReactNode = any;
-  export type ComponentType<P = any> = (props: P) => any;
+  export type ReactNode = FrameworkRenderable;
+  export type ComponentType<P = unknown> = FrameworkComponentFactory<P>;
   export function useMemo<T>(factory: () => T, deps: unknown[]): T;
   export function useState<T>(initial: T | (() => T)): [T, (value: T) => void];
   const React: {
-    createElement: (...args: any[]) => any;
+    createElement: FrameworkElementFactory;
     useMemo: typeof useMemo;
     useState: typeof useState;
   };
@@ -27,13 +31,21 @@ declare module 'react' {
 
 declare module 'react/jsx-runtime' {
   export const Fragment: unique symbol;
-  export function jsx(type: any, props: any, key?: any): any;
-  export function jsxs(type: any, props: any, key?: any): any;
+  export function jsx(
+    type: unknown,
+    props: unknown,
+    key?: unknown,
+  ): FrameworkRenderable;
+  export function jsxs(
+    type: unknown,
+    props: unknown,
+    key?: unknown,
+  ): FrameworkRenderable;
 }
 
 declare namespace JSX {
   interface IntrinsicElements {
-    [elemName: string]: any;
+    [elemName: string]: unknown;
   }
 }
 
@@ -105,16 +117,16 @@ declare module '@rs-x/expression-parser' {
 }
 
 declare module 'vue' {
-  export function defineComponent(options: any): any;
+  export function defineComponent(options: unknown): unknown;
   export function reactive<T extends object>(value: T): T;
-  export function createApp(component: any): {
+  export function createApp(component: unknown): {
     mount(target: Element | string): unknown;
     unmount(): void;
   };
 }
 
 declare module '@angular/core' {
-  export function Component(metadata: any): ClassDecorator;
+  export function Component(metadata: unknown): ClassDecorator;
   export const ChangeDetectionStrategy: {
     OnPush: unknown;
   };
@@ -125,7 +137,7 @@ declare module '@angular/forms' {
 }
 
 declare module '@angular/platform-browser' {
-  export function createApplication(config?: any): Promise<any>;
+  export function createApplication(config?: unknown): Promise<unknown>;
 }
 
 declare module 'rxjs' {

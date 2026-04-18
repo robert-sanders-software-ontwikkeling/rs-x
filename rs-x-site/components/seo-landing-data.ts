@@ -96,7 +96,10 @@ export const seoLandingPages: Record<SeoLandingKey, SeoLandingContent> = {
       'Shared expression models across multiple components.',
       'Data-heavy pages where reducing re-renders matters.',
     ],
-    primaryCta: { label: 'Next.js integration', href: '/docs/frameworks/nextjs' },
+    primaryCta: {
+      label: 'Next.js integration',
+      href: '/docs/frameworks/nextjs',
+    },
     secondaryCta: { label: 'Get started', href: '/get-started?track=next' },
     relatedLinks: [
       {

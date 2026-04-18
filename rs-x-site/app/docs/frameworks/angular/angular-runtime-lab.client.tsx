@@ -8,7 +8,8 @@ import {
 const loadAngularCoreModule = () => import('@angular/core');
 const loadAngularCommonModule = () => import('@angular/common');
 const loadAngularFormsModule = () => import('@angular/forms');
-const loadAngularPlatformBrowserModule = () => import('@angular/platform-browser');
+const loadAngularPlatformBrowserModule = () =>
+  import('@angular/platform-browser');
 const loadAngularCompilerModule = () => import('@angular/compiler');
 const loadAngularRsxModule = () =>
   import('../../../../../rs-x-angular/dist/rsx/fesm2022/rs-x-angular.mjs');

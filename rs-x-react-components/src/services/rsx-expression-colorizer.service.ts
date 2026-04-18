@@ -24,8 +24,7 @@ export function installRsxExpressionColorizer(
 
   const isModelDisposed = () => {
     return (
-      disposed ||
-      (typeof model.isDisposed === 'function' && model.isDisposed())
+      disposed || (typeof model.isDisposed === 'function' && model.isDisposed())
     );
   };
 

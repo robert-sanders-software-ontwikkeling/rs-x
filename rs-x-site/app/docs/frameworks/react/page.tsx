@@ -3,11 +3,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { EditableCompiledFrameworkExample } from '@rs-x/react-components';
+
+import { SyntaxCodeBlock } from '../../../../components/SyntaxCodeBlock';
 import {
   type CoreConceptDoc,
   CoreConceptPageLayout,
 } from '../../core-concepts/_template/core-concept-page';
-import { SyntaxCodeBlock } from '../../../../components/SyntaxCodeBlock';
 
 const demoLinks = (
   <div className="docsApiActions" style={{ marginTop: '1rem' }}>
@@ -295,7 +296,7 @@ const changeTransactionCode = dedent`
 const doc: CoreConceptDoc = {
   title: 'React integration',
   lead: 'Bind rs-x expressions to React components with rsx + useRsxExpression and useRsxModel — components re-render automatically when model values change.',
-  whatItMeans:
+  whatItMeans: (
     <>
       <p>
         <code>useRsxExpression</code> watches one RS-X expression instance and
@@ -308,16 +309,16 @@ const doc: CoreConceptDoc = {
       <p>
         The important rule for React and Next.js client components is that{' '}
         <code>useRsxExpression</code> should receive an expression instance that
-        was created earlier, not a new one created during the current render.
-        In practice, that usually means either creating the model and
-        expression at module scope or creating them inside the component
-        with{' '}
+        was created earlier, not a new one created during the current render. In
+        practice, that usually means either creating the model and expression at
+        module scope or creating them inside the component with{' '}
         <code>useMemo</code>. Rebinding the expression during render creates a
         new RS-X object graph every time React renders, which breaks the
         subscription lifecycle and can lead to confusing runtime behavior.
       </p>
-    </>,
-  whyItMatters:
+    </>
+  ),
+  whyItMatters: (
     <>
       <p>
         With the stable-expression pattern, you make plain model updates like{' '}
@@ -334,7 +335,8 @@ const doc: CoreConceptDoc = {
         expects subscription-style inputs to behave over the life of the
         component.
       </p>
-    </>,
+    </>
+  ),
   keyPoints: [
     'Zero boilerplate — build an expression with rsx(...) and pass it to useRsxExpression.',
     'useRsxExpression accepts a stable pre-built IExpression from rsx(...) and updates the component when that expression changes.',
@@ -351,9 +353,9 @@ const doc: CoreConceptDoc = {
           <p>
             <code>useRsxExpression</code> expects you to pass it an expression
             that already exists. In other words, build the RS-X expression
-            first, then give that same expression instance to the hook. Once
-            the hook receives that expression instance, it can subscribe to it,
-            read its current value, and re-render the component whenever that
+            first, then give that same expression instance to the hook. Once the
+            hook receives that expression instance, it can subscribe to it, read
+            its current value, and re-render the component whenever that
             expression reports a change.
           </p>
           <p>
@@ -364,8 +366,8 @@ const doc: CoreConceptDoc = {
             Even if the expression string is identical, the object identity is
             not. In practice that can lead to duplicate observers, lost
             subscriptions, stale references, or model instrumentation edge cases
-            because the runtime keeps seeing fresh expression graphs instead of a
-            single long-lived one.
+            because the runtime keeps seeing fresh expression graphs instead of
+            a single long-lived one.
           </p>
         </>,
       ],
@@ -380,10 +382,10 @@ const doc: CoreConceptDoc = {
           </p>
           <p>
             Use <code>useMemo</code> when the model belongs to one component
-            instance. Memoize the model first, then memoize the bound
-            expression from that model. That gives each mounted component its
-            own isolated RS-X model and expression while still preserving the
-            stable identity that the hook needs.
+            instance. Memoize the model first, then memoize the bound expression
+            from that model. That gives each mounted component its own isolated
+            RS-X model and expression while still preserving the stable identity
+            that the hook needs.
           </p>
           <p>
             In Next.js this rule applies inside client components the same way
@@ -432,7 +434,8 @@ const doc: CoreConceptDoc = {
         <>
           Run <code>rsx init</code> in your React project to detect the
           framework, install the right packages, and apply the setup
-          automatically. See the <Link href="/docs/core-concepts/cli">CLI docs</Link>.
+          automatically. See the{' '}
+          <Link href="/docs/core-concepts/cli">CLI docs</Link>.
         </>
       ),
       code: installCode,
@@ -493,7 +496,9 @@ export default function Page() {
       examplesSlot={
         <>
           <article className="card docsApiCard">
-            <h2 className="cardTitle">useRsxExpression — pre-built IExpression example</h2>
+            <h2 className="cardTitle">
+              useRsxExpression — pre-built IExpression example
+            </h2>
             <p className="cardText">
               Build the expression once at module scope and reuse it. The hook
               reads from that expression and updates when it changes, but it
@@ -506,7 +511,9 @@ export default function Page() {
             />
           </article>
           <article className="card docsApiCard">
-            <h2 className="cardTitle">useRsxExpression — create with useMemo example</h2>
+            <h2 className="cardTitle">
+              useRsxExpression — create with useMemo example
+            </h2>
             <p className="cardText">
               When the model belongs to the component, memoize both the model
               and let useRsxExpression create and dispose the bound expression
@@ -519,7 +526,9 @@ export default function Page() {
             />
           </article>
           <article className="card docsApiCard">
-            <h2 className="cardTitle">useRsxModel — full model binding example</h2>
+            <h2 className="cardTitle">
+              useRsxModel — full model binding example
+            </h2>
             <p className="cardText">
               Bind every scalar field in a model object. Each field is
               independently reactive — React only re-renders the subtree that
@@ -540,7 +549,9 @@ export default function Page() {
             <SyntaxCodeBlock code={useRsxModelFilterCode} />
           </article>
           <article className="card docsApiCard">
-            <h2 className="cardTitle">Expression change transactions example</h2>
+            <h2 className="cardTitle">
+              Expression change transactions example
+            </h2>
             <p className="cardText">
               Run the same two mutations with and without a transaction and
               compare the commit counter: separate updates emit twice, the

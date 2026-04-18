@@ -11,7 +11,8 @@ import {
 const loadAngularCoreModule = () => import('@angular/core');
 const loadAngularCommonModule = () => import('@angular/common');
 const loadAngularFormsModule = () => import('@angular/forms');
-const loadAngularPlatformBrowserModule = () => import('@angular/platform-browser');
+const loadAngularPlatformBrowserModule = () =>
+  import('@angular/platform-browser');
 const loadAngularCompilerModule = () => import('@angular/compiler');
 const loadAngularRsxModule = () =>
   import('../../../../rs-x-angular/dist/rsx/fesm2022/rs-x-angular.mjs');
@@ -144,9 +145,9 @@ describe('CompiledFrameworkExamplePreview', () => {
       expect(screen.getByText('demo')).toBeTruthy();
     });
 
-    expect((globalThis as { __rsxDisposeCount?: number }).__rsxDisposeCount ?? 0).toBe(
-      0,
-    );
+    expect(
+      (globalThis as { __rsxDisposeCount?: number }).__rsxDisposeCount ?? 0,
+    ).toBe(0);
 
     rerender(
       <CompiledFrameworkExamplePreview
@@ -159,15 +160,15 @@ describe('CompiledFrameworkExamplePreview', () => {
       expect(screen.getByText('demo updated')).toBeTruthy();
     });
 
-    expect((globalThis as { __rsxDisposeCount?: number }).__rsxDisposeCount).toBe(
-      1,
-    );
+    expect(
+      (globalThis as { __rsxDisposeCount?: number }).__rsxDisposeCount,
+    ).toBe(1);
 
     unmount();
 
-    expect((globalThis as { __rsxDisposeCount?: number }).__rsxDisposeCount).toBe(
-      2,
-    );
+    expect(
+      (globalThis as { __rsxDisposeCount?: number }).__rsxDisposeCount,
+    ).toBe(2);
   });
 
   it('replaces editor and preview state when initialCode changes', async () => {

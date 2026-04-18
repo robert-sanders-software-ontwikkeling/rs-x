@@ -27,15 +27,18 @@ export function useRsxExpression<T>(
   deps?: DependencyList,
 ): T | null {
   const ownsExpression = typeof expressionOrFactory === 'function';
-  const expressionTree = useMemo(() => {
-    if (ownsExpression) {
-      return ensureExpression(
-        (expressionOrFactory as () => IExpression<T>)(),
-      );
-    }
+  const expressionTree = useMemo(
+    () => {
+      if (ownsExpression) {
+        return ensureExpression(
+          (expressionOrFactory as () => IExpression<T>)(),
+        );
+      }
 
-    return ensureExpression(expressionOrFactory as IExpression<T>);
-  }, ownsExpression ? (deps ?? []) : [expressionOrFactory]);
+      return ensureExpression(expressionOrFactory as IExpression<T>);
+    },
+    ownsExpression ? (deps ?? []) : [expressionOrFactory],
+  );
 
   const [value, setValue] = useState<T | null>(() => {
     if (expressionTree.value !== undefined) {

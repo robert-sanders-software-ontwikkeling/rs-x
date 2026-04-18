@@ -1,21 +1,19 @@
 'use client';
 
-import './framework-runtime-lab.component.css';
-
+import type { BeforeMount, OnMount } from '@monaco-editor/react';
+import type * as Monaco from 'monaco-editor';
+import * as React from 'react';
 import {
-  type CSSProperties,
   type ComponentType,
   createElement,
-  useId,
+  type CSSProperties,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
 } from 'react';
-import * as React from 'react';
 import * as ReactJsxRuntime from 'react/jsx-runtime';
-import type { BeforeMount, OnMount } from '@monaco-editor/react';
-import type * as Monaco from 'monaco-editor';
 import { createRoot } from 'react-dom/client';
 
 import { InjectionContainer } from '@rs-x/core';
@@ -30,15 +28,18 @@ import {
   useRsxExpression,
   useRsxModel,
 } from '@rs-x/react';
-import { FrameworkExampleFeedback } from './framework-example-feedback.component';
 
-import { installRsxExpressionColorizer } from '../../services/rsx-expression-colorizer.service';
 import {
   createFrameworkLanguageProgram,
   type FrameworkCompilerDiagnostic,
   type FrameworkKey,
   validateFrameworkSourceWithRsxCompiler,
 } from '../../services/framework-example-rsx-compiler.service';
+import { installRsxExpressionColorizer } from '../../services/rsx-expression-colorizer.service';
+
+import { FrameworkExampleFeedback } from './framework-example-feedback.component';
+
+import './framework-runtime-lab.component.css';
 
 type FrameworkExample = {
   label: string;
@@ -61,7 +62,7 @@ export type FrameworkRuntimeModuleLoaders = {
   loadAngularPlatformBrowserModule?: () => Promise<Record<string, unknown>>;
   loadAngularCompilerModule?: () => Promise<Record<string, unknown>>;
   loadAngularRsxModule?: () => Promise<{
-    providexRsx: () => any[];
+    providexRsx: () => unknown[];
   }>;
   loadRxjsModule?: () => Promise<Record<string, unknown>>;
 };
@@ -69,15 +70,22 @@ export type FrameworkRuntimeModuleLoaders = {
 let runtimeReadyPromise: Promise<void> | null = null;
 const transpiledModuleCache = new Map<string, string>();
 let angularPreviewCompileId = 0;
-const MONACO_FRAMEWORK_TYPES_URI = 'file:///node_modules/@types/rsx-docs-runtime.d.ts';
+const MONACO_FRAMEWORK_TYPES_URI =
+  'file:///node_modules/@types/rsx-docs-runtime.d.ts';
 const MONACO_FRAMEWORK_TYPES = `
+type FrameworkRenderable = unknown;
+type FrameworkComponentFactory<P = unknown> = (props: P) => FrameworkRenderable;
+type FrameworkElementFactory = (
+  ...args: readonly unknown[]
+) => FrameworkRenderable;
+
 declare module 'react' {
-  export type ReactNode = any;
-  export type ComponentType<P = any> = (props: P) => any;
+  export type ReactNode = FrameworkRenderable;
+  export type ComponentType<P = unknown> = FrameworkComponentFactory<P>;
   export function useMemo<T>(factory: () => T, deps: unknown[]): T;
   export function useState<T>(initial: T | (() => T)): [T, (value: T) => void];
   const React: {
-    createElement: (...args: any[]) => any;
+    createElement: FrameworkElementFactory;
     useMemo: typeof useMemo;
     useState: typeof useState;
   };
@@ -86,13 +94,21 @@ declare module 'react' {
 
 declare module 'react/jsx-runtime' {
   export const Fragment: unique symbol;
-  export function jsx(type: any, props: any, key?: any): any;
-  export function jsxs(type: any, props: any, key?: any): any;
+  export function jsx(
+    type: unknown,
+    props: unknown,
+    key?: unknown,
+  ): FrameworkRenderable;
+  export function jsxs(
+    type: unknown,
+    props: unknown,
+    key?: unknown,
+  ): FrameworkRenderable;
 }
 
 declare namespace JSX {
   interface IntrinsicElements {
-    [elemName: string]: any;
+    [elemName: string]: unknown;
   }
 }
 
@@ -171,16 +187,16 @@ declare module '@rs-x/expression-parser' {
 }
 
 declare module 'vue' {
-  export function defineComponent(options: any): any;
+  export function defineComponent(options: unknown): unknown;
   export function reactive<T extends object>(value: T): T;
-  export function createApp(component: any): {
+  export function createApp(component: unknown): {
     mount(target: Element | string): unknown;
     unmount(): void;
   };
 }
 
 declare module '@angular/core' {
-  export function Component(metadata: any): ClassDecorator;
+  export function Component(metadata: unknown): ClassDecorator;
   export function inject<T>(token: { readonly __type?: T }): T;
   export function inject<T = unknown>(token: unknown): T;
   export interface OnDestroy {
@@ -196,7 +212,7 @@ declare module '@angular/forms' {
 }
 
 declare module '@angular/platform-browser' {
-  export function createApplication(config?: any): Promise<any>;
+  export function createApplication(config?: unknown): Promise<unknown>;
 }
 
 declare module 'rxjs' {
@@ -213,6 +229,11 @@ type EditorDiagnostic = {
   message: string;
   line: number;
   column: number;
+};
+
+type AngularApplicationRef = {
+  bootstrap(component: unknown, host: Element): void;
+  destroy(): void;
 };
 
 function severityFromFrameworkDiagnosticCategory(
@@ -247,8 +268,7 @@ function installFrameworkRsxCompilerMarkers(args: {
 
   const isModelDisposed = () => {
     return (
-      disposed ||
-      (typeof model.isDisposed === 'function' && model.isDisposed())
+      disposed || (typeof model.isDisposed === 'function' && model.isDisposed())
     );
   };
 
@@ -380,9 +400,10 @@ function ensureRsxRuntimeReady(): Promise<void> {
         RsXExpressionParserInjectionTokens.IJsExpressionAstParser,
       );
 
-    runtimeReadyPromise = (isParserReady
-      ? Promise.resolve()
-      : Promise.resolve(InjectionContainer.load(RsXExpressionParserModule))
+    runtimeReadyPromise = (
+      isParserReady
+        ? Promise.resolve()
+        : Promise.resolve(InjectionContainer.load(RsXExpressionParserModule))
     ).then(() => undefined);
   }
 
@@ -452,9 +473,9 @@ async function compileReactExampleComponent(
   ) => Record<string, unknown>;
 
   const resolved = evaluator(require, module, exports);
-  const component = (resolved.default ?? resolved.OrderTotal ?? resolved.UserCard) as
-    | ComponentType
-    | undefined;
+  const component = (resolved.default ??
+    resolved.OrderTotal ??
+    resolved.UserCard) as ComponentType | undefined;
   const dispose =
     typeof resolved.dispose === 'function'
       ? (resolved.dispose as () => void)
@@ -473,7 +494,12 @@ async function transpileCommonJsModule(args: {
   jsx?: boolean;
   experimentalDecorators?: boolean;
 }): Promise<string> {
-  const { cacheKey, source, jsx = false, experimentalDecorators = false } = args;
+  const {
+    cacheKey,
+    source,
+    jsx = false,
+    experimentalDecorators = false,
+  } = args;
   const cached = transpiledModuleCache.get(cacheKey);
   if (cached) {
     return cached;
@@ -526,7 +552,9 @@ function evaluateCommonJsModule(args: {
   return evaluator(require, module, exports);
 }
 
-function normalizeCommonJsInteropModule<T extends object>(module: T): T & {
+function normalizeCommonJsInteropModule<T extends object>(
+  module: T,
+): T & {
   default: T;
 } {
   const maybeDefault = (module as { default?: unknown }).default;
@@ -724,8 +752,12 @@ async function compileAngularExampleComponent(args: {
     rxjsModule,
   ] = await Promise.all([
     loadAngularCoreModule ? loadAngularCoreModule() : import('@angular/core'),
-    loadAngularCommonModule ? loadAngularCommonModule() : import('@angular/common'),
-    loadAngularFormsModule ? loadAngularFormsModule() : import('@angular/forms'),
+    loadAngularCommonModule
+      ? loadAngularCommonModule()
+      : import('@angular/common'),
+    loadAngularFormsModule
+      ? loadAngularFormsModule()
+      : import('@angular/forms'),
     loadAngularPlatformBrowserModule
       ? loadAngularPlatformBrowserModule()
       : import('@angular/platform-browser'),
@@ -760,9 +792,9 @@ async function compileAngularExampleComponent(args: {
       typeof resolved.dispose === 'function'
         ? (resolved.dispose as () => void)
         : undefined,
-    createApplication: angularPlatformBrowser.createApplication as (
-      options: { providers: unknown[] },
-    ) => Promise<{
+    createApplication: angularPlatformBrowser.createApplication as (options: {
+      providers: unknown[];
+    }) => Promise<{
       bootstrap: (component: unknown, host: Element) => void;
       destroy: () => void;
     }>,
@@ -791,7 +823,7 @@ export function CompiledFrameworkExamplePreview({
     mount: (target: Element | string) => unknown;
     unmount: () => void;
   } | null>(null);
-  const angularAppRef = useRef<any>(null);
+  const angularAppRef = useRef<AngularApplicationRef | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(true);
 
@@ -994,9 +1026,9 @@ export function EditableCompiledFrameworkExample({
 }) {
   const generatedEditorId = useId().replace(/:/gu, '-');
   const [code, setCode] = useState(initialCode);
-  const [editorMarkerErrors, setEditorMarkerErrors] = useState<EditorDiagnostic[]>(
-    [],
-  );
+  const [editorMarkerErrors, setEditorMarkerErrors] = useState<
+    EditorDiagnostic[]
+  >([]);
   const [compilerErrors, setCompilerErrors] = useState<EditorDiagnostic[]>([]);
   const [isCompilerValidationPending, setIsCompilerValidationPending] =
     useState(true);
@@ -1090,26 +1122,27 @@ export function EditableCompiledFrameworkExample({
     };
   }, []);
 
-  const editorOptions = useMemo<Monaco.editor.IStandaloneEditorConstructionOptions>(
-    () => ({
-      automaticLayout: true,
-      minimap: { enabled: false },
-      scrollBeyondLastLine: false,
-      fontSize: 14,
-      lineHeight: 22,
-      tabSize: 2,
-      wordWrap: 'off',
-      padding: { top: 16, bottom: 16 },
-      overviewRulerLanes: 0,
-      hideCursorInOverviewRuler: true,
-      renderLineHighlight: 'line',
-      roundedSelection: true,
-      guides: {
-        indentation: true,
-      },
-    }),
-    [],
-  );
+  const editorOptions =
+    useMemo<Monaco.editor.IStandaloneEditorConstructionOptions>(
+      () => ({
+        automaticLayout: true,
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+        fontSize: 14,
+        lineHeight: 22,
+        tabSize: 2,
+        wordWrap: 'off',
+        padding: { top: 16, bottom: 16 },
+        overviewRulerLanes: 0,
+        hideCursorInOverviewRuler: true,
+        renderLineHighlight: 'line',
+        roundedSelection: true,
+        guides: {
+          indentation: true,
+        },
+      }),
+      [],
+    );
 
   const beforeMount: BeforeMount = (monaco) => {
     const ts = monaco.typescript;
@@ -1211,7 +1244,8 @@ export function EditableCompiledFrameworkExample({
           candidate.column === marker.column,
       ) === index,
   );
-  const isPreviewBlocked = isCompilerValidationPending || editorErrors.length > 0;
+  const isPreviewBlocked =
+    isCompilerValidationPending || editorErrors.length > 0;
 
   useEffect(() => {
     if (isPreviewBlocked && runtimeError) {
@@ -1287,11 +1321,7 @@ export function EditableCompiledFrameworkExample({
   );
 }
 
-export function CompiledReactExamplePreview({
-  code,
-}: {
-  code: string;
-}) {
+export function CompiledReactExamplePreview({ code }: { code: string }) {
   const [component, setComponent] = useState<ComponentType | null>(null);
   const [error, setError] = useState<string | null>(null);
   const disposeRef = useRef<(() => void) | null>(null);
@@ -1337,11 +1367,7 @@ export function CompiledReactExamplePreview({
     return <p className="frameworkLabStatus">Compiling runnable example…</p>;
   }
 
-  return (
-    <div className="frameworkLabPreview">
-      {createElement(component)}
-    </div>
-  );
+  return <div className="frameworkLabPreview">{createElement(component)}</div>;
 }
 
 const expressionExamples: Record<FrameworkKey, FrameworkExample> = {
@@ -1611,9 +1637,8 @@ let prebuiltPreviewExpression: IExpression<number> | null = null;
 
 function getPrebuiltPreviewExpression(): IExpression<number> {
   if (!prebuiltPreviewExpression) {
-    prebuiltPreviewExpression = rsx<number>('price * quantity')(
-      prebuiltPreviewModel,
-    );
+    prebuiltPreviewExpression =
+      rsx<number>('price * quantity')(prebuiltPreviewModel);
   }
 
   return prebuiltPreviewExpression;
@@ -1627,7 +1652,10 @@ function ExpressionPreview() {
     }),
     [],
   );
-  const totalExpr = useMemo(() => rsx<number>('price * quantity')(model), [model]);
+  const totalExpr = useMemo(
+    () => rsx<number>('price * quantity')(model),
+    [model],
+  );
   const total = useRsxExpression(totalExpr);
 
   useEffect(() => {
@@ -1907,12 +1935,16 @@ export function FrameworkRuntimeLab({
       <h2 className="cardTitle">Live framework preview</h2>
       <p className="cardText">
         Run a small rs-x UI example directly inside the docs. The preview is
-        clickable, and the code pane shows the framework-specific code shape
-        you would use in a real app.
+        clickable, and the code pane shows the framework-specific code shape you
+        would use in a real app.
       </p>
 
       {availableFrameworks.length > 1 ? (
-        <div className="frameworkLabTabs" role="tablist" aria-label="Frameworks">
+        <div
+          className="frameworkLabTabs"
+          role="tablist"
+          aria-label="Frameworks"
+        >
           {availableFrameworks.map((key) => (
             <button
               key={key}
@@ -1985,7 +2017,11 @@ export function ModelBindingLab({
       </p>
 
       {availableFrameworks.length > 1 ? (
-        <div className="frameworkLabTabs" role="tablist" aria-label="Frameworks">
+        <div
+          className="frameworkLabTabs"
+          role="tablist"
+          aria-label="Frameworks"
+        >
           {availableFrameworks.map((key) => (
             <button
               key={key}

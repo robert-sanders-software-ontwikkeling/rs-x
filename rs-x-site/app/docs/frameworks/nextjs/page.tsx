@@ -3,11 +3,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { EditableCompiledFrameworkExample } from '@rs-x/react-components';
+
+import { SyntaxCodeBlock } from '../../../../components/SyntaxCodeBlock';
 import {
   type CoreConceptDoc,
   CoreConceptPageLayout,
 } from '../../core-concepts/_template/core-concept-page';
-import { SyntaxCodeBlock } from '../../../../components/SyntaxCodeBlock';
 
 const installCode = dedent`
   rsx init
@@ -270,8 +271,8 @@ const doc: CoreConceptDoc = {
       <p>
         The Next.js-specific difference is where that code can live. In plain
         React, the question is only how to create the expression. In Next.js,
-        you also have to decide which part of the tree is a server component
-        and which part is a client component.
+        you also have to decide which part of the tree is a server component and
+        which part is a client component.
       </p>
     </>
   ),
@@ -286,8 +287,8 @@ const doc: CoreConceptDoc = {
       <p>
         When you create the expression at module scope or let
         <code> useRsxExpression</code> create it from a stable client-side
-        model, the hook can stay connected to one expression
-        instance and let RS-X drive the re-renders from normal model mutations.
+        model, the hook can stay connected to one expression instance and let
+        RS-X drive the re-renders from normal model mutations.
       </p>
     </>
   ),
@@ -406,7 +407,8 @@ const doc: CoreConceptDoc = {
         <>
           Run <code>rsx init</code> in your Next.js project to detect the
           framework, install the right packages, and apply the setup
-          automatically. See the <Link href="/docs/core-concepts/cli">CLI docs</Link>.
+          automatically. See the{' '}
+          <Link href="/docs/core-concepts/cli">CLI docs</Link>.
         </>
       ),
       code: installCode,
@@ -451,11 +453,14 @@ export default function Page() {
       examplesSlot={
         <>
           <article className="card docsApiCard">
-            <h2 className="cardTitle">useRsxExpression — pre-built IExpression example</h2>
+            <h2 className="cardTitle">
+              useRsxExpression — pre-built IExpression example
+            </h2>
             <p className="cardText">
-              Build the expression once at module scope and reuse it in a Next.js
-              client component. The hook reads from that expression and updates when
-              it changes, but it does not dispose the expression on unmount.
+              Build the expression once at module scope and reuse it in a
+              Next.js client component. The hook reads from that expression and
+              updates when it changes, but it does not dispose the expression on
+              unmount.
             </p>
             <EditableCompiledFrameworkExample
               framework="nextjs"
@@ -464,10 +469,12 @@ export default function Page() {
             />
           </article>
           <article className="card docsApiCard">
-            <h2 className="cardTitle">useRsxExpression — create with useMemo example</h2>
+            <h2 className="cardTitle">
+              useRsxExpression — create with useMemo example
+            </h2>
             <p className="cardText">
-              When the model belongs to the page or client component, memoize the
-              model and let useRsxExpression create and dispose the bound
+              When the model belongs to the page or client component, memoize
+              the model and let useRsxExpression create and dispose the bound
               expression for that component instance.
             </p>
             <EditableCompiledFrameworkExample
@@ -477,7 +484,9 @@ export default function Page() {
             />
           </article>
           <article className="card docsApiCard">
-            <h2 className="cardTitle">useRsxModel — full model binding example</h2>
+            <h2 className="cardTitle">
+              useRsxModel — full model binding example
+            </h2>
             <p className="cardText">
               Bind every scalar field in a model object. In a Next.js client
               component, the component can read those fields directly and the UI
@@ -490,7 +499,9 @@ export default function Page() {
             />
           </article>
           <article className="card docsApiCard">
-            <h2 className="cardTitle">Expression change transactions example</h2>
+            <h2 className="cardTitle">
+              Expression change transactions example
+            </h2>
             <p className="cardText">
               Run the same two async updates with and without a transaction and
               compare the commit counter.

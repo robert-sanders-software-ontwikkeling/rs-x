@@ -54,12 +54,11 @@
   padding: 1rem;
   border-radius: 16px;
   border: 1px solid color-mix(in srgb, var(--border-soft) 65%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-solid) 98%, transparent),
-      color-mix(in srgb, var(--surface) 92%, transparent)
-    );
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-solid) 98%, transparent),
+    color-mix(in srgb, var(--surface) 92%, transparent)
+  );
 }
 
 .frameworkLabPaneTitle {
@@ -386,7 +385,8 @@
   padding: 0.32rem 0;
   border-radius: 0;
   border: 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 18%, transparent);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border-soft) 18%, transparent);
   background: transparent;
 }
 

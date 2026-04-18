@@ -76,8 +76,8 @@ export function FrameworkExampleFeedback({
         <div className="frameworkLabDiagnostics frameworkLabDiagnosticsRuntime">
           <p className="frameworkLabDiagnosticsTitle">Runtime issue</p>
           <p className="frameworkLabDiagnosticsNote">
-            The example compiled, but running it failed. Update the code and
-            the preview will try again.
+            The example compiled, but running it failed. Update the code and the
+            preview will try again.
           </p>
           <div className="frameworkLabDiagnosticsGroup">
             <p className="frameworkLabDiagnosticsLabel">Runtime</p>

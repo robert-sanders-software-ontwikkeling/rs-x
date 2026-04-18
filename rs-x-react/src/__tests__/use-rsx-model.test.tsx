@@ -176,9 +176,9 @@ describe('useRsxForm', () => {
 
     const model = { age: 30, score: 99 };
     const { unmount } = renderHook(() => useRsxModel(model));
-    const createdExpressions = (useRsxExpression as unknown as vi.Mock).mock.calls.map(
-      ([expression]: [IExpression]) => expression,
-    );
+    const createdExpressions = (
+      useRsxExpression as unknown as vi.Mock
+    ).mock.calls.map(([expression]: [IExpression]) => expression);
 
     unmount();
 
