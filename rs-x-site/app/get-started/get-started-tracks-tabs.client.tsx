@@ -168,7 +168,7 @@ const tracks: readonly Track[] = [
     label: 'Next.js',
     title: 'Create a new Next.js project',
     description:
-      'Generates a Next.js starter with rs-x integration and webpack integration.',
+      'Generates a Next.js starter with rs-x integration and app-router-friendly setup.',
     steps: [
       'Install the CLI globally with npm.',
       'Generate the project from the Next.js template.',

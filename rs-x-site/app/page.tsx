@@ -300,8 +300,9 @@ export default function HomePage() {
               <div className="toolingCardBody">
                 <h3 className="toolingCardTitle">Next.js</h3>
                 <p className="toolingCardText">
-                  Integrate rs-x into Next.js with webpack plugin support and
-                  server-compatible bootstrap wiring.
+                  Integrate rs-x into Next.js client components with the same
+                  expression hooks used in React, plus app-router-friendly setup
+                  guidance.
                 </p>
                 <Link
                   className="btn btnGhost toolingCardCta"
