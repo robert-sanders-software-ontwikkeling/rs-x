@@ -13,7 +13,7 @@
           "type": "boolean",
           "description": "Enable generation of the preparsed AST cache during rsx build --prod."
         },
-        "project": {
+        "tsconfig": {
           "type": "string",
           "description": "Default tsconfig path used by rsx build and rsx typecheck when --project is omitted."
         },
@@ -50,20 +50,20 @@
         "packageManager": {
           "type": "string",
           "enum": ["pnpm", "npm", "yarn", "bun"],
-          "description": "Default package manager for install, setup, and project flows."
+          "description": "Default package manager for install, init, and project flows."
         },
         "installTag": {
           "type": "string",
           "enum": ["latest", "next"],
           "description": "Default package release channel for CLI-driven installs."
         },
-        "setup": {
+        "init": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
             "verify": {
               "type": "boolean",
-              "description": "Run setup verification automatically when rsx setup is invoked without an explicit --verify flag."
+              "description": "Run init verification automatically when rsx init is invoked without an explicit --verify flag."
             }
           }
         },

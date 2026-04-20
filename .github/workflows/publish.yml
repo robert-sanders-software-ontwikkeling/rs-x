@@ -120,11 +120,22 @@ jobs:
         run: |
           echo "github.ref=${{ github.ref }}"
           echo "github.ref_name=${{ github.ref_name }}"
+          echo "github.event_name=${{ github.event_name }}"
+          echo "github.actor=${{ github.actor }}"
           echo "github.workflow=${{ github.workflow }}"
           echo "github.workflow_ref=${{ github.workflow_ref }}"
           echo "github.repository=${{ github.repository }}"
           echo "github.repository_owner=${{ github.repository_owner }}"
           echo "job.environment=${{ job.environment.name || 'none' }}"
+
+      - name: Debug npm auth
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set +e
+          echo "registry=$(npm config get registry)"
+          npm whoami
+          npm view @rs-x/core version
 
       # ---------------- BUILD ----------------
       - name: Build Node libraries

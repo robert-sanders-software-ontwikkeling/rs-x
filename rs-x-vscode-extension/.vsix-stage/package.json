@@ -15,7 +15,8 @@
     "onLanguage:typescript",
     "onLanguage:typescriptreact",
     "onLanguage:javascript",
-    "onLanguage:javascriptreact"
+    "onLanguage:javascriptreact",
+    "onLanguage:vue"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -33,7 +34,9 @@
           "source.ts",
           "source.tsx",
           "source.js",
-          "source.jsx"
+          "source.jsx",
+          "source.vue",
+          "text.html.vue"
         ],
         "embeddedLanguages": {
           "meta.embedded.inline.rsx": "typescript"
@@ -48,7 +51,8 @@
           "typescript",
           "typescriptreact",
           "javascript",
-          "javascriptreact"
+          "javascriptreact",
+          "vue"
         ]
       }
     ]

@@ -155,43 +155,17 @@ function publishFolder(folder, pkgName) {
     );
   } else {
     console.log(`🔐 OIDC publish with provenance for ${pkgName}`);
-    // Do not pass NODE_AUTH_TOKEN for provenance
-    try {
-      run('pnpm', [
-        'publish',
-        folder,
-        '--tag',
-        DIST_TAG,
-        '--access',
-        'public',
-        '--provenance',
-        '--no-git-checks',
-      ]);
-    } catch (error) {
-      console.error(`⚠️  Provenance publish failed for ${pkgName}.`);
-      if (!NODE_AUTH_TOKEN) {
-        throw error;
-      }
-      console.log(
-        `🔁 Retrying ${pkgName} publish with NODE_AUTH_TOKEN (no provenance).`,
-      );
-      run(
-        'pnpm',
-        [
-          'publish',
-          folder,
-          '--tag',
-          DIST_TAG,
-          '--access',
-          'public',
-          '--provenance=false',
-          '--no-git-checks',
-        ],
-        {
-          NODE_AUTH_TOKEN,
-        },
-      );
-    }
+    // Provenance is mandatory for established package publishes.
+    run('pnpm', [
+      'publish',
+      folder,
+      '--tag',
+      DIST_TAG,
+      '--access',
+      'public',
+      '--provenance',
+      '--no-git-checks',
+    ]);
   }
 }
 
