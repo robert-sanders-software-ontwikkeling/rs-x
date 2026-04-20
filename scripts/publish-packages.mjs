@@ -42,6 +42,8 @@ function run(command, args, envOverrides = {}) {
   if (typeof result.status === 'number' && result.status !== 0) {
     const error = new Error(`Command failed: ${printable}`);
     error.status = result.status;
+    error.stdout = result.stdout?.toString() ?? '';
+    error.stderr = result.stderr?.toString() ?? '';
     throw error;
   }
 }
@@ -156,21 +158,39 @@ function publishFolder(folder, pkgName) {
     );
   } else {
     console.log(`🔐 OIDC publish with provenance for ${pkgName}`);
-    // Provenance is mandatory for established package publishes.
-    run(
-      'pnpm',
-      [
-        'publish',
-        folder,
-        '--tag',
-        DIST_TAG,
-        '--access',
-        'public',
-        '--provenance',
-        '--no-git-checks',
-      ],
-      { NODE_AUTH_TOKEN: '' },
-    );
+    const publishArgs = [
+      'publish',
+      folder,
+      '--tag',
+      DIST_TAG,
+      '--access',
+      'public',
+      '--provenance',
+      '--no-git-checks',
+    ];
+
+    try {
+      // Provenance is mandatory for established package publishes.
+      run('pnpm', publishArgs, { NODE_AUTH_TOKEN: '' });
+    } catch (error) {
+      const output = `${error.stdout ?? ''}\n${error.stderr ?? ''}`;
+      const needsAuth =
+        output.includes('ENEEDAUTH') ||
+        output.includes('need auth') ||
+        output.includes('requires you to be logged in');
+
+      if (!needsAuth || !FIRST_PUBLISH_NODE_AUTH_TOKEN) {
+        throw error;
+      }
+
+      console.warn(
+        `⚠️  OIDC auth unavailable for ${pkgName}; retrying with npm token and provenance.`,
+      );
+      run('pnpm', publishArgs, {
+        FIRST_PUBLISH_NODE_AUTH_TOKEN,
+        NODE_AUTH_TOKEN: FIRST_PUBLISH_NODE_AUTH_TOKEN,
+      });
+    }
   }
 }
 
