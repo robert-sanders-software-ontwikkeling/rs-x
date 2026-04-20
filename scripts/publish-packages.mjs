@@ -146,6 +146,7 @@ function publishFolder(folder, pkgName) {
         DIST_TAG,
         '--access',
         'public',
+        '--provenance=false',
         '--no-git-checks',
       ],
       {
@@ -183,6 +184,7 @@ function publishFolder(folder, pkgName) {
           DIST_TAG,
           '--access',
           'public',
+          '--provenance=false',
           '--no-git-checks',
         ],
         {
@@ -214,6 +216,7 @@ function dryRun() {
           DIST_TAG,
           '--access',
           'public',
+          '--provenance=false',
           '--no-git-checks',
         ],
         { NODE_AUTH_TOKEN },

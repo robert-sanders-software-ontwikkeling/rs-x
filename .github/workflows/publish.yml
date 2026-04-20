@@ -116,6 +116,16 @@ jobs:
           cat .changeset/pre.json
           node -e "console.log('@rs-x/core version:', require('./rs-x-core/package.json').version)"
 
+      - name: Debug publish identity
+        run: |
+          echo "github.ref=${{ github.ref }}"
+          echo "github.ref_name=${{ github.ref_name }}"
+          echo "github.workflow=${{ github.workflow }}"
+          echo "github.workflow_ref=${{ github.workflow_ref }}"
+          echo "github.repository=${{ github.repository }}"
+          echo "github.repository_owner=${{ github.repository_owner }}"
+          echo "job.environment=${{ job.environment.name || 'none' }}"
+
       # ---------------- BUILD ----------------
       - name: Build Node libraries
         run: pnpm run build:libs
