@@ -11,6 +11,7 @@ type RsxPreparsedModule = {
 async function loadCompiledModule(): Promise<RsxCompiledModule> {
   try {
     return (await import(
+      /* @vite-ignore */
       '../rsx-generated/' + 'rsx-aot-compiled.generated'
     )) as RsxCompiledModule;
   } catch {
@@ -21,6 +22,7 @@ async function loadCompiledModule(): Promise<RsxCompiledModule> {
 async function loadPreparsedModule(): Promise<RsxPreparsedModule> {
   try {
     return (await import(
+      /* @vite-ignore */
       '../rsx-generated/' + 'rsx-aot-preparsed.generated'
     )) as RsxPreparsedModule;
   } catch {

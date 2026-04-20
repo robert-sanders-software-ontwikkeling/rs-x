@@ -133,6 +133,7 @@ const expectedByFramework = {
     scripts: ['build:rsx', 'dev', 'build'],
     deps: ['@rs-x/react', '@rs-x/compiler', '@rs-x/typescript-plugin'],
     files: ['src/main.tsx', 'src/rsx-bootstrap.ts', 'src/app/app.tsx'],
+    bootstrap: 'src/rsx-bootstrap.ts',
     config: {
       buildPrefix: 'src/rsx-generated/',
       defaultDirectory: 'src/expressions'
@@ -142,6 +143,7 @@ const expectedByFramework = {
     scripts: ['build:rsx', 'dev', 'build'],
     deps: ['@rs-x/vue', '@rs-x/compiler', '@rs-x/typescript-plugin'],
     files: ['src/main.ts', 'src/App.vue', 'src/lib/rsx-bootstrap.ts'],
+    bootstrap: 'src/lib/rsx-bootstrap.ts',
     config: {
       buildPrefix: 'src/rsx-generated/',
       defaultDirectory: 'src/expressions'
@@ -150,7 +152,8 @@ const expectedByFramework = {
   next: {
     scripts: ['build:rsx', 'dev', 'build'],
     deps: ['@rs-x/react', '@rs-x/compiler', '@rs-x/typescript-plugin'],
-    files: ['app/layout.tsx', 'app/page.tsx', 'components/demo-app.tsx'],
+    files: ['app/layout.tsx', 'app/page.tsx', 'components/demo-app.tsx', 'lib/rsx-bootstrap.ts'],
+    bootstrap: 'lib/rsx-bootstrap.ts',
     config: {
       buildPrefix: 'app/rsx-generated/',
       defaultDirectory: 'app/expressions'
@@ -188,6 +191,12 @@ if (typeof rsxConfig.build.compiledFile !== 'string' || !rsxConfig.build.compile
 }
 if (rsxConfig.cli.add.defaultDirectory !== expected.config.defaultDirectory) {
   throw new Error('Unexpected rsx.config.json cli.add.defaultDirectory: ' + rsxConfig.cli.add.defaultDirectory);
+}
+if (typeof expected.bootstrap === 'string') {
+  const bootstrapContents = fs.readFileSync(expected.bootstrap, 'utf8');
+  if (!bootstrapContents.includes('/* @vite-ignore */')) {
+    throw new Error('Bootstrap file is missing @vite-ignore: ' + expected.bootstrap);
+  }
 }
 " 
   then

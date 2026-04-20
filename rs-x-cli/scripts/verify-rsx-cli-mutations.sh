@@ -973,6 +973,10 @@ verify_bootstrap_custom_paths() {
     printf '%s: rsx-bootstrap.ts does not use configured preparseFile path (expected %s).\n' "$label" "$expected_preparse_dir"
     return 1
   fi
+  if ! grep -qF '/* @vite-ignore */' "$bootstrap_file"; then
+    printf '%s: rsx-bootstrap.ts does not suppress Vite dynamic import analysis.\n' "$label"
+    return 1
+  fi
   return 0
 }
 
