@@ -25,7 +25,7 @@
     "rs-x-ui"
   ],
   "scripts": {
-    "build:libs": "pnpm --filter '@rs-x/core' run build && pnpm --filter '@rs-x/state-manager' run build && pnpm --filter '@rs-x/expression-parser' run build && pnpm --filter '@rs-x/react' run build && pnpm --filter '@rs-x/vue' run build",
+    "build:libs": "pnpm --filter '@rs-x/core' run build && pnpm --filter '@rs-x/state-manager' run build && pnpm --filter '@rs-x/expression-parser' run build && pnpm --filter '@rs-x/compiler' run build && pnpm --filter '@rs-x/react' run build && pnpm --filter '@rs-x/vue' run build",
     "build:angular": "pnpm --prefix rs-x-angular run build:angular",
     "clean": "pnpm -r exec rimraf node_modules dist && pnpm exec rimraf node_modules dist .pnpm-store",
     "reinstall": "pnpm run clean && pnpm install",
