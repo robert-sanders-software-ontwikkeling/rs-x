@@ -118,9 +118,11 @@ declare module '@rs-x/react' {
     continue(): void;
   };
 
-  export function useRsxExpression<T>(expression: IExpression<T>): T | null;
   export function useRsxExpression<T>(
-    expressionFactory: () => IExpression<T>,
+    expression: import('@rs-x/expression-parser').IExpression<T>,
+  ): T | null;
+  export function useRsxExpression<T>(
+    expressionFactory: () => import('@rs-x/expression-parser').IExpression<T>,
     deps?: readonly unknown[],
   ): T | null;
   export function useRsxModel<TModel extends object>(
@@ -132,7 +134,7 @@ declare module '@rs-x/react' {
 
 declare module '@rs-x/vue' {
   export function useRsxExpression<T>(
-    expression: IExpression<T>,
+    expression: import('@rs-x/expression-parser').IExpression<T>,
   ): { value: T | null };
   export function useRsxModel<TModel extends object>(
     model: TModel,

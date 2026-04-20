@@ -148,4 +148,51 @@ describe('validateFrameworkSourceWithRsxCompiler', () => {
 
     expect(diagnostics).toEqual([]);
   });
+
+  it('keeps accepting the exact current React pre-built docs example', async () => {
+    const diagnostics = await validateFrameworkSourceWithRsxCompiler({
+      framework: 'react',
+      userSource: [
+        "import { rsx } from '@rs-x/expression-parser';",
+        "import { useRsxExpression } from '@rs-x/react';",
+        '',
+        '// Create a module-scoped model and expression once',
+        'const model = { price: 100, quantity: 3 };',
+        "const totalExpr = rsx<number>('price * quantity')(model);",
+        '',
+        'export default function OrderTotal() {',
+        '  // Pass the pre-built IExpression — no model needed',
+        '  const total = useRsxExpression(totalExpr);',
+        '',
+        '  return (',
+        '    <div>',
+        '      <label>',
+        '        Price',
+        '        <input',
+        '          type="number"',
+        '          value={model.price}',
+        '          onChange={(event) => {',
+        '            model.price = Number(event.target.value);',
+        '          }}',
+        '        />',
+        '      </label>',
+        '      <label>',
+        '        Quantity',
+        '        <input',
+        '          type="number"',
+        '          value={model.quantity}',
+        '          onChange={(event) => {',
+        '            model.quantity = Number(event.target.value);',
+        '          }}',
+        '        />',
+        '      </label>',
+        '      <span>Total: {total}</span>',
+        '    </div>',
+        '  );',
+        '}',
+      ].join('\n'),
+    });
+
+    expect(diagnostics).toEqual([]);
+  });
 });
