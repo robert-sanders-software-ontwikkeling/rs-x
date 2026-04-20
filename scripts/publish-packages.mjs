@@ -57,12 +57,28 @@ function getLocalPackageVersion(folder) {
 }
 
 function pnpmInfoExists(pkgName) {
-  try {
-    execSync(`pnpm info ${pkgName}`, { stdio: 'ignore' });
-    return true;
-  } catch {
+  const result = spawnSync('pnpm', ['info', pkgName, 'version', '--json'], {
+    stdio: 'pipe',
+    env: process.env,
+  });
+
+  if (result.error) {
+    console.warn(
+      `[publish] Failed to check npm info for ${pkgName}: ${result.error.message}`,
+    );
     return false;
   }
+
+  if (result.status !== 0) {
+    const stderr = result.stderr?.toString().trim();
+    if (stderr) {
+      console.warn(`[publish] pnpm info ${pkgName} failed: ${stderr}`);
+    }
+    return false;
+  }
+
+  const stdout = result.stdout?.toString().trim();
+  return Boolean(stdout && stdout !== 'null');
 }
 
 // ---------------- PATCH ANGULAR ----------------
