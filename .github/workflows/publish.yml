@@ -205,7 +205,7 @@ jobs:
 
       # ---------------- COMMIT VERSION BUMP ----------------
       - name: Open PR for version bump
-        if: success() && github.ref == 'refs/heads/main'
+        if: success() && env.DIST_TAG == 'latest' && github.ref == 'refs/heads/main'
         id: create-pr
         uses: peter-evans/create-pull-request@v7
         with:
@@ -218,7 +218,7 @@ jobs:
           base: main
 
       - name: Auto-merge version bump PR
-        if: success() && github.ref == 'refs/heads/main' && steps.create-pr.outputs.pull-request-number != ''
+        if: success() && env.DIST_TAG == 'latest' && github.ref == 'refs/heads/main' && steps.create-pr.outputs.pull-request-number != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh pr merge ${{ steps.create-pr.outputs.pull-request-number }} --auto --squash --repo ${{ github.repository }}
