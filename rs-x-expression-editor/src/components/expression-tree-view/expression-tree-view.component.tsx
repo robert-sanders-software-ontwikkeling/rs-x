@@ -2,8 +2,8 @@ import React, { useMemo } from 'react';
 
 import { PrettyPrinter } from '@rs-x/core';
 import type {
-  IExpression,
   IExpressionChangeHistory,
+  IExpressionTree,
 } from '@rs-x/expression-parser';
 
 import { useExpressionChangedRerender } from './hooks/use-expression-changed-rerender';
@@ -19,7 +19,7 @@ import './expression-tree-view.component.css';
 
 export interface IExpressionTreeProps {
   version: number;
-  root: IExpression;
+  root: IExpressionTree;
 
   nodeWidth?: number;
   nodeHeight?: number;

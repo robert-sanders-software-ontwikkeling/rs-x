@@ -1,0 +1,62 @@
+{
+  "name": "@rs-x/compiler",
+  "version": "1.0.2",
+  "description": "Compile-time tooling scaffold for RS-X expression analysis and diagnostics",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "import": "./dist/testing/index.js",
+      "default": "./dist/testing/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x"
+  },
+  "homepage": "https://rsxjs.com",
+  "bugs": {
+    "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsup lib/index.ts --format esm,cjs --dts",
+    "clean": "rimraf dist",
+    "test": "cross-env TZ=UTC pnpm jest --runInBand --no-cache --config ../jest.config.ts rs-x-compiler/tests"
+  },
+  "dependencies": {
+    "@rs-x/expression-parser": "workspace:*",
+    "typescript": "^6.0.2"
+  },
+  "devDependencies": {
+    "globals": "^17.4.0",
+    "rimraf": "^6.1.3",
+    "tsup": "^8.5.1"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "keywords": [
+    "rs-x",
+    "compiler",
+    "typescript",
+    "language-service",
+    "intellisense"
+  ]
+}

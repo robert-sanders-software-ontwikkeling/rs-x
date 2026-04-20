@@ -21,7 +21,7 @@ function initializeRsx(): () => Promise<void> {
   return () => {
     if (
       InjectionContainer.isBound(
-        RsXExpressionParserInjectionTokens.IExpressionFactory,
+        RsXExpressionParserInjectionTokens.IExpressionParser,
       )
     ) {
       return Promise.resolve();

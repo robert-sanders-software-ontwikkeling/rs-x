@@ -9,7 +9,7 @@ import { SyntaxCodeBlock } from '../../../components/SyntaxCodeBlock';
 export const metadata = {
   title: 'Expression Change Transaction Manager',
   description:
-    'Batch expression change emission with suspend/continue/commit in rs-x.',
+    'Coordinate expression commit boundaries with suspend/continue/commit in rs-x.',
 };
 
 const usageCode = dedent`
@@ -30,26 +30,36 @@ const usageCode = dedent`
   const model = { a: 1, b: 2 };
   const expression = rsx<number>('a + b')(model);
 
+  const unsubscribeCommitted = tx.subscribeCommitted(() => {
+    console.log('commit boundary reached');
+  });
+
   expression.changed.subscribe(() => {
     console.log('changed ->', expression.value);
   });
 
+  // Batch writes
   tx.suspend();
   model.a = 10;
   model.b = 20;
-  tx.continue(); // commits pending changes and emits consolidated notifications
+  tx.continue(); // resumes + commit()
+
+  unsubscribeCommitted();
 `;
 
 const apiCode = dedent`
+  export type IExpressionCommitListener = () => void;
+
+  export interface IDirtyFlushable {
+    flush(): void;
+  }
+
   export interface IExpressionChangeTransactionManager extends IDisposable {
-    readonly commited: Observable<AbstractExpression>;
-    registerChange(
-      rootExpression: AbstractExpression,
-      commitHandler: IExpressionChangeCommitHandler,
-    ): void;
+    subscribeCommitted(listener: IExpressionCommitListener): () => void;
     suspend(): void;
     continue(): void;
     commit(): void;
+    scheduleDirtyFlush(manager: IDirtyFlushable): void;
   }
 `;
 
@@ -91,14 +101,15 @@ export default function ExpressionChangeTransactionManagerDocsPage() {
         <article className="card docsApiCard">
           <h2 className="cardTitle">Description</h2>
           <p className="cardText">
-            Coordinates expression commit handlers per evaluation root and
-            flushes them as one transaction boundary.
+            Coordinates commit boundaries for expression evaluation. Internally,
+            expression evaluate managers subscribe once and flush pending work
+            when commits are triggered.
           </p>
           <p className="cardText">
-            In practice, identifier updates call{' '}
-            <span className="codeInline">registerChange(...)</span>, the manager
-            groups these handlers in a per-root queue, and commit emits a single
-            committed-root signal after reevaluation stabilizes.
+            It also provides a shared microtask queue via{' '}
+            <span className="codeInline">scheduleDirtyFlush(...)</span> so
+            multiple dirty managers can flush once per microtask instead of
+            creating independent flush loops.
           </p>
         </article>
 
@@ -107,16 +118,16 @@ export default function ExpressionChangeTransactionManagerDocsPage() {
           <ApiParameterList
             items={[
               {
-                name: 'rootExpression',
-                type: 'AbstractExpression',
+                name: 'listener',
+                type: '() => void',
                 description:
-                  'Root expression whose commit should be coordinated by the change transaction manager.',
+                  'Commit listener passed to subscribeCommitted(listener). Returns an unsubscribe function.',
               },
               {
-                name: 'commitHandler',
-                type: 'IExpressionChangeCommitHandler',
+                name: 'manager',
+                type: 'IDirtyFlushable',
                 description:
-                  'Callback invoked when the manager flushes a commit cycle.',
+                  'Dirty manager passed to scheduleDirtyFlush(manager). Must expose flush(): void.',
               },
             ]}
           />
@@ -133,8 +144,8 @@ export default function ExpressionChangeTransactionManagerDocsPage() {
             All control methods return <span className="codeInline">void</span>.
           </p>
           <p className="cardText">
-            <span className="codeInline">commited</span> is an observable event
-            stream of committed root expressions.
+            <span className="codeInline">subscribeCommitted(...)</span> returns
+            an unsubscribe callback.
           </p>
         </article>
 
@@ -149,34 +160,28 @@ export default function ExpressionChangeTransactionManagerDocsPage() {
             immediately triggers <span className="codeInline">commit()</span>.
           </p>
           <p className="cardText">
-            <span className="codeInline">commit()</span> flushes pending commit
-            handlers for each root and emits on{' '}
-            <span className="codeInline">commited</span> once that root has no
-            pending handlers left in the current microtask pass.
+            Keep <span className="codeInline">suspend()</span> /{' '}
+            <span className="codeInline">continue()</span> calls balanced.
+            <span className="codeInline"> continue() </span>
+            decrements internal suspend depth.
           </p>
         </article>
 
         <article className="card docsApiCard">
           <h2 className="cardTitle">Internal lifecycle</h2>
           <p className="cardText">
-            The manager listens to state-manager{' '}
-            <span className="codeInline">startChangeCycle</span> and{' '}
-            <span className="codeInline">endChangeCycle</span>. A depth counter
-            gates auto-commit, so flush happens only when the outermost cycle
-            finishes and batching is not suspended.
+            <span className="codeInline">subscribeCommitted(...)</span>{' '}
+            listeners are one-shot per commit call. Internally, listeners are
+            copied, cleared, then invoked.
           </p>
           <p className="cardText">
-            Pending work is stored as{' '}
-            <span className="codeInline">
-              Map&lt;rootExpression, Set&lt;commitHandler&gt;&gt;
-            </span>
-            . This deduplicates repeated handler registrations per root in one
-            cycle.
+            <span className="codeInline">scheduleDirtyFlush(...)</span> batches
+            dirty managers in a shared set and flushes them in the next
+            microtask using <span className="codeInline">queueMicrotask</span>.
           </p>
           <p className="cardText">
-            Commit execution runs in microtask passes. Each pass can trigger
-            additional registrations during reevaluation; the next microtask
-            pass flushes those before final committed emission.
+            If suspended, <span className="codeInline">commit()</span> is
+            ignored until suspension depth returns to zero.
           </p>
         </article>
 

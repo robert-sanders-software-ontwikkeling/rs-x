@@ -6,6 +6,8 @@ import {
   RsXCoreModule,
 } from '@rs-x/core';
 
+import { IndexWatchRuleFactory } from './index-watch-rule/index-watch-rule.factory';
+import { type IIndexWatchRuleFactory } from './index-watch-rule/index-watch-rule.factory.interface';
 import { ArrayObserverProxyPairFactory } from './object-observer/factories/array-observer-proxy-pair.factory';
 import { DateObserverProxyPairFactory } from './object-observer/factories/date-observer-proxy-pair.factory';
 import { MapObserverProxyPairFactory } from './object-observer/factories/map-observer-proxy-pair.factory';
@@ -42,6 +44,10 @@ import { ObjectStateManager } from './state-manager/object-state-manager';
 import { type IObjectStateManager } from './state-manager/object-state-manager.interface';
 import { StateManager } from './state-manager/state-manager';
 import { type IStateManager } from './state-manager/state-manager.interface';
+import {
+  type IWatchFactory,
+  WatchFactory,
+} from './state-manager/watch-factory/watch-factory';
 import { ObjectPropertyObserverProxyPairManager } from './object-property-observer-proxy-pair-manager';
 import { type IObjectPropertyObserverProxyPairManager } from './object-property-observer-proxy-pair-manager.type';
 import { RsXStateManagerInjectionTokens } from './rs-x-state-manager-injection-tokens';
@@ -135,6 +141,13 @@ export const RsXStateManagerModule = new ContainerModule((options) => {
     )
     .to(ObjectPropertyObserverProxyPairManager)
     .inSingletonScope();
+  options
+    .bind<IIndexWatchRuleFactory>(
+      RsXStateManagerInjectionTokens.IIndexWatchRuleFactory,
+    )
+    .to(IndexWatchRuleFactory)
+    .inSingletonScope();
+
   registerMultiInjectServices(
     options,
     RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList,
@@ -194,6 +207,11 @@ export const RsXStateManagerModule = new ContainerModule((options) => {
   options
     .bind<IStateManager>(RsXStateManagerInjectionTokens.IStateManager)
     .to(StateManager)
+    .inSingletonScope();
+
+  options
+    .bind<IWatchFactory>(RsXStateManagerInjectionTokens.IWatchFactory)
+    .to(WatchFactory)
     .inSingletonScope();
 });
 

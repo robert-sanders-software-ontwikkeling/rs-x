@@ -9,3 +9,12 @@ node_modules
 dist
 build
 coverage
+reports
+.vscode
+pnpm-lock.yaml
+package-lock.json
+**/*.generated.ts
+**/rsx-generated/**
+**/tmp-*.mjs
+**/tmp-*.ts
+**/.tmp-*

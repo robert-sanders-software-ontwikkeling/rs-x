@@ -13,7 +13,7 @@ import {
 } from '@rs-x/core';
 
 import { AbstractObserver } from '../../../abstract-observer';
-import { IndexWatchRule } from '../../../index-watch-rule-registry';
+import type { IIndexWatchRuleFactory } from '../../../index-watch-rule/index-watch-rule.factory.interface';
 import type { IObserver } from '../../../observer.interface';
 import type { IDateProxyFactory } from '../../../proxies/date-proxy/date-proxy.factory.type';
 import { RsXStateManagerInjectionTokens } from '../../../rs-x-state-manager-injection-tokens';
@@ -86,6 +86,7 @@ class ProperForDataObserverManager
     private readonly _date: Date,
     private readonly _dateProxyFactory: IDateProxyFactory,
     private readonly _datePropertyAccessor: IDatePropertyAccessor,
+    private readonly _indexWatchRuleFactory: IIndexWatchRuleFactory,
     private readonly _errorLog: IErrorLog,
     private readonly releaseObject: () => void,
   ) {
@@ -104,10 +105,11 @@ class ProperForDataObserverManager
     data: IDatePropertyObserverInfo,
     index: DateProperty,
   ): IObserver {
-    const indexWatchPredicate = (targetIndex, target, context) =>
-      targetIndex === index && target === context;
+    const indexWatchRule = this._indexWatchRuleFactory.create(
+      this._date,
+      index,
+    );
 
-    const indexWatchRule = new IndexWatchRule(this._date, indexWatchPredicate);
     const dateObserver = this._dateProxyFactory.create({
       date: this._date,
       indexWatchRule,
@@ -146,6 +148,8 @@ export class DatePropertyObserverManager
     private readonly _errorLog: IErrorLog,
     @Inject(RsXCoreInjectionTokens.IDatePropertyAccessor)
     private readonly _datePropertyAccessor: IDatePropertyAccessor,
+    @Inject(RsXStateManagerInjectionTokens.IIndexWatchRuleFactory)
+    private readonly _indexWatchRuleFactory: IIndexWatchRuleFactory,
   ) {
     super();
   }
@@ -163,6 +167,7 @@ export class DatePropertyObserverManager
       date,
       this._dateProxyFactory,
       this._datePropertyAccessor,
+      this._indexWatchRuleFactory,
       this._errorLog,
       () => this.release(date),
     );

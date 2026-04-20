@@ -18,10 +18,16 @@ export class ExpressionFactory implements IExpressionFactory {
     context: object,
     expressionString: string,
     leafIndexWatchRule?: IIndexWatchRule,
+    compiled?: boolean,
+    lazy?: boolean,
+    lazyGroup?: string,
   ): IExpression<T> {
-    return this._expressionManager
-      .create(context)
-      .instance.create({ expressionString, leafIndexWatchRule })
-      .instance as IExpression<T>;
+    return this._expressionManager.createAndGetInstance(context).create({
+      expressionString,
+      leafIndexWatchRule,
+      compiled,
+      lazy,
+      lazyGroup,
+    }).instance as IExpression<T>;
   }
 }

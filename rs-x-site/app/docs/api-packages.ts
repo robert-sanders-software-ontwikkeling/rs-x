@@ -10,7 +10,18 @@ export type DocsLinkItem = {
   meta: string;
 };
 
-export type ApiPackageKey = 'core' | 'state-manager' | 'expression-parser';
+export type ApiPackageKey =
+  | 'core'
+  | 'state-manager'
+  | 'expression-parser'
+  | 'compiler'
+  | 'typescript-plugin'
+  | 'cli'
+  | 'angular'
+  | 'react'
+  | 'vue'
+  | 'react-components'
+  | 'dev-tools';
 
 export type ApiPackageConfig = {
   key: ApiPackageKey;
@@ -30,7 +41,9 @@ function formatModuleLabel(moduleName: string): string {
   return moduleName.replace(/\.ts$/i, '').replace(/\./g, '-');
 }
 
-const coreLinks = Array.from(new Set(coreApiItems.map((item) => item.module)))
+export const coreLinks = Array.from(
+  new Set(coreApiItems.map((item) => item.module)),
+)
   .sort((a, b) => a.localeCompare(b))
   .map((moduleName) => {
     const count = coreApiItems.filter(
@@ -43,7 +56,7 @@ const coreLinks = Array.from(new Set(coreApiItems.map((item) => item.module)))
     };
   });
 
-const expressionParserLinks: DocsLinkItem[] = [
+export const expressionParserLinks: DocsLinkItem[] = [
   {
     href: '/docs/expression-change-transaction-manager',
     title: 'Change transaction manager',
@@ -78,6 +91,11 @@ const expressionParserLinks: DocsLinkItem[] = [
     href: '/docs/rsx-function',
     title: 'rsx function',
     meta: 'Binding entry point',
+  },
+  {
+    href: '/docs/irsx-options',
+    title: 'IRsxOptions',
+    meta: 'Declaration options for rsx(expression, options)',
   },
   {
     href: '/docs/expression-change-tracker-manager',
@@ -121,12 +139,86 @@ const expressionParserLinks: DocsLinkItem[] = [
   },
 ];
 
-const stateManagerLinks: DocsLinkItem[] = [
+export const stateManagerLinks: DocsLinkItem[] = [
   ...stateManagerApiGroupEntries.map((group) => ({
     href: `/docs/state-manager-api#${group.key}`,
     title: group.title,
     meta: `${group.apiEntryCount} API entries`,
   })),
+];
+
+const compilerLinks: DocsLinkItem[] = [
+  {
+    href: '/docs/core-concepts/compiler',
+    title: 'Compiler',
+    meta: 'Build-time parsing, validation, and compiled expressions',
+  },
+  {
+    href: '/docs/core-concepts/cli',
+    title: 'CLI',
+    meta: 'Install compiler tooling via rsx install compiler',
+  },
+];
+
+const typescriptPluginLinks: DocsLinkItem[] = [
+  {
+    href: '/docs/core-concepts/compiler',
+    title: 'Compiler integration',
+    meta: 'Language service and TypeScript plugin behavior',
+  },
+];
+
+const cliLinks: DocsLinkItem[] = [
+  {
+    href: '/docs/core-concepts/cli',
+    title: 'CLI',
+    meta: 'Install, setup, build, and typecheck workflows',
+  },
+  {
+    href: '/get-started',
+    title: 'Get started',
+    meta: 'Bootstrap an rs-x project',
+  },
+];
+
+const reactLinks: DocsLinkItem[] = [
+  {
+    href: '/docs/frameworks/react',
+    title: 'React integration',
+    meta: 'useRsxExpression and useRsxModel hooks',
+  },
+];
+
+const vueLinks: DocsLinkItem[] = [
+  {
+    href: '/docs/frameworks/vue',
+    title: 'Vue integration',
+    meta: 'useRsxExpression composable',
+  },
+];
+
+const angularLinks: DocsLinkItem[] = [
+  {
+    href: '/docs/frameworks/angular',
+    title: 'Angular integration',
+    meta: 'RsxPipe and providexRsx() for templates',
+  },
+];
+
+const reactComponentsLinks: DocsLinkItem[] = [
+  {
+    href: '/docs',
+    title: 'Docs UI',
+    meta: 'Shared docs components and playground UI',
+  },
+];
+
+const devToolsLinks: DocsLinkItem[] = [
+  {
+    href: '/docs/core-concepts/performance-report',
+    title: 'Performance report',
+    meta: 'Benchmarks and performance dashboards',
+  },
 ];
 
 export const apiPackages: ApiPackageConfig[] = [
@@ -155,10 +247,80 @@ export const apiPackages: ApiPackageConfig[] = [
     description: 'Expression parsing, tracking, and reactive evaluation APIs.',
     links: expressionParserLinks,
   },
+  {
+    key: 'compiler',
+    name: '@rs-x/compiler',
+    href: '/docs/core-concepts/compiler',
+    description: 'Build-time parsing, validation, and compiled expressions.',
+    links: compilerLinks,
+  },
+  {
+    key: 'typescript-plugin',
+    name: '@rs-x/typescript-plugin',
+    href: '/docs/core-concepts/compiler',
+    description: 'Language service plugin for rsx diagnostics.',
+    links: typescriptPluginLinks,
+  },
+  {
+    key: 'cli',
+    name: '@rs-x/cli',
+    href: '/docs/core-concepts/cli',
+    description: 'Project setup, build, and tooling automation.',
+    links: cliLinks,
+  },
+  {
+    key: 'angular',
+    name: '@rs-x/angular',
+    href: '/docs/frameworks/angular',
+    description: 'Angular integration and rsx pipe bindings.',
+    links: angularLinks,
+  },
+  {
+    key: 'react',
+    name: '@rs-x/react',
+    href: '/docs/frameworks/react',
+    description: 'React hooks integration for rs-x expressions.',
+    links: reactLinks,
+  },
+  {
+    key: 'vue',
+    name: '@rs-x/vue',
+    href: '/docs/frameworks/vue',
+    description: 'Vue composable integration for rs-x expressions.',
+    links: vueLinks,
+  },
+  {
+    key: 'react-components',
+    name: '@rs-x/react-components',
+    href: '/docs',
+    description: 'Shared UI components for docs and playgrounds.',
+    links: reactComponentsLinks,
+  },
+  {
+    key: 'dev-tools',
+    name: '@rs-x/dev-tools',
+    href: '/docs/core-concepts/performance-report',
+    description: 'Benchmarks, reports, and dev tooling utilities.',
+    links: devToolsLinks,
+  },
 ];
 
 export const apiPackagesByKey: Record<ApiPackageKey, ApiPackageConfig> = {
-  core: apiPackages[0],
-  'state-manager': apiPackages[1],
-  'expression-parser': apiPackages[2],
+  core: apiPackages.find((pkg) => pkg.key === 'core')!,
+  'state-manager': apiPackages.find((pkg) => pkg.key === 'state-manager')!,
+  'expression-parser': apiPackages.find(
+    (pkg) => pkg.key === 'expression-parser',
+  )!,
+  compiler: apiPackages.find((pkg) => pkg.key === 'compiler')!,
+  'typescript-plugin': apiPackages.find(
+    (pkg) => pkg.key === 'typescript-plugin',
+  )!,
+  cli: apiPackages.find((pkg) => pkg.key === 'cli')!,
+  angular: apiPackages.find((pkg) => pkg.key === 'angular')!,
+  react: apiPackages.find((pkg) => pkg.key === 'react')!,
+  vue: apiPackages.find((pkg) => pkg.key === 'vue')!,
+  'react-components': apiPackages.find(
+    (pkg) => pkg.key === 'react-components',
+  )!,
+  'dev-tools': apiPackages.find((pkg) => pkg.key === 'dev-tools')!,
 };

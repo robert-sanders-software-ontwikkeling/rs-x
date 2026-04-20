@@ -16,7 +16,9 @@ export const metadata = {
 
 const apiCode = dedent`
   export interface IIndexWatchRule {
+    id: unknown;
     context: unknown;
+    dispose(): void;
     test(index: unknown, target: unknown): boolean;
   }
 `;
@@ -26,10 +28,12 @@ const rsxUsageCode = dedent`
   import type { IIndexWatchRule } from '@rs-x/state-manager';
 
   const watchRule: IIndexWatchRule = {
+    id: 'my-watch-rule',
     context: { allow: new Set(['a', 'b']) },
     test(index) {
       return this.context.allow.has(String(index));
     },
+    dispose() {},
   };
 
   const model = { a: 1, b: 2, c: 3 };
@@ -38,15 +42,34 @@ const rsxUsageCode = dedent`
 
 const stateManagerUsageCode = dedent`
   import type { IStateManager } from '@rs-x/state-manager';
+  import type { IIndexWatchRule } from '@rs-x/state-manager';
 
-  const watchRule = {
+  const watchRule: IIndexWatchRule = {
+    id: 'recursive-toggle',
     context: { recursive: true },
     test(_index, _target) {
       return this.context.recursive;
     },
+    dispose() {},
   };
 
   stateManager.watchState(model, 'user', { indexWatchRule: watchRule });
+`;
+
+const currentImplementationCode = dedent`
+  import { IndexWatchRuleFactory } from '@rs-x/state-manager';
+
+  const model = { user: { profile: { name: 'Ada' } } };
+  const factory = new IndexWatchRuleFactory();
+
+  // The runtime creates a rule for one (context, index) pair.
+  // Rule semantics: test(nextIndex, nextTarget) is true only when
+  // nextIndex === index && nextTarget === context.
+  const rule = factory.create(model, 'user');
+
+  // Use it in watchState/rsx APIs, then dispose when done.
+  stateManager.watchState(model, 'user', { indexWatchRule: rule });
+  rule.dispose();
 `;
 
 const fullRecursiveShortcutCode = dedent`
@@ -58,7 +81,6 @@ const fullRecursiveShortcutCode = dedent`
 `;
 
 const plainObjectPlaygroundCode = dedent`
-  const rsx = api.rsx;
 
   const model = {
     user: {
@@ -101,7 +123,6 @@ const plainObjectPlaygroundCode = dedent`
 `;
 
 const datePlaygroundCode = dedent`
-  const rsx = api.rsx;
 
   const model = {
     schedule: {
@@ -144,7 +165,6 @@ const datePlaygroundCode = dedent`
 `;
 
 const arrayPlaygroundCode = dedent`
-  const rsx = api.rsx;
 
   const model = {
     items: [
@@ -189,8 +209,6 @@ const arrayPlaygroundCode = dedent`
 `;
 
 const mapPlaygroundCode = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const admin = { enabled: true, rank: 1 };
@@ -251,8 +269,6 @@ const mapPlaygroundCode = dedent`
 `;
 
 const setPlaygroundCode = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const taskA = { id: 'A', done: false, note: 'leaf object' };
@@ -412,6 +428,11 @@ export default function IndexWatchRuleDocsPage() {
             collection membership mutations. But nested member/property changes
             under leaf values are only tracked when the rule allows them.
           </p>
+          <p className="cardText">
+            Current runtime behavior uses factory-managed rules keyed by
+            <span className="codeInline"> (context, index) </span> pairs to keep
+            watch-rule identity stable and disposable.
+          </p>
         </article>
 
         <article className="card docsApiCard">
@@ -436,9 +457,25 @@ export default function IndexWatchRuleDocsPage() {
         </article>
 
         <article className="card docsApiCard">
+          <h2 className="cardTitle">Current Factory Implementation</h2>
+          <p className="cardText">
+            <span className="codeInline">IndexWatchRuleFactory</span> creates
+            lightweight rules that match exactly one context/index pair. This is
+            the default watch-rule implementation used by state-manager.
+          </p>
+          <SyntaxCodeBlock code={currentImplementationCode} />
+        </article>
+
+        <article className="card docsApiCard">
           <h2 className="cardTitle">Parameters</h2>
           <ApiParameterList
             items={[
+              {
+                name: 'id',
+                type: 'unknown',
+                description:
+                  'Stable identifier for rule identity/reference tracking.',
+              },
               {
                 name: 'context',
                 type: 'unknown',
@@ -455,6 +492,11 @@ export default function IndexWatchRuleDocsPage() {
                 type: 'unknown',
                 description:
                   'Object/collection that owns the current index/member.',
+              },
+              {
+                name: 'dispose',
+                type: '() => void',
+                description: 'Releases rule resources when no longer needed.',
               },
             ]}
           />
@@ -500,6 +542,13 @@ export default function IndexWatchRuleDocsPage() {
           <div className="qsCodeHeader">
             <div className="qsCodeTitle">Watch everything under the leaf</div>
           </div>
+          <p className="cardText">
+            Use the pre-built{' '}
+            <Link href="/docs/watch-index-recursive-rule">
+              <span className="codeInline">watchIndexRecursiveRule</span>
+            </Link>{' '}
+            to enable recursive observation without writing a custom rule.
+          </p>
           <SyntaxCodeBlock code={fullRecursiveShortcutCode} />
         </article>
 

@@ -13,6 +13,68 @@ import { stateManagerApiBySymbol } from '../state-manager-api.helpers';
 const STATE_MANAGER_GITHUB_BASE =
   'https://github.com/robert-sanders-software-ontwikkeling/rs-x/blob/main/rs-x-state-manager/lib';
 
+type SingletonBinding = {
+  token: string;
+  serviceType: string;
+};
+
+const SINGLETON_SERVICE_BINDINGS: Record<string, SingletonBinding> = {
+  ArrayProxyFactory: {
+    token: 'IArrayProxyFactory',
+    serviceType: 'IArrayProxyFactory',
+  },
+  MapProxyFactory: {
+    token: 'IMapProxyFactory',
+    serviceType: 'IMapProxyFactory',
+  },
+  SetProxyFactory: {
+    token: 'ISetProxyFactory',
+    serviceType: 'ISetProxyFactory',
+  },
+  DateProxyFactory: {
+    token: 'IDateProxyFactory',
+    serviceType: 'IDateProxyFactory',
+  },
+  PromiseProxyFactory: {
+    token: 'IPromiseProxyFactory',
+    serviceType: 'IPromiseProxyFactory',
+  },
+  ObservableProxyFactory: {
+    token: 'IObservableProxyFactory',
+    serviceType: 'IObservableProxyFactory',
+  },
+  ObjectPropertyObserverProxyPairManager: {
+    token: 'IObjectPropertyObserverProxyPairManager',
+    serviceType: 'IObjectPropertyObserverProxyPairManager',
+  },
+  ObjectObserverProxyPairFactoryProvider: {
+    token: 'IObjectObserverProxyPairFactoryProvider',
+    serviceType: 'IObjectObserverProxyPairFactoryProvider',
+  },
+  ObjectObserverProxyPairManager: {
+    token: 'IObjectObserverProxyPairManager',
+    serviceType: 'IObjectObserverProxyPairManager',
+  },
+  ObjectPropertyObserverManager: {
+    token: 'IObjectPropertyObserverManager',
+    serviceType: 'IObjectPropertyObserverManager',
+  },
+  DatePropertyObserverManager: {
+    token: 'IDatePropertyObserverManager',
+    serviceType: 'IDatePropertyObserverManager',
+  },
+  ObjectStateManager: {
+    token: 'IObjectStateManager',
+    serviceType: 'IObjectStateManager',
+  },
+  StateManager: { token: 'IStateManager', serviceType: 'IStateManager' },
+  WatchFactory: { token: 'IWatchFactory', serviceType: 'IWatchFactory' },
+  IndexWatchRuleFactory: {
+    token: 'IIndexWatchRuleFactory',
+    serviceType: 'IIndexWatchRuleFactory',
+  },
+};
+
 const MODULE_DETAILS: Record<string, string> = {
   'state-manager':
     'Core state tracking module. Contains `StateManager` (the runtime implementation), `IStateManager` (its contract), the `IStateChange` and `IContextChanged` event payloads, `IStateOptions` for configuring recursive watches, and `IStateEventListener` for low-level keyed callbacks.',
@@ -20,8 +82,12 @@ const MODULE_DETAILS: Record<string, string> = {
     'Handles grouped observer subscriptions for each watched state key and index-watch-rule variant.',
   'grouped-change-subscriptions-for-context-manager':
     'Groups watcher subscriptions by context and exposes per-context subscription orchestration.',
+  'state-manager/watch-factory':
+    'Watch-factory runtime that provides keyed, reference-counted watch handles and zero-allocation listener dispatch hooks.',
   'object-property-observer-proxy-pair-manager':
     'Resolves observer/proxy pair managers by value type and coordinates observer lifecycle.',
+  'abstract-observer':
+    'Base observer abstraction shared by concrete observer and proxy implementations.',
   'object-observer':
     'Contains object-level observer contracts and managers used to detect structural and nested changes.',
   'object-observer/factories':
@@ -38,7 +104,7 @@ const MODULE_DETAILS: Record<string, string> = {
     'Observer/proxy pair support for indexed-value scenarios.',
   'property-observer/factories/non-iterable-object-property':
     'Property observer strategy for non-iterable object properties.',
-  'index-watch-rule-registry':
+  'index-watch-rule':
     'Index-watch-rule contracts, registry, and default recursive/non-recursive watch rules.',
   'proxies/array-proxy':
     'Array proxy factory and contracts that emit semantic index/mutation changes.',
@@ -65,15 +131,15 @@ const MODULE_DETAILS: Record<string, string> = {
 const MEMBER_DESCRIPTION_OVERRIDES: Record<string, Record<string, string>> = {
   IStateManager: {
     changed:
-      'Emits an `IStateChange` event every time a watched value meaningfully changes. The payload includes `{ context, index, oldValue, newValue, oldContext }`. Subscribe here to react to any mutation across all watched state.',
+      'Emits an `IStateChange` event every time a watched value meaningfully changes. The payload includes `{ context, index, oldValue, newValue, oldContext, watched }`. Subscribe here to react to any mutation across all watched state.',
     contextChanged:
       'Emits an `IContextChanged` event when the object at a watched path is replaced — for example when `model.doc` is assigned a new `TextDocument` instance. The expression runtime uses this to rebind downstream slots to the new context.',
     startChangeCycle:
-      'Emits `void` at the start of a change-processing cycle, before queued observer notifications are flushed. Useful for batching UI updates or measuring throughput.',
+      'Emits an `IChangeCycleIndex` payload at the start of a change-processing cycle, before queued observer notifications are flushed. Useful for batching UI updates or measuring throughput per `(context, index)`.',
     endChangeCycle:
-      'Emits `void` after all queued observer notifications in the current change cycle have been processed. Pair with `startChangeCycle` to bracket a batch of related changes.',
+      'Emits an `IChangeCycleIndex` payload after all queued observer notifications in the current change cycle have been processed. Pair with `startChangeCycle` to bracket a batch of related changes.',
     watchState:
-      'Starts watching `context[index]`. Creates an observer/proxy pair for the value, subscribes to mutations, and stores the current value. Returns the current value snapshot. Watches are reference-counted — each call increments the counter, and you must call `releaseState` once per `watchState` call. Accepts an optional `IStateOptions` with `indexWatchRule` (for recursive watching) and `ownerId` (for ownership tagging).',
+      'Starts watching `context[index]`. Creates an observer/proxy pair for the value, subscribes to mutations, and stores the current value. Returns the current value snapshot. Watches are reference-counted — each call increments the counter, and you must call `releaseState` once per `watchState` call. Accepts `IStateOptions` with `indexWatchRule` (recursive watching), `ownerId` (ownership tagging), and `suppressInitialChangeEmit` (skip initial change emission when wiring).',
     subscribeStateEvents:
       'Registers a low-overhead keyed listener directly on `(context, index)` without going through the global `changed` observable. Used internally by the expression runtime. Returns an unsubscribe function — call it to remove the listener.',
     releaseState:
@@ -91,13 +157,13 @@ const MEMBER_DESCRIPTION_OVERRIDES: Record<string, Record<string, string>> = {
   },
   StateManager: {
     changed:
-      'Emits an `IStateChange` event after each mutation cycle. The payload `{ context, index, oldValue, newValue, oldContext }` lets subscribers identify exactly which slot changed and what the previous value was.',
+      'Emits an `IStateChange` event after each mutation cycle. The payload `{ context, index, oldValue, newValue, oldContext, watched }` lets subscribers identify exactly which slot changed and what the previous value was.',
     contextChanged:
       'Emits when the object at a watched path is swapped out for a new instance. The expression runtime subscribes here to rebind all downstream expressions to the new context object.',
     startChangeCycle:
-      'Emits `void` before StateManager flushes the pending change queue. Subscribe to perform work that should precede all change notifications for a given cycle.',
+      'Emits an `IChangeCycleIndex` payload before StateManager flushes the pending change queue. Subscribe to perform work that should precede all change notifications for a given cycle.',
     endChangeCycle:
-      'Emits `void` after StateManager finishes processing all pending changes. Subscribe to perform work that should follow the complete cycle — e.g. triggering a single re-render after many fields changed.',
+      'Emits an `IChangeCycleIndex` payload after StateManager finishes processing all pending changes. Subscribe to perform work that should follow the complete cycle — e.g. triggering a single re-render after many fields changed.',
     watchState:
       'Registers a watch for `context[index]`. Wraps the current value in an observer/proxy, stores a snapshot, and increments the reference count. Returns the current value. Pass `{ indexWatchRule: watchIndexRecursiveRule }` as the third argument to enable recursive (deep) watching of nested objects.',
     subscribeStateEvents:
@@ -123,8 +189,8 @@ const SYMBOL_DOCS: Record<string, SymbolDocumentation> = {
       export class StateManager implements IStateManager {
         readonly changed: Observable<IStateChange>;
         readonly contextChanged: Observable<IContextChanged>;
-        readonly startChangeCycle: Observable<void>;
-        readonly endChangeCycle: Observable<void>;
+        readonly startChangeCycle: Observable<IChangeCycleIndex>;
+        readonly endChangeCycle: Observable<IChangeCycleIndex>;
         isWatched(context: unknown, index: unknown, indexWatchRule?: IIndexWatchRule): boolean;
         watchState(context: unknown, index: unknown, options?: IStateOptions): unknown;
         subscribeStateEvents(context: unknown, index: unknown, listener: IStateEventListener): () => void;
@@ -235,6 +301,82 @@ const SYMBOL_DOCS: Record<string, SymbolDocumentation> = {
     summary:
       'Keyed callback listener contract used by `subscribeStateEvents(...)` for direct `(context, index)` state and context-rebind notifications.',
   },
+  IIndexWatchRule: {
+    summary:
+      'Contract used by StateManager to decide whether nested `(index, target)` transitions should be observed for a watched branch. Includes `id` for identity/reference tracking and `dispose()` for release.',
+    exampleCode: dedent`
+      import type { IIndexWatchRule } from '@rs-x/state-manager';
+
+      const watchRule: IIndexWatchRule = {
+        id: 'profile-rule',
+        context: { allowed: new Set(['profile', 'name']) },
+        test(index) {
+          return this.context.allowed.has(String(index));
+        },
+        dispose() {
+          // optional cleanup
+        },
+      };
+    `,
+  },
+  IIndexWatchRuleFactory: {
+    summary:
+      'Factory contract for creating index watch rules from a `(context, index)` pair.',
+  },
+  IndexWatchRuleFactory: {
+    summary:
+      'Default factory used by the runtime to create watch rules for identifier/index based observation. Created rules are stable per `(context, index)` and can be disposed when no longer needed.',
+    exampleCode: dedent`
+      import { IndexWatchRuleFactory } from '@rs-x/state-manager';
+
+      const factory = new IndexWatchRuleFactory();
+      const rule = factory.create({ user: { profile: {} } }, 'user');
+
+      // rule can be passed to watchState(..., { indexWatchRule: rule })
+      // or rsx(...)(model, rule)
+      rule.dispose();
+    `,
+  },
+  WatchFactory: {
+    summary:
+      'DI-managed watch-handle factory. Resolve `IWatchFactory` from `RsXStateManagerInjectionTokens` instead of constructing `WatchFactory` directly.',
+    exampleCode: dedent`
+      import { InjectionContainer } from '@rs-x/core';
+      import {
+        RsXStateManagerModule,
+        RsXStateManagerInjectionTokens,
+        type IWatchFactory,
+      } from '@rs-x/state-manager';
+
+      await InjectionContainer.load(RsXStateManagerModule);
+
+      const watchFactory = InjectionContainer.get<IWatchFactory>(
+        RsXStateManagerInjectionTokens.IWatchFactory,
+      );
+
+      const model = { total: 10 };
+      const watch = watchFactory.create({
+        context: model,
+        index: 'total',
+        options: {},
+      }).instance;
+
+      watch.watch();
+      console.log(watch.value); // 10
+      watch.dispose();
+    `,
+  },
+  watchIndexRecursiveRule: {
+    summary:
+      'Reusable built-in rule that accepts every nested index and enables full recursive branch watching.',
+    exampleCode: dedent`
+      import { watchIndexRecursiveRule } from '@rs-x/state-manager';
+      import { rsx } from '@rs-x/expression-parser';
+
+      const model = { a: { b: { c: 1 } } };
+      const expression = rsx('a.b')(model, watchIndexRecursiveRule);
+    `,
+  },
 };
 
 function defaultExample(symbol: string, kind: string): string {
@@ -245,6 +387,28 @@ function defaultExample(symbol: string, kind: string): string {
     return `import { ${symbol} } from '@rs-x/state-manager';\n\nclass My${symbol} extends ${symbol} {\n  // implement abstract members\n}`;
   }
   if (kind.includes('class')) {
+    const singletonBinding = SINGLETON_SERVICE_BINDINGS[symbol];
+    if (singletonBinding) {
+      const variableName =
+        symbol.charAt(0).toLowerCase() +
+          symbol.slice(1).replace(/Factory$/, '') || 'service';
+      return dedent`
+        import { InjectionContainer } from '@rs-x/core';
+        import {
+          RsXStateManagerInjectionTokens,
+          RsXStateManagerModule,
+          type ${singletonBinding.serviceType},
+        } from '@rs-x/state-manager';
+
+        await InjectionContainer.load(RsXStateManagerModule);
+
+        // Resolve from DI container (do not construct this service directly).
+        const ${variableName} = InjectionContainer.get<${singletonBinding.serviceType}>(
+          RsXStateManagerInjectionTokens.${singletonBinding.token},
+        );
+        console.log(${variableName});
+      `;
+    }
     return `import { ${symbol} } from '@rs-x/state-manager';\n\nconst instance = new ${symbol}(...args);`;
   }
   if (kind === 'interface') {
@@ -257,6 +421,35 @@ function defaultExample(symbol: string, kind: string): string {
     return `import { ${symbol} } from '@rs-x/state-manager';\n\nconsole.log(${symbol});`;
   }
   return `import { ${symbol} } from '@rs-x/state-manager';`;
+}
+
+function defaultConstructorInjectionExample(
+  symbol: string,
+  kind: string,
+): string {
+  if (!kind.includes('class')) {
+    return '';
+  }
+
+  const singletonBinding = SINGLETON_SERVICE_BINDINGS[symbol];
+  if (!singletonBinding) {
+    return '';
+  }
+
+  return dedent`
+    import { Inject } from '@rs-x/core';
+    import {
+      RsXStateManagerInjectionTokens,
+      type ${singletonBinding.serviceType},
+    } from '@rs-x/state-manager';
+
+    class MyConsumer {
+      constructor(
+        @Inject(RsXStateManagerInjectionTokens.${singletonBinding.token})
+        private readonly dependency: ${singletonBinding.serviceType},
+      ) {}
+    }
+  `;
 }
 
 type StateManagerSymbolPageProps = {
@@ -311,7 +504,7 @@ const StateManagerApiSymbolPage: React.FC<
       packageName="@rs-x/state-manager"
       fullTypeSignature={fullTypeSignature}
       defaultExample={defaultExample}
-      defaultConstructorInjectionExample={() => ''}
+      defaultConstructorInjectionExample={defaultConstructorInjectionExample}
       gitBasePath={STATE_MANAGER_GITHUB_BASE}
     />
   );

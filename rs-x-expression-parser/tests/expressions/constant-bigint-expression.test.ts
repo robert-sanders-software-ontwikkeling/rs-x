@@ -54,8 +54,6 @@ describe('ConstantBigIntExpression tests', () => {
           context: {},
           services,
         });
-
-        services.transactionManager.commit();
       });
       expect(clonedExpression.value).toEqual(9007199254740991n);
     } finally {

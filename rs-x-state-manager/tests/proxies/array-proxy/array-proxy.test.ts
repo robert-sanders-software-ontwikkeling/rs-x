@@ -24,7 +24,7 @@ describe('ArrayProxy tests', () => {
     const array = [];
     const proxyRegistry = new ProxyRegistryMock();
     const setProxyFactory = new ArrayProxyFactory(proxyRegistry);
-    const { proxy } = setProxyFactory.create({ array }).instance;
+    const { proxy } = setProxyFactory.createAndGetInstance({ array });
 
     expect(proxyRegistry.register).toHaveBeenCalledTimes(1);
     expect(proxyRegistry.register.mock.calls[0][0]).toBe(array);
@@ -35,7 +35,7 @@ describe('ArrayProxy tests', () => {
     const array = [];
     const proxyRegistry = new ProxyRegistryMock();
     const setProxyFactory = new ArrayProxyFactory(proxyRegistry);
-    const { observer } = setProxyFactory.create({ array }).instance;
+    const { observer } = setProxyFactory.createAndGetInstance({ array });
 
     observer.dispose();
 

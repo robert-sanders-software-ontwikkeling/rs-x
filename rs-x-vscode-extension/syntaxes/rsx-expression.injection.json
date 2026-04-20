@@ -1,0 +1,81 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "scopeName": "rsx.expression.injection",
+  "injectionSelector": "L:source.ts -comment -string, L:source.tsx -comment -string, L:source.js -comment -string, L:source.jsx -comment -string, L:source.vue -comment -string, L:text.html.vue -comment -string",
+  "patterns": [
+    {
+      "include": "#rsx-single-quoted-expression"
+    },
+    {
+      "include": "#rsx-double-quoted-expression"
+    },
+    {
+      "include": "#rsx-template-literal-expression"
+    }
+  ],
+  "repository": {
+    "rsx-single-quoted-expression": {
+      "name": "meta.function-call.rsx",
+      "begin": "\\brsx(?:\\s*<(?:[^<>]|<[^<>]*>)+>)?\\s*\\(\\s*(')",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.string.begin.ts"
+        }
+      },
+      "end": "(?<!\\\\)'",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.end.ts"
+        }
+      },
+      "contentName": "meta.embedded.inline.rsx",
+      "patterns": [
+        {
+          "include": "source.ts"
+        }
+      ]
+    },
+    "rsx-double-quoted-expression": {
+      "name": "meta.function-call.rsx",
+      "begin": "\\brsx(?:\\s*<(?:[^<>]|<[^<>]*>)+>)?\\s*\\(\\s*(\")",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.string.begin.ts"
+        }
+      },
+      "end": "(?<!\\\\)\"",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.end.ts"
+        }
+      },
+      "contentName": "meta.embedded.inline.rsx",
+      "patterns": [
+        {
+          "include": "source.ts"
+        }
+      ]
+    },
+    "rsx-template-literal-expression": {
+      "name": "meta.function-call.rsx",
+      "begin": "\\brsx(?:\\s*<(?:[^<>]|<[^<>]*>)+>)?\\s*\\(\\s*(`)",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.string.begin.ts"
+        }
+      },
+      "end": "(?<!\\\\)`",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.end.ts"
+        }
+      },
+      "contentName": "meta.embedded.inline.rsx",
+      "patterns": [
+        {
+          "include": "source.ts"
+        }
+      ]
+    }
+  }
+}

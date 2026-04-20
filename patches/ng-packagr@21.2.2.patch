@@ -1,0 +1,10 @@
+--- a/src/lib/ts/conf/tsconfig.ngc.json
++++ b/src/lib/ts/conf/tsconfig.ngc.json
+@@ -7,7 +7,6 @@
+   "buildOnSave": false,
+   "compileOnSave": false,
+   "compilerOptions": {
+-    "baseUrl": ".",
+     "target": "es2022",
+     "module": "es2022",
+     "moduleResolution": "bundler",

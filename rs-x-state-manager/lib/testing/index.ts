@@ -2,4 +2,6 @@ export * from './object-observer-proxy-pair.factory.mock';
 export * from './observer.mock';
 export * from './observer-equal-to';
 export * from './property-observer-proxy-pair.factory.mock';
+export * from './watch.mock';
 export * from './watch-index-rule.mock';
+export * from './watch-rule.mock';

@@ -8,6 +8,7 @@ import {
   IndexWatchRule,
   type IStateManager,
   RsXStateManagerInjectionTokens,
+  watchIndexRecursiveRule,
 } from '@rs-x/state-manager';
 
 import { rxjsScope } from './rxjs-scope';
@@ -36,9 +37,14 @@ export class ScriptEvaluator {
 
     // We wrap so user can "return { ... }" at top-level.
     // User code starts after these wrapper lines.
-    const wrapperHeaderLines = ['"use strict";', '(async function (api) {'];
+    const wrapperHeaderLines = [
+      '"use strict";',
+      '(async function (api) {',
+      '  const { rsx, rxjs, printValue, stateManager, IndexWatchRule, watchIndexRecursiveRule, WaitForEvent, ExpressionChangeTransactionManager } = api;',
+      '  {',
+    ];
 
-    const wrapperFooterLines = ['})'];
+    const wrapperFooterLines = ['  }', '})'];
 
     // IMPORTANT: sourceURL must be inside the evaluated string (not only outside).
     const wrapped = [
@@ -85,6 +91,15 @@ export class ScriptEvaluator {
         // Convert wrapped line -> user editor line
         line = Math.max(1, loc.line - WRAPPER_LINE_OFFSET);
         column = Math.max(1, loc.column);
+      } else {
+        const inferred = this._inferLocationFromRuntimeMessage(
+          editorModelString,
+          message,
+        );
+        if (inferred) {
+          line = inferred.line;
+          column = inferred.column;
+        }
       }
 
       // Filter stack to show only relevant frames (user script) if present
@@ -148,6 +163,68 @@ export class ScriptEvaluator {
     return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
+  private _inferLocationFromRuntimeMessage(
+    script: string,
+    message: string,
+  ): { line: number; column: number } | null {
+    const unresolvedIndex = message.match(/index '([^']+)'/u)?.[1];
+    if (!unresolvedIndex) {
+      return null;
+    }
+
+    const rsxLiteralPattern = /rsx\s*(?:<[^>]*>)?\s*\(\s*(['"`])([\s\S]*?)\1/gu;
+    let literalMatch: RegExpExecArray | null = null;
+
+    while ((literalMatch = rsxLiteralPattern.exec(script)) !== null) {
+      const expressionText = literalMatch[2];
+      const tokenPattern = new RegExp(
+        `\\b${this._escapeRegExp(unresolvedIndex)}\\b`,
+        'u',
+      );
+      const token = tokenPattern.exec(expressionText);
+      if (!token) {
+        continue;
+      }
+
+      const literalStartOffset =
+        literalMatch.index + literalMatch[0].indexOf(literalMatch[2]);
+      const tokenOffset = literalStartOffset + token.index;
+      return this._offsetToLineColumn(script, tokenOffset);
+    }
+
+    // Fallback: if we cannot map inside an rsx(...) literal, at least point to
+    // the first exact identifier occurrence in user code.
+    const firstTokenPattern = new RegExp(
+      `\\b${this._escapeRegExp(unresolvedIndex)}\\b`,
+      'u',
+    );
+    const firstToken = firstTokenPattern.exec(script);
+    if (firstToken) {
+      return this._offsetToLineColumn(script, firstToken.index);
+    }
+
+    return null;
+  }
+
+  private _offsetToLineColumn(
+    text: string,
+    offset: number,
+  ): { line: number; column: number } {
+    let line = 1;
+    let column = 1;
+
+    for (let i = 0; i < offset && i < text.length; i++) {
+      if (text[i] === '\n') {
+        line++;
+        column = 1;
+      } else {
+        column++;
+      }
+    }
+
+    return { line, column };
+  }
+
   public evaluateModel<T>(editorModelString: string): EvaluateModelResult<T> {
     try {
       const result = new Function('api', `return ${editorModelString}`)(
@@ -172,6 +249,7 @@ export class ScriptEvaluator {
     printValue: typeof printValue;
     stateManager: IStateManager;
     IndexWatchRule: typeof IndexWatchRule;
+    watchIndexRecursiveRule: typeof watchIndexRecursiveRule;
     WaitForEvent: typeof WaitForEvent;
     ExpressionChangeTransactionManager: IExpressionChangeTransactionManager;
   } {
@@ -183,6 +261,7 @@ export class ScriptEvaluator {
         RsXStateManagerInjectionTokens.IStateManager,
       ),
       IndexWatchRule,
+      watchIndexRecursiveRule,
       WaitForEvent,
       ExpressionChangeTransactionManager:
         InjectionContainer.get<IExpressionChangeTransactionManager>(

@@ -1,6 +1,16 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "types": []
-  }
+    "types": ["node"],
+    "typeRoots": ["../node_modules/@types"],
+    "emitDecoratorMetadata": false,
+    "ignoreDeprecations": "6.0",
+    "baseUrl": "..",
+    "paths": {
+      "@rs-x/react": ["./rs-x-react/dist/index.d.ts"],
+      "@rs-x/vue": ["./rs-x-vue/dist/index.d.ts"],
+      "@rs-x/angular": ["./rs-x-angular/dist/rsx/types/rs-x-angular.d.ts"]
+    }
+  },
+  "include": ["src/**/*", "../types/declarations.d.ts"]
 }

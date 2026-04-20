@@ -26,6 +26,7 @@ import { ExpressionChangeTransactionManager } from '../lib/expresion-change-tran
 import { ExpressionCache } from '../lib/expression-cache/expression-cache';
 import { ExpressionChangePlayback } from '../lib/expression-change-playback/expression-change-playback';
 import { ExpressionChangeTrackerManager } from '../lib/expression-change-tracker/expression-change-tracker-manager';
+import { ExpressionEvaluateManager } from '../lib/expression-evaluate-manager';
 import { ExpressionFactory } from '../lib/expression-factory/expression-factory';
 import { ExpressionManager } from '../lib/expression-factory/expression-manager';
 import { ExpressionIdProvider } from '../lib/expression-id/expression-id-provider';
@@ -34,13 +35,14 @@ import { ExpressionIndexAccessor } from '../lib/expression-observer/expression-i
 import { ExpressionObserverFactory } from '../lib/expression-observer/expression-observer.factory';
 import { ExpressionObserverProxyPairFactory } from '../lib/expression-observer/expression-observer-proxy-pair.factory';
 import { ExpressionServices } from '../lib/expression-services/expression-services';
+import { IdentifierWatchRuleFactory } from '../lib/expressions/identifier-index-watch-rule/identifier-watch-rule.factory';
 import { ArrayIndexOwnerResolver } from '../lib/identifier-owner-resolver/array-index-owner-resolver';
 import { DefaultIdentifierOwnerResolver } from '../lib/identifier-owner-resolver/default-identifier-owner-resolver';
 import { GlobalIdentifierOwnerResolver } from '../lib/identifier-owner-resolver/global-identifier-owner-resolver';
 import { MapKeyOwnerResolver } from '../lib/identifier-owner-resolver/map-key-owner-resolver';
 import { PropertyOwnerResolver } from '../lib/identifier-owner-resolver/property-owner-resolver';
 import { SetKeyOwnerResolver } from '../lib/identifier-owner-resolver/set-key-owner-resolver';
-import { JsEspreeExpressionParser } from '../lib/js-espree-expression-parser';
+import { JsExpressionParser } from '../lib/js-expression-parser';
 import {
   RsXExpressionParserModule,
   unloadRsXExpressionParserModule,
@@ -111,7 +113,7 @@ describe('RsXExpressionParserModule tests', () => {
     const actual = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionParser,
     );
-    expect(actual).toBeInstanceOf(JsEspreeExpressionParser);
+    expect(actual).toBeInstanceOf(JsExpressionParser);
   });
 
   it('IExpressionParser instance is a singleton', () => {
@@ -340,6 +342,23 @@ describe('RsXExpressionParserModule tests', () => {
     expect(a1).toBe(a2);
   });
 
+  it('can get instance of IExpressionEvaluateManager', () => {
+    const actual = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionEvaluateManager,
+    );
+    expect(actual).toBeInstanceOf(ExpressionEvaluateManager);
+  });
+
+  it('IExpressionEvaluateManager instance is a singleton', () => {
+    const a1 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionEvaluateManager,
+    );
+    const a2 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionEvaluateManager,
+    );
+    expect(a1).toBe(a2);
+  });
+
   it('can get instance of IExpressionChangePlayback', () => {
     const actual = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionChangePlayback,
@@ -387,6 +406,23 @@ describe('RsXExpressionParserModule tests', () => {
     );
     const a2 = InjectionContainer.get(
       RsXExpressionParserInjectionTokens.IExpressionIdProvider,
+    );
+    expect(a1).toBe(a2);
+  });
+
+  it('can get instance of IIdentifierWatchRuleFactory', () => {
+    const actual = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IIdentifierWatchRuleFactory,
+    );
+    expect(actual).toBeInstanceOf(IdentifierWatchRuleFactory);
+  });
+
+  it('IIdentifierWatchRuleFactory instance is a singleton', () => {
+    const a1 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IIdentifierWatchRuleFactory,
+    );
+    const a2 = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IIdentifierWatchRuleFactory,
     );
     expect(a1).toBe(a2);
   });

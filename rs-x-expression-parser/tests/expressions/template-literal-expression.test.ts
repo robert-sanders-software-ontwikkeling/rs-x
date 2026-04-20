@@ -55,8 +55,6 @@ describe('TemplateLiteralExpression tests', () => {
           context: model,
           services,
         });
-
-        services.transactionManager.commit();
       });
       expect(clonedExpression.value).toEqual('Hello Robert');
     } finally {

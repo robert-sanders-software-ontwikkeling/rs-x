@@ -26,4 +26,18 @@ export abstract class BinaryExpression<
       this._childExpressions[1].clone(),
     );
   }
+
+  protected override canEvaluate(): boolean {
+    return (
+      this.readArg(this._childExpressions[0]) !== undefined &&
+      this.readArg(this._childExpressions[1]) !== undefined
+    );
+  }
+
+  protected override evaluate(): T {
+    return this.evaluateExpression(
+      this.readArg(this._childExpressions[0]),
+      this.readArg(this._childExpressions[1]),
+    );
+  }
 }

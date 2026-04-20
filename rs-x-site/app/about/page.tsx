@@ -10,6 +10,9 @@ export const metadata = {
   title: 'About me',
   description:
     'About the maintainer of rs-x: engineering focus, values, and how to support community-first development.',
+  alternates: {
+    canonical: '/about',
+  },
 };
 
 export default function AboutPage() {

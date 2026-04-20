@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { FaTimes } from 'react-icons/fa';
 
 import type {
-  IExpression,
   IExpressionChangeHistory,
+  IExpressionTree,
 } from '@rs-x/expression-parser';
 
 import { ExpressionTree } from '../expression-tree-view/expression-tree-view.component';
@@ -12,7 +12,7 @@ import { ZoomDropdown } from '../zoom-dropdown/zoom-dropdown.component';
 export interface IExpressionTreePanelProps {
   selectedExpressionString: string | undefined;
   treeZoomPercent: number;
-  expression: IExpression;
+  expression: IExpressionTree;
   version: number;
   highlightVersion: number;
   treeHighlight: IExpressionChangeHistory[];

@@ -1,7 +1,6 @@
 import {
   emptyFunction,
   ErrorLog,
-  GuidFactory,
   InjectionContainer,
   type IPropertyChange,
   truePredicate,
@@ -32,7 +31,6 @@ describe('StateChangeSubscriptionManager tests', () => {
         RsXStateManagerInjectionTokens.IObjectPropertyObserverProxyPairManager,
       ),
       new ErrorLog(),
-      new GuidFactory(),
     );
     indexWatchRule = new IndexWatchRuleMock();
     indexWatchRule.test.mockReturnValue(true);
@@ -49,7 +47,7 @@ describe('StateChangeSubscriptionManager tests', () => {
       },
     };
     const stateChangeSubscrionInfoForContext =
-      stateChangeSubscriptionManager.create(context).instance;
+      stateChangeSubscriptionManager.createAndGetInstance(context);
     const recursiveObserver = stateChangeSubscrionInfoForContext.create({
       index: 'x',
       indexWatchRule,
@@ -74,7 +72,7 @@ describe('StateChangeSubscriptionManager tests', () => {
       },
     };
     const stateChangeSubscriptionInfoForContext =
-      stateChangeSubscriptionManager.create(context).instance;
+      stateChangeSubscriptionManager.createAndGetInstance(context);
     const recursiveObserver = stateChangeSubscriptionInfoForContext.create({
       index: 'x',
       indexWatchRule,
@@ -115,7 +113,7 @@ describe('StateChangeSubscriptionManager tests', () => {
       },
     };
     const stateChangeSubscrionInfoForContext =
-      stateChangeSubscriptionManager.create(context).instance;
+      stateChangeSubscriptionManager.createAndGetInstance(context);
     const recursiveObserver = stateChangeSubscrionInfoForContext.create({
       index: 'x',
       indexWatchRule,
@@ -153,7 +151,7 @@ describe('StateChangeSubscriptionManager tests', () => {
       },
     };
     const stateChangeSubscrionInfoForContext =
-      stateChangeSubscriptionManager.create(context).instance;
+      stateChangeSubscriptionManager.createAndGetInstance(context);
     const recursiveObserver = stateChangeSubscrionInfoForContext.create({
       index: 'x',
       indexWatchRule,
@@ -192,7 +190,7 @@ describe('StateChangeSubscriptionManager tests', () => {
     };
 
     const stateChangeSubscrionInfoForContext =
-      stateChangeSubscriptionManager.create(context).instance;
+      stateChangeSubscriptionManager.createAndGetInstance(context);
     const recursiveObserver = stateChangeSubscrionInfoForContext.create({
       index: 'x',
       indexWatchRule,
@@ -244,7 +242,7 @@ describe('StateChangeSubscriptionManager tests', () => {
       },
     };
     const stateChangeSubscrionInfoForContext =
-      stateChangeSubscriptionManager.create(context).instance;
+      stateChangeSubscriptionManager.createAndGetInstance(context);
     const recursiveObserver = stateChangeSubscrionInfoForContext.create({
       index: 'x',
       indexWatchRule,

@@ -55,8 +55,6 @@ describe('EqualityExpression tests', () => {
           context: model,
           services,
         });
-
-        services.transactionManager.commit();
       });
       expect(clonedExpression.value).toEqual(false);
     } finally {

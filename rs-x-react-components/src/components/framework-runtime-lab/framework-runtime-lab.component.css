@@ -1,0 +1,606 @@
+.frameworkLabCard {
+  overflow: hidden;
+}
+
+.frameworkLabTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1.2rem 0 1.25rem;
+}
+
+.frameworkLabTab {
+  appearance: none;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 74%, transparent);
+  background: color-mix(in srgb, var(--surface-solid) 94%, transparent);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 0.55rem 0.9rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease,
+    transform 120ms ease;
+}
+
+.frameworkLabTab:hover {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border-soft));
+  transform: translateY(-1px);
+}
+
+.frameworkLabTab.isActive {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface-solid));
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border-soft));
+}
+
+.frameworkLabSplit {
+  display: grid;
+  grid-template-columns: minmax(18rem, 0.95fr) minmax(20rem, 1.05fr);
+  gap: var(--sp-4);
+  align-items: stretch;
+  margin-top: 0.85rem;
+}
+
+.frameworkLabPane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 65%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-solid) 98%, transparent),
+    color-mix(in srgb, var(--surface) 92%, transparent)
+  );
+}
+
+.frameworkLabPaneTitle {
+  margin: 0 0 0.4rem;
+  font-size: 0.84rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.frameworkLabPaneText,
+.frameworkLabStatus {
+  margin: 0 0 0.45rem;
+  color: color-mix(in srgb, var(--text) 62%, var(--muted));
+  line-height: 1.45;
+  font-size: 0.92rem;
+  max-width: 32rem;
+}
+
+.frameworkLabStatus.isHidden {
+  visibility: hidden;
+  margin: 0;
+  min-height: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.frameworkLabPreview {
+  display: grid;
+  gap: 0.5rem;
+  flex: 1;
+  min-height: 24rem;
+  min-height: 0;
+  align-content: stretch;
+  margin-top: 0.5rem;
+}
+
+.frameworkExampleFeedback {
+  display: grid;
+  gap: 0.55rem;
+  flex: 1;
+  min-height: 0;
+  align-content: stretch;
+}
+
+.frameworkLabDemoArea {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 0.55rem;
+  padding: 0.9rem;
+  border-radius: 16px;
+  background: #1e1e1e;
+  min-width: 0;
+  min-height: 24rem;
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 10%, transparent),
+    0 18px 38px -30px color-mix(in srgb, black 46%, transparent);
+}
+
+.frameworkLabDemoHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid color-mix(in srgb, white 12%, transparent);
+}
+
+.frameworkLabDemoEyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, white 68%, var(--muted));
+}
+
+.frameworkLabDemoBody {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  align-content: stretch;
+  overflow: auto;
+}
+
+.frameworkLabInputGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.frameworkLabField {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.frameworkLabFieldLabel {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.frameworkLabInput {
+  width: 100%;
+  min-width: 0;
+  padding: 0.72rem 0.8rem;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 75%, transparent);
+  background: color-mix(in srgb, var(--surface-solid) 96%, transparent);
+  color: var(--text);
+  font: inherit;
+}
+
+.frameworkLabInput:focus {
+  outline: 2px solid color-mix(in srgb, var(--accent) 38%, transparent);
+  outline-offset: 1px;
+}
+
+.frameworkLabStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.frameworkLabStats > div {
+  padding: 0.9rem;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 72%, transparent);
+  background: color-mix(in srgb, var(--surface-solid) 88%, transparent);
+}
+
+.frameworkLabStatLabel {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.frameworkLabStats strong {
+  font-size: 1.1rem;
+  line-height: 1.2;
+}
+
+.frameworkLabButtonRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.frameworkLabCode {
+  margin: 0;
+  padding: 1rem;
+  overflow: auto;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 68%, transparent);
+  background: color-mix(in srgb, var(--surface-solid) 82%, black 18%);
+  color: color-mix(in srgb, white 92%, var(--text));
+  font-size: 0.9rem;
+  line-height: 1.65;
+  white-space: pre;
+}
+
+.frameworkLabEditorHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.frameworkLabEditorHeader .frameworkLabPaneTitle {
+  margin-bottom: 0;
+}
+
+.frameworkLabEditorShell {
+  display: flex;
+}
+
+.frameworkLabEditor {
+  width: 100%;
+  min-height: 24rem;
+  resize: vertical;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 68%, transparent);
+  background: color-mix(in srgb, var(--surface-solid) 82%, black 18%);
+  color: color-mix(in srgb, white 92%, var(--text));
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.65;
+  padding: 1rem;
+  white-space: pre;
+}
+
+.frameworkLabEditor:focus {
+  outline: 2px solid color-mix(in srgb, var(--accent) 38%, transparent);
+  outline-offset: 1px;
+}
+
+.frameworkLabMount > * {
+  min-width: 0;
+}
+
+.frameworkLabMount {
+  padding: 0.1rem;
+  border-radius: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.frameworkLabMountInner {
+  min-width: 0;
+  min-height: 100%;
+}
+
+.frameworkLabMount.isHidden {
+  display: none;
+}
+
+.frameworkLabMountInner > * {
+  display: grid;
+  gap: 0.35rem;
+  align-content: start;
+  padding: 0.15rem;
+  border-radius: 12px;
+}
+
+.frameworkLabMount label {
+  display: grid;
+  gap: 0.18rem;
+  font-size: 0.76rem;
+  font-weight: 640;
+  letter-spacing: 0;
+  text-transform: none;
+  color: color-mix(in srgb, white 70%, var(--muted));
+}
+
+.frameworkLabMount input,
+.frameworkLabMount textarea,
+.frameworkLabMount select {
+  width: 100%;
+  min-width: 0;
+  padding: 0.62rem 0.78rem;
+  border-radius: 12px;
+  border: 0;
+  background: color-mix(in srgb, white 5%, transparent);
+  color: color-mix(in srgb, white 92%, var(--text));
+  box-shadow: none;
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.frameworkLabMount input[type='number']::-webkit-outer-spin-button,
+.frameworkLabMount input[type='number']::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.frameworkLabMount input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.frameworkLabMount input:focus,
+.frameworkLabMount textarea:focus,
+.frameworkLabMount select:focus {
+  outline: 2px solid color-mix(in srgb, var(--accent) 38%, transparent);
+  outline-offset: 1px;
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--border-soft));
+}
+
+.frameworkLabMount p {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: color-mix(in srgb, var(--text) 92%, var(--muted));
+  line-height: 1.55;
+  font-size: 1rem;
+  max-width: 42rem;
+}
+
+.frameworkLabMount p strong,
+.frameworkLabMount p b {
+  color: var(--text);
+}
+
+.frameworkLabMount .previewSectionTitle {
+  margin: 0.15rem 0 0.1rem;
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.frameworkLabMount .previewNote {
+  max-width: 40rem;
+}
+
+.frameworkLabMount dl {
+  margin: 0.35rem 0 0.1rem;
+  display: grid;
+  gap: 0.18rem;
+  max-width: 42rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid color-mix(in srgb, var(--border-soft) 20%, transparent);
+}
+
+.frameworkLabMount dl > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: center;
+  padding: 0.32rem 0;
+  border-radius: 0;
+  border: 0;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border-soft) 18%, transparent);
+  background: transparent;
+}
+
+.frameworkLabMount dl > .metricRowResult {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.frameworkLabMount dt,
+.frameworkLabMount dd {
+  margin: 0;
+}
+
+.frameworkLabMount dt {
+  color: color-mix(in srgb, white 66%, var(--muted));
+  font-size: 0.82rem;
+  font-weight: 560;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.frameworkLabMount dd {
+  color: color-mix(in srgb, white 98%, var(--text));
+  font-size: 0.96rem;
+  font-weight: 680;
+  text-align: right;
+}
+
+.frameworkLabMount dd.metricValue {
+  color: var(--text);
+  font-weight: 720;
+}
+
+.frameworkLabMount dd.metricText {
+  text-align: left;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--text) 92%, var(--muted));
+}
+
+.frameworkLabMount dd.metricTextReserved {
+  min-height: 1.55em;
+  color: transparent;
+}
+
+.frameworkLabMount dd.metricPlaceholder {
+  color: color-mix(in srgb, var(--text) 58%, var(--muted));
+  font-style: italic;
+}
+
+.frameworkLabMount .previewActions {
+  display: grid;
+  gap: 0.6rem;
+  width: min(100%, 26rem);
+}
+
+.frameworkLabMount button {
+  all: unset;
+  box-sizing: border-box;
+  justify-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2, 0.5rem);
+  min-height: 0;
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  border-radius: 14px;
+  padding: 0.82rem 1.18rem;
+  font: inherit;
+  font-weight: 800;
+  line-height: 1;
+  white-space: normal;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: none;
+  transition:
+    transform 120ms ease,
+    border-color 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease,
+    box-shadow 120ms ease,
+    opacity 120ms ease;
+}
+
+.frameworkLabMount button:hover {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--surface-2) 86%, var(--surface-solid));
+  box-shadow: var(--shadow-1);
+}
+
+.frameworkLabMount button:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+  pointer-events: none;
+  color: color-mix(in srgb, var(--text) 72%, var(--muted));
+  background: color-mix(in srgb, var(--surface-2) 82%, var(--surface-solid));
+  border-color: color-mix(in srgb, var(--border) 82%, transparent);
+  box-shadow: none;
+  transform: none;
+}
+
+.frameworkLabPane .monaco-editor .rsxExprIdentifier {
+  color: #9cdcfe !important;
+}
+
+.frameworkLabPane .monaco-editor .rsxExprKeyword {
+  color: #c586c0 !important;
+}
+
+.frameworkLabPane .monaco-editor .rsxExprNumber {
+  color: #b5cea8 !important;
+}
+
+.frameworkLabPane .monaco-editor .rsxExprOperator,
+.frameworkLabPane .monaco-editor .rsxExprPunctuation {
+  color: #d4d4d4 !important;
+}
+
+.frameworkLabPane .monaco-editor .rsxExprString {
+  color: #ce9178 !important;
+}
+
+.frameworkLabDiagnostics {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, #d96c6c 24%, var(--border-soft));
+  background: color-mix(in srgb, #d96c6c 7%, var(--surface-solid));
+}
+
+.frameworkLabDiagnosticsRuntime {
+  border-color: color-mix(in srgb, #dd7d57 28%, var(--border-soft));
+  background: color-mix(in srgb, #dd7d57 8%, var(--surface-solid));
+}
+
+.frameworkLabDiagnosticsTitle,
+.frameworkLabDiagnosticsLabel {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.frameworkLabDiagnosticsTitle {
+  color: color-mix(in srgb, var(--text) 78%, var(--muted));
+}
+
+.frameworkLabDiagnosticsNote {
+  margin: -0.35rem 0 0;
+  color: color-mix(in srgb, var(--text) 72%, var(--muted));
+  line-height: 1.5;
+}
+
+.frameworkLabDiagnosticsLabel {
+  color: #b84b4b;
+}
+
+.frameworkLabDiagnosticsGroup {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.frameworkLabDiagnosticsList {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.35rem;
+  color: color-mix(in srgb, var(--text) 88%, var(--muted));
+}
+
+html:not([data-theme='dark']) .frameworkLabDemoArea {
+  background: color-mix(in srgb, var(--surface-solid) 98%, var(--surface-2));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 70%, transparent),
+    0 12px 28px -28px color-mix(in srgb, black 16%, transparent);
+}
+
+html:not([data-theme='dark']) .frameworkLabDemoHeader {
+  border-bottom-color: color-mix(in srgb, var(--border-soft) 42%, transparent);
+}
+
+html:not([data-theme='dark']) .frameworkLabDemoEyebrow {
+  color: color-mix(in srgb, var(--text) 58%, var(--muted));
+}
+
+html:not([data-theme='dark']) .frameworkLabMount label,
+html:not([data-theme='dark']) .frameworkLabMount dt,
+html:not([data-theme='dark']) .frameworkLabMount .previewSectionTitle {
+  color: color-mix(in srgb, var(--text) 72%, var(--muted));
+}
+
+html:not([data-theme='dark']) .frameworkLabMount dd,
+html:not([data-theme='dark']) .frameworkLabMount p {
+  color: color-mix(in srgb, var(--text) 92%, var(--muted));
+}
+
+html:not([data-theme='dark']) .frameworkLabMount input,
+html:not([data-theme='dark']) .frameworkLabMount textarea,
+html:not([data-theme='dark']) .frameworkLabMount select {
+  background: color-mix(in srgb, var(--surface-2) 72%, var(--surface-solid));
+  color: var(--text);
+}
+
+html:not([data-theme='dark']) .frameworkLabMount dl > div {
+  border-bottom-color: color-mix(in srgb, var(--border-soft) 30%, transparent);
+}
+
+html:not([data-theme='dark']) .frameworkLabMount button {
+  background: color-mix(in srgb, var(--surface-solid) 86%, var(--surface-2));
+  color: var(--text);
+}

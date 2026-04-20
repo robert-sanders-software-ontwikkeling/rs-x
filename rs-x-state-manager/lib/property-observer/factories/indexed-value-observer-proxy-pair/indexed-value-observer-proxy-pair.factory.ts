@@ -1,7 +1,6 @@
 import {
   type IDisposableOwner,
   type IErrorLog,
-  type IGuidFactory,
   type IIndexValueAccessor,
   type IPropertyChange,
   type IProxyRegistry,
@@ -10,7 +9,7 @@ import {
   UnexpectedException,
 } from '@rs-x/core';
 
-import type { IIndexWatchRule } from '../../../index-watch-rule-registry/index-watch-rule.interface';
+import { type IIndexWatchRule } from '../../../index-watch-rule/index-watch-rule.interface';
 import { type IObjectObserverProxyPairManager } from '../../../object-observer/object-observer-proxy-pair-manager.type';
 import {
   type IObserverProxyPair,
@@ -35,7 +34,6 @@ export abstract class IndexObserverProxyPairFactory<
     private readonly _objectObserveryManager: IObjectObserverProxyPairManager,
     indexSetObserverManager: IIndexSetObserverManager<TIndex>,
     errorLog: IErrorLog,
-    guidFactory: IGuidFactory,
     protected readonly _indexValueAccessor: IIndexValueAccessor,
     private readonly _proxyRegister: IProxyRegistry,
     private readonly _valueMetadata: IValueMetadata,
@@ -45,7 +43,6 @@ export abstract class IndexObserverProxyPairFactory<
       new IndexChangeSubscriptionManager<TIndex>(
         indexSetObserverManager,
         errorLog,
-        guidFactory,
       );
   }
 
@@ -128,7 +125,7 @@ export abstract class IndexObserverProxyPairFactory<
     indexWatchRule: IIndexWatchRule | undefined,
   ): ObserverGroup {
     const indexChangeSubscriptionsForContextManager =
-      this._indexChangeSubscriptionManager.create(object).instance;
+      this._indexChangeSubscriptionManager.createAndGetInstance(object);
     const { id } = indexChangeSubscriptionsForContextManager.create({
       index,
       initialValue,
@@ -147,7 +144,7 @@ export abstract class IndexObserverProxyPairFactory<
 
   private onIndexSet(
     change: IPropertyChange,
-    subsriptionId: string,
+    subsriptionId: number,
     indexWatchRule: IIndexWatchRule | undefined,
   ): void {
     const isAsync = this._valueMetadata.isAsync(change.newValue);

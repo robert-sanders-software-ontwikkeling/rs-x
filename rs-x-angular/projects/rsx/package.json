@@ -3,18 +3,14 @@
   "version": "1.0.2",
   "description": "Angular integration for RS-X, providing the RsxPipe",
   "type": "module",
-  "module": "fesm2022/rs-x-angular.mjs",
-  "main": "fesm2022/rs-x-angular.mjs",
-  "types": "types/rs-x-angular.d.ts",
-  "typings": "types/rs-x-angular.d.ts",
+  "module": "./fesm2022/rs-x-angular.mjs",
+  "main": "./fesm2022/rs-x-angular.mjs",
+  "types": "./types/rs-x-angular.d.ts",
   "exports": {
     ".": {
       "import": "./fesm2022/rs-x-angular.mjs",
-      "default": "./fesm2022/rs-x-angular.mjs",
-      "types": "./types/rs-x-angular.d.ts"
-    },
-    "./package.json": {
-      "default": "./package.json"
+      "types": "./types/rs-x-angular.d.ts",
+      "default": "./fesm2022/rs-x-angular.mjs"
     }
   },
   "sideEffects": false,
@@ -35,10 +31,10 @@
     "provenance": true
   },
   "peerDependencies": {
-    "@angular/common": ">=21.1.0",
-    "@angular/core": ">=21.1.0",
-    "@rs-x/core": "workspace:*",
-    "@rs-x/expression-parser": "workspace:*",
+    "@angular/common": ">=20.0.0",
+    "@angular/core": ">=20.0.0",
+    "@rs-x/core": ">=2.0.0-0",
+    "@rs-x/expression-parser": ">=2.0.0-0",
     "rxjs": ">=7.8.0"
   },
   "peerDependenciesMeta": {
@@ -61,6 +57,6 @@
     "typescript"
   ],
   "devDependencies": {
-    "globals": "^17.3.0"
+    "globals": "^17.4.0"
   }
 }

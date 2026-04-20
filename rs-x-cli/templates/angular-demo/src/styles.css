@@ -1,0 +1,261 @@
+:root {
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+
+  --bg: #f6f8fc;
+  --surface: rgba(255, 255, 255, 0.86);
+  --surface-2: rgba(255, 255, 255, 0.72);
+  --surface-solid: #ffffff;
+  --text: #0b1324;
+  --muted: rgba(11, 19, 36, 0.66);
+  --border: rgba(10, 25, 55, 0.14);
+  --border-soft: rgba(10, 25, 55, 0.1);
+  --brand: #0b66ff;
+  --brand-2: #2bb6a9;
+  --focus: rgba(11, 102, 255, 0.35);
+  --shadow-1:
+    0 1px 2px rgba(16, 24, 40, 0.06), 0 12px 34px rgba(16, 24, 40, 0.1);
+  --shadow-2:
+    0 2px 10px rgba(16, 24, 40, 0.08), 0 18px 52px rgba(16, 24, 40, 0.12);
+  --page-glow-a: rgba(11, 102, 255, 0.06);
+  --page-glow-b: rgba(43, 182, 169, 0.05);
+  --code-surface: #f7f9ff;
+  --hero-section-bg: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.72),
+    rgba(255, 255, 255, 0.42)
+  );
+  --r-xl: 1.75rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.25rem;
+  --sp-6: 1.5rem;
+  --sp-7: 2rem;
+  --sp-8: 2.5rem;
+  --sp-9: 3rem;
+  --sp-10: 4rem;
+  --container: 1120px;
+}
+
+html[data-theme='dark'],
+body[data-theme='dark'] {
+  --bg: #070b14;
+  --surface: rgba(12, 18, 35, 0.82);
+  --surface-2: rgba(12, 18, 35, 0.68);
+  --surface-solid: #0c1223;
+  --text: #edf2ff;
+  --muted: rgba(237, 242, 255, 0.7);
+  --border: rgba(237, 242, 255, 0.16);
+  --border-soft: rgba(237, 242, 255, 0.12);
+  --brand: #7ab6ff;
+  --brand-2: #49d9c8;
+  --focus: rgba(122, 182, 255, 0.35);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.22), 0 12px 34px rgba(0, 0, 0, 0.32);
+  --shadow-2: 0 2px 10px rgba(0, 0, 0, 0.24), 0 18px 52px rgba(0, 0, 0, 0.34);
+  --page-glow-a: rgba(122, 182, 255, 0.1);
+  --page-glow-b: rgba(73, 217, 200, 0.08);
+  --code-surface: #0f182b;
+  --hero-section-bg: linear-gradient(
+    180deg,
+    rgba(12, 18, 35, 0.56),
+    rgba(12, 18, 35, 0.24)
+  );
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+html {
+  color-scheme: light;
+  background: var(--bg);
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--text);
+  background-color: var(--bg);
+  background:
+    radial-gradient(circle at top, var(--page-glow-a), transparent 32%),
+    radial-gradient(circle at 85% 12%, var(--page-glow-b), transparent 28%),
+    var(--bg);
+  transition:
+    background 180ms ease,
+    color 180ms ease;
+}
+
+html[data-theme='dark'] body,
+body[data-theme='dark'] {
+  background-color: var(--bg);
+  background:
+    radial-gradient(circle at top, var(--page-glow-a), transparent 32%),
+    radial-gradient(circle at 85% 12%, var(--page-glow-b), transparent 28%),
+    var(--bg);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.container {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 var(--sp-6);
+}
+
+.hero {
+  position: relative;
+  padding: calc(var(--sp-10) + 1rem) 0 calc(var(--sp-8) + 0.5rem);
+  background: var(--hero-section-bg);
+}
+
+.heroGrid {
+  display: grid;
+  grid-template-columns: minmax(540px, 1.05fr) minmax(300px, 0.95fr);
+  column-gap: var(--sp-6);
+  row-gap: var(--sp-8);
+  align-items: center;
+}
+
+.heroLeft {
+  min-width: 0;
+  padding-top: var(--sp-4);
+}
+
+.hTitle {
+  margin: 0 0 var(--sp-5);
+  font-size: clamp(3.6rem, 5.2vw, 4.8rem);
+  line-height: 0.96;
+  letter-spacing: -0.052em;
+}
+
+.hSubhead {
+  margin: 0 0 var(--sp-2);
+  font-size: clamp(1.42rem, 2vw, 1.82rem);
+  font-weight: 640;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+}
+
+.hSub {
+  margin: var(--sp-5) 0 0;
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1.72;
+  max-width: 31.5rem;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-top: var(--sp-5);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: 0.82rem 1.18rem;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    transform 160ms ease,
+    background 240ms ease,
+    border-color 240ms ease,
+    box-shadow 240ms ease;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btnGhost {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+.btnGhost:hover {
+  box-shadow: var(--shadow-1);
+}
+
+.card {
+  position: relative;
+  min-width: 0;
+  border: 1px solid var(--border-soft);
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+  border-radius: var(--r-xl);
+  padding: var(--sp-6);
+  box-shadow: var(--shadow-1);
+  display: flex;
+  flex-direction: column;
+}
+
+.cardTitle {
+  margin: 0 0 var(--sp-3);
+  font-weight: 700;
+  font-size: clamp(1.12rem, 0.96vw, 1.22rem);
+  letter-spacing: -0.02em;
+}
+
+.cardText {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.62;
+}
+
+.heroNote {
+  align-self: center;
+  margin-top: 0;
+}
+
+.section {
+  padding: var(--sp-7) 0 var(--sp-10);
+}
+
+@media (max-width: 920px) {
+  .heroGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .container {
+    padding: 0 var(--sp-4);
+  }
+
+  .hero {
+    padding: calc(var(--sp-8) + 0.5rem) 0 var(--sp-8);
+  }
+
+  .hTitle {
+    font-size: clamp(2.9rem, 14vw, 3.6rem);
+  }
+}

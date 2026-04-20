@@ -53,8 +53,6 @@ describe('ConstantBooleanExpression tests', () => {
           context: {},
           services,
         });
-
-        services.transactionManager.commit();
       });
       expect(clonedExpression.value).toEqual(true);
     } finally {

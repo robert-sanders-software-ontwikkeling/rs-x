@@ -1,6 +1,6 @@
 import { type Observable } from 'rxjs';
 
-import type { IIndexWatchRule } from '../index-watch-rule-registry/index-watch-rule.interface';
+import { type IIndexWatchRule } from '../index-watch-rule/index-watch-rule.interface';
 
 export interface IContextChanged {
   oldContext: unknown;
@@ -16,18 +16,26 @@ export interface IStateChange extends IContextChanged {
 export interface IStateOptions {
   indexWatchRule?: IIndexWatchRule;
   ownerId?: unknown;
+  suppressInitialChangeEmit?: boolean;
 }
 
 export interface IStateEventListener {
   onStateChange: (change: IStateChange) => void;
   onContextChanged: (change: IContextChanged) => void;
+  onStartChangeCycle?: (cycle: IChangeCycleIndex) => void;
+  onEndChangeCycle?: (cycle: IChangeCycleIndex) => void;
+}
+
+export interface IChangeCycleIndex {
+  context: unknown;
+  index: unknown;
 }
 
 export interface IStateManager {
   readonly changed: Observable<IStateChange>;
   readonly contextChanged: Observable<IContextChanged>;
-  readonly startChangeCycle: Observable<void>;
-  readonly endChangeCycle: Observable<void>;
+  readonly startChangeCycle: Observable<IChangeCycleIndex>;
+  readonly endChangeCycle: Observable<IChangeCycleIndex>;
   isWatched(
     context: unknown,
     index: unknown,
@@ -44,7 +52,7 @@ export interface IStateManager {
     listener: IStateEventListener,
   ): () => void;
   releaseState(
-    oontext: unknown,
+    context: unknown,
     index: unknown,
     indexWatchRule?: IIndexWatchRule,
   ): void;

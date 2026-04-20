@@ -1,13 +1,13 @@
 import {
-  type IExpression,
   type IExpressionChangeHistory,
+  type IExpressionTree,
 } from '@rs-x/expression-parser';
 
 import { type LayoutResult } from './layout/layout-result.interface';
 import { type NodeId } from './layout/node.interface';
 
 export class ExpressionIndex {
-  public readonly idByExprRef = new Map<IExpression, NodeId>();
+  public readonly idByExprRef = new Map<IExpressionTree, NodeId>();
   public readonly idByExprKey = new Map<string, NodeId>();
   public readonly parentById = new Map<NodeId, NodeId | null>();
 
@@ -33,7 +33,7 @@ export class ExpressionIndex {
     return `${from}->${to}`;
   }
 
-  public exprKey(expression: IExpression): string {
+  public exprKey(expression: IExpressionTree): string {
     if (!expression.id) {
       throw new Error(
         'ExpressionIndex: expression.id is not available (expression not initialized)',
@@ -43,7 +43,7 @@ export class ExpressionIndex {
     return expression.id;
   }
 
-  public resolveNodeId(expr: IExpression): NodeId | null {
+  public resolveNodeId(expr: IExpressionTree): NodeId | null {
     const byRef = this.idByExprRef.get(expr);
     if (byRef) {
       return byRef;

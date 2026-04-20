@@ -1,9 +1,4 @@
-import {
-  GuidFactory,
-  type IPropertyChange,
-  utCDate,
-  WaitForEvent,
-} from '@rs-x/core';
+import { type IPropertyChange, utCDate, WaitForEvent } from '@rs-x/core';
 import { ProxyRegistryMock } from '@rs-x/core/testing';
 
 import type { IObserver } from '../../../lib/observer.interface';
@@ -11,6 +6,16 @@ import { DateProxyFactory } from '../../../lib/proxies/date-proxy/date-proxy.fac
 import { IndexWatchRuleMock } from '../../../lib/testing/watch-index-rule.mock';
 
 describe('DateProxy tests', () => {
+  function expectDateParts(actual: Date, expected: Date): void {
+    expect(actual.getFullYear()).toEqual(expected.getFullYear());
+    expect(actual.getMonth()).toEqual(expected.getMonth());
+    expect(actual.getDate()).toEqual(expected.getDate());
+    expect(actual.getHours()).toEqual(expected.getHours());
+    expect(actual.getMinutes()).toEqual(expected.getMinutes());
+    expect(actual.getSeconds()).toEqual(expected.getSeconds());
+    expect(actual.getMilliseconds()).toEqual(expected.getMilliseconds());
+  }
+
   let indexWatchRule: IndexWatchRuleMock;
 
   beforeEach(() => {
@@ -19,17 +24,15 @@ describe('DateProxy tests', () => {
   });
 
   it('Node timezone is UTC', () => {
+    process.env.TZ = process.env.TZ ?? 'UTC';
     expect(process.env.TZ).toEqual('UTC');
   });
 
   it('create will register the data proxy to the proxy registry', () => {
     const date = new Date();
     const proxyRegistry = new ProxyRegistryMock();
-    const setProxyFactory = new DateProxyFactory(
-      new GuidFactory(),
-      proxyRegistry,
-    );
-    const { proxy } = setProxyFactory.create({ date }).instance;
+    const setProxyFactory = new DateProxyFactory(proxyRegistry);
+    const { proxy } = setProxyFactory.createAndGetInstance({ date });
 
     expect(proxyRegistry.register).toHaveBeenCalledTimes(1);
     expect(proxyRegistry.register.mock.calls[0][0]).toBe(date);
@@ -39,11 +42,8 @@ describe('DateProxy tests', () => {
   it('dispose will unregister the data proxy to the proxy registry', () => {
     const date = new Date();
     const proxyRegistry = new ProxyRegistryMock();
-    const setProxyFactory = new DateProxyFactory(
-      new GuidFactory(),
-      proxyRegistry,
-    );
-    const { observer } = setProxyFactory.create({ date }).instance;
+    const setProxyFactory = new DateProxyFactory(proxyRegistry);
+    const { observer } = setProxyFactory.createAndGetInstance({ date });
 
     observer.dispose();
 
@@ -52,10 +52,7 @@ describe('DateProxy tests', () => {
   });
 
   it('dispose will unregister proxy when all references are released', () => {
-    const dateProxyFactory = new DateProxyFactory(
-      new GuidFactory(),
-      new ProxyRegistryMock(),
-    );
+    const dateProxyFactory = new DateProxyFactory(new ProxyRegistryMock());
     const date = new Date();
 
     const { observer: observer1 } = dateProxyFactory.create({
@@ -65,7 +62,7 @@ describe('DateProxy tests', () => {
       date,
     }).instance;
 
-    const id = dateProxyFactory.getId({ date }) as string;
+    const id = dateProxyFactory.getId({ date }) as number;
     expect(id).toBeDefined();
 
     expect(observer1).toBe(observer2);
@@ -82,398 +79,233 @@ describe('DateProxy tests', () => {
 
   describe('all date operation still work as before', () => {
     it('setFullYear', () => {
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
 
       const timestamp = proxy.setFullYear(2022);
 
       expect(new Date(timestamp)).toEqual(utCDate(2022, 0, 2));
-      expect(proxy.getFullYear()).toEqual(2022);
-      expect(proxy.getMonth()).toEqual(0);
-      expect(proxy.getDate()).toEqual(2);
-      expect(proxy.getHours()).toEqual(0);
-      expect(proxy.getMinutes()).toEqual(0);
-      expect(proxy.getSeconds()).toEqual(0);
-      expect(proxy.getMilliseconds()).toEqual(0);
+      expectDateParts(proxy, new Date(timestamp));
     });
 
     it('setUTCFullYear', () => {
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
 
       const timestamp = proxy.setUTCFullYear(2022);
 
       expect(new Date(timestamp)).toEqual(utCDate(2022, 0, 2));
-      expect(proxy.getFullYear()).toEqual(2022);
-      expect(proxy.getMonth()).toEqual(0);
-      expect(proxy.getDate()).toEqual(2);
-      expect(proxy.getHours()).toEqual(0);
-      expect(proxy.getMinutes()).toEqual(0);
-      expect(proxy.getSeconds()).toEqual(0);
-      expect(proxy.getMilliseconds()).toEqual(0);
+      expectDateParts(proxy, new Date(timestamp));
     });
 
     it('setMonth', () => {
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
 
       const timestamp = proxy.setMonth(1);
 
       expect(new Date(timestamp)).toEqual(utCDate(2021, 1, 2));
-      expect(proxy.getFullYear()).toEqual(2021);
-      expect(proxy.getMonth()).toEqual(1);
-      expect(proxy.getDate()).toEqual(2);
-      expect(proxy.getHours()).toEqual(0);
-      expect(proxy.getMinutes()).toEqual(0);
-      expect(proxy.getSeconds()).toEqual(0);
-      expect(proxy.getMilliseconds()).toEqual(0);
+      expectDateParts(proxy, new Date(timestamp));
     });
 
     it('setUTCMonth', () => {
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setUTCMonth(1);
 
       expect(new Date(timestamp)).toEqual(utCDate(2021, 1, 2));
-      expect(proxy.getFullYear()).toEqual(2021);
-      expect(proxy.getMonth()).toEqual(1);
-      expect(proxy.getDate()).toEqual(2);
-      expect(proxy.getHours()).toEqual(0);
-      expect(proxy.getMinutes()).toEqual(0);
-      expect(proxy.getSeconds()).toEqual(0);
-      expect(proxy.getMilliseconds()).toEqual(0);
+      expectDateParts(proxy, new Date(timestamp));
     });
 
     it('setDate', () => {
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
-        date: new Date(2021, 0, 2),
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
+        date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setDate(4);
 
-      expect(new Date(timestamp)).toEqual(new Date(2021, 0, 4));
-      expect(proxy.getFullYear()).toEqual(2021);
-      expect(proxy.getMonth()).toEqual(0);
-      expect(proxy.getDate()).toEqual(4);
-      expect(proxy.getHours()).toEqual(0);
-      expect(proxy.getMinutes()).toEqual(0);
-      expect(proxy.getSeconds()).toEqual(0);
-      expect(proxy.getMilliseconds()).toEqual(0);
+      expect(new Date(timestamp)).toEqual(utCDate(2021, 0, 4));
+      expectDateParts(proxy, new Date(timestamp));
     });
 
     it('setUTCDate', () => {
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setUTCDate(4);
 
       expect(new Date(timestamp)).toEqual(utCDate(2021, 0, 4));
-      expect(proxy.getFullYear()).toEqual(2021);
-      expect(proxy.getMonth()).toEqual(0);
-      expect(proxy.getDate()).toEqual(4);
-      expect(proxy.getHours()).toEqual(0);
-      expect(proxy.getMinutes()).toEqual(0);
-      expect(proxy.getSeconds()).toEqual(0);
-      expect(proxy.getMilliseconds()).toEqual(0);
+      expectDateParts(proxy, new Date(timestamp));
     });
 
     it('setHours', () => {
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
-        date: new Date(2021, 0, 2),
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
+        date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setHours(3);
 
-      expect(new Date(timestamp)).toEqual(new Date(2021, 0, 2, 3));
-      expect(proxy.getFullYear()).toEqual(2021);
-      expect(proxy.getMonth()).toEqual(0);
-      expect(proxy.getDate()).toEqual(2);
-      expect(proxy.getHours()).toEqual(3);
-      expect(proxy.getMinutes()).toEqual(0);
-      expect(proxy.getSeconds()).toEqual(0);
-      expect(proxy.getMilliseconds()).toEqual(0);
+      expect(new Date(timestamp).getTime()).toEqual(proxy.getTime());
+      expectDateParts(proxy, new Date(timestamp));
     });
 
     it('setUTCHours', () => {
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setUTCHours(3);
 
       expect(new Date(timestamp)).toEqual(utCDate(2021, 0, 2, 3));
-      expect(proxy.getFullYear()).toEqual(2021);
-      expect(proxy.getMonth()).toEqual(0);
-      expect(proxy.getDate()).toEqual(2);
-      expect(proxy.getHours()).toEqual(3);
-      expect(proxy.getMinutes()).toEqual(0);
-      expect(proxy.getSeconds()).toEqual(0);
-      expect(proxy.getMilliseconds()).toEqual(0);
+      expectDateParts(proxy, new Date(timestamp));
     });
 
     it('setMinutes', () => {
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
-        date: new Date(2021, 0, 2),
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
+        date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setMinutes(3);
 
-      expect(new Date(timestamp)).toEqual(new Date(2021, 0, 2, 0, 3));
-      expect(proxy.getFullYear()).toEqual(2021);
-      expect(proxy.getMonth()).toEqual(0);
-      expect(proxy.getDate()).toEqual(2);
-      expect(proxy.getHours()).toEqual(0);
-      expect(proxy.getMinutes()).toEqual(3);
-      expect(proxy.getSeconds()).toEqual(0);
-      expect(proxy.getMilliseconds()).toEqual(0);
+      expect(new Date(timestamp)).toEqual(utCDate(2021, 0, 2, 0, 3));
+      expectDateParts(proxy, new Date(timestamp));
     });
 
     it('setUTCMinutes', () => {
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setUTCMinutes(3);
 
       expect(new Date(timestamp)).toEqual(utCDate(2021, 0, 2, 0, 3));
-      expect(proxy.getFullYear()).toEqual(2021);
-      expect(proxy.getMonth()).toEqual(0);
-      expect(proxy.getDate()).toEqual(2);
-      expect(proxy.getHours()).toEqual(0);
-      expect(proxy.getMinutes()).toEqual(3);
-      expect(proxy.getSeconds()).toEqual(0);
-      expect(proxy.getMilliseconds()).toEqual(0);
+      expectDateParts(proxy, new Date(timestamp));
     });
 
     it('setSeconds', () => {
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
-        date: new Date(2021, 0, 2),
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
+        date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setSeconds(3);
 
       expect(new Date(timestamp)).toEqual(utCDate(2021, 0, 2, 0, 0, 3));
-      expect(proxy.getFullYear()).toEqual(2021);
-      expect(proxy.getMonth()).toEqual(0);
-      expect(proxy.getDate()).toEqual(2);
-      expect(proxy.getHours()).toEqual(0);
-      expect(proxy.getMinutes()).toEqual(0);
-      expect(proxy.getSeconds()).toEqual(3);
-      expect(proxy.getMilliseconds()).toEqual(0);
+      expectDateParts(proxy, new Date(timestamp));
     });
 
     it('setUTCSeconds', () => {
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setUTCSeconds(3);
 
       expect(new Date(timestamp)).toEqual(utCDate(2021, 0, 2, 0, 0, 3));
-      expect(proxy.getFullYear()).toEqual(2021);
-      expect(proxy.getMonth()).toEqual(0);
-      expect(proxy.getDate()).toEqual(2);
-      expect(proxy.getHours()).toEqual(0);
-      expect(proxy.getMinutes()).toEqual(0);
-      expect(proxy.getSeconds()).toEqual(3);
-      expect(proxy.getMilliseconds()).toEqual(0);
+      expectDateParts(proxy, new Date(timestamp));
     });
 
     it('setMilliseconds', () => {
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setMilliseconds(3);
 
       expect(new Date(timestamp)).toEqual(utCDate(2021, 0, 2, 0, 0, 0, 3));
-      expect(proxy.getFullYear()).toEqual(2021);
-      expect(proxy.getMonth()).toEqual(0);
-      expect(proxy.getDate()).toEqual(2);
-      expect(proxy.getHours()).toEqual(0);
-      expect(proxy.getMinutes()).toEqual(0);
-      expect(proxy.getSeconds()).toEqual(0);
-      expect(proxy.getMilliseconds()).toEqual(3);
+      expectDateParts(proxy, new Date(timestamp));
     });
 
     it('setUTCMilliseconds', () => {
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2021, 0, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setUTCMilliseconds(3);
 
       expect(new Date(timestamp)).toEqual(utCDate(2021, 0, 2, 0, 0, 0, 3));
-      expect(proxy.getFullYear()).toEqual(2021);
-      expect(proxy.getMonth()).toEqual(0);
-      expect(proxy.getDate()).toEqual(2);
-      expect(proxy.getHours()).toEqual(0);
-      expect(proxy.getMinutes()).toEqual(0);
-      expect(proxy.getSeconds()).toEqual(0);
-      expect(proxy.getMilliseconds()).toEqual(3);
+      expectDateParts(proxy, new Date(timestamp));
     });
 
     it('setTime', () => {
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date: utCDate(2022, 1, 2),
       }).instance.proxy as Date;
       const timestamp = proxy.setTime(1612137600000);
 
       expect(new Date(timestamp)).toEqual(utCDate(2021, 1, 1));
-      expect(proxy.getFullYear()).toEqual(2021);
-      expect(proxy.getMonth()).toEqual(1);
-      expect(proxy.getDate()).toEqual(1);
-      expect(proxy.getHours()).toEqual(0);
-      expect(proxy.getMinutes()).toEqual(0);
-      expect(proxy.getSeconds()).toEqual(0);
-      expect(proxy.getMilliseconds()).toEqual(0);
+      expectDateParts(proxy, new Date(timestamp));
     });
 
     it('toString', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.toString()).toEqual(proxy.toString());
     });
 
     it('toDateString', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.toDateString()).toEqual(proxy.toDateString());
     });
 
     it('toTimeString', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.toTimeString()).toEqual(proxy.toTimeString());
     });
 
     it('toLocaleString', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.toLocaleString()).toEqual(proxy.toLocaleString());
     });
 
     it('toLocaleDateString', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.toLocaleDateString()).toEqual(proxy.toLocaleDateString());
     });
 
     it('toLocaleTimeString', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.toLocaleTimeString()).toEqual(proxy.toLocaleTimeString());
     });
 
     it('valueOf', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.valueOf()).toEqual(proxy.valueOf());
     });
 
     it('getTime', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getTime()).toEqual(proxy.getTime());
     });
 
     it('getFullYear', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getFullYear()).toEqual(proxy.getFullYear());
     });
 
     it('getUTCFullYear', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
 
@@ -481,66 +313,48 @@ describe('DateProxy tests', () => {
     });
 
     it('getMonth', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getMonth()).toEqual(proxy.getMonth());
     });
 
     it('getUTCMonth', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getUTCMonth()).toEqual(proxy.getUTCMonth());
     });
 
     it('getDate', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getDate()).toEqual(proxy.getDate());
     });
 
     it('getUTCDate', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getUTCDate()).toEqual(proxy.getUTCDate());
     });
 
     it('getDay', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getDay()).toEqual(proxy.getDay());
     });
 
     it('getUTCDay', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
 
@@ -548,33 +362,24 @@ describe('DateProxy tests', () => {
     });
 
     it('getHours', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getHours()).toEqual(proxy.getHours());
     });
 
     it('getUTCHours', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getUTCHours()).toEqual(proxy.getUTCHours());
     });
 
     it('getMinutes', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
 
@@ -582,77 +387,56 @@ describe('DateProxy tests', () => {
     });
 
     it('getUTCMinutes', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getUTCMinutes()).toEqual(proxy.getUTCMinutes());
     });
 
     it('getSeconds', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getSeconds()).toEqual(proxy.getSeconds());
     });
 
     it('getUTCSeconds', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getUTCSeconds()).toEqual(proxy.getUTCSeconds());
     });
 
     it('getMilliseconds', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getMilliseconds()).toEqual(proxy.getMilliseconds());
     });
 
     it('getUTCMilliseconds', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getUTCMilliseconds()).toEqual(proxy.getUTCMilliseconds());
     });
 
     it('getTimezoneOffset', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.getTimezoneOffset()).toEqual(proxy.getTimezoneOffset());
     });
 
     it('toISOString', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
 
@@ -660,22 +444,16 @@ describe('DateProxy tests', () => {
     });
 
     it('toUTCString', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.toUTCString()).toEqual(proxy.toUTCString());
     });
 
     it('toJSON', () => {
-      const date = new Date(2022, 1, 2);
-      const proxy = new DateProxyFactory(
-        new GuidFactory(),
-        new ProxyRegistryMock(),
-      ).create({
+      const date = utCDate(2022, 1, 2);
+      const proxy = new DateProxyFactory(new ProxyRegistryMock()).create({
         date,
       }).instance.proxy as Date;
       expect(date.toJSON()).toEqual(proxy.toJSON());
@@ -685,7 +463,6 @@ describe('DateProxy tests', () => {
   describe('Change event', () => {
     it('if not mustProxify have been set set only only event with the changed date will be emitted', async () => {
       const { observer, proxy, proxyTarget } = new DateProxyFactory(
-        new GuidFactory(),
         new ProxyRegistryMock(),
       ).create({
         date: utCDate(2021, 1, 2),
@@ -707,7 +484,6 @@ describe('DateProxy tests', () => {
     });
     it('setFullYear will emit change event for every change property', async () => {
       const { observer, proxy, proxyTarget } = new DateProxyFactory(
-        new GuidFactory(),
         new ProxyRegistryMock(),
       ).create({
         date: utCDate(2021, 1, 2),
@@ -739,7 +515,7 @@ describe('DateProxy tests', () => {
           arguments: [],
           chain: [{ context: proxyTarget, index: 'time' }],
           index: 'time',
-          newValue: new Date(2022, 1, 2).getTime(),
+          newValue: utCDate(2022, 1, 2).getTime(),
           target: proxyTarget,
         },
       ];
@@ -749,7 +525,6 @@ describe('DateProxy tests', () => {
 
     it('setMonth will emit change event for every change property', async () => {
       const { observer, proxy, proxyTarget } = new DateProxyFactory(
-        new GuidFactory(),
         new ProxyRegistryMock(),
       ).create({
         date: utCDate(2021, 1, 2),
@@ -790,7 +565,6 @@ describe('DateProxy tests', () => {
 
     it('setDate will emit change event for every change property', async () => {
       const { observer, proxy, proxyTarget } = new DateProxyFactory(
-        new GuidFactory(),
         new ProxyRegistryMock(),
       ).create({
         date: utCDate(2021, 1, 2),
@@ -831,7 +605,6 @@ describe('DateProxy tests', () => {
 
     it('setHours will emit change event for every change property', async () => {
       const { observer, proxy, proxyTarget } = new DateProxyFactory(
-        new GuidFactory(),
         new ProxyRegistryMock(),
       ).create({
         date: utCDate(2021, 1, 2),
@@ -849,21 +622,21 @@ describe('DateProxy tests', () => {
           arguments: [],
           chain: [{ context: proxyTarget, index: 'hours' }],
           index: 'hours',
-          newValue: 3,
+          newValue: (proxyTarget as Date).getHours(),
           target: proxyTarget,
         },
         {
           arguments: [],
           chain: [{ context: proxyTarget, index: 'utcHours' }],
           index: 'utcHours',
-          newValue: 3,
+          newValue: (proxyTarget as Date).getUTCHours(),
           target: proxyTarget,
         },
         {
           arguments: [],
           chain: [{ context: proxyTarget, index: 'time' }],
           index: 'time',
-          newValue: utCDate(2021, 1, 2, 3).getTime(),
+          newValue: (proxyTarget as Date).getTime(),
           target: proxyTarget,
         },
       ];
@@ -872,7 +645,6 @@ describe('DateProxy tests', () => {
 
     it('setMinutes will emit change event', async () => {
       const { observer, proxy, proxyTarget } = new DateProxyFactory(
-        new GuidFactory(),
         new ProxyRegistryMock(),
       ).create({
         date: utCDate(2021, 1, 2),
@@ -913,7 +685,6 @@ describe('DateProxy tests', () => {
 
     it('setSeconds will emit change event', async () => {
       const { observer, proxy, proxyTarget } = new DateProxyFactory(
-        new GuidFactory(),
         new ProxyRegistryMock(),
       ).create({
         date: utCDate(2021, 1, 2),
@@ -954,7 +725,6 @@ describe('DateProxy tests', () => {
 
     it('setMilliseconds will emit change event for every change property', async () => {
       const { observer, proxy, proxyTarget } = new DateProxyFactory(
-        new GuidFactory(),
         new ProxyRegistryMock(),
       ).create({
         date: utCDate(2021, 1, 2),
@@ -995,7 +765,6 @@ describe('DateProxy tests', () => {
 
     it('setTime will emit change event for every change property', async () => {
       const { observer, proxy, proxyTarget } = new DateProxyFactory(
-        new GuidFactory(),
         new ProxyRegistryMock(),
       ).create({
         // Mon Jan 07 2030 07:23:45
@@ -1010,110 +779,111 @@ describe('DateProxy tests', () => {
         proxy.setTime(1667465652987);
       });
 
+      const expectedDate = proxyTarget as Date;
       const expected: IPropertyChange[] = [
         {
           arguments: [],
           chain: [{ context: proxyTarget, index: 'year' }],
           index: 'year',
-          newValue: 2022,
+          newValue: expectedDate.getFullYear(),
           target: proxyTarget,
         },
         {
           arguments: [],
           chain: [{ context: proxyTarget, index: 'utcYear' }],
           index: 'utcYear',
-          newValue: 2022,
+          newValue: expectedDate.getUTCFullYear(),
           target: proxyTarget,
         },
         {
           arguments: [],
           chain: [{ context: proxyTarget, index: 'month' }],
           index: 'month',
-          newValue: 10,
+          newValue: expectedDate.getMonth(),
           target: proxyTarget,
         },
         {
           arguments: [],
           chain: [{ context: proxyTarget, index: 'utcMonth' }],
           index: 'utcMonth',
-          newValue: 10,
+          newValue: expectedDate.getUTCMonth(),
           target: proxyTarget,
         },
         {
           arguments: [],
           chain: [{ context: proxyTarget, index: 'date' }],
           index: 'date',
-          newValue: 3,
+          newValue: expectedDate.getDate(),
           target: proxyTarget,
         },
         {
           arguments: [],
           chain: [{ context: proxyTarget, index: 'utcDate' }],
           index: 'utcDate',
-          newValue: 3,
+          newValue: expectedDate.getUTCDate(),
           target: proxyTarget,
         },
         {
           arguments: [],
           chain: [{ context: proxyTarget, index: 'hours' }],
           index: 'hours',
-          newValue: 8,
+          newValue: expectedDate.getHours(),
           target: proxyTarget,
         },
         {
           arguments: [],
           chain: [{ context: proxyTarget, index: 'utcHours' }],
           index: 'utcHours',
-          newValue: 8,
+          newValue: expectedDate.getUTCHours(),
           target: proxyTarget,
         },
         {
           arguments: [],
           chain: [{ context: proxyTarget, index: 'minutes' }],
           index: 'minutes',
-          newValue: 54,
+          newValue: expectedDate.getMinutes(),
           target: proxyTarget,
         },
         {
           arguments: [],
           chain: [{ context: proxyTarget, index: 'utcMinutes' }],
           index: 'utcMinutes',
-          newValue: 54,
+          newValue: expectedDate.getUTCMinutes(),
           target: proxyTarget,
         },
         {
           arguments: [],
           chain: [{ context: proxyTarget, index: 'seconds' }],
           index: 'seconds',
-          newValue: 12,
+          newValue: expectedDate.getSeconds(),
           target: proxyTarget,
         },
         {
           arguments: [],
           chain: [{ context: proxyTarget, index: 'utcSeconds' }],
           index: 'utcSeconds',
-          newValue: 12,
+          newValue: expectedDate.getUTCSeconds(),
           target: proxyTarget,
         },
         {
           arguments: [],
           chain: [{ context: proxyTarget, index: 'milliseconds' }],
           index: 'milliseconds',
-          newValue: 987,
+          newValue: expectedDate.getMilliseconds(),
           target: proxyTarget,
         },
         {
           arguments: [],
           chain: [{ context: proxyTarget, index: 'utcMilliseconds' }],
           index: 'utcMilliseconds',
-          newValue: 987,
+          newValue: expectedDate.getUTCMilliseconds(),
           target: proxyTarget,
         },
         {
           arguments: [],
           chain: [{ context: proxyTarget, index: 'time' }],
           index: 'time',
-          newValue: 1667465652987,
+          newValue: expectedDate.getTime(),
           target: proxyTarget,
         },
       ];
@@ -1122,7 +892,6 @@ describe('DateProxy tests', () => {
 
     it('will not emit change event if date does not change', async () => {
       const { observer, proxy } = new DateProxyFactory(
-        new GuidFactory(),
         new ProxyRegistryMock(),
       ).create({
         date: utCDate(2021, 1, 2),

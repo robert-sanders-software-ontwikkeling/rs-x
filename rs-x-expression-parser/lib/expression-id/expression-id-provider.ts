@@ -4,24 +4,25 @@ import {
   Injectable,
   RsXCoreInjectionTokens,
 } from '@rs-x/core';
-import type { IExpression } from '@rs-x/expression-parser';
+
+import type { IExpressionTree } from '../expressions/expression-parser.interface';
 
 @Injectable()
 export class ExpressionIdProvider {
-  private readonly _rootIdByRoot = new WeakMap<IExpression, string>();
+  private readonly _rootIdByRoot = new WeakMap<IExpressionTree, string>();
 
   constructor(
     @Inject(RsXCoreInjectionTokens.IGuidFactory)
     private readonly _idFactory: IGuidFactory,
   ) {}
 
-  public getId(node: IExpression): string {
+  public getId(node: IExpressionTree): string {
     const root = this.getRoot(node);
     const rootId = this.getOrCreateRootId(root);
 
     // Build path from root using indices
     const parts: string[] = [];
-    let current: IExpression | undefined = node;
+    let current: IExpressionTree | undefined = node;
 
     while (current) {
       const parent = current.parent;
@@ -46,15 +47,15 @@ export class ExpressionIdProvider {
     return parts.length > 0 ? `${rootId}/${parts.reverse().join('/')}` : rootId;
   }
 
-  private getRoot(node: IExpression): IExpression {
-    let current: IExpression = node;
+  private getRoot(node: IExpressionTree): IExpressionTree {
+    let current: IExpressionTree = node;
     while (current.parent) {
       current = current.parent;
     }
     return current;
   }
 
-  private getOrCreateRootId(root: IExpression): string {
+  private getOrCreateRootId(root: IExpressionTree): string {
     const existing = this._rootIdByRoot.get(root);
     if (existing) {
       return existing;

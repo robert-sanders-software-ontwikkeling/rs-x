@@ -1,0 +1,11 @@
+--- a/dist/rollup.js
++++ b/dist/rollup.js
+@@ -6834,7 +6834,7 @@
+           tsconfig: options.tsconfig,
+           compilerOptions: {
+             ...compilerOptions,
+-            baseUrl: compilerOptions.baseUrl || ".",
++            ...(compilerOptions.baseUrl !== void 0 ? { baseUrl: compilerOptions.baseUrl } : {}),
+             // Ensure ".d.ts" modules are generated
+             declaration: true,
+             // Skip ".js" generation

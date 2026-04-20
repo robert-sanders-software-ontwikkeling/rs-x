@@ -3,27 +3,60 @@
   "private": true,
   "version": "0.1.2",
   "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "copy:monaco-dts": "node ../scripts/copy-monaco-dts.mjs rs-x-site",
     "prod": "pnpm run build && next start",
     "dev": "pnpm run copy:monaco-dts && next dev",
     "build": "pnpm run copy:monaco-dts && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:a11y": "pnpm exec playwright test",
+    "test:a11y:report": "pnpm exec playwright show-report a11y-report"
   },
   "dependencies": {
+    "@angular/common": "21.2.7",
+    "@angular/compiler": "21.2.7",
+    "@angular/core": "21.2.7",
+    "@angular/forms": "21.2.7",
+    "@angular/platform-browser": "21.2.7",
     "@rs-x/core": "workspace:*",
+    "@rs-x/angular": "workspace:*",
     "@rs-x/expression-parser": "workspace:*",
-    "@rs-x/state-manager": "workspace:*",
+    "@rs-x/react": "workspace:*",
     "@rs-x/react-components": "workspace:*",
-    "monaco-editor": "^0.55.1"
+    "@rs-x/state-manager": "workspace:*",
+    "@rs-x/vue": "workspace:*",
+    "monaco-editor": "^0.55.1",
+    "vue": "^3.5.32",
+    "zone.js": "0.16.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x"
+  },
+  "homepage": "https://rsxjs.com",
+  "bugs": {
+    "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x/issues"
   },
   "devDependencies": {
-    "@types/node": "^22.10.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "eslint": "^9.0.0",
-    "eslint-config-next": "^15.1.0",
-    "typescript": "^5.7.0"
-  }
+    "@axe-core/playwright": "^4.10.1",
+    "@playwright/test": "^1.50.0",
+    "@types/node": "^25.5.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^10.2.0",
+    "eslint-config-next": "^16.2.2",
+    "typescript": "^6.0.2"
+  },
+  "keywords": [
+    "rs-x",
+    "website",
+    "react",
+    "nextjs",
+    "monaco",
+    "typescript"
+  ]
 }

@@ -1,52 +1,65 @@
-import { useEffect, useRef, useState } from 'react';
+import { type DependencyList, useLayoutEffect, useMemo, useState } from 'react';
 
-import { ArgumentException, Type } from '@rs-x/core';
-import { AbstractExpression, type IExpression } from '@rs-x/expression-parser';
-import { type IIndexWatchRule } from '@rs-x/state-manager';
+import {
+  AbstractExpression,
+  CompiledExpression,
+  type IExpression,
+} from '@rs-x/expression-parser';
 
-import { getExpressionFactory } from '../expression.factory';
+function ensureExpression<T>(expression: IExpression<T>): IExpression<T> {
+  if (
+    expression instanceof AbstractExpression ||
+    expression instanceof CompiledExpression
+  ) {
+    return expression;
+  }
 
-export interface IUseRsxExpressionOptions {
-  model?: object;
-  leafWatchRule?: IIndexWatchRule;
+  throw new Error('useRsxExpression: expression must be an IExpression');
 }
 
+export function useRsxExpression<T>(expression: IExpression<T>): T | null;
 export function useRsxExpression<T>(
-  expression: string | IExpression<T>,
-  options?: IUseRsxExpressionOptions,
+  expressionFactory: () => IExpression<T>,
+  deps?: DependencyList,
+): T | null;
+export function useRsxExpression<T>(
+  expressionOrFactory: IExpression<T> | (() => IExpression<T>),
+  deps?: DependencyList,
 ): T | null {
-  const { model, leafWatchRule } = options || {};
-  if (Type.isString(expression) && !model) {
-    throw new ArgumentException(
-      'model is required when expression is a string',
-    );
-  }
-  const [value, setValue] = useState<T | null>(null);
-  const expressionRef = useRef<IExpression<T> | null>(null);
+  const ownsExpression = typeof expressionOrFactory === 'function';
+  const expressionTree = useMemo(
+    () => {
+      if (ownsExpression) {
+        return ensureExpression(
+          (expressionOrFactory as () => IExpression<T>)(),
+        );
+      }
 
-  useEffect(() => {
-    let expressionTree: IExpression<T>;
-    let ownsExpression = false;
+      return ensureExpression(expressionOrFactory as IExpression<T>);
+    },
+    ownsExpression ? (deps ?? []) : [expressionOrFactory],
+  );
 
-    if (Type.isString(expression)) {
-      const factory = getExpressionFactory();
-      expressionTree = factory.create<T>(
-        model as object,
-        expression,
-        leafWatchRule,
-      );
-      ownsExpression = true;
-    } else if (expression instanceof AbstractExpression) {
-      expressionTree = expression;
-      ownsExpression = false;
-    } else {
-      throw new Error(
-        'useRsxExpression: expression must be a string or an IExpression',
-      );
+  const [value, setValue] = useState<T | null>(() => {
+    if (expressionTree.value !== undefined) {
+      return expressionTree.value ?? null;
     }
 
-    expressionRef.current = expressionTree;
+    const evaluator = expressionTree as unknown as {
+      evalateTopToBottom?: () => void;
+      evaluateBottomToTop?: () => boolean;
+    };
 
+    evaluator.evalateTopToBottom?.();
+    if (expressionTree.value !== undefined) {
+      return expressionTree.value ?? null;
+    }
+
+    evaluator.evaluateBottomToTop?.();
+    return expressionTree.value ?? null;
+  });
+
+  useLayoutEffect(() => {
     const changedSubscription = expressionTree.changed.subscribe(() => {
       setValue(expressionTree.value ?? null);
     });
@@ -55,10 +68,10 @@ export function useRsxExpression<T>(
     return () => {
       changedSubscription.unsubscribe();
       if (ownsExpression) {
-        expressionTree.dispose(); // only dispose if we created it
+        expressionTree.dispose();
       }
     };
-  }, [expression, model, leafWatchRule]); // recreate if expression string or model changes
+  }, [expressionTree, ownsExpression]); // recreate if expression changes
 
   return value;
 }

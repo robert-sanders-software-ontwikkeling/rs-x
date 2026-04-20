@@ -215,7 +215,7 @@ class PropertyObserverFactory {
   public create(context: object, propertyName: string): IObserver {
     return this._objectPropertyObserverManager
       .create(context)
-      .instance.create(propertyName).instance;
+      .instance.createAndGetInstance(propertyName);
   }
 }
 

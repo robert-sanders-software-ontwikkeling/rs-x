@@ -18,6 +18,10 @@ export class Type {
     object,
     Map<PropertyKey, boolean>
   >();
+  private static readonly _hasPropertyByPrototype = new WeakMap<
+    object,
+    Map<string, boolean>
+  >();
 
   public static isReadonlyProperty(target: unknown, key: unknown): boolean {
     if (
@@ -198,16 +202,43 @@ export class Type {
   }
 
   public static hasProperty(root: unknown, name: string): boolean {
+    if (!root || (typeof root !== 'object' && typeof root !== 'function')) {
+      return false;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(root, name)) {
+      return true;
+    }
+
+    const prototype = Object.getPrototypeOf(root as object);
+    if (!prototype || prototype === Object.prototype) {
+      return false;
+    }
+
+    const cachedByKey = Type._hasPropertyByPrototype.get(prototype);
+    if (cachedByKey?.has(name)) {
+      return cachedByKey.get(name) as boolean;
+    }
+
+    let hasProperty = false;
     for (
-      let current = root;
+      let current: object | null = prototype;
       current && current !== Object.prototype;
       current = Object.getPrototypeOf(current)
     ) {
       if (Object.prototype.hasOwnProperty.call(current, name)) {
-        return true;
+        hasProperty = true;
+        break;
       }
     }
-    return false;
+
+    let nextCachedByKey = cachedByKey;
+    if (!nextCachedByKey) {
+      nextCachedByKey = new Map<string, boolean>();
+      Type._hasPropertyByPrototype.set(prototype, nextCachedByKey);
+    }
+    nextCachedByKey.set(name, hasProperty);
+    return hasProperty;
   }
 
   public static hasOwnPropertyInPrototypeChain(

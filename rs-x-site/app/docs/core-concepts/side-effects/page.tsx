@@ -35,8 +35,6 @@ const sideEffectBasicCode = dedent`
 `;
 
 const sideEffectBasicPlayground = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const model = {
@@ -95,8 +93,6 @@ const sideEffectMultipleCode = dedent`
 `;
 
 const sideEffectMultiplePlayground = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const model = {
@@ -160,8 +156,6 @@ const sideEffectConditionalCode = dedent`
 `;
 
 const sideEffectConditionalPlayground = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const model = {
@@ -235,8 +229,6 @@ const sideEffectCrossPropertyCode = dedent`
 `;
 
 const sideEffectCrossPropertyPlayground = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const model = {

@@ -1,12 +1,17 @@
-import { type IExpressionChangeCommitHandler } from '../expresion-change-transaction-manager.interface';
+import {
+  type IExpressionEvaluateUnit,
+  SequenceExpressionEvaluateUnit,
+} from '../expression-evaluate-manager';
 
 import { AbstractExpression } from './abstract-expression';
 import type { IExpressionBindConfiguration } from './expression-bind-configuration.type';
 import { ExpressionType } from './expression-parser.interface';
 
 export class SequenceExpression extends AbstractExpression {
+  private _expressionEvaluateUnit: IExpressionEvaluateUnit | undefined;
+
   constructor(expressionString: string, expressions: AbstractExpression[]) {
-    super(ExpressionType.Sequence, expressionString, ...expressions);
+    super(ExpressionType.Sequence, expressionString, expressions);
   }
 
   public override clone(): this {
@@ -19,32 +24,67 @@ export class SequenceExpression extends AbstractExpression {
     );
   }
 
-  public override bind(
+  protected override bindChildren(
     settings: IExpressionBindConfiguration,
-  ): AbstractExpression {
-    super.bind(settings);
-    this._childExpressions.forEach((childExpression) =>
-      childExpression.bind(settings),
+  ): void {
+    const isMemberSegment = this.parent?.type === ExpressionType.Member;
+    if (!isMemberSegment) {
+      super.bindChildren(settings);
+      return;
+    }
+
+    const childBindSettings = {
+      ...settings,
+      skipEvaluateUnitRegistration: true,
+    };
+    const dependencyUnits: IExpressionEvaluateUnit[] = [];
+
+    for (let i = 0; i < this._childExpressions.length; i++) {
+      const childExpression = this._childExpressions[i];
+      childExpression.bind(childBindSettings);
+      const unit =
+        AbstractExpression.getExpressionEvaluateUnit(childExpression);
+      if (unit) {
+        dependencyUnits.push(unit);
+      }
+    }
+
+    this._expressionEvaluateUnit = new SequenceExpressionEvaluateUnit(
+      this.expressionString,
+      undefined,
+      dependencyUnits,
+      () => this.evaluate(),
+      this.commitValue,
     );
 
-    return this;
+    if (!settings.skipEvaluateUnitRegistration) {
+      this.evaluateManagerForExpression.register(this._expressionEvaluateUnit);
+    }
   }
 
-  protected override prepareReevaluation(
-    sender: AbstractExpression,
-    root: AbstractExpression,
-    pendingCommits: Set<IExpressionChangeCommitHandler>,
-  ): boolean {
-    // Bubble child changes as if they originated from this sequence segment.
-    // MemberExpression path resolution expects direct segment senders.
-    if (this._childExpressions.includes(sender)) {
-      return super.prepareReevaluation(this, root, pendingCommits);
-    }
-    return super.prepareReevaluation(sender, root, pendingCommits);
+  protected override get expressionEvaluateUnit():
+    | IExpressionEvaluateUnit
+    | undefined {
+    return this._expressionEvaluateUnit;
+  }
+
+  protected override internalDispose(): void {
+    super.internalDispose();
+    this._expressionEvaluateUnit = undefined;
   }
 
   protected override evaluate(): unknown {
     const childExpression = this._childExpressions;
-    return childExpression[childExpression.length - 1].value;
+    return AbstractExpression.evaluateExpression(
+      childExpression[childExpression.length - 1] as AbstractExpression,
+    );
   }
+
+  protected override shouldAbortTopDownEvaluation(): boolean {
+    return false;
+  }
+
+  private commitValue = () => {
+    this.evaluateBottomToTop();
+  };
 }

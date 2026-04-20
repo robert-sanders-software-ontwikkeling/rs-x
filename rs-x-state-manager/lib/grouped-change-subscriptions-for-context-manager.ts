@@ -1,9 +1,8 @@
 import { type Subscription } from 'rxjs';
 
 import {
-  GuidKeyedInstanceFactory,
+  GroupedKeyedInstanceFactory,
   type IErrorLog,
-  type IGuidFactory,
   type IKeyedInstanceFactory,
   type IPropertyChange,
 } from '@rs-x/core';
@@ -24,8 +23,8 @@ export interface IGroupedChangeSubscriptionsForContextManager<
   TSubsriptionData,
   TData,
   TIdData = TData,
-> extends IKeyedInstanceFactory<string, TData, IObserver, TIdData> {
-  getSubsriptionData(id: string): TSubsriptionData | undefined;
+> extends IKeyedInstanceFactory<number, TData, IObserver, TIdData> {
+  getSubsriptionData(id: number): TSubsriptionData | undefined;
 }
 
 export abstract class GroupedChangeSubscriptionsForContextManager<
@@ -33,7 +32,7 @@ export abstract class GroupedChangeSubscriptionsForContextManager<
   TData extends TIdData & IChangeSubscriptionsCreateMethods,
   TIdData = TData,
 >
-  extends GuidKeyedInstanceFactory<TData, IObserver>
+  extends GroupedKeyedInstanceFactory<number, TData, IObserver>
   implements
     IGroupedChangeSubscriptionsForContextManager<
       TSubsriptionData,
@@ -41,8 +40,9 @@ export abstract class GroupedChangeSubscriptionsForContextManager<
       TIdData
     >
 {
+  private _nextId = 0;
   private readonly _subscriptions = new Map<
-    string,
+    number,
     ISubscriptionWithData<TSubsriptionData>
   >();
 
@@ -50,20 +50,19 @@ export abstract class GroupedChangeSubscriptionsForContextManager<
     private _context: unknown,
     private readonly releaseContext: () => void,
     protected readonly _errorLog: IErrorLog,
-    guidFactory: IGuidFactory,
   ) {
-    super(guidFactory);
+    super();
   }
 
   protected get context(): unknown {
     return this._context;
   }
 
-  public getSubsriptionData(id: string): TSubsriptionData | undefined {
+  public getSubsriptionData(id: number): TSubsriptionData | undefined {
     return this._subscriptions.get(id)?.data;
   }
 
-  protected override createInstance(data: TData, id: string): IObserver {
+  protected override createInstance(data: TData, id: number): IObserver {
     const { observer, subscriptionData } = this.createObserver(
       this._context,
       data,
@@ -100,10 +99,10 @@ export abstract class GroupedChangeSubscriptionsForContextManager<
   protected abstract createObserver(
     context: unknown,
     data: TData,
-    id: string,
+    id: number,
   ): { subscriptionData: TSubsriptionData; observer: IObserver };
 
-  protected override releaseInstance(observer: IObserver, id: string): void {
+  protected override releaseInstance(observer: IObserver, id: number): void {
     super.releaseInstance(observer, id);
     this._subscriptions.get(id)?.subscription.unsubscribe();
     this._subscriptions.delete(id);
@@ -111,5 +110,9 @@ export abstract class GroupedChangeSubscriptionsForContextManager<
 
   protected override onReleased(): void {
     this.releaseContext();
+  }
+
+  protected override createUniqueId(_data: TData): number {
+    return this._nextId++;
   }
 }

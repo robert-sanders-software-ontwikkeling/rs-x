@@ -1,0 +1,90 @@
+#!/usr/bin/env node
+
+const { spawnSync } = require('node:child_process');
+const fs = require('node:fs');
+const path = require('node:path');
+
+function runCapture(command, args) {
+  return spawnSync(command, args, {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
+  });
+}
+
+function hasCommand(command) {
+  const result = runCapture(command, ['--version']);
+  return !result.error && result.status === 0;
+}
+
+function shouldSkipInstall() {
+  if (process.env.CI === 'true') {
+    return true;
+  }
+  if (process.env.RSX_SKIP_VSCODE_EXTENSION_INSTALL === 'true') {
+    return true;
+  }
+  return false;
+}
+
+function installVsCodeExtension() {
+  if (shouldSkipInstall()) {
+    console.log(
+      '[rs-x] Skipping VS Code extension auto-install (CI or RSX_SKIP_VSCODE_EXTENSION_INSTALL=true).',
+    );
+    return;
+  }
+
+  if (!hasCommand('code')) {
+    console.log(
+      '[rs-x] VS Code CLI (`code`) not found on PATH. Skipping VS Code extension install.',
+    );
+    return;
+  }
+
+  const localVsix = resolveBundledVsix();
+  if (!localVsix) {
+    console.log(
+      '[rs-x] No bundled VSIX found in @rs-x/cli package. Skipping VS Code extension install.',
+    );
+    return;
+  }
+
+  const args = ['--install-extension', localVsix];
+
+  const result = spawnSync('code', args, {
+    stdio: 'inherit',
+  });
+
+  if (result.error || result.status !== 0) {
+    console.log(
+      '[rs-x] Could not auto-install bundled VSIX. You can install manually:',
+    );
+    console.log(`       code --install-extension "${localVsix}"`);
+    return;
+  }
+
+  console.log(`[rs-x] Installed bundled VSIX: ${path.basename(localVsix)}`);
+}
+
+function resolveBundledVsix() {
+  const packageRoot = path.resolve(__dirname, '..');
+  const candidates = fs
+    .readdirSync(packageRoot)
+    .filter((name) => /^rs-x-vscode-extension-.*\.vsix$/u.test(name))
+    .map((name) => path.join(packageRoot, name));
+
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  const latest = candidates
+    .map((fullPath) => ({
+      fullPath,
+      mtimeMs: fs.statSync(fullPath).mtimeMs,
+    }))
+    .sort((a, b) => b.mtimeMs - a.mtimeMs)[0];
+
+  return latest?.fullPath ?? null;
+}
+
+installVsCodeExtension();

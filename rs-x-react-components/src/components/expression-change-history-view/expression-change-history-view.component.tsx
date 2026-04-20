@@ -5,6 +5,7 @@ import {
   ExpressionType,
   type IExpression,
   type IExpressionChangeHistory,
+  type IExpressionTree,
 } from '@rs-x/expression-parser';
 
 import { useExpressionChangeHistoryTracker } from './hooks/use-expression-change-history-tracker';
@@ -123,7 +124,7 @@ function getExpressionText(expression: IExpression): {
   expressionString: string;
   type: string;
 } {
-  const parent = expression.parent;
+  const parent = getTreeParent(expression);
   const isLastChild = parent?.childExpressions?.at(-1) === expression;
 
   const isTrigger =
@@ -136,13 +137,28 @@ function getExpressionText(expression: IExpression): {
   };
 }
 
+function isTreeExpression(
+  expression: IExpression,
+): expression is IExpressionTree {
+  return 'parent' in expression && 'childExpressions' in expression;
+}
+
+function getTreeParent(expression: IExpression): IExpressionTree | undefined {
+  if (!isTreeExpression(expression)) {
+    return undefined;
+  }
+
+  return expression.parent;
+}
+
 function getDisplayStepItems(
   items: readonly IExpressionChangeHistory[],
 ): readonly IExpressionChangeHistory[] {
   return items.filter((item) => {
     if (item.expression.type === ExpressionType.Identifier) {
-      if (item.expression.parent?.type === ExpressionType.Member) {
-        const parentChildExpressions = item.expression.parent?.childExpressions;
+      const parent = getTreeParent(item.expression);
+      if (parent?.type === ExpressionType.Member) {
+        const parentChildExpressions = parent.childExpressions;
         return (
           item.expression ===
           parentChildExpressions[parentChildExpressions.length - 1]

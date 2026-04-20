@@ -8,6 +8,7 @@ export * from './expression-change-history-view';
 export * from './expression-tree-panel';
 export * from './expression-tree-view';
 export * from './expression-tree-view-with-model';
+export * from './framework-runtime-lab';
 export * from './hooks';
 export * from './item-link-card';
 export * from './left-accent-card';

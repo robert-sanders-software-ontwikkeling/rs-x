@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rsxjs.com/schemas/rsx-config.schema.json",
+  "title": "RS-X Config",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "build": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "preparse": {
+          "type": "boolean",
+          "description": "Enable generation of the preparsed AST cache during rsx build --prod."
+        },
+        "tsconfig": {
+          "type": "string",
+          "description": "Default tsconfig path used by rsx build and rsx typecheck when --project is omitted."
+        },
+        "outDir": {
+          "type": "string",
+          "description": "Default output directory used by rsx build when --out-dir is omitted."
+        },
+        "preparseFile": {
+          "type": "string",
+          "description": "Path to the generated preparsed AST cache module."
+        },
+        "compiled": {
+          "type": "boolean",
+          "description": "Enable generation of the compiled-expression cache."
+        },
+        "compiledFile": {
+          "type": "string",
+          "description": "Path to the generated compiled-expression cache module."
+        },
+        "registrationFile": {
+          "type": "string",
+          "description": "Path to the generated registration module that loads AOT output into runtime caches."
+        },
+        "compiledResolvedEvaluator": {
+          "type": "boolean",
+          "description": "Generate resolved-dependency evaluators inside compiled AOT output."
+        }
+      }
+    },
+    "cli": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "packageManager": {
+          "type": "string",
+          "enum": ["pnpm", "npm", "yarn", "bun"],
+          "description": "Default package manager for install, init, and project flows."
+        },
+        "installTag": {
+          "type": "string",
+          "enum": ["latest", "next"],
+          "description": "Default package release channel for CLI-driven installs."
+        },
+        "init": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "verify": {
+              "type": "boolean",
+              "description": "Run init verification automatically when rsx init is invoked without an explicit --verify flag."
+            }
+          }
+        },
+        "project": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "verify": {
+              "type": "boolean",
+              "description": "Re-run project verification automatically when rsx project is invoked without an explicit --verify flag."
+            }
+          }
+        },
+        "add": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "defaultDirectory": {
+              "type": "string",
+              "description": "Default directory suggested by rsx add."
+            },
+            "searchRoots": {
+              "type": "array",
+              "description": "Preferred roots used when rsx add ranks existing RS-X expression files.",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

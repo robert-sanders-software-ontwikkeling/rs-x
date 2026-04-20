@@ -41,8 +41,6 @@ const memberFunctionExampleCode = dedent`
 `;
 
 const memberFunctionPlaygroundScript = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const model = {
@@ -117,8 +115,6 @@ const memberFunctionWithArgsExampleCode = dedent`
 `;
 
 const memberFunctionWithArgsPlaygroundScript = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const model = {
@@ -195,8 +191,6 @@ const memberSequenceExampleCode = dedent`
 `;
 
 const memberSequencePlaygroundScript = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const model = {
@@ -259,8 +253,6 @@ const memberArrayExampleCode = dedent`
 `;
 
 const memberArrayPlaygroundScript = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const model = {
@@ -316,8 +308,6 @@ const memberMapExampleCode = dedent`
 `;
 
 const memberMapPlaygroundScript = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const model = {
@@ -373,8 +363,6 @@ const memberSetExampleCode = dedent`
 `;
 
 const memberSetPlaygroundScript = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const taskA = { id: 'A', done: false };
@@ -431,8 +419,6 @@ const memberNestedPromiseExampleCode = dedent`
 `;
 
 const memberNestedPromisePlaygroundScript = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
   const emptyFunction = () => {};
 
   const model = {
@@ -492,9 +478,7 @@ const memberNestedObservableExampleCode = dedent`
 `;
 
 const memberNestedObservablePlaygroundScript = dedent`
-  const $ = api.rxjs;
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
+  const $ = rxjs;
   const emptyFunction = () => {};
 
   const x$ = new $.BehaviorSubject({

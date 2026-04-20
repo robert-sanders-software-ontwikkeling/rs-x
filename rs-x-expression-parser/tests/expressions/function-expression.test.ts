@@ -4,6 +4,7 @@ import type { IExpressionServices } from '../../lib/expression-services/expressi
 import {
   ExpressionType,
   type IExpression,
+  type IExpressionTree,
 } from '../../lib/expressions/expression-parser.interface';
 import { FunctionExpression } from '../../lib/expressions/function-expression';
 import {
@@ -55,8 +56,6 @@ describe('FunctionExpression tests', () => {
           context: model,
           services,
         });
-
-        services.transactionManager.commit();
       });
       expect(clonedExpression.value).toEqual(20);
     } finally {
@@ -230,7 +229,9 @@ describe('FunctionExpression tests', () => {
     expression = rsx('initializeA()')(model);
     await new WaitForEvent(expression, 'changed').wait(() => {});
 
-    const argumentExpression = expression.childExpressions.find(
+    const argumentExpression = (
+      expression as IExpressionTree
+    ).childExpressions.find(
       (childExpression) => childExpression.type === ExpressionType.Array,
     );
 

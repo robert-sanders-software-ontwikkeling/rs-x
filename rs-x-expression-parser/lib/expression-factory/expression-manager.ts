@@ -44,12 +44,11 @@ class ExpressionForContextManager
 
   override create(expressionData: IExpressionData): {
     referenceCount: number;
-    instance: IExpression<unknown, unknown>;
+    instance: IExpression<unknown>;
     id: string;
   } {
     const result = super.create(expressionData);
 
-    this._services.transactionManager.suspend();
     result.instance.bind({
       context: this._context,
       services: this._services,
@@ -62,7 +61,6 @@ class ExpressionForContextManager
       },
       leafIndexWatchRule: expressionData.leafIndexWatchRule,
     });
-    this._services.transactionManager.continue();
 
     return result;
   }
@@ -74,8 +72,12 @@ class ExpressionForContextManager
   protected override createInstance(
     expressionData: IExpressionData,
   ): IExpression {
-    return this._expressionCache.create(expressionData.expressionString)
-      .instance;
+    return this._expressionCache.create({
+      expressionString: expressionData.expressionString,
+      compiled: expressionData.compiled,
+      lazy: expressionData.lazy,
+      lazyGroup: expressionData.lazyGroup,
+    }).instance;
   }
 
   protected override releaseInstance(instance: IExpression): void {

@@ -1,12 +1,12 @@
 import { InjectionContainer } from '@rs-x/core';
 import {
-  type IExpression,
   type IExpressionManager,
+  type IExpressionTree,
   RsXExpressionParserInjectionTokens,
 } from '@rs-x/expression-parser';
 
-export interface IExpressionFactoryResult {
-  expression: IExpression | undefined;
+export interface IExpressionTreeFactoryResult {
+  expression: IExpressionTree | undefined;
   expressionString: string;
   error: string;
 }
@@ -31,17 +31,17 @@ export class ModelExpressionsFactory {
   public create(
     model: object,
     expressionStrings: string[],
-  ): IExpressionFactoryResult[] {
-    const result: IExpressionFactoryResult[] = [];
+  ): IExpressionTreeFactoryResult[] {
+    const result: IExpressionTreeFactoryResult[] = [];
 
     return expressionStrings.map((expressionString) => {
       let error = '';
-      let expression: IExpression | undefined = undefined;
+      let expression: IExpressionTree | undefined = undefined;
 
       try {
         expression = this._expressionManager
           .create(model)
-          .instance.create({ expressionString }).instance;
+          .instance.create({ expressionString }).instance as IExpressionTree;
       } catch (e) {
         error = e instanceof Error ? e.message : String(e);
       }

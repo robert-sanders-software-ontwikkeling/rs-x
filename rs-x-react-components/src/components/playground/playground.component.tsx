@@ -15,7 +15,11 @@ import {
 } from '@rs-x/expression-parser';
 
 import { ensureExpressionParserBootstrapped } from '../../services/expression-parser-bootstrap';
+import { validatePlaygroundScriptWithRsxCompiler } from '../../services/playground-rsx-compiler.service';
 import { downloadProjectZip } from '../../services/project-export.service';
+import { installRsxCompilerMarkers } from '../../services/rsx-compiler-marker.service';
+import { installRsxCompletionProvider } from '../../services/rsx-completion-provider.service';
+import { installRsxExpressionColorizer } from '../../services/rsx-expression-colorizer.service';
 import { RxjsMonacoTypesLoader } from '../../services/rxjs-monaco-types-loader';
 import { ScriptEvaluator } from '../../services/script-evaluator';
 import { setupScriptModels } from '../../services/setup-script-models';
@@ -99,8 +103,7 @@ async function evaluateScript(scriptBody: string): Promise<EvalResult> {
 
           Example:
 
-          const $ = api.rxjs;
-          const rsx = api.rsx;
+          const $ = rxjs;
           cont model = {
             a: 10, 
             b: $.of(20)
@@ -123,8 +126,7 @@ const editorPlaceholder = dedent`
   // You should return a rs-x expression
   // For example:
 
-  const $ = api.rxjs;
-  const rsx = api.rsx;
+  const $ = rxjs;
   cont model = {
     a: 10, 
     b: $.of(20)
@@ -289,28 +291,8 @@ export const Playground: React.FC = () => {
   });
 
   useEffect(() => {
-    let cancelled = false;
-
-    ensureExpressionParserBootstrapped()
-      .then(() => {
-        if (!cancelled) {
-          setIsBootstrapReady(true);
-        }
-      })
-      .catch((error) => {
-        console.error('Failed to bootstrap expression parser module', error);
-        if (!cancelled) {
-          setErrors([
-            error instanceof Error
-              ? error.message
-              : 'Failed to initialize expression parser module',
-          ]);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    ensureExpressionParserBootstrapped();
+    setIsBootstrapReady(true);
   }, []);
 
   const handleMount: OnMount = (editor, monaco) => {
@@ -325,7 +307,10 @@ export const Playground: React.FC = () => {
 
     let cancelled = false;
     const loadingStart = Date.now();
+    let disposeRsxCompilerMarkers: (() => void) | undefined;
+    let disposeRsxCompletionProvider: (() => void) | undefined;
     let disposeScriptModels: (() => void) | undefined;
+    let disposeRsxExpressionColorizer: (() => void) | undefined;
     let disposeMonacoPlaceholder: (() => void) | undefined;
 
     setIsEditorLoading(true);
@@ -345,6 +330,18 @@ export const Playground: React.FC = () => {
           initialUserCode: scriptRef.current,
         });
         disposeScriptModels = scriptModels.dispose;
+        disposeRsxExpressionColorizer = installRsxExpressionColorizer(
+          editorMount.monaco,
+          scriptModels.userModel,
+        );
+        disposeRsxCompilerMarkers = installRsxCompilerMarkers({
+          monaco: editorMount.monaco,
+          model: scriptModels.userModel,
+        });
+        disposeRsxCompletionProvider = installRsxCompletionProvider(
+          editorMount.monaco,
+          scriptModels.userModel,
+        );
 
         await yieldFrame();
         if (cancelled) {
@@ -396,6 +393,9 @@ export const Playground: React.FC = () => {
     return () => {
       cancelled = true;
       disposeMonacoPlaceholder?.();
+      disposeRsxCompilerMarkers?.();
+      disposeRsxCompletionProvider?.();
+      disposeRsxExpressionColorizer?.();
       disposeScriptModels?.();
     };
   }, [editorMount]);
@@ -471,8 +471,23 @@ export const Playground: React.FC = () => {
     setScript(nextScript);
 
     try {
-      await ensureExpressionParserBootstrapped();
+      ensureExpressionParserBootstrapped();
       setIsBootstrapReady(true);
+
+      const compilerDiagnostics =
+        await validatePlaygroundScriptWithRsxCompiler(nextScript);
+      if (compilerDiagnostics.length > 0) {
+        const messages = compilerDiagnostics.map(
+          (diagnostic) =>
+            `[${diagnostic.category}] ${diagnostic.message} (line ${diagnostic.line}, col ${diagnostic.column})`,
+        );
+        setErrors(messages);
+        setNewExpression(undefined);
+        return {
+          ok: false,
+          error: messages.join('\n'),
+        };
+      }
 
       const result = await evaluateScript(nextScript);
       if (result.ok) {
@@ -499,13 +514,16 @@ export const Playground: React.FC = () => {
     void compileScriptInternal(nextScript);
   };
 
-  // auto compile once per mounted/active playground session
+  // auto compile once per mounted/active playground session — only when a
+  // pre-existing script was loaded from the URL. Reading from scriptRef avoids
+  // re-firing on every keystroke (script state changes), which would compile
+  // partial input and show spurious "a is not defined" errors.
   useEffect(() => {
     if (!isBootstrapReady) {
       return;
     }
 
-    if (script.trim().length === 0) {
+    if (scriptRef.current.trim().length === 0) {
       return;
     }
 
@@ -514,8 +532,8 @@ export const Playground: React.FC = () => {
     }
     didAutoCompileRef.current = true;
 
-    compileScript(script);
-  }, [isBootstrapReady, script]);
+    compileScript(scriptRef.current);
+  }, [isBootstrapReady]);
 
   useEffect(() => {
     if (pathname !== '/playground') {

@@ -193,8 +193,6 @@ function createDatePropertyExample(
   description: string,
 ): DatePropertyExampleTab {
   const playgroundScript = dedent`
-    const rsx = api.rsx;
-    const WaitForEvent = api.WaitForEvent;
     const emptyFunction = () => {};
 
     const model = {

@@ -10,7 +10,9 @@ export const RsXExpressionParserInjectionTokens = {
   IExpressionChangeTransactionManager: Symbol(
     'IExpressionChangeTransactionManager',
   ),
+  IExpressionTreeBuilder: Symbol('IExpressionTreeBuilder'),
   IExpressionParser: Symbol('IExpressionParser'),
+  IJsExpressionAstParser: Symbol('IJsExpressionAstParser'),
   IExpressionFactory: Symbol('IExpressionFactory'),
   IExpressionObserverProxyPairFactory: Symbol(
     'IExpressionObserverProxyPairFactory',
@@ -18,9 +20,15 @@ export const RsXExpressionParserInjectionTokens = {
   IExpressionIndexAccessor: Symbol('IExpressionIndexAccessor'),
   IExpressionObserverFactory: Symbol('IExpressionObserverFactory'),
   IExpressionCache: Symbol('IExpressionCache'),
+  ICompiledExpressionCompiler: Symbol('ICompiledExpressionCompiler'),
+  ITreeExpressionEngine: Symbol('ITreeExpressionEngine'),
+  ICompiledExpressionEngine: Symbol('ICompiledExpressionEngine'),
+  IExpressionEngineSelector: Symbol('IExpressionEngineSelector'),
   IExpressionServices: Symbol('IExpressionServices'),
+  IExpressionEvaluateManager: Symbol('IExpressionEvaluateManager'),
   ExpressiomMetadata: Symbol('ExpressiomMetadata'),
   IExpressionChangePlayback: Symbol('IExpressionChangePlayback'),
   IExpressionChangeTrackerManager: Symbol('IExpressionChangeTrackerManager'),
   IExpressionIdProvider: Symbol('IExpressionIdProvider'),
+  IIdentifierWatchRuleFactory: Symbol('IIdentifierWatchRuleFactory'),
 };

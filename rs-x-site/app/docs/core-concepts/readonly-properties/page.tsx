@@ -110,9 +110,6 @@ const exampleCode = dedent`
 `;
 
 const playgroundScript = dedent`
-  const rsx = api.rsx;
-  const stateManager = api.stateManager;
-  const printValue = api.printValue;
 
   class MyModel {
     _aPlusBId = 'aPlusB';

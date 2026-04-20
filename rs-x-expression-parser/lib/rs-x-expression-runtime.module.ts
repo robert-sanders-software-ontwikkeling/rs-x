@@ -1,0 +1,242 @@
+import {
+  ContainerModule,
+  defaultIndexValueAccessorList,
+  defaultValueMetadataList,
+  type IDeepCloneExcept,
+  InjectionContainer,
+  overrideMultiInjectServices,
+  registerMultiInjectServices,
+  RsXCoreInjectionTokens,
+} from '@rs-x/core';
+import {
+  defaultObjectObserverProxyPairFactoryList,
+  RsXStateManagerInjectionTokens,
+  RsXStateManagerModule,
+} from '@rs-x/state-manager';
+
+import { ExpressionCache } from './expression-cache/expression-cache';
+import type { IExpressionCache } from './expression-cache/expression-cache.type';
+import { ExpressionChangePlayback } from './expression-change-playback/expression-change-playback';
+import { type IExpressionChangePlayback } from './expression-change-playback/expression-change-playback.interface';
+import { ExpressionChangeTrackerManager } from './expression-change-tracker/expression-change-tracker-manager';
+import { type IExpressionChangeTrackerManager } from './expression-change-tracker/expression-change-tracker-manager.interface';
+import {
+  type ICompiledExpressionEngine,
+  type IExpressionEngineSelector,
+  type ITreeExpressionEngine,
+} from './expression-engine/expression-engine.interface';
+import { ExpressionEngineSelector } from './expression-engine/expression-engine-selector';
+import { RuntimeCompiledExpressionEngine } from './expression-engine/runtime-compiled-expression-engine';
+import { RuntimeTreeExpressionEngine } from './expression-engine/runtime-tree-expression-engine';
+import { ExpressionFactory } from './expression-factory/expression-factory';
+import type { IExpressionFactory } from './expression-factory/expression-factory.interface';
+import { ExpressionManager } from './expression-factory/expression-manager';
+import type { IExpressionManager } from './expression-factory/expression-manager.type';
+import { ExpressionIdProvider } from './expression-id/expression-id-provider';
+import { type IExpressionIdProvider } from './expression-id/expression-id-provider.interface';
+import { DeepCloneExceptWithExpressionSupport } from './expression-observer/deep-clone-except-with-expression-support';
+import { ExpressionIndexAccessor } from './expression-observer/expression-index-accessor';
+import { ExpressionMetadata } from './expression-observer/expression-metadata';
+import { ExpressionObserverFactory } from './expression-observer/expression-observer.factory';
+import { ExpressionObserverProxyPairFactory } from './expression-observer/expression-observer-proxy-pair.factory';
+import type { IExpressionObserverFactory } from './expression-observer/expression-proxy.factory.type';
+import { ExpressionServices } from './expression-services/expression-services';
+import type { IExpressionServices } from './expression-services/expression-services.interface';
+import { IdentifierWatchRuleFactory } from './expressions/identifier-index-watch-rule/identifier-watch-rule.factory';
+import type { IIdentifierWatchRuleFactory } from './expressions/identifier-index-watch-rule/identifier-watch-rule.factory.interface';
+import { ArrayIndexOwnerResolver } from './identifier-owner-resolver/array-index-owner-resolver';
+import { DefaultIdentifierOwnerResolver } from './identifier-owner-resolver/default-identifier-owner-resolver';
+import { GlobalIdentifierOwnerResolver } from './identifier-owner-resolver/global-identifier-owner-resolver';
+import type { IIdentifierOwnerResolver } from './identifier-owner-resolver/identifier-owner-resolver.interface';
+import { MapKeyOwnerResolver } from './identifier-owner-resolver/map-key-owner-resolver';
+import { PropertyOwnerResolver } from './identifier-owner-resolver/property-owner-resolver';
+import { SetKeyOwnerResolver } from './identifier-owner-resolver/set-key-owner-resolver';
+import { ExpressionChangeTransactionManager } from './expresion-change-transaction-manager';
+import type { IExpressionChangeTransactionManager } from './expresion-change-transaction-manager.interface';
+import {
+  ExpressionEvaluateManager,
+  type IExpressionEvaluateManager,
+} from './expression-evaluate-manager';
+import {
+  type ExpressionTreeBuilder,
+  ExpressionTreeBuilder as RuntimeExpressionTreeBuilder,
+} from './expression-tree-builder';
+import { RsXExpressionParserInjectionTokens } from './rs-x-expression-parser-injection-tokes';
+import { clearRuntimeExpressionLoadRegistry } from './runtime-expression-load-registry';
+
+InjectionContainer.load(RsXStateManagerModule);
+
+export const RsXExpressionRuntimeModule = new ContainerModule((options) => {
+  options.unbind(RsXCoreInjectionTokens.DefaultDeepCloneExcept);
+  options
+    .bind<IDeepCloneExcept>(RsXCoreInjectionTokens.DefaultDeepCloneExcept)
+    .to(DeepCloneExceptWithExpressionSupport)
+    .inSingletonScope();
+  options
+    .bind<IExpressionChangeTransactionManager>(
+      RsXExpressionParserInjectionTokens.IExpressionChangeTransactionManager,
+    )
+    .to(ExpressionChangeTransactionManager)
+    .inSingletonScope();
+  options
+    .bind<ExpressionTreeBuilder>(
+      RsXExpressionParserInjectionTokens.IExpressionTreeBuilder,
+    )
+    .to(RuntimeExpressionTreeBuilder)
+    .inSingletonScope();
+  options
+    .bind<IExpressionManager>(
+      RsXExpressionParserInjectionTokens.IExpressionManager,
+    )
+    .to(ExpressionManager)
+    .inSingletonScope();
+  options
+    .bind<IIdentifierOwnerResolver>(
+      RsXExpressionParserInjectionTokens.IdentifierOwnerResolver,
+    )
+    .to(DefaultIdentifierOwnerResolver)
+    .inSingletonScope();
+  options
+    .bind<IExpressionFactory>(
+      RsXExpressionParserInjectionTokens.IExpressionFactory,
+    )
+    .to(ExpressionFactory)
+    .inSingletonScope();
+  options
+    .bind<IExpressionObserverFactory>(
+      RsXExpressionParserInjectionTokens.IExpressionObserverFactory,
+    )
+    .to(ExpressionObserverFactory)
+    .inSingletonScope();
+  options
+    .bind<IExpressionCache>(RsXExpressionParserInjectionTokens.IExpressionCache)
+    .to(ExpressionCache)
+    .inSingletonScope();
+  options
+    .bind<ITreeExpressionEngine>(
+      RsXExpressionParserInjectionTokens.ITreeExpressionEngine,
+    )
+    .to(RuntimeTreeExpressionEngine)
+    .inSingletonScope();
+  options
+    .bind<ICompiledExpressionEngine>(
+      RsXExpressionParserInjectionTokens.ICompiledExpressionEngine,
+    )
+    .to(RuntimeCompiledExpressionEngine)
+    .inSingletonScope();
+  options
+    .bind<IExpressionEngineSelector>(
+      RsXExpressionParserInjectionTokens.IExpressionEngineSelector,
+    )
+    .to(ExpressionEngineSelector)
+    .inSingletonScope();
+  options
+    .bind<IExpressionServices>(
+      RsXExpressionParserInjectionTokens.IExpressionServices,
+    )
+    .to(ExpressionServices)
+    .inSingletonScope();
+  options
+    .bind<IExpressionEvaluateManager>(
+      RsXExpressionParserInjectionTokens.IExpressionEvaluateManager,
+    )
+    .to(ExpressionEvaluateManager)
+    .inSingletonScope();
+
+  options
+    .bind<IExpressionChangePlayback>(
+      RsXExpressionParserInjectionTokens.IExpressionChangePlayback,
+    )
+    .to(ExpressionChangePlayback)
+    .inSingletonScope();
+  options
+    .bind<IExpressionChangeTrackerManager>(
+      RsXExpressionParserInjectionTokens.IExpressionChangeTrackerManager,
+    )
+    .to(ExpressionChangeTrackerManager)
+    .inSingletonScope();
+
+  options
+    .bind<IExpressionIdProvider>(
+      RsXExpressionParserInjectionTokens.IExpressionIdProvider,
+    )
+    .to(ExpressionIdProvider)
+    .inSingletonScope();
+
+  options
+    .bind<IIdentifierWatchRuleFactory>(
+      RsXExpressionParserInjectionTokens.IIdentifierWatchRuleFactory,
+    )
+    .to(IdentifierWatchRuleFactory)
+    .inSingletonScope();
+
+  registerMultiInjectServices(
+    options,
+    RsXExpressionParserInjectionTokens.IIdentifierOwnerResolverList,
+    [
+      {
+        target: PropertyOwnerResolver,
+        token: RsXExpressionParserInjectionTokens.PropertyOwnerResolver,
+      },
+      {
+        target: ArrayIndexOwnerResolver,
+        token: RsXExpressionParserInjectionTokens.ArrayIndexOwnerResolver,
+      },
+      {
+        target: SetKeyOwnerResolver,
+        token: RsXExpressionParserInjectionTokens.SetKeyOwnerResolver,
+      },
+      {
+        target: MapKeyOwnerResolver,
+        token: RsXExpressionParserInjectionTokens.MapKeyOwnerResolver,
+      },
+      {
+        target: GlobalIdentifierOwnerResolver,
+        token: RsXExpressionParserInjectionTokens.GlobalIdentifierOwnerResolver,
+      },
+    ],
+  );
+
+  overrideMultiInjectServices(
+    options,
+    RsXCoreInjectionTokens.IIndexValueAccessorList,
+    [
+      {
+        target: ExpressionIndexAccessor,
+        token: RsXExpressionParserInjectionTokens.IExpressionIndexAccessor,
+      },
+      ...defaultIndexValueAccessorList,
+    ],
+  );
+
+  overrideMultiInjectServices(
+    options,
+    RsXStateManagerInjectionTokens.IObjectObserverProxyPairFactoryList,
+    [
+      {
+        target: ExpressionObserverProxyPairFactory,
+        token:
+          RsXExpressionParserInjectionTokens.IExpressionObserverProxyPairFactory,
+      },
+      ...defaultObjectObserverProxyPairFactoryList,
+    ],
+  );
+
+  overrideMultiInjectServices(
+    options,
+    RsXCoreInjectionTokens.IValueMetadataList,
+    [
+      {
+        target: ExpressionMetadata,
+        token: RsXExpressionParserInjectionTokens.ExpressiomMetadata,
+      },
+      ...defaultValueMetadataList,
+    ],
+  );
+});
+
+export async function unloadRsXExpressionRuntimeModule(): Promise<void> {
+  clearRuntimeExpressionLoadRegistry();
+  await InjectionContainer.unload(RsXStateManagerModule);
+  await InjectionContainer.unload(RsXExpressionRuntimeModule);
+}

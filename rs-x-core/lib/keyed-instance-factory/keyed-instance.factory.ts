@@ -67,6 +67,10 @@ export abstract class KeyedInstanceFactory<
     return `${this.constructor.name}`;
   }
 
+  public get size(): number {
+    return this._instances.size;
+  }
+
   public get isEmpty(): boolean {
     return this._instances.size === 0;
   }
@@ -103,9 +107,10 @@ export abstract class KeyedInstanceFactory<
   }
 
   public getOrCreate(data: TData): TInstance {
-    let instance = this.getFromId(this.getOrCreateId(data));
+    const id = this.getOrCreateId(data);
+    let instance = this.getFromId(id);
     if (instance === undefined) {
-      instance = this.create(data).instance;
+      instance = this.createWithId(data, id).instance;
     }
     return instance;
   }
@@ -116,18 +121,18 @@ export abstract class KeyedInstanceFactory<
     id: TId;
   } {
     const id = this.getOrCreateId(data);
+    return this.createWithId(data, id);
+  }
+
+  /** Like `create(data).instance` but allocates no intermediate result object. */
+  public createAndGetInstance(data: TData): TInstance {
+    const id = this.getOrCreateId(data);
     const instance = this.getOrCreateInstance(id, data);
-    const result = {
-      id,
-      instance,
-      referenceCount: this.updateReferenceCount(id, 1, instance),
-    };
-
-    if (result.referenceCount === 1) {
-      this.onInstanceCreated(result.instance, data);
+    const referenceCount = this.updateReferenceCount(id, 1, instance);
+    if (referenceCount === 1) {
+      this.onInstanceCreated(instance, data);
     }
-
-    return result;
+    return instance;
   }
 
   public release(
@@ -221,5 +226,23 @@ export abstract class KeyedInstanceFactory<
     this._instances.set(id, instance);
 
     return instance;
+  }
+
+  private createWithId(
+    data: TData,
+    id: TId,
+  ): { referenceCount: number; instance: TInstance; id: TId } {
+    const instance = this.getOrCreateInstance(id, data);
+    const result = {
+      id,
+      instance,
+      referenceCount: this.updateReferenceCount(id, 1, instance),
+    };
+
+    if (result.referenceCount === 1) {
+      this.onInstanceCreated(result.instance, data);
+    }
+
+    return result;
   }
 }

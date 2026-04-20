@@ -5,7 +5,6 @@ import {
   defaultIndexValueAccessorList,
   type IDisposableOwner,
   type IErrorLog,
-  type IGuidFactory,
   type IIndexValueAccessor,
   Inject,
   Injectable,
@@ -237,8 +236,6 @@ export class TextDocumentInxdexObserverProxyPairFactory extends IndexObserverPro
     textDocumenIndexObserverManager: TextDocumenIndexObserverManager,
     @Inject(RsXCoreInjectionTokens.IErrorLog)
     errorLog: IErrorLog,
-    @Inject(RsXCoreInjectionTokens.IGuidFactory)
-    guidFactory: IGuidFactory,
     @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
     indexValueAccessor: IIndexValueAccessor,
     @Inject(RsXCoreInjectionTokens.IProxyRegistry)
@@ -250,7 +247,6 @@ export class TextDocumentInxdexObserverProxyPairFactory extends IndexObserverPro
       objectObserverManager,
       Type.cast(textDocumenIndexObserverManager),
       errorLog,
-      guidFactory,
       indexValueAccessor,
       proxyRegister,
       valueMetadata,

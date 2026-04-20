@@ -4,42 +4,35 @@
     "noImplicitReturns": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "outDir": "dist/build",
-    "target": "ES2024",
-    "module": "ESNext",
-    "moduleResolution": "node",
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
     "sourceMap": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "lib": ["ES2024", "dom"],
-    "noImplicitAny": false,
+    "lib": ["ES2022", "dom"],
     "allowSyntheticDefaultImports": true,
-    "downlevelIteration": true,
-    "declaration": true,
     "esModuleInterop": true,
-    "useDefineForClassFields": false,
-    "pretty": true,
-    "baseUrl": "./",
+    "declaration": true,
+    "declarationMap": true,
     "inlineSources": true,
     "noImplicitOverride": true,
+    "allowJs": true,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
+    "typeRoots": ["./node_modules/@types", "./types"],
+    "types": ["node", "jest"],
     "paths": {
-      "@rs-x/core": ["rs-x-core/lib/index.ts"],
-      "@rs-x/core/testing": ["rs-x-core/lib/testing/index.ts"],
-      "@rs-x/state-manager": ["rs-x-state-manager/lib/index.ts"],
+      "@rs-x/core": ["./rs-x-core/lib/index.ts"],
+      "@rs-x/core/testing": ["./rs-x-core/lib/testing/index.ts"],
+      "@rs-x/state-manager": ["./rs-x-state-manager/lib/index.ts"],
       "@rs-x/state-manager/testing": [
         "rs-x-state-manager/lib/testing/index.ts"
       ],
-      "@rs-x/expression-parser": ["rs-x-expression-parser/lib/index.ts"]
-    },
-    "allowJs": true,
-    "typeRoots": ["node_modules/@types", "./types"],
-    "types": ["node", "jest"]
-  },
-  "ts-node": {
-    "compilerOptions": {
-      "module": "CommonJS"
+      "@rs-x/expression-parser": ["./rs-x-expression-parser/lib/index.ts"],
+      "@rs-x/compiler": ["./rs-x-compiler/lib/index.ts"]
     }
   },
-  "include": ["./types/declarations.d.ts", "**/*"],
+  "include": ["./types/declarations.d.ts", "./types/globals.d.ts"],
   "exclude": ["node_modules", "dist"]
 }

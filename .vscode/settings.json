@@ -2,11 +2,14 @@
   "exportall.config.relExclusion": [
     "/rs-x-core/lib/testing",
     "/rs-x-state-manager/lib/testing",
-    "/rs-x-react/src/__tests__"
+    "/rs-x-react/src/__tests__",
+    "/rs-x-expression-parser/lib/benchmark"
   ],
   "jest.nodeEnv": {
     "TZ": "UTC"
   },
+  "jest.jestCommandLine": "pnpm jest --config jest.config.ts",
+  "jest.monitorLongRun": 180000,
   "typescript.updateImportsOnFileMove.enabled": "never",
   "[typescript]": {
     "editor.codeActionsOnSave": {
@@ -17,5 +20,5 @@
   "editor.codeActionsOnSave": {
     "source.organizeImports": "never",
     "source.fixAll.eslint": "always"
-  }
+  },
 }

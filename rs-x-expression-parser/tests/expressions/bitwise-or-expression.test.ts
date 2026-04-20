@@ -55,8 +55,6 @@ describe('BitwiseOrExpression tests', () => {
           context: model,
           services,
         });
-
-        services.transactionManager.commit();
       });
       expect(clonedExpression.value).toEqual(7);
     } finally {

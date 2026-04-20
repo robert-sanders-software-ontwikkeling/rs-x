@@ -3,6 +3,7 @@ import { InjectionContainer } from '@rs-x/core';
 import type {
   IExpression,
   IExpressionParser,
+  IExpressionTree,
 } from '../../lib/expressions/expression-parser.interface';
 import { ExpressionType } from '../../lib/expressions/expression-parser.interface';
 import {
@@ -256,7 +257,7 @@ describe('Expression string tests', () => {
       '({ config: map["admin"], row: items[index], list: [head, ...tail], label: `name:${user.first}` })',
     );
 
-    const stack: IExpression[] = [expression];
+    const stack: IExpressionTree[] = [expression as IExpressionTree];
     const seenTypes = new Set<ExpressionType>();
     const seenStrings = new Set<string>();
 
@@ -276,7 +277,7 @@ describe('Expression string tests', () => {
         ExpressionType.Object,
         ExpressionType.Property,
         ExpressionType.Member,
-        ExpressionType.Index,
+        ExpressionType.ComputedIndex,
         ExpressionType.Array,
         ExpressionType.Spread,
         ExpressionType.TemplateLiteral,

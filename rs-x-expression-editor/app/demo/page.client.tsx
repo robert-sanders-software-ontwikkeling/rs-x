@@ -6,8 +6,8 @@ import React, { useEffect, useRef, useState } from 'react';
 
 import {
   AbstractExpression,
-  type IExpression,
   type IExpressionChangeHistory,
+  type IExpressionTree,
 } from '@rs-x/expression-parser';
 
 import { useExpressionChangeHistoryTracker } from '../../src/components/expression-change-history-view/hooks/use-expression-change-history-tracker';
@@ -23,7 +23,7 @@ import { useSyncScriptToUrl } from './hooks/use-sync-script-to-url';
 const dataKey = 'data';
 
 type EvalResult =
-  | { ok: true; value: IExpression }
+  | { ok: true; value: IExpressionTree }
   | { ok: false; error: string };
 
 function readInitialScriptFromUrl(): string {
@@ -49,7 +49,7 @@ async function evaluateScript(scriptBody: string): Promise<EvalResult> {
 
   try {
     const result =
-      await ScriptEvaluator.getInstance().evaluateScript<IExpression>(body);
+      await ScriptEvaluator.getInstance().evaluateScript<IExpressionTree>(body);
 
     if (!result.success) {
       return {
@@ -66,8 +66,7 @@ async function evaluateScript(scriptBody: string): Promise<EvalResult> {
 
           Example:
 
-          const $ = api.rxjs;
-          const rsx = api.rsx;
+          const $ = rxjs;
           cont model = {
             a: 10, 
             b: $.of(20)
@@ -90,8 +89,7 @@ const editorPlaceholder = dedent`
   // You should return a rs-x expression
   // For example:
 
-  const $ = api.rxjs;
-  const rsx = api.rsx;
+  const $ = rxjs;
   cont model = {
     a: 10, 
     b: $.of(20)
@@ -106,7 +104,7 @@ const DemoPageClient: React.FC = () => {
     return readInitialScriptFromUrl();
   });
 
-  const [expression, setExpression] = useState<IExpression | undefined>(
+  const [expression, setExpression] = useState<IExpressionTree | undefined>(
     undefined,
   );
 
@@ -167,7 +165,7 @@ const DemoPageClient: React.FC = () => {
     installMonacoPlaceholder(editor, monaco, editorPlaceholder);
   };
 
-  const disposeExpression = (expr: IExpression | undefined) => {
+  const disposeExpression = (expr: IExpressionTree | undefined) => {
     if (!expr) {
       return;
     }
@@ -178,7 +176,7 @@ const DemoPageClient: React.FC = () => {
     }
   };
 
-  const setNewExpression = (next: IExpression | undefined) => {
+  const setNewExpression = (next: IExpressionTree | undefined) => {
     disposeExpression(expression);
 
     setPersistedHistory([]);

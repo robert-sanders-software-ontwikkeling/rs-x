@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 
-import type { IExpression } from '@rs-x/expression-parser';
+import type { IExpression, IExpressionTree } from '@rs-x/expression-parser';
 
 import type { NodeId } from '../layout/node.interface';
 
@@ -28,6 +28,12 @@ export type NodeVm = {
 };
 
 class NodeVmBuilder {
+  private isTreeExpression(
+    expression: IExpression,
+  ): expression is IExpressionTree {
+    return 'hidden' in expression && 'childExpressions' in expression;
+  }
+
   public build(args: {
     nodes: readonly LayoutNode[];
     nodePos: Map<NodeId, NodePos>;
@@ -53,7 +59,7 @@ class NodeVmBuilder {
 
     for (const n of nodes) {
       // 🚀 skip hidden expressions
-      if (n.expression.hidden === true) {
+      if (this.isTreeExpression(n.expression) && n.expression.hidden === true) {
         continue;
       }
 

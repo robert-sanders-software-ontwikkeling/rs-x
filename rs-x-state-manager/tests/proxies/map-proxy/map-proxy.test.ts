@@ -30,7 +30,7 @@ describe('MapProxy tests', () => {
     const map = new Map();
     const proxyRegistry = new ProxyRegistryMock();
     const setProxyFactory = new MapProxyFactory(proxyRegistry);
-    const { proxy } = setProxyFactory.create({ map }).instance;
+    const { proxy } = setProxyFactory.createAndGetInstance({ map });
 
     expect(proxyRegistry.register).toHaveBeenCalledTimes(1);
     expect(proxyRegistry.register.mock.calls[0][0]).toBe(map);
@@ -41,7 +41,7 @@ describe('MapProxy tests', () => {
     const map = new Map();
     const proxyRegistry = new ProxyRegistryMock();
     const setProxyFactory = new MapProxyFactory(proxyRegistry);
-    const { observer } = setProxyFactory.create({ map }).instance;
+    const { observer } = setProxyFactory.createAndGetInstance({ map });
 
     observer.dispose();
 

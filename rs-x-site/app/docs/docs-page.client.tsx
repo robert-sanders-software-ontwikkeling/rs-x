@@ -46,13 +46,48 @@ const frameworkLinks: DocsLinkItem[] = [
     meta: 'useRsxExpression and useRsxModel hooks for reactive components',
   },
   {
+    href: '/docs/frameworks/nextjs',
+    title: 'Next.js',
+    meta: 'Client component patterns for useRsxExpression in app-router projects',
+  },
+  {
     href: '/docs/frameworks/angular',
     title: 'Angular',
     meta: 'RsxPipe and providexRsx() for reactive Angular templates',
   },
+  {
+    href: '/docs/frameworks/vue',
+    title: 'Vue',
+    meta: 'Composition API patterns with rs-x expressions',
+  },
+  {
+    href: '/docs/frameworks/rxjs',
+    title: 'RxJS',
+    meta: 'Observable values inside expressions',
+  },
 ];
 
 const coreConceptLinks: DocsLinkItem[] = [
+  {
+    href: '/docs/core-concepts/first-expression',
+    title: 'Create your first expression',
+    meta: 'Step-by-step flow: bind, subscribe, options, and dispose',
+  },
+  {
+    href: '/docs/core-concepts/cli',
+    title: 'CLI',
+    meta: 'Scaffold, setup, build, and typecheck workflows with rsx commands',
+  },
+  {
+    href: '/docs/core-concepts/rsx-config',
+    title: 'rsx.config.json',
+    meta: 'Build and CLI configuration reference — all fields, types, and defaults',
+  },
+  {
+    href: '/docs/core-concepts/compiler',
+    title: 'Compiler',
+    meta: 'How build-time preparse/compiled/lazy options affect runtime tradeoffs',
+  },
   {
     href: '/docs/core-concepts/async-operations',
     title: 'Async operations',
@@ -94,19 +129,29 @@ const coreConceptLinks: DocsLinkItem[] = [
     meta: 'Pluggable strategy for resolving identifier owners',
   },
   {
+    href: '/docs/core-concepts/leaf-identifier',
+    title: 'Leaf identifier watching',
+    meta: 'Default watch behavior for leaf properties and how to control it with IIndexWatchRule',
+  },
+  {
+    href: '/docs/watch-index-recursive-rule',
+    title: 'watchIndexRecursiveRule',
+    meta: 'Pre-built rule that enables full recursive observation of any identifier value',
+  },
+  {
     href: '/docs/core-concepts/member-expressions',
     title: 'Member expressions',
     meta: 'Nested property and member access',
   },
   {
+    href: '/docs/core-concepts/performance',
+    title: 'Performance',
+    meta: 'Engine modes, parsing, binding, updates, memory — and what changed in v2',
+  },
+  {
     href: '/docs/core-concepts/modular-expressions',
     title: 'Modular expressions',
     meta: 'Compose reusable expression parts',
-  },
-  {
-    href: '/docs/core-concepts/performance-report',
-    title: 'Performance report',
-    meta: 'Parse, bind, update, and memory benchmarks',
   },
   {
     href: '/docs/core-concepts/readonly-properties',
@@ -246,8 +291,9 @@ export function DocsPageClient({
               </p>
               <h2 className="cardTitle">Framework integrations</h2>
               <p className="cardText">
-                Drop-in integrations for React and Angular — bind expressions
-                directly to your components and templates with zero boilerplate.
+                Drop-in integrations for React, Angular, Vue, and RxJS — bind
+                expressions directly to your components and templates with zero
+                boilerplate.
               </p>
               <ul
                 className="docsApiLinkGrid docsConceptLinkGrid"

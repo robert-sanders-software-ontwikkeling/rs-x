@@ -9,16 +9,19 @@ type ChartSeries = {
 type ChartRow = {
   label: string;
   values: Record<string, number>;
+  xValue?: number;
 };
 
 type PerformanceBarChartProps = {
   ariaLabel: string;
   rows: ChartRow[];
   series: ChartSeries[];
-  valueUnit?: 'us' | 'ms' | 'mb' | '';
+  valueUnit?: 'µs' | 'ms' | 'mb' | '';
   decimals?: number;
   xAxisLabel?: string;
   yAxisLabel?: string;
+  xScale?: 'equal' | 'log';
+  yScale?: 'linear' | 'log';
 };
 
 const SVG_WIDTH = 920;
@@ -81,50 +84,97 @@ export function PerformanceBarChart({
   decimals = 3,
   xAxisLabel = 'Scenario',
   yAxisLabel = 'Value',
+  xScale = 'equal',
+  yScale = 'linear',
 }: PerformanceBarChartProps) {
   const plotWidth = SVG_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
   const plotHeight = SVG_HEIGHT - MARGIN_TOP - MARGIN_BOTTOM;
-  const rawMax = Math.max(
-    0.000001,
-    ...rows.flatMap((row) =>
-      series.map((entry) => {
-        const value = row.values[entry.key];
-        return isFiniteNumber(value) ? value : 0;
-      }),
-    ),
+
+  const allValues = rows.flatMap((row) =>
+    series.map((entry) => {
+      const value = row.values[entry.key];
+      return isFiniteNumber(value) ? value : 0;
+    }),
   );
-  const yMax = rawMax * 1.1;
+  const rawMax = Math.max(0.000001, ...allValues);
+  const positiveValues = allValues.filter((v) => v > 0);
+  const rawMin =
+    positiveValues.length > 0 ? Math.min(...positiveValues) : 0.000001;
+
+  const yMax = yScale === 'log' ? rawMax * 1.5 : rawMax * 1.1;
+  const yLogMin =
+    yScale === 'log' ? Math.pow(10, Math.floor(Math.log10(rawMin))) : 0;
+  const yLogMax =
+    yScale === 'log' ? Math.pow(10, Math.ceil(Math.log10(yMax))) : 0;
+  const yLogRange =
+    yScale === 'log' ? Math.log10(yLogMax) - Math.log10(yLogMin) || 1 : 1;
+
+  const logXMin =
+    xScale === 'log'
+      ? Math.log(Math.max(1, Math.min(...rows.map((r) => r.xValue ?? 1))))
+      : 0;
+  const logXMax =
+    xScale === 'log'
+      ? Math.log(Math.max(1, Math.max(...rows.map((r) => r.xValue ?? 1))))
+      : 0;
+  const logXRange = logXMax - logXMin || 1;
 
   const xAt = (index: number): number => {
     if (rows.length <= 1) {
       return MARGIN_LEFT + plotWidth / 2;
+    }
+    if (xScale === 'log') {
+      const xv = rows[index].xValue ?? 1;
+      const ratio = (Math.log(Math.max(1, xv)) - logXMin) / logXRange;
+      return MARGIN_LEFT + ratio * plotWidth;
     }
     const ratio = index / (rows.length - 1);
     return MARGIN_LEFT + ratio * plotWidth;
   };
 
   const yAt = (value: number): number => {
+    if (yScale === 'log') {
+      const clamped = Math.max(yLogMin, value);
+      const ratio = (Math.log10(clamped) - Math.log10(yLogMin)) / yLogRange;
+      return (
+        MARGIN_TOP + plotHeight - Math.max(0, Math.min(1, ratio)) * plotHeight
+      );
+    }
     const ratio = Math.max(0, Math.min(1, value / yMax));
     return MARGIN_TOP + plotHeight - ratio * plotHeight;
   };
 
-  const yTicks = Array.from({ length: Y_TICK_COUNT }, (_, index) => {
-    const ratio = index / (Y_TICK_COUNT - 1);
-    const value = yMax * ratio;
-    return {
-      value,
-      y: yAt(value),
-    };
-  }).reverse();
+  const yTicks = (() => {
+    if (yScale === 'log') {
+      const ticks: { value: number; y: number }[] = [];
+      const minExp = Math.floor(Math.log10(yLogMin));
+      const maxExp = Math.ceil(Math.log10(yLogMax));
+      for (let exp = minExp; exp <= maxExp; exp++) {
+        const value = Math.pow(10, exp);
+        if (value >= yLogMin && value <= yLogMax) {
+          ticks.push({ value, y: yAt(value) });
+        }
+      }
+      return ticks;
+    }
+    return Array.from({ length: Y_TICK_COUNT }, (_, index) => {
+      const ratio = index / (Y_TICK_COUNT - 1);
+      const value = yMax * ratio;
+      return { value, y: yAt(value) };
+    }).reverse();
+  })();
 
   const maxLabelLength = rows.reduce((max, row) => {
     return Math.max(max, row.label.length);
   }, 0);
   const labelFootprint = Math.max(64, Math.min(220, maxLabelLength * 7));
-  const xLabelStep = Math.max(
-    1,
-    Math.ceil((rows.length * labelFootprint) / Math.max(1, plotWidth)),
-  );
+  const xLabelStep =
+    xScale === 'log'
+      ? 1
+      : Math.max(
+          1,
+          Math.ceil((rows.length * labelFootprint) / Math.max(1, plotWidth)),
+        );
   const legendSeries = series;
   const showLegend = legendSeries.length > 1;
 
@@ -175,11 +225,6 @@ export function PerformanceBarChart({
           }
 
           const x = xAt(index);
-          const isEdge = index === 0 || index === rows.length - 1;
-          const labelX =
-            index === 0 ? x + 4 : index === rows.length - 1 ? x - 4 : x;
-          const textAnchor =
-            index === 0 ? 'start' : index === rows.length - 1 ? 'end' : 'end';
           const labelY = MARGIN_TOP + plotHeight + 24;
 
           return (
@@ -193,12 +238,10 @@ export function PerformanceBarChart({
               />
               <text
                 className="docsPerfTickLabel docsPerfTickLabelX"
-                x={labelX}
+                x={x}
                 y={labelY}
-                transform={
-                  isEdge ? undefined : `rotate(-32 ${labelX} ${labelY})`
-                }
-                textAnchor={textAnchor}
+                transform={`rotate(-32 ${x} ${labelY})`}
+                textAnchor="end"
               >
                 {row.label}
               </text>

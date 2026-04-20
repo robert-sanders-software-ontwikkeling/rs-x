@@ -61,8 +61,6 @@ describe('InstanceofExpression tests', () => {
           context: model,
           services,
         });
-
-        services.transactionManager.commit();
       });
       expect(clonedExpression.value).toEqual(true);
     } finally {

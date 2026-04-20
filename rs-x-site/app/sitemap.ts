@@ -20,7 +20,9 @@ const OBSERVATION_KINDS = [
 ] as const;
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return [
+  const lastModified = new Date();
+
+  const entries: MetadataRoute.Sitemap = [
     // Top-level pages
     { url: `${BASE_URL}/`, priority: 1.0, changeFrequency: 'weekly' },
     {
@@ -39,7 +41,84 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE_URL}/about`, priority: 0.5, changeFrequency: 'monthly' },
     { url: `${BASE_URL}/sponsor`, priority: 0.4, changeFrequency: 'monthly' },
 
+    // SEO landing pages
+    {
+      url: `${BASE_URL}/react`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/nextjs`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/vue`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/angular`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/rxjs`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/nodejs`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/typescript`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/javascript`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/reactivity`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/change-detection`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/spa-frameworks`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+
     // Core concepts
+    {
+      url: `${BASE_URL}/docs/core-concepts/first-expression`,
+      priority: 0.8,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/core-concepts/cli`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/core-concepts/compiler`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/core-concepts/rsx-config`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
     {
       url: `${BASE_URL}/docs/core-concepts/async-operations`,
       priority: 0.7,
@@ -86,6 +165,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
     },
     {
+      url: `${BASE_URL}/docs/core-concepts/leaf-identifier`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
       url: `${BASE_URL}/docs/core-concepts/member-expressions`,
       priority: 0.7,
       changeFrequency: 'monthly',
@@ -96,12 +180,47 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
     },
     {
+      url: `${BASE_URL}/docs/core-concepts/performance`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
       url: `${BASE_URL}/docs/core-concepts/performance-demo`,
       priority: 0.6,
       changeFrequency: 'monthly',
     },
     {
+      url: `${BASE_URL}/docs/core-concepts/performance-identifiers`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/core-concepts/performance-memory`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/core-concepts/performance-parse`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
       url: `${BASE_URL}/docs/core-concepts/performance-report`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/core-concepts/performance-v1-v2`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/core-concepts/angular-signals-comparison`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/core-concepts/compiled-vs-tree`,
       priority: 0.6,
       changeFrequency: 'monthly',
     },
@@ -113,6 +232,36 @@ export default function sitemap(): MetadataRoute.Sitemap {
     {
       url: `${BASE_URL}/docs/core-concepts/side-effects`,
       priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/watch-index-recursive-rule`,
+      priority: 0.7,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/frameworks/react`,
+      priority: 0.8,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/frameworks/angular`,
+      priority: 0.8,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/frameworks/nextjs`,
+      priority: 0.8,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/frameworks/vue`,
+      priority: 0.8,
+      changeFrequency: 'monthly',
+    },
+    {
+      url: `${BASE_URL}/docs/frameworks/rxjs`,
+      priority: 0.8,
       changeFrequency: 'monthly',
     },
 
@@ -324,6 +473,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
     },
     {
+      url: `${BASE_URL}/docs/irsx-options`,
+      priority: 0.6,
+      changeFrequency: 'monthly',
+    },
+    {
       url: `${BASE_URL}/docs/iidentifier-owner-resolver`,
       priority: 0.6,
       changeFrequency: 'monthly',
@@ -369,4 +523,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
     },
   ];
+
+  return Array.from(
+    new Map(entries.map((entry) => [entry.url, entry])).values(),
+  ).map((entry) => ({
+    ...entry,
+    lastModified,
+  }));
 }

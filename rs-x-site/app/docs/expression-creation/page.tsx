@@ -46,6 +46,7 @@ export default function ExpressionCreationPage() {
                     src="/diagrams/expression-creation-flow.svg"
                     alt="Expression creation flow diagram"
                     className="advancedSvg"
+                    loading="lazy"
                   />
                 </div>
               </div>

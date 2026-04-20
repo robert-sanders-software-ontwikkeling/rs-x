@@ -1,6 +1,6 @@
 import type {
-  IExpression,
   IExpressionChangeHistory,
+  IExpressionTree,
 } from '@rs-x/expression-parser';
 
 import { useExpressionChangeTrackerSubscription } from './use-expression-change-tracker-subscription';
@@ -8,7 +8,7 @@ import { usePersistChangeHistoryFromStack } from './use-persist-change-history-f
 
 export function useExpressionChangeHistoryTracker(args: {
   changeHistory: IExpressionChangeHistory[][];
-  expression: IExpression | null | undefined;
+  expression: IExpressionTree | null | undefined;
   version: number | string;
   modelIndex: number;
   expressionIndex: number;

@@ -21,7 +21,20 @@ Object.keys(compilerOptions.paths ?? {}).forEach((alias) => {
 });
 
 // ESM dependencies that need Babel transform
-const esModules = ['rxjs', 'resize-observer-polyfill', 'superjson'].join('|');
+const esModules = [
+  'rxjs',
+  'resize-observer-polyfill',
+  'superjson',
+  'inversify',
+  '@inversifyjs/common',
+  '@inversifyjs/container',
+  '@inversifyjs/core',
+  '@inversifyjs/plugin',
+  '@inversifyjs/prototype-utils',
+  '@inversifyjs/reflect-metadata-utils',
+].join('|');
+const includePerformanceTests =
+  process.env.RSX_INCLUDE_PERFORMANCE_TESTS === 'true';
 
 // ------------------------------
 // Jest configuration
@@ -31,18 +44,36 @@ const jestConfig: Config.InitialOptions = {
   testEnvironment: 'jest-environment-jsdom',
   extensionsToTreatAsEsm: ['.ts'],
 
-  // Exclude Angular and React package entirely
-  testPathIgnorePatterns: ['<rootDir>/rs-x-angular/', '<rootDir>/rs-x-react/'],
+  // Exclude packages that run their own test runners
+  testPathIgnorePatterns: [
+    '<rootDir>/rs-x-angular/',
+    '<rootDir>/rs-x-react/',
+    '<rootDir>/rs-x-react-components/',
+    '<rootDir>/rs-x-vue/',
+    '<rootDir>/rs-x-cli/.tests/',
+    '<rootDir>/rs-x-cli/rsx-project-',
+    '<rootDir>/rs-x-vscode-extension/.vsix-stage/',
+    '<rootDir>/rs-x-site/a11y/',
+    ...(!includePerformanceTests
+      ? ['<rootDir>/rs-x-expression-parser/tests/performance/']
+      : []),
+  ],
 
   modulePathIgnorePatterns: [
     '<rootDir>/rs-x-angular/',
     '<rootDir>/rs-x-react/',
+    '<rootDir>/rs-x-react-components/',
+    '<rootDir>/rs-x-vue/',
+    '<rootDir>/rs-x-cli/.tests/',
+    '<rootDir>/rs-x-cli/rsx-project-',
+    '<rootDir>/rs-x-vscode-extension/.vsix-stage/',
+    '<rootDir>/rs-x-site/a11y/',
   ],
 
   // Transforms
   transform: {
-    // TypeScript via ts-jest (ESM)
-    '^.+\\.tsx?$': [
+    // TypeScript and selected JavaScript via ts-jest (ESM)
+    '^.+\\.[jt]sx?$': [
       'ts-jest',
       {
         tsconfig: '<rootDir>/tsconfig.test.json',
@@ -52,15 +83,11 @@ const jestConfig: Config.InitialOptions = {
       },
     ],
 
-    // ESM dependencies via Babel
-    [`(${esModules}).+\\.js$`]: [
-      'babel-jest',
-      { configFile: '<rootDir>/babel.config.js' },
-    ],
-
     // Styles / templates
     '^.+\\.(scss|css|html)$': 'jest-transform-stub',
   },
+
+  transformIgnorePatterns: [`/node_modules/(?!(${esModules})/)`],
 
   setupFiles: ['<rootDir>/jest.idb.setup.ts'],
 

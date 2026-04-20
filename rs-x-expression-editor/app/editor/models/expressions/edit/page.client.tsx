@@ -1,6 +1,5 @@
 'use client';
 
-import type { OnMount } from '@monaco-editor/react';
 import { useRouter } from 'next/navigation';
 import React from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
@@ -9,7 +8,6 @@ import { ObjectViewer } from '../../../../../src/components/object-viewer/object
 import { TsEditorWithErrorPanel } from '../../../../../src/components/ts-editor-with-error-panel/ts-editor-with-error-panel.component';
 import { ExpressionEditorBusinessService } from '../../../../../src/services/expression-editor-business.service';
 import { ExpressionEditorStateBuilder } from '../../../../../src/services/expression-editor-state-builder';
-import { ModelIntellisenseService } from '../../../../../src/services/model-intellisense.service';
 import { createQueryString, useEditorContext } from '../../../provider.client';
 
 const EditExpressionPageClient: React.FC = () => {
@@ -42,10 +40,6 @@ const EditExpressionPageClient: React.FC = () => {
     }
 
     return errors;
-  };
-
-  const handleExpressionMount: OnMount = (_, monacoInstance) => {
-    ModelIntellisenseService.getInstance().register(monacoInstance);
   };
 
   const updateExpression = (expressionString: string, name: string) => {
@@ -137,7 +131,6 @@ const EditExpressionPageClient: React.FC = () => {
             }}
             save={updateExpression}
             cancel={onCancel}
-            onMount={handleExpressionMount}
           />
         </Panel>
       </Group>

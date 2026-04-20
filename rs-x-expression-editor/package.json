@@ -2,25 +2,46 @@
   "name": "@rs-x/expression-editor",
   "version": "1.0.2",
   "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "copy:monaco-dts": "node ../scripts/copy-monaco-dts.mjs",
-    "dev": "npm run copy:monaco-dts && next dev",
-    "build": "npm run copy:monaco-dts && next build",
-    "prod": "npm run build && npx serve out"
+    "dev": "pnpm run copy:monaco-dts && next dev",
+    "build": "pnpm run copy:monaco-dts && next build",
+    "prod": "pnpm run build && npx serve out"
   },
   "dependencies": {
+    "@rs-x/compiler": "workspace:*",
     "@rs-x/core": "workspace:*",
     "@rs-x/expression-parser": "workspace:*",
     "@rs-x/react": "workspace:*",
     "monaco-editor": "^0.55.1"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x"
+  },
+  "homepage": "https://github.com/robert-sanders-software-ontwikkeling/rs-x",
+  "bugs": {
+    "url": "https://github.com/robert-sanders-software-ontwikkeling/rs-x/issues"
+  },
   "devDependencies": {
-    "@types/node": "^25.3.0",
-    "globals": "^17.3.0",
-    "typescript": "^5.9.3"
+    "@types/node": "^25.5.2",
+    "globals": "^17.4.0",
+    "typescript": "^6.0.2"
   },
   "peerDependencies": {
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
-  }
+  },
+  "keywords": [
+    "rs-x",
+    "expression-editor",
+    "react",
+    "monaco",
+    "typescript",
+    "playground"
+  ]
 }

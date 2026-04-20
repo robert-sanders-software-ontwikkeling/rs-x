@@ -54,8 +54,6 @@ describe('ConstantNullExpression tests', () => {
           context: {},
           services,
         });
-
-        services.transactionManager.commit();
       });
       expect(clonedExpression.value).toEqual(null);
     } finally {

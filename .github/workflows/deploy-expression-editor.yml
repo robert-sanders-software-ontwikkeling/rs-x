@@ -1,5 +1,6 @@
 name: Deploy rs-x-expression-editor to GitHub Pages
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   GH_PAGES: 'true'
   NEXT_PUBLIC_BASE_PATH: '/rs-x'
 
@@ -24,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -32,10 +33,15 @@ jobs:
           version: 10.22.0
 
       - name: Setup Node.js (with pnpm cache)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: lts/*
           cache: pnpm
+
+      - name: Debug lockfile hashes
+        run: |
+          git rev-parse HEAD
+          sha256sum pnpm-lock.yaml rs-x-compiler/package.json
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

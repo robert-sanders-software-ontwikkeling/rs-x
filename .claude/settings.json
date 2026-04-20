@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r 'class GroupedKeyedInstanceFactory' /Users/robertsanders/projects/rs-x --include=*.ts -l)",
+      "Bash(node --expose-gc --max-old-space-size=1024 tmp-mem-leak.mjs)",
+      "Bash(npm run:*)",
+      "Bash(node --expose-gc tmp-mem-leak.mjs)",
+      "Bash(node --expose-gc --max-old-space-size=512 scripts/benchmark-core-concepts-performance.mjs)",
+      "Bash(node --expose-gc --max-old-space-size=2048 scripts/benchmark-core-concepts-performance.mjs)",
+      "Bash(npm test:*)",
+      "Bash(node --max-old-space-size=2048 --expose-gc scripts/benchmark-core-concepts-performance.mjs)",
+      "Bash(node scripts/benchmark-core-concepts-performance.mjs)",
+      "Bash(cross-env TZ=UTC pnpm jest --runInBand --no-cache --config jest.config.ts)",
+      "Bash(node --prof-process /Users/robertsanders/projects/rs-x/isolate-0x138008000-19494-v8.log)",
+      "Bash(node --cpu-prof --cpu-prof-name=/tmp/rsx-clone-profile.cpuprofile -e \":*)",
+      "Bash(cp /tmp/rsx-profile-clone.mjs /Users/robertsanders/projects/rs-x/rs-x-expression-parser/tmp-profile-clone.mjs)",
+      "Bash(node tmp-profile-clone.mjs)",
+      "Bash(node tmp-bind-gc-proof.mjs)",
+      "Bash(node -e \":*)",
+      "Bash(node --prof scripts/benchmark-core-concepts-performance.mjs)",
+      "Bash(ls -t /Users/robertsanders/projects/rs-x/rs-x-expression-parser/isolate-*.log)",
+      "Bash(node --prof-process /Users/robertsanders/projects/rs-x/rs-x-expression-parser/isolate-0x130018000-38157-v8.log)",
+      "Bash(pnpm build:libs)",
+      "Bash(tsup lib/index.ts --format esm --experimental-dts)",
+      "Bash(pnpm add:*)",
+      "Bash(grep -rn \"baseUrl\" /Users/robertsanders/projects/rs-x/node_modules/rollup-plugin-dts/dist/*.cjs)",
+      "Bash(pnpm patch:*)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(printf '\\\\n')",
+      "Bash(printf '\\\\nN\\\\n')",
+      "Read(//dev/**)",
+      "Read(//private/tmp/**)",
+      "Bash(npm pack:*)",
+      "Bash(tar xzf:*)",
+      "Bash(pnpm format:*)"
+    ]
+  }
+}

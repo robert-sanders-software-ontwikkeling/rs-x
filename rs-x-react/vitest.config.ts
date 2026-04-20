@@ -47,5 +47,15 @@ export default defineConfig({
       'src/__tests__/**/*.e2e.test.tsx',
     ],
     exclude: ['node_modules', 'dist'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text'],
+      thresholds: {
+        statements: 100,
+        branches: 100,
+        functions: 100,
+        lines: 100,
+      },
+    },
   },
 });

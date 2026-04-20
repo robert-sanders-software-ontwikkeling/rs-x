@@ -1,0 +1,129 @@
+{
+  "generatedAt": "2026-04-01T18:26:29.402Z",
+  "environment": {
+    "nodeVersion": "v25.4.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "osRelease": "24.6.0",
+    "cpuModel": "Apple M4",
+    "totalMemoryGb": 16
+  },
+  "config": {
+    "pairCounts": [
+      1,
+      2,
+      4,
+      7,
+      12,
+      20,
+      33,
+      55,
+      90
+    ],
+    "bindings": 1000,
+    "bindRuns": 8,
+    "bindWarmup": 5,
+    "expressionShape": "\"x + y + x + y + …\" — N pairs → 4N−1 nodes, always 2 unique deps (x, y)",
+    "bindingShape": "1000 unique model objects per run (same x+y values, different object identity)",
+    "measurement": "Each timed run: create BINDINGS unique model objects, bind all, dispose all. Cache is reset between runs so compiled mode re-uses the cached compiled plan (compile once during warmup, share plan for all timed runs). Tree mode must clone the AST for each binding on every run."
+  },
+  "rows": [
+    {
+      "pairs": 1,
+      "nodeCount": 3,
+      "tree": {
+        "bindMs": 37.201562499999966
+      },
+      "compiled": {
+        "bindMs": 32.811833499999466
+      }
+    },
+    {
+      "pairs": 2,
+      "nodeCount": 7,
+      "tree": {
+        "bindMs": 66.07335400000011
+      },
+      "compiled": {
+        "bindMs": 70.15399949999846
+      }
+    },
+    {
+      "pairs": 4,
+      "nodeCount": 15,
+      "tree": {
+        "bindMs": 330.06847950000156
+      },
+      "compiled": {
+        "bindMs": 100.05058300000383
+      }
+    },
+    {
+      "pairs": 7,
+      "nodeCount": 27,
+      "tree": {
+        "bindMs": 1231.0134585000196
+      },
+      "compiled": {
+        "bindMs": 145.44406249996973
+      }
+    },
+    {
+      "pairs": 12,
+      "nodeCount": 47,
+      "tree": {
+        "bindMs": 596.2546455000411
+      },
+      "compiled": {
+        "bindMs": 166.0141869999934
+      }
+    },
+    {
+      "pairs": 20,
+      "nodeCount": 79,
+      "tree": {
+        "bindMs": 1042.9533335000742
+      },
+      "compiled": {
+        "bindMs": 129.9568750000326
+      }
+    },
+    {
+      "pairs": 33,
+      "nodeCount": 131,
+      "tree": {
+        "bindMs": 1692.9021669999347
+      },
+      "compiled": {
+        "bindMs": 528.1653749999823
+      }
+    },
+    {
+      "pairs": 55,
+      "nodeCount": 219,
+      "tree": {
+        "bindMs": 2626.694978999789
+      },
+      "compiled": {
+        "bindMs": 520.7609790000133
+      }
+    },
+    {
+      "pairs": 90,
+      "nodeCount": 359,
+      "tree": {
+        "bindMs": 4179.420000000158
+      },
+      "compiled": {
+        "bindMs": 338.4499170000199
+      }
+    }
+  ],
+  "crossover": {
+    "nodeCount": 7,
+    "between": [
+      7,
+      15
+    ]
+  }
+}

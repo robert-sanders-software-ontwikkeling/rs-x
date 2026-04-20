@@ -1,0 +1,199 @@
+import { expectCompiledOrTreeInstanceOf } from './_compiled-assertions';
+process.env.RSX_EXPRESSION_ENGINE_MODE = 'compiled';
+
+import { InjectionContainer, WaitForEvent } from '@rs-x/core';
+
+import type { IExpressionServices } from '../../../lib/expression-services/expression-services.interface';
+import {
+  ExpressionType,
+  type IExpression,
+} from '../../../lib/expressions/expression-parser.interface';
+import { SequenceExpression } from '../../../lib/expressions/sequence-expression';
+import {
+  RsXExpressionParserModule,
+  unloadRsXExpressionParserModule,
+} from '../../../lib/rs-x-expression-parser.module';
+import { RsXExpressionParserInjectionTokens } from '../../../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../../../lib/rsx';
+
+describe('SequenceExpression tests', () => {
+  let expression: IExpression | undefined;
+
+  beforeAll(async () => {
+    await InjectionContainer.load(RsXExpressionParserModule);
+  });
+
+  afterAll(async () => {
+    await unloadRsXExpressionParserModule();
+  });
+
+  afterEach(() => {
+    expression?.dispose();
+    expression = undefined;
+  });
+
+  it('type', () => {
+    const model = {
+      b: 2,
+      value: 100,
+      setB(v: number) {
+        this.b = v;
+      },
+    };
+    expression = rsx('(setB(value), b)')(model);
+
+    expect(expression.type).toEqual(ExpressionType.Sequence);
+  });
+
+  it('clone', async () => {
+    const services: IExpressionServices = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionServices,
+    );
+    const model: { b: number | null; value: number; setB(v: number): void } = {
+      b: null,
+      value: 100,
+      setB(v: number) {
+        this.b = v;
+      },
+    };
+    expression = rsx('(setB(value), b)')(model);
+
+    const clonedExpression = expression.clone();
+
+    try {
+      expectCompiledOrTreeInstanceOf(clonedExpression, SequenceExpression);
+      expect(clonedExpression.type).toEqual(ExpressionType.Sequence);
+      expect(clonedExpression.expressionString).toEqual('(setB(value), b)');
+
+      await new WaitForEvent(clonedExpression, 'changed').wait(() => {
+        clonedExpression.bind({
+          context: model,
+          services,
+        });
+      });
+      expect(clonedExpression.value).toEqual(100);
+    } finally {
+      clonedExpression.dispose();
+    }
+  });
+
+  it('will emit change event for initial value', async () => {
+    const model: { b: number | null; value: number; setB(v: number): void } = {
+      b: null,
+      value: 100,
+      setB(v: number) {
+        this.b = v;
+      },
+    };
+    expression = rsx('(setB(value), b)')(model);
+
+    const actual = (await new WaitForEvent(expression, 'changed').wait(
+      () => {},
+    )) as IExpression;
+
+    expect(actual.value).toEqual(100);
+    expect(actual).toBe(expression);
+  });
+
+  it('will emit change event when operands changes', async () => {
+    const model: { b: number | null; value: number; setB(v: number): void } = {
+      b: null,
+      value: 100,
+      setB(v: number) {
+        this.b = v;
+      },
+    };
+    expression = rsx('(setB(value), b)')(model);
+
+    // Wait till the expression has been initialized before changing value
+    await new WaitForEvent(expression, 'changed').wait(() => {});
+
+    const actual = (await new WaitForEvent(expression, 'changed', {
+      ignoreInitialValue: true,
+    }).wait(() => {
+      model.value = 200;
+    })) as IExpression;
+
+    expect(actual.value).toEqual(200);
+    expect(actual).toBe(expression);
+  });
+
+  it('side-effect functions are called once during initialization', async () => {
+    const trackPrice = jest.fn();
+    const trackQty = jest.fn();
+
+    const model = {
+      price: 100,
+      quantity: 3,
+      trackPrice(v: number) {
+        trackPrice(v);
+      },
+      trackQty(v: number) {
+        trackQty(v);
+      },
+    };
+
+    expression = rsx<number>(
+      '(trackPrice(price), trackQty(quantity), price * quantity)',
+    )(model);
+
+    await new WaitForEvent(expression, 'changed').wait(() => {});
+
+    expect(expression.value).toEqual(300);
+    expect(trackPrice).toHaveBeenCalledTimes(1);
+    expect(trackPrice).toHaveBeenCalledWith(100);
+    expect(trackQty).toHaveBeenCalledTimes(1);
+    expect(trackQty).toHaveBeenCalledWith(3);
+  });
+
+  it('only the side-effect depending on the changed field is re-called on update', async () => {
+    const trackPrice = jest.fn();
+    const trackQty = jest.fn();
+
+    const model = {
+      price: 100,
+      quantity: 3,
+      trackPrice(v: number) {
+        trackPrice(v);
+      },
+      trackQty(v: number) {
+        trackQty(v);
+      },
+    };
+
+    expression = rsx<number>(
+      '(trackPrice(price), trackQty(quantity), price * quantity)',
+    )(model);
+
+    await new WaitForEvent(expression, 'changed').wait(() => {});
+
+    trackPrice.mockClear();
+    trackQty.mockClear();
+
+    // Only price changes — only trackPrice(price) path is re-evaluated
+    await new WaitForEvent(expression, 'changed', {
+      ignoreInitialValue: true,
+    }).wait(() => {
+      model.price = 200;
+    });
+
+    expect(expression.value).toEqual(600);
+    expect(trackPrice).toHaveBeenCalledTimes(1);
+    expect(trackPrice).toHaveBeenCalledWith(200);
+    expect(trackQty).not.toHaveBeenCalled();
+
+    trackPrice.mockClear();
+
+    // Only quantity changes — only trackQty(quantity) path is re-evaluated
+    await new WaitForEvent(expression, 'changed', {
+      ignoreInitialValue: true,
+    }).wait(() => {
+      model.quantity = 5;
+    });
+
+    expect(expression.value).toEqual(1000);
+    expect(trackQty).toHaveBeenCalledTimes(1);
+    expect(trackQty).toHaveBeenCalledWith(5);
+    expect(trackPrice).not.toHaveBeenCalled();
+  });
+});

@@ -1,17 +1,15 @@
 import { InjectionContainer } from '@rs-x/core';
-import { RsXExpressionParserModule } from '@rs-x/expression-parser';
+import {
+  RsXExpressionParserInjectionTokens,
+  RsXExpressionParserModule,
+} from '@rs-x/expression-parser';
 
-let bootstrapPromise: Promise<void> | null = null;
-
-export function ensureExpressionParserBootstrapped(): Promise<void> {
-  if (!bootstrapPromise) {
-    bootstrapPromise = InjectionContainer.load(RsXExpressionParserModule).catch(
-      (error) => {
-        bootstrapPromise = null;
-        throw error;
-      },
-    );
+export function ensureExpressionParserBootstrapped(): void {
+  if (
+    !InjectionContainer.isBound(
+      RsXExpressionParserInjectionTokens.IExpressionParser,
+    )
+  ) {
+    InjectionContainer.load(RsXExpressionParserModule);
   }
-
-  return bootstrapPromise;
 }

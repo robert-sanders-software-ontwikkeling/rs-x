@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": [
+    "node_modules",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/.next/**",
+    "rs-x-angular/**",
+    "rs-x-site/**",
+    "rs-x-ui/**",
+    "rs-x-cli/templates/**",
+    "rs-x-cli/rsx-project-*-verify/**"
+  ]
+}

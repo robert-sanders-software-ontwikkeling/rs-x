@@ -2,7 +2,6 @@ import React from 'react';
 
 import { ApiDocHeader } from '../app/docs/components/api-doc-header';
 import {
-  type ApiItem,
   type ApiMember,
   createQuickFacts,
   plainMemberName,
@@ -12,6 +11,7 @@ import { DisposeCard } from '../app/docs/components/dispose-card';
 import { MembersCard } from '../app/docs/components/members-card';
 import { QuickFacts } from '../app/docs/components/quick-facts';
 import { WhenToUse } from '../app/docs/components/when-to-user';
+import { type ApiItem } from '../app/docs/core-api/core-api.types';
 import { renderTextWithCoreLinks } from '../lib/type-doc-links';
 
 import { type ApiParameterItem, ApiParameterList } from './ApiParameterList';

@@ -303,7 +303,8 @@ export const CodeViewer: React.FC<ICodeViewerProps> = ({
   ]);
 
   const preElement = (
-    <pre className={preClassName} style={style}>
+    // tabIndex={0} makes scrollable code blocks keyboard-accessible (WCAG 2.1.1)
+    <pre className={preClassName} style={style} tabIndex={0}>
       <code className={resolvedCodeClassName}>
         {renderCodeLines(visibleCode)}
       </code>

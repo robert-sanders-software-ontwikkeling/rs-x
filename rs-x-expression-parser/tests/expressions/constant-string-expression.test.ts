@@ -54,8 +54,6 @@ describe('ConstantStringExpression tests', () => {
           context: {},
           services,
         });
-
-        services.transactionManager.commit();
       });
       expect(clonedExpression.value).toEqual('hi');
     } finally {

@@ -68,9 +68,7 @@ const exampleCode = dedent`
 `;
 
 const playgroundScript = dedent`
-  const rsx = api.rsx;
-  const WaitForEvent = api.WaitForEvent;
-  const tx = api.ExpressionChangeTransactionManager;
+  const tx = ExpressionChangeTransactionManager;
   const emptyFunction = () => {};
 
   const model = {

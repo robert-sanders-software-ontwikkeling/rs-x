@@ -75,7 +75,9 @@ describe('ExpressionManager', () => {
     const context = { a: 1 };
     const expressionString = 'a + 1';
 
-    expressionManager.create(context).instance.create({ expressionString });
+    expressionManager
+      .createAndGetInstance(context)
+      .create({ expressionString });
 
     expect(expressionCache.getReferenceCount(expressionString)).toEqual(1);
 

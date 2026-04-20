@@ -2,11 +2,11 @@ import { catchError, EMPTY, finalize, skip, take, timeout } from 'rxjs';
 
 import { InjectionContainer, Type } from '@rs-x/core';
 import {
-  type IExpression,
   type IExpressionChangeHistory,
   type IExpressionChangePlayback,
   type IExpressionChangeTrackerManager,
   type IExpressionChangeTransactionManager,
+  type IExpressionTree,
   RsXExpressionParserInjectionTokens,
 } from '@rs-x/expression-parser';
 
@@ -17,7 +17,7 @@ import { type EvaluateModelResult, ScriptEvaluator } from './script-evaluator';
 
 export type CompileExpressionResult = {
   expressionString: string;
-  expression?: IExpression;
+  expression?: IExpressionTree;
   error?: string;
 };
 
@@ -123,7 +123,7 @@ export class ExpressionEditorBusinessService {
     });
   }
 
-  public disposeExpression(expression?: IExpression | null): void {
+  public disposeExpression(expression?: IExpressionTree | null): void {
     if (!expression) {
       return;
     }
@@ -145,7 +145,7 @@ export class ExpressionEditorBusinessService {
   }
 
   public replayChangeHistory(args: {
-    expression: IExpression;
+    expression: IExpressionTree;
     index: number;
     changeHistory: IExpressionChangeHistory[][];
   }): void {

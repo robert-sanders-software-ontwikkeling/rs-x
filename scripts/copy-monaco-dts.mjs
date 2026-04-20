@@ -110,20 +110,15 @@ function main() {
     entries.push({ uri, content });
   }
 
-  // Preserve RxJS package.json types field (helps TS module resolution)
-  const realPkg = JSON.parse(
-    fs.readFileSync(path.join(rxjsDir, 'package.json'), 'utf8'),
-  );
-
+  // Write virtual RxJS package.json files pointing directly to the DTS entry
+  // points within dist/types/. Monaco TypeScript does not support `exports` or
+  // `typesVersions`, so we hardcode the resolved paths rather than copying the
+  // real package.json fields (which rely on those modern resolution features).
   const virtualPkgPath = path.join(outNodeModules, 'rxjs', 'package.json');
   ensureDir(path.dirname(virtualPkgPath));
   fs.writeFileSync(
     virtualPkgPath,
-    JSON.stringify(
-      { name: 'rxjs', types: realPkg.types || realPkg.typings },
-      null,
-      2,
-    ),
+    JSON.stringify({ name: 'rxjs', types: 'dist/types/index.d.ts' }, null, 2),
     'utf8',
   );
 
@@ -136,7 +131,11 @@ function main() {
   ensureDir(path.dirname(operatorsPkgPath));
   fs.writeFileSync(
     operatorsPkgPath,
-    JSON.stringify({ name: 'rxjs/operators', types: 'index.d.ts' }, null, 2),
+    JSON.stringify(
+      { name: 'rxjs/operators', types: '../dist/types/operators/index.d.ts' },
+      null,
+      2,
+    ),
     'utf8',
   );
 

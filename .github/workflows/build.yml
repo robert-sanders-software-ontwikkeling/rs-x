@@ -8,6 +8,9 @@ on:
       - refactor/**
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -17,7 +20,7 @@ jobs:
       # Checkout repository
       # ------------------------------
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       # ------------------------------
       # Setup pnpm
@@ -31,10 +34,18 @@ jobs:
       # Setup Node.js (with pnpm cache)
       # ------------------------------
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         with:
           node-version: lts/*
           cache: pnpm
+
+      # ------------------------------
+      # Debug lockfile + package.json
+      # ------------------------------
+      - name: Debug lockfile hashes
+        run: |
+          git rev-parse HEAD
+          sha256sum pnpm-lock.yaml rs-x-compiler/package.json
 
       # ------------------------------
       # Install dependencies
@@ -61,6 +72,22 @@ jobs:
       # Build all node libraries
       - name: Build Node libraries
         run: pnpm -w run build:libs
+
+      # Build compiler package
+      - name: Build compiler
+        run: pnpm -w run build:compiler
+
+      # Build TypeScript plugin
+      - name: Build TypeScript plugin
+        run: pnpm -w run build:ts-plugin
+
+      # Build VS Code extension
+      - name: Build VS Code extension
+        run: pnpm -w run build:vscode-extension
+
+      # Build CLI package
+      - name: Build CLI
+        run: pnpm --filter @rs-x/cli run build
 
       # Build expression editor
       - name: Build expression-editor
@@ -90,3 +117,24 @@ jobs:
 
       - name: Run React tests
         run: pnpm -w run test:react
+
+      - name: Run Vue tests
+        run: pnpm --filter @rs-x/vue run test
+
+      # =====================================================
+      # 5️⃣ ACCESSIBILITY
+      # =====================================================
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @rs-x/site exec playwright install chromium --with-deps
+
+      - name: Run axe accessibility tests
+        run: pnpm --filter @rs-x/site run test:a11y
+
+      - name: Upload axe report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: a11y-report
+          path: rs-x-site/a11y-report/
+          retention-days: 14

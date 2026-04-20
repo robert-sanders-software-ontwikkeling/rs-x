@@ -11,7 +11,6 @@ import {
   defaultIndexValueAccessorList,
   type IDisposableOwner,
   type IErrorLog,
-  type IGuidFactory,
   type IIndexValueAccessor,
   Inject,
   Injectable,
@@ -224,7 +223,7 @@ class IndexForDocumentObserverManager extends KeyedInstanceFactory<
     info: IIndexObserverInfo<ITextDocumentIndex>,
     id: number,
   ): TextDocumentIndexObserver {
-    const obs = this._docMgr.create(this._doc).instance;
+    const obs = this._docMgr.createAndGetInstance(this._doc);
     return new TextDocumentIndexObserver(
       {
         canDispose: () => this.getReferenceCount(id) === 1,
@@ -291,7 +290,7 @@ class TextDocumentObserverProxyPairFactory implements IObjectObserverProxyPairFa
     _: IDisposableOwner,
     proxyTarget: IProxyTarget<TextDocument>,
   ): IObserverProxyPair<TextDocument> {
-    const observer = this._mgr.create(proxyTarget.target).instance;
+    const observer = this._mgr.createAndGetInstance(proxyTarget.target);
     return {
       observer,
       proxy: observer.target as TextDocument,
@@ -311,7 +310,6 @@ class TextDocumentIndexObserverProxyPairFactory extends IndexObserverProxyPairFa
     @Inject(MyTokens.TextDocumentIndexObserverManager)
     indexObserverManager: TextDocumentIndexObserverManager,
     @Inject(RsXCoreInjectionTokens.IErrorLog) errorLog: IErrorLog,
-    @Inject(RsXCoreInjectionTokens.IGuidFactory) guidFactory: IGuidFactory,
     @Inject(RsXCoreInjectionTokens.IIndexValueAccessor)
     indexValueAccessor: IIndexValueAccessor,
     @Inject(RsXCoreInjectionTokens.IProxyRegistry)
@@ -323,7 +321,6 @@ class TextDocumentIndexObserverProxyPairFactory extends IndexObserverProxyPairFa
       objectObserverManager,
       Type.cast(indexObserverManager),
       errorLog,
-      guidFactory,
       indexValueAccessor,
       proxyRegister,
       valueMetadata,

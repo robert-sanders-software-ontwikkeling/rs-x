@@ -55,8 +55,6 @@ describe('ConditionalExpression tests', () => {
           context: model,
           services,
         });
-
-        services.transactionManager.commit();
       });
       expect(clonedExpression.value).toEqual(100);
     } finally {

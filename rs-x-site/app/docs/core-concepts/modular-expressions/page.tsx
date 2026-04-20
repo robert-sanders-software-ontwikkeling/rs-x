@@ -128,7 +128,6 @@ const exampleCode = dedent`
 `;
 
 const playgroundScript = dedent`
-  const rsx = api.rsx;
 
   const model = {
     customer: {

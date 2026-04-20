@@ -1,20 +1,20 @@
-import type { IExpression } from '@rs-x/expression-parser';
+import type { IExpressionTree } from './expressions/expression-parser.interface';
 
 export type ExpressionNodeId = string;
 
 export class ExpressionNodeIdIndex {
-  private readonly _idToNode = new Map<ExpressionNodeId, IExpression>();
-  private readonly _nodeToId = new WeakMap<IExpression, ExpressionNodeId>();
+  private readonly _idToNode = new Map<ExpressionNodeId, IExpressionTree>();
+  private readonly _nodeToId = new WeakMap<IExpressionTree, ExpressionNodeId>();
 
   private constructor() {}
 
-  public static build(root: IExpression): ExpressionNodeIdIndex {
+  public static build(root: IExpressionTree): ExpressionNodeIdIndex {
     const index = new ExpressionNodeIdIndex();
     index.buildInternal(root);
     return index;
   }
 
-  public getId(node: IExpression): ExpressionNodeId {
+  public getId(node: IExpressionTree): ExpressionNodeId {
     const id = this._nodeToId.get(node);
     if (!id) {
       throw new Error(
@@ -24,7 +24,7 @@ export class ExpressionNodeIdIndex {
     return id;
   }
 
-  public getNode(id: ExpressionNodeId): IExpression {
+  public getNode(id: ExpressionNodeId): IExpressionTree {
     const node = this._idToNode.get(id);
     if (!node) {
       throw new Error(`Could not find expression node for id: '${id}'`);
@@ -32,8 +32,8 @@ export class ExpressionNodeIdIndex {
     return node;
   }
 
-  private buildInternal(root: IExpression): void {
-    const stack: Array<{ node: IExpression; id: ExpressionNodeId }> = [
+  private buildInternal(root: IExpressionTree): void {
+    const stack: Array<{ node: IExpressionTree; id: ExpressionNodeId }> = [
       { node: root, id: 'r' },
     ];
 

@@ -71,6 +71,11 @@ export function SiteHeader() {
   const menuId = useId();
   const communityMenuId = useId();
   const communityRef = useRef<HTMLLIElement | null>(null);
+  const communityTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const communityMenuRef = useRef<HTMLUListElement | null>(null);
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const communityKeyboardClose = useRef(false);
+  const menuKeyboardClose = useRef(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -117,11 +122,38 @@ export function SiteHeader() {
     };
   }, [router]);
 
+  // Focus first menu item when community dropdown opens;
+  // restore focus to trigger when closed via keyboard.
+  useEffect(() => {
+    if (communityOpen) {
+      const firstLink =
+        communityMenuRef.current?.querySelector<HTMLElement>('a');
+      firstLink?.focus();
+    } else if (communityKeyboardClose.current) {
+      communityTriggerRef.current?.focus();
+      communityKeyboardClose.current = false;
+    }
+  }, [communityOpen]);
+
+  // Restore focus to menu button when mobile menu closes via keyboard.
+  useEffect(() => {
+    if (!menuOpen && menuKeyboardClose.current) {
+      menuButtonRef.current?.focus();
+      menuKeyboardClose.current = false;
+    }
+  }, [menuOpen]);
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setMenuOpen(false);
-        setCommunityOpen(false);
+        if (communityOpen) {
+          communityKeyboardClose.current = true;
+          setCommunityOpen(false);
+        }
+        if (menuOpen) {
+          menuKeyboardClose.current = true;
+          setMenuOpen(false);
+        }
       }
     };
 
@@ -130,7 +162,7 @@ export function SiteHeader() {
     return () => {
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, []);
+  }, [communityOpen, menuOpen]);
 
   useEffect(() => {
     setCommunityOpen(false);
@@ -187,6 +219,39 @@ export function SiteHeader() {
     };
   }, []);
 
+  const onCommunityMenuKeyDown = (e: React.KeyboardEvent<HTMLUListElement>) => {
+    const items = Array.from(
+      communityMenuRef.current?.querySelectorAll<HTMLElement>('a') ?? [],
+    );
+    const currentIndex = items.indexOf(document.activeElement as HTMLElement);
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        items[(currentIndex + 1) % items.length]?.focus();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        items[(currentIndex - 1 + items.length) % items.length]?.focus();
+        break;
+      case 'Home':
+        e.preventDefault();
+        items[0]?.focus();
+        break;
+      case 'End':
+        e.preventDefault();
+        items[items.length - 1]?.focus();
+        break;
+      case 'Escape':
+        communityKeyboardClose.current = true;
+        setCommunityOpen(false);
+        break;
+      case 'Tab':
+        setCommunityOpen(false);
+        break;
+    }
+  };
+
   const onToggleTheme = () => {
     const html = document.documentElement;
 
@@ -238,6 +303,7 @@ export function SiteHeader() {
               })}
               <li className="navGroup" ref={communityRef}>
                 <button
+                  ref={communityTriggerRef}
                   className="navGroupTrigger"
                   type="button"
                   aria-expanded={communityOpen}
@@ -252,13 +318,21 @@ export function SiteHeader() {
                   Community
                 </button>
                 <ul
+                  ref={communityMenuRef}
                   id={communityMenuId}
+                  role="menu"
                   className={`navGroupMenu ${communityOpen ? 'isOpen' : ''}`}
                   aria-label="Community links"
+                  onKeyDown={onCommunityMenuKeyDown}
                 >
                   {communityNavItems.map((item) => (
-                    <li key={item.label}>
-                      <a href={item.href} target="_blank" rel="noreferrer">
+                    <li key={item.label} role="none">
+                      <a
+                        href={item.href}
+                        role="menuitem"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
                         {item.label}
                       </a>
                     </li>
@@ -289,9 +363,10 @@ export function SiteHeader() {
 
             {/* Mobile menu button */}
             <button
+              ref={menuButtonRef}
               className="menuButton"
               type="button"
-              aria-label="Open menu"
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={menuOpen}
               aria-controls={menuId}
               onClick={() => {

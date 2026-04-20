@@ -1,0 +1,1191 @@
+import { expectCompiledOrTreeInstanceOf } from './_compiled-assertions';
+process.env.RSX_EXPRESSION_ENGINE_MODE = 'compiled';
+
+import { BehaviorSubject, of } from 'rxjs';
+
+import {
+  emptyFunction,
+  InjectionContainer,
+  truePredicate,
+  WaitForEvent,
+} from '@rs-x/core';
+import { IndexWatchRuleMock } from '@rs-x/state-manager/testing';
+
+import type { IExpressionServices } from '../../../lib/expression-services/expression-services.interface';
+import {
+  ExpressionType,
+  type IExpression,
+} from '../../../lib/expressions/expression-parser.interface';
+import { MemberExpression } from '../../../lib/expressions/member-expression';
+import {
+  RsXExpressionParserModule,
+  unloadRsXExpressionParserModule,
+} from '../../../lib/rs-x-expression-parser.module';
+import { RsXExpressionParserInjectionTokens } from '../../../lib/rs-x-expression-parser-injection-tokes';
+import { rsx } from '../../../lib/rsx';
+
+describe('Member expression tests', () => {
+  let expression: IExpression | undefined;
+
+  beforeAll(async () => {
+    await InjectionContainer.load(RsXExpressionParserModule);
+  });
+
+  afterAll(async () => {
+    await unloadRsXExpressionParserModule();
+  });
+
+  afterEach(() => {
+    expression?.dispose();
+    expression = undefined;
+  });
+
+  it('type', () => {
+    const model = { a: { b: 1 } };
+    expression = rsx('a.b')(model);
+    expect(expression.type).toEqual(ExpressionType.Member);
+  });
+
+  it('clone', async () => {
+    const services: IExpressionServices = InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionServices,
+    );
+
+    const model = { a: { b: 1 } };
+    expression = rsx('a.b')(model);
+
+    const clonedExpression = expression.clone();
+
+    try {
+      expectCompiledOrTreeInstanceOf(clonedExpression, MemberExpression);
+      expect(clonedExpression.type).toEqual(ExpressionType.Member);
+      expect(clonedExpression.expressionString).toEqual('a.b');
+
+      await new WaitForEvent(clonedExpression, 'changed').wait(() => {
+        clonedExpression.bind({
+          context: model,
+          services,
+        });
+      });
+      expect(clonedExpression.value).toEqual(1);
+    } finally {
+      clonedExpression.dispose();
+    }
+  });
+
+  describe('member expression with array index', () => {
+    it('Emits the initial value for a member expression with a static array index', async () => {
+      const model = {
+        array: [11, 21, 31, 41, 51],
+      };
+      expression = rsx('array[1]')(model);
+
+      const actual = (await new WaitForEvent(expression, 'changed').wait(
+        () => {},
+      )) as IExpression;
+
+      expect(actual.value).toEqual(21);
+      expect(actual).toBe(expression);
+    });
+
+    it('Emits the initial value for a member expression with a calculated array index', async () => {
+      const model = {
+        a: 1,
+        nestedA: {
+          nestedB: {
+            array: [1000, 1100, 1200, 1300],
+          },
+        },
+      };
+
+      expression = rsx('nestedA.nestedB.array[a + 1]')(model);
+
+      const actual = (await new WaitForEvent(expression, 'changed').wait(
+        () => {},
+      )) as IExpression;
+
+      expect(actual.value).toEqual(1200);
+      expect(actual).toBe(expression);
+    });
+
+    it('dynamic index on root array: emit change event for initial value', async () => {
+      const model = {
+        index: 0,
+        a: ['1', 1],
+      };
+      expression = rsx('a[index]')(model);
+
+      const actual = (await new WaitForEvent(expression, 'changed').wait(
+        () => {},
+      )) as IExpression;
+
+      expect(actual.value).toEqual('1');
+      expect(actual).toBe(expression);
+    });
+
+    it('dynamic index on root array: emit value when dynamic index changes', async () => {
+      const model = {
+        index: 0,
+        a: ['1', 1],
+      };
+      expression = rsx('a[index]')(model);
+
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => {});
+
+      const actual = (await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.index = 1;
+      })) as IExpression;
+
+      expect(actual.value).toEqual(1);
+      expect(actual).toBe(expression);
+    });
+
+    it('Emits a changed value for a member expression with a calculated array index when the index is set to a new value', async () => {
+      const model = {
+        a: 1,
+        nestedA: {
+          nestedB: {
+            array: [1000, 1100, 1200, 1300],
+          },
+        },
+      };
+
+      expression = rsx('nestedA.nestedB.array[a + 1]')(model);
+
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => {});
+
+      const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
+        model.nestedA.nestedB.array[2] = 10;
+      })) as IExpression;
+
+      expect(actual.value).toEqual(10);
+      expect(actual).toBe(expression);
+    });
+
+    it('Emits a changed value for a member expression with a calculated array index when the index value changes', async () => {
+      const model = {
+        a: 1,
+        nestedA: {
+          nestedB: {
+            array: [1000, 1100, 1200, 1300],
+          },
+        },
+      };
+
+      expression = rsx('nestedA.nestedB.array[a + 1]')(model);
+
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => {});
+
+      expect(expression.value).toEqual(1200);
+
+      const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
+        model.a = 2;
+      })) as IExpression;
+
+      expect(actual.value).toEqual(1300);
+      expect(actual).toBe(expression);
+    });
+
+    it('Emits a changed value for a member expression  when replacing a parent object', async () => {
+      const model = {
+        a: 1,
+        nestedA: {
+          nestedB: {
+            array: [1000, 1100, 1200, 1300],
+          },
+        },
+      };
+
+      expression = rsx('nestedA.nestedB.array[a + 1]')(model);
+
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => {});
+
+      const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
+        model.nestedA.nestedB = {
+          array: [-1, -2, -3, -4],
+        };
+      })) as IExpression;
+
+      expect(actual.value).toEqual(-3);
+      expect(actual).toBe(expression);
+    });
+  });
+
+  describe('member expression with map key', () => {
+    it('Emits the initial value for a member expression with a static array index', async () => {
+      const model = {
+        map: new Map([
+          ['a', 1],
+          ['b', 2],
+          ['c', 3],
+        ]),
+      };
+
+      expression = rsx('map["b"]')(model);
+
+      const actual = (await new WaitForEvent(expression, 'changed').wait(
+        emptyFunction,
+      )) as IExpression;
+
+      expect(actual.value).toEqual(2);
+      expect(actual).toBe(expression);
+    });
+
+    it('Emits the initial value for a member expression with a calculated map key', async () => {
+      const model = {
+        key: 'c',
+        nestedA: {
+          map: new Map([
+            ['a', 1],
+            ['b', 2],
+            ['c', 3],
+          ]),
+        },
+      };
+
+      expression = rsx('nestedA.map[key]')(model);
+
+      const actual = (await new WaitForEvent(expression, 'changed').wait(
+        emptyFunction,
+      )) as IExpression;
+
+      expect(actual.value).toEqual(3);
+      expect(actual).toBe(expression);
+    });
+
+    it('Emits a changed value for a member expression with a calculated map key when we change the value for the key', async () => {
+      const model = {
+        key: 'c',
+        nestedA: {
+          map: new Map([
+            ['a', 1],
+            ['b', 2],
+            ['c', 3],
+          ]),
+        },
+      };
+
+      expression = rsx('nestedA.map[key]')(model);
+
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+      const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
+        model.nestedA.map.set('c', 30);
+      })) as IExpression;
+
+      expect(actual.value).toEqual(30);
+      expect(actual).toBe(expression);
+    });
+
+    it('Emits a changed value for a member expression with a calculated map key when the calcuulated key changed', async () => {
+      const model = {
+        key: 'c',
+        nestedA: {
+          map: new Map([
+            ['a', 1],
+            ['b', 2],
+            ['c', 3],
+          ]),
+        },
+      };
+
+      expression = rsx('nestedA.map[key]')(model);
+
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => {});
+
+      const actual = (await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.key = 'b';
+      })) as IExpression;
+
+      expect(actual.value).toEqual(2);
+      expect(actual).toBe(expression);
+    });
+
+    it('Emits a changed value for a member expression  when replacing a parent object directly', async () => {
+      const model = {
+        key: 'c',
+        nestedA: {
+          map: new Map([
+            ['a', 1],
+            ['b', 2],
+            ['c', 3],
+          ]),
+        },
+      };
+      expression = rsx('nestedA.map[key]')(model);
+
+      await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(emptyFunction);
+
+      const actual = (await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.nestedA = {
+          map: new Map([
+            ['a', -1],
+            ['b', -2],
+            ['c', -3],
+          ]),
+        };
+      })) as IExpression;
+
+      expect(actual.value).toEqual(-3);
+      expect(actual).toBe(expression);
+    });
+
+    it('Emits a changed value for a member expression  when replacing a parent object', async () => {
+      const model = {
+        key: 'c',
+        nestedA: {
+          map: new Map([
+            ['a', 1],
+            ['b', 2],
+            ['c', 3],
+          ]),
+        },
+      };
+      expression = rsx('nestedA.map[key]')(model);
+
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => {});
+
+      const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
+        model.nestedA = {
+          map: new Map([
+            ['a', -1],
+            ['b', -2],
+            ['c', -3],
+          ]),
+        };
+      })) as IExpression;
+
+      expect(actual.value).toEqual(-3);
+      expect(actual).toBe(expression);
+    });
+  });
+
+  describe('member expression with date property', () => {
+    it('Emits a changed value for a member expression with a date property when the date is mutated via native setter', async () => {
+      const model = {
+        invoiceDate: new Date('2026-03-13T08:15:20.250Z'),
+      };
+
+      expression = rsx('invoiceDate.year')(model);
+
+      await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+      const actual = (await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.invoiceDate.setFullYear(2027);
+      })) as IExpression;
+
+      expect(actual).toBe(expression);
+      expect(actual.value).toEqual(2027);
+    });
+
+    it('Emits a changed value when mutating model.invoiceDate through the current model reference', async () => {
+      const model = {
+        invoiceDate: new Date('2026-03-13T08:15:20.250Z'),
+      };
+
+      expression = rsx('invoiceDate.year')(model);
+
+      await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+      const actual = (await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.invoiceDate.setFullYear(2028);
+      })) as IExpression;
+
+      expect(actual).toBe(expression);
+      expect(actual.value).toEqual(2028);
+    });
+
+    it('Emits a changed value when mutating a captured date reference after initial binding', async () => {
+      const model = {
+        invoiceDate: new Date('2026-03-13T08:15:20.250Z'),
+      };
+
+      expression = rsx('invoiceDate.year')(model);
+
+      await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+      const invoiceDate = model.invoiceDate;
+
+      const actual = (await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        invoiceDate.setFullYear(2029);
+      })) as IExpression;
+
+      expect(actual).toBe(expression);
+      expect(actual.value).toEqual(2029);
+    });
+  });
+
+  describe('member expression with observable', () => {
+    it('will emit initial value', async () => {
+      const model = {
+        x: of({
+          y: {
+            z: 100,
+          },
+        }),
+      };
+      expression = rsx('x.y.z')(model);
+
+      const actual = (await new WaitForEvent(expression, 'changed').wait(
+        () => {},
+      )) as IExpression;
+
+      expect(actual.value).toEqual(100);
+      expect(actual).toBe(expression);
+    });
+
+    it('resolves nested observables', async () => {
+      const model = {
+        x: of({
+          y: {
+            z: of(100),
+          },
+        }),
+      };
+
+      expression = rsx('x.y.z')(model);
+
+      const actual = (await new WaitForEvent(expression, 'changed').wait(
+        emptyFunction,
+      )) as IExpression;
+
+      expect(expression.value).toEqual(100);
+      expect(actual).toBe(expression);
+    });
+
+    it('will emit change event when changing observable', async () => {
+      const model = {
+        x: of({
+          y: {
+            z: of(100),
+          },
+        }),
+      };
+
+      expression = rsx('x.y.z')(model);
+
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => {});
+
+      const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
+        model.x = of({
+          y: { z: of(200) },
+        });
+      })) as IExpression;
+
+      expect(actual.value).toEqual(200);
+      expect(actual).toBe(expression);
+    });
+
+    it('will emit change event when nested obserable emit new value', async () => {
+      const nestedModel = {
+        y: {
+          z: new BehaviorSubject(100),
+        },
+      };
+      const model = {
+        x: of(nestedModel),
+      };
+      expression = rsx('x.y.z')(model);
+
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => {});
+
+      const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
+        nestedModel.y.z.next(200);
+      })) as IExpression;
+
+      expect(actual.value).toEqual(200);
+      expect(actual).toBe(expression);
+    });
+
+    it('will emit change event when obserable emit new value', async () => {
+      const model = {
+        x: new BehaviorSubject({
+          y: {
+            z: of(100),
+          },
+        }),
+      };
+      expression = rsx('x.y.z')(model);
+
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => {});
+
+      const actual = (await new WaitForEvent(expression, 'changed').wait(() => {
+        model.x.next({
+          y: {
+            z: of(200),
+          },
+        });
+      })) as IExpression;
+
+      expect(actual.value).toEqual(200);
+      expect(actual).toBe(expression);
+    });
+
+    it('multiple nested obserable emit new value', async () => {
+      const nestedObservable = new BehaviorSubject({ d: 200 });
+      const rootObservable = new BehaviorSubject({ c: nestedObservable });
+      const model = {
+        a: {
+          b: new BehaviorSubject({
+            c: new BehaviorSubject({ d: 20 }),
+          }),
+        },
+      };
+      const expression = rsx('a.b.c.d')(model);
+
+      await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+      expect(expression.value).toEqual(20);
+
+      await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.a = { b: rootObservable };
+      });
+      expect(expression.value).toEqual(200);
+
+      await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        nestedObservable.next({ d: 300 });
+      });
+      expect(expression.value).toEqual(300);
+
+      await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        rootObservable.next({
+          c: new BehaviorSubject({ d: 400 }),
+        });
+      });
+      expect(expression.value).toEqual(400);
+    });
+  });
+
+  describe('member expression with promises', () => {
+    it('will emit initial value', async () => {
+      const model = {
+        x: Promise.resolve({
+          y: {
+            z: 100,
+          },
+        }),
+      };
+
+      expression = rsx('x.y.z')(model);
+
+      const actual = await new WaitForEvent(expression, 'changed').wait(
+        emptyFunction,
+      );
+
+      expect(actual).toBe(expression);
+      expect(expression.value).toEqual(100);
+    });
+
+    it('will emit change event when changing promise', async () => {
+      const model = {
+        x: Promise.resolve({
+          y: {
+            z: Promise.resolve(100),
+          },
+        }),
+      };
+
+      expression = rsx('x.y.z')(model);
+
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => {});
+
+      const actual = await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.x = Promise.resolve({
+          y: { z: Promise.resolve(200) },
+        });
+      });
+
+      expect(actual).toBe(expression);
+      expect(expression.value).toEqual(200);
+    });
+
+    it('will emit change event when changing object with nested promise', async () => {
+      const model = {
+        a: {
+          b: Promise.resolve({
+            c: Promise.resolve({
+              d: 20,
+            }),
+          }),
+        },
+      };
+      expression = rsx('a.b.c.d')(model);
+
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+      const actual = await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.a = {
+          b: Promise.resolve({
+            c: Promise.resolve({
+              d: 200,
+            }),
+          }),
+        };
+      });
+
+      expect(actual).toBe(expression);
+      expect(expression.value).toEqual(200);
+    });
+  });
+
+  describe('member expression with object array', () => {
+    it(`initial value of 'a.b[1].c.d')`, async () => {
+      const model = {
+        a: {
+          b: [
+            {
+              c: {
+                d: 10,
+              },
+            },
+            {
+              c: {
+                d: 11,
+              },
+            },
+          ],
+        },
+        x: { y: 1 },
+      };
+      expression = rsx('a.b[1].c.d')(model);
+
+      await new WaitForEvent(expression, 'changed').wait(() => {});
+
+      expect(expression.value).toEqual(11);
+    });
+
+    it(`value of 'a.b[1].c.d') after changing 'a' to '{b: [{ c: { d: 100}},{ c: { d: 110}}}`, async () => {
+      const model = {
+        a: {
+          b: [
+            {
+              c: {
+                d: 10,
+              },
+            },
+            {
+              c: {
+                d: 11,
+              },
+            },
+          ],
+        },
+        x: { y: 1 },
+      };
+      expression = rsx('a.b[1].c.d')(model);
+
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => {});
+
+      await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.a = {
+          b: [
+            {
+              c: {
+                d: 100,
+              },
+            },
+            {
+              c: {
+                d: 110,
+              },
+            },
+          ],
+        };
+      });
+
+      expect(expression.value).toEqual(110);
+    });
+
+    it(`value of 'a.b[1].c.d' after changing b[1] to '{ c: { d: 120}}`, async () => {
+      const model = {
+        a: {
+          b: [
+            {
+              c: {
+                d: 10,
+              },
+            },
+            {
+              c: {
+                d: 11,
+              },
+            },
+          ],
+        },
+        x: { y: 1 },
+      };
+      expression = rsx('a.b[1].c.d')(model);
+
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+      await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.a.b[1] = {
+          c: {
+            d: 120,
+          },
+        };
+      });
+
+      expect(expression.value).toEqual(120);
+    });
+
+    it(`value of 'a.b[1].c.d' after changing b[1].c to '{d: 220}`, async () => {
+      const model = {
+        a: {
+          b: [
+            {
+              c: {
+                d: 10,
+              },
+            },
+            {
+              c: {
+                d: 11,
+              },
+            },
+          ],
+        },
+        x: { y: 1 },
+      };
+      expression = rsx('a.b[1].c.d')(model);
+
+      // Wait till the expression has been initialized before changing value
+      await new WaitForEvent(expression, 'changed').wait(() => {});
+
+      await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.a.b[1].c = { d: 220 };
+      });
+
+      expect(expression.value).toEqual(220);
+    });
+
+    it(`Value of a.b[1].c.d after first changing path segements.`, async () => {
+      const model = {
+        a: {
+          b: [
+            {
+              c: {
+                d: 10,
+              },
+            },
+            {
+              c: {
+                d: 11,
+              },
+            },
+          ],
+        },
+        x: { y: 1 },
+      };
+      expression = rsx('a.b[1].c.d')(model);
+
+      await new WaitForEvent(expression, 'changed').wait(() => {});
+
+      expect(expression.value).toEqual(11);
+
+      await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.a = {
+          b: [
+            {
+              c: {
+                d: 100,
+              },
+            },
+            {
+              c: {
+                d: 110,
+              },
+            },
+          ],
+        };
+      });
+
+      expect(expression.value).toEqual(110);
+
+      await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.a.b[1] = {
+          c: {
+            d: 120,
+          },
+        };
+      });
+
+      expect(expression.value).toEqual(120);
+
+      await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.a.b[1].c = { d: 130 };
+      });
+
+      expect(expression.value).toEqual(130);
+
+      await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.a.b[1].c.d = 140;
+      });
+
+      expect(expression.value).toEqual(140);
+    });
+  });
+
+  describe('member expression with method', () => {
+    it(`will emit initial value for 'a.b.mail(message, subject).messageWithSubject'`, async () => {
+      const model = {
+        message: 'Hello',
+        subject: 'Message',
+        a: {
+          b: {
+            mail: (message: string, subject: string) => {
+              return {
+                messageWithSubject: `message: ${message}, subject: ${subject}`,
+              };
+            },
+          },
+        },
+      };
+
+      expression = rsx('a.b.mail(message, subject).messageWithSubject')(model);
+
+      const actual = await new WaitForEvent(expression, 'changed').wait(
+        emptyFunction,
+      );
+
+      expect(actual).toBe(expression);
+      expect(expression.value).toEqual('message: Hello, subject: Message');
+    });
+
+    it(`will emit change for 'a.b.mail(message, subject).messageWithSubject' when setting 'message'`, async () => {
+      const model = {
+        message: 'Hello',
+        subject: 'Message',
+        a: {
+          b: {
+            mail: (message: string, subject: string) => {
+              return {
+                messageWithSubject: `message: ${message}, subject: ${subject}`,
+              };
+            },
+          },
+        },
+      };
+
+      expression = rsx('a.b.mail(message, subject).messageWithSubject')(model);
+
+      await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+      const actual = (await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.message = 'hi';
+      })) as IExpression;
+
+      expect(actual.value).toEqual('message: hi, subject: Message');
+    });
+  });
+
+  describe('member expression with sequence', () => {
+    it('Emits initial and changed values for (initializeA(), a).b', async () => {
+      const model: {
+        a: { b: number } | undefined;
+        initializeA(): void;
+      } = {
+        a: undefined,
+        initializeA() {
+          if (!this.a) {
+            this.a = { b: 1 };
+          }
+        },
+      };
+
+      expression = rsx('(initializeA(), a).b')(model);
+
+      const initial = (await new WaitForEvent(expression, 'changed').wait(
+        emptyFunction,
+      )) as IExpression;
+
+      expect(initial.value).toEqual(1);
+      expect(initial).toBe(expression);
+
+      const changed = (await new WaitForEvent(expression, 'changed', {
+        ignoreInitialValue: true,
+      }).wait(() => {
+        model.a = { b: 10 };
+      })) as IExpression;
+
+      expect(changed.value).toEqual(10);
+      expect(changed).toBe(expression);
+    });
+  });
+
+  describe('member expression with complex expression with observabble', () => {
+    it('initial value', async () => {
+      const model = {
+        parameters: new BehaviorSubject({
+          a: 10,
+          b: 20,
+        }),
+      };
+
+      expression = rsx('parameters.a + parameters.b')(model);
+
+      await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+      expect(expression.value).toEqual(30);
+    });
+
+    it('will emit change event when new parameters have been emitted', async () => {
+      const model = {
+        parameters: new BehaviorSubject({
+          a: 10,
+          b: 20,
+        }),
+      };
+
+      expression = rsx('parameters.a + parameters.b')(model);
+
+      await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+      await new WaitForEvent(expression, 'changed', { count: 2 }).wait(() => {
+        model.parameters.next({
+          a: 5,
+          b: 20,
+        });
+      });
+
+      expect(expression.value).toEqual(25);
+    });
+  });
+
+  it('Only non-root path segments and the specified leave properties will be observed.”', async () => {
+    const model = {
+      a: {
+        b: {
+          c: 10,
+          d: 20,
+        },
+        e: 30,
+      },
+      f: 40,
+    };
+
+    const indexWatchRule = new IndexWatchRuleMock(
+      (index: unknown, target: unknown) =>
+        (index === 'b' && target === model.a) ||
+        (index === 'c' && target === model.a.b),
+    );
+
+    expression = rsx('a.b')(model, indexWatchRule);
+
+    await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+    expect(model).isWritableProperty('a');
+    expect(model.a).isWritableProperty('b');
+    expect(model.a.b).isWritableProperty('c');
+    expect(model.a.b).not.isWritableProperty('d');
+    expect(model.a).not.isWritableProperty('e');
+    expect(model).not.isWritableProperty('f');
+  });
+
+  it('Will not watch leaf objects recursively by default', async () => {
+    const model = {
+      a: {
+        b: {
+          c: 10,
+          d: 20,
+        },
+        e: 30,
+      },
+      f: 40,
+    };
+    expression = rsx('a.b')(model);
+    await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+    expect(model).isWritableProperty('a');
+    expect(model.a).isWritableProperty('b');
+    expect(model.a.b).not.isWritableProperty('c');
+    expect(model.a.b).not.isWritableProperty('d');
+    expect(model.a).not.isWritableProperty('e');
+    expect(model).not.isWritableProperty('f');
+  });
+
+  it('Watched identifiers will be released when the associated expressions are disposed.', async () => {
+    const model = {
+      a: {
+        b: {
+          c: 10,
+          d: 20,
+        },
+        e: 30,
+      },
+      f: 40,
+    };
+
+    const indexWatchRule = new IndexWatchRuleMock(truePredicate);
+    expression = rsx('a.b')(model, indexWatchRule);
+
+    await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+    expect(model).isWritableProperty('a');
+    expect(model.a).isWritableProperty('b');
+    expect(model.a.b).isWritableProperty('c');
+    expect(model.a.b).isWritableProperty('d');
+    expect(model.a).not.isWritableProperty('e');
+    expect(model).not.isWritableProperty('f');
+
+    expression.dispose();
+
+    expect(model).not.isWritableProperty('a');
+    expect(model.a).not.isWritableProperty('b');
+    expect(model.a.b).not.isWritableProperty('c');
+    expect(model.a.b).not.isWritableProperty('d');
+    expect(model.a).not.isWritableProperty('e');
+    expect(model).not.isWritableProperty('f');
+  });
+
+  it('updates only the bound expression when a single row member changes', async () => {
+    const rows = Array.from({ length: 20 }, (_, index) => ({
+      a: { b: index + 1 },
+    }));
+
+    const expressions = rows.map((row) => rsx('a.b')(row));
+    try {
+      const initialValues = (await Promise.all(
+        expressions.map((expr) =>
+          new WaitForEvent(expr, 'changed').wait(() => {}),
+        ),
+      )) as Array<IExpression | null>;
+
+      initialValues.forEach((result, index) => {
+        expect(result?.value).toEqual(index + 1);
+        expect(expressions[index].value).toEqual(index + 1);
+      });
+
+      const targetIndex = 12;
+      const nextValue = 321;
+      const waiters = expressions.map((expr) =>
+        new WaitForEvent(expr, 'changed', {
+          ignoreInitialValue: true,
+          timeout: 200,
+        }).wait(() => {}),
+      );
+
+      rows[targetIndex].a.b = nextValue;
+
+      const results = (await Promise.all(waiters)) as Array<IExpression | null>;
+
+      results.forEach((result, index) => {
+        if (index === targetIndex) {
+          expect(result?.value).toEqual(nextValue);
+          expect(expressions[index].value).toEqual(nextValue);
+        } else {
+          expect(result).toBeNull();
+          expect(expressions[index].value).toEqual(index + 1);
+        }
+      });
+    } finally {
+      expressions.forEach((expr) => expr.dispose());
+    }
+  });
+
+  it('When creating expressions with shared identifiers, the expressions will be observed until all associated expressions have been released.', async () => {
+    const model = {
+      a: {
+        b: {
+          c: 10,
+          d: 20,
+        },
+        e: 30,
+      },
+      f: 40,
+    };
+
+    const expression1 = rsx('a.b')(model);
+    await new WaitForEvent(expression1, 'changed').wait(emptyFunction);
+    const expression2 = rsx('a.b')(model);
+    await new WaitForEvent(expression2, 'changed').wait(emptyFunction);
+    const expression3 = rsx('c')(model.a.b);
+    await new WaitForEvent(expression3, 'changed').wait(emptyFunction);
+
+    expect(model).isWritableProperty('a');
+    expect(model.a).isWritableProperty('b');
+    expect(model.a.b).isWritableProperty('c');
+    expect(model.a.b).not.isWritableProperty('d');
+    expect(model.a).not.isWritableProperty('e');
+    expect(model).not.isWritableProperty('f');
+
+    expression1.dispose();
+
+    expect(model).isWritableProperty('a');
+    expect(model.a).isWritableProperty('b');
+    expect(model.a.b).isWritableProperty('c');
+    expect(model.a.b).not.isWritableProperty('d');
+    expect(model.a).not.isWritableProperty('e');
+    expect(model).not.isWritableProperty('f');
+
+    expression2.dispose();
+
+    expect(model).not.isWritableProperty('a');
+    expect(model.a).not.isWritableProperty('b');
+    expect(model.a.b).isWritableProperty('c');
+    expect(model.a.b).not.isWritableProperty('d');
+    expect(model.a).not.isWritableProperty('e');
+    expect(model).not.isWritableProperty('f');
+
+    expression3.dispose();
+
+    expect(model).not.isWritableProperty('a');
+    expect(model.a).not.isWritableProperty('b');
+    expect(model.a.b).not.isWritableProperty('c');
+    expect(model.a.b).not.isWritableProperty('d');
+    expect(model.a).not.isWritableProperty('e');
+    expect(model).not.isWritableProperty('f');
+  });
+});

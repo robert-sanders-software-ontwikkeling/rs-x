@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 
-import type { IExpression } from '@rs-x/expression-parser';
+import type { IExpressionTree } from '@rs-x/expression-parser';
 
 export function useExpressionChangedRerender(
-  expression: IExpression | null | undefined,
+  expression: IExpressionTree | null | undefined,
 ): number {
   const [tick, setTick] = useState<number>(0);
 

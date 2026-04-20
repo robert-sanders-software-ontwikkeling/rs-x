@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import type { IExpression } from '@rs-x/expression-parser';
+import type { IExpressionTree } from '@rs-x/expression-parser';
 
 import type { NodeId } from '../layout/node.interface';
 
@@ -8,7 +8,7 @@ type LayoutEdge = { from: NodeId; to: NodeId };
 
 type LayoutNode = {
   id: NodeId;
-  expression: IExpression;
+  expression: IExpressionTree;
 };
 
 type NodePos = {
@@ -23,7 +23,7 @@ export type EdgePathVm = {
   className: string;
 };
 
-function isHiddenExpression(expr: IExpression): boolean {
+function isHiddenExpression(expr: IExpressionTree): boolean {
   return (expr as unknown as { hidden?: boolean }).hidden === true;
 }
 

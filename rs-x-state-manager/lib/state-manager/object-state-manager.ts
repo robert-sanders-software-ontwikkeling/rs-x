@@ -129,7 +129,7 @@ export class ObjectStateManager
     if (stateForObjectManagerForNewContext) {
       stateForObjectManagerForNewContext.set(key, newValue, watched, ownerId);
     } else if (newValue !== undefined) {
-      this.create(newContext).instance.create({
+      this.createAndGetInstance(newContext).create({
         key,
         value: newValue,
         watched,

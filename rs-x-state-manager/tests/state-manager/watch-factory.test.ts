@@ -1,0 +1,460 @@
+import { Subject } from 'rxjs';
+
+import { Type } from '@rs-x/core';
+
+import {
+  type IChangeCycleIndex,
+  type IContextChanged,
+  type IStateChange,
+  type IStateManager,
+} from '../../lib/state-manager/state-manager.interface';
+import { WatchFactory } from '../../lib/state-manager/watch-factory/watch-factory';
+import { IndexWatchRuleMock } from '../../lib/testing/watch-index-rule.mock';
+
+interface IStateManagerMock {
+  changedSubject: Subject<IStateChange>;
+  contextChangedSubject: Subject<IContextChanged>;
+  emitStateChange: (event: IStateChange) => void;
+  emitContextChanged: (event: IContextChanged) => void;
+  emitStartChangeCycle: (event: IChangeCycleIndex) => void;
+  emitEndChangeCycle: (event: IChangeCycleIndex) => void;
+  instance: IStateManager;
+  watchState: jest.Mock;
+  subscribeStateEvents: jest.Mock;
+  getState: jest.Mock;
+  releaseState: jest.Mock;
+}
+
+const createStateManagerMock = (): IStateManagerMock => {
+  const changedSubject = new Subject<IStateChange>();
+  const contextChangedSubject = new Subject<IContextChanged>();
+
+  const watchState = jest.fn();
+  const keyedListeners = new Map<
+    string,
+    Set<{
+      onStateChange: (change: IStateChange) => void;
+      onContextChanged: (change: IContextChanged) => void;
+      onStartChangeCycle?: (cycle: IChangeCycleIndex) => void;
+      onEndChangeCycle?: (cycle: IChangeCycleIndex) => void;
+    }>
+  >();
+  const contextIds = new WeakMap<object, number>();
+  let nextContextId = 0;
+  const getContextId = (context: unknown): string => {
+    if (
+      context === null ||
+      (typeof context !== 'object' && typeof context !== 'function')
+    ) {
+      return `${typeof context}:${String(context)}`;
+    }
+    const asObject = context as object;
+    let existing = contextIds.get(asObject);
+    if (existing === undefined) {
+      existing = ++nextContextId;
+      contextIds.set(asObject, existing);
+    }
+    return `obj:${existing}`;
+  };
+  const toKey = (context: unknown, index: unknown): string =>
+    `${String(index)}::${getContextId(context)}`;
+  const subscribeStateEvents = jest.fn(
+    (
+      context: unknown,
+      index: unknown,
+      listener: {
+        onStateChange: (change: IStateChange) => void;
+        onContextChanged: (change: IContextChanged) => void;
+        onStartChangeCycle?: (cycle: IChangeCycleIndex) => void;
+        onEndChangeCycle?: (cycle: IChangeCycleIndex) => void;
+      },
+    ) => {
+      const key = toKey(context, index);
+      const listeners = keyedListeners.get(key) ?? new Set();
+      listeners.add(listener);
+      keyedListeners.set(key, listeners);
+      return (): void => {
+        const current = keyedListeners.get(key);
+        current?.delete(listener);
+        if (current && current.size === 0) {
+          keyedListeners.delete(key);
+        }
+      };
+    },
+  );
+  const getState = jest.fn();
+  const releaseState = jest.fn();
+
+  const emitStateChange = (event: IStateChange): void => {
+    const key = toKey(event.context, event.index);
+    const listeners = keyedListeners.get(key);
+    if (!listeners) {
+      return;
+    }
+    listeners.forEach((listener) => listener.onStateChange(event));
+  };
+
+  const emitContextChanged = (event: IContextChanged): void => {
+    const oldKey = toKey(event.oldContext, event.index);
+    const listeners = keyedListeners.get(oldKey);
+    if (!listeners || listeners.size === 0) {
+      return;
+    }
+    keyedListeners.delete(oldKey);
+    const newKey = toKey(event.context, event.index);
+    const newListeners = keyedListeners.get(newKey) ?? new Set();
+    listeners.forEach((listener) => {
+      listener.onContextChanged(event);
+      newListeners.add(listener);
+    });
+    keyedListeners.set(newKey, newListeners);
+  };
+
+  const emitStartChangeCycle = (event: IChangeCycleIndex): void => {
+    const key = toKey(event.context, event.index);
+    keyedListeners.get(key)?.forEach((l) => l.onStartChangeCycle?.(event));
+  };
+
+  const emitEndChangeCycle = (event: IChangeCycleIndex): void => {
+    const key = toKey(event.context, event.index);
+    keyedListeners.get(key)?.forEach((l) => l.onEndChangeCycle?.(event));
+  };
+
+  const instance = {
+    changed: changedSubject.asObservable(),
+    contextChanged: contextChangedSubject.asObservable(),
+    startChangeCycle: new Subject<IChangeCycleIndex>().asObservable(),
+    endChangeCycle: new Subject<IChangeCycleIndex>().asObservable(),
+    watchState,
+    subscribeStateEvents,
+    getState,
+    releaseState,
+  } as unknown as IStateManager;
+
+  return {
+    changedSubject,
+    contextChangedSubject,
+    emitStateChange,
+    emitContextChanged,
+    emitStartChangeCycle,
+    emitEndChangeCycle,
+    instance,
+    watchState,
+    subscribeStateEvents,
+    getState,
+    releaseState,
+  };
+};
+
+describe('WatchFactory', () => {
+  let stateManagerMock: IStateManagerMock;
+  let watchFactory: WatchFactory;
+
+  beforeEach(() => {
+    stateManagerMock = createStateManagerMock();
+    watchFactory = new WatchFactory(stateManagerMock.instance);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('watches non-readonly state, falls back to getState when watchState returns undefined, and reference-counted unwatch works', () => {
+    const context = { a: 1 };
+    const index = 'a';
+    stateManagerMock.watchState.mockReturnValue(undefined);
+    stateManagerMock.getState.mockReturnValue(10);
+    jest.spyOn(Type, 'isReadonlyProperty').mockReturnValue(false);
+
+    const watch = watchFactory.create({
+      context,
+      index,
+      options: {},
+    }).instance;
+
+    watch.watch();
+    expect(stateManagerMock.watchState).toHaveBeenCalledTimes(1);
+    expect(stateManagerMock.getState).toHaveBeenCalledTimes(1);
+    expect(watch.value).toBe(10);
+
+    // Second watch call only increases internal ref count.
+    watch.watch();
+    expect(stateManagerMock.watchState).toHaveBeenCalledTimes(1);
+
+    watch.unwatch();
+    expect(stateManagerMock.releaseState).toHaveBeenCalledTimes(0);
+
+    watch.unwatch();
+    expect(stateManagerMock.releaseState).toHaveBeenCalledTimes(1);
+    expect(stateManagerMock.releaseState).toHaveBeenCalledWith(
+      context,
+      index,
+      undefined,
+    );
+  });
+
+  it('uses getState for readonly properties', () => {
+    const context = { a: 1 };
+    const index = 'a';
+    stateManagerMock.getState.mockReturnValue(5);
+    jest.spyOn(Type, 'isReadonlyProperty').mockReturnValue(true);
+
+    const watch = watchFactory.create({
+      context,
+      index,
+      options: {},
+    }).instance;
+
+    watch.watch();
+
+    expect(stateManagerMock.watchState).not.toHaveBeenCalled();
+    expect(stateManagerMock.getState).toHaveBeenCalledWith(context, index);
+    expect(watch.value).toBe(5);
+  });
+
+  it('forwards matching state, context, and cycle events and ignores mismatches', () => {
+    const context = { a: 1 };
+    const otherContext = { a: 2 };
+    const newContext = { a: 3 };
+    const index = 'a';
+    jest.spyOn(Type, 'isReadonlyProperty').mockReturnValue(false);
+    stateManagerMock.watchState.mockReturnValue(1);
+
+    const watch = watchFactory.create({
+      context,
+      index,
+      options: {},
+    }).instance;
+
+    const changed: IStateChange[] = [];
+    const contexts: IContextChanged[] = [];
+    const starts: IChangeCycleIndex[] = [];
+    const ends: IChangeCycleIndex[] = [];
+    watch.changed.subscribe((event) => changed.push(event));
+    watch.contextChange.subscribe((event) => contexts.push(event));
+    watch.startChangeCycle.subscribe((event) => starts.push(event));
+    watch.endChangeCycle.subscribe((event) => ends.push(event));
+
+    watch.watch();
+
+    stateManagerMock.changedSubject.next({
+      context: otherContext,
+      oldContext: otherContext,
+      index,
+      oldValue: 0,
+      newValue: 99,
+    });
+    expect(changed).toHaveLength(0);
+
+    const validStateChange: IStateChange = {
+      context,
+      oldContext: context,
+      index,
+      oldValue: 1,
+      newValue: 2,
+    };
+    stateManagerMock.emitStateChange(validStateChange);
+    expect(changed).toEqual([validStateChange]);
+    expect(watch.value).toBe(2);
+
+    stateManagerMock.contextChangedSubject.next({
+      context: newContext,
+      oldContext: otherContext,
+      index,
+    });
+    expect(contexts).toHaveLength(0);
+
+    const validContextChanged: IContextChanged = {
+      context: newContext,
+      oldContext: context,
+      index,
+    };
+    stateManagerMock.emitContextChanged(validContextChanged);
+    expect(contexts).toEqual([validContextChanged]);
+    expect(watch.context).toBe(newContext);
+
+    stateManagerMock.emitStartChangeCycle({ context: otherContext, index });
+    stateManagerMock.emitEndChangeCycle({ context: otherContext, index });
+    expect(starts).toHaveLength(0);
+    expect(ends).toHaveLength(0);
+
+    const validStart = { context: newContext, index };
+    const validEnd = { context: newContext, index };
+    stateManagerMock.emitStartChangeCycle(validStart);
+    stateManagerMock.emitEndChangeCycle(validEnd);
+    expect(starts).toEqual([validStart]);
+    expect(ends).toEqual([validEnd]);
+  });
+
+  it('does not rebind context when ownerId is set', () => {
+    const context = { a: 1 };
+    const newContext = { a: 2 };
+    const index = 'a';
+    jest.spyOn(Type, 'isReadonlyProperty').mockReturnValue(false);
+    stateManagerMock.watchState.mockReturnValue(1);
+
+    const watch = watchFactory.create({
+      context,
+      index,
+      options: { ownerId: 'owner' },
+    }).instance;
+    const contexts: IContextChanged[] = [];
+    watch.contextChange.subscribe((event) => contexts.push(event));
+
+    watch.watch();
+    stateManagerMock.emitContextChanged({
+      context: newContext,
+      oldContext: context,
+      index,
+    });
+
+    expect(contexts).toHaveLength(0);
+    expect(watch.context).toBe(context);
+  });
+
+  it('dispose honors factory reference ownership and is idempotent', () => {
+    const context = { a: 1 };
+    const index = 'a';
+    jest.spyOn(Type, 'isReadonlyProperty').mockReturnValue(false);
+    stateManagerMock.watchState.mockReturnValue(1);
+
+    const first = watchFactory.createAndGetInstance({
+      context,
+      index,
+      options: {},
+    });
+    const second = watchFactory.create({
+      context,
+      index,
+      options: {},
+    }).instance;
+    expect(first).toBe(second);
+
+    first.watch();
+
+    const changed: IStateChange[] = [];
+    first.changed.subscribe((event) => changed.push(event));
+
+    // First dispose cannot teardown shared instance yet.
+    first.dispose();
+    stateManagerMock.emitStateChange({
+      context,
+      oldContext: context,
+      index,
+      oldValue: 1,
+      newValue: 2,
+    });
+    expect(changed).toHaveLength(1);
+    expect(stateManagerMock.releaseState).toHaveBeenCalledTimes(0);
+
+    // Now owner can dispose and unsubscribe.
+    first.dispose();
+    expect(stateManagerMock.releaseState).toHaveBeenCalledTimes(1);
+
+    // Idempotent.
+    first.dispose();
+    expect(stateManagerMock.releaseState).toHaveBeenCalledTimes(1);
+  });
+
+  it('shares watches by index when no watch rule and by identity when watch rule is present', () => {
+    const context = { a: 1 };
+    const ruleA = new IndexWatchRuleMock();
+    const ruleB = new IndexWatchRuleMock();
+
+    const noRuleA = watchFactory.create({
+      context,
+      index: 'a',
+      options: {},
+    }).instance;
+    const noRuleB = watchFactory.create({
+      context,
+      index: 'a',
+      options: {},
+    }).instance;
+    expect(noRuleA).toBe(noRuleB);
+
+    const withRuleA1 = watchFactory.create({
+      context,
+      index: 'a',
+      options: { indexWatchRule: ruleA },
+    }).instance;
+    const withRuleA2 = watchFactory.create({
+      context,
+      index: 'a',
+      options: { indexWatchRule: ruleA },
+    }).instance;
+    const withRuleB = watchFactory.create({
+      context,
+      index: 'a',
+      options: { indexWatchRule: ruleB },
+    }).instance;
+    expect(withRuleA1).toBe(withRuleA2);
+    expect(withRuleA1).not.toBe(withRuleB);
+  });
+
+  it('supports identity keys for primitive, null, object and function indexes with watch rules', () => {
+    const context = { a: 1 };
+    const rule = new IndexWatchRuleMock();
+    const objectIndex = { key: 'x' };
+    const functionIndex = () => 1;
+
+    const primitiveA = watchFactory.create({
+      context,
+      index: 1,
+      options: { indexWatchRule: rule },
+    }).instance;
+    const primitiveB = watchFactory.create({
+      context,
+      index: 1,
+      options: { indexWatchRule: rule },
+    }).instance;
+    expect(primitiveA).toBe(primitiveB);
+
+    const nullA = watchFactory.create({
+      context,
+      index: null,
+      options: { indexWatchRule: rule },
+    }).instance;
+    const nullB = watchFactory.create({
+      context,
+      index: null,
+      options: { indexWatchRule: rule },
+    }).instance;
+    expect(nullA).toBe(nullB);
+
+    const objectA = watchFactory.create({
+      context,
+      index: objectIndex,
+      options: { indexWatchRule: rule },
+    }).instance;
+    const objectB = watchFactory.create({
+      context,
+      index: objectIndex,
+      options: { indexWatchRule: rule },
+    }).instance;
+    expect(objectA).toBe(objectB);
+
+    const functionA = watchFactory.create({
+      context,
+      index: functionIndex,
+      options: { indexWatchRule: rule },
+    }).instance;
+    const functionB = watchFactory.create({
+      context,
+      index: functionIndex,
+      options: { indexWatchRule: rule },
+    }).instance;
+    expect(functionA).toBe(functionB);
+  });
+
+  it('unwatch is safe when watch was never started', () => {
+    const watch = watchFactory.create({
+      context: { a: 1 },
+      index: 'a',
+      options: {},
+    }).instance;
+
+    watch.unwatch();
+    expect(stateManagerMock.releaseState).not.toHaveBeenCalled();
+  });
+});

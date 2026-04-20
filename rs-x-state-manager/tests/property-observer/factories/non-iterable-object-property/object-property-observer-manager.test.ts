@@ -93,7 +93,7 @@ describe('IObjectPropertyObserverManager: PropertObserver tests', () => {
   it('will emit change event when changing field value', async () => {
     const observer = objectPropertyObserverManager
       .create(object)
-      .instance.create({ index: 'field' }).instance;
+      .instance.createAndGetInstance({ index: 'field' });
 
     const actual = (await new WaitForEvent(observer, 'changed').wait(() => {
       object.field = 'hi';
@@ -113,7 +113,7 @@ describe('IObjectPropertyObserverManager: PropertObserver tests', () => {
   it('will not emit change event when setting to the same field value', async () => {
     const observer = objectPropertyObserverManager
       .create(object)
-      .instance.create({ index: 'field' }).instance;
+      .instance.createAndGetInstance({ index: 'field' });
 
     const actual = await new WaitForEvent(observer, 'changed').wait(() => {
       object.field = 'field';
@@ -125,7 +125,7 @@ describe('IObjectPropertyObserverManager: PropertObserver tests', () => {
   it('will emit change event when changing property value', async () => {
     const observer = objectPropertyObserverManager
       .create(object)
-      .instance.create({ index: 'property' }).instance;
+      .instance.createAndGetInstance({ index: 'property' });
 
     const actual = (await new WaitForEvent(observer, 'changed').wait(() => {
       object.property = 'hi';
@@ -145,7 +145,7 @@ describe('IObjectPropertyObserverManager: PropertObserver tests', () => {
   it('will not emit change event when setting to the same property value', async () => {
     const observer = objectPropertyObserverManager
       .create(object)
-      .instance.create({ index: 'property' }).instance;
+      .instance.createAndGetInstance({ index: 'property' });
 
     const actual = await new WaitForEvent(observer, 'changed').wait(() => {
       object.property = 'property';
@@ -157,7 +157,7 @@ describe('IObjectPropertyObserverManager: PropertObserver tests', () => {
   it('will emit change event when function return value has changed', async () => {
     const observer = objectPropertyObserverManager
       .create(object)
-      .instance.create({ index: 'method' }).instance;
+      .instance.createAndGetInstance({ index: 'method' });
     object.method(5);
 
     const actual = (await new WaitForEvent(observer, 'changed').wait(() => {
@@ -179,7 +179,7 @@ describe('IObjectPropertyObserverManager: PropertObserver tests', () => {
   it('will not emit change event when function return value has not changed', async () => {
     const observer = objectPropertyObserverManager
       .create(object)
-      .instance.create({ index: 'method' }).instance;
+      .instance.createAndGetInstance({ index: 'method' });
     object.method(5);
 
     const actual = await new WaitForEvent(observer, 'changed').wait(() => {
@@ -191,7 +191,7 @@ describe('IObjectPropertyObserverManager: PropertObserver tests', () => {
 
   it('dispose an will release the observer', async () => {
     const objectPropertyObserverrManager =
-      objectPropertyObserverManager.create(object).instance;
+      objectPropertyObserverManager.createAndGetInstance(object);
     const propertyObserverrManager = objectPropertyObserverrManager.create({
       index: 'field',
     }).instance;
@@ -205,7 +205,7 @@ describe('IObjectPropertyObserverManager: PropertObserver tests', () => {
   it('dispose an observed field will stop observing changes', async () => {
     const observer = objectPropertyObserverManager
       .create(object)
-      .instance.create({ index: 'field' }).instance;
+      .instance.createAndGetInstance({ index: 'field' });
     observer.dispose();
     object.field = 'Hello Robert';
 
@@ -219,7 +219,7 @@ describe('IObjectPropertyObserverManager: PropertObserver tests', () => {
   it('dispose an observed property will stop observing changes', async () => {
     const observer = objectPropertyObserverManager
       .create(object)
-      .instance.create({ index: 'property' }).instance;
+      .instance.createAndGetInstance({ index: 'property' });
     observer.dispose();
 
     object.property = 'Hi Robert';
@@ -234,7 +234,7 @@ describe('IObjectPropertyObserverManager: PropertObserver tests', () => {
   it('dispose an observed method will stop observing changes', async () => {
     const observer = objectPropertyObserverManager
       .create(object)
-      .instance.create({ index: 'method' }).instance;
+      .instance.createAndGetInstance({ index: 'method' });
     object.method(7);
     observer.dispose();
 

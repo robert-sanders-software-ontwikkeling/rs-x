@@ -3,9 +3,8 @@ import { Subject } from 'rxjs';
 import {
   type CheckValidKey,
   type DateProperty,
-  GuidKeyedInstanceFactory,
+  GroupedKeyedInstanceFactory,
   type IDisposableOwner,
-  type IGuidFactory,
   Inject,
   Injectable,
   type IProxyRegistry,
@@ -14,7 +13,7 @@ import {
 } from '@rs-x/core';
 
 import { AbstractObserver } from '../../abstract-observer';
-import type { IIndexWatchRule } from '../../index-watch-rule-registry/index-watch-rule.interface';
+import type { IIndexWatchRule } from '../../index-watch-rule/index-watch-rule.interface';
 
 import type {
   IDateObserverProxyPair,
@@ -286,25 +285,26 @@ class DateProxy extends AbstractObserver<Date, Date, undefined> {
 
   protected override disposeInternal(): void {
     this._proxyRegistry.unregister(this.value);
+    this.indexWatchRule?.dispose();
     this.target = Type.cast(undefined);
   }
 }
 @Injectable()
 export class DateProxyFactory
-  extends GuidKeyedInstanceFactory<
+  extends GroupedKeyedInstanceFactory<
+    number,
     IDateProxyData,
     IDateObserverProxyPair,
     IDateProxyIdData
   >
   implements IDateProxyFactory
 {
+  private _nextId = 0;
   constructor(
-    @Inject(RsXCoreInjectionTokens.IGuidFactory)
-    guidFactory: IGuidFactory,
     @Inject(RsXCoreInjectionTokens.IProxyRegistry)
     private readonly _proxyRegistry: IProxyRegistry,
   ) {
-    super(guidFactory);
+    super();
   }
 
   protected override getGroupId(data: IDateProxyIdData): Date {
@@ -319,7 +319,7 @@ export class DateProxyFactory
 
   protected override createInstance(
     dateProxyData: IDateProxyData,
-    id: string,
+    id: number,
   ): IDateObserverProxyPair {
     const observer = new DateProxy(
       {
@@ -338,5 +338,9 @@ export class DateProxyFactory
       proxy: observer.target,
       proxyTarget: dateProxyData.date,
     };
+  }
+
+  protected override createUniqueId(_data: IDateProxyIdData): number {
+    return this._nextId++;
   }
 }

@@ -1,11 +1,18 @@
 import { coreApiItems } from './core-api/core-api.data';
 import { stateManagerApiItems } from './state-manager-api/state-manager-api.data';
-import { apiPackages } from './api-packages';
+import {
+  coreLinks,
+  expressionParserLinks,
+  stateManagerLinks,
+} from './api-packages';
 import { DocsPageClient } from './docs-page.client';
 
 export const metadata = {
   title: 'Docs',
   description: 'Documentation and concepts for rs-x declarative reactivity.',
+  alternates: {
+    canonical: '/docs',
+  },
 };
 
 const advancedLinks = [
@@ -34,6 +41,11 @@ const advancedLinks = [
     title: 'Custom data types',
     meta: 'Teach rs-x to observe any class — observer, proxy, index accessor, DI wiring',
   },
+  {
+    href: '/docs/core-concepts/performance',
+    title: 'Performance',
+    meta: 'Engine modes, parsing, binding, updates, memory — and what changed in v2',
+  },
 ];
 
 const apiSymbols = [
@@ -53,10 +65,27 @@ const apiSymbols = [
   })),
 ];
 
+const apiNamespaces = [
+  {
+    name: '@rs-x/core',
+    links: coreLinks,
+    apiEntryCount: coreApiItems.length,
+  },
+  {
+    name: '@rs-x/state-manager',
+    links: stateManagerLinks,
+    apiEntryCount: stateManagerApiItems.length,
+  },
+  {
+    name: '@rs-x/expression-parser',
+    links: expressionParserLinks,
+  },
+];
+
 export default function DocsPage() {
   return (
     <DocsPageClient
-      apiNamespaces={apiPackages}
+      apiNamespaces={apiNamespaces}
       advancedLinks={advancedLinks}
       apiSymbols={apiSymbols}
     />

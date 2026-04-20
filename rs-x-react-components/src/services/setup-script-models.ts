@@ -21,15 +21,18 @@ function buildWrapper(userCode: string): {
 } {
   const header = `/* --- RS-X Demo Wrapper (generated) --- */
 
-        type __Result =  IExpression<any, any>;
+        type __Result =  IExpression<unknown>;
 
         async function __rsx_demo(): Promise<__Result> {
+          const { rsx, rxjs, printValue, stateManager, IndexWatchRule, WaitForEvent, ExpressionChangeTransactionManager } = api;
+          {
         `;
 
   const headerLines = header.split('\n').length - 1;
 
   const wrapped = `${header}${userCode}
-}
+          }
+        }
 `;
 
   return { wrapped, headerLines };
@@ -46,6 +49,10 @@ export function setupScriptModels(args: {
     allowJs: true,
     checkJs: true,
     allowNonTsExtensions: true,
+    allowReturnOutsideFunction: true,
+  });
+  monaco.typescript.typescriptDefaults.setCompilerOptions({
+    ...monaco.typescript.typescriptDefaults.getCompilerOptions(),
     allowReturnOutsideFunction: true,
   });
 
@@ -78,6 +85,16 @@ export function setupScriptModels(args: {
     const mapped: Monaco.editor.IMarkerData[] = [];
 
     for (const m of wrapperMarkers) {
+      if (String(m.code) === '1108') {
+        continue;
+      }
+      if (
+        typeof m.message === 'string' &&
+        m.message.includes('only be used within a function body')
+      ) {
+        continue;
+      }
+
       const startLine = m.startLineNumber - headerLines;
       const endLine = m.endLineNumber - headerLines;
 
@@ -113,11 +130,22 @@ export function setupScriptModels(args: {
     applyMappedMarkers();
   });
 
+  const userMarkerSub = monaco.editor.onDidChangeMarkers((uris) => {
+    if (!uris.some((u) => u.toString() === userUri.toString())) {
+      return;
+    }
+
+    // Ensure top-level return diagnostics never reappear on the visible user model.
+    monaco.editor.setModelMarkers(userModel, 'typescript', []);
+    monaco.editor.setModelMarkers(userModel, 'javascript', []);
+  });
+
   applyMappedMarkers();
 
   const dispose = () => {
     userSub.dispose();
     markersSub.dispose();
+    userMarkerSub.dispose();
   };
 
   return { userModel, wrapperModel, dispose };

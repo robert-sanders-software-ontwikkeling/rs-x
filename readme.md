@@ -1,6 +1,6 @@
 # rs-x
 
-Declarative reactivity for JavaScript & TypeScript.
+Strongly typed, declarative reactivity for JavaScript & TypeScript.
 
 rs-x binds plain JavaScript expressions to a data model and propagates updates automatically — synchronous, asynchronous (promises, observables), and mixed data all work transparently without a compilation step.
 
@@ -15,11 +15,15 @@ rs-x binds plain JavaScript expressions to a data model and propagates updates a
 | `rs-x-core`              | Shared core utilities                                        |
 | `rs-x-state-manager`     | Reactive state management with fine-grained change detection |
 | `rs-x-expression-parser` | JavaScript expression parser → observable expression tree    |
-| `rs-x-angular`           | Angular pipe integration (`rsx` pipe)                        |
-| `rs-x-react`             | React hooks integration                                      |
+| `rs-x-compiler`          | Build-time transformer and compiled expression pipeline      |
+| `rs-x-typescript-plugin` | TypeScript plugin for RS-X diagnostics                       |
+| `rs-x-angular`           | Angular integration                                          |
+| `rs-x-react`             | React integration                                            |
+| `rs-x-vue`               | Vue integration                                              |
 | `rs-x-react-components`  | React UI components                                          |
-| `rs-x-expression-editor` | Expression editor component                                  |
 | `rs-x-dev-tools`         | Developer tools                                              |
+| `rs-x-cli`               | CLI tooling for setup/build/typecheck                        |
+| `rs-x-vscode-extension`  | VS Code extension                                            |
 | `rs-x-site`              | Documentation website (Next.js)                              |
 
 ---
@@ -33,19 +37,56 @@ rs-x binds plain JavaScript expressions to a data model and propagates updates a
 5. When using Visual Studio Code, install extensions.
    For example, the [Jest](https://marketplace.visualstudio.com/items?itemName=Orta.vscode-jest) extension is very useful for executing and debugging tests.
 
+## Monorepo quick start
+
+```bash
+git clone https://github.com/robert-sanders-software-ontwikkeling/rs-x.git
+# or: git clone git@github.com:robert-sanders-software-ontwikkeling/rs-x.git
+cd rs-x
+pnpm install
+çpnpm build:libs
+pnpm test
+```
+
 ## Commands
 
 - `pnpm build:core` : builds **rs-x-core** project
 - `pnpm build:state-manager` : builds **rs-x-state-manager** project
 - `pnpm build:expression-parser` : builds **rs-x-expression-parser** project
-- `pnpm build:libs` : builds all library projects
-- `pnpm build:angular` : builds the **rs-x-angular** project
+- `pnpm build:compiler` : builds **rs-x-compiler** project
+- `pnpm build:ts-plugin` : builds **rs-x-typescript-plugin** project
 - `pnpm build:react` : builds **rs-x-react** project
+- `pnpm build:vue` : builds **rs-x-vue** project
+- `pnpm build:angular` : builds the **rs-x-angular** project
+- `pnpm build:react-components` : builds **rs-x-react-components** project
 - `pnpm build:devtools` : builds **rs-x-dev-tools** project
 - `pnpm build:expression-editor` : builds **rs-x-expression-editor** project
+- `pnpm build:libs` : builds all library projects
+- `pnpm build:vscode-extension` : builds **rs-x-vscode-extension** project
+- `pnpm package:vscode-extension` : packages VS Code extension (VSIX)
+- `pnpm install:vscode-extension` : package + install local RS-X VS Code extension (includes TS plugin)
+- `pnpm install:compiler-tooling` : install `@rs-x/compiler` + `@rs-x/typescript-plugin`
+- `pnpm init:rsx` : init project (packages + async RS-X bootstrap wiring + VS Code extension)
+- `pnpm setup:developer-tooling` : install compiler tooling + local VS Code extension
 - `pnpm test` : run all tests
+- `pnpm test:angular` : run Angular tests
+- `pnpm test:react` : run React tests
+- `pnpm test:performance` : run performance tests
+- `pnpm test:compiled-expression` : run compiled-expression tests
 - `pnpm lint` : run ESLint without auto-fixing
 - `pnpm lint:fix` : run ESLint and auto-fix errors
+
+### RS-X CLI
+
+You can also use the CLI directly:
+
+- `npx @rs-x/cli doctor`
+- `npx @rs-x/cli init`
+- `npx @rs-x/cli install compiler`
+- `npx @rs-x/cli install vscode`
+- `npx @rs-x/cli setup`
+
+For local monorepo development (use local VSIX build): `npx @rs-x/cli install vscode --local`
 
 ---
 
@@ -93,7 +134,7 @@ Before starting, make sure you have:
 
 ---
 
-### Steo 1: Install packages if not already done
+### Step 1: Install packages if not already done
 
 npm install
 
@@ -181,7 +222,7 @@ Installs the latest **Node.js LTS** version.
 
 ### Pipeline Step 3: Install pnpm
 
-Installs **pnpm v9**, required by the repository.
+Installs the repository's pinned pnpm version.
 
 ---
 
@@ -230,9 +271,12 @@ If no changes are needed, the step exits safely.
 
 ### Pipeline Step 7: Build Packages
 
-    pnpm -r run build
-
-All packages are built recursively.
+    pnpm run build:libs
+    pnpm run build:compiler
+    pnpm run build:ts-plugin
+    pnpm --filter @rs-x/cli run build
+    pnpm run build:angular
+    pnpm --filter @rs-x/react-components run build
 
 If **any build fails**, the release is aborted.
 
@@ -240,13 +284,13 @@ If **any build fails**, the release is aborted.
 
 ### Pipeline Step 8: Publish Packages
 
-    pnpm changeset publish
+    node scripts/publish-packages.mjs
 
 This step:
 
 - Publishes only packages with new versions
-- Skips versions that already exist on npm
-- Uses the `NPM_TOKEN` secret for authentication
+- Uses OIDC/provenance when possible
+- Uses `NPM_TOKEN` only for first-time publishes
 
 Once this step succeeds, the release is **live on npm**.
 

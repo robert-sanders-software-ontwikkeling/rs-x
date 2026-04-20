@@ -53,8 +53,6 @@ describe('ConstantRegExpExpression tests', () => {
           context: {},
           services,
         });
-
-        services.transactionManager.commit();
       });
       expect(clonedExpression.value).toEqual(new RegExp('ab+c', 'i'));
     } finally {
