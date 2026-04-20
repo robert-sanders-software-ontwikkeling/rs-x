@@ -17,7 +17,10 @@ const targetEntry = path.join(targetDistDir, 'index.js');
 const workspaceRoot = path.resolve(extensionRoot, '..');
 
 const workspacePackageEntries = new Map([
-  ['@rs-x/compiler', path.join(workspaceRoot, 'rs-x-compiler', 'lib', 'index.ts')],
+  [
+    '@rs-x/compiler',
+    path.join(workspaceRoot, 'rs-x-compiler', 'lib', 'index.ts'),
+  ],
   [
     '@rs-x/expression-parser',
     path.join(workspaceRoot, 'rs-x-expression-parser', 'lib', 'index.ts'),
