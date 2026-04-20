@@ -7,6 +7,7 @@
     "ignoreDeprecations": "6.0",
     "baseUrl": "..",
     "paths": {
+      "@rs-x/compiler": ["./rs-x-compiler/dist/index.d.ts"],
       "@rs-x/react": ["./rs-x-react/dist/index.d.ts"],
       "@rs-x/vue": ["./rs-x-vue/dist/index.d.ts"],
       "@rs-x/angular": ["./rs-x-angular/dist/rsx/types/rs-x-angular.d.ts"]
