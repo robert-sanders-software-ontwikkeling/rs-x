@@ -198,7 +198,7 @@ jobs:
         if: ${{ github.event.inputs.promote_from_next != 'true' && github.event.inputs.dry_run != 'true' }}
         env:
           DIST_TAG: ${{ env.DIST_TAG }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # Only for first-time publishes
+          FIRST_PUBLISH_NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -e
           node scripts/publish-packages.mjs

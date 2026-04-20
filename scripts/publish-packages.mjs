@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 
 const DIST_TAG = process.env.DIST_TAG || 'latest';
-const NODE_AUTH_TOKEN = process.env.NODE_AUTH_TOKEN;
+const FIRST_PUBLISH_NODE_AUTH_TOKEN = process.env.FIRST_PUBLISH_NODE_AUTH_TOKEN;
 
 const angularDist = 'rs-x-angular/dist/rsx';
 
@@ -127,16 +127,16 @@ function publishFolder(folder, pkgName) {
     `Publishing ${pkgName}@${version} (${firstPublish ? 'first' : 'existing'})`,
   );
 
-  if (firstPublish && !NODE_AUTH_TOKEN) {
+  if (firstPublish && !FIRST_PUBLISH_NODE_AUTH_TOKEN) {
     console.error(
-      `Error: NODE_AUTH_TOKEN missing for first-time publish of ${pkgName}`,
+      `Error: FIRST_PUBLISH_NODE_AUTH_TOKEN missing for first-time publish of ${pkgName}`,
     );
     process.exit(1);
   }
 
   if (firstPublish) {
     console.log(`🚀 First-time publish of ${pkgName}`);
-    // Pass NODE_AUTH_TOKEN for first-time publish
+    // First-time publishes still require a registry token.
     run(
       'pnpm',
       [
@@ -150,22 +150,27 @@ function publishFolder(folder, pkgName) {
         '--no-git-checks',
       ],
       {
-        NODE_AUTH_TOKEN,
+        FIRST_PUBLISH_NODE_AUTH_TOKEN,
+        NODE_AUTH_TOKEN: FIRST_PUBLISH_NODE_AUTH_TOKEN,
       },
     );
   } else {
     console.log(`🔐 OIDC publish with provenance for ${pkgName}`);
     // Provenance is mandatory for established package publishes.
-    run('pnpm', [
-      'publish',
-      folder,
-      '--tag',
-      DIST_TAG,
-      '--access',
-      'public',
-      '--provenance',
-      '--no-git-checks',
-    ]);
+    run(
+      'pnpm',
+      [
+        'publish',
+        folder,
+        '--tag',
+        DIST_TAG,
+        '--access',
+        'public',
+        '--provenance',
+        '--no-git-checks',
+      ],
+      { NODE_AUTH_TOKEN: '' },
+    );
   }
 }
 
@@ -179,7 +184,7 @@ function dryRun() {
 
     if (firstPublish) {
       console.log(`Dry-run for first-time publish: ${pkgJson.name}`);
-      // Use NODE_AUTH_TOKEN only for first-time publish
+      // Use the registry token only for first-time publish dry-runs.
       run(
         'pnpm',
         [
@@ -193,22 +198,29 @@ function dryRun() {
           '--provenance=false',
           '--no-git-checks',
         ],
-        { NODE_AUTH_TOKEN },
+        {
+          FIRST_PUBLISH_NODE_AUTH_TOKEN,
+          NODE_AUTH_TOKEN: FIRST_PUBLISH_NODE_AUTH_TOKEN,
+        },
       );
     } else {
       console.log(`Dry-run with OIDC/provenance: ${pkgJson.name}`);
-      // Unset NODE_AUTH_TOKEN for provenance
-      run('pnpm', [
-        'publish',
-        folder,
-        '--dry-run',
-        '--tag',
-        DIST_TAG,
-        '--access',
-        'public',
-        '--provenance',
-        '--no-git-checks',
-      ]);
+      // Do not pass NODE_AUTH_TOKEN for provenance-based dry-runs.
+      run(
+        'pnpm',
+        [
+          'publish',
+          folder,
+          '--dry-run',
+          '--tag',
+          DIST_TAG,
+          '--access',
+          'public',
+          '--provenance',
+          '--no-git-checks',
+        ],
+        { NODE_AUTH_TOKEN: '' },
+      );
     }
   }
 
