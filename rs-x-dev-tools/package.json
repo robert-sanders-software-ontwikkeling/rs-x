@@ -1,6 +1,6 @@
 {
   "name": "@rs-x/dev-tools",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "RS-X DevTools for inspecting reactive state and expressions",
   "type": "module",
   "main": "./dist/index.js",
