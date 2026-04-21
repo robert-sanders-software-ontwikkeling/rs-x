@@ -211,11 +211,11 @@ importers:
         specifier: 21.2.7
         version: 21.2.7(@angular/compiler@21.2.7)(rxjs@7.8.2)(zone.js@0.16.1)
       '@rs-x/core':
-        specifier: '>=2.0.0'
-        version: 2.0.0(rxjs@7.8.2)
+        specifier: '>=2.0.1'
+        version: 2.0.1(rxjs@7.8.2)
       '@rs-x/expression-parser':
-        specifier: '>=2.0.0'
-        version: 2.0.0(rxjs@7.8.2)
+        specifier: '>=2.0.1'
+        version: 2.0.1(rxjs@7.8.2)
       rxjs:
         specifier: '>=7.8.0'
         version: 7.8.2
@@ -2281,20 +2281,20 @@ packages:
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
 
-  '@rs-x/core@2.0.0':
-    resolution: {integrity: sha512-wsIX9WasUpPGx1aXyNtTSIvjQWZ7y4FUvwJqgCqg4SSmVwdc8ok236pGJ6x+4SQHp1BiVI36FghE8CafSMyDiQ==}
+  '@rs-x/core@2.0.1':
+    resolution: {integrity: sha512-Dr+M1RIDON0CkWz/+5ZAhK0kNmoSGNmKmjCKbbb3kicsWbgdb9IUqp8SjvBd6tUYWg89oOi3NJkIPs7H3rMUkg==}
     engines: {node: '>=24'}
     peerDependencies:
       rxjs: ^7.8.2
 
-  '@rs-x/expression-parser@2.0.0':
-    resolution: {integrity: sha512-Pnr8tJc1B7qsJYE2MG4lo59EGrexWICRdYUmedh9yD+o9vwjrAe0x+gM5ZDFjqAVy3PZpDx7gt7g63EE18xvtw==}
+  '@rs-x/expression-parser@2.0.1':
+    resolution: {integrity: sha512-TE02iDG5aId4r5DWGuAi509DdXcLCjDg9o2t0jkd6xiPnyEdvfeL8CbDNKjVa0YQELWRJEScr0rvgFcBU3do9Q==}
     engines: {node: '>=24'}
     peerDependencies:
       rxjs: ^7.8.0
 
-  '@rs-x/state-manager@2.0.0':
-    resolution: {integrity: sha512-i6XGKMpfrf58LxzahdD4UzkMpdA59WItI3vzZH22vomxbPOsQz3j3ViNx2tYGiQG4GQknnadQkKsbMQyaT4biQ==}
+  '@rs-x/state-manager@2.0.1':
+    resolution: {integrity: sha512-CiYNeNVibl1yyjx0ev6vR0cksZEln2+VFkKW3lB1ZSCQJD8hkZtYlZ4n9avS+Ektc0s87JLUmC0a1XfFMUZNDA==}
     engines: {node: '>=24'}
     peerDependencies:
       rxjs: ^7.8.0
@@ -8141,24 +8141,24 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
 
-  '@rs-x/core@2.0.0(rxjs@7.8.2)':
+  '@rs-x/core@2.0.1(rxjs@7.8.2)':
     dependencies:
       fast-equals: 6.0.0
       inversify: 8.1.0(reflect-metadata@0.2.2)
       reflect-metadata: 0.2.2
       rxjs: 7.8.2
 
-  '@rs-x/expression-parser@2.0.0(rxjs@7.8.2)':
+  '@rs-x/expression-parser@2.0.1(rxjs@7.8.2)':
     dependencies:
-      '@rs-x/core': 2.0.0(rxjs@7.8.2)
-      '@rs-x/state-manager': 2.0.0(rxjs@7.8.2)
+      '@rs-x/core': 2.0.1(rxjs@7.8.2)
+      '@rs-x/state-manager': 2.0.1(rxjs@7.8.2)
       astring: 1.9.0
       meriyah: 7.1.0
       rxjs: 7.8.2
 
-  '@rs-x/state-manager@2.0.0(rxjs@7.8.2)':
+  '@rs-x/state-manager@2.0.1(rxjs@7.8.2)':
     dependencies:
-      '@rs-x/core': 2.0.0(rxjs@7.8.2)
+      '@rs-x/core': 2.0.1(rxjs@7.8.2)
       rxjs: 7.8.2
 
   '@rtsao/scc@1.1.0': {}
