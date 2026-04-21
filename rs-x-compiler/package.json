@@ -1,6 +1,6 @@
 {
   "name": "@rs-x/compiler",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Compile-time tooling scaffold for RS-X expression analysis and diagnostics",
   "type": "module",
   "main": "./dist/index.js",
