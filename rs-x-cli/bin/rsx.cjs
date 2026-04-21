@@ -46,7 +46,7 @@ const RUNTIME_PACKAGES = [
   '@rs-x/expression-parser',
 ];
 const COMPILER_PACKAGES = ['@rs-x/compiler', '@rs-x/typescript-plugin'];
-const RSX_PACKAGE_VERSION = '^1.0.2';
+const RSX_PACKAGE_VERSION = 'latest';
 const PROJECT_TEMPLATES = ['angular', 'vuejs', 'react', 'nextjs', 'nodejs'];
 const TS_RESERVED_WORDS = new Set([
   'abstract',
@@ -1869,7 +1869,6 @@ function resolveProjectRsxSpecs(
     ...(includeAngularPackage ? { '@rs-x/angular': versionSpec } : {}),
     ...(includeReactPackage ? { '@rs-x/react': versionSpec } : {}),
     ...(includeVuePackage ? { '@rs-x/vue': versionSpec } : {}),
-    '@rs-x/cli': versionSpec,
   };
 
   const tarballSlugs = {
@@ -1881,7 +1880,6 @@ function resolveProjectRsxSpecs(
     ...(includeAngularPackage ? { '@rs-x/angular': 'rs-x-angular' } : {}),
     ...(includeReactPackage ? { '@rs-x/react': 'rs-x-react' } : {}),
     ...(includeVuePackage ? { '@rs-x/vue': 'rs-x-vue' } : {}),
-    '@rs-x/cli': 'rs-x-cli',
   };
 
   if (tarballsDir) {
@@ -2596,7 +2594,6 @@ function applyAngularDemoStarter(projectRoot, projectName, pm, flags) {
   };
   packageJson.devDependencies = {
     ...(packageJson.devDependencies ?? {}),
-    '@rs-x/cli': rsxSpecs['@rs-x/cli'],
     '@rs-x/compiler': rsxSpecs['@rs-x/compiler'],
     '@rs-x/typescript-plugin': rsxSpecs['@rs-x/typescript-plugin'],
   };
@@ -2776,7 +2773,6 @@ function applyReactDemoStarter(projectRoot, projectName, pm, flags) {
     '@types/react': packageJson.devDependencies?.['@types/react'] ?? '^19.2.2',
     '@types/react-dom':
       packageJson.devDependencies?.['@types/react-dom'] ?? '^19.2.2',
-    '@rs-x/cli': rsxSpecs['@rs-x/cli'],
     '@rs-x/compiler': rsxSpecs['@rs-x/compiler'],
     '@rs-x/typescript-plugin': rsxSpecs['@rs-x/typescript-plugin'],
   };
@@ -2894,7 +2890,6 @@ function applyVueDemoStarter(projectRoot, projectName, pm, flags) {
   };
   packageJson.devDependencies = {
     ...(packageJson.devDependencies ?? {}),
-    '@rs-x/cli': rsxSpecs['@rs-x/cli'],
     '@rs-x/compiler': rsxSpecs['@rs-x/compiler'],
     '@rs-x/typescript-plugin': rsxSpecs['@rs-x/typescript-plugin'],
   };
@@ -3008,7 +3003,6 @@ function applyNextDemoStarter(projectRoot, projectName, pm, flags) {
   };
   packageJson.devDependencies = {
     ...(packageJson.devDependencies ?? {}),
-    '@rs-x/cli': rsxSpecs['@rs-x/cli'],
     '@rs-x/compiler': rsxSpecs['@rs-x/compiler'],
     '@rs-x/typescript-plugin': rsxSpecs['@rs-x/typescript-plugin'],
   };
@@ -5242,14 +5236,6 @@ function runSetupReact(flags) {
       cwd: projectRoot,
       label: 'RS-X React bindings',
     });
-    installResolvedPackages(pm, ['@rs-x/cli'], {
-      dev: true,
-      dryRun,
-      tag,
-      specs,
-      cwd: projectRoot,
-      label: 'RS-X CLI',
-    });
   } else {
     logInfo('Skipping RS-X React bindings install (--skip-install).');
   }
@@ -5311,14 +5297,6 @@ function runSetupNext(flags) {
       specs,
       cwd: projectRoot,
       label: 'RS-X React bindings',
-    });
-    installResolvedPackages(pm, ['@rs-x/cli'], {
-      dev: true,
-      dryRun,
-      tag,
-      specs,
-      cwd: projectRoot,
-      label: 'RS-X CLI',
     });
   } else {
     logInfo('Skipping RS-X React bindings install (--skip-install).');
@@ -5402,14 +5380,6 @@ function runSetupVue(flags) {
       cwd: projectRoot,
       label: 'RS-X Vue bindings',
     });
-    installResolvedPackages(pm, ['@rs-x/cli'], {
-      dev: true,
-      dryRun,
-      tag,
-      specs,
-      cwd: projectRoot,
-      label: 'RS-X CLI',
-    });
   } else {
     logInfo('Skipping RS-X Vue bindings install (--skip-install).');
   }
@@ -5473,14 +5443,6 @@ function runSetupAngular(flags) {
       specs,
       cwd: projectRoot,
       label: 'RS-X Angular bindings',
-    });
-    installResolvedPackages(pm, ['@rs-x/cli'], {
-      dev: true,
-      dryRun,
-      tag,
-      specs,
-      cwd: projectRoot,
-      label: 'RS-X CLI',
     });
   } else {
     logInfo('Skipping package installation (--skip-install).');
