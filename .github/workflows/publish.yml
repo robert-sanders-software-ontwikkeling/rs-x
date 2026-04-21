@@ -222,7 +222,30 @@ jobs:
         if: success() && env.DIST_TAG == 'latest' && github.ref == 'refs/heads/main' && env.HAS_PIPELINE_PAT == 'true' && steps.create-pr.outputs.pull-request-number != ''
         env:
           GH_TOKEN: ${{ secrets.PIPELINE_PAT }}
-        run: gh pr merge ${{ steps.create-pr.outputs.pull-request-number }} --auto --squash --repo ${{ github.repository }}
+        run: |
+          set +e
+          pr_number="${{ steps.create-pr.outputs.pull-request-number }}"
+
+          gh pr merge "$pr_number" --auto --squash --repo ${{ github.repository }}
+          auto_merge_status=$?
+
+          if [ "$auto_merge_status" -eq 0 ]; then
+            echo "Enabled auto-merge for PR #$pr_number."
+            exit 0
+          fi
+
+          echo "Auto-merge is unavailable for PR #$pr_number. Attempting immediate squash merge instead."
+
+          gh pr merge "$pr_number" --squash --delete-branch --repo ${{ github.repository }}
+          squash_merge_status=$?
+
+          if [ "$squash_merge_status" -eq 0 ]; then
+            echo "Merged PR #$pr_number with squash fallback."
+            exit 0
+          fi
+
+          echo "::warning::Could not auto-merge or squash-merge PR #$pr_number. Leaving the PR open."
+          exit 0
 
       # ---------------- CREATE RELEASE ----------------
       - name: Create GitHub Release

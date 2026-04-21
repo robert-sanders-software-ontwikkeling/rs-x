@@ -4,15 +4,53 @@ const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 
+function getSpawnOptions(baseOptions = {}) {
+  if (process.platform !== 'win32') {
+    return baseOptions;
+  }
+
+  return {
+    ...baseOptions,
+    shell: true,
+    windowsVerbatimArguments: false,
+  };
+}
+
 function runCapture(command, args) {
-  return spawnSync(command, args, {
-    stdio: ['ignore', 'pipe', 'pipe'],
-    encoding: 'utf8',
-  });
+  return spawnSync(
+    command,
+    args,
+    getSpawnOptions({
+      stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf8',
+    }),
+  );
 }
 
 function getVsCodeCliCandidates() {
-  return process.platform === 'win32' ? ['code.cmd', 'code'] : ['code'];
+  if (process.platform !== 'win32') {
+    return ['code'];
+  }
+
+  const candidates = ['code.cmd', 'code'];
+  const {
+    LOCALAPPDATA,
+    ProgramFiles,
+    'ProgramFiles(x86)': programFilesX86,
+  } = process.env;
+
+  const windowsInstallRoots = [
+    LOCALAPPDATA ? path.join(LOCALAPPDATA, 'Programs', 'Microsoft VS Code') : null,
+    ProgramFiles ? path.join(ProgramFiles, 'Microsoft VS Code') : null,
+    programFilesX86 ? path.join(programFilesX86, 'Microsoft VS Code') : null,
+  ].filter(Boolean);
+
+  for (const installRoot of windowsInstallRoots) {
+    candidates.push(path.join(installRoot, 'bin', 'code.cmd'));
+    candidates.push(path.join(installRoot, 'bin', 'code'));
+  }
+
+  return [...new Set(candidates)];
 }
 
 function resolveVsCodeCliCommand() {
@@ -49,8 +87,13 @@ function installVsCodeExtension() {
   const vsCodeCli = resolveVsCodeCliCommand();
   if (!vsCodeCli) {
     console.log(
-      '[rs-x] VS Code CLI (`code`) not found on PATH. Skipping VS Code extension install.',
+      '[rs-x] VS Code CLI (`code`) not found. Checked PATH and standard Windows VS Code install locations. Skipping VS Code extension install.',
     );
+    if (process.platform === 'win32') {
+      console.log(
+        '[rs-x] On Windows, make sure VS Code is installed in the default location or add its `bin` folder to PATH.',
+      );
+    }
     return;
   }
 
@@ -64,9 +107,13 @@ function installVsCodeExtension() {
 
   const args = ['--install-extension', localVsix];
 
-  const result = spawnSync(vsCodeCli, args, {
-    stdio: 'inherit',
-  });
+  const result = spawnSync(
+    vsCodeCli,
+    args,
+    getSpawnOptions({
+      stdio: 'inherit',
+    }),
+  );
 
   if (result.error || result.status !== 0) {
     console.log(

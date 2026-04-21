@@ -160,11 +160,15 @@ function run(command, args, options = {}) {
     return { status: 0 };
   }
 
-  const result = spawnSync(command, args, {
-    cwd,
-    env: env ? { ...process.env, ...env } : process.env,
-    stdio: 'inherit',
-  });
+  const result = spawnSync(
+    command,
+    args,
+    getSpawnOptions({
+      cwd,
+      env: env ? { ...process.env, ...env } : process.env,
+      stdio: 'inherit',
+    }),
+  );
 
   if (result.error) {
     throw result.error;
@@ -178,15 +182,53 @@ function run(command, args, options = {}) {
 }
 
 function runCapture(command, args) {
-  return spawnSync(command, args, {
-    cwd: process.cwd(),
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  return spawnSync(
+    command,
+    args,
+    getSpawnOptions({
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }),
+  );
+}
+
+function getSpawnOptions(baseOptions = {}) {
+  if (process.platform !== 'win32') {
+    return baseOptions;
+  }
+
+  return {
+    ...baseOptions,
+    shell: true,
+    windowsVerbatimArguments: false,
+  };
 }
 
 function getVsCodeCliCandidates() {
-  return process.platform === 'win32' ? ['code.cmd', 'code'] : ['code'];
+  if (process.platform !== 'win32') {
+    return ['code'];
+  }
+
+  const candidates = ['code.cmd', 'code'];
+  const {
+    LOCALAPPDATA,
+    ProgramFiles,
+    'ProgramFiles(x86)': programFilesX86,
+  } = process.env;
+
+  const windowsInstallRoots = [
+    LOCALAPPDATA ? path.join(LOCALAPPDATA, 'Programs', 'Microsoft VS Code') : null,
+    ProgramFiles ? path.join(ProgramFiles, 'Microsoft VS Code') : null,
+    programFilesX86 ? path.join(programFilesX86, 'Microsoft VS Code') : null,
+  ].filter(Boolean);
+
+  for (const installRoot of windowsInstallRoots) {
+    candidates.push(path.join(installRoot, 'bin', 'code.cmd'));
+    candidates.push(path.join(installRoot, 'bin', 'code'));
+  }
+
+  return [...new Set(candidates)];
 }
 
 function resolveVsCodeCliCommand() {
@@ -436,11 +478,17 @@ function installVsCodeExtension(flags) {
 
   if (!vsCodeCli) {
     logWarn(
-      'VS Code CLI `code` is not available on PATH. Skipping VS Code extension installation.',
+      'VS Code CLI `code` is not available. Checked PATH and standard Windows VS Code install locations. Skipping VS Code extension installation.',
     );
-    logInfo(
-      'In VS Code: Command Palette -> "Shell Command: Install code command in PATH".',
-    );
+    if (process.platform === 'win32') {
+      logInfo(
+        'On Windows, add the VS Code `bin` folder to PATH or install VS Code in the default location.',
+      );
+    } else {
+      logInfo(
+        'In VS Code: Command Palette -> "Shell Command: Install code command in PATH".',
+      );
+    }
     return;
   }
 
