@@ -77,9 +77,8 @@ const jestConfig: Config.InitialOptions = {
       'ts-jest',
       {
         tsconfig: '<rootDir>/tsconfig.test.json',
-        diagnostics: true,
+        diagnostics: false,
         useESM: true,
-        isolatedModules: false,
       },
     ],
 

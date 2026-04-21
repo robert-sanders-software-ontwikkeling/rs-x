@@ -7,6 +7,7 @@
     "target": "ES2022",
     "module": "ES2022",
     "moduleResolution": "bundler",
+    "isolatedModules": true,
     "sourceMap": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
@@ -27,7 +28,7 @@
       "@rs-x/core/testing": ["./rs-x-core/lib/testing/index.ts"],
       "@rs-x/state-manager": ["./rs-x-state-manager/lib/index.ts"],
       "@rs-x/state-manager/testing": [
-        "rs-x-state-manager/lib/testing/index.ts"
+        "./rs-x-state-manager/lib/testing/index.ts"
       ],
       "@rs-x/expression-parser": ["./rs-x-expression-parser/lib/index.ts"],
       "@rs-x/compiler": ["./rs-x-compiler/lib/index.ts"]

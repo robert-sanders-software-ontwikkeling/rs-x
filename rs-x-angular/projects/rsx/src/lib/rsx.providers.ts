@@ -18,15 +18,15 @@ export const IExpressionChangeTransactionManagerToken =
   );
 
 function initializeRsx(): () => Promise<void> {
-  return () => {
+  return async () => {
     if (
       InjectionContainer.isBound(
         RsXExpressionParserInjectionTokens.IExpressionParser,
       )
     ) {
-      return Promise.resolve();
+      return;
     }
-    return InjectionContainer.load(RsXExpressionParserModule);
+    await InjectionContainer.load(RsXExpressionParserModule);
   };
 }
 
