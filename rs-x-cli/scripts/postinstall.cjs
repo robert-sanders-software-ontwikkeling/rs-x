@@ -11,9 +11,21 @@ function runCapture(command, args) {
   });
 }
 
-function hasCommand(command) {
-  const result = runCapture(command, ['--version']);
-  return !result.error && result.status === 0;
+function getVsCodeCliCandidates() {
+  return process.platform === 'win32' ? ['code.cmd', 'code'] : ['code'];
+}
+
+function resolveVsCodeCliCommand() {
+  for (const command of getVsCodeCliCandidates()) {
+    const result = runCapture(command, ['--version']);
+    const hasCliOutput =
+      typeof result.stdout === 'string' && result.stdout.trim().length > 0;
+    if (!result.error && result.status === 0 && hasCliOutput) {
+      return command;
+    }
+  }
+
+  return null;
 }
 
 function shouldSkipInstall() {
@@ -34,7 +46,8 @@ function installVsCodeExtension() {
     return;
   }
 
-  if (!hasCommand('code')) {
+  const vsCodeCli = resolveVsCodeCliCommand();
+  if (!vsCodeCli) {
     console.log(
       '[rs-x] VS Code CLI (`code`) not found on PATH. Skipping VS Code extension install.',
     );
@@ -51,7 +64,7 @@ function installVsCodeExtension() {
 
   const args = ['--install-extension', localVsix];
 
-  const result = spawnSync('code', args, {
+  const result = spawnSync(vsCodeCli, args, {
     stdio: 'inherit',
   });
 
@@ -59,7 +72,7 @@ function installVsCodeExtension() {
     console.log(
       '[rs-x] Could not auto-install bundled VSIX. You can install manually:',
     );
-    console.log(`       code --install-extension "${localVsix}"`);
+    console.log(`       ${vsCodeCli} --install-extension "${localVsix}"`);
     return;
   }
 

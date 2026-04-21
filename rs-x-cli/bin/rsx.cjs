@@ -185,7 +185,28 @@ function runCapture(command, args) {
   });
 }
 
+function getVsCodeCliCandidates() {
+  return process.platform === 'win32' ? ['code.cmd', 'code'] : ['code'];
+}
+
+function resolveVsCodeCliCommand() {
+  for (const command of getVsCodeCliCandidates()) {
+    const result = runCapture(command, ['--version']);
+    const hasCliOutput =
+      typeof result.stdout === 'string' && result.stdout.trim().length > 0;
+    if (!result.error && result.status === 0 && hasCliOutput) {
+      return command;
+    }
+  }
+
+  return null;
+}
+
 function hasCommand(command) {
+  if (command === 'code') {
+    return resolveVsCodeCliCommand() !== null;
+  }
+
   const result = runCapture(command, ['--version']);
   return !result.error && result.status === 0;
 }
@@ -411,8 +432,9 @@ function installVsCodeExtension(flags) {
   const dryRun = Boolean(flags['dry-run']);
   const force = Boolean(flags.force);
   const local = Boolean(flags.local);
+  const vsCodeCli = resolveVsCodeCliCommand();
 
-  if (!hasCommand('code')) {
+  if (!vsCodeCli) {
     logWarn(
       'VS Code CLI `code` is not available on PATH. Skipping VS Code extension installation.',
     );
@@ -423,11 +445,11 @@ function installVsCodeExtension(flags) {
   }
 
   if (local) {
-    installLocalVsix(dryRun, force);
+    installLocalVsix(vsCodeCli, dryRun, force);
     return;
   }
 
-  installBundledVsix(dryRun, force);
+  installBundledVsix(vsCodeCli, dryRun, force);
 }
 
 function resolveBundledVsix() {
@@ -451,7 +473,7 @@ function resolveBundledVsix() {
   return latest?.fullPath ?? null;
 }
 
-function installBundledVsix(dryRun, force) {
+function installBundledVsix(vsCodeCli, dryRun, force) {
   const bundledVsix = resolveBundledVsix();
   if (!bundledVsix) {
     logWarn(
@@ -469,11 +491,11 @@ function installBundledVsix(dryRun, force) {
   }
 
   logInfo(`Installing bundled VSIX from ${bundledVsix}...`);
-  run('code', args, { dryRun });
+  run(vsCodeCli, args, { dryRun });
   logOk('VS Code extension installed from bundled VSIX.');
 }
 
-function installLocalVsix(dryRun, force) {
+function installLocalVsix(vsCodeCli, dryRun, force) {
   const repoRoot = findRepoRoot(process.cwd());
   if (!repoRoot) {
     logWarn('Could not locate rs-x repository root for --local VSIX install.');
@@ -520,7 +542,7 @@ function installLocalVsix(dryRun, force) {
   }
 
   logInfo(`Installing local VSIX from ${vsixPath}...`);
-  run('code', args, { dryRun });
+  run(vsCodeCli, args, { dryRun });
   logOk('Local VS Code extension installed.');
 }
 

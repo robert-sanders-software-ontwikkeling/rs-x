@@ -1,6 +1,6 @@
 {
   "name": "@rs-x/angular",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "description": "Angular integration for RS-X, providing the RsxPipe",
   "type": "module",
   "module": "./fesm2022/rs-x-angular.mjs",
@@ -33,8 +33,8 @@
   "peerDependencies": {
     "@angular/common": ">=20.0.0",
     "@angular/core": ">=20.0.0",
-    "@rs-x/core": ">=2.0.0-0",
-    "@rs-x/expression-parser": ">=2.0.0-0",
+    "@rs-x/core": ">=2.0.0",
+    "@rs-x/expression-parser": ">=2.0.0",
     "rxjs": ">=7.8.0"
   },
   "peerDependenciesMeta": {

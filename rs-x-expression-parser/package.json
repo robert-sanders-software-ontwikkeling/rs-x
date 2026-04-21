@@ -1,6 +1,6 @@
 {
   "name": "@rs-x/expression-parser",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "description": "Reactive JavaScript expression parser with observable AST integration for RS-X",
   "type": "module",
   "main": "./dist/index.js",

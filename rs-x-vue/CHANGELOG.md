@@ -1,4 +1,4 @@
-# @rs-x/react-components
+# @rs-x/vue
 
 ## 2.0.0
 
@@ -23,18 +23,3 @@
   - @rs-x/core@2.0.0
   - @rs-x/state-manager@2.0.0
   - @rs-x/expression-parser@2.0.0
-  - @rs-x/compiler@2.0.0
-  - @rs-x/react@2.0.0
-  - @rs-x/vue@2.0.0
-  - @rs-x/angular@2.0.0
-
-## 1.0.2
-
-### Patch Changes
-
-- 082e52c: Fix to many call when initializing sequence expression
-- Updated dependencies [f3bc0ce]
-- Updated dependencies [082e52c]
-  - @rs-x/core@1.0.2
-  - @rs-x/expression-parser@1.0.2
-  - @rs-x/state-manager@1.0.2
