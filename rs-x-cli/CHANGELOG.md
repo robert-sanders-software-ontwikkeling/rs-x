@@ -1,5 +1,12 @@
 # @rs-x/cli
 
+## 2.0.3
+
+### Patch Changes
+
+- 6632da1: Cli fix
+- 294500d: Patch cli
+
 ## 2.0.0
 
 ### Major Changes

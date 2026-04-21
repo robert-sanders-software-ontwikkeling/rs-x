@@ -1,5 +1,21 @@
 # @rs-x/react-components
 
+## 2.0.3
+
+### Patch Changes
+
+- 6632da1: Cli fix
+- 294500d: Patch cli
+- Updated dependencies [6632da1]
+- Updated dependencies [294500d]
+  - @rs-x/angular@2.0.3
+  - @rs-x/compiler@2.0.3
+  - @rs-x/core@2.0.3
+  - @rs-x/expression-parser@2.0.3
+  - @rs-x/react@2.0.3
+  - @rs-x/state-manager@2.0.3
+  - @rs-x/vue@2.0.3
+
 ## 2.0.0
 
 ### Major Changes

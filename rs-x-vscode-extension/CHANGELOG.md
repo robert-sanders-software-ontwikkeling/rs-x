@@ -1,5 +1,15 @@
 # rs-x-vscode-extension
 
+## 2.0.3
+
+### Patch Changes
+
+- 6632da1: Cli fix
+- 294500d: Patch cli
+- Updated dependencies [6632da1]
+- Updated dependencies [294500d]
+  - @rs-x/typescript-plugin@2.0.3
+
 ## 2.0.0
 
 ### Major Changes
