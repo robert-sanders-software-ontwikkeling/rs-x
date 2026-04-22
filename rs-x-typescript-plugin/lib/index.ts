@@ -12,6 +12,15 @@ import {
   tokenizeRsxExpression,
 } from '@rs-x/compiler';
 
+import {
+  createRsxSemanticClassificationContext,
+  resolveSemanticTokenTypeForIdentifier,
+} from './rsx-semantic-classification';
+import {
+  excludeClassificationSpansInRanges,
+  getEncodedLexicalClassificationsForRsxExpression,
+} from './rsx-syntactic-classification';
+
 interface ITypescriptPluginInit {
   typescript: typeof tsModule;
 }
@@ -247,7 +256,59 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
 
       return {
         ...base,
-        spans: [...base.spans, ...pluginSpans],
+        spans: mergeEncodedClassificationSpans(base.spans, pluginSpans),
+      };
+    };
+
+    proxy.getEncodedSyntacticClassifications = (fileName, span) => {
+      const base = languageService.getEncodedSyntacticClassifications(
+        fileName,
+        span,
+      ) ?? { spans: [], endOfLineState: ts.EndOfLineState.None };
+
+      const program = languageService.getProgram?.();
+      if (!program) {
+        return base;
+      }
+
+      const rsxProgram = resolveRsxProgramForFile({
+        ts,
+        info,
+        program,
+        fileName,
+      });
+      const sourceFile = rsxProgram.program.getSourceFile(rsxProgram.fileName);
+      if (!sourceFile) {
+        return base;
+      }
+
+      const checker = rsxProgram.program.getTypeChecker();
+      const sites = detectExpressionSitesInSourceFile(sourceFile, checker);
+      if (sites.length === 0) {
+        return base;
+      }
+
+      const pluginSpans = getRsxEncodedSyntacticClassifications({
+        ts,
+        sourceFile,
+        span,
+        sites,
+      });
+      if (pluginSpans.length === 0) {
+        return base;
+      }
+
+      const expressionRanges = sites.map((site) => ({
+        start: site.expressionLiteral.getStart(sourceFile) + 1,
+        end: site.expressionLiteral.getEnd() - 1,
+      }));
+
+      return {
+        ...base,
+        spans: mergeEncodedClassificationSpans(
+          excludeClassificationSpansInRanges(base.spans, expressionRanges),
+          pluginSpans,
+        ),
       };
     };
 
@@ -443,6 +504,8 @@ function getRsxEncodedClassifications(args: {
       expressionStart,
       expressionEnd,
     );
+    const semanticContext =
+      createRsxSemanticClassificationContext(expressionText);
     const tokens = tokenizeRsxExpression(expressionText);
     if (tokens.length === 0) {
       continue;
@@ -465,9 +528,61 @@ function getRsxEncodedClassifications(args: {
         ts,
         token,
         format,
+        context: semanticContext,
         text: expressionText,
       });
       if (classification === null) {
+        continue;
+      }
+
+      encoded.push(clippedStart, clippedEnd - clippedStart, classification);
+    }
+  }
+
+  return encoded;
+}
+
+function getRsxEncodedSyntacticClassifications(args: {
+  ts: typeof tsModule;
+  sourceFile: tsModule.SourceFile;
+  span: tsModule.TextSpan;
+  sites: ReturnType<typeof detectExpressionSitesInSourceFile>;
+}): number[] {
+  const { ts, sourceFile, span, sites } = args;
+  const spanStart = span.start;
+  const spanEnd = span.start + span.length;
+  const encoded: number[] = [];
+
+  for (const site of sites) {
+    const expressionStart = site.expressionLiteral.getStart(sourceFile) + 1;
+    const expressionEnd = site.expressionLiteral.getEnd() - 1;
+
+    if (expressionEnd <= spanStart || expressionStart >= spanEnd) {
+      continue;
+    }
+
+    const expressionText = sourceFile.text.slice(
+      expressionStart,
+      expressionEnd,
+    );
+    const classifications = getEncodedLexicalClassificationsForRsxExpression({
+      ts,
+      expressionText,
+    });
+
+    for (let index = 0; index < classifications.spans.length; index += 3) {
+      const tokenStart = expressionStart + classifications.spans[index];
+      const tokenLength = classifications.spans[index + 1];
+      const tokenEnd = tokenStart + tokenLength;
+      const classification = classifications.spans[index + 2];
+
+      if (tokenEnd <= spanStart || tokenStart >= spanEnd) {
+        continue;
+      }
+
+      const clippedStart = tokenStart < spanStart ? spanStart : tokenStart;
+      const clippedEnd = tokenEnd > spanEnd ? spanEnd : tokenEnd;
+      if (clippedEnd <= clippedStart) {
         continue;
       }
 
@@ -482,9 +597,10 @@ function encodeClassification(args: {
   ts: typeof tsModule;
   token: IRsxToken;
   format?: tsModule.SemanticClassificationFormat;
+  context: ReturnType<typeof createRsxSemanticClassificationContext>;
   text: string;
 }): number | null {
-  const { ts, token, format, text } = args;
+  const { ts, token, format, context, text } = args;
 
   // Keep plugin coloring conservative: only semantic identifier/keyword tokens.
   // Let TypeScript's native syntactic classifier own operators/punctuation/strings
@@ -494,10 +610,11 @@ function encodeClassification(args: {
   }
 
   if (format === ts.SemanticClassificationFormat.TwentyTwenty) {
-    const semanticTokenType = resolveSemanticTokenTypeForIdentifier(
+    const semanticTokenType = resolveSemanticTokenTypeForIdentifier({
+      context,
       text,
       token,
-    );
+    });
     return (semanticTokenType + 1) << 8;
   }
 
@@ -506,43 +623,39 @@ function encodeClassification(args: {
     : ts.ClassificationType.identifier;
 }
 
-function resolveSemanticTokenTypeForIdentifier(
-  text: string,
-  token: IRsxToken,
-): number {
-  const prev = previousNonWhitespaceChar(text, token.start - 1);
-  const next = nextNonWhitespaceChar(text, token.end);
+function mergeEncodedClassificationSpans(
+  baseSpans: number[],
+  pluginSpans: number[],
+): number[] {
+  const merged: Array<{
+    start: number;
+    length: number;
+    classification: number;
+  }> = [];
 
-  // Mirrors TypeScript 2020 token type indexes (classifier2020.ts).
-  if (prev === '.') {
-    return 9; // property
+  for (let index = 0; index < baseSpans.length; index += 3) {
+    merged.push({
+      start: baseSpans[index],
+      length: baseSpans[index + 1],
+      classification: baseSpans[index + 2],
+    });
   }
-  if (next === '(') {
-    return 10; // function
-  }
-  return 7; // variable
-}
 
-function previousNonWhitespaceChar(text: string, from: number): string | null {
-  for (let i = from; i >= 0; i--) {
-    if (!isWhitespace(text[i])) {
-      return text[i];
-    }
+  for (let index = 0; index < pluginSpans.length; index += 3) {
+    merged.push({
+      start: pluginSpans[index],
+      length: pluginSpans[index + 1],
+      classification: pluginSpans[index + 2],
+    });
   }
-  return null;
-}
 
-function nextNonWhitespaceChar(text: string, from: number): string | null {
-  for (let i = from; i < text.length; i++) {
-    if (!isWhitespace(text[i])) {
-      return text[i];
-    }
-  }
-  return null;
-}
+  merged.sort((left, right) => left.start - right.start);
 
-function isWhitespace(char: string): boolean {
-  return /\s/u.test(char);
+  return merged.flatMap((item) => [
+    item.start,
+    item.length,
+    item.classification,
+  ]);
 }
 
 function toTsDiagnosticCategory(
