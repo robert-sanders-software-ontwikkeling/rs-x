@@ -310,8 +310,10 @@ describe('rsx language service', () => {
     const sourceFile = program.getSourceFile(fixturePath)!;
 
     const position =
-      findPosition(sourceFile, "rsx('lines.reduce((sum, line) => line.q, 0)')(model)") +
-      "rsx('lines.reduce((sum, line) => line.q".length;
+      findPosition(
+        sourceFile,
+        "rsx('lines.reduce((sum, line) => line.q, 0)')(model)",
+      ) + "rsx('lines.reduce((sum, line) => line.q".length;
     const completions = getRsxCompletionsAtPosition(
       program,
       fixturePath,

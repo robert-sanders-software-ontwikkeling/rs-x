@@ -99,9 +99,12 @@ export function getRsxCompletionsAtPosition(
     context,
     expressionOffset,
   );
-  const activePrefixSource = inlineFunctionContext?.prefixSource ?? prefixSource;
-  const localBindings = inlineFunctionContext?.localBindings ?? emptyLocalBindings;
-  const constructorPrefix = resolveConstructorCompletionPrefix(activePrefixSource);
+  const activePrefixSource =
+    inlineFunctionContext?.prefixSource ?? prefixSource;
+  const localBindings =
+    inlineFunctionContext?.localBindings ?? emptyLocalBindings;
+  const constructorPrefix =
+    resolveConstructorCompletionPrefix(activePrefixSource);
   if (constructorPrefix !== null) {
     return resolveConstructorCompletions(context, constructorPrefix);
   }
@@ -114,7 +117,11 @@ export function getRsxCompletionsAtPosition(
         context.checker,
         localBindings,
       )
-    : resolveRootCompletionType(context.modelType, completionTarget.prefix, localBindings);
+    : resolveRootCompletionType(
+        context.modelType,
+        completionTarget.prefix,
+        localBindings,
+      );
 
   if (!targetType) {
     if (completionTarget.chain.length > 0) {
@@ -407,7 +414,10 @@ function resolveInlineFunctionBodyContext(
 function findInlineFunctionMatchAtOffset(
   sourceFile: ts.SourceFile,
   absoluteOffset: number,
-): { functionNode: ts.ArrowFunction | ts.FunctionExpression; callExpression: ts.CallExpression } | null {
+): {
+  functionNode: ts.ArrowFunction | ts.FunctionExpression;
+  callExpression: ts.CallExpression;
+} | null {
   let bestMatch: {
     functionNode: ts.ArrowFunction | ts.FunctionExpression;
     callExpression: ts.CallExpression;
@@ -553,7 +563,11 @@ function pickSignatureByArgumentCount(
     const parameters = signature.getParameters();
     const hasRest = parameters.some((parameter) => {
       const declaration = parameter.valueDeclaration;
-      return ts.isParameter(declaration) && Boolean(declaration.dotDotDotToken);
+      return Boolean(
+        declaration &&
+        ts.isParameter(declaration) &&
+        declaration.dotDotDotToken,
+      );
     });
 
     if (
@@ -574,7 +588,12 @@ function resolveTsExpressionType(
   localBindings: LocalBindings = emptyLocalBindings,
 ): ts.Type | null {
   if (ts.isParenthesizedExpression(node)) {
-    return resolveTsExpressionType(node.expression, modelType, checker, localBindings);
+    return resolveTsExpressionType(
+      node.expression,
+      modelType,
+      checker,
+      localBindings,
+    );
   }
 
   if (ts.isIdentifier(node)) {
@@ -664,7 +683,9 @@ function resolveTsExpressionType(
           node.arguments.length,
         )
       : null;
-    return signature ? checker.getNonNullableType(signature.getReturnType()) : null;
+    return signature
+      ? checker.getNonNullableType(signature.getReturnType())
+      : null;
   }
 
   return null;

@@ -514,6 +514,7 @@ function resolveMemberType(
         rootModelType,
         checker,
         diagnostics,
+        undefined,
         localBindings,
       );
       continue;
@@ -830,7 +831,11 @@ function validateInlineFunctionExpression(
 
   const bindings = new Map(outerBindings);
   const parameters = signature.getParameters();
-  for (let index = 0; index < inlineFunction.parameterNames.length; index += 1) {
+  for (
+    let index = 0;
+    index < inlineFunction.parameterNames.length;
+    index += 1
+  ) {
     const parameterName = inlineFunction.parameterNames[index];
     const parameter = parameters[index];
     if (!parameter || !parameterName) {
@@ -920,7 +925,11 @@ function pickInlineFunctionSignature(
     const parameters = signature.getParameters();
     const hasRest = parameters.some((parameter) => {
       const declaration = parameter.valueDeclaration;
-      return ts.isParameter(declaration) && Boolean(declaration.dotDotDotToken);
+      return Boolean(
+        declaration &&
+        ts.isParameter(declaration) &&
+        declaration.dotDotDotToken,
+      );
     });
 
     if (
