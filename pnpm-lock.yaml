@@ -633,9 +633,15 @@ importers:
 
   rs-x-vscode-extension:
     dependencies:
+      '@rs-x/compiler':
+        specifier: workspace:*
+        version: link:../rs-x-compiler
       '@rs-x/typescript-plugin':
         specifier: workspace:*
         version: link:../rs-x-typescript-plugin
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.2
     devDependencies:
       '@types/vscode':
         specifier: ^1.110.0
@@ -649,9 +655,6 @@ importers:
       tsup:
         specifier: ^8.5.1
         version: 8.5.1(patch_hash=99553218472ba84091dfd92b4d0e9fc93d6cda44eae2e3eff00ab4b267286f89)(@microsoft/api-extractor@7.58.1(@types/node@25.5.2))(@swc/core@1.15.24)(jiti@2.6.1)(postcss@8.5.9)(tsx@4.21.0)(typescript@6.0.2)
-      typescript:
-        specifier: ^6.0.2
-        version: 6.0.2
 
   rs-x-vue:
     dependencies:
