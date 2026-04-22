@@ -1,0 +1,48 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "RS-X",
+  "scopeName": "source.rsx",
+  "patterns": [
+    {
+      "include": "#header"
+    },
+    {
+      "include": "#body"
+    }
+  ],
+  "repository": {
+    "header": {
+      "patterns": [
+        {
+          "name": "meta.directive.rsx",
+          "match": "^(model|return)(\\s*:\\s*)(.*)$",
+          "captures": {
+            "1": {
+              "name": "keyword.control.rsx"
+            },
+            "2": {
+              "name": "punctuation.separator.key-value.rsx"
+            },
+            "3": {
+              "patterns": [
+                {
+                  "include": "source.ts"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "body": {
+      "name": "meta.embedded.block.rsx",
+      "begin": "^(?!(?:model|return)\\s*:).+",
+      "while": "^(?!(?:model|return)\\s*:).*$",
+      "patterns": [
+        {
+          "include": "source.ts"
+        }
+      ]
+    }
+  }
+}

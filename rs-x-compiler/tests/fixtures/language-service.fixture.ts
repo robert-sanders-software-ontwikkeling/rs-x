@@ -41,8 +41,13 @@ interface IModel {
 
 declare const factory: IExpressionFactory;
 declare const model: IModel;
+const sharedExpression = 'user.na';
+const sharedValidExpression = 'user.name';
+const sharedReduceExpression = 'lines.reduce((sum, line) => line.q, 0)';
 
 rsx('user.na')(model);
+rsx(sharedExpression)(model);
+rsx(sharedValidExpression)(model);
 rsx('exprUser.na')(model);
 rsx('user.stats().to')(model);
 rsx('exprCount + 1')(model);
@@ -64,3 +69,4 @@ rsx('cartItems[0].q')(model);
 rsx('lines.reduce((sum, line) => sum + line.lineTotal, 0)')(model);
 rsx('lines.reduce((sum, line) => sum.toF, 0)')(model);
 rsx('lines.reduce((sum, line) => line.q, 0)')(model);
+rsx(sharedReduceExpression)(model);

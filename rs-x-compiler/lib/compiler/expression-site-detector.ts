@@ -1,10 +1,15 @@
 import ts from 'typescript';
 
+import {
+  createRsxBackedProgramForFile,
+  type IRsxBackedProgram,
+  isRsxFileName,
+} from '../rsx';
 import { createVueBackedProgramForFile, isVueFileName } from '../vue';
 
 import { effectiveTypeFlags as _typeFlags } from './effective-typescript';
 
-export type ExpressionEntryPointKind = 'rsx' | 'factory-create';
+export type ExpressionEntryPointKind = 'rsx' | 'factory-create' | 'rsx-file';
 
 export interface IExpressionSiteDetection {
   readonly kind: ExpressionEntryPointKind;
@@ -14,8 +19,13 @@ export interface IExpressionSiteDetection {
   /** Named lazy group. When set, implies lazy: true. */
   readonly lazyGroup: string | undefined;
   readonly compiled: boolean;
-  readonly expressionLiteral: ts.StringLiteralLike;
-  readonly callExpression: ts.CallExpression;
+  readonly expressionSourceFile: ts.SourceFile;
+  readonly expressionStart: number;
+  readonly expressionEnd: number;
+  readonly expressionLiteral?: ts.StringLiteralLike;
+  readonly callExpression?: ts.CallExpression;
+  readonly modelTypeNode?: ts.TypeNode;
+  readonly returnTypeNode?: ts.TypeNode;
   readonly sourceFile: ts.SourceFile;
 }
 
@@ -35,6 +45,19 @@ export function detectExpressionSites(
   }
 
   for (const rootFileName of program.getRootFileNames()) {
+    if (isRsxFileName(rootFileName)) {
+      const rsxProgram = createRsxBackedProgramForFile(program, rootFileName);
+      if (!rsxProgram) {
+        continue;
+      }
+
+      const detection = detectExpressionSiteInRsxBackedProgram(rsxProgram);
+      if (detection) {
+        detections.push(detection);
+      }
+      continue;
+    }
+
     if (!isVueFileName(rootFileName) || seenVueRoots.has(rootFileName)) {
       continue;
     }
@@ -105,6 +128,7 @@ function tryDetectRsxEntryPoint(
 
   const expressionLiteral = resolveStaticExpressionLiteral(
     rsxInvocation.arguments[0],
+    checker,
   );
   if (!expressionLiteral) {
     return null;
@@ -123,6 +147,10 @@ function tryDetectRsxEntryPoint(
     lazy: rsxOptions.lazy,
     lazyGroup: rsxOptions.lazyGroup,
     compiled: rsxOptions.compiled,
+    expressionSourceFile: expressionLiteral.getSourceFile(),
+    expressionStart:
+      expressionLiteral.getStart(expressionLiteral.getSourceFile()) + 1,
+    expressionEnd: expressionLiteral.getEnd() - 1,
     expressionLiteral,
     callExpression,
     sourceFile: callExpression.getSourceFile(),
@@ -238,6 +266,7 @@ function tryDetectFactoryEntryPoint(
 
   const expressionLiteral = resolveStaticExpressionLiteral(
     callExpression.arguments[1],
+    checker,
   );
   if (!expressionLiteral) {
     return null;
@@ -257,10 +286,49 @@ function tryDetectFactoryEntryPoint(
     lazy: false,
     lazyGroup: undefined,
     compiled: true,
+    expressionSourceFile: expressionLiteral.getSourceFile(),
+    expressionStart:
+      expressionLiteral.getStart(expressionLiteral.getSourceFile()) + 1,
+    expressionEnd: expressionLiteral.getEnd() - 1,
     expressionLiteral,
     callExpression,
     sourceFile: callExpression.getSourceFile(),
   };
+}
+
+function detectExpressionSiteInRsxBackedProgram(
+  rsxProgram: IRsxBackedProgram,
+): IExpressionSiteDetection | null {
+  const statements = rsxProgram.virtualSourceFile.statements;
+  const modelAlias = statements[0];
+  const returnAlias = statements[1];
+  if (!modelAlias || !ts.isTypeAliasDeclaration(modelAlias)) {
+    return null;
+  }
+
+  return {
+    kind: 'rsx-file',
+    expression: rsxProgram.metadata.expression,
+    preparse: true,
+    lazy: false,
+    lazyGroup: undefined,
+    compiled: true,
+    expressionSourceFile: rsxProgram.sourceFile,
+    expressionStart: rsxProgram.metadata.expressionStart,
+    expressionEnd: rsxProgram.metadata.expressionEnd,
+    modelTypeNode: modelAlias.type,
+    returnTypeNode:
+      returnAlias && ts.isTypeAliasDeclaration(returnAlias)
+        ? returnAlias.type
+        : undefined,
+    sourceFile: rsxProgram.sourceFile,
+  };
+}
+
+export function createExpressionSiteDetectionFromRsxBackedProgram(
+  rsxProgram: IRsxBackedProgram,
+): IExpressionSiteDetection | null {
+  return detectExpressionSiteInRsxBackedProgram(rsxProgram);
 }
 
 function resolveRsxOptions(optionArgument?: ts.Expression): {
@@ -340,9 +408,53 @@ function isPropertyName(
 
 function resolveStaticExpressionLiteral(
   node: ts.Expression,
+  checker: ts.TypeChecker,
+  seenSymbols = new Set<ts.Symbol>(),
 ): ts.StringLiteralLike | null {
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
     return node;
+  }
+
+  if (!ts.isIdentifier(node)) {
+    return null;
+  }
+
+  const symbol = checker.getSymbolAtLocation(node);
+  if (!symbol) {
+    return null;
+  }
+
+  const resolvedSymbol =
+    symbol.flags & ts.SymbolFlags.Alias
+      ? checker.getAliasedSymbol(symbol)
+      : symbol;
+  if (seenSymbols.has(resolvedSymbol)) {
+    return null;
+  }
+  seenSymbols.add(resolvedSymbol);
+
+  const declarations = resolvedSymbol.declarations ?? [];
+  for (const declaration of declarations) {
+    if (!ts.isVariableDeclaration(declaration) || !declaration.initializer) {
+      continue;
+    }
+
+    const declarationList = declaration.parent;
+    if (
+      !ts.isVariableDeclarationList(declarationList) ||
+      (declarationList.flags & ts.NodeFlags.Const) === 0
+    ) {
+      continue;
+    }
+
+    const literal = resolveStaticExpressionLiteral(
+      declaration.initializer,
+      checker,
+      seenSymbols,
+    );
+    if (literal) {
+      return literal;
+    }
   }
 
   return null;

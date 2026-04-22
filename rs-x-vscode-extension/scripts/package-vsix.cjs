@@ -60,7 +60,10 @@ fs.rmSync(stageRoot, { recursive: true, force: true });
 fs.mkdirSync(stageRoot, { recursive: true });
 fs.mkdirSync(outputDir, { recursive: true });
 
-copyRecursive(path.join(extensionRoot, 'dist'), path.join(stageRoot, 'dist'));
+copyRecursive(
+  path.join(extensionRoot, 'dist', 'extension.js'),
+  path.join(stageRoot, 'dist', 'extension.js'),
+);
 copyRecursive(
   path.join(extensionRoot, 'syntaxes'),
   path.join(stageRoot, 'syntaxes'),
@@ -68,6 +71,10 @@ copyRecursive(
 copyRecursive(
   path.join(extensionRoot, 'schemas'),
   path.join(stageRoot, 'schemas'),
+);
+copyRecursive(
+  path.join(extensionRoot, 'language-configuration.json'),
+  path.join(stageRoot, 'language-configuration.json'),
 );
 copyRecursive(
   path.join(extensionRoot, 'README.md'),
@@ -85,6 +92,10 @@ copyRecursive(
   path.join(extensionRoot, 'node_modules', '@rs-x', 'typescript-plugin'),
   path.join(stageRoot, 'node_modules', '@rs-x', 'typescript-plugin'),
 );
+copyRecursive(
+  path.join(extensionRoot, '..', 'node_modules', 'typescript'),
+  path.join(stageRoot, 'node_modules', 'typescript'),
+);
 
 const stagedManifest = {
   name: baseManifest.name,
@@ -100,13 +111,21 @@ const stagedManifest = {
   contributes: baseManifest.contributes,
   dependencies: {
     '@rs-x/typescript-plugin': baseManifest.version,
+    typescript: baseManifest.dependencies.typescript,
   },
   files: [
     'dist',
     'schemas',
     'syntaxes',
+    'language-configuration.json',
     'node_modules/@rs-x/typescript-plugin/dist',
     'node_modules/@rs-x/typescript-plugin/package.json',
+    'node_modules/typescript/lib',
+    'node_modules/typescript/package.json',
+    'node_modules/typescript/LICENSE.txt',
+    'node_modules/typescript/README.md',
+    'node_modules/typescript/SECURITY.md',
+    'node_modules/typescript/ThirdPartyNoticeText.txt',
     'icon.png',
     'package.json',
     'README.md',

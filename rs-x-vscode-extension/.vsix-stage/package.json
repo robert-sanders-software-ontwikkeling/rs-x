@@ -3,7 +3,7 @@
   "displayName": "RS-X Compiler Support",
   "description": "VS Code extension that enables RS-X expression IntelliSense and diagnostics",
   "icon": "icon.png",
-  "version": "1.0.2",
+  "version": "2.0.2",
   "publisher": "RobertSanders",
   "engines": {
     "vscode": "^1.90.0"
@@ -12,6 +12,7 @@
     "Programming Languages"
   ],
   "activationEvents": [
+    "onLanguage:rsx",
     "onLanguage:typescript",
     "onLanguage:typescriptreact",
     "onLanguage:javascript",
@@ -20,6 +21,19 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "languages": [
+      {
+        "id": "rsx",
+        "aliases": [
+          "RS-X",
+          "rsx"
+        ],
+        "extensions": [
+          ".rsx"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
     "jsonValidation": [
       {
         "fileMatch": "rsx.config.json",
@@ -27,6 +41,14 @@
       }
     ],
     "grammars": [
+      {
+        "language": "rsx",
+        "scopeName": "source.rsx",
+        "path": "./syntaxes/rsx-file.language.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.rsx": "typescript"
+        }
+      },
       {
         "scopeName": "rsx.expression.injection",
         "path": "./syntaxes/rsx-expression.injection.json",
@@ -58,14 +80,22 @@
     ]
   },
   "dependencies": {
-    "@rs-x/typescript-plugin": "1.0.2"
+    "@rs-x/typescript-plugin": "2.0.2",
+    "typescript": "^6.0.2"
   },
   "files": [
     "dist",
     "schemas",
     "syntaxes",
+    "language-configuration.json",
     "node_modules/@rs-x/typescript-plugin/dist",
     "node_modules/@rs-x/typescript-plugin/package.json",
+    "node_modules/typescript/lib",
+    "node_modules/typescript/package.json",
+    "node_modules/typescript/LICENSE.txt",
+    "node_modules/typescript/README.md",
+    "node_modules/typescript/SECURITY.md",
+    "node_modules/typescript/ThirdPartyNoticeText.txt",
     "icon.png",
     "package.json",
     "README.md",

@@ -112,6 +112,14 @@ export function validateExpressionSite(
     diagnostics,
   );
 
+  validateDeclaredReturnType({
+    checker,
+    diagnostics,
+    modelType,
+    parsedExpression,
+    site,
+  });
+
   return {
     ...site,
     diagnostics,
@@ -122,11 +130,72 @@ function resolveModelType(
   site: IExpressionSiteDetection,
   checker: ts.TypeChecker,
 ): ts.Type | null {
-  const modelArgument = site.callExpression.arguments[0];
+  if (site.modelTypeNode) {
+    return checker.getTypeFromTypeNode(site.modelTypeNode);
+  }
+
+  const modelArgument = site.callExpression?.arguments[0];
   if (!modelArgument) {
     return null;
   }
   return checker.getTypeAtLocation(modelArgument);
+}
+
+function validateDeclaredReturnType(args: {
+  checker: ts.TypeChecker;
+  diagnostics: ICompilerDiagnostic[];
+  modelType: ts.Type;
+  parsedExpression: AbstractExpression;
+  site: IExpressionSiteDetection;
+}): void {
+  const { checker, diagnostics, modelType, parsedExpression, site } = args;
+  if (!site.returnTypeNode) {
+    return;
+  }
+
+  const actualResolvedType = resolveExpressionType(
+    parsedExpression,
+    modelType,
+    modelType,
+    checker,
+    [],
+  );
+  const actualType = resolveResolvedTypeToTsType(actualResolvedType, checker);
+  if (!actualType) {
+    return;
+  }
+
+  const expectedType = checker.getTypeFromTypeNode(site.returnTypeNode);
+  if (!checker.isTypeAssignableTo(actualType, expectedType)) {
+    diagnostics.push({
+      category: 'semantic',
+      message: `Expression result is not assignable to declared return type '${checker.typeToString(
+        expectedType,
+      )}'.`,
+    });
+  }
+}
+
+function resolveResolvedTypeToTsType(
+  resolved: IResolvedType,
+  checker: ts.TypeChecker,
+): ts.Type | null {
+  if (resolved.tsType) {
+    return resolved.tsType;
+  }
+
+  switch (resolved.primitive) {
+    case 'string':
+      return checker.getStringType();
+    case 'number':
+      return checker.getNumberType();
+    case 'boolean':
+      return checker.getBooleanType();
+    case 'bigint':
+      return checker.getBigIntType();
+    default:
+      return null;
+  }
 }
 
 function resolveExpressionType(

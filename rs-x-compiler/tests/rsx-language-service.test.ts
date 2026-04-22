@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { readFileSync } from 'node:fs';
 
 import ts from 'typescript';
 
@@ -12,9 +13,9 @@ import {
 
 const workspaceRoot = path.resolve(__dirname, '../..');
 
-function createProgram(entryFile: string): ts.Program {
+function createProgram(entryFile: string | string[]): ts.Program {
   return ts.createProgram({
-    rootNames: [entryFile],
+    rootNames: Array.isArray(entryFile) ? entryFile : [entryFile],
     options: {
       baseUrl: workspaceRoot,
       ignoreDeprecations: '6.0',
@@ -65,6 +66,25 @@ describe('rsx language service', () => {
       start: findPosition(sourceFile, "'user.na'") + 1,
       end: findPosition(sourceFile, "'user.na'") + "'user.na'".length - 1,
     });
+
+    const sharedExpressionPosition =
+      findPosition(sourceFile, "const sharedExpression = 'user.na';") +
+      "const sharedExpression = 'user".length;
+    const sharedExpressionRegion = findRsxExpressionRegionAtPosition(
+      program,
+      fixturePath,
+      sharedExpressionPosition,
+    );
+
+    expect(sharedExpressionRegion).toEqual({
+      expression: 'user.na',
+      start:
+        findPosition(sourceFile, "const sharedExpression = 'user.na';") +
+        "const sharedExpression = '".length,
+      end:
+        findPosition(sourceFile, "const sharedExpression = 'user.na';") +
+        "const sharedExpression = 'user.na".length,
+    });
   });
 
   it('finds expression region at position for no-substitution template literals', () => {
@@ -111,6 +131,19 @@ describe('rsx language service', () => {
     expect(
       new Set(memberCompletions.map((completion) => completion.name)).size,
     ).toBe(memberCompletions.length);
+
+    const sharedMemberPosition =
+      findPosition(sourceFile, "const sharedExpression = 'user.na';") +
+      "const sharedExpression = 'user.na".length;
+    const sharedMemberCompletions = getRsxCompletionsAtPosition(
+      program,
+      fixturePath,
+      sharedMemberPosition,
+    );
+
+    expect(sharedMemberCompletions).toEqual([
+      { kind: 'property', name: 'name' },
+    ]);
 
     const modularMemberPosition =
       findPosition(sourceFile, 'exprUser.na') + 'exprUser.na'.length;
@@ -337,6 +370,23 @@ describe('rsx language service', () => {
       kind: 'method',
       name: 'toFixed',
     });
+
+    const sharedLambdaPosition =
+      findPosition(
+        sourceFile,
+        "const sharedReduceExpression = 'lines.reduce((sum, line) => line.q, 0)';",
+      ) +
+      "const sharedReduceExpression = 'lines.reduce((sum, line) => line.q"
+        .length;
+    const sharedLambdaCompletions = getRsxCompletionsAtPosition(
+      program,
+      fixturePath,
+      sharedLambdaPosition,
+    );
+
+    expect(sharedLambdaCompletions).toEqual([
+      { kind: 'property', name: 'qty' },
+    ]);
   });
 
   it('returns diagnostics for syntax and semantic issues', () => {
@@ -353,6 +403,10 @@ describe('rsx language service', () => {
         message: diagnostic.message,
       })),
     ).toEqual([
+      {
+        category: 'semantic',
+        message: "Identifier 'na' does not exist on model type.",
+      },
       {
         category: 'semantic',
         message: "Identifier 'na' does not exist on model type.",
@@ -409,6 +463,10 @@ describe('rsx language service', () => {
         category: 'semantic',
         message: "Identifier 'q' does not exist on model type.",
       },
+      {
+        category: 'semantic',
+        message: "Identifier 'q' does not exist on model type.",
+      },
     ]);
   });
 
@@ -442,6 +500,25 @@ describe('rsx language service', () => {
       text: 'number',
       start: findPosition(sourceFile, "'exprCount + 1'") + 1,
       end: findPosition(sourceFile, "'exprCount + 1'") + 1 + 'exprCount'.length,
+    });
+
+    const sharedHoverPosition =
+      findPosition(sourceFile, "const sharedValidExpression = 'user.name';") +
+      "const sharedValidExpression = 'user.".length;
+    const sharedHover = getRsxHoverAtPosition(
+      program,
+      fixturePath,
+      sharedHoverPosition,
+    );
+
+    expect(sharedHover).toEqual({
+      text: 'string',
+      start:
+        findPosition(sourceFile, "const sharedValidExpression = 'user.name';") +
+        "const sharedValidExpression = 'user.".length,
+      end:
+        findPosition(sourceFile, "const sharedValidExpression = 'user.name';") +
+        "const sharedValidExpression = 'user.name".length,
     });
 
     const lambdaBodyNeedle =
@@ -583,5 +660,189 @@ describe('rsx language service', () => {
       }),
     );
     expect(constructorArgHelp?.items.length).toBeGreaterThan(0);
+  });
+
+  it('resolves shared expression declarations across files when used in rsx(...)', () => {
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/language-service-shared-expression.fixture.ts',
+    );
+    const consumerPath = path.resolve(
+      __dirname,
+      './fixtures/language-service-shared-expression-consumer.fixture.ts',
+    );
+    const program = createProgram([fixturePath, consumerPath]);
+    const sourceFile = program.getSourceFile(fixturePath)!;
+
+    const completionPosition =
+      findPosition(
+        sourceFile,
+        "export const sharedImportedExpression = 'user.na';",
+      ) + "export const sharedImportedExpression = 'user.na".length;
+    const completions = getRsxCompletionsAtPosition(
+      program,
+      fixturePath,
+      completionPosition,
+    );
+
+    expect(completions).toEqual([{ kind: 'property', name: 'name' }]);
+
+    const hoverPosition =
+      findPosition(
+        sourceFile,
+        "export const sharedImportedValidExpression = 'user.name';",
+      ) + "export const sharedImportedValidExpression = 'user.".length;
+    const hover = getRsxHoverAtPosition(program, fixturePath, hoverPosition);
+
+    expect(hover).toEqual({
+      text: 'string',
+      start:
+        findPosition(
+          sourceFile,
+          "export const sharedImportedValidExpression = 'user.name';",
+        ) + "export const sharedImportedValidExpression = 'user.".length,
+      end:
+        findPosition(
+          sourceFile,
+          "export const sharedImportedValidExpression = 'user.name';",
+        ) + "export const sharedImportedValidExpression = 'user.name".length,
+    });
+
+    const lambdaCompletionPosition =
+      findPosition(sourceFile, "  'lines.reduce((sum, line) => line.q, 0)';") +
+      "  'lines.reduce((sum, line) => line.q".length;
+    const lambdaCompletions = getRsxCompletionsAtPosition(
+      program,
+      fixturePath,
+      lambdaCompletionPosition,
+    );
+
+    expect(lambdaCompletions).toEqual([{ kind: 'property', name: 'qty' }]);
+
+    const diagnostics = getRsxDiagnosticsForFile(program, fixturePath).map(
+      (diagnostic) => ({
+        category: diagnostic.category,
+        message: diagnostic.message,
+      }),
+    );
+
+    expect(diagnostics).toEqual([
+      {
+        category: 'semantic',
+        message: "Identifier 'na' does not exist on model type.",
+      },
+      {
+        category: 'semantic',
+        message: "Identifier 'q' does not exist on model type.",
+      },
+    ]);
+  });
+
+  it('supports .rsx files with model and return headers', () => {
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/language-service-file.fixture.rsx',
+    );
+    const modelPath = path.resolve(
+      __dirname,
+      './fixtures/rsx-file-model.fixture.ts',
+    );
+    const program = createProgram([fixturePath, modelPath]);
+    const sourceFile = ts.createSourceFile(
+      fixturePath,
+      readFileSync(fixturePath, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TS,
+    );
+
+    const regionPosition =
+      findPosition(sourceFile, 'lines.reduce((sum, line) => sum + line.q, 0)') +
+      'lines.re'.length;
+    const region = findRsxExpressionRegionAtPosition(
+      program,
+      fixturePath,
+      regionPosition,
+    );
+
+    expect(region).toEqual({
+      expression: 'lines.reduce((sum, line) => sum + line.q, 0)',
+      start: findPosition(
+        sourceFile,
+        'lines.reduce((sum, line) => sum + line.q, 0)',
+      ),
+      end:
+        findPosition(
+          sourceFile,
+          'lines.reduce((sum, line) => sum + line.q, 0)',
+        ) + 'lines.reduce((sum, line) => sum + line.q, 0)'.length,
+    });
+
+    const completionPosition =
+      findPosition(sourceFile, 'lines.reduce((sum, line) => sum + line.q, 0)') +
+      'lines.reduce((sum, line) => sum + line.q'.length;
+    const completions = getRsxCompletionsAtPosition(
+      program,
+      fixturePath,
+      completionPosition,
+    );
+
+    expect(completions).toEqual([{ kind: 'property', name: 'qty' }]);
+
+    const hoverPosition =
+      findPosition(sourceFile, 'lines.reduce((sum, line) => sum + line.q, 0)') +
+      'lines.reduce((sum, line) => su'.length;
+    const hover = getRsxHoverAtPosition(program, fixturePath, hoverPosition);
+
+    expect(hover).toEqual(
+      expect.objectContaining({
+        text: 'number',
+      }),
+    );
+
+    const diagnostics = getRsxDiagnosticsForFile(program, fixturePath).map(
+      (diagnostic) => ({
+        category: diagnostic.category,
+        message: diagnostic.message,
+      }),
+    );
+
+    expect(diagnostics).toEqual([
+      {
+        category: 'semantic',
+        message: "Identifier 'q' does not exist on model type.",
+      },
+      {
+        category: 'semantic',
+        message:
+          "Expression result is not assignable to declared return type 'number'.",
+      },
+    ]);
+  });
+
+  it('applies unsupported-expression validation to .rsx files too', () => {
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/language-service-unsupported.fixture.rsx',
+    );
+    const modelPath = path.resolve(
+      __dirname,
+      './fixtures/rsx-file-model.fixture.ts',
+    );
+    const program = createProgram([fixturePath, modelPath]);
+
+    const diagnostics = getRsxDiagnosticsForFile(program, fixturePath).map(
+      (diagnostic) => ({
+        category: diagnostic.category,
+        message: diagnostic.message,
+      }),
+    );
+
+    expect(diagnostics).toEqual([
+      {
+        category: 'unsupported',
+        message: 'Assignment expressions are not supported',
+      },
+    ]);
   });
 });

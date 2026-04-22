@@ -9,9 +9,9 @@ import {
 
 const workspaceRoot = path.resolve(__dirname, '../..');
 
-function createProgram(entryFile: string): ts.Program {
+function createProgram(entryFile: string | string[]): ts.Program {
   return ts.createProgram({
-    rootNames: [entryFile],
+    rootNames: Array.isArray(entryFile) ? entryFile : [entryFile],
     options: {
       baseUrl: workspaceRoot,
       ignoreDeprecations: '6.0',
@@ -93,6 +93,13 @@ describe('expression-site detection', () => {
         compiled: false,
       },
       {
+        kind: 'rsx',
+        expression: 'a + b.method().result',
+        preparse: true,
+        lazy: false,
+        compiled: true,
+      },
+      {
         kind: 'factory-create',
         expression: 'a + 1',
         preparse: true,
@@ -102,6 +109,13 @@ describe('expression-site detection', () => {
       {
         kind: 'factory-create',
         expression: 'a + 1',
+        preparse: true,
+        lazy: false,
+        compiled: true,
+      },
+      {
+        kind: 'factory-create',
+        expression: 'a + 3',
         preparse: true,
         lazy: false,
         compiled: true,
@@ -209,6 +223,13 @@ describe('expression-site detection', () => {
         compiled: false,
       },
       {
+        kind: 'rsx',
+        expression: 'a + b.method().result',
+        preparse: true,
+        lazy: false,
+        compiled: true,
+      },
+      {
         kind: 'factory-create',
         expression: 'a + 1',
         preparse: true,
@@ -218,6 +239,13 @@ describe('expression-site detection', () => {
       {
         kind: 'factory-create',
         expression: 'a + 1',
+        preparse: true,
+        lazy: false,
+        compiled: true,
+      },
+      {
+        kind: 'factory-create',
+        expression: 'a + 3',
         preparse: true,
         lazy: false,
         compiled: true,
@@ -246,6 +274,39 @@ describe('expression-site detection', () => {
       {
         kind: 'factory-create',
         expression: 'a',
+        preparse: true,
+        lazy: false,
+        compiled: true,
+      },
+    ]);
+  });
+
+  it('detects .rsx files with external model contracts', () => {
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/expression-file.fixture.rsx',
+    );
+    const modelPath = path.resolve(
+      __dirname,
+      './fixtures/rsx-file-model.fixture.ts',
+    );
+
+    const program = createProgram([fixturePath, modelPath]);
+
+    const detections = detectExpressionSites(program)
+      .filter((detection) => detection.sourceFile.fileName === fixturePath)
+      .map((detection) => ({
+        kind: detection.kind,
+        expression: detection.expression,
+        preparse: detection.preparse,
+        lazy: detection.lazy,
+        compiled: detection.compiled,
+      }));
+
+    expect(detections).toEqual([
+      {
+        kind: 'rsx-file',
+        expression: 'lines.reduce((sum, line) => sum + line.lineTotal, 0)',
         preparse: true,
         lazy: false,
         compiled: true,

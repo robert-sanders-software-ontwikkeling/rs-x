@@ -1,7 +1,7 @@
 import type tsModule from 'typescript/lib/tsserverlibrary';
 
 import {
-  detectExpressionSitesInSourceFile,
+  detectExpressionSites,
   extractVueEmbeddedTypeScriptFile,
   findRsxExpressionRegionAtPosition,
   getRsxCompletionsAtPosition,
@@ -12,6 +12,7 @@ import {
   tokenizeRsxExpression,
 } from '@rs-x/compiler';
 
+import { patchLanguageServiceHostForRsxImports } from './rsx-language-service-host';
 import {
   createRsxSemanticClassificationContext,
   resolveSemanticTokenTypeForIdentifier,
@@ -25,12 +26,22 @@ interface ITypescriptPluginInit {
   typescript: typeof tsModule;
 }
 
+function getRelevantExpressionSitesForFile(
+  program: tsModule.Program,
+  fileName: string,
+) {
+  return detectExpressionSites(program).filter(
+    (site) => site.expressionSourceFile.fileName === fileName,
+  );
+}
+
 function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
   const ts = modules.typescript;
 
   function create(
     info: tsModule.server.PluginCreateInfo,
   ): tsModule.LanguageService {
+    patchLanguageServiceHostForRsxImports({ info, ts });
     const languageService = info.languageService;
     const proxy: tsModule.LanguageService = Object.create(null);
 
@@ -282,15 +293,17 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
         return base;
       }
 
-      const checker = rsxProgram.program.getTypeChecker();
-      const sites = detectExpressionSitesInSourceFile(sourceFile, checker);
+      const sites = getRelevantExpressionSitesForFile(
+        rsxProgram.program,
+        rsxProgram.fileName,
+      );
       if (sites.length === 0) {
         return base;
       }
 
       const pluginSpans = getRsxEncodedSyntacticClassifications({
         ts,
-        sourceFile,
+        fileName: rsxProgram.fileName,
         span,
         sites,
       });
@@ -299,8 +312,8 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
       }
 
       const expressionRanges = sites.map((site) => ({
-        start: site.expressionLiteral.getStart(sourceFile) + 1,
-        end: site.expressionLiteral.getEnd() - 1,
+        start: site.expressionStart,
+        end: site.expressionEnd,
       }));
 
       return {
@@ -482,8 +495,7 @@ function getRsxEncodedClassifications(args: {
     return [];
   }
 
-  const checker = program.getTypeChecker();
-  const sites = detectExpressionSitesInSourceFile(sourceFile, checker);
+  const sites = getRelevantExpressionSitesForFile(program, fileName);
   if (sites.length === 0) {
     return [];
   }
@@ -493,14 +505,15 @@ function getRsxEncodedClassifications(args: {
   const encoded: number[] = [];
 
   for (const site of sites) {
-    const expressionStart = site.expressionLiteral.getStart(sourceFile) + 1;
-    const expressionEnd = site.expressionLiteral.getEnd() - 1;
+    const expressionSourceFile = site.expressionSourceFile;
+    const expressionStart = site.expressionStart;
+    const expressionEnd = site.expressionEnd;
 
     if (expressionEnd <= spanStart || expressionStart >= spanEnd) {
       continue;
     }
 
-    const expressionText = sourceFile.text.slice(
+    const expressionText = expressionSourceFile.text.slice(
       expressionStart,
       expressionEnd,
     );
@@ -544,24 +557,28 @@ function getRsxEncodedClassifications(args: {
 
 function getRsxEncodedSyntacticClassifications(args: {
   ts: typeof tsModule;
-  sourceFile: tsModule.SourceFile;
+  fileName: string;
   span: tsModule.TextSpan;
-  sites: ReturnType<typeof detectExpressionSitesInSourceFile>;
+  sites: ReturnType<typeof detectExpressionSites>;
 }): number[] {
-  const { ts, sourceFile, span, sites } = args;
+  const { ts, fileName, span, sites } = args;
   const spanStart = span.start;
   const spanEnd = span.start + span.length;
   const encoded: number[] = [];
 
   for (const site of sites) {
-    const expressionStart = site.expressionLiteral.getStart(sourceFile) + 1;
-    const expressionEnd = site.expressionLiteral.getEnd() - 1;
+    const expressionSourceFile = site.expressionSourceFile;
+    if (expressionSourceFile.fileName !== fileName) {
+      continue;
+    }
+    const expressionStart = site.expressionStart;
+    const expressionEnd = site.expressionEnd;
 
     if (expressionEnd <= spanStart || expressionStart >= spanEnd) {
       continue;
     }
 
-    const expressionText = sourceFile.text.slice(
+    const expressionText = expressionSourceFile.text.slice(
       expressionStart,
       expressionEnd,
     );
