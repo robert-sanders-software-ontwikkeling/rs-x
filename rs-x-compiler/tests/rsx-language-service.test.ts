@@ -321,6 +321,22 @@ describe('rsx language service', () => {
     );
 
     expect(completions).toEqual([{ kind: 'property', name: 'qty' }]);
+
+    const lambdaAccumulatorPosition =
+      findPosition(
+        sourceFile,
+        "rsx('lines.reduce((sum, line) => sum.toF, 0)')(model)",
+      ) + "rsx('lines.reduce((sum, line) => sum.toF".length;
+    const accumulatorCompletions = getRsxCompletionsAtPosition(
+      program,
+      fixturePath,
+      lambdaAccumulatorPosition,
+    );
+
+    expect(accumulatorCompletions).toContainEqual({
+      kind: 'method',
+      name: 'toFixed',
+    });
   });
 
   it('returns diagnostics for syntax and semantic issues', () => {
@@ -387,6 +403,10 @@ describe('rsx language service', () => {
       },
       {
         category: 'semantic',
+        message: "Identifier 'toF' does not exist on model type.",
+      },
+      {
+        category: 'semantic',
         message: "Identifier 'q' does not exist on model type.",
       },
     ]);
@@ -423,6 +443,70 @@ describe('rsx language service', () => {
       start: findPosition(sourceFile, "'exprCount + 1'") + 1,
       end: findPosition(sourceFile, "'exprCount + 1'") + 1 + 'exprCount'.length,
     });
+
+    const lambdaBodyNeedle =
+      "rsx('lines.reduce((sum, line) => sum + line.lineTotal, 0)')(model)";
+    const lambdaLineHoverPosition =
+      findPosition(sourceFile, lambdaBodyNeedle) +
+      "rsx('lines.reduce((sum, line) => sum + line".length;
+    const lambdaLineHover = getRsxHoverAtPosition(
+      program,
+      fixturePath,
+      lambdaLineHoverPosition,
+    );
+
+    expect(lambdaLineHover).toEqual(
+      expect.objectContaining({
+        text: expect.stringContaining('lineTotal'),
+      }),
+    );
+
+    const lambdaSumHoverPosition =
+      findPosition(sourceFile, lambdaBodyNeedle) +
+      "rsx('lines.reduce((sum, line) => su".length;
+    const lambdaSumHover = getRsxHoverAtPosition(
+      program,
+      fixturePath,
+      lambdaSumHoverPosition,
+    );
+
+    expect(lambdaSumHover).toEqual(
+      expect.objectContaining({
+        text: 'number',
+      }),
+    );
+
+    const lambdaHeaderNeedle =
+      "rsx('lines.reduce((sum, line) => line.q, 0)')(model)";
+    const lambdaHeaderSumHoverPosition =
+      findPosition(sourceFile, lambdaHeaderNeedle) +
+      "rsx('lines.reduce((su".length;
+    const lambdaHeaderSumHover = getRsxHoverAtPosition(
+      program,
+      fixturePath,
+      lambdaHeaderSumHoverPosition,
+    );
+
+    expect(lambdaHeaderSumHover).toEqual(
+      expect.objectContaining({
+        text: 'number',
+      }),
+    );
+
+    const lambdaHeaderLineHoverPosition =
+      findPosition(sourceFile, lambdaHeaderNeedle) +
+      "rsx('lines.reduce((sum, li".length;
+    const lambdaHeaderLineHover = getRsxHoverAtPosition(
+      program,
+      fixturePath,
+      lambdaHeaderLineHoverPosition,
+    );
+
+    expect(lambdaHeaderLineHover).toEqual(
+      expect.objectContaining({
+        text: expect.stringContaining('qty'),
+      }),
+    );
   });
 
   it('returns signature help for model functions inside rsx expression strings', () => {

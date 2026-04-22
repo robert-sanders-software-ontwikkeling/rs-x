@@ -110,28 +110,36 @@ export function getRsxCompletionsAtPosition(
   }
 
   const completionTarget = resolveCompletionTarget(activePrefixSource);
-  const targetType = completionTarget.chain.length
-    ? resolveChainType(
-        context.modelType,
-        completionTarget.chain,
-        context.checker,
-        localBindings,
-      )
-    : resolveRootCompletionType(
-        context.modelType,
-        completionTarget.prefix,
-        localBindings,
-      );
+  if (!completionTarget.chain.length) {
+    const names = [
+      ...context.modelType
+        .getProperties()
+        .map((property) => property.getName()),
+      ...localBindings.keys(),
+    ]
+      .filter((name) => name.startsWith(completionTarget.prefix))
+      .filter((name, index, collection) => collection.indexOf(name) === index)
+      .sort();
+
+    return names.map((name) => ({
+      name,
+      kind: localBindings.has(name)
+        ? ('property' as const)
+        : isCallableProperty(context.modelType, name, context.checker)
+          ? ('method' as const)
+          : ('property' as const),
+    }));
+  }
+
+  const targetType = resolveChainType(
+    context.modelType,
+    completionTarget.chain,
+    context.checker,
+    localBindings,
+  );
 
   if (!targetType) {
-    if (completionTarget.chain.length > 0) {
-      return [];
-    }
-
-    const localNames = [...localBindings.keys()]
-      .filter((name) => name.startsWith(completionTarget.prefix))
-      .sort();
-    return localNames.map((name) => ({ kind: 'property' as const, name }));
+    return [];
   }
 
   if (isDateLikeType(targetType, context.checker)) {
@@ -227,6 +235,10 @@ export function getRsxHoverAtPosition(
   }
 
   const expressionOffset = position - context.expressionStart;
+  const localBindings = resolveInlineFunctionLocalBindings(
+    context,
+    expressionOffset,
+  );
   const tokenRange = resolveIdentifierTokenRange(
     context.expression,
     expressionOffset,
@@ -245,6 +257,7 @@ export function getRsxHoverAtPosition(
     context.modelType,
     chain,
     context.checker,
+    localBindings,
   );
   if (!resolvedType) {
     return null;
@@ -390,7 +403,11 @@ function resolveInlineFunctionBodyContext(
     ts.ScriptKind.TS,
   );
   const absoluteOffset = sourcePrefix.length + expressionOffset;
-  const match = findInlineFunctionMatchAtOffset(sourceFile, absoluteOffset);
+  const match = findInlineFunctionMatchAtOffset(
+    sourceFile,
+    absoluteOffset,
+    false,
+  );
   if (!match) {
     return null;
   }
@@ -411,9 +428,33 @@ function resolveInlineFunctionBodyContext(
   };
 }
 
+function resolveInlineFunctionLocalBindings(
+  context: IRsxExpressionContext,
+  expressionOffset: number,
+): LocalBindings {
+  const sourcePrefix = 'const __rsx_expr__ = ';
+  const sourceFile = ts.createSourceFile(
+    '__rsx_expr__.ts',
+    `${sourcePrefix}${context.expression};`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const absoluteOffset = sourcePrefix.length + expressionOffset;
+  const match = findInlineFunctionMatchAtOffset(
+    sourceFile,
+    absoluteOffset,
+    true,
+  );
+  return match
+    ? resolveInlineFunctionBindings(context, match)
+    : emptyLocalBindings;
+}
+
 function findInlineFunctionMatchAtOffset(
   sourceFile: ts.SourceFile,
   absoluteOffset: number,
+  includeParameters: boolean,
 ): {
   functionNode: ts.ArrowFunction | ts.FunctionExpression;
   callExpression: ts.CallExpression;
@@ -426,8 +467,11 @@ function findInlineFunctionMatchAtOffset(
   const visit = (node: ts.Node): void => {
     if (
       (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) &&
-      absoluteOffset >= node.body.getStart(sourceFile) &&
-      absoluteOffset <= node.body.getEnd()
+      absoluteOffset >=
+        (includeParameters
+          ? node.getStart(sourceFile)
+          : node.body.getStart(sourceFile)) &&
+      absoluteOffset <= node.getEnd()
     ) {
       const callExpression = findParentCallExpression(node);
       if (callExpression) {
@@ -484,6 +528,15 @@ function resolveInlineFunctionBindings(
   );
   if (callbackIndex < 0) {
     return emptyLocalBindings;
+  }
+
+  const arrayMethodBindings = resolveArrayMethodInlineFunctionBindings(
+    context,
+    match,
+    callbackIndex,
+  );
+  if (arrayMethodBindings.size > 0) {
+    return arrayMethodBindings;
   }
 
   const callableType = resolveTsExpressionType(
@@ -555,6 +608,96 @@ function resolveInlineFunctionBindings(
   return bindings;
 }
 
+function resolveArrayMethodInlineFunctionBindings(
+  context: IRsxExpressionContext,
+  match: {
+    functionNode: ts.ArrowFunction | ts.FunctionExpression;
+    callExpression: ts.CallExpression;
+  },
+  callbackIndex: number,
+): LocalBindings {
+  if (
+    callbackIndex !== 0 ||
+    !ts.isPropertyAccessExpression(match.callExpression.expression)
+  ) {
+    return emptyLocalBindings;
+  }
+
+  const methodName = match.callExpression.expression.name.text;
+  const targetType = resolveTsExpressionType(
+    match.callExpression.expression.expression,
+    context.modelType,
+    context.checker,
+  );
+  if (!targetType) {
+    return emptyLocalBindings;
+  }
+
+  const elementType = resolveArrayElementType(targetType, context.checker);
+  if (!elementType) {
+    return emptyLocalBindings;
+  }
+
+  const bindings = new Map<string, ts.Type>();
+  const parameterNodes = match.functionNode.parameters;
+
+  const bindParameter = (index: number, type: ts.Type | null): void => {
+    const parameterNode = parameterNodes[index];
+    if (!parameterNode || !ts.isIdentifier(parameterNode.name) || !type) {
+      return;
+    }
+
+    bindings.set(parameterNode.name.text, type);
+  };
+
+  switch (methodName) {
+    case 'map':
+    case 'filter':
+    case 'find':
+    case 'some':
+    case 'every':
+    case 'forEach':
+      bindParameter(0, elementType);
+      bindParameter(1, context.checker.getNumberType());
+      bindParameter(2, targetType);
+      return bindings;
+    case 'reduce': {
+      const seedArgument = match.callExpression.arguments[1];
+      const accumulatorType =
+        seedArgument && ts.isExpression(seedArgument)
+          ? (resolveTsExpressionType(
+              seedArgument,
+              context.modelType,
+              context.checker,
+            ) ?? elementType)
+          : elementType;
+      bindParameter(0, accumulatorType);
+      bindParameter(1, elementType);
+      bindParameter(2, context.checker.getNumberType());
+      bindParameter(3, targetType);
+      return bindings;
+    }
+    default:
+      return emptyLocalBindings;
+  }
+}
+
+function resolveArrayElementType(
+  targetType: ts.Type,
+  checker: ts.TypeChecker,
+): ts.Type | null {
+  const nonNullableTarget = checker.getNonNullableType(targetType);
+  const numberIndexType = nonNullableTarget.getNumberIndexType();
+  if (numberIndexType) {
+    return checker.getNonNullableType(numberIndexType);
+  }
+
+  const typeArguments = checker.getTypeArguments(
+    nonNullableTarget as ts.TypeReference,
+  );
+  return typeArguments[0] ? checker.getNonNullableType(typeArguments[0]) : null;
+}
+
 function pickSignatureByArgumentCount(
   signatures: readonly ts.Signature[],
   argumentCount: number,
@@ -587,6 +730,21 @@ function resolveTsExpressionType(
   checker: ts.TypeChecker,
   localBindings: LocalBindings = emptyLocalBindings,
 ): ts.Type | null {
+  if (ts.isNumericLiteral(node)) {
+    return checker.getNumberType();
+  }
+
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+    return checker.getStringType();
+  }
+
+  if (
+    node.kind === ts.SyntaxKind.TrueKeyword ||
+    node.kind === ts.SyntaxKind.FalseKeyword
+  ) {
+    return checker.getBooleanType();
+  }
+
   if (ts.isParenthesizedExpression(node)) {
     return resolveTsExpressionType(
       node.expression,
@@ -891,19 +1049,6 @@ function resolveChainType(
   }
 
   return currentType;
-}
-
-function resolveRootCompletionType(
-  modelType: ts.Type,
-  prefix: string,
-  localBindings: LocalBindings,
-): ts.Type | null {
-  const localBindingType = localBindings.get(prefix);
-  if (localBindingType) {
-    return localBindingType;
-  }
-
-  return modelType;
 }
 
 function resolveCallableType(
