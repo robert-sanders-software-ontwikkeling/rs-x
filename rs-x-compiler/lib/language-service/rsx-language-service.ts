@@ -62,6 +62,10 @@ interface IRsxExpressionContext {
   readonly checker: ts.TypeChecker;
 }
 
+type LocalBindings = ReadonlyMap<string, ts.Type>;
+
+const emptyLocalBindings: LocalBindings = new Map();
+
 export function findRsxExpressionRegionAtPosition(
   program: ts.Program,
   fileName: string,
@@ -91,22 +95,36 @@ export function getRsxCompletionsAtPosition(
 
   const expressionOffset = position - context.expressionStart;
   const prefixSource = context.expression.slice(0, expressionOffset);
-  const constructorPrefix = resolveConstructorCompletionPrefix(prefixSource);
+  const inlineFunctionContext = resolveInlineFunctionBodyContext(
+    context,
+    expressionOffset,
+  );
+  const activePrefixSource = inlineFunctionContext?.prefixSource ?? prefixSource;
+  const localBindings = inlineFunctionContext?.localBindings ?? emptyLocalBindings;
+  const constructorPrefix = resolveConstructorCompletionPrefix(activePrefixSource);
   if (constructorPrefix !== null) {
     return resolveConstructorCompletions(context, constructorPrefix);
   }
 
-  const completionTarget = resolveCompletionTarget(prefixSource);
+  const completionTarget = resolveCompletionTarget(activePrefixSource);
   const targetType = completionTarget.chain.length
     ? resolveChainType(
         context.modelType,
         completionTarget.chain,
         context.checker,
+        localBindings,
       )
-    : context.modelType;
+    : resolveRootCompletionType(context.modelType, completionTarget.prefix, localBindings);
 
   if (!targetType) {
-    return [];
+    if (completionTarget.chain.length > 0) {
+      return [];
+    }
+
+    const localNames = [...localBindings.keys()]
+      .filter((name) => name.startsWith(completionTarget.prefix))
+      .sort();
+    return localNames.map((name) => ({ kind: 'property' as const, name }));
   }
 
   if (isDateLikeType(targetType, context.checker)) {
@@ -352,6 +370,306 @@ function resolveExpressionContext(
   return null;
 }
 
+function resolveInlineFunctionBodyContext(
+  context: IRsxExpressionContext,
+  expressionOffset: number,
+): { prefixSource: string; localBindings: LocalBindings } | null {
+  const sourcePrefix = 'const __rsx_expr__ = ';
+  const sourceFile = ts.createSourceFile(
+    '__rsx_expr__.ts',
+    `${sourcePrefix}${context.expression};`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const absoluteOffset = sourcePrefix.length + expressionOffset;
+  const match = findInlineFunctionMatchAtOffset(sourceFile, absoluteOffset);
+  if (!match) {
+    return null;
+  }
+
+  const localBindings = resolveInlineFunctionBindings(context, match);
+  if (localBindings.size === 0) {
+    return null;
+  }
+
+  const bodyStartOffset = Math.max(
+    0,
+    match.functionNode.body.getStart(sourceFile) - sourcePrefix.length,
+  );
+
+  return {
+    prefixSource: context.expression.slice(bodyStartOffset, expressionOffset),
+    localBindings,
+  };
+}
+
+function findInlineFunctionMatchAtOffset(
+  sourceFile: ts.SourceFile,
+  absoluteOffset: number,
+): { functionNode: ts.ArrowFunction | ts.FunctionExpression; callExpression: ts.CallExpression } | null {
+  let bestMatch: {
+    functionNode: ts.ArrowFunction | ts.FunctionExpression;
+    callExpression: ts.CallExpression;
+  } | null = null;
+
+  const visit = (node: ts.Node): void => {
+    if (
+      (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) &&
+      absoluteOffset >= node.body.getStart(sourceFile) &&
+      absoluteOffset <= node.body.getEnd()
+    ) {
+      const callExpression = findParentCallExpression(node);
+      if (callExpression) {
+        const bestWidth = bestMatch
+          ? bestMatch.functionNode.body.getWidth(sourceFile)
+          : Number.POSITIVE_INFINITY;
+        const nextWidth = node.body.getWidth(sourceFile);
+        if (nextWidth <= bestWidth) {
+          bestMatch = { functionNode: node, callExpression };
+        }
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  ts.forEachChild(sourceFile, visit);
+  return bestMatch;
+}
+
+function findParentCallExpression(
+  functionNode: ts.ArrowFunction | ts.FunctionExpression,
+): ts.CallExpression | null {
+  let current: ts.Node = functionNode;
+
+  while (current.parent) {
+    if (
+      ts.isCallExpression(current.parent) &&
+      current.parent.arguments.some((argument) => argument === current)
+    ) {
+      return current.parent;
+    }
+
+    if (!ts.isParenthesizedExpression(current.parent)) {
+      current = current.parent;
+      continue;
+    }
+
+    current = current.parent;
+  }
+
+  return null;
+}
+
+function resolveInlineFunctionBindings(
+  context: IRsxExpressionContext,
+  match: {
+    functionNode: ts.ArrowFunction | ts.FunctionExpression;
+    callExpression: ts.CallExpression;
+  },
+): LocalBindings {
+  const callbackIndex = match.callExpression.arguments.findIndex(
+    (argument) => argument === match.functionNode,
+  );
+  if (callbackIndex < 0) {
+    return emptyLocalBindings;
+  }
+
+  const callableType = resolveTsExpressionType(
+    match.callExpression.expression,
+    context.modelType,
+    context.checker,
+  );
+  if (!callableType) {
+    return emptyLocalBindings;
+  }
+
+  const outerSignature = pickSignatureByArgumentCount(
+    callableType.getCallSignatures(),
+    match.callExpression.arguments.length,
+  );
+  if (!outerSignature) {
+    return emptyLocalBindings;
+  }
+
+  const parameter = outerSignature.getParameters()[callbackIndex];
+  const declaration =
+    parameter?.valueDeclaration ?? parameter?.declarations?.[0];
+  if (!parameter || !declaration) {
+    return emptyLocalBindings;
+  }
+
+  const callbackType = context.checker.getTypeOfSymbolAtLocation(
+    parameter,
+    declaration,
+  );
+  const callbackSignature = pickSignatureByArgumentCount(
+    callbackType.getCallSignatures(),
+    match.functionNode.parameters.length,
+  );
+  if (!callbackSignature) {
+    return emptyLocalBindings;
+  }
+
+  const bindings = new Map<string, ts.Type>();
+  const callbackParameters = callbackSignature.getParameters();
+  for (
+    let index = 0;
+    index < match.functionNode.parameters.length &&
+    index < callbackParameters.length;
+    index += 1
+  ) {
+    const parameterNode = match.functionNode.parameters[index];
+    if (!ts.isIdentifier(parameterNode.name)) {
+      continue;
+    }
+
+    const callbackParameter = callbackParameters[index];
+    const callbackDeclaration =
+      callbackParameter?.valueDeclaration ??
+      callbackParameter?.declarations?.[0];
+    if (!callbackParameter || !callbackDeclaration) {
+      continue;
+    }
+
+    bindings.set(
+      parameterNode.name.text,
+      context.checker.getTypeOfSymbolAtLocation(
+        callbackParameter,
+        callbackDeclaration,
+      ),
+    );
+  }
+
+  return bindings;
+}
+
+function pickSignatureByArgumentCount(
+  signatures: readonly ts.Signature[],
+  argumentCount: number,
+): ts.Signature | null {
+  for (const signature of signatures) {
+    const parameters = signature.getParameters();
+    const hasRest = parameters.some((parameter) => {
+      const declaration = parameter.valueDeclaration;
+      return ts.isParameter(declaration) && Boolean(declaration.dotDotDotToken);
+    });
+
+    if (
+      argumentCount <= parameters.length ||
+      (hasRest && argumentCount >= parameters.length - 1)
+    ) {
+      return signature;
+    }
+  }
+
+  return signatures[0] ?? null;
+}
+
+function resolveTsExpressionType(
+  node: ts.Expression,
+  modelType: ts.Type,
+  checker: ts.TypeChecker,
+  localBindings: LocalBindings = emptyLocalBindings,
+): ts.Type | null {
+  if (ts.isParenthesizedExpression(node)) {
+    return resolveTsExpressionType(node.expression, modelType, checker, localBindings);
+  }
+
+  if (ts.isIdentifier(node)) {
+    const localBinding = localBindings.get(node.text);
+    if (localBinding) {
+      return checker.getNonNullableType(localBinding);
+    }
+
+    const property = modelType.getProperty(node.text);
+    const declaration =
+      property?.valueDeclaration ?? property?.declarations?.[0];
+    if (!property || !declaration) {
+      return null;
+    }
+
+    return checker.getNonNullableType(
+      checker.getTypeOfSymbolAtLocation(property, declaration),
+    );
+  }
+
+  if (ts.isPropertyAccessExpression(node)) {
+    const targetType = resolveTsExpressionType(
+      node.expression,
+      modelType,
+      checker,
+      localBindings,
+    );
+    if (!targetType) {
+      return null;
+    }
+
+    const property = checker
+      .getNonNullableType(targetType)
+      .getProperty(node.name.text);
+    const declaration =
+      property?.valueDeclaration ?? property?.declarations?.[0];
+    if (!property || !declaration) {
+      return null;
+    }
+
+    return checker.getNonNullableType(
+      checker.getTypeOfSymbolAtLocation(property, declaration),
+    );
+  }
+
+  if (ts.isElementAccessExpression(node)) {
+    const targetType = resolveTsExpressionType(
+      node.expression,
+      modelType,
+      checker,
+      localBindings,
+    );
+    if (!targetType) {
+      return null;
+    }
+
+    const nonNullableTarget = checker.getNonNullableType(targetType);
+    const literalArgument = node.argumentExpression;
+    if (literalArgument && ts.isNumericLiteral(literalArgument)) {
+      return (
+        nonNullableTarget.getNumberIndexType() ??
+        checker.getTypeArguments(nonNullableTarget as ts.TypeReference)[0] ??
+        null
+      );
+    }
+
+    if (literalArgument && ts.isStringLiteral(literalArgument)) {
+      const property = nonNullableTarget.getProperty(literalArgument.text);
+      const declaration =
+        property?.valueDeclaration ?? property?.declarations?.[0];
+      if (property && declaration) {
+        return checker.getTypeOfSymbolAtLocation(property, declaration);
+      }
+    }
+  }
+
+  if (ts.isCallExpression(node)) {
+    const callableType = resolveTsExpressionType(
+      node.expression,
+      modelType,
+      checker,
+      localBindings,
+    );
+    const signature = callableType
+      ? pickSignatureByArgumentCount(
+          callableType.getCallSignatures(),
+          node.arguments.length,
+        )
+      : null;
+    return signature ? checker.getNonNullableType(signature.getReturnType()) : null;
+  }
+
+  return null;
+}
+
 function resolveProgramForFile(
   program: ts.Program,
   fileName: string,
@@ -452,10 +770,25 @@ function resolveChainType(
   modelType: ts.Type,
   chain: readonly string[],
   checker: ts.TypeChecker,
+  localBindings: LocalBindings = emptyLocalBindings,
 ): ts.Type | null {
   let currentType: ts.Type | null = modelType;
+  let startIndex = 0;
 
-  for (const segment of chain) {
+  const firstSegment = chain[0];
+  const localRootMatch = firstSegment?.match(/^([A-Za-z_$][\w$]*)$/u);
+  if (localRootMatch) {
+    const localRootType = localBindings.get(localRootMatch[1]);
+    if (localRootType) {
+      currentType = checker.getNonNullableType(
+        unwrapRsxExpressionType(localRootType, checker),
+      );
+      startIndex = 1;
+    }
+  }
+
+  for (let index = startIndex; index < chain.length; index += 1) {
+    const segment = chain[index];
     if (!currentType) {
       return null;
     }
@@ -537,6 +870,19 @@ function resolveChainType(
   }
 
   return currentType;
+}
+
+function resolveRootCompletionType(
+  modelType: ts.Type,
+  prefix: string,
+  localBindings: LocalBindings,
+): ts.Type | null {
+  const localBindingType = localBindings.get(prefix);
+  if (localBindingType) {
+    return localBindingType;
+  }
+
+  return modelType;
 }
 
 function resolveCallableType(

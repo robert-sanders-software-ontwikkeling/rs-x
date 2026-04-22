@@ -24,7 +24,7 @@ interface ICart {
 
 interface IModel {
   user: IUser;
-  lines: { lineTotal: number }[];
+  lines: { qty: number; lineTotal: number }[];
   exprUser: IExpression<IUser>;
   exprCount: IExpression<number>;
   count: number;
@@ -62,3 +62,4 @@ rsx('cart.items[0].q')(model);
 rsx('cartItems[0].')(model);
 rsx('cartItems[0].q')(model);
 rsx('lines.reduce((sum, line) => sum + line.lineTotal, 0)')(model);
+rsx('lines.reduce((sum, line) => line.q, 0)')(model);

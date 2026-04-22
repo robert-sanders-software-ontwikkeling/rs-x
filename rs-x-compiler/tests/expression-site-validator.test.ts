@@ -170,6 +170,10 @@ describe('expression-site validation', () => {
         messages: [],
       },
       {
+        expression: 'lines.reduce((sum, line) => sum + line.qtyq, 0)',
+        messages: ["Identifier 'qtyq' does not exist on model type."],
+      },
+      {
         expression: 'applyToLineTotals((sum, line) => sum + line.lineTotal, 0)',
         messages: [],
       },

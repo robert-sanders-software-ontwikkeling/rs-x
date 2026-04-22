@@ -301,6 +301,26 @@ describe('rsx language service', () => {
     expect(rootPrefixCompletions).toEqual([{ kind: 'property', name: 'qty' }]);
   });
 
+  it('returns completions for lambda callback parameters inside array methods', () => {
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/language-service.fixture.ts',
+    );
+    const program = createProgram(fixturePath);
+    const sourceFile = program.getSourceFile(fixturePath)!;
+
+    const position =
+      findPosition(sourceFile, "rsx('lines.reduce((sum, line) => line.q, 0)')(model)") +
+      "rsx('lines.reduce((sum, line) => line.q".length;
+    const completions = getRsxCompletionsAtPosition(
+      program,
+      fixturePath,
+      position,
+    );
+
+    expect(completions).toEqual([{ kind: 'property', name: 'qty' }]);
+  });
+
   it('returns diagnostics for syntax and semantic issues', () => {
     const fixturePath = path.resolve(
       __dirname,
@@ -358,6 +378,10 @@ describe('rsx language service', () => {
       {
         category: 'syntax',
         message: "Syntax error in expression 'cartItems[0].'.",
+      },
+      {
+        category: 'semantic',
+        message: "Identifier 'q' does not exist on model type.",
       },
       {
         category: 'semantic',

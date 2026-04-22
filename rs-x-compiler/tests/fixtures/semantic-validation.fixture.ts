@@ -89,6 +89,7 @@ rsx('getNumber$() + 1')(model);
 rsx('a.b.c.d')(model);
 rsx('cart.first().qty')(model);
 rsx('lines.reduce((sum, line) => sum + line.lineTotal, 0)')(model);
+rsx('lines.reduce((sum, line) => sum + line.qtyq, 0)')(model);
 rsx('applyToLineTotals((sum, line) => sum + line.lineTotal, 0)')(model);
 expressionFactory.create(model, 'multiply(count, 2)');
 rsx('x1 * 3')(modularModel);

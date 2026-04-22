@@ -1,4 +1,4 @@
-import type ts from 'typescript';
+import ts from 'typescript';
 
 import { effectiveTypeFlags as _typeFlags } from './effective-typescript';
 export { setEffectiveTypeScript } from './effective-typescript';
@@ -35,6 +35,10 @@ interface IResolvedType {
     | 'null'
     | 'function';
 }
+
+type LocalBindings = ReadonlyMap<string, ts.Type>;
+
+const emptyLocalBindings: LocalBindings = new Map();
 
 const globalIdentifierOwnerResolver = new GlobalIdentifierOwnerResolver();
 export const supportedDateProperties = new Set<string>([
@@ -131,6 +135,7 @@ function resolveExpressionType(
   rootModelType: ts.Type,
   checker: ts.TypeChecker,
   diagnostics: ICompilerDiagnostic[],
+  localBindings: LocalBindings = emptyLocalBindings,
 ): IResolvedType {
   switch (expression.type) {
     case ExpressionType.Identifier:
@@ -139,6 +144,7 @@ function resolveExpressionType(
         currentContextType,
         checker,
         diagnostics,
+        localBindings,
       );
 
     case ExpressionType.Member:
@@ -148,6 +154,7 @@ function resolveExpressionType(
         rootModelType,
         checker,
         diagnostics,
+        localBindings,
       );
 
     case ExpressionType.Function:
@@ -157,6 +164,7 @@ function resolveExpressionType(
         rootModelType,
         checker,
         diagnostics,
+        localBindings,
       );
 
     case ExpressionType.Number:
@@ -182,6 +190,7 @@ function resolveExpressionType(
         checker,
         diagnostics,
         '*',
+        localBindings,
       );
 
     case ExpressionType.Subtraction:
@@ -192,6 +201,7 @@ function resolveExpressionType(
         checker,
         diagnostics,
         '-',
+        localBindings,
       );
 
     case ExpressionType.Division:
@@ -202,6 +212,7 @@ function resolveExpressionType(
         checker,
         diagnostics,
         '/',
+        localBindings,
       );
 
     case ExpressionType.Remainder:
@@ -212,6 +223,7 @@ function resolveExpressionType(
         checker,
         diagnostics,
         '%',
+        localBindings,
       );
 
     case ExpressionType.Exponentiation:
@@ -222,6 +234,7 @@ function resolveExpressionType(
         checker,
         diagnostics,
         '**',
+        localBindings,
       );
 
     case ExpressionType.Addition:
@@ -231,6 +244,7 @@ function resolveExpressionType(
         rootModelType,
         checker,
         diagnostics,
+        localBindings,
       );
 
     case ExpressionType.UnaryPlus:
@@ -241,6 +255,7 @@ function resolveExpressionType(
         rootModelType,
         checker,
         diagnostics,
+        localBindings,
       );
 
     default:
@@ -250,6 +265,7 @@ function resolveExpressionType(
         rootModelType,
         checker,
         diagnostics,
+        localBindings,
       );
   }
 }
@@ -259,8 +275,16 @@ function resolveIdentifierType(
   contextType: ts.Type,
   checker: ts.TypeChecker,
   diagnostics: ICompilerDiagnostic[],
+  localBindings: LocalBindings,
 ): IResolvedType {
   const normalizedIdentifier = String(identifier);
+  const localBindingType = localBindings.get(normalizedIdentifier);
+  if (localBindingType) {
+    return {
+      tsType: unwrapRsxExpressionType(localBindingType, checker),
+    };
+  }
+
   contextType = checker.getNonNullableType(
     unwrapRsxExpressionType(contextType, checker),
   );
@@ -429,6 +453,7 @@ function resolveMemberType(
   rootModelType: ts.Type,
   checker: ts.TypeChecker,
   diagnostics: ICompilerDiagnostic[],
+  localBindings: LocalBindings,
 ): IResolvedType {
   const segments = memberExpression.childExpressions as AbstractExpression[];
   if (segments.length === 0) {
@@ -441,6 +466,7 @@ function resolveMemberType(
     rootModelType,
     checker,
     diagnostics,
+    localBindings,
   );
 
   for (let i = 1; i < segments.length; i++) {
@@ -457,6 +483,7 @@ function resolveMemberType(
         currentTsType,
         checker,
         diagnostics,
+        localBindings,
       );
       continue;
     }
@@ -469,6 +496,7 @@ function resolveMemberType(
         rootModelType,
         checker,
         diagnostics,
+        localBindings,
       );
       currentType = resolveIndexedType(
         currentTsType,
@@ -486,6 +514,7 @@ function resolveMemberType(
         rootModelType,
         checker,
         diagnostics,
+        localBindings,
       );
       continue;
     }
@@ -496,6 +525,7 @@ function resolveMemberType(
       rootModelType,
       checker,
       diagnostics,
+      localBindings,
     );
   }
 
@@ -559,6 +589,7 @@ function resolveFunctionType(
   rootModelType: ts.Type,
   checker: ts.TypeChecker,
   diagnostics: ICompilerDiagnostic[],
+  localBindings: LocalBindings,
 ): IResolvedType {
   if (functionExpression.childExpressions.length < 3) {
     // Function-valued expression (for example an inline lambda callback),
@@ -580,6 +611,7 @@ function resolveFunctionType(
           rootModelType,
           checker,
           diagnostics,
+          localBindings,
         );
 
   if (!objectType.tsType) {
@@ -593,6 +625,7 @@ function resolveFunctionType(
     checker,
     diagnostics,
     functionNameExpression,
+    localBindings,
   );
 }
 
@@ -603,6 +636,7 @@ function resolveFunctionTypeFromKnownContext(
   checker: ts.TypeChecker,
   diagnostics: ICompilerDiagnostic[],
   functionNameExpression?: AbstractExpression,
+  localBindings: LocalBindings = emptyLocalBindings,
 ): IResolvedType {
   objectType = unwrapRsxExpressionType(objectType, checker);
   // If the object resolved to any/unknown we cannot inspect its properties.
@@ -655,6 +689,7 @@ function resolveFunctionTypeFromKnownContext(
       rootModelType,
       checker,
       diagnostics,
+      localBindings,
     ),
   );
 
@@ -670,6 +705,15 @@ function resolveFunctionTypeFromKnownContext(
     });
     return {};
   }
+
+  validateInlineFunctionArguments(
+    argumentExpressions,
+    matchingSignature,
+    rootModelType,
+    checker,
+    diagnostics,
+    localBindings,
+  );
 
   return {
     tsType: matchingSignature.getReturnType(),
@@ -721,6 +765,173 @@ function getRequiredParameterCount(parameters: ts.Symbol[]): number {
       | undefined;
     return !declaration?.questionToken && !declaration?.initializer;
   }).length;
+}
+
+function validateInlineFunctionArguments(
+  argumentExpressions: readonly AbstractExpression[],
+  signature: ts.Signature,
+  rootModelType: ts.Type,
+  checker: ts.TypeChecker,
+  diagnostics: ICompilerDiagnostic[],
+  localBindings: LocalBindings,
+): void {
+  const parameters = signature.getParameters();
+
+  for (let index = 0; index < argumentExpressions.length; index += 1) {
+    const argumentExpression = argumentExpressions[index];
+    if (argumentExpression?.type !== ExpressionType.Function) {
+      continue;
+    }
+
+    const parameter = parameters[index];
+    if (!parameter) {
+      continue;
+    }
+
+    const declaration =
+      parameter.valueDeclaration ?? parameter.declarations?.[0];
+    if (!declaration) {
+      continue;
+    }
+
+    validateInlineFunctionExpression(
+      argumentExpression,
+      checker.getTypeOfSymbolAtLocation(parameter, declaration),
+      rootModelType,
+      checker,
+      diagnostics,
+      localBindings,
+    );
+  }
+}
+
+function validateInlineFunctionExpression(
+  functionExpression: AbstractExpression,
+  parameterType: ts.Type,
+  rootModelType: ts.Type,
+  checker: ts.TypeChecker,
+  diagnostics: ICompilerDiagnostic[],
+  outerBindings: LocalBindings,
+): void {
+  const inlineFunction = parseInlineFunctionParts(
+    functionExpression.expressionString,
+  );
+  if (!inlineFunction) {
+    return;
+  }
+
+  const signature = pickInlineFunctionSignature(
+    unwrapRsxExpressionType(parameterType, checker).getCallSignatures(),
+    inlineFunction.parameterNames.length,
+  );
+  if (!signature) {
+    return;
+  }
+
+  const bindings = new Map(outerBindings);
+  const parameters = signature.getParameters();
+  for (let index = 0; index < inlineFunction.parameterNames.length; index += 1) {
+    const parameterName = inlineFunction.parameterNames[index];
+    const parameter = parameters[index];
+    if (!parameter || !parameterName) {
+      continue;
+    }
+
+    const declaration =
+      parameter.valueDeclaration ?? parameter.declarations?.[0];
+    if (!declaration) {
+      continue;
+    }
+
+    bindings.set(
+      parameterName,
+      checker.getTypeOfSymbolAtLocation(parameter, declaration),
+    );
+  }
+
+  const parser = new JsEspreeExpressionParser(new JsExpressionAstParser());
+  for (const bodyExpression of inlineFunction.bodyExpressions) {
+    try {
+      resolveExpressionType(
+        parser.parse(bodyExpression),
+        rootModelType,
+        rootModelType,
+        checker,
+        diagnostics,
+        bindings,
+      );
+    } catch {
+      // The outer expression parser already reports syntax errors.
+    }
+  }
+}
+
+function parseInlineFunctionParts(
+  expressionSource: string,
+): { parameterNames: string[]; bodyExpressions: string[] } | null {
+  const sourceText = `const __rsx_inline__ = ${expressionSource};`;
+  const sourceFile = ts.createSourceFile(
+    '__rsx_inline__.ts',
+    sourceText,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const statement = sourceFile.statements[0];
+  if (!statement || !ts.isVariableStatement(statement)) {
+    return null;
+  }
+
+  const declaration = statement.declarationList.declarations[0];
+  const initializer = declaration?.initializer;
+  if (
+    !initializer ||
+    (!ts.isArrowFunction(initializer) && !ts.isFunctionExpression(initializer))
+  ) {
+    return null;
+  }
+
+  const parameterNames = initializer.parameters.flatMap((parameter) =>
+    ts.isIdentifier(parameter.name) ? [parameter.name.text] : [],
+  );
+
+  if (ts.isBlock(initializer.body)) {
+    return {
+      parameterNames,
+      bodyExpressions: initializer.body.statements.flatMap((statementNode) =>
+        ts.isReturnStatement(statementNode) && statementNode.expression
+          ? [statementNode.expression.getText(sourceFile)]
+          : [],
+      ),
+    };
+  }
+
+  return {
+    parameterNames,
+    bodyExpressions: [initializer.body.getText(sourceFile)],
+  };
+}
+
+function pickInlineFunctionSignature(
+  signatures: readonly ts.Signature[],
+  parameterCount: number,
+): ts.Signature | null {
+  for (const signature of signatures) {
+    const parameters = signature.getParameters();
+    const hasRest = parameters.some((parameter) => {
+      const declaration = parameter.valueDeclaration;
+      return ts.isParameter(declaration) && Boolean(declaration.dotDotDotToken);
+    });
+
+    if (
+      parameterCount <= parameters.length ||
+      (hasRest && parameterCount >= parameters.length - 1)
+    ) {
+      return signature;
+    }
+  }
+
+  return signatures[0] ?? null;
 }
 
 function isAssignableToParameter(
@@ -789,6 +1000,7 @@ function resolveNumericBinaryType(
   checker: ts.TypeChecker,
   diagnostics: ICompilerDiagnostic[],
   operator: '*' | '-' | '/' | '%' | '**',
+  localBindings: LocalBindings,
 ): IResolvedType {
   const leftExpression = expression.childExpressions[0] as AbstractExpression;
   const rightExpression = expression.childExpressions[1] as AbstractExpression;
@@ -799,6 +1011,7 @@ function resolveNumericBinaryType(
     rootModelType,
     checker,
     diagnostics,
+    localBindings,
   );
   const rightType = resolveExpressionType(
     rightExpression,
@@ -806,6 +1019,7 @@ function resolveNumericBinaryType(
     rootModelType,
     checker,
     diagnostics,
+    localBindings,
   );
 
   if (!isNumberLike(leftType, checker) || !isNumberLike(rightType, checker)) {
@@ -832,6 +1046,7 @@ function resolveAdditionType(
   rootModelType: ts.Type,
   checker: ts.TypeChecker,
   diagnostics: ICompilerDiagnostic[],
+  localBindings: LocalBindings,
 ): IResolvedType {
   const leftExpression = expression.childExpressions[0] as AbstractExpression;
   const rightExpression = expression.childExpressions[1] as AbstractExpression;
@@ -842,6 +1057,7 @@ function resolveAdditionType(
     rootModelType,
     checker,
     diagnostics,
+    localBindings,
   );
   const rightType = resolveExpressionType(
     rightExpression,
@@ -849,6 +1065,7 @@ function resolveAdditionType(
     rootModelType,
     checker,
     diagnostics,
+    localBindings,
   );
 
   if (isStringLike(leftType, checker) || isStringLike(rightType, checker)) {
@@ -888,16 +1105,21 @@ function hasMissingIdentifierDiagnostic(
   expression: AbstractExpression,
   diagnostics: ICompilerDiagnostic[],
 ): boolean {
-  if (expression.type !== ExpressionType.Identifier) {
-    return false;
+  if (expression.type === ExpressionType.Identifier) {
+    const identifier = expression.expressionString;
+    const expectedMessage = `Identifier '${identifier}' does not exist on model type.`;
+    return diagnostics.some(
+      (diagnostic) =>
+        diagnostic.category === 'semantic' &&
+        diagnostic.message === expectedMessage,
+    );
   }
 
-  const identifier = expression.expressionString;
-  const expectedMessage = `Identifier '${identifier}' does not exist on model type.`;
-  return diagnostics.some(
-    (diagnostic) =>
-      diagnostic.category === 'semantic' &&
-      diagnostic.message === expectedMessage,
+  return expression.childExpressions.some((childExpression) =>
+    hasMissingIdentifierDiagnostic(
+      childExpression as AbstractExpression,
+      diagnostics,
+    ),
   );
 }
 
@@ -907,6 +1129,7 @@ function resolveNumericUnaryType(
   rootModelType: ts.Type,
   checker: ts.TypeChecker,
   diagnostics: ICompilerDiagnostic[],
+  localBindings: LocalBindings,
 ): IResolvedType {
   const operandExpression = expression
     .childExpressions[0] as AbstractExpression;
@@ -916,6 +1139,7 @@ function resolveNumericUnaryType(
     rootModelType,
     checker,
     diagnostics,
+    localBindings,
   );
 
   if (!isNumberLike(operandType, checker)) {
@@ -940,6 +1164,14 @@ function isNumberLike(type: IResolvedType, checker: ts.TypeChecker): boolean {
     return false;
   }
   const unwrappedType = unwrapRsxExpressionType(type.tsType, checker);
+  if ((unwrappedType.flags & _typeFlags.TypeParameter) !== 0) {
+    const constraint = checker.getBaseConstraintOfType(unwrappedType);
+    if (!constraint) {
+      return true;
+    }
+
+    return isNumberLike({ tsType: constraint }, checker);
+  }
   if ((unwrappedType.flags & _typeFlags.Any) !== 0) {
     return true;
   }
@@ -990,6 +1222,7 @@ function resolveNestedExpressionType(
   rootModelType: ts.Type,
   checker: ts.TypeChecker,
   diagnostics: ICompilerDiagnostic[],
+  localBindings: LocalBindings,
 ): IResolvedType {
   const childExpressions = expression.childExpressions as AbstractExpression[];
   if (childExpressions.length === 0) {
@@ -1003,6 +1236,7 @@ function resolveNestedExpressionType(
       rootModelType,
       checker,
       diagnostics,
+      localBindings,
     ),
   );
 
