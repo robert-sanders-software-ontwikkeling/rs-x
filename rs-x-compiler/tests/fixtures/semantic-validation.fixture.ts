@@ -8,6 +8,7 @@ import {
 
 interface Model {
   count: number;
+  lines: { lineTotal: number }[];
   index: number;
   key: string;
   items: number[];
@@ -83,6 +84,7 @@ rsx('replayNumber + 1')(model);
 rsx('getNumber$() + 1')(model);
 rsx('a.b.c.d')(model);
 rsx('cart.first().qty')(model);
+rsx('lines.reduce((sum, line) => sum + line.lineTotal, 0)')(model);
 expressionFactory.create(model, 'multiply(count, 2)');
 rsx('x1 * 3')(modularModel);
 rsx('xObj.total * 2')(modularModel);

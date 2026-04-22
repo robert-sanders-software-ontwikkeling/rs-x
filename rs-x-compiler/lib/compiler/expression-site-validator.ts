@@ -27,7 +27,13 @@ export interface IValidatedExpressionSite extends IExpressionSiteDetection {
 
 interface IResolvedType {
   readonly tsType?: ts.Type;
-  readonly primitive?: 'string' | 'number' | 'boolean' | 'bigint' | 'null';
+  readonly primitive?:
+    | 'string'
+    | 'number'
+    | 'boolean'
+    | 'bigint'
+    | 'null'
+    | 'function';
 }
 
 const globalIdentifierOwnerResolver = new GlobalIdentifierOwnerResolver();
@@ -554,6 +560,12 @@ function resolveFunctionType(
   checker: ts.TypeChecker,
   diagnostics: ICompilerDiagnostic[],
 ): IResolvedType {
+  if (functionExpression.childExpressions.length < 3) {
+    // Function-valued expression (for example an inline lambda callback),
+    // not a function call site.
+    return { primitive: 'function' };
+  }
+
   const objectExpression = functionExpression
     .childExpressions[0] as AbstractExpression;
   const functionNameExpression = functionExpression
@@ -738,6 +750,14 @@ function isPrimitiveAssignable(
     return false;
   }
 
+  if (
+    (parameterType.flags &
+      (_typeFlags.Any | _typeFlags.Unknown | _typeFlags.TypeParameter)) !==
+    0
+  ) {
+    return true;
+  }
+
   if (parameterType.isUnionOrIntersection()) {
     return parameterType.types.some((type) =>
       isPrimitiveAssignable(primitive, type),
@@ -755,6 +775,8 @@ function isPrimitiveAssignable(
       return (parameterType.flags & _typeFlags.BigIntLike) !== 0;
     case 'null':
       return (parameterType.flags & _typeFlags.Null) !== 0;
+    case 'function':
+      return parameterType.getCallSignatures().length > 0;
     default:
       return false;
   }

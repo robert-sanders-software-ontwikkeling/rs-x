@@ -238,4 +238,21 @@ describe('FunctionExpression tests', () => {
     expect(argumentExpression).toBeDefined();
     expect(argumentExpression?.hidden).toBe(true);
   });
+
+  it('supports array reduce with inline arrow-function callback', async () => {
+    const model = {
+      lines: [{ lineTotal: 12 }, { lineTotal: 20 }, { lineTotal: 8 }],
+    };
+
+    expression = rsx<number>(
+      'lines.reduce((sum, line) => sum + line.lineTotal, 0)',
+    )(model);
+
+    const actual = (await new WaitForEvent(expression, 'changed').wait(
+      () => {},
+    )) as IExpression;
+
+    expect(actual.value).toBe(40);
+    expect(actual).toBe(expression);
+  });
 });

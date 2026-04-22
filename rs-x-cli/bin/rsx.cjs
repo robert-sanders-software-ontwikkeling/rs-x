@@ -218,7 +218,9 @@ function getVsCodeCliCandidates() {
   } = process.env;
 
   const windowsInstallRoots = [
-    LOCALAPPDATA ? path.join(LOCALAPPDATA, 'Programs', 'Microsoft VS Code') : null,
+    LOCALAPPDATA
+      ? path.join(LOCALAPPDATA, 'Programs', 'Microsoft VS Code')
+      : null,
     ProgramFiles ? path.join(ProgramFiles, 'Microsoft VS Code') : null,
     programFilesX86 ? path.join(programFilesX86, 'Microsoft VS Code') : null,
   ].filter(Boolean);

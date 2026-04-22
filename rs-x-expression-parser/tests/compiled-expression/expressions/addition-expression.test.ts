@@ -99,4 +99,23 @@ describe('AdditionExpression tests', () => {
     expect(actual.value).toEqual(6);
     expect(actual).toBe(expression);
   });
+
+  it('supports conditional numeric additions', async () => {
+    const model = {
+      availableGround: true,
+      availableAir: false,
+      availableSea: true,
+    };
+
+    expression = rsx<number>(
+      '(availableGround ? 1 : 0) + (availableAir ? 1 : 0) + (availableSea ? 1 : 0)',
+    )(model);
+
+    const actual = (await new WaitForEvent(expression, 'changed').wait(
+      () => {},
+    )) as IExpression;
+
+    expect(actual.value).toBe(2);
+    expect(actual).toBe(expression);
+  });
 });
