@@ -47,6 +47,10 @@ interface Model {
     };
   };
   multiply(a: number, b: number): number;
+  applyToLineTotals(
+    reducer: (sum: number, line: { lineTotal: number }) => number,
+    seed: number,
+  ): number;
   getNumber$(): Observable<number>;
   cart: {
     items: { qty: number }[];
@@ -85,6 +89,7 @@ rsx('getNumber$() + 1')(model);
 rsx('a.b.c.d')(model);
 rsx('cart.first().qty')(model);
 rsx('lines.reduce((sum, line) => sum + line.lineTotal, 0)')(model);
+rsx('applyToLineTotals((sum, line) => sum + line.lineTotal, 0)')(model);
 expressionFactory.create(model, 'multiply(count, 2)');
 rsx('x1 * 3')(modularModel);
 rsx('xObj.total * 2')(modularModel);
@@ -97,6 +102,7 @@ rsx('user.unknown')(model);
 
 // invalid function argument type
 rsx('user.multiplier("2").total')(model);
+rsx('applyToLineTotals("invalid", 0)')(model);
 
 // invalid multiplication operands
 rsx('user.name * 2')(model);

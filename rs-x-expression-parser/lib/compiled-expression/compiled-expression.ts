@@ -837,6 +837,9 @@ export class CompiledExpression implements IExpressionTree {
             innerTarget,
             property,
           );
+          if (resolvedValue === undefined) {
+            resolvedValue = Reflect.get(innerTarget, property, receiver);
+          }
         } catch {
           resolvedValue = Reflect.get(innerTarget, property, receiver);
         }

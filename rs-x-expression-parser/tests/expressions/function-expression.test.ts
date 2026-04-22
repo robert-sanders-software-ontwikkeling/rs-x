@@ -255,4 +255,57 @@ describe('FunctionExpression tests', () => {
     expect(actual.value).toBe(40);
     expect(actual).toBe(expression);
   });
+
+  it('supports inline arrow-function callbacks across array methods', async () => {
+    const model = {
+      lines: [
+        { qty: 2, unitPrice: 10, lineTotal: 20 },
+        { qty: 1, unitPrice: 7, lineTotal: 7 },
+        { qty: 5, unitPrice: 3, lineTotal: 15 },
+      ],
+    };
+
+    const scenarios: Array<{
+      expressionString: string;
+      expectedValue: unknown;
+    }> = [
+      {
+        expressionString:
+          'lines.reduce((sum, line) => sum + line.lineTotal, 0)',
+        expectedValue: 42,
+      },
+      {
+        expressionString: 'lines.map((line) => line.qty * line.unitPrice)',
+        expectedValue: [20, 7, 15],
+      },
+      {
+        expressionString: 'lines.filter((line) => line.qty > 1).length',
+        expectedValue: 2,
+      },
+      {
+        expressionString: 'lines.find((line) => line.unitPrice === 7).qty',
+        expectedValue: 1,
+      },
+      {
+        expressionString: 'lines.some((line) => line.qty >= 5)',
+        expectedValue: true,
+      },
+      {
+        expressionString: 'lines.every((line) => line.unitPrice > 0)',
+        expectedValue: true,
+      },
+    ];
+
+    for (const scenario of scenarios) {
+      const scenarioExpression = rsx(scenario.expressionString)(model);
+      const changedExpression = (await new WaitForEvent(
+        scenarioExpression,
+        'changed',
+      ).wait(() => {})) as IExpression | null;
+      const resolvedExpression = changedExpression ?? scenarioExpression;
+
+      expect(resolvedExpression.value).toEqual(scenario.expectedValue);
+      scenarioExpression.dispose();
+    }
+  });
 });

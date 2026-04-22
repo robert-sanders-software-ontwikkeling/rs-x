@@ -170,6 +170,10 @@ describe('expression-site validation', () => {
         messages: [],
       },
       {
+        expression: 'applyToLineTotals((sum, line) => sum + line.lineTotal, 0)',
+        messages: [],
+      },
+      {
         expression: 'multiply(count, 2)',
         messages: [],
       },
@@ -193,6 +197,12 @@ describe('expression-site validation', () => {
         expression: 'user.multiplier("2").total',
         messages: [
           "Arguments for 'multiplier' do not match any call signature.",
+        ],
+      },
+      {
+        expression: 'applyToLineTotals("invalid", 0)',
+        messages: [
+          "Arguments for 'applyToLineTotals' do not match any call signature.",
         ],
       },
       {
