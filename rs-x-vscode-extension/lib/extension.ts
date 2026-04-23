@@ -1,5 +1,6 @@
 import ts from 'typescript';
 import * as vscode from 'vscode';
+
 import { parseRsxFileExpressions } from '@rs-x/compiler';
 
 import {
@@ -15,8 +16,8 @@ import {
   getRsxReferencesAtPosition,
   getRsxRenameLocationsAtPosition,
   getRsxSemanticTokens,
-  getRsxSyntacticTokensForText,
   getRsxSignatureHelpAtPosition,
+  getRsxSyntacticTokensForText,
   rsxSemanticTokenModifiers,
   rsxSemanticTokenTypes,
 } from './rsx-standalone-language-service';
@@ -49,8 +50,9 @@ interface IRsxFileParts {
   body: string;
 }
 
-type IParsedRsxExpression =
-  NonNullable<ReturnType<typeof parseRsxFileExpressions>>['expressions'][number];
+type IParsedRsxExpression = NonNullable<
+  ReturnType<typeof parseRsxFileExpressions>
+>['expressions'][number];
 
 interface IModuleExpressionStandaloneService {
   document: NonNullable<ReturnType<typeof createRsxStandaloneLanguageService>>;
@@ -72,7 +74,10 @@ interface IDocumentSemanticTokenCacheEntry {
 interface IModuleExpressionCacheEntry {
   version: number;
   parsed: ReturnType<typeof parseRsxFileExpressions>;
-  servicesByExpressionIndex: Map<number, IModuleExpressionStandaloneService | null>;
+  servicesByExpressionIndex: Map<
+    number,
+    IModuleExpressionStandaloneService | null
+  >;
   diagnosticsByExpressionIndex: Map<number, vscode.Diagnostic[]>;
   semanticTokensByExpressionIndex: Map<number, IRsxSemanticToken[]>;
 }
@@ -85,7 +90,10 @@ const documentSemanticTokenCache = new Map<
   string,
   IDocumentSemanticTokenCacheEntry
 >();
-const diagnosticsDebounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const diagnosticsDebounceTimers = new Map<
+  string,
+  ReturnType<typeof setTimeout>
+>();
 const diagnosticsRequestIds = new Map<string, number>();
 const modulePrewarmTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const moduleBackgroundWarmTimers = new Map<
@@ -204,30 +212,33 @@ export function activate(context: vscode.ExtensionContext): void {
       clearTimeout(existingTimer);
     }
 
-    const timer = setTimeout(() => {
-      diagnosticsDebounceTimers.delete(key);
-      if (diagnosticsRequestIds.get(key) !== nextRequestId) {
-        return;
-      }
+    const timer = setTimeout(
+      () => {
+        diagnosticsDebounceTimers.delete(key);
+        if (diagnosticsRequestIds.get(key) !== nextRequestId) {
+          return;
+        }
 
-      const currentDocument =
-        vscode.workspace.textDocuments.find(
-          (candidate) => candidate.uri.toString() === key,
-        ) ?? document;
-      if (currentDocument.languageId !== RSX_LANGUAGE_ID) {
-        return;
-      }
+        const currentDocument =
+          vscode.workspace.textDocuments.find(
+            (candidate) => candidate.uri.toString() === key,
+          ) ?? document;
+        if (currentDocument.languageId !== RSX_LANGUAGE_ID) {
+          return;
+        }
 
-      const resolvedDiagnostics = computeDiagnosticsForDocument(
-        currentDocument,
-        mode,
-      );
-      if (diagnosticsRequestIds.get(key) !== nextRequestId) {
-        return;
-      }
+        const resolvedDiagnostics = computeDiagnosticsForDocument(
+          currentDocument,
+          mode,
+        );
+        if (diagnosticsRequestIds.get(key) !== nextRequestId) {
+          return;
+        }
 
-      diagnostics.set(currentDocument.uri, resolvedDiagnostics);
-    }, Math.max(0, debounceMs));
+        diagnostics.set(currentDocument.uri, resolvedDiagnostics);
+      },
+      Math.max(0, debounceMs),
+    );
 
     diagnosticsDebounceTimers.set(key, timer);
   };
@@ -254,13 +265,17 @@ export function activate(context: vscode.ExtensionContext): void {
       refreshDiagnosticsForDocument(document, 'auto', 100),
     ),
   );
-  context.subscriptions.push(
-    vscode.window.onDidChangeActiveTextEditor((editor) => {
-      if (editor) {
-        scheduleModuleExpressionPrewarm(editor.document, 0);
-      }
-    }),
-  );
+  const onDidChangeActiveTextEditor =
+    vscode.window?.onDidChangeActiveTextEditor;
+  if (onDidChangeActiveTextEditor) {
+    context.subscriptions.push(
+      onDidChangeActiveTextEditor((editor) => {
+        if (editor) {
+          scheduleModuleExpressionPrewarm(editor.document, 0);
+        }
+      }),
+    );
+  }
   context.subscriptions.push(
     vscode.workspace.onDidCloseTextDocument((document) => {
       if (document.languageId === RSX_LANGUAGE_ID) {
@@ -423,21 +438,24 @@ class RsxDefinitionProvider implements vscode.DefinitionProvider {
     const moduleHeaderService =
       standalone || moduleExpressionService
         ? null
-        : createModuleHeaderStandaloneLanguageServiceForOffset(document, offset);
+        : createModuleHeaderStandaloneLanguageServiceForOffset(
+            document,
+            offset,
+          );
     const lookupDocument =
-      standalone ?? moduleExpressionService?.document ?? moduleHeaderService?.document;
+      standalone ??
+      moduleExpressionService?.document ??
+      moduleHeaderService?.document;
     if (!lookupDocument) {
       return [];
     }
-    const lookupPosition =
-      standalone
-        ? offset
-        : moduleExpressionService?.position ?? moduleHeaderService?.position ?? offset;
+    const lookupPosition = standalone
+      ? offset
+      : (moduleExpressionService?.position ??
+        moduleHeaderService?.position ??
+        offset);
 
-    return getRsxDefinitionsAtPosition(
-      lookupDocument,
-      lookupPosition,
-    ).map(
+    return getRsxDefinitionsAtPosition(lookupDocument, lookupPosition).map(
       (definition) =>
         new vscode.Location(
           vscode.Uri.file(definition.fileName),
@@ -721,7 +739,10 @@ class RsxSemanticTokensProvider
     );
     const tokens = resolveSemanticTokensForDocument(document, sourceText);
     for (const token of tokens) {
-      const tokenText = sourceText.slice(token.start, token.start + token.length);
+      const tokenText = sourceText.slice(
+        token.start,
+        token.start + token.length,
+      );
       const normalizedTokenText = tokenText.trim();
       if (normalizedTokenText.length === 0) {
         continue;
@@ -784,7 +805,8 @@ function resolveSemanticTokensForDocument(
 
   const moduleTokens = getModuleExpressionSemanticTokens(document, 'full');
   const syntacticTokens = getRsxSyntacticTokensForText(sourceText);
-  const headerDirectiveTokens = getRsxHeaderDirectiveKeywordTokensForText(sourceText);
+  const headerDirectiveTokens =
+    getRsxHeaderDirectiveKeywordTokensForText(sourceText);
   const mergedBySpan = new Map<string, IRsxSemanticToken>();
   for (const token of syntacticTokens) {
     mergedBySpan.set(`${token.start}:${token.length}`, token);
@@ -1097,10 +1119,13 @@ function scheduleModuleExpressionPrewarm(
     clearTimeout(existingTimer);
   }
 
-  const timer = setTimeout(() => {
-    modulePrewarmTimers.delete(key);
-    prewarmModuleExpressionAnalysis(document);
-  }, Math.max(0, delayMs));
+  const timer = setTimeout(
+    () => {
+      modulePrewarmTimers.delete(key);
+      prewarmModuleExpressionAnalysis(document);
+    },
+    Math.max(0, delayMs),
+  );
   modulePrewarmTimers.set(key, timer);
 }
 
@@ -1127,10 +1152,13 @@ function scheduleModuleExpressionBackgroundWarm(
     clearTimeout(existingTimer);
   }
 
-  const timer = setTimeout(() => {
-    moduleBackgroundWarmTimers.delete(key);
-    warmModuleExpressionsInBackground(document, requestId, 0);
-  }, Math.max(0, delayMs));
+  const timer = setTimeout(
+    () => {
+      moduleBackgroundWarmTimers.delete(key);
+      warmModuleExpressionsInBackground(document, requestId, 0);
+    },
+    Math.max(0, delayMs),
+  );
   moduleBackgroundWarmTimers.set(key, timer);
 }
 
@@ -1304,7 +1332,10 @@ function createModuleExpressionStandaloneLanguageServiceForOffset(
 function createModuleHeaderStandaloneLanguageServiceForOffset(
   document: vscode.TextDocument,
   offset: number,
-): { document: NonNullable<ReturnType<typeof createRsxStandaloneLanguageService>>; position: number } | null {
+): {
+  document: NonNullable<ReturnType<typeof createRsxStandaloneLanguageService>>;
+  position: number;
+} | null {
   if (
     document.languageId !== RSX_LANGUAGE_ID ||
     document.uri.scheme !== 'file'
@@ -1384,12 +1415,16 @@ function getOrCreateMappedExpressionDiagnostics(args: {
     return [];
   }
 
-  const expressionDiagnostics = getRsxDiagnostics(moduleExpressionService.document);
+  const expressionDiagnostics = getRsxDiagnostics(
+    moduleExpressionService.document,
+  );
   const mappedDiagnostics: vscode.Diagnostic[] = [];
   const bodyStart = moduleExpressionService.standaloneExpressionStart;
-  const bodyEnd = bodyStart + moduleExpressionService.expression.expression.length;
+  const bodyEnd =
+    bodyStart + moduleExpressionService.expression.expression.length;
   for (const diagnostic of expressionDiagnostics) {
-    const overlapsBody = diagnostic.end > bodyStart && diagnostic.start < bodyEnd;
+    const overlapsBody =
+      diagnostic.end > bodyStart && diagnostic.start < bodyEnd;
     const isReturnMismatchDiagnostic =
       diagnostic.category === 'semantic' &&
       !!moduleExpressionService.expression.returnTypeText &&
@@ -1399,10 +1434,16 @@ function getOrCreateMappedExpressionDiagnostics(args: {
     }
 
     const mappedStart = overlapsBody
-      ? mapModuleExpressionOffsetToDocument(moduleExpressionService, diagnostic.start)
+      ? mapModuleExpressionOffsetToDocument(
+          moduleExpressionService,
+          diagnostic.start,
+        )
       : moduleExpressionService.expression.expressionStart;
     const mappedEnd = overlapsBody
-      ? mapModuleExpressionOffsetToDocument(moduleExpressionService, diagnostic.end)
+      ? mapModuleExpressionOffsetToDocument(
+          moduleExpressionService,
+          diagnostic.end,
+        )
       : moduleExpressionService.expression.expressionEnd;
 
     mappedDiagnostics.push(
@@ -1452,7 +1493,8 @@ function getOrCreateMappedExpressionSemanticTokens(args: {
 
   const mappedExpressionTokens: IRsxSemanticToken[] = [];
   const bodyStart = moduleExpressionService.standaloneExpressionStart;
-  const bodyEnd = bodyStart + moduleExpressionService.expression.expression.length;
+  const bodyEnd =
+    bodyStart + moduleExpressionService.expression.expression.length;
   for (const token of getRsxSemanticTokens(moduleExpressionService.document)) {
     const tokenStart = token.start;
     const tokenEnd = token.start + token.length;
@@ -1550,10 +1592,13 @@ function getModuleExpressionSemanticTokens(
     mode === 'auto' &&
     parsed.expressions.length > MODULE_FOCUSED_ANALYSIS_EXPRESSION_THRESHOLD
   ) {
-    for (let expressionIndex = 0; expressionIndex < parsed.expressions.length; expressionIndex += 1) {
-      const cachedTokens = cacheEntry.semanticTokensByExpressionIndex.get(
-        expressionIndex,
-      );
+    for (
+      let expressionIndex = 0;
+      expressionIndex < parsed.expressions.length;
+      expressionIndex += 1
+    ) {
+      const cachedTokens =
+        cacheEntry.semanticTokensByExpressionIndex.get(expressionIndex);
       if (cachedTokens) {
         tokens.push(...cachedTokens);
       }
@@ -1614,7 +1659,7 @@ function getActiveExpressionIndex(
   document: vscode.TextDocument,
   parsed: NonNullable<IModuleExpressionCacheEntry['parsed']>,
 ): number {
-  const activeEditor = vscode.window.activeTextEditor;
+  const activeEditor = vscode.window?.activeTextEditor;
   if (!activeEditor) {
     return -1;
   }
@@ -1632,7 +1677,10 @@ function createModuleExpressionStandaloneLanguageService(
   expressionIndex: number,
 ): IModuleExpressionStandaloneService | null {
   const standaloneTextLines = [`model: ${expression.modelTypeText}`];
-  if (expression.returnTypeText && expression.returnTypeText.trim().length > 0) {
+  if (
+    expression.returnTypeText &&
+    expression.returnTypeText.trim().length > 0
+  ) {
     standaloneTextLines.push(`return: ${expression.returnTypeText.trim()}`);
   }
   standaloneTextLines.push('', expression.expression);
@@ -1677,7 +1725,8 @@ function createModuleExpressionVirtualFileSuffix(
     .replace(/[^A-Za-z0-9_]+/gu, '_')
     .replace(/^_+/u, '')
     .replace(/_+$/u, '');
-  const safeName = normalized.length > 0 ? normalized : `expr_${expressionIndex}`;
+  const safeName =
+    normalized.length > 0 ? normalized : `expr_${expressionIndex}`;
   return `module_${safeName.slice(0, 80)}`;
 }
 
@@ -1712,7 +1761,7 @@ function extractTopLevelModelPropertyNamesFromTypeText(
   let bracketDepth = 0;
   let parenDepth = 0;
   let angleDepth = 0;
-  let quote: '\'' | '"' | null = null;
+  let quote: "'" | '"' | null = null;
 
   for (let index = 0; index < body.length; index += 1) {
     const character = body[index];
@@ -1723,7 +1772,7 @@ function extractTopLevelModelPropertyNamesFromTypeText(
       continue;
     }
 
-    if (character === '\'' || character === '"') {
+    if (character === "'" || character === '"') {
       quote = character;
       continue;
     }
@@ -1787,8 +1836,9 @@ function extractTopLevelModelPropertyNamesFromTypeText(
       continue;
     }
 
-    const quotedMatch =
-      /^(?:readonly\s+)?['"]([^'"]+)['"](?:\?)?\s*:/u.exec(segment);
+    const quotedMatch = /^(?:readonly\s+)?['"]([^'"]+)['"](?:\?)?\s*:/u.exec(
+      segment,
+    );
     if (
       quotedMatch?.[1] &&
       /^[A-Za-z_$][A-Za-z0-9_$]*$/u.test(quotedMatch[1])
@@ -2019,7 +2069,9 @@ function getModuleHeaderCompletions(
     return [];
   }
 
-  const linePrefix = document.lineAt(position.line).text.slice(0, position.character);
+  const linePrefix = document
+    .lineAt(position.line)
+    .text.slice(0, position.character);
   if (linePrefix.includes(':')) {
     return [];
   }

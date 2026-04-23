@@ -140,7 +140,6 @@ describe('rsx standalone language service', () => {
     expect(rsxSemanticTokenTypes[lineTotalToken!.tokenType]).toBe('property');
   });
 
-
   it('prefers semantic token kind when semantic and fallback spans overlap', () => {
     const document = createFixtureDocument();
     const service = createRsxStandaloneLanguageService({
@@ -200,7 +199,6 @@ lines.map((line) => ({
     expect(shippingMethodTokens).toEqual([]);
   });
 
-
   it('emits semantic operator tokens for comparison operators', () => {
     const text = 'model: { a: number; b: number }\n\na > b && a >= b';
     const service = createRsxStandaloneLanguageService({
@@ -210,11 +208,12 @@ lines.map((line) => ({
 
     const expressionStart = text.lastIndexOf('a > b && a >= b');
     const tokens = getRsxSemanticTokens(service!);
-    const operatorLikeTokens = tokens.filter((token) =>
-      token.start >= expressionStart &&
-      /^[+\-*\/%<>=!&|^~?:.,;()\[\]{}]+$/u.test(
-        text.slice(token.start, token.start + token.length).trim(),
-      ),
+    const operatorLikeTokens = tokens.filter(
+      (token) =>
+        token.start >= expressionStart &&
+        /^[+\-*\/%<>=!&|^~?:.,;()\[\]{}]+$/u.test(
+          text.slice(token.start, token.start + token.length).trim(),
+        ),
     );
 
     expect(
@@ -232,8 +231,9 @@ lines.map((line) => ({
 
     expect(parsed).not.toBeNull();
     const expression =
-      parsed!.expressions.find((candidate) => candidate.name === 'lineTotalsRsx') ??
-      parsed!.expressions[0];
+      parsed!.expressions.find(
+        (candidate) => candidate.name === 'lineTotalsRsx',
+      ) ?? parsed!.expressions[0];
     expect(expression).toBeDefined();
 
     const standaloneTextLines = [`model: ${expression!.modelTypeText}`];
@@ -242,9 +242,8 @@ lines.map((line) => ({
     }
     standaloneTextLines.push('', expression!.expression);
     const standaloneText = standaloneTextLines.join('\n');
-    const modelPropertyNamesHint = extractTopLevelModelPropertyNamesFromTypeText(
-      expression!.modelTypeText,
-    );
+    const modelPropertyNamesHint =
+      extractTopLevelModelPropertyNamesFromTypeText(expression!.modelTypeText);
 
     const firstStart = performance.now();
     const firstService = createRsxStandaloneLanguageService({
@@ -273,13 +272,18 @@ lines.map((line) => ({
 
     const tokenTexts = secondTokens
       .map((token) =>
-        secondService!.originalText.slice(token.start, token.start + token.length),
+        secondService!.originalText.slice(
+          token.start,
+          token.start + token.length,
+        ),
       )
       .map((value) => value.trim())
       .filter((value) => value.length > 0);
     expect(firstTokens.length).toBeGreaterThan(0);
     expect(
-      tokenTexts.some((value) => /^[+\-*\/%<>=!&|^~?:.,;()\[\]{}]+$/u.test(value)),
+      tokenTexts.some((value) =>
+        /^[+\-*\/%<>=!&|^~?:.,;()\[\]{}]+$/u.test(value),
+      ),
     ).toBe(true);
     expect(tokenTexts).toEqual(
       expect.arrayContaining(['line', 'lineTotal', 'qty', 'unitPrice']),
@@ -490,7 +494,9 @@ function createFixtureDocument(): { text: string } {
   };
 }
 
-function extractTopLevelModelPropertyNamesFromTypeText(typeText: string): string[] {
+function extractTopLevelModelPropertyNamesFromTypeText(
+  typeText: string,
+): string[] {
   const trimmed = typeText.trim();
   if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) {
     return [];
@@ -564,8 +570,9 @@ function extractTopLevelModelPropertyNamesFromTypeText(typeText: string): string
       continue;
     }
 
-    const quotedMatch =
-      /^(?:readonly\s+)?['"]([^'"]+)['"](?:\?)?\s*:/u.exec(segment);
+    const quotedMatch = /^(?:readonly\s+)?['"]([^'"]+)['"](?:\?)?\s*:/u.exec(
+      segment,
+    );
     if (
       quotedMatch?.[1] &&
       /^[A-Za-z_$][A-Za-z0-9_$]*$/u.test(quotedMatch[1])

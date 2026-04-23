@@ -151,7 +151,8 @@ export function parseRsxFileExpressions(args: {
       }
 
       const header =
-        parseTopLevelHeaderLine(line.text) ?? parseIndentedHeaderLine(line.text);
+        parseTopLevelHeaderLine(line.text) ??
+        parseIndentedHeaderLine(line.text);
       if (!header || !isSupportedRsxHeaderKey(header.key)) {
         break;
       }

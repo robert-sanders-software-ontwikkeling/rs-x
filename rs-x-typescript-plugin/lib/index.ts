@@ -32,9 +32,7 @@ function getRelevantExpressionSitesForFile(
 ) {
   return detectExpressionSites(program, {
     includePartialRsxInvocations: true,
-  }).filter(
-    (site) => site.expressionSourceFile.fileName === fileName,
-  );
+  }).filter((site) => site.expressionSourceFile.fileName === fileName);
 }
 
 function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {

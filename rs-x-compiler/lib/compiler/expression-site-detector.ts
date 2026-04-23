@@ -156,8 +156,8 @@ function tryDetectRsxEntryPoint(
       expressionEnd: expressionLiteral.getEnd() - 1,
       expressionLiteral,
       callExpression,
-      modelTypeNode: rsxInvocation.typeArguments?.[0],
-      returnTypeNode: rsxInvocation.typeArguments?.[1],
+      modelTypeNode: rsxInvocation.typeArguments?.[1],
+      returnTypeNode: rsxInvocation.typeArguments?.[0],
       sourceFile: callExpression.getSourceFile(),
     };
   }
@@ -173,7 +173,10 @@ function tryDetectRsxEntryPoint(
     return null;
   }
 
-  if (callExpression.arguments.length < 1 || callExpression.arguments.length > 2) {
+  if (
+    callExpression.arguments.length < 1 ||
+    callExpression.arguments.length > 2
+  ) {
     return null;
   }
 
@@ -203,8 +206,8 @@ function tryDetectRsxEntryPoint(
       expressionLiteral.getStart(expressionLiteral.getSourceFile()) + 1,
     expressionEnd: expressionLiteral.getEnd() - 1,
     expressionLiteral,
-    modelTypeNode: callExpression.typeArguments?.[0],
-    returnTypeNode: callExpression.typeArguments?.[1],
+    modelTypeNode: callExpression.typeArguments?.[1],
+    returnTypeNode: callExpression.typeArguments?.[0],
     sourceFile: callExpression.getSourceFile(),
   };
 }

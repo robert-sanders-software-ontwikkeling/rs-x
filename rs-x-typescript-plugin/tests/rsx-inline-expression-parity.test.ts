@@ -105,9 +105,11 @@ describe('rsx inline expression parity', () => {
   it('returns model completions for single-quoted and template inline rsx expressions', () => {
     const service = createPluginLanguageService(inlineFixtureText);
     const singleStart =
-      inlineFixtureText.indexOf("rsx<Model>('a')(model)") + "rsx<Model>('".length;
+      inlineFixtureText.indexOf("rsx<Model>('a')(model)") +
+      "rsx<Model>('".length;
     const templateStart =
-      inlineFixtureText.indexOf('rsx<Model>(`a`)(model)') + 'rsx<Model>(`'.length;
+      inlineFixtureText.indexOf('rsx<Model>(`a`)(model)') +
+      'rsx<Model>(`'.length;
 
     expect(singleStart).toBeGreaterThanOrEqual(0);
     expect(templateStart).toBeGreaterThanOrEqual(0);
@@ -123,7 +125,8 @@ describe('rsx inline expression parity', () => {
       {},
     );
 
-    const singleEntries = singleCompletions?.entries.map((entry) => entry.name) ?? [];
+    const singleEntries =
+      singleCompletions?.entries.map((entry) => entry.name) ?? [];
     const templateEntries =
       templateCompletions?.entries.map((entry) => entry.name) ?? [];
 
@@ -137,7 +140,9 @@ describe('rsx inline expression parity', () => {
 });
 
 function createPluginLanguageService(sourceText: string): ts.LanguageService {
-  const snapshots = new Map<string, string>([[inlineFixtureFileName, sourceText]]);
+  const snapshots = new Map<string, string>([
+    [inlineFixtureFileName, sourceText],
+  ]);
 
   const languageServiceHost: ts.LanguageServiceHost = {
     getCompilationSettings: () => ({
@@ -158,7 +163,8 @@ function createPluginLanguageService(sourceText: string): ts.LanguageService {
     getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options),
     fileExists: (fileName) =>
       snapshots.has(fileName) || ts.sys.fileExists(fileName),
-    readFile: (fileName) => snapshots.get(fileName) ?? ts.sys.readFile(fileName),
+    readFile: (fileName) =>
+      snapshots.get(fileName) ?? ts.sys.readFile(fileName),
     readDirectory: ts.sys.readDirectory,
     directoryExists: ts.sys.directoryExists,
     getDirectories: ts.sys.getDirectories,
@@ -197,7 +203,11 @@ function toRelativeSpans(args: {
       continue;
     }
 
-    relative.push(clampedStart - rangeStart, clampedEnd - clampedStart, classification);
+    relative.push(
+      clampedStart - rangeStart,
+      clampedEnd - clampedStart,
+      classification,
+    );
   }
 
   return relative;

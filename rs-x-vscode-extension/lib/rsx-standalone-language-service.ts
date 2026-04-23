@@ -722,7 +722,10 @@ function collectSemanticTokens(
     const tokenText = document.originalText
       .slice(mappedStart, mappedEnd)
       .trim();
-    if (tokenType === operatorTokenType && !isOperatorLikeTokenText(tokenText)) {
+    if (
+      tokenType === operatorTokenType &&
+      !isOperatorLikeTokenText(tokenText)
+    ) {
       continue;
     }
     if (
@@ -1387,7 +1390,9 @@ function resolveProjectContext(fileName: string): IResolvedProjectContext {
     },
     rootNames: [fileName],
   });
-  const cacheKey = configFileName ? `config:${configFileName}` : `default:${fileName}`;
+  const cacheKey = configFileName
+    ? `config:${configFileName}`
+    : `default:${fileName}`;
   const cached = projectContextCache.get(cacheKey);
   if (cached) {
     return cached;

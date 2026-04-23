@@ -92,9 +92,7 @@ function getRelevantExpressionSites(
 ): IExpressionSiteDetection[] {
   return detectExpressionSites(program, {
     includePartialRsxInvocations: true,
-  }).filter(
-    (site) => getExpressionSourceFileName(site) === fileName,
-  );
+  }).filter((site) => getExpressionSourceFileName(site) === fileName);
 }
 
 function getRsxBackedDetections(

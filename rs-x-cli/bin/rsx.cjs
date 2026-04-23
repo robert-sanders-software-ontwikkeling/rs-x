@@ -5764,7 +5764,7 @@ function runBuild(flags) {
     process.exit(1);
   }
 
-  const compilerModule = resolveRsxCompilerModule(projectRoot);
+  const compilerModule = resolveRsxCompilerModule(projectRoot, ts);
   // Sync TypeScript TypeFlags so the compiler uses the project's TS version constants.
   // This prevents flag mismatches when the project uses a newer TypeScript (e.g. TS 6.x)
   // than the one bundled with @rs-x/compiler.
@@ -5892,7 +5892,15 @@ function runTypecheck(flags) {
   });
 }
 
-function resolveRsxCompilerModule(projectRoot) {
+function resolveRsxCompilerModule(projectRoot, ts) {
+  const compilerSourceModule = resolveRsxCompilerModuleFromSource(
+    projectRoot,
+    ts,
+  );
+  if (compilerSourceModule) {
+    return compilerSourceModule;
+  }
+
   const siblingCompilerPath = path.resolve(
     __dirname,
     '..',
@@ -5919,6 +5927,79 @@ function resolveRsxCompilerModule(projectRoot) {
   }
 
   return null;
+}
+
+function resolveRsxCompilerModuleFromSource(projectRoot, ts) {
+  if (!ts || typeof ts.transpileModule !== 'function') {
+    return null;
+  }
+
+  const repoRoot = findRepoRoot(projectRoot);
+  const candidateRoots = new Set([
+    path.resolve(__dirname, '..', '..', 'rs-x-compiler'),
+    repoRoot ? path.join(repoRoot, 'rs-x-compiler') : null,
+  ]);
+
+  for (const candidateRoot of candidateRoots) {
+    if (!candidateRoot) {
+      continue;
+    }
+    const sourceEntryPath = path.join(candidateRoot, 'lib', 'index.ts');
+    if (!fs.existsSync(sourceEntryPath)) {
+      continue;
+    }
+
+    const compilerModule = requireTypeScriptModuleFromSource(
+      sourceEntryPath,
+      ts,
+    );
+    if (
+      compilerModule &&
+      typeof compilerModule.validateExpressionSites === 'function'
+    ) {
+      return compilerModule;
+    }
+  }
+
+  return null;
+}
+
+function requireTypeScriptModuleFromSource(entryPath, ts) {
+  const previousTsLoader = require.extensions['.ts'];
+  const previousTsxLoader = require.extensions['.tsx'];
+  const transpileLoader = (module, filename) => {
+    const source = fs.readFileSync(filename, 'utf8');
+    const transpiled = ts.transpileModule(source, {
+      compilerOptions: {
+        module: ts.ModuleKind.CommonJS,
+        target: ts.ScriptTarget.ES2022,
+        moduleResolution: ts.ModuleResolutionKind.NodeJs,
+        esModuleInterop: true,
+      },
+      fileName: filename,
+      reportDiagnostics: false,
+    });
+    module._compile(transpiled.outputText, filename);
+  };
+
+  require.extensions['.ts'] = transpileLoader;
+  require.extensions['.tsx'] = transpileLoader;
+  try {
+    return require(entryPath);
+  } catch {
+    return null;
+  } finally {
+    if (previousTsLoader) {
+      require.extensions['.ts'] = previousTsLoader;
+    } else {
+      delete require.extensions['.ts'];
+    }
+    if (previousTsxLoader) {
+      require.extensions['.tsx'] = previousTsxLoader;
+    } else {
+      delete require.extensions['.tsx'];
+    }
+  }
 }
 
 function runRsxSemanticValidation(program, projectRoot, compilerModule) {

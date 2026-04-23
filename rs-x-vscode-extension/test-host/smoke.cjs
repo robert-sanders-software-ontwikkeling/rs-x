@@ -78,7 +78,10 @@ async function run() {
   const moduleDocument =
     await vscode.workspace.openTextDocument(moduleFixturePath);
   const moduleEditor = await vscode.window.showTextDocument(moduleDocument);
-  const moduleFocusPosition = positionInside(moduleDocument, 'line.qty * line.unitPrice');
+  const moduleFocusPosition = positionInside(
+    moduleDocument,
+    'line.qty * line.unitPrice',
+  );
   moduleEditor.selection = new vscode.Selection(
     moduleFocusPosition,
     moduleFocusPosition,
@@ -123,7 +126,13 @@ async function run() {
       .join(', ')}`,
   );
 
-  const requiredSemanticTexts = ['lineTotal', 'line', 'qty', 'unitPrice', 'country'];
+  const requiredSemanticTexts = [
+    'lineTotal',
+    'line',
+    'qty',
+    'unitPrice',
+    'country',
+  ];
   for (const requiredText of requiredSemanticTexts) {
     assert.ok(
       decodedSpans.some((span) => span.text === requiredText),
@@ -194,9 +203,7 @@ async function executeDocumentSemanticTokens(vscode, uri) {
 
   throw (
     lastError ??
-    new Error(
-      `No semantic token command returned data for ${uri.toString()}`,
-    )
+    new Error(`No semantic token command returned data for ${uri.toString()}`)
   );
 }
 
