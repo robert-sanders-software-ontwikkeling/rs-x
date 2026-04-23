@@ -300,6 +300,7 @@ describe('expression-site detection', () => {
         expression: detection.expression,
         preparse: detection.preparse,
         lazy: detection.lazy,
+        lazyGroup: detection.lazyGroup,
         compiled: detection.compiled,
       }));
 
@@ -309,7 +310,127 @@ describe('expression-site detection', () => {
         expression: 'lines.reduce((sum, line) => sum + line.lineTotal, 0)',
         preparse: true,
         lazy: false,
+        lazyGroup: undefined,
         compiled: true,
+      },
+    ]);
+  });
+
+  it('reads rsx-file option headers (lazy/lazyGroup/preparse/compile)', () => {
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/expression-file-options.fixture.rsx',
+    );
+    const modelPath = path.resolve(
+      __dirname,
+      './fixtures/rsx-file-model.fixture.ts',
+    );
+
+    const program = createProgram([fixturePath, modelPath]);
+
+    const detections = detectExpressionSites(program)
+      .filter((detection) => detection.sourceFile.fileName === fixturePath)
+      .map((detection) => ({
+        kind: detection.kind,
+        expression: detection.expression,
+        preparse: detection.preparse,
+        lazy: detection.lazy,
+        lazyGroup: detection.lazyGroup,
+        compiled: detection.compiled,
+      }));
+
+    expect(detections).toEqual([
+      {
+        kind: 'rsx-file',
+        expression: 'lines.reduce((sum, line) => sum + line.lineTotal, 0)',
+        preparse: false,
+        lazy: true,
+        lazyGroup: 'shipping',
+        compiled: false,
+      },
+    ]);
+  });
+
+  it('detects multiple expression blocks in a single .rsx file', () => {
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/expression-file-multi.fixture.rsx',
+    );
+    const modelPath = path.resolve(
+      __dirname,
+      './fixtures/rsx-file-model.fixture.ts',
+    );
+
+    const program = createProgram([fixturePath, modelPath]);
+    const detections = detectExpressionSites(program)
+      .filter((detection) => detection.sourceFile.fileName === fixturePath)
+      .map((detection) => ({
+        kind: detection.kind,
+        expression: detection.expression,
+        preparse: detection.preparse,
+        lazy: detection.lazy,
+        lazyGroup: detection.lazyGroup,
+        compiled: detection.compiled,
+      }));
+
+    expect(detections).toEqual([
+      {
+        kind: 'rsx-file',
+        expression: 'lines.reduce((sum, line) => sum + line.lineTotal, 0)',
+        preparse: true,
+        lazy: true,
+        lazyGroup: 'shipping',
+        compiled: true,
+      },
+      {
+        kind: 'rsx-file',
+        expression: 'lines[0].name',
+        preparse: true,
+        lazy: true,
+        lazyGroup: 'shipping',
+        compiled: false,
+      },
+    ]);
+  });
+
+  it('reads indented per-expression headers in multi-expression .rsx files', () => {
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/expression-file-multi-indented-headers.fixture.rsx',
+    );
+    const modelPath = path.resolve(
+      __dirname,
+      './fixtures/rsx-file-model.fixture.ts',
+    );
+
+    const program = createProgram([fixturePath, modelPath]);
+    const detections = detectExpressionSites(program)
+      .filter((detection) => detection.sourceFile.fileName === fixturePath)
+      .map((detection) => ({
+        kind: detection.kind,
+        expression: detection.expression,
+        preparse: detection.preparse,
+        lazy: detection.lazy,
+        lazyGroup: detection.lazyGroup,
+        compiled: detection.compiled,
+      }));
+
+    expect(detections).toEqual([
+      {
+        kind: 'rsx-file',
+        expression: 'lines.reduce((sum, line) => sum + line.lineTotal, 0)',
+        preparse: true,
+        lazy: true,
+        lazyGroup: 'shipping',
+        compiled: true,
+      },
+      {
+        kind: 'rsx-file',
+        expression: 'lines[0].name',
+        preparse: true,
+        lazy: true,
+        lazyGroup: 'shipping',
+        compiled: false,
       },
     ]);
   });

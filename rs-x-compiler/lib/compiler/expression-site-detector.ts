@@ -29,8 +29,13 @@ export interface IExpressionSiteDetection {
   readonly sourceFile: ts.SourceFile;
 }
 
+export interface IExpressionSiteDetectionOptions {
+  readonly includePartialRsxInvocations?: boolean;
+}
+
 export function detectExpressionSites(
   program: ts.Program,
+  options?: IExpressionSiteDetectionOptions,
 ): IExpressionSiteDetection[] {
   const checker = program.getTypeChecker();
   const detections: IExpressionSiteDetection[] = [];
@@ -41,7 +46,9 @@ export function detectExpressionSites(
       continue;
     }
 
-    detections.push(...detectExpressionSitesInSourceFile(sourceFile, checker));
+    detections.push(
+      ...detectExpressionSitesInSourceFile(sourceFile, checker, options),
+    );
   }
 
   for (const rootFileName of program.getRootFileNames()) {
@@ -51,10 +58,7 @@ export function detectExpressionSites(
         continue;
       }
 
-      const detection = detectExpressionSiteInRsxBackedProgram(rsxProgram);
-      if (detection) {
-        detections.push(detection);
-      }
+      detections.push(...detectExpressionSitesInRsxBackedProgram(rsxProgram));
       continue;
     }
 
@@ -87,12 +91,13 @@ export function detectExpressionSites(
 export function detectExpressionSitesInSourceFile(
   sourceFile: ts.SourceFile,
   checker: ts.TypeChecker,
+  options?: IExpressionSiteDetectionOptions,
 ): IExpressionSiteDetection[] {
   const detections: IExpressionSiteDetection[] = [];
 
   const visit = (node: ts.Node): void => {
     if (ts.isCallExpression(node)) {
-      const rsxDetection = tryDetectRsxEntryPoint(node, checker);
+      const rsxDetection = tryDetectRsxEntryPoint(node, checker, options);
       if (rsxDetection) {
         detections.push(rsxDetection);
       }
@@ -113,32 +118,78 @@ export function detectExpressionSitesInSourceFile(
 function tryDetectRsxEntryPoint(
   callExpression: ts.CallExpression,
   checker: ts.TypeChecker,
+  options?: IExpressionSiteDetectionOptions,
 ): IExpressionSiteDetection | null {
-  if (!ts.isCallExpression(callExpression.expression)) {
+  if (ts.isCallExpression(callExpression.expression)) {
+    const rsxInvocation = callExpression.expression;
+    if (
+      rsxInvocation.arguments.length < 1 ||
+      rsxInvocation.arguments.length > 2
+    ) {
+      return null;
+    }
+
+    const expressionLiteral = resolveStaticExpressionLiteral(
+      rsxInvocation.arguments[0],
+      checker,
+    );
+    if (!expressionLiteral) {
+      return null;
+    }
+
+    if (!isRsxCallee(rsxInvocation.expression, checker)) {
+      return null;
+    }
+
+    const rsxOptions = resolveRsxOptions(rsxInvocation.arguments[1]);
+
+    return {
+      kind: 'rsx',
+      expression: expressionLiteral.text,
+      preparse: rsxOptions.preparse,
+      lazy: rsxOptions.lazy,
+      lazyGroup: rsxOptions.lazyGroup,
+      compiled: rsxOptions.compiled,
+      expressionSourceFile: expressionLiteral.getSourceFile(),
+      expressionStart:
+        expressionLiteral.getStart(expressionLiteral.getSourceFile()) + 1,
+      expressionEnd: expressionLiteral.getEnd() - 1,
+      expressionLiteral,
+      callExpression,
+      modelTypeNode: rsxInvocation.typeArguments?.[0],
+      returnTypeNode: rsxInvocation.typeArguments?.[1],
+      sourceFile: callExpression.getSourceFile(),
+    };
+  }
+
+  if (!options?.includePartialRsxInvocations) {
     return null;
   }
 
-  const rsxInvocation = callExpression.expression;
-  if (
-    rsxInvocation.arguments.length < 1 ||
-    rsxInvocation.arguments.length > 2
-  ) {
+  const hasModelInvocationParent =
+    ts.isCallExpression(callExpression.parent) &&
+    callExpression.parent.expression === callExpression;
+  if (hasModelInvocationParent) {
+    return null;
+  }
+
+  if (callExpression.arguments.length < 1 || callExpression.arguments.length > 2) {
     return null;
   }
 
   const expressionLiteral = resolveStaticExpressionLiteral(
-    rsxInvocation.arguments[0],
+    callExpression.arguments[0],
     checker,
   );
   if (!expressionLiteral) {
     return null;
   }
 
-  if (!isRsxCallee(rsxInvocation.expression, checker)) {
+  if (!isRsxCallee(callExpression.expression, checker)) {
     return null;
   }
 
-  const rsxOptions = resolveRsxOptions(rsxInvocation.arguments[1]);
+  const rsxOptions = resolveRsxOptions(callExpression.arguments[1]);
 
   return {
     kind: 'rsx',
@@ -152,7 +203,8 @@ function tryDetectRsxEntryPoint(
       expressionLiteral.getStart(expressionLiteral.getSourceFile()) + 1,
     expressionEnd: expressionLiteral.getEnd() - 1,
     expressionLiteral,
-    callExpression,
+    modelTypeNode: callExpression.typeArguments?.[0],
+    returnTypeNode: callExpression.typeArguments?.[1],
     sourceFile: callExpression.getSourceFile(),
   };
 }
@@ -296,39 +348,59 @@ function tryDetectFactoryEntryPoint(
   };
 }
 
-function detectExpressionSiteInRsxBackedProgram(
+function detectExpressionSitesInRsxBackedProgram(
   rsxProgram: IRsxBackedProgram,
-): IExpressionSiteDetection | null {
-  const statements = rsxProgram.virtualSourceFile.statements;
-  const modelAlias = statements[0];
-  const returnAlias = statements[1];
-  if (!modelAlias || !ts.isTypeAliasDeclaration(modelAlias)) {
-    return null;
+): IExpressionSiteDetection[] {
+  const aliases = new Map<string, ts.TypeAliasDeclaration>();
+  for (const statement of rsxProgram.virtualSourceFile.statements) {
+    if (!ts.isTypeAliasDeclaration(statement)) {
+      continue;
+    }
+    aliases.set(statement.name.text, statement);
   }
 
-  return {
-    kind: 'rsx-file',
-    expression: rsxProgram.metadata.expression,
-    preparse: true,
-    lazy: false,
-    lazyGroup: undefined,
-    compiled: true,
-    expressionSourceFile: rsxProgram.sourceFile,
-    expressionStart: rsxProgram.metadata.expressionStart,
-    expressionEnd: rsxProgram.metadata.expressionEnd,
-    modelTypeNode: modelAlias.type,
-    returnTypeNode:
-      returnAlias && ts.isTypeAliasDeclaration(returnAlias)
-        ? returnAlias.type
-        : undefined,
-    sourceFile: rsxProgram.sourceFile,
-  };
+  const detections: IExpressionSiteDetection[] = [];
+  for (
+    let index = 0;
+    index < rsxProgram.metadata.expressions.length;
+    index += 1
+  ) {
+    const expression = rsxProgram.metadata.expressions[index];
+    const modelAlias = aliases.get(`__RSX_MODEL_${String(index)}`);
+    if (!modelAlias) {
+      continue;
+    }
+
+    const returnAlias = aliases.get(`__RSX_RETURN_${String(index)}`);
+    detections.push({
+      kind: 'rsx-file',
+      expression: expression.expression,
+      preparse: expression.preparse,
+      lazy: expression.lazy,
+      lazyGroup: expression.lazyGroup,
+      compiled: expression.compiled,
+      expressionSourceFile: rsxProgram.sourceFile,
+      expressionStart: expression.expressionStart,
+      expressionEnd: expression.expressionEnd,
+      modelTypeNode: modelAlias.type,
+      returnTypeNode: returnAlias?.type,
+      sourceFile: rsxProgram.sourceFile,
+    });
+  }
+
+  return detections;
+}
+
+export function createExpressionSiteDetectionsFromRsxBackedProgram(
+  rsxProgram: IRsxBackedProgram,
+): IExpressionSiteDetection[] {
+  return detectExpressionSitesInRsxBackedProgram(rsxProgram);
 }
 
 export function createExpressionSiteDetectionFromRsxBackedProgram(
   rsxProgram: IRsxBackedProgram,
 ): IExpressionSiteDetection | null {
-  return detectExpressionSiteInRsxBackedProgram(rsxProgram);
+  return detectExpressionSitesInRsxBackedProgram(rsxProgram)[0] ?? null;
 }
 
 function resolveRsxOptions(optionArgument?: ts.Expression): {

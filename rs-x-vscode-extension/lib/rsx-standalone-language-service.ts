@@ -5,6 +5,10 @@ import ts from 'typescript';
 import {
   createRsxBackedProgramForFile,
   createRsxImportAwareCompilerHost,
+  generateRsxModuleDeclaration,
+  getRsxFileNameFromVirtualDeclaration,
+  getRsxVirtualDeclarationFileName,
+  parseExpressionDiagnostic,
 } from '@rs-x/compiler';
 
 const RSX_MODEL_PREFIX = 'type __RSX_MODEL = ';
@@ -46,6 +50,44 @@ export interface IRsxCodeFix {
   readonly edits: readonly IRsxCodeFixEdit[];
 }
 
+export interface IRsxCompletionItem {
+  readonly name: string;
+  readonly kind: 'property' | 'method' | 'constructor';
+}
+
+export interface IRsxHoverInfo {
+  readonly text: string;
+  readonly start: number;
+  readonly end: number;
+}
+
+export interface IRsxSignatureParameter {
+  readonly name: string;
+  readonly typeText: string;
+  readonly isOptional: boolean;
+  readonly isRest: boolean;
+}
+
+export interface IRsxSignatureHelpItem {
+  readonly parameters: readonly IRsxSignatureParameter[];
+  readonly returnTypeText: string;
+}
+
+export interface IRsxSignatureHelp {
+  readonly items: readonly IRsxSignatureHelpItem[];
+  readonly argumentIndex: number;
+  readonly argumentCount: number;
+  readonly applicableStart: number;
+  readonly applicableEnd: number;
+}
+
+export interface IRsxDiagnostic {
+  readonly category: 'syntax' | 'semantic' | 'suggestion';
+  readonly message: string;
+  readonly start: number;
+  readonly end: number;
+}
+
 interface IRsxFileParts {
   readonly headers: readonly string[];
   readonly body: string;
@@ -68,11 +110,24 @@ interface IRsxVirtualDocument {
   readonly virtualFileName: string;
   readonly originalText: string;
   readonly virtualText: string;
+  readonly modelPropertyNames: readonly string[];
   readonly modelTypeRegion: IMappedRegion;
   readonly returnTypeRegion?: IMappedRegion;
   readonly bodyRegion: IMappedRegion;
   readonly languageService: ts.LanguageService;
 }
+
+interface IStandaloneRuntime {
+  readonly languageService: ts.LanguageService;
+  readonly rootNames: readonly string[];
+  readonly options: ts.CompilerOptions;
+  readonly virtualFileName: string;
+  setVirtualText(text: string): void;
+}
+
+const projectContextCache = new Map<string, IResolvedProjectContext>();
+const projectContextByFileCache = new Map<string, IResolvedProjectContext>();
+const standaloneRuntimeByVirtualFile = new Map<string, IStandaloneRuntime>();
 
 export const rsxSemanticTokenTypes = [
   'class',
@@ -86,7 +141,16 @@ export const rsxSemanticTokenTypes = [
   'enumMember',
   'property',
   'function',
-  'member',
+  'method',
+  'macro',
+  'keyword',
+  'modifier',
+  'comment',
+  'string',
+  'number',
+  'regexp',
+  'operator',
+  'decorator',
 ] as const;
 
 export const rsxSemanticTokenModifiers = [
@@ -101,6 +165,8 @@ export const rsxSemanticTokenModifiers = [
 export function createRsxStandaloneLanguageService(args: {
   fileName: string;
   text: string;
+  modelPropertyNamesHint?: readonly string[];
+  virtualFileNameSuffix?: string;
 }): IRsxVirtualDocument | null {
   const parsed = parseRsxFile(args.text);
   if (!parsed) {
@@ -108,15 +174,25 @@ export function createRsxStandaloneLanguageService(args: {
   }
 
   const projectContext = resolveProjectContext(args.fileName);
+  const hintedModelPropertyNames =
+    args.modelPropertyNamesHint
+      ?.map((propertyName) => propertyName.trim())
+      .filter((propertyName) =>
+        /^[A-Za-z_$][A-Za-z0-9_$]*$/u.test(propertyName),
+      ) ?? [];
   const virtual = buildVirtualDocument({
     fileName: args.fileName,
     text: args.text,
+    virtualFileNameSuffix: args.virtualFileNameSuffix,
     parsed,
-    modelPropertyNames: resolveTopLevelModelPropertyNames({
-      fileName: args.fileName,
-      text: args.text,
-      projectContext,
-    }),
+    modelPropertyNames:
+      hintedModelPropertyNames.length > 0
+        ? hintedModelPropertyNames
+        : resolveTopLevelModelPropertyNames({
+            fileName: args.fileName,
+            text: args.text,
+            projectContext,
+          }),
   });
   const rootNames = Array.from(
     new Set([
@@ -124,20 +200,69 @@ export function createRsxStandaloneLanguageService(args: {
         (rootName) => rootName !== args.fileName && !rootName.endsWith('.rsx'),
       ),
       virtual.virtualFileName,
+      getRsxVirtualDeclarationFileName(args.fileName),
     ]),
   );
-  const moduleResolutionHost = createRsxImportAwareCompilerHost({
+  const runtime = getOrCreateStandaloneRuntime({
+    fileName: args.fileName,
+    virtualFileName: virtual.virtualFileName,
     options: projectContext.options,
     rootNames,
   });
+  runtime.setVirtualText(virtual.virtualText);
 
+  return {
+    ...virtual,
+    languageService: runtime.languageService,
+  };
+}
+
+function getOrCreateStandaloneRuntime(args: {
+  fileName: string;
+  virtualFileName: string;
+  options: ts.CompilerOptions;
+  rootNames: readonly string[];
+}): IStandaloneRuntime {
+  const existing = standaloneRuntimeByVirtualFile.get(args.virtualFileName);
+  if (existing) {
+    return existing;
+  }
+
+  const runtimeState = {
+    virtualText: '',
+    scriptVersion: 0,
+  };
+  const moduleResolutionHost = createRsxImportAwareCompilerHost({
+    options: args.options,
+    rootNames: args.rootNames,
+  });
   const languageServiceHost: ts.LanguageServiceHost = {
-    getCompilationSettings: () => projectContext.options,
-    getScriptFileNames: () => rootNames,
-    getScriptVersion: () => '1',
+    getCompilationSettings: () => args.options,
+    getScriptFileNames: () => [...args.rootNames],
+    getScriptVersion: (fileName) =>
+      fileName === args.virtualFileName
+        ? String(runtimeState.scriptVersion)
+        : '1',
     getScriptSnapshot: (fileName) => {
-      if (fileName === virtual.virtualFileName) {
-        return ts.ScriptSnapshot.fromString(virtual.virtualText);
+      if (fileName === args.virtualFileName) {
+        return ts.ScriptSnapshot.fromString(runtimeState.virtualText);
+      }
+
+      const rsxFileName = getRsxFileNameFromVirtualDeclaration(fileName);
+      if (rsxFileName) {
+        const rsxText = ts.sys.readFile(rsxFileName);
+        if (typeof rsxText !== 'string') {
+          return undefined;
+        }
+        const declarationText = generateRsxModuleDeclaration({
+          fileName: rsxFileName,
+          text: rsxText,
+          compilerOptions: args.options,
+          rootNames: args.rootNames,
+        });
+        return typeof declarationText === 'string'
+          ? ts.ScriptSnapshot.fromString(declarationText)
+          : undefined;
       }
 
       const text = ts.sys.readFile(fileName);
@@ -149,11 +274,34 @@ export function createRsxStandaloneLanguageService(args: {
     getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options),
     useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
     readFile: (fileName) =>
-      fileName === virtual.virtualFileName
-        ? virtual.virtualText
-        : ts.sys.readFile(fileName),
+      fileName === args.virtualFileName
+        ? runtimeState.virtualText
+        : (() => {
+            const rsxFileName = getRsxFileNameFromVirtualDeclaration(fileName);
+            if (!rsxFileName) {
+              return ts.sys.readFile(fileName);
+            }
+            const rsxText = ts.sys.readFile(rsxFileName);
+            if (typeof rsxText !== 'string') {
+              return undefined;
+            }
+            return (
+              generateRsxModuleDeclaration({
+                fileName: rsxFileName,
+                text: rsxText,
+                compilerOptions: args.options,
+                rootNames: args.rootNames,
+              }) ?? undefined
+            );
+          })(),
     fileExists: (fileName) =>
-      fileName === virtual.virtualFileName || ts.sys.fileExists(fileName),
+      fileName === args.virtualFileName ||
+      (() => {
+        const rsxFileName = getRsxFileNameFromVirtualDeclaration(fileName);
+        return rsxFileName
+          ? ts.sys.fileExists(rsxFileName)
+          : ts.sys.fileExists(fileName);
+      })(),
     readDirectory: ts.sys.readDirectory,
     directoryExists: ts.sys.directoryExists,
     getDirectories: ts.sys.getDirectories,
@@ -169,18 +317,28 @@ export function createRsxStandaloneLanguageService(args: {
           ts.resolveModuleName(
             moduleName,
             containingFile,
-            options ?? projectContext.options,
+            options ?? args.options,
             moduleResolutionHost,
             undefined,
             redirectedReference,
           ).resolvedModule,
       ),
   };
-
-  return {
-    ...virtual,
+  const runtime: IStandaloneRuntime = {
     languageService: ts.createLanguageService(languageServiceHost),
+    rootNames: args.rootNames,
+    options: args.options,
+    virtualFileName: args.virtualFileName,
+    setVirtualText(text: string) {
+      if (runtimeState.virtualText === text) {
+        return;
+      }
+      runtimeState.virtualText = text;
+      runtimeState.scriptVersion += 1;
+    },
   };
+  standaloneRuntimeByVirtualFile.set(args.virtualFileName, runtime);
+  return runtime;
 }
 
 export function getRsxDefinitionsAtPosition(
@@ -210,13 +368,24 @@ export function getRsxReferencesAtPosition(
     return [];
   }
 
-  return mapBoundSpansToOriginal(
+  const symbolReferences = mapBoundSpansToOriginal(
     document,
     document.languageService.getReferencesAtPosition(
       document.virtualFileName,
       virtualPosition,
     ) ?? [],
   );
+
+  const moduleReferences = getRsxModuleImportReferences(document);
+  const merged = new Map<string, IRsxMappedSpan>();
+  for (const reference of [...symbolReferences, ...moduleReferences]) {
+    merged.set(
+      `${reference.fileName}:${reference.start}:${reference.end}`,
+      reference,
+    );
+  }
+
+  return [...merged.values()];
 }
 
 export function getRsxImplementationsAtPosition(
@@ -311,7 +480,206 @@ export function getRsxRenameLocationsAtPosition(args: {
   });
 }
 
+export function getRsxCompletionsAtPosition(
+  document: IRsxVirtualDocument,
+  position: number,
+): IRsxCompletionItem[] {
+  const virtualPosition = mapOriginalOffsetToVirtual(document, position);
+  if (virtualPosition === null) {
+    return [];
+  }
+
+  const completions = document.languageService.getCompletionsAtPosition(
+    document.virtualFileName,
+    virtualPosition,
+    {
+      includeInsertTextCompletions: true,
+      includeCompletionsForModuleExports: false,
+      includeCompletionsWithInsertText: true,
+    },
+  );
+  if (!completions) {
+    return [];
+  }
+
+  const seen = new Set<string>();
+  return completions.entries.flatMap((entry) => {
+    const name = entry.insertText ?? entry.name;
+    if (!name || seen.has(name)) {
+      return [];
+    }
+    seen.add(name);
+
+    return [
+      {
+        name,
+        kind: toCompletionKind(entry.kind),
+      },
+    ];
+  });
+}
+
+export function getRsxHoverAtPosition(
+  document: IRsxVirtualDocument,
+  position: number,
+): IRsxHoverInfo | null {
+  const virtualPosition = mapOriginalOffsetToVirtual(document, position);
+  if (virtualPosition === null) {
+    return null;
+  }
+
+  const quickInfo = document.languageService.getQuickInfoAtPosition(
+    document.virtualFileName,
+    virtualPosition,
+  );
+  if (!quickInfo) {
+    return null;
+  }
+
+  const mapped = mapVirtualSpanToOriginal({
+    document,
+    fileName: document.virtualFileName,
+    start: quickInfo.textSpan.start,
+    end: quickInfo.textSpan.start + quickInfo.textSpan.length,
+  });
+  if (!mapped) {
+    return null;
+  }
+
+  const text = [
+    formatHoverDisplayText({
+      document,
+      displayText: ts.displayPartsToString(quickInfo.displayParts),
+      rangeStart: mapped.start,
+      rangeEnd: mapped.end,
+    }),
+    ts.displayPartsToString(quickInfo.documentation),
+  ]
+    .filter((segment) => segment.length > 0)
+    .join('\n\n');
+
+  return {
+    text,
+    start: mapped.start,
+    end: mapped.end,
+  };
+}
+
+export function getRsxSignatureHelpAtPosition(
+  document: IRsxVirtualDocument,
+  position: number,
+): IRsxSignatureHelp | null {
+  const virtualPosition = mapOriginalOffsetToVirtual(document, position);
+  if (virtualPosition === null) {
+    return null;
+  }
+
+  const help = document.languageService.getSignatureHelpItems(
+    document.virtualFileName,
+    virtualPosition,
+    {
+      triggerReason: {
+        kind: 'invoked',
+      },
+    },
+  );
+  if (!help || !help.applicableSpan) {
+    return null;
+  }
+
+  const mappedApplicable = mapVirtualSpanToOriginal({
+    document,
+    fileName: document.virtualFileName,
+    start: help.applicableSpan.start,
+    end: help.applicableSpan.start + help.applicableSpan.length,
+  });
+  if (!mappedApplicable) {
+    return null;
+  }
+
+  return {
+    items: help.items.map((item) => ({
+      parameters: item.parameters.map((parameter) => ({
+        name: parameter.name,
+        typeText: toSignatureParameterTypeText(parameter),
+        isOptional: !!parameter.isOptional,
+        isRest: !!parameter.isRest,
+      })),
+      returnTypeText: toSignatureReturnTypeText(item),
+    })),
+    argumentIndex: help.argumentIndex,
+    argumentCount: help.argumentCount,
+    applicableStart: mappedApplicable.start,
+    applicableEnd: mappedApplicable.end,
+  };
+}
+
 export function getRsxSemanticTokens(
+  document: IRsxVirtualDocument,
+): IRsxSemanticToken[] {
+  const semanticTokens = collectSemanticTokens(document);
+  const syntacticTokens = collectSyntacticTokens(document);
+
+  const bySpan = new Map<string, IRsxSemanticToken>();
+  for (const token of syntacticTokens) {
+    bySpan.set(`${token.start}:${token.length}`, token);
+  }
+
+  // Prefer semantic classifications whenever they exist for the same span.
+  for (const token of semanticTokens) {
+    bySpan.set(`${token.start}:${token.length}`, token);
+  }
+
+  return [...bySpan.values()].sort((left, right) =>
+    left.start === right.start
+      ? left.length - right.length
+      : left.start - right.start,
+  );
+}
+
+export function getRsxSyntacticTokensForText(
+  text: string,
+): IRsxSemanticToken[] {
+  const scanner = ts.createScanner(
+    ts.ScriptTarget.Latest,
+    false,
+    ts.LanguageVariant.Standard,
+    text,
+    undefined,
+  );
+  const tokens: IRsxSemanticToken[] = [];
+  const tokenTypeIndexes = {
+    keyword: rsxSemanticTokenTypes.indexOf('keyword'),
+    comment: rsxSemanticTokenTypes.indexOf('comment'),
+    string: rsxSemanticTokenTypes.indexOf('string'),
+    number: rsxSemanticTokenTypes.indexOf('number'),
+    regexp: rsxSemanticTokenTypes.indexOf('regexp'),
+    operator: rsxSemanticTokenTypes.indexOf('operator'),
+  } as const;
+
+  let token = scanner.scan();
+  while (token !== ts.SyntaxKind.EndOfFileToken) {
+    const tokenStart = scanner.getTokenPos();
+    const tokenEnd = scanner.getTextPos();
+    if (tokenEnd > tokenStart) {
+      const tokenType = toSyntacticTokenType(token, tokenTypeIndexes);
+      if (tokenType !== null) {
+        tokens.push({
+          start: tokenStart,
+          length: tokenEnd - tokenStart,
+          tokenType,
+          tokenModifiers: 0,
+        });
+      }
+    }
+
+    token = scanner.scan();
+  }
+
+  return tokens;
+}
+
+function collectSemanticTokens(
   document: IRsxVirtualDocument,
 ): IRsxSemanticToken[] {
   const classifications =
@@ -325,6 +693,12 @@ export function getRsxSemanticTokens(
     ).spans ?? [];
 
   const tokens: IRsxSemanticToken[] = [];
+  const operatorTokenType = rsxSemanticTokenTypes.indexOf('operator');
+  const literalLikeTokenTypes = new Set<number>(
+    ['string', 'number', 'regexp', 'comment']
+      .map((name) => rsxSemanticTokenTypes.indexOf(name))
+      .filter((value) => value >= 0),
+  );
   for (let index = 0; index < classifications.length; index += 3) {
     const start = classifications[index];
     const length = classifications[index + 1];
@@ -345,6 +719,20 @@ export function getRsxSemanticTokens(
       continue;
     }
 
+    const tokenText = document.originalText
+      .slice(mappedStart, mappedEnd)
+      .trim();
+    if (tokenType === operatorTokenType && !isOperatorLikeTokenText(tokenText)) {
+      continue;
+    }
+    if (
+      tokenType !== operatorTokenType &&
+      !literalLikeTokenTypes.has(tokenType) &&
+      hasOperatorLikePunctuation(tokenText)
+    ) {
+      continue;
+    }
+
     tokens.push({
       start: mappedStart,
       length: mappedEnd - mappedStart,
@@ -354,6 +742,233 @@ export function getRsxSemanticTokens(
   }
 
   return tokens;
+}
+
+function collectSyntacticTokens(
+  document: IRsxVirtualDocument,
+): IRsxSemanticToken[] {
+  const scanner = ts.createScanner(
+    ts.ScriptTarget.Latest,
+    false,
+    ts.LanguageVariant.Standard,
+    document.virtualText,
+    undefined,
+  );
+  const tokens: IRsxSemanticToken[] = [];
+  const tokenTypeIndexes = {
+    keyword: rsxSemanticTokenTypes.indexOf('keyword'),
+    comment: rsxSemanticTokenTypes.indexOf('comment'),
+    string: rsxSemanticTokenTypes.indexOf('string'),
+    number: rsxSemanticTokenTypes.indexOf('number'),
+    regexp: rsxSemanticTokenTypes.indexOf('regexp'),
+    operator: rsxSemanticTokenTypes.indexOf('operator'),
+  } as const;
+
+  let token = scanner.scan();
+  while (token !== ts.SyntaxKind.EndOfFileToken) {
+    const tokenStart = scanner.getTokenPos();
+    const tokenEnd = scanner.getTextPos();
+    const mappedStart = mapVirtualOffsetToOriginal(document, tokenStart);
+    const mappedEnd = mapVirtualOffsetToOriginal(document, tokenEnd);
+    if (mappedStart !== null && mappedEnd !== null && mappedEnd > mappedStart) {
+      const tokenType = toSyntacticTokenType(token, tokenTypeIndexes);
+      if (tokenType !== null) {
+        tokens.push({
+          start: mappedStart,
+          length: mappedEnd - mappedStart,
+          tokenType,
+          tokenModifiers: 0,
+        });
+      }
+    }
+
+    token = scanner.scan();
+  }
+
+  return tokens;
+}
+
+function toSyntacticTokenType(
+  token: ts.SyntaxKind,
+  indexes: {
+    keyword: number;
+    comment: number;
+    string: number;
+    number: number;
+    regexp: number;
+    operator: number;
+  },
+): number | null {
+  if (
+    token >= ts.SyntaxKind.FirstKeyword &&
+    token <= ts.SyntaxKind.LastKeyword
+  ) {
+    return indexes.keyword >= 0 ? indexes.keyword : null;
+  }
+
+  if (
+    token === ts.SyntaxKind.SingleLineCommentTrivia ||
+    token === ts.SyntaxKind.MultiLineCommentTrivia
+  ) {
+    return indexes.comment >= 0 ? indexes.comment : null;
+  }
+
+  if (
+    token === ts.SyntaxKind.StringLiteral ||
+    token === ts.SyntaxKind.NoSubstitutionTemplateLiteral ||
+    token === ts.SyntaxKind.TemplateHead ||
+    token === ts.SyntaxKind.TemplateMiddle ||
+    token === ts.SyntaxKind.TemplateTail
+  ) {
+    return indexes.string >= 0 ? indexes.string : null;
+  }
+
+  if (
+    token === ts.SyntaxKind.NumericLiteral ||
+    token === ts.SyntaxKind.BigIntLiteral
+  ) {
+    return indexes.number >= 0 ? indexes.number : null;
+  }
+
+  if (token === ts.SyntaxKind.RegularExpressionLiteral) {
+    return indexes.regexp >= 0 ? indexes.regexp : null;
+  }
+
+  const tokenText = ts.tokenToString(token);
+  if (
+    tokenText &&
+    isOperatorLikeTokenText(tokenText) &&
+    indexes.operator >= 0
+  ) {
+    return indexes.operator;
+  }
+
+  return null;
+}
+
+function isOperatorLikeTokenText(text: string): boolean {
+  return /^[+\-*\/%<>=!&|^~?:.,;()\[\]{}]+$/u.test(text);
+}
+
+function hasOperatorLikePunctuation(text: string): boolean {
+  return /[+\-*\/%<>=!&|^~?:.,;()\[\]{}]/u.test(text);
+}
+
+export function getRsxDiagnostics(
+  document: IRsxVirtualDocument,
+): IRsxDiagnostic[] {
+  const diagnostics: IRsxDiagnostic[] = [];
+  const seen = new Set<string>();
+  const unsupportedBodyMessage = resolveUnsupportedBodyMessage(document);
+  const byCategory: Array<{
+    category: IRsxDiagnostic['category'];
+    values: readonly ts.DiagnosticWithLocation[];
+  }> = [
+    {
+      category: 'semantic',
+      values:
+        document.languageService.getSemanticDiagnostics(
+          document.virtualFileName,
+        ) ?? [],
+    },
+    {
+      category: 'syntax',
+      values:
+        document.languageService.getSyntacticDiagnostics(
+          document.virtualFileName,
+        ) ?? [],
+    },
+    {
+      category: 'suggestion',
+      values:
+        document.languageService.getSuggestionDiagnostics(
+          document.virtualFileName,
+        ) ?? [],
+    },
+  ];
+
+  for (const { category, values } of byCategory) {
+    for (const diagnostic of values) {
+      const diagnosticStart = diagnostic.start ?? 0;
+      const diagnosticLength = diagnostic.length ?? 0;
+      const mapped = mapVirtualSpanToOriginal({
+        document,
+        fileName: diagnostic.file?.fileName ?? document.virtualFileName,
+        start: diagnosticStart,
+        end: diagnosticStart + diagnosticLength,
+      });
+      if (!mapped || mapped.fileName !== document.fileName) {
+        continue;
+      }
+
+      const start = mapped.start;
+      const end = Math.max(mapped.end, mapped.start + 1);
+      if (
+        unsupportedBodyMessage &&
+        category !== 'suggestion' &&
+        rangesOverlap(
+          start,
+          end,
+          document.bodyRegion.originalStart,
+          document.bodyRegion.originalEnd,
+        )
+      ) {
+        continue;
+      }
+
+      const message = ts.flattenDiagnosticMessageText(
+        diagnostic.messageText,
+        '\n',
+      );
+      const key = `${category}:${start}:${end}:${message}`;
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      diagnostics.push({
+        category,
+        message,
+        start,
+        end,
+      });
+    }
+  }
+
+  if (unsupportedBodyMessage) {
+    const start = document.bodyRegion.originalStart;
+    const end = Math.max(document.bodyRegion.originalEnd, start + 1);
+    const key = `semantic:${start}:${end}:${unsupportedBodyMessage}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      diagnostics.push({
+        category: 'semantic',
+        message: unsupportedBodyMessage,
+        start,
+        end,
+      });
+    }
+  }
+
+  diagnostics.sort((left, right) => left.start - right.start);
+  return diagnostics;
+}
+
+function resolveUnsupportedBodyMessage(
+  document: IRsxVirtualDocument,
+): string | null {
+  const bodyExpression = document.originalText
+    .slice(document.bodyRegion.originalStart, document.bodyRegion.originalEnd)
+    .trim();
+  if (!bodyExpression) {
+    return null;
+  }
+
+  const parsedDiagnostic = parseExpressionDiagnostic(bodyExpression);
+  if (parsedDiagnostic?.category !== 'unsupported') {
+    return null;
+  }
+
+  return parsedDiagnostic.message;
 }
 
 export function getRsxDocumentSymbols(
@@ -516,6 +1131,7 @@ export function getRsxCodeFixes(args: {
 function buildVirtualDocument(args: {
   fileName: string;
   text: string;
+  virtualFileNameSuffix?: string;
   parsed: IRsxFileParts;
   modelPropertyNames: readonly string[];
 }): Omit<IRsxVirtualDocument, 'languageService'> {
@@ -561,25 +1177,23 @@ function buildVirtualDocument(args: {
     virtualText += '\n';
   }
 
-  const lastHeaderMatch = returnTypeMatch ?? modelTypeMatch;
-  const bodyHeaderEnd = normalizedText.indexOf('\n', lastHeaderMatch.index);
-  const bodyOriginalStart = skipWhitespace(
-    normalizedText,
-    bodyHeaderEnd === -1 ? normalizedText.length : bodyHeaderEnd + 1,
-  );
+  const bodyOriginalStart = findRsxBodyStartOffset(normalizedText);
   const bodyOriginalText = normalizedText.slice(bodyOriginalStart);
   const bodyDeclarationPrefix = returnTypeRegion
     ? `const __rsx_expression: __RSX_RETURN = (\n`
     : `${RSX_BODY_PREFIX} = (\n`;
   const bodyVirtualStart = virtualText.length + bodyDeclarationPrefix.length;
   virtualText += `${bodyDeclarationPrefix}${bodyOriginalText}\n);\n`;
-  const virtualFileName = `${args.fileName}.standalone.ts`;
+  const virtualFileName = args.virtualFileNameSuffix
+    ? `${args.fileName}.standalone.${args.virtualFileNameSuffix}.ts`
+    : `${args.fileName}.standalone.ts`;
 
   return {
     fileName: args.fileName,
     virtualFileName,
     originalText: normalizedText,
     virtualText,
+    modelPropertyNames: args.modelPropertyNames,
     modelTypeRegion: {
       originalStart: modelTypeOriginalStart,
       originalEnd: modelTypeOriginalEnd,
@@ -594,6 +1208,33 @@ function buildVirtualDocument(args: {
       virtualEnd: bodyVirtualStart + bodyOriginalText.length,
     },
   };
+}
+
+function formatHoverDisplayText(args: {
+  document: IRsxVirtualDocument;
+  displayText: string;
+  rangeStart: number;
+  rangeEnd: number;
+}): string {
+  const { document, displayText, rangeStart, rangeEnd } = args;
+  const match = /^const\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*:\s*([\s\S]+)$/u.exec(
+    displayText.trim(),
+  );
+  if (!match) {
+    return displayText;
+  }
+
+  const propertyName = match[1];
+  const propertyType = match[2];
+  const hoveredText = document.originalText.slice(rangeStart, rangeEnd);
+  if (
+    hoveredText !== propertyName ||
+    !document.modelPropertyNames.includes(propertyName)
+  ) {
+    return displayText;
+  }
+
+  return `model.${propertyName}: ${propertyType}`;
 }
 
 function resolveTopLevelModelPropertyNames(args: {
@@ -687,6 +1328,12 @@ function resolveTopLevelModelPropertyNames(args: {
 
 function parseRsxFile(text: string): IRsxFileParts | null {
   const normalizedText = text.replace(/\r\n/gu, '\n');
+  // Standalone mode supports a single expression body. Module-style RS-X files
+  // that declare multiple `expression:` blocks should be handled by imports,
+  // not by per-file standalone diagnostics.
+  if (/^\s*expression\s*:/mu.test(normalizedText)) {
+    return null;
+  }
   const lines = normalizedText.split('\n');
   const headers: string[] = [];
   let index = 0;
@@ -714,6 +1361,11 @@ function parseRsxFile(text: string): IRsxFileParts | null {
 }
 
 function resolveProjectContext(fileName: string): IResolvedProjectContext {
+  const cachedByFile = projectContextByFileCache.get(fileName);
+  if (cachedByFile) {
+    return cachedByFile;
+  }
+
   const containingDirectory = path.dirname(fileName);
   const configFileName =
     ts.findConfigFile(
@@ -723,19 +1375,29 @@ function resolveProjectContext(fileName: string): IResolvedProjectContext {
     ) ??
     ts.findConfigFile(containingDirectory, ts.sys.fileExists, 'jsconfig.json');
 
+  const defaultContext = (): IResolvedProjectContext => ({
+    options: {
+      target: ts.ScriptTarget.ES2022,
+      module: ts.ModuleKind.ES2022,
+      moduleResolution: ts.ModuleResolutionKind.Bundler,
+      allowJs: true,
+      checkJs: true,
+      jsx: ts.JsxEmit.Preserve,
+      strict: true,
+    },
+    rootNames: [fileName],
+  });
+  const cacheKey = configFileName ? `config:${configFileName}` : `default:${fileName}`;
+  const cached = projectContextCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   if (!configFileName) {
-    return {
-      options: {
-        target: ts.ScriptTarget.ES2022,
-        module: ts.ModuleKind.ES2022,
-        moduleResolution: ts.ModuleResolutionKind.Bundler,
-        allowJs: true,
-        checkJs: true,
-        jsx: ts.JsxEmit.Preserve,
-        strict: true,
-      },
-      rootNames: [fileName],
-    };
+    const resolved = defaultContext();
+    projectContextCache.set(cacheKey, resolved);
+    projectContextByFileCache.set(fileName, resolved);
+    return resolved;
   }
 
   const parsedConfig = ts.getParsedCommandLineOfConfigFile(
@@ -748,24 +1410,19 @@ function resolveProjectContext(fileName: string): IResolvedProjectContext {
   );
 
   if (!parsedConfig) {
-    return {
-      options: {
-        target: ts.ScriptTarget.ES2022,
-        module: ts.ModuleKind.ES2022,
-        moduleResolution: ts.ModuleResolutionKind.Bundler,
-        allowJs: true,
-        checkJs: true,
-        jsx: ts.JsxEmit.Preserve,
-        strict: true,
-      },
-      rootNames: [fileName],
-    };
+    const resolved = defaultContext();
+    projectContextCache.set(cacheKey, resolved);
+    projectContextByFileCache.set(fileName, resolved);
+    return resolved;
   }
 
-  return {
+  const resolved = {
     options: parsedConfig.options,
     rootNames: parsedConfig.fileNames,
   };
+  projectContextCache.set(cacheKey, resolved);
+  projectContextByFileCache.set(fileName, resolved);
+  return resolved;
 }
 
 function mapBoundSpansToOriginal(
@@ -784,6 +1441,48 @@ function mapBoundSpansToOriginal(
     });
     return mapped ? [mapped] : [];
   });
+}
+
+function getRsxModuleImportReferences(
+  document: IRsxVirtualDocument,
+): IRsxMappedSpan[] {
+  const declarationFileName = getRsxVirtualDeclarationFileName(
+    document.fileName,
+  );
+  const declarationText = generateRsxModuleDeclaration({
+    fileName: document.fileName,
+    text: document.originalText,
+  });
+  if (!declarationText) {
+    return [];
+  }
+
+  const exportMatch = /declare const\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*:/u.exec(
+    declarationText,
+  );
+  if (!exportMatch || typeof exportMatch.index !== 'number') {
+    return [];
+  }
+
+  const symbolPosition =
+    exportMatch.index + exportMatch[0].indexOf(exportMatch[1]);
+  const references =
+    document.languageService.getReferencesAtPosition(
+      declarationFileName,
+      symbolPosition,
+    ) ?? [];
+
+  return references
+    .flatMap((reference) => {
+      const mapped = mapVirtualSpanToOriginal({
+        document,
+        fileName: reference.fileName,
+        start: reference.textSpan.start,
+        end: reference.textSpan.start + reference.textSpan.length,
+      });
+      return mapped ? [mapped] : [];
+    })
+    .filter((reference) => !reference.fileName.endsWith('.rsx.d.ts'));
 }
 
 function toRsxDocumentSymbols(
@@ -873,6 +1572,43 @@ function toDocumentSymbolKind(
   }
 
   return 'variable';
+}
+
+function toCompletionKind(
+  kind: ts.ScriptElementKind,
+): IRsxCompletionItem['kind'] {
+  if (
+    kind === ts.ScriptElementKind.memberFunctionElement ||
+    kind === ts.ScriptElementKind.functionElement
+  ) {
+    return 'method';
+  }
+
+  if (kind === ts.ScriptElementKind.constructorImplementationElement) {
+    return 'constructor';
+  }
+
+  return 'property';
+}
+
+function toSignatureParameterTypeText(
+  parameter: ts.SignatureHelpParameter,
+): string {
+  const displayText = ts.displayPartsToString(parameter.displayParts).trim();
+  const prefixPattern = new RegExp(
+    `^\\.\\.\\.${escapeRegExp(parameter.name)}\\??\\s*:\\s*|^${escapeRegExp(parameter.name)}\\??\\s*:\\s*`,
+    'u',
+  );
+  return displayText.replace(prefixPattern, '').trim();
+}
+
+function toSignatureReturnTypeText(item: ts.SignatureHelpItem): string {
+  const suffixText = ts.displayPartsToString(item.suffixDisplayParts).trim();
+  return suffixText.replace(/^\)\s*:\s*/u, '').trim();
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
 }
 
 function mapVirtualSpanToOriginal(args: {
@@ -967,6 +1703,44 @@ function skipWhitespace(text: string, index: number): number {
     cursor += 1;
   }
   return cursor;
+}
+
+function findRsxBodyStartOffset(text: string): number {
+  let cursor = 0;
+
+  while (cursor < text.length) {
+    const lineEndIndex = text.indexOf('\n', cursor);
+    const lineEnd = lineEndIndex === -1 ? text.length : lineEndIndex;
+    const line = text.slice(cursor, lineEnd);
+    const trimmed = line.trim();
+    const nextLineOffset = lineEndIndex === -1 ? text.length : lineEnd + 1;
+
+    if (trimmed.length === 0) {
+      cursor = nextLineOffset;
+      continue;
+    }
+
+    const headerMatch = /^([A-Za-z][A-Za-z0-9_]*)\s*:\s*(.+)$/u.exec(trimmed);
+    if (!headerMatch || !isSupportedRsxHeaderKey(headerMatch[1])) {
+      break;
+    }
+
+    cursor = nextLineOffset;
+  }
+
+  return skipWhitespace(text, cursor);
+}
+
+function isSupportedRsxHeaderKey(key: string): boolean {
+  return (
+    key === 'model' ||
+    key === 'return' ||
+    key === 'preparse' ||
+    key === 'lazy' ||
+    key === 'lazyGroup' ||
+    key === 'compiled' ||
+    key === 'compile'
+  );
 }
 
 function rangesOverlap(

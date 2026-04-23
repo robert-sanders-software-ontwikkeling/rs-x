@@ -15,7 +15,7 @@
       "patterns": [
         {
           "name": "meta.directive.rsx",
-          "match": "^(model|return)(\\s*:\\s*)(.*)$",
+          "match": "^(expression|defaults|model|return|preparse|lazy|lazyGroup|compiled|compile)(\\s*:\\s*)(.*)$",
           "captures": {
             "1": {
               "name": "keyword.control.rsx"
@@ -31,13 +31,32 @@
               ]
             }
           }
+        },
+        {
+          "name": "meta.directive.rsx",
+          "match": "^(\\s+)(model|return|preparse|lazy|lazyGroup|compiled|compile)(\\s*:\\s*)(.*)$",
+          "captures": {
+            "2": {
+              "name": "keyword.control.rsx"
+            },
+            "3": {
+              "name": "punctuation.separator.key-value.rsx"
+            },
+            "4": {
+              "patterns": [
+                {
+                  "include": "source.ts"
+                }
+              ]
+            }
+          }
         }
       ]
     },
     "body": {
       "name": "meta.embedded.block.rsx",
-      "begin": "^(?!(?:model|return)\\s*:).+",
-      "while": "^(?!(?:model|return)\\s*:).*$",
+      "begin": "^(?!(?:expression|defaults|model|return|preparse|lazy|lazyGroup|compiled|compile)\\s*:).+",
+      "while": "^(?!(?:expression|defaults|model|return|preparse|lazy|lazyGroup|compiled|compile)\\s*:).*$",
       "patterns": [
         {
           "include": "source.ts"

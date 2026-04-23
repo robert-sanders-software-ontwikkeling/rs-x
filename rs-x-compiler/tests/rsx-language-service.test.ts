@@ -820,6 +820,33 @@ describe('rsx language service', () => {
     ]);
   });
 
+  it('reports declared return mismatches for module-style .rsx expressions', () => {
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/language-service-file-module-return-mismatch.fixture.rsx',
+    );
+    const modelPath = path.resolve(
+      __dirname,
+      './fixtures/rsx-file-model.fixture.ts',
+    );
+    const program = createProgram([fixturePath, modelPath]);
+
+    const diagnostics = getRsxDiagnosticsForFile(program, fixturePath).map(
+      (diagnostic) => ({
+        category: diagnostic.category,
+        message: diagnostic.message,
+      }),
+    );
+
+    expect(diagnostics).toEqual([
+      {
+        category: 'semantic',
+        message:
+          "Expression result is not assignable to declared return type 'string'.",
+      },
+    ]);
+  });
+
   it('applies unsupported-expression validation to .rsx files too', () => {
     const fixturePath = path.resolve(
       __dirname,

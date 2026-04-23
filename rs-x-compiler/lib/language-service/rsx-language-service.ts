@@ -1,7 +1,7 @@
 import ts from 'typescript';
 
 import {
-  createExpressionSiteDetectionFromRsxBackedProgram,
+  createExpressionSiteDetectionsFromRsxBackedProgram,
   detectExpressionSites,
   detectExpressionSitesInSourceFile,
   type IExpressionSiteDetection,
@@ -90,15 +90,17 @@ function getRelevantExpressionSites(
   program: ts.Program,
   fileName: string,
 ): IExpressionSiteDetection[] {
-  return detectExpressionSites(program).filter(
+  return detectExpressionSites(program, {
+    includePartialRsxInvocations: true,
+  }).filter(
     (site) => getExpressionSourceFileName(site) === fileName,
   );
 }
 
-function getRsxBackedDetection(
+function getRsxBackedDetections(
   rsxBacked: IRsxBackedProgram,
-): IExpressionSiteDetection | null {
-  return createExpressionSiteDetectionFromRsxBackedProgram(rsxBacked);
+): IExpressionSiteDetection[] {
+  return createExpressionSiteDetectionsFromRsxBackedProgram(rsxBacked);
 }
 
 export function findRsxExpressionRegionAtPosition(
@@ -106,16 +108,37 @@ export function findRsxExpressionRegionAtPosition(
   fileName: string,
   position: number,
 ): IRsxExpressionRegion | null {
-  const context = resolveExpressionContext(program, fileName, position);
-  if (!context) {
+  const resolved = resolveProgramForFile(program, fileName);
+  const sourceFile =
+    resolved.rsxBacked?.sourceFile ??
+    resolved.program.getSourceFile(resolved.fileName);
+  if (!sourceFile) {
     return null;
   }
 
-  return {
-    expression: context.expression,
-    start: context.expressionStart,
-    end: context.expressionEnd,
-  };
+  const checker = resolved.program.getTypeChecker();
+  const sites = resolved.rsxBacked
+    ? getRsxBackedDetections(resolved.rsxBacked)
+    : sourceFile.fileName === resolved.fileName
+      ? getRelevantExpressionSites(resolved.program, resolved.fileName)
+      : detectExpressionSitesInSourceFile(sourceFile, checker, {
+          includePartialRsxInvocations: true,
+        });
+
+  for (const site of sites) {
+    const { start, end } = getExpressionLiteralBounds(site);
+    if (position < start || position > end) {
+      continue;
+    }
+
+    return {
+      expression: site.expression,
+      start,
+      end,
+    };
+  }
+
+  return null;
 }
 
 export function getRsxCompletionsAtPosition(
@@ -213,40 +236,35 @@ export function getRsxDiagnosticsForFile(
 
   const checker = resolved.program.getTypeChecker();
   if (resolved.rsxBacked) {
-    const site = getRsxBackedDetection(resolved.rsxBacked);
-    if (!site) {
-      return [];
-    }
+    return getRsxBackedDetections(resolved.rsxBacked).flatMap((site) => {
+      const result = validateExpressionSite(site, checker);
+      const literalBounds = getExpressionLiteralBounds(site);
+      return result.diagnostics.map((diagnostic) => {
+        const tokenRange = resolveDiagnosticTokenRangeInExpression({
+          expression: site.expression,
+          token: diagnostic.token,
+        });
+        const start =
+          tokenRange === null
+            ? literalBounds.start
+            : literalBounds.start + tokenRange.start;
+        const end =
+          tokenRange === null
+            ? literalBounds.end
+            : literalBounds.start + tokenRange.end;
 
-    const result = validateExpressionSite(site, checker);
-    const literalBounds = getExpressionLiteralBounds(site);
-    return result.diagnostics.map((diagnostic) => {
-      const tokenRange = resolveDiagnosticTokenRangeInExpression({
-        expression: site.expression,
-        token: diagnostic.token,
+        return {
+          category: diagnostic.category,
+          message: diagnostic.message,
+          start,
+          end,
+        };
       });
-      const start =
-        tokenRange === null
-          ? literalBounds.start
-          : literalBounds.start + tokenRange.start;
-      const end =
-        tokenRange === null
-          ? literalBounds.end
-          : literalBounds.start + tokenRange.end;
-
-      return {
-        category: diagnostic.category,
-        message: diagnostic.message,
-        start,
-        end,
-      };
     });
   }
 
   const sites = resolved.rsxBacked
-    ? toArray(
-        createExpressionSiteDetectionFromRsxBackedProgram(resolved.rsxBacked),
-      )
+    ? getRsxBackedDetections(resolved.rsxBacked)
     : sourceFile.fileName === resolved.fileName
       ? getRelevantExpressionSites(resolved.program, resolved.fileName)
       : detectExpressionSitesInSourceFile(sourceFile, checker);
@@ -443,38 +461,35 @@ function resolveExpressionContext(
 
   const checker = resolved.program.getTypeChecker();
   if (resolved.rsxBacked) {
-    const site = getRsxBackedDetection(resolved.rsxBacked);
-    if (!site) {
-      return null;
-    }
+    const sites = getRsxBackedDetections(resolved.rsxBacked);
+    for (const site of sites) {
+      const expressionStart = site.expressionStart;
+      const expressionEnd = site.expressionEnd;
+      if (position < expressionStart || position > expressionEnd) {
+        continue;
+      }
 
-    const expressionStart = site.expressionStart;
-    const expressionEnd = site.expressionEnd;
-    if (position < expressionStart || position > expressionEnd) {
-      return null;
-    }
+      const modelType = site.modelTypeNode
+        ? checker.getTypeFromTypeNode(site.modelTypeNode)
+        : null;
+      if (!modelType) {
+        continue;
+      }
 
-    const modelType = site.modelTypeNode
-      ? checker.getTypeFromTypeNode(site.modelTypeNode)
-      : null;
-    if (!modelType) {
-      return null;
+      return {
+        sourceFile,
+        expression: site.expression,
+        expressionStart,
+        expressionEnd,
+        modelType,
+        checker,
+      };
     }
-
-    return {
-      sourceFile,
-      expression: site.expression,
-      expressionStart,
-      expressionEnd,
-      modelType,
-      checker,
-    };
+    return null;
   }
 
   const sites = resolved.rsxBacked
-    ? toArray(
-        createExpressionSiteDetectionFromRsxBackedProgram(resolved.rsxBacked),
-      )
+    ? getRsxBackedDetections(resolved.rsxBacked)
     : sourceFile.fileName === resolved.fileName
       ? getRelevantExpressionSites(resolved.program, resolved.fileName)
       : detectExpressionSitesInSourceFile(sourceFile, checker);
@@ -987,10 +1002,6 @@ function resolveProgramForFile(
       fileName,
     }
   );
-}
-
-function toArray<T>(value: T | null): T[] {
-  return value ? [value] : [];
 }
 
 function resolveCompletionTarget(prefixSource: string): {

@@ -154,4 +154,136 @@ describe('rsx language service host', () => {
       `${rsxPath}.d.ts`,
     );
   });
+
+  it('infers return type from expression when return header is omitted', () => {
+    const rsxPath = path.resolve(
+      workspaceRoot,
+      './rs-x-compiler/tests/fixtures/expression-file.fixture.rsx',
+    );
+    const containingFile = path.resolve(
+      workspaceRoot,
+      './rs-x-compiler/tests/fixtures/rsx-file-import-consumer.fixture.ts',
+    );
+    const snapshots = new Map<string, string>([
+      [
+        rsxPath,
+        [
+          "model: import('./rsx-file-model.fixture').IModel",
+          '',
+          "lines.length > 0 ? user.name : ''",
+          '',
+        ].join('\n'),
+      ],
+    ]);
+
+    const languageServiceHost: ts.LanguageServiceHost = {
+      getCompilationSettings: () => ({
+        moduleResolution: ts.ModuleResolutionKind.Bundler,
+        module: ts.ModuleKind.ES2022,
+        target: ts.ScriptTarget.ES2022,
+      }),
+      getScriptFileNames: () => [containingFile, rsxPath],
+      getScriptSnapshot: (fileName) => {
+        const text = snapshots.get(fileName);
+        return typeof text === 'string'
+          ? ts.ScriptSnapshot.fromString(text)
+          : undefined;
+      },
+      getScriptVersion: () => '1',
+      getCurrentDirectory: () => workspaceRoot,
+      getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options),
+      fileExists: (fileName) => snapshots.has(fileName),
+      readFile: (fileName) => snapshots.get(fileName),
+    };
+
+    const info = {
+      languageServiceHost,
+      project: {
+        getCompilationSettings: () =>
+          languageServiceHost.getCompilationSettings!(),
+      },
+    } as unknown as ts.server.PluginCreateInfo;
+
+    patchLanguageServiceHostForRsxImports({ info, ts });
+
+    const declarationSnapshot = languageServiceHost.getScriptSnapshot?.(
+      `${rsxPath}.d.ts`,
+    );
+    expect(declarationSnapshot).toBeDefined();
+    const declarationText = declarationSnapshot!.getText(
+      0,
+      declarationSnapshot!.getLength(),
+    );
+
+    expect(declarationText).toContain('IExpression<string>');
+  });
+
+  it('provides quick info for symbols imported from .rsx modules', () => {
+    const rsxPath = path.resolve(
+      workspaceRoot,
+      './rs-x-compiler/tests/fixtures/expression-file.fixture.rsx',
+    );
+    const modelPath = path.resolve(
+      workspaceRoot,
+      './rs-x-compiler/tests/fixtures/rsx-file-model.fixture.ts',
+    );
+    const containingFile = path.resolve(
+      workspaceRoot,
+      './rs-x-compiler/tests/fixtures/rsx-file-import-consumer.fixture.ts',
+    );
+    const snapshots = new Map<string, string>([
+      [rsxPath, ts.sys.readFile(rsxPath) ?? ''],
+      [modelPath, ts.sys.readFile(modelPath) ?? ''],
+      [containingFile, ts.sys.readFile(containingFile) ?? ''],
+    ]);
+
+    const languageServiceHost: ts.LanguageServiceHost = {
+      getCompilationSettings: () => ({
+        moduleResolution: ts.ModuleResolutionKind.Bundler,
+        module: ts.ModuleKind.ES2022,
+        target: ts.ScriptTarget.ES2022,
+        strict: true,
+        allowSyntheticDefaultImports: true,
+      }),
+      getScriptFileNames: () => [containingFile, rsxPath, modelPath],
+      getScriptSnapshot: (fileName) => {
+        const text = snapshots.get(fileName);
+        return typeof text === 'string'
+          ? ts.ScriptSnapshot.fromString(text)
+          : undefined;
+      },
+      getScriptVersion: () => '1',
+      getCurrentDirectory: () => workspaceRoot,
+      getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options),
+      fileExists: (fileName) =>
+        snapshots.has(fileName) || ts.sys.fileExists(fileName),
+      readFile: (fileName) =>
+        snapshots.get(fileName) ?? ts.sys.readFile(fileName),
+      readDirectory: ts.sys.readDirectory,
+      directoryExists: ts.sys.directoryExists,
+      getDirectories: ts.sys.getDirectories,
+    };
+
+    const info = {
+      languageServiceHost,
+      project: {
+        getCompilationSettings: () =>
+          languageServiceHost.getCompilationSettings!(),
+      },
+    } as unknown as ts.server.PluginCreateInfo;
+
+    patchLanguageServiceHostForRsxImports({ info, ts });
+    const languageService = ts.createLanguageService(languageServiceHost);
+    const consumerText = snapshots.get(containingFile) ?? '';
+    const symbolPosition = consumerText.indexOf('totalExpr') + 1;
+
+    const quickInfo = languageService.getQuickInfoAtPosition(
+      containingFile,
+      symbolPosition,
+    );
+    expect(quickInfo).not.toBeUndefined();
+    expect(ts.displayPartsToString(quickInfo?.displayParts ?? [])).toContain(
+      'IExpression<number>',
+    );
+  });
 });

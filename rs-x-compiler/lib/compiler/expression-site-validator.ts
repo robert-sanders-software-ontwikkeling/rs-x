@@ -1101,6 +1101,13 @@ function resolveNumericBinaryType(
   );
 
   if (!isNumberLike(leftType, checker) || !isNumberLike(rightType, checker)) {
+    if (
+      hasMissingIdentifierDiagnostic(leftExpression, diagnostics) ||
+      hasMissingIdentifierDiagnostic(rightExpression, diagnostics)
+    ) {
+      return { primitive: 'number' };
+    }
+
     const token = pickIncompatibleOperandToken({
       leftExpression,
       leftType,
@@ -1221,6 +1228,10 @@ function resolveNumericUnaryType(
   );
 
   if (!isNumberLike(operandType, checker)) {
+    if (hasMissingIdentifierDiagnostic(operandExpression, diagnostics)) {
+      return { primitive: 'number' };
+    }
+
     diagnostics.push({
       category: 'semantic',
       message: 'Unary numeric operator requires a number-compatible operand.',

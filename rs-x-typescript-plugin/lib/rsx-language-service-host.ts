@@ -17,6 +17,22 @@ export function patchLanguageServiceHostForRsxImports(args: {
   if (!compilerOptions) {
     return;
   }
+  const fallbackModuleHost = ts.createCompilerHost(compilerOptions, true);
+
+  const resolveWithFallbackHost = (args: {
+    moduleName: string;
+    containingFile: string;
+    options?: tsModule.CompilerOptions;
+    redirectedReference?: tsModule.ResolvedProjectReference;
+  }): tsModule.ResolvedModuleFull | undefined =>
+    ts.resolveModuleName(
+      args.moduleName,
+      args.containingFile,
+      args.options ?? compilerOptions,
+      fallbackModuleHost,
+      undefined,
+      args.redirectedReference,
+    ).resolvedModule;
 
   const resolveRsxModule = (args: {
     moduleName: string;
@@ -61,11 +77,7 @@ export function patchLanguageServiceHostForRsxImports(args: {
       }),
     );
 
-    if (!baseResolveModuleNames) {
-      return resolved;
-    }
-
-    const baseResolved = baseResolveModuleNames(
+    const baseResolved = baseResolveModuleNames?.(
       moduleNames,
       containingFile,
       reusedNames,
@@ -75,7 +87,15 @@ export function patchLanguageServiceHostForRsxImports(args: {
     );
 
     return moduleNames.map(
-      (_, index) => resolved[index] ?? baseResolved?.[index],
+      (moduleName, index) =>
+        resolved[index] ??
+        baseResolved?.[index] ??
+        resolveWithFallbackHost({
+          moduleName,
+          containingFile,
+          options,
+          redirectedReference,
+        }),
     );
   };
 
@@ -99,11 +119,7 @@ export function patchLanguageServiceHostForRsxImports(args: {
       return resolvedModule ? { resolvedModule } : undefined;
     });
 
-    if (!baseResolveModuleNameLiterals) {
-      return resolved;
-    }
-
-    const baseResolved = baseResolveModuleNameLiterals(
+    const baseResolved = baseResolveModuleNameLiterals?.(
       moduleLiterals,
       containingFile,
       redirectedReference,
@@ -113,7 +129,16 @@ export function patchLanguageServiceHostForRsxImports(args: {
     );
 
     return moduleLiterals.map(
-      (_, index) => resolved[index] ?? baseResolved?.[index],
+      (moduleLiteral, index) =>
+        resolved[index] ??
+        baseResolved?.[index] ?? {
+          resolvedModule: resolveWithFallbackHost({
+            moduleName: moduleLiteral.text,
+            containingFile,
+            options,
+            redirectedReference,
+          }),
+        },
     );
   };
 
@@ -130,6 +155,8 @@ export function patchLanguageServiceHostForRsxImports(args: {
       const declarationText = generateRsxModuleDeclaration({
         fileName: rsxFileName,
         text: rsxText,
+        compilerOptions,
+        rootNames: host.getScriptFileNames?.() ?? [],
       });
       return typeof declarationText === 'string'
         ? ts.ScriptSnapshot.fromString(declarationText)
@@ -168,6 +195,8 @@ export function patchLanguageServiceHostForRsxImports(args: {
         ? (generateRsxModuleDeclaration({
             fileName: rsxFileName,
             text: rsxText,
+            compilerOptions,
+            rootNames: host.getScriptFileNames?.() ?? [],
           }) ?? undefined)
         : undefined;
     }

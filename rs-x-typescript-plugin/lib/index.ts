@@ -30,7 +30,9 @@ function getRelevantExpressionSitesForFile(
   program: tsModule.Program,
   fileName: string,
 ) {
-  return detectExpressionSites(program).filter(
+  return detectExpressionSites(program, {
+    includePartialRsxInvocations: true,
+  }).filter(
     (site) => site.expressionSourceFile.fileName === fileName,
   );
 }
@@ -91,6 +93,9 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
         rsxProgram.fileName,
         position,
       );
+      if (rsxCompletions.length === 0) {
+        return baseCompletions;
+      }
       const pluginEntries = rsxCompletions.map(
         (completion): tsModule.CompletionEntry => ({
           name: completion.name,
@@ -193,7 +198,7 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
         position,
       );
       if (!rsxSignatureHelp) {
-        return undefined;
+        return baseSignatureHelp;
       }
 
       const signatureItems: tsModule.SignatureHelpItem[] =
@@ -265,9 +270,20 @@ function init(modules: ITypescriptPluginInit): tsModule.server.PluginModule {
         return base;
       }
 
+      const expressionRanges = getRelevantExpressionSitesForFile(
+        rsxProgram.program,
+        rsxProgram.fileName,
+      ).map((site) => ({
+        start: site.expressionStart,
+        end: site.expressionEnd,
+      }));
+
       return {
         ...base,
-        spans: mergeEncodedClassificationSpans(base.spans, pluginSpans),
+        spans: mergeEncodedClassificationSpans(
+          excludeClassificationSpansInRanges(base.spans, expressionRanges),
+          pluginSpans,
+        ),
       };
     };
 
