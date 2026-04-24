@@ -155,6 +155,67 @@ describe('rsx language service host', () => {
     );
   });
 
+  it('resolves extensionless imports to .rsx virtual declaration files', () => {
+    const rsxPath = path.resolve(
+      workspaceRoot,
+      './rs-x-compiler/tests/fixtures/expression-file-multi.fixture.rsx',
+    );
+    const containingFile = path.resolve(
+      workspaceRoot,
+      './rs-x-compiler/tests/fixtures/rsx-file-multi-extensionless-import-consumer.fixture.ts',
+    );
+    const snapshots = new Map<string, string>([
+      [rsxPath, ts.sys.readFile(rsxPath) ?? ''],
+      [
+        containingFile,
+        "import { total } from './expression-file-multi.fixture';\nvoid total;\n",
+      ],
+    ]);
+
+    const languageServiceHost: ts.LanguageServiceHost = {
+      getCompilationSettings: () => ({
+        moduleResolution: ts.ModuleResolutionKind.Bundler,
+        module: ts.ModuleKind.ES2022,
+        target: ts.ScriptTarget.ES2022,
+      }),
+      getScriptFileNames: () => [containingFile, rsxPath],
+      getScriptSnapshot: (fileName) => {
+        const text = snapshots.get(fileName);
+        return typeof text === 'string'
+          ? ts.ScriptSnapshot.fromString(text)
+          : undefined;
+      },
+      getScriptVersion: () => '1',
+      getCurrentDirectory: () => workspaceRoot,
+      getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options),
+      fileExists: (fileName) =>
+        snapshots.has(fileName) || ts.sys.fileExists(fileName),
+      readFile: (fileName) =>
+        snapshots.get(fileName) ?? ts.sys.readFile(fileName),
+    };
+
+    const info = {
+      languageServiceHost,
+      project: {
+        getCompilationSettings: () =>
+          languageServiceHost.getCompilationSettings!(),
+      },
+    } as unknown as ts.server.PluginCreateInfo;
+
+    patchLanguageServiceHostForRsxImports({ info, ts });
+
+    const resolved = languageServiceHost.resolveModuleNames?.(
+      ['./expression-file-multi.fixture'],
+      containingFile,
+      undefined,
+      undefined,
+      languageServiceHost.getCompilationSettings!(),
+      undefined,
+    );
+
+    expect(resolved?.[0]?.resolvedFileName).toBe(`${rsxPath}.d.ts`);
+  });
+
   it('infers return type from expression when return header is omitted', () => {
     const rsxPath = path.resolve(
       workspaceRoot,

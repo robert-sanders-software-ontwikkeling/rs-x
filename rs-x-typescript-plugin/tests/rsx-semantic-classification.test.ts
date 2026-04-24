@@ -92,11 +92,11 @@ describe('rsx semantic classification', () => {
     ).toBe(RSX_SEMANTIC_TOKEN_TYPE.property);
   });
 
-  it('keeps non-lambda identifiers classified as variables or functions', () => {
+  it('classifies non-lambda bare identifiers as properties and calls as functions', () => {
     const expression = 'count + test(1)';
     const context = createRsxSemanticClassificationContext(expression);
 
-    const variableToken = findIdentifierToken({
+    const propertyToken = findIdentifierToken({
       expression,
       value: 'count',
     });
@@ -109,9 +109,9 @@ describe('rsx semantic classification', () => {
       resolveSemanticTokenTypeForIdentifier({
         context,
         text: expression,
-        token: variableToken,
+        token: propertyToken,
       }),
-    ).toBe(RSX_SEMANTIC_TOKEN_TYPE.variable);
+    ).toBe(RSX_SEMANTIC_TOKEN_TYPE.property);
     expect(
       resolveSemanticTokenTypeForIdentifier({
         context,

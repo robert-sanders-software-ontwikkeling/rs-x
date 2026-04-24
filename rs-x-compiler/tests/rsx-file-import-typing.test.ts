@@ -97,4 +97,33 @@ describe('.rsx file import typing', () => {
 
     expect(diagnostics).toEqual([]);
   });
+
+  it('allows extensionless named imports from multi-expression .rsx modules', () => {
+    const rsxPath = path.resolve(
+      __dirname,
+      './fixtures/expression-file-multi.fixture.rsx',
+    );
+    const modelPath = path.resolve(
+      __dirname,
+      './fixtures/rsx-file-model.fixture.ts',
+    );
+    const consumerPath = path.resolve(
+      __dirname,
+      './fixtures/rsx-file-multi-extensionless-import-consumer.fixture.ts',
+    );
+
+    const program = createProgram([rsxPath, modelPath, consumerPath]);
+    const diagnostics = ts
+      .getPreEmitDiagnostics(program)
+      .filter((diagnostic) =>
+        diagnostic.file?.fileName.endsWith(
+          'rsx-file-multi-extensionless-import-consumer.fixture.ts',
+        ),
+      )
+      .map((diagnostic) =>
+        ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'),
+      );
+
+    expect(diagnostics).toEqual([]);
+  });
 });

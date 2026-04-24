@@ -1,9 +1,9 @@
 import type tsModule from 'typescript/lib/tsserverlibrary';
 
 import {
-  createRsxImportAwareCompilerHost,
   generateRsxModuleDeclaration,
   getRsxFileNameFromVirtualDeclaration,
+  getRsxVirtualDeclarationFileName,
 } from '@rs-x/compiler';
 
 export function patchLanguageServiceHostForRsxImports(args: {
@@ -40,23 +40,21 @@ export function patchLanguageServiceHostForRsxImports(args: {
     options?: tsModule.CompilerOptions;
     redirectedReference?: tsModule.ResolvedProjectReference;
   }): tsModule.ResolvedModuleFull | undefined => {
-    if (!args.moduleName.endsWith('.rsx')) {
+    const rsxFileName = resolveRsxModuleFileName({
+      moduleName: args.moduleName,
+      containingFile: args.containingFile,
+      host,
+      ts,
+    });
+    if (!rsxFileName) {
       return undefined;
     }
 
-    const baseHost = createRsxImportAwareCompilerHost({
-      options: args.options ?? compilerOptions,
-      rootNames: host.getScriptFileNames?.() ?? [],
-    });
-
-    return ts.resolveModuleName(
-      args.moduleName,
-      args.containingFile,
-      args.options ?? compilerOptions,
-      baseHost,
-      undefined,
-      args.redirectedReference,
-    ).resolvedModule;
+    return {
+      resolvedFileName: getRsxVirtualDeclarationFileName(rsxFileName),
+      extension: ts.Extension.Dts,
+      isExternalLibraryImport: false,
+    };
   };
 
   const baseResolveModuleNames = host.resolveModuleNames?.bind(host);
@@ -203,4 +201,75 @@ export function patchLanguageServiceHostForRsxImports(args: {
 
     return baseReadFile?.(fileName) ?? ts.sys.readFile(fileName);
   };
+}
+
+function resolveRsxModuleFileName(args: {
+  moduleName: string;
+  containingFile: string;
+  host: tsModule.LanguageServiceHost;
+  ts: typeof tsModule;
+}): string | null {
+  if (!isRelativeModuleName(args.moduleName)) {
+    return null;
+  }
+
+  const candidates = args.moduleName.endsWith('.rsx')
+    ? [args.moduleName]
+    : [`${args.moduleName}.rsx`, `${args.moduleName}/index.rsx`];
+  for (const candidate of candidates) {
+    const resolvedFileName = normalizePath(
+      resolveRelativePath(args.containingFile, candidate),
+    );
+    if (
+      args.host.fileExists?.(resolvedFileName) ??
+      args.ts.sys.fileExists(resolvedFileName)
+    ) {
+      return resolvedFileName;
+    }
+  }
+
+  return null;
+}
+
+function isRelativeModuleName(moduleName: string): boolean {
+  return (
+    moduleName.startsWith('./') ||
+    moduleName.startsWith('../') ||
+    moduleName === '.' ||
+    moduleName === '..'
+  );
+}
+
+function resolveRelativePath(
+  containingFile: string,
+  moduleName: string,
+): string {
+  const normalizedContainingFile = normalizePath(containingFile);
+  const containingDirectory = normalizedContainingFile.includes('/')
+    ? normalizedContainingFile.slice(
+        0,
+        normalizedContainingFile.lastIndexOf('/'),
+      )
+    : '.';
+  const joined = `${containingDirectory}/${moduleName}`;
+  const parts = joined.split('/');
+  const normalizedParts: string[] = [];
+
+  for (const part of parts) {
+    if (!part || part === '.') {
+      continue;
+    }
+    if (part === '..') {
+      normalizedParts.pop();
+      continue;
+    }
+    normalizedParts.push(part);
+  }
+
+  const prefix = joined.startsWith('/') ? '/' : '';
+  return `${prefix}${normalizedParts.join('/')}`;
+}
+
+function normalizePath(fileName: string): string {
+  return fileName.replace(/\\/gu, '/');
 }

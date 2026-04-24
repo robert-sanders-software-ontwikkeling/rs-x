@@ -55,6 +55,11 @@ jest.mock(
         public readonly tokenModifiers: readonly string[],
       ) {}
     },
+    EventEmitter: class EventEmitter {
+      readonly event = jest.fn();
+      fire = jest.fn();
+      dispose = jest.fn();
+    },
     CodeActionKind: {
       QuickFix: 'quickfix',
     },

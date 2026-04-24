@@ -8,7 +8,6 @@ import {
 } from '@rs-x/core';
 import { AbstractObserver, type IObserver } from '@rs-x/state-manager';
 
-import type { AbstractExpression } from '../expressions/abstract-expression';
 import type { IExpression } from '../expressions/expression-parser.interface';
 
 import type {
@@ -17,14 +16,14 @@ import type {
 } from './expression-proxy.factory.type';
 
 class ExpressionObserver extends AbstractObserver<
-  AbstractExpression,
-  undefined,
+  IExpression,
+  unknown,
   undefined
 > {
   private readonly _changedSubsctiption: Subscription;
 
-  constructor(owner: IDisposableOwner, target: AbstractExpression) {
-    super(owner, target, undefined, new ReplaySubject<IPropertyChange>(1));
+  constructor(owner: IDisposableOwner, target: IExpression) {
+    super(owner, target, target.value, new ReplaySubject<IPropertyChange>(1));
     this._changedSubsctiption = target.changed.subscribe(
       this.onExpressionChanged,
     );
@@ -35,6 +34,7 @@ class ExpressionObserver extends AbstractObserver<
   }
 
   private onExpressionChanged = (expression: IExpression): void => {
+    this.value = expression.value;
     this.emitChange({
       arguments: [],
       chain: [],
@@ -45,30 +45,24 @@ class ExpressionObserver extends AbstractObserver<
 }
 @Injectable()
 export class ExpressionObserverFactory
-  extends KeyedInstanceFactory<
-    AbstractExpression,
-    IExpressionObserverData,
-    IObserver
-  >
+  extends KeyedInstanceFactory<IExpression, IExpressionObserverData, IObserver>
   implements IExpressionObserverFactory
 {
   constructor() {
     super();
   }
 
-  public override getId(data: IExpressionObserverData): AbstractExpression {
+  public override getId(data: IExpressionObserverData): IExpression {
     return data.expression;
   }
 
-  protected override createId(
-    data: IExpressionObserverData,
-  ): AbstractExpression {
+  protected override createId(data: IExpressionObserverData): IExpression {
     return data.expression;
   }
 
   protected override createInstance(
     data: IExpressionObserverData,
-    id: AbstractExpression,
+    id: IExpression,
   ): IObserver {
     return new ExpressionObserver(
       {

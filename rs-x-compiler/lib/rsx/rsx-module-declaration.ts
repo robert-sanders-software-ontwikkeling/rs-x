@@ -4,6 +4,7 @@ import {
   createRsxBackedProgramForFile,
   parseRsxFileExpressions,
 } from './rsx-file';
+import { getRsxExpressionExports } from './rsx-module-exports';
 
 export function getRsxVirtualDeclarationFileName(fileName: string): string {
   return `${fileName}.d.ts`;
@@ -28,13 +29,10 @@ export function generateRsxModuleDeclaration(args: {
     return null;
   }
 
-  const baseExportName = toRsxExportName(args.fileName);
-  const usedExportNames = new Set<string>();
-  const expressionExports = parsed.expressions.map((expression, index) => {
-    const preferredName =
-      expression.name ??
-      (index === 0 ? baseExportName : `${baseExportName}${String(index + 1)}`);
-    const exportName = ensureUniqueExportName(preferredName, usedExportNames);
+  const expressionExports = getRsxExpressionExports({
+    fileName: args.fileName,
+    expressions: parsed.expressions,
+  }).map(({ expression, exportName }) => {
     const returnType =
       expression.returnTypeText ??
       inferRsxReturnTypeFromExpression({
@@ -51,6 +49,7 @@ export function generateRsxModuleDeclaration(args: {
 
   const lines = [
     "import type { IExpression } from '@rs-x/expression-parser';",
+    "import type { IExpressionTree } from '@rs-x/expression-parser';",
     "import type { IIndexWatchRule } from '@rs-x/state-manager';",
     '',
   ];
@@ -59,7 +58,9 @@ export function generateRsxModuleDeclaration(args: {
     lines.push(`declare const ${expressionExport.exportName}: (`);
     lines.push(`  model: ${expressionExport.expression.modelTypeText},`);
     lines.push('  leafIndexWatchRule?: IIndexWatchRule,');
-    lines.push(`) => IExpression<${expressionExport.returnType}>;`);
+    lines.push(
+      `) => ${expressionExport.expression.compiled ? 'IExpression' : 'IExpressionTree'}<${expressionExport.returnType}>;`,
+    );
     lines.push('');
   }
 
@@ -292,7 +293,11 @@ export function createRsxImportAwareCompilerHost(args: {
     compilerOptions,
   ) =>
     moduleNames.map((moduleName) => {
-      if (!moduleName.endsWith('.rsx')) {
+      const resolvedRsxFileName = resolveRsxModuleFileName(
+        containingFile,
+        moduleName,
+      );
+      if (!resolvedRsxFileName) {
         return ts.resolveModuleName(
           moduleName,
           containingFile,
@@ -303,13 +308,8 @@ export function createRsxImportAwareCompilerHost(args: {
         ).resolvedModule;
       }
 
-      const resolvedFileName = resolveRelativePath(containingFile, moduleName);
-      if (!ts.sys.fileExists(resolvedFileName)) {
-        return undefined;
-      }
-
       return {
-        resolvedFileName: getRsxVirtualDeclarationFileName(resolvedFileName),
+        resolvedFileName: getRsxVirtualDeclarationFileName(resolvedRsxFileName),
         extension: ts.Extension.Dts,
         isExternalLibraryImport: false,
       };
@@ -380,47 +380,6 @@ export function createRsxImportAwareCompilerHost(args: {
   };
 }
 
-function toRsxExportName(fileName: string): string {
-  const normalizedFileName = fileName.replace(/\\/gu, '/');
-  const fileSegment = normalizedFileName.slice(
-    normalizedFileName.lastIndexOf('/') + 1,
-  );
-  const baseName = fileSegment.endsWith('.rsx')
-    ? fileSegment.slice(0, -'.rsx'.length)
-    : fileSegment;
-  const parts = baseName.split(/[^A-Za-z0-9_$]+/u).filter(Boolean);
-  if (parts.length === 0) {
-    return 'rsxExpression';
-  }
-
-  const [first, ...rest] = parts;
-  const joined = [
-    first.toLowerCase(),
-    ...rest.map((part) => part[0].toUpperCase() + part.slice(1)),
-  ].join('');
-
-  return /^[A-Za-z_$]/u.test(joined) ? joined : `rsx${joined}`;
-}
-
-function ensureUniqueExportName(
-  preferredName: string,
-  usedExportNames: Set<string>,
-): string {
-  if (!usedExportNames.has(preferredName)) {
-    usedExportNames.add(preferredName);
-    return preferredName;
-  }
-
-  let suffix = 2;
-  while (usedExportNames.has(`${preferredName}${String(suffix)}`)) {
-    suffix += 1;
-  }
-
-  const uniqueName = `${preferredName}${String(suffix)}`;
-  usedExportNames.add(uniqueName);
-  return uniqueName;
-}
-
 function resolveRelativePath(
   containingFile: string,
   moduleName: string,
@@ -449,4 +408,34 @@ function resolveRelativePath(
 
   const prefix = joined.startsWith('/') ? '/' : '';
   return `${prefix}${normalizedParts.join('/')}`;
+}
+
+function resolveRsxModuleFileName(
+  containingFile: string,
+  moduleName: string,
+): string | null {
+  if (!isRelativeModuleName(moduleName)) {
+    return null;
+  }
+
+  const candidates = moduleName.endsWith('.rsx')
+    ? [moduleName]
+    : [`${moduleName}.rsx`, `${moduleName}/index.rsx`];
+  for (const candidate of candidates) {
+    const resolvedFileName = resolveRelativePath(containingFile, candidate);
+    if (ts.sys.fileExists(resolvedFileName)) {
+      return resolvedFileName;
+    }
+  }
+
+  return null;
+}
+
+function isRelativeModuleName(moduleName: string): boolean {
+  return (
+    moduleName.startsWith('./') ||
+    moduleName.startsWith('../') ||
+    moduleName === '.' ||
+    moduleName === '..'
+  );
 }

@@ -1,7 +1,13 @@
 import ts from 'typescript';
 import * as vscode from 'vscode';
 
-import { parseRsxFileExpressions } from '@rs-x/compiler';
+import {
+  createRsxSemanticClassificationContext,
+  parseRsxFileExpressions,
+  resolveRsxSemanticTokenType,
+  shouldEmitRsxSemanticToken,
+  tokenizeRsxExpression,
+} from '@rs-x/compiler';
 
 import {
   canRenameRsxSymbolAtPosition,
@@ -44,6 +50,9 @@ const HEADER_COMPLETION_TRIGGER_CHARACTERS = [
   ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
   '_',
 ] as const;
+const RSX_DOCUMENT_SEMANTIC_TOKEN_POLICY = Object.freeze({
+  emitOperatorTokens: false,
+});
 
 interface IRsxFileParts {
   headers: string[];
@@ -101,7 +110,9 @@ const moduleBackgroundWarmTimers = new Map<
   ReturnType<typeof setTimeout>
 >();
 const moduleBackgroundWarmRequestIds = new Map<string, number>();
-const MODULE_FOCUSED_ANALYSIS_EXPRESSION_THRESHOLD = 12;
+let semanticTokensChangeEmitter: vscode.EventEmitter<void> | null = null;
+const MODULE_FOCUSED_ANALYSIS_EXPRESSION_THRESHOLD = 50;
+const MODULE_FOCUSED_ANALYSIS_TEXT_LENGTH_THRESHOLD = 20_000;
 
 type IDiagnosticsMode = 'auto' | 'focused' | 'full';
 
@@ -174,10 +185,16 @@ export function activate(context: vscode.ExtensionContext): void {
       ',',
     ),
   );
+  semanticTokensChangeEmitter = new vscode.EventEmitter<void>();
+  const semanticTokensProvider = new RsxSemanticTokensProvider(
+    semanticTokensLegend,
+    semanticTokensChangeEmitter,
+  );
+  context.subscriptions.push(semanticTokensChangeEmitter);
   context.subscriptions.push(
     vscode.languages.registerDocumentSemanticTokensProvider(
       RSX_LANGUAGE_ID,
-      new RsxSemanticTokensProvider(semanticTokensLegend),
+      semanticTokensProvider,
       semanticTokensLegend,
     ),
   );
@@ -724,40 +741,32 @@ class RsxSignatureHelpProvider implements vscode.SignatureHelpProvider {
 class RsxSemanticTokensProvider
   implements vscode.DocumentSemanticTokensProvider
 {
-  constructor(private readonly legend: vscode.SemanticTokensLegend) {}
+  readonly onDidChangeSemanticTokens: vscode.Event<void>;
+
+  constructor(
+    private readonly legend: vscode.SemanticTokensLegend,
+    changeEmitter: vscode.EventEmitter<void>,
+  ) {
+    this.onDidChangeSemanticTokens = changeEmitter.event;
+  }
 
   provideDocumentSemanticTokens(
     document: vscode.TextDocument,
   ): vscode.ProviderResult<vscode.SemanticTokens> {
     const sourceText = document.getText();
     const builder = new vscode.SemanticTokensBuilder(this.legend);
-    const operatorTokenType = rsxSemanticTokenTypes.indexOf('operator');
-    const literalLikeTokenTypes = new Set<number>(
-      ['string', 'number', 'regexp', 'comment']
-        .map((name) => rsxSemanticTokenTypes.indexOf(name))
-        .filter((value) => value >= 0),
-    );
     const tokens = resolveSemanticTokensForDocument(document, sourceText);
     for (const token of tokens) {
       const tokenText = sourceText.slice(
         token.start,
         token.start + token.length,
       );
-      const normalizedTokenText = tokenText.trim();
-      if (normalizedTokenText.length === 0) {
-        continue;
-      }
       if (
-        token.tokenType !== operatorTokenType &&
-        !literalLikeTokenTypes.has(token.tokenType) &&
-        hasOperatorLikePunctuation(normalizedTokenText)
-      ) {
-        // Guard against accidental mixed punctuation spans from mapped semantic ranges.
-        continue;
-      }
-      if (
-        token.tokenType === operatorTokenType &&
-        !isOperatorLikeTokenText(normalizedTokenText)
+        !shouldEmitRsxSemanticToken({
+          tokenType: token.tokenType,
+          tokenText,
+          policy: RSX_DOCUMENT_SEMANTIC_TOKEN_POLICY,
+        })
       ) {
         continue;
       }
@@ -803,7 +812,7 @@ function resolveSemanticTokensForDocument(
     return tokens;
   }
 
-  const moduleTokens = getModuleExpressionSemanticTokens(document, 'full');
+  const moduleTokens = getModuleExpressionSemanticTokens(document, 'auto');
   const syntacticTokens = getRsxSyntacticTokensForText(sourceText);
   const headerDirectiveTokens =
     getRsxHeaderDirectiveKeywordTokensForText(sourceText);
@@ -826,14 +835,6 @@ function resolveSemanticTokensForDocument(
     tokens,
   });
   return tokens;
-}
-
-function isOperatorLikeTokenText(text: string): boolean {
-  return /^[+\-*/%<>=!&|^~?:.,;()[\]{}]+$/u.test(text);
-}
-
-function hasOperatorLikePunctuation(text: string): boolean {
-  return /[+\-*/%<>=!&|^~?:.,;()[\]{}]/u.test(text);
 }
 
 function getRsxHeaderDirectiveKeywordTokensForText(
@@ -1204,6 +1205,8 @@ function warmModuleExpressionsInBackground(
       cacheEntry,
       expressionIndex,
     });
+    documentSemanticTokenCache.delete(key);
+    semanticTokensChangeEmitter?.fire();
 
     const continuation = setTimeout(() => {
       moduleBackgroundWarmTimers.delete(key);
@@ -1481,44 +1484,39 @@ function getOrCreateMappedExpressionSemanticTokens(args: {
     return cachedTokens;
   }
 
-  const moduleExpressionService =
-    getModuleExpressionStandaloneLanguageServiceForIndex(
-      args.document,
-      args.cacheEntry,
-      args.expressionIndex,
-    );
-  if (!moduleExpressionService) {
+  const expression = args.cacheEntry.parsed?.expressions[args.expressionIndex];
+  if (!expression) {
     return [];
   }
 
   const mappedExpressionTokens: IRsxSemanticToken[] = [];
-  const bodyStart = moduleExpressionService.standaloneExpressionStart;
-  const bodyEnd =
-    bodyStart + moduleExpressionService.expression.expression.length;
-  for (const token of getRsxSemanticTokens(moduleExpressionService.document)) {
-    const tokenStart = token.start;
-    const tokenEnd = token.start + token.length;
-    if (tokenEnd <= bodyStart || tokenStart >= bodyEnd) {
+  const expressionText = expression.expression;
+  const classificationContext =
+    createRsxSemanticClassificationContext(expressionText);
+  for (const token of tokenizeRsxExpression(expressionText)) {
+    const tokenType = resolveRsxSemanticTokenType({
+      context: classificationContext,
+      text: expressionText,
+      token,
+    });
+    if (tokenType === null) {
       continue;
     }
 
-    const clampedStart = Math.max(tokenStart, bodyStart);
-    const clampedEnd = Math.min(tokenEnd, bodyEnd);
-    const mappedStart = mapModuleExpressionOffsetToDocument(
-      moduleExpressionService,
-      clampedStart,
-    );
-    const mappedEnd = mapModuleExpressionOffsetToDocument(
-      moduleExpressionService,
-      clampedEnd,
-    );
+    const tokenText = expressionText.slice(token.start, token.end);
+    if (!shouldEmitRsxSemanticToken({ tokenType, tokenText })) {
+      continue;
+    }
+
+    const mappedStart = expression.expressionStart + token.start;
+    const mappedEnd = expression.expressionStart + token.end;
     const mappedLength = Math.max(mappedEnd - mappedStart, 1);
 
     mappedExpressionTokens.push({
       start: mappedStart,
       length: mappedLength,
-      tokenType: token.tokenType,
-      tokenModifiers: token.tokenModifiers,
+      tokenType,
+      tokenModifiers: 0,
     });
   }
 
@@ -1588,10 +1586,7 @@ function getModuleExpressionSemanticTokens(
     parsed,
     mode,
   });
-  if (
-    mode === 'auto' &&
-    parsed.expressions.length > MODULE_FOCUSED_ANALYSIS_EXPRESSION_THRESHOLD
-  ) {
+  if (mode === 'auto' && shouldUseFocusedModuleAnalysis(document, parsed)) {
     for (
       let expressionIndex = 0;
       expressionIndex < parsed.expressions.length;
@@ -1614,10 +1609,7 @@ function getModuleExpressionSemanticTokens(
     );
   }
 
-  if (
-    mode === 'auto' &&
-    parsed.expressions.length > MODULE_FOCUSED_ANALYSIS_EXPRESSION_THRESHOLD
-  ) {
+  if (mode === 'auto' && shouldUseFocusedModuleAnalysis(document, parsed)) {
     scheduleModuleExpressionBackgroundWarm(document, 120);
   }
 
@@ -1642,7 +1634,7 @@ function resolveExpressionIndexesForMode(args: {
   const shouldFocus =
     args.mode === 'focused' ||
     (args.mode === 'auto' &&
-      expressionCount > MODULE_FOCUSED_ANALYSIS_EXPRESSION_THRESHOLD);
+      shouldUseFocusedModuleAnalysis(args.document, args.parsed));
   if (!shouldFocus) {
     return args.parsed.expressions.map((_, index) => index);
   }
@@ -1653,6 +1645,16 @@ function resolveExpressionIndexesForMode(args: {
   }
 
   return expressionCount > 0 ? [0] : [];
+}
+
+function shouldUseFocusedModuleAnalysis(
+  document: vscode.TextDocument,
+  parsed: NonNullable<IModuleExpressionCacheEntry['parsed']>,
+): boolean {
+  return (
+    parsed.expressions.length > MODULE_FOCUSED_ANALYSIS_EXPRESSION_THRESHOLD &&
+    document.getText().length > MODULE_FOCUSED_ANALYSIS_TEXT_LENGTH_THRESHOLD
+  );
 }
 
 function getActiveExpressionIndex(

@@ -1,5 +1,6 @@
 import { Injectable, Type, UnsupportedException } from '@rs-x/core';
 
+import { CompiledExpression } from '../compiled-expression/compiled-expression';
 import { AbstractExpression } from '../expressions/abstract-expression';
 import type { IExpression } from '../expressions/expression-parser.interface';
 
@@ -14,7 +15,8 @@ export class ExpressionIndexAccessor implements IExpressionIndexAccessor {
     if (!target) {
       return undefined;
     }
-    return Type.cast<IExpression>(target[index])?.value;
+    const value = target[index];
+    return isExpressionReference(value) ? value.value : undefined;
   }
 
   public hasValue(context: unknown, index: string): boolean {
@@ -22,7 +24,8 @@ export class ExpressionIndexAccessor implements IExpressionIndexAccessor {
     if (!target) {
       return false;
     }
-    return Type.cast<IExpression>(target[index])?.value !== undefined;
+    const value = target[index];
+    return isExpressionReference(value) && value.value !== undefined;
   }
 
   public getValue(context: unknown, index: string): unknown {
@@ -46,6 +49,12 @@ export class ExpressionIndexAccessor implements IExpressionIndexAccessor {
       return false;
     }
 
-    return target[index] instanceof AbstractExpression;
+    return isExpressionReference(target[index]);
   }
+}
+
+function isExpressionReference(value: unknown): value is IExpression {
+  return (
+    value instanceof AbstractExpression || value instanceof CompiledExpression
+  );
 }

@@ -222,7 +222,7 @@ lines.map((line) => ({
       ),
     ).toEqual(expect.arrayContaining(['>', '&&', '=']));
   });
-  it('resolves module-expression semantic tokens under 2s with operator coverage', () => {
+  it('resolves module-expression semantic tokens under 2s with semantic operator tokens', () => {
     const text = readFileSync(modulePerformanceFixturePath, 'utf8');
     const parsed = parseRsxFileExpressions({
       fileName: modulePerformanceFixturePath,

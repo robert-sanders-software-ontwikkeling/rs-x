@@ -3,7 +3,7 @@
   "displayName": "RS-X Compiler Support",
   "description": "VS Code extension that enables RS-X expression IntelliSense and diagnostics",
   "icon": "icon.png",
-  "version": "2.0.2",
+  "version": "2.0.3-local.20260424110832",
   "publisher": "RobertSanders",
   "engines": {
     "vscode": "^1.90.0"
@@ -44,10 +44,7 @@
       {
         "language": "rsx",
         "scopeName": "source.rsx",
-        "path": "./syntaxes/rsx-file.language.json",
-        "embeddedLanguages": {
-          "meta.embedded.block.rsx": "typescript"
-        }
+        "path": "./syntaxes/rsx-file.language.json"
       },
       {
         "scopeName": "rsx.expression.injection",
@@ -59,10 +56,7 @@
           "source.jsx",
           "source.vue",
           "text.html.vue"
-        ],
-        "embeddedLanguages": {
-          "meta.embedded.inline.rsx": "typescript"
-        }
+        ]
       }
     ],
     "typescriptServerPlugins": [

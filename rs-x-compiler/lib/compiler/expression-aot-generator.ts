@@ -18,7 +18,11 @@ export interface IGeneratedAotCompiledExpressionsModule {
   readonly skippedExpressions: readonly string[];
 }
 
-export interface IAotCompiledExpressionGenerationOptions {
+export interface IAotExpressionDetectionOptions {
+  readonly rsxFileNames?: readonly string[];
+}
+
+export interface IAotCompiledExpressionGenerationOptions extends IAotExpressionDetectionOptions {
   readonly includeResolvedEvaluator?: boolean;
 }
 
@@ -148,7 +152,7 @@ export function generateAotCompiledExpressionsModule(
   options: IAotCompiledExpressionGenerationOptions = {},
 ): IGeneratedAotCompiledExpressionsModule {
   const includeResolvedEvaluator = options.includeResolvedEvaluator === true;
-  const detections = detectExpressionSites(program);
+  const detections = detectExpressionSites(program, options);
   const uniqueExpressions = [
     ...new Set(
       detections
@@ -210,8 +214,9 @@ export function generateAotCompiledExpressionsModule(
 
 export function generateAotParsedExpressionCacheModule(
   program: ts.Program,
+  options: IAotExpressionDetectionOptions = {},
 ): IGeneratedAotParsedExpressionCacheModule {
-  const detections = detectExpressionSites(program);
+  const detections = detectExpressionSites(program, options);
   const uniqueExpressions = [
     ...new Set(
       detections
@@ -272,7 +277,7 @@ export function generateAotLazyExpressionPreloadManifestModule(
   options: IAotCompiledExpressionGenerationOptions = {},
 ): IGeneratedAotLazyExpressionPreloadManifestModule {
   const includeResolvedEvaluator = options.includeResolvedEvaluator === true;
-  const detections = detectExpressionSites(program);
+  const detections = detectExpressionSites(program, options);
   const lazyPreparsedExpressions = [
     ...new Set(
       detections
@@ -409,7 +414,7 @@ export function generateAotLazyExpressionsModule(
   options: IAotCompiledExpressionGenerationOptions = {},
 ): IGeneratedAotLazyExpressionsModule {
   const includeResolvedEvaluator = options.includeResolvedEvaluator === true;
-  const detections = detectExpressionSites(program);
+  const detections = detectExpressionSites(program, options);
 
   // ── Separate ungrouped vs grouped lazy detections ────────────────────────
   const ungroupedDetections = detections.filter((d) => d.lazy && !d.lazyGroup);

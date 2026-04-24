@@ -9,6 +9,9 @@ import {
   getRsxFileNameFromVirtualDeclaration,
   getRsxVirtualDeclarationFileName,
   parseExpressionDiagnostic,
+  rsxSemanticTokenTypes,
+  shouldEmitRsxSemanticToken,
+  toRsxSyntacticTokenType,
 } from '@rs-x/compiler';
 
 const RSX_MODEL_PREFIX = 'type __RSX_MODEL = ';
@@ -129,29 +132,7 @@ const projectContextCache = new Map<string, IResolvedProjectContext>();
 const projectContextByFileCache = new Map<string, IResolvedProjectContext>();
 const standaloneRuntimeByVirtualFile = new Map<string, IStandaloneRuntime>();
 
-export const rsxSemanticTokenTypes = [
-  'class',
-  'enum',
-  'interface',
-  'namespace',
-  'typeParameter',
-  'type',
-  'parameter',
-  'variable',
-  'enumMember',
-  'property',
-  'function',
-  'method',
-  'macro',
-  'keyword',
-  'modifier',
-  'comment',
-  'string',
-  'number',
-  'regexp',
-  'operator',
-  'decorator',
-] as const;
+export { rsxSemanticTokenTypes };
 
 export const rsxSemanticTokenModifiers = [
   'declaration',
@@ -648,21 +629,13 @@ export function getRsxSyntacticTokensForText(
     undefined,
   );
   const tokens: IRsxSemanticToken[] = [];
-  const tokenTypeIndexes = {
-    keyword: rsxSemanticTokenTypes.indexOf('keyword'),
-    comment: rsxSemanticTokenTypes.indexOf('comment'),
-    string: rsxSemanticTokenTypes.indexOf('string'),
-    number: rsxSemanticTokenTypes.indexOf('number'),
-    regexp: rsxSemanticTokenTypes.indexOf('regexp'),
-    operator: rsxSemanticTokenTypes.indexOf('operator'),
-  } as const;
 
   let token = scanner.scan();
   while (token !== ts.SyntaxKind.EndOfFileToken) {
     const tokenStart = scanner.getTokenPos();
     const tokenEnd = scanner.getTextPos();
     if (tokenEnd > tokenStart) {
-      const tokenType = toSyntacticTokenType(token, tokenTypeIndexes);
+      const tokenType = toRsxSyntacticTokenType(token);
       if (tokenType !== null) {
         tokens.push({
           start: tokenStart,
@@ -693,12 +666,6 @@ function collectSemanticTokens(
     ).spans ?? [];
 
   const tokens: IRsxSemanticToken[] = [];
-  const operatorTokenType = rsxSemanticTokenTypes.indexOf('operator');
-  const literalLikeTokenTypes = new Set<number>(
-    ['string', 'number', 'regexp', 'comment']
-      .map((name) => rsxSemanticTokenTypes.indexOf(name))
-      .filter((value) => value >= 0),
-  );
   for (let index = 0; index < classifications.length; index += 3) {
     const start = classifications[index];
     const length = classifications[index + 1];
@@ -719,20 +686,8 @@ function collectSemanticTokens(
       continue;
     }
 
-    const tokenText = document.originalText
-      .slice(mappedStart, mappedEnd)
-      .trim();
-    if (
-      tokenType === operatorTokenType &&
-      !isOperatorLikeTokenText(tokenText)
-    ) {
-      continue;
-    }
-    if (
-      tokenType !== operatorTokenType &&
-      !literalLikeTokenTypes.has(tokenType) &&
-      hasOperatorLikePunctuation(tokenText)
-    ) {
+    const tokenText = document.originalText.slice(mappedStart, mappedEnd);
+    if (!shouldEmitRsxSemanticToken({ tokenType, tokenText })) {
       continue;
     }
 
@@ -758,14 +713,6 @@ function collectSyntacticTokens(
     undefined,
   );
   const tokens: IRsxSemanticToken[] = [];
-  const tokenTypeIndexes = {
-    keyword: rsxSemanticTokenTypes.indexOf('keyword'),
-    comment: rsxSemanticTokenTypes.indexOf('comment'),
-    string: rsxSemanticTokenTypes.indexOf('string'),
-    number: rsxSemanticTokenTypes.indexOf('number'),
-    regexp: rsxSemanticTokenTypes.indexOf('regexp'),
-    operator: rsxSemanticTokenTypes.indexOf('operator'),
-  } as const;
 
   let token = scanner.scan();
   while (token !== ts.SyntaxKind.EndOfFileToken) {
@@ -774,8 +721,13 @@ function collectSyntacticTokens(
     const mappedStart = mapVirtualOffsetToOriginal(document, tokenStart);
     const mappedEnd = mapVirtualOffsetToOriginal(document, tokenEnd);
     if (mappedStart !== null && mappedEnd !== null && mappedEnd > mappedStart) {
-      const tokenType = toSyntacticTokenType(token, tokenTypeIndexes);
+      const tokenType = toRsxSyntacticTokenType(token);
       if (tokenType !== null) {
+        const tokenText = document.originalText.slice(mappedStart, mappedEnd);
+        if (!shouldEmitRsxSemanticToken({ tokenType, tokenText })) {
+          token = scanner.scan();
+          continue;
+        }
         tokens.push({
           start: mappedStart,
           length: mappedEnd - mappedStart,
@@ -789,72 +741,6 @@ function collectSyntacticTokens(
   }
 
   return tokens;
-}
-
-function toSyntacticTokenType(
-  token: ts.SyntaxKind,
-  indexes: {
-    keyword: number;
-    comment: number;
-    string: number;
-    number: number;
-    regexp: number;
-    operator: number;
-  },
-): number | null {
-  if (
-    token >= ts.SyntaxKind.FirstKeyword &&
-    token <= ts.SyntaxKind.LastKeyword
-  ) {
-    return indexes.keyword >= 0 ? indexes.keyword : null;
-  }
-
-  if (
-    token === ts.SyntaxKind.SingleLineCommentTrivia ||
-    token === ts.SyntaxKind.MultiLineCommentTrivia
-  ) {
-    return indexes.comment >= 0 ? indexes.comment : null;
-  }
-
-  if (
-    token === ts.SyntaxKind.StringLiteral ||
-    token === ts.SyntaxKind.NoSubstitutionTemplateLiteral ||
-    token === ts.SyntaxKind.TemplateHead ||
-    token === ts.SyntaxKind.TemplateMiddle ||
-    token === ts.SyntaxKind.TemplateTail
-  ) {
-    return indexes.string >= 0 ? indexes.string : null;
-  }
-
-  if (
-    token === ts.SyntaxKind.NumericLiteral ||
-    token === ts.SyntaxKind.BigIntLiteral
-  ) {
-    return indexes.number >= 0 ? indexes.number : null;
-  }
-
-  if (token === ts.SyntaxKind.RegularExpressionLiteral) {
-    return indexes.regexp >= 0 ? indexes.regexp : null;
-  }
-
-  const tokenText = ts.tokenToString(token);
-  if (
-    tokenText &&
-    isOperatorLikeTokenText(tokenText) &&
-    indexes.operator >= 0
-  ) {
-    return indexes.operator;
-  }
-
-  return null;
-}
-
-function isOperatorLikeTokenText(text: string): boolean {
-  return /^[+\-*\/%<>=!&|^~?:.,;()\[\]{}]+$/u.test(text);
-}
-
-function hasOperatorLikePunctuation(text: string): boolean {
-  return /[+\-*\/%<>=!&|^~?:.,;()\[\]{}]/u.test(text);
 }
 
 export function getRsxDiagnostics(

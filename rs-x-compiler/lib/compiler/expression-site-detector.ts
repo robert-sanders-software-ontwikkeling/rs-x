@@ -26,11 +26,13 @@ export interface IExpressionSiteDetection {
   readonly callExpression?: ts.CallExpression;
   readonly modelTypeNode?: ts.TypeNode;
   readonly returnTypeNode?: ts.TypeNode;
+  readonly typeChecker?: ts.TypeChecker;
   readonly sourceFile: ts.SourceFile;
 }
 
 export interface IExpressionSiteDetectionOptions {
   readonly includePartialRsxInvocations?: boolean;
+  readonly rsxFileNames?: readonly string[];
 }
 
 export function detectExpressionSites(
@@ -40,9 +42,14 @@ export function detectExpressionSites(
   const checker = program.getTypeChecker();
   const detections: IExpressionSiteDetection[] = [];
   const seenVueRoots = new Set<string>();
+  const seenRsxRoots = new Set<string>();
 
   for (const sourceFile of program.getSourceFiles()) {
     if (sourceFile.isDeclarationFile) {
+      continue;
+    }
+
+    if (sourceFile.fileName.endsWith('.rsx.ts')) {
       continue;
     }
 
@@ -53,6 +60,7 @@ export function detectExpressionSites(
 
   for (const rootFileName of program.getRootFileNames()) {
     if (isRsxFileName(rootFileName)) {
+      seenRsxRoots.add(rootFileName);
       const rsxProgram = createRsxBackedProgramForFile(program, rootFileName);
       if (!rsxProgram) {
         continue;
@@ -83,6 +91,20 @@ export function detectExpressionSites(
         vueProgram.program.getTypeChecker(),
       ),
     );
+  }
+
+  for (const rsxFileName of options?.rsxFileNames ?? []) {
+    if (seenRsxRoots.has(rsxFileName) || !isRsxFileName(rsxFileName)) {
+      continue;
+    }
+    seenRsxRoots.add(rsxFileName);
+
+    const rsxProgram = createRsxBackedProgramForFile(program, rsxFileName);
+    if (!rsxProgram) {
+      continue;
+    }
+
+    detections.push(...detectExpressionSitesInRsxBackedProgram(rsxProgram));
   }
 
   return detections;
@@ -354,6 +376,7 @@ function tryDetectFactoryEntryPoint(
 function detectExpressionSitesInRsxBackedProgram(
   rsxProgram: IRsxBackedProgram,
 ): IExpressionSiteDetection[] {
+  const typeChecker = rsxProgram.program.getTypeChecker();
   const aliases = new Map<string, ts.TypeAliasDeclaration>();
   for (const statement of rsxProgram.virtualSourceFile.statements) {
     if (!ts.isTypeAliasDeclaration(statement)) {
@@ -387,6 +410,7 @@ function detectExpressionSitesInRsxBackedProgram(
       expressionEnd: expression.expressionEnd,
       modelTypeNode: modelAlias.type,
       returnTypeNode: returnAlias?.type,
+      typeChecker,
       sourceFile: rsxProgram.sourceFile,
     });
   }

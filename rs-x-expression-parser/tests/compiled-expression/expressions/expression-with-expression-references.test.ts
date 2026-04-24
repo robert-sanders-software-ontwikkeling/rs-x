@@ -50,4 +50,38 @@ describe('Expression with expression reference', () => {
 
     expect(expression.value).toEqual(model.items);
   });
+
+  it('uses expression reference values as dependencies', async () => {
+    const source = { rate: 0.15 };
+    const rateExpression = rsx<number>('rate')(source);
+    const model = {
+      discountRate: rateExpression,
+    };
+
+    expression = rsx<string>('(discountRate * 100).toFixed(0) + "%"')(model);
+
+    await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+    expect(expression.value).toEqual('15%');
+  });
+
+  it('updates when an expression reference dependency changes', async () => {
+    const source = { rate: 0.15 };
+    const rateExpression = rsx<number>('rate')(source);
+    const model = {
+      discountRate: rateExpression,
+    };
+
+    expression = rsx<string>('(discountRate * 100).toFixed(0) + "%"')(model);
+
+    await new WaitForEvent(expression, 'changed').wait(emptyFunction);
+
+    await new WaitForEvent(expression, 'changed', {
+      ignoreInitialValue: true,
+    }).wait(() => {
+      source.rate = 0.25;
+    });
+
+    expect(expression.value).toEqual('25%');
+  });
 });

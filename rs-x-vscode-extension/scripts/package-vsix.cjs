@@ -8,12 +8,59 @@ const stageRoot = path.join(extensionRoot, '.vsix-stage');
 const baseManifest = JSON.parse(
   fs.readFileSync(path.join(extensionRoot, 'package.json'), 'utf8'),
 );
+const localBuild =
+  process.argv.includes('--local-build') ||
+  process.env.RSX_LOCAL_VSIX === '1' ||
+  process.env.RSX_LOCAL_VSIX === 'true';
+const packagedExtensionVersion = resolvePackagedExtensionVersion(
+  baseManifest.version,
+  localBuild,
+);
 const outputDir = path.join(extensionRoot, 'dist');
 const outputPath = path.join(
   outputDir,
-  `rs-x-vscode-extension-${baseManifest.version}.vsix`,
+  `rs-x-vscode-extension-${packagedExtensionVersion}.vsix`,
 );
 const vsceCliPath = require.resolve('@vscode/vsce/vsce');
+
+function pad2(value) {
+  return String(value).padStart(2, '0');
+}
+
+function toVersionTimestamp(date) {
+  return [
+    date.getUTCFullYear(),
+    pad2(date.getUTCMonth() + 1),
+    pad2(date.getUTCDate()),
+    pad2(date.getUTCHours()),
+    pad2(date.getUTCMinutes()),
+    pad2(date.getUTCSeconds()),
+  ].join('');
+}
+
+function resolvePackagedExtensionVersion(baseVersion, useLocalVersion) {
+  if (!useLocalVersion) {
+    return baseVersion;
+  }
+
+  const explicitVersion = process.env.RSX_LOCAL_VSIX_VERSION?.trim();
+  if (explicitVersion) {
+    return explicitVersion;
+  }
+
+  const suffix = `local.${toVersionTimestamp(new Date())}`;
+  const stableVersionMatch = baseVersion.match(/^(\d+)\.(\d+)\.(\d+)/u);
+  if (!stableVersionMatch) {
+    return baseVersion.includes('-')
+      ? `${baseVersion}.${suffix}`
+      : `${baseVersion}-${suffix}`;
+  }
+
+  const major = stableVersionMatch[1];
+  const minor = stableVersionMatch[2];
+  const patch = Number(stableVersionMatch[3]);
+  return `${major}.${minor}.${patch + 1}-${suffix}`;
+}
 
 function copyRecursive(sourcePath, targetPath) {
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
@@ -194,7 +241,7 @@ const stagedManifest = {
   displayName: baseManifest.displayName,
   description: baseManifest.description,
   icon: baseManifest.icon,
-  version: baseManifest.version,
+  version: packagedExtensionVersion,
   publisher: baseManifest.publisher,
   engines: baseManifest.engines,
   categories: baseManifest.categories,
@@ -273,4 +320,9 @@ run(
   { cwd: stageRoot },
 );
 
+if (localBuild) {
+  console.log(
+    `[rs-x-vscode-extension] Local VSIX version: ${packagedExtensionVersion}`,
+  );
+}
 console.log(`VSIX generated at ${outputPath}`);

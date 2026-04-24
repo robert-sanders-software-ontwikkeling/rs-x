@@ -9,22 +9,26 @@ import {
   getRsxHoverAtPosition,
   getRsxSignatureHelpAtPosition,
   type IRsxToken,
+  shouldEmitRsxSemanticToken,
+  shouldEmitTsClassificationForRsxToken,
   tokenizeRsxExpression,
+  toTsClassificationTypeForRsxTokenKind,
 } from '@rs-x/compiler';
 
 import { patchLanguageServiceHostForRsxImports } from './rsx-language-service-host';
 import {
   createRsxSemanticClassificationContext,
-  resolveSemanticTokenTypeForIdentifier,
+  resolveSemanticTokenType,
 } from './rsx-semantic-classification';
-import {
-  excludeClassificationSpansInRanges,
-  getEncodedLexicalClassificationsForRsxExpression,
-} from './rsx-syntactic-classification';
+import { excludeClassificationSpansInRanges } from './rsx-syntactic-classification';
 
 interface ITypescriptPluginInit {
   typescript: typeof tsModule;
 }
+
+const RSX_INLINE_CLASSIFICATION_POLICY = Object.freeze({
+  emitOperatorTokens: false,
+});
 
 function getRelevantExpressionSitesForFile(
   program: tsModule.Program,
@@ -596,16 +600,17 @@ function getRsxEncodedSyntacticClassifications(args: {
       expressionStart,
       expressionEnd,
     );
-    const classifications = getEncodedLexicalClassificationsForRsxExpression({
-      ts,
-      expressionText,
-    });
-
-    for (let index = 0; index < classifications.spans.length; index += 3) {
-      const tokenStart = expressionStart + classifications.spans[index];
-      const tokenLength = classifications.spans[index + 1];
-      const tokenEnd = tokenStart + tokenLength;
-      const classification = classifications.spans[index + 2];
+    const tokens = tokenizeRsxExpression(expressionText);
+    for (const token of tokens) {
+      const tokenStart = expressionStart + token.start;
+      const tokenEnd = expressionStart + token.end;
+      const classification = encodeSyntacticClassification({
+        ts,
+        token,
+      });
+      if (classification === null) {
+        continue;
+      }
 
       if (tokenEnd <= spanStart || tokenStart >= spanEnd) {
         continue;
@@ -632,26 +637,77 @@ function encodeClassification(args: {
   text: string;
 }): number | null {
   const { ts, token, format, context, text } = args;
-
-  // Keep plugin coloring conservative: only semantic identifier/keyword tokens.
-  // Let TypeScript's native syntactic classifier own operators/punctuation/strings
-  // to avoid cross-range color artifacts in regular TS code.
-  if (token.kind !== 'identifier' && token.kind !== 'keyword') {
+  const semanticTokenType = resolveSemanticTokenType({
+    context,
+    text,
+    token,
+  });
+  if (semanticTokenType === null) {
+    return null;
+  }
+  const tokenText = text.slice(token.start, token.end);
+  if (
+    !shouldEmitRsxSemanticToken({
+      tokenType: semanticTokenType,
+      tokenText,
+      policy: RSX_INLINE_CLASSIFICATION_POLICY,
+    })
+  ) {
     return null;
   }
 
   if (format === ts.SemanticClassificationFormat.TwentyTwenty) {
-    const semanticTokenType = resolveSemanticTokenTypeForIdentifier({
-      context,
-      text,
-      token,
-    });
     return (semanticTokenType + 1) << 8;
   }
 
-  return token.kind === 'keyword'
-    ? ts.ClassificationType.keyword
-    : ts.ClassificationType.identifier;
+  switch (token.kind) {
+    case 'identifier':
+      return ts.ClassificationType.identifier;
+    case 'keyword':
+      return ts.ClassificationType.keyword;
+    case 'number':
+      return ts.ClassificationType.numericLiteral;
+    case 'string':
+      return ts.ClassificationType.stringLiteral;
+    case 'operator':
+    case 'punctuation':
+      return ts.ClassificationType.operator;
+    default:
+      return null;
+  }
+}
+
+function encodeSyntacticClassification(args: {
+  ts: typeof tsModule;
+  token: IRsxToken;
+}): number | null {
+  const { ts, token } = args;
+  const classification = toTsClassificationTypeForRsxTokenKind({
+    classificationType: {
+      identifier: ts.ClassificationType.identifier,
+      keyword: ts.ClassificationType.keyword,
+      numericLiteral: ts.ClassificationType.numericLiteral,
+      stringLiteral: ts.ClassificationType.stringLiteral,
+      operator: ts.ClassificationType.operator,
+      punctuation: ts.ClassificationType.punctuation,
+    },
+    tokenKind: token.kind,
+  });
+  if (classification === null) {
+    return null;
+  }
+
+  if (
+    !shouldEmitTsClassificationForRsxToken({
+      classification,
+      operatorClassification: ts.ClassificationType.operator,
+      policy: RSX_INLINE_CLASSIFICATION_POLICY,
+    })
+  ) {
+    return null;
+  }
+
+  return classification;
 }
 
 function mergeEncodedClassificationSpans(

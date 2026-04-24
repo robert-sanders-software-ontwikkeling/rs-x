@@ -235,7 +235,7 @@ export function getRsxDiagnosticsForFile(
   const checker = resolved.program.getTypeChecker();
   if (resolved.rsxBacked) {
     return getRsxBackedDetections(resolved.rsxBacked).flatMap((site) => {
-      const result = validateExpressionSite(site, checker);
+      const result = validateExpressionSite(site, site.typeChecker ?? checker);
       const literalBounds = getExpressionLiteralBounds(site);
       return result.diagnostics.map((diagnostic) => {
         const tokenRange = resolveDiagnosticTokenRangeInExpression({
@@ -267,7 +267,7 @@ export function getRsxDiagnosticsForFile(
       ? getRelevantExpressionSites(resolved.program, resolved.fileName)
       : detectExpressionSitesInSourceFile(sourceFile, checker);
   return sites.flatMap((site) => {
-    const result = validateExpressionSite(site, checker);
+    const result = validateExpressionSite(site, site.typeChecker ?? checker);
     const literalBounds = getExpressionLiteralBounds(site);
     const expressionText = site.expression;
 

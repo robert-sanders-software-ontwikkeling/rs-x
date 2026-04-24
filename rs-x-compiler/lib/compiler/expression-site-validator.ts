@@ -19,6 +19,7 @@ import {
 import {
   detectExpressionSites,
   type IExpressionSiteDetection,
+  type IExpressionSiteDetectionOptions,
 } from './expression-site-detector';
 
 export interface IValidatedExpressionSite extends IExpressionSiteDetection {
@@ -61,12 +62,13 @@ export const supportedDateProperties = new Set<string>([
 
 export function validateExpressionSites(
   program: ts.Program,
+  options?: IExpressionSiteDetectionOptions,
 ): IValidatedExpressionSite[] {
   const checker = program.getTypeChecker();
   const parser = new JsEspreeExpressionParser(new JsExpressionAstParser());
 
-  return detectExpressionSites(program).map((site) =>
-    validateExpressionSite(site, checker, parser),
+  return detectExpressionSites(program, options).map((site) =>
+    validateExpressionSite(site, site.typeChecker ?? checker, parser),
   );
 }
 
@@ -162,6 +164,12 @@ function validateDeclaredReturnType(args: {
   );
   const actualType = resolveResolvedTypeToTsType(actualResolvedType, checker);
   if (!actualType) {
+    return;
+  }
+  if (
+    diagnostics.length === 0 &&
+    containsTypeParameterLike(actualType, checker)
+  ) {
     return;
   }
 
@@ -359,7 +367,7 @@ function resolveIdentifierType(
   );
   // If the context resolved to any/unknown (e.g. inferred from unresolved `this`
   // in a JS object literal inside an in-memory program), allow any identifier.
-  if (contextType.flags & (_typeFlags.Any | _typeFlags.Unknown)) {
+  if (isAnyOrUnknownType(contextType, checker)) {
     return {};
   }
   const property = contextType.getProperty(normalizedIdentifier);
@@ -710,7 +718,7 @@ function resolveFunctionTypeFromKnownContext(
 ): IResolvedType {
   objectType = unwrapRsxExpressionType(objectType, checker);
   // If the object resolved to any/unknown we cannot inspect its properties.
-  if (objectType.flags & (_typeFlags.Any | _typeFlags.Unknown)) {
+  if (isAnyOrUnknownType(objectType, checker)) {
     return {};
   }
   const fnExpression =
@@ -1028,42 +1036,42 @@ function isAssignableToParameter(
     return false;
   }
 
-  return isPrimitiveAssignable(argumentType.primitive, parameterType);
+  return isPrimitiveAssignable(argumentType.primitive, parameterType, checker);
 }
 
 function isPrimitiveAssignable(
   primitive: IResolvedType['primitive'],
   parameterType: ts.Type,
+  checker: ts.TypeChecker,
 ): boolean {
   if (!primitive) {
     return false;
   }
 
   if (
-    (parameterType.flags &
-      (_typeFlags.Any | _typeFlags.Unknown | _typeFlags.TypeParameter)) !==
-    0
+    isAnyOrUnknownType(parameterType, checker) ||
+    isTypeParameterLike(parameterType)
   ) {
     return true;
   }
 
   if (parameterType.isUnionOrIntersection()) {
     return parameterType.types.some((type) =>
-      isPrimitiveAssignable(primitive, type),
+      isPrimitiveAssignable(primitive, type, checker),
     );
   }
 
   switch (primitive) {
     case 'string':
-      return (parameterType.flags & _typeFlags.StringLike) !== 0;
+      return tsTypeMatches(parameterType, _typeFlags.StringLike, checker);
     case 'number':
-      return (parameterType.flags & _typeFlags.NumberLike) !== 0;
+      return tsTypeMatches(parameterType, _typeFlags.NumberLike, checker);
     case 'boolean':
-      return (parameterType.flags & _typeFlags.BooleanLike) !== 0;
+      return tsTypeMatches(parameterType, _typeFlags.BooleanLike, checker);
     case 'bigint':
-      return (parameterType.flags & _typeFlags.BigIntLike) !== 0;
+      return tsTypeMatches(parameterType, _typeFlags.BigIntLike, checker);
     case 'null':
-      return (parameterType.flags & _typeFlags.Null) !== 0;
+      return tsTypeMatches(parameterType, _typeFlags.Null, checker);
     case 'function':
       return parameterType.getCallSignatures().length > 0;
     default:
@@ -1261,6 +1269,14 @@ function isNumberLike(type: IResolvedType, checker: ts.TypeChecker): boolean {
 
     return isNumberLike({ tsType: constraint }, checker);
   }
+  if (isTypeParameterLike(unwrappedType)) {
+    const constraint = checker.getBaseConstraintOfType(unwrappedType);
+    if (!constraint) {
+      return true;
+    }
+
+    return isNumberLike({ tsType: constraint }, checker);
+  }
   if ((unwrappedType.flags & _typeFlags.Any) !== 0) {
     return true;
   }
@@ -1352,7 +1368,86 @@ function tsTypeMatches(
     );
   }
 
+  if (typeDisplayMatchesMask(type, mask, checker)) {
+    return true;
+  }
+
   return false;
+}
+
+function typeDisplayMatchesMask(
+  type: ts.Type,
+  mask: ts.TypeFlags,
+  checker: ts.TypeChecker,
+): boolean {
+  const displayType = checker.getBaseTypeOfLiteralType(type);
+  const display = checker.typeToString(displayType);
+
+  if (mask === _typeFlags.NumberLike) {
+    return display === 'number' || display === 'Number';
+  }
+  if (mask === _typeFlags.StringLike) {
+    return display === 'string' || display === 'String';
+  }
+  if (mask === _typeFlags.BooleanLike) {
+    return display === 'boolean' || display === 'Boolean';
+  }
+  if (mask === _typeFlags.BigIntLike) {
+    return display === 'bigint' || display === 'BigInt';
+  }
+  if (mask === _typeFlags.Null) {
+    return display === 'null';
+  }
+
+  return false;
+}
+
+function isAnyOrUnknownType(type: ts.Type, checker: ts.TypeChecker): boolean {
+  if ((type.flags & (_typeFlags.Any | _typeFlags.Unknown)) !== 0) {
+    return true;
+  }
+
+  const display = checker.typeToString(type);
+  return display === 'any' || display === 'unknown';
+}
+
+function isTypeParameterLike(type: ts.Type): boolean {
+  if ((type.flags & _typeFlags.TypeParameter) !== 0) {
+    return true;
+  }
+
+  const declarations = type.getSymbol()?.declarations ?? [];
+  return declarations.some((declaration) =>
+    ts.isTypeParameterDeclaration(declaration),
+  );
+}
+
+function containsTypeParameterLike(
+  type: ts.Type,
+  checker: ts.TypeChecker,
+  seen = new Set<ts.Type>(),
+): boolean {
+  if (seen.has(type)) {
+    return false;
+  }
+  seen.add(type);
+
+  type = unwrapRsxExpressionType(type, checker);
+  if (isTypeParameterLike(type)) {
+    return true;
+  }
+
+  if (type.isUnionOrIntersection()) {
+    return type.types.some((memberType) =>
+      containsTypeParameterLike(memberType, checker, seen),
+    );
+  }
+
+  return checker
+    .getTypeArguments(type as ts.TypeReference)
+    .some((typeArgument) =>
+      containsTypeParameterLike(typeArgument, checker, seen),
+    );
 }
 
 function unwrapRsxExpressionType(

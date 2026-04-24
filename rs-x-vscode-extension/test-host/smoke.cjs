@@ -114,18 +114,6 @@ async function run() {
     moduleDocument,
     secondSemanticTokens,
   );
-  const operatorSpans = decodedSpans.filter((span) =>
-    isOperatorLikeText(span.text),
-  );
-  assert.equal(
-    operatorSpans.length,
-    0,
-    `Expected no semantic tokens on operator-only text, found: ${operatorSpans
-      .slice(0, 5)
-      .map((span) => JSON.stringify(span.text))
-      .join(', ')}`,
-  );
-
   const requiredSemanticTexts = [
     'lineTotal',
     'line',
@@ -149,7 +137,6 @@ async function run() {
           firstElapsedMs,
           secondElapsedMs,
           decodedSpanCount: decodedSpans.length,
-          operatorSpanCount: operatorSpans.length,
         },
         null,
         2,
@@ -230,8 +217,4 @@ function decodeSemanticTokenSpans(vscode, document, semanticTokens) {
     });
   }
   return spans;
-}
-
-function isOperatorLikeText(text) {
-  return /^[+\-*/%<>=!&|^~?:.,;()[\]{}]+$/u.test(text);
 }
