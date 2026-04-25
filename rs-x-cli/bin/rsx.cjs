@@ -5032,9 +5032,11 @@ function wireRsxVitePlugin(projectRoot, dryRun) {
     fs.existsSync(candidate),
   );
   const pluginPath = path.join(projectRoot, 'rsx-vite-plugin.mjs');
+  const pluginTypesPath = path.join(projectRoot, 'rsx-vite-plugin.d.mts');
   const stalePluginFiles = [
     path.join(projectRoot, 'rsx-vite-plugin.ts'),
     path.join(projectRoot, 'rsx-vite-plugin.d.ts'),
+    path.join(projectRoot, 'rsx-vite-plugin.mjs.d.ts'),
   ];
 
   if (!viteConfigPath) {
@@ -5091,11 +5093,19 @@ export function rsxVitePlugin() {
   };
 }
 `;
+  const pluginTypesSource = `import type { Plugin } from 'vite';
+
+export declare function rsxVitePlugin(): Plugin;
+`;
+
   if (dryRun) {
     logInfo(`[dry-run] create ${pluginPath}`);
+    logInfo(`[dry-run] create ${pluginTypesPath}`);
   } else {
     fs.writeFileSync(pluginPath, pluginSource, 'utf8');
     logOk(`Created ${pluginPath}`);
+    fs.writeFileSync(pluginTypesPath, pluginTypesSource, 'utf8');
+    logOk(`Created ${pluginTypesPath}`);
   }
 
   const original = fs.readFileSync(viteConfigPath, 'utf8');

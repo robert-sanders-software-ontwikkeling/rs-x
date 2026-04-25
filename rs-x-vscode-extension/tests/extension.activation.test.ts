@@ -316,6 +316,86 @@ describe('rsx vscode extension activation', () => {
     );
   });
 
+  it('does not treat object literal fields in expression bodies as rsx headers', () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+
+    activate(context as never);
+
+    const diagnosticCollection = createDiagnosticCollection.mock.results.at(-1)
+      ?.value as { set: jest.Mock };
+    const openHandler = onDidOpenTextDocument.mock.calls.at(-1)?.[0] as (
+      document: unknown,
+    ) => void;
+
+    jest.useFakeTimers();
+    const document = createTextDocument(
+      [
+        'defaults:',
+        '  model: { lines: Array<{ id: string; name: string; qty: number; unitPrice: number }> }',
+        '',
+        'expression: linesRsx',
+        '  lines.map((line) => ({',
+        '    id: line.id,',
+        '    name: line.name,',
+        '    qty: line.qty,',
+        '    unitPrice: line.unitPrice,',
+        '    lineTotal: line.qty * line.unitPrice',
+        '  }))',
+      ].join('\n'),
+    );
+    openHandler(document);
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
+
+    const diagnostics = diagnosticCollection.set.mock.calls.at(-1)?.[1] as
+      | Array<{ message: string }>
+      | undefined;
+    expect(diagnostics ?? []).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          message: expect.stringMatching(/^Unknown RS-X header key/u),
+        }),
+      ]),
+    );
+  });
+
+  it('still reports unknown headers before an expression body starts', () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+
+    activate(context as never);
+
+    const diagnosticCollection = createDiagnosticCollection.mock.results.at(-1)
+      ?.value as { set: jest.Mock };
+    const openHandler = onDidOpenTextDocument.mock.calls.at(-1)?.[0] as (
+      document: unknown,
+    ) => void;
+
+    jest.useFakeTimers();
+    const document = createTextDocument(
+      ['expression: totalRsx', '  modelx: { total: number }', '  total'].join(
+        '\n',
+      ),
+    );
+    openHandler(document);
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
+
+    const diagnostics = diagnosticCollection.set.mock.calls.at(-1)?.[1] as
+      | Array<{ message: string }>
+      | undefined;
+    expect(diagnostics ?? []).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          message: 'Unknown RS-X header key "modelx".',
+        }),
+      ]),
+    );
+  });
+
   it('does not fire background semantic-token refreshes for small module .rsx files', () => {
     const context = {
       subscriptions: [] as Array<{ dispose(): void }>,

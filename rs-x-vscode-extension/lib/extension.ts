@@ -141,6 +141,12 @@ interface IHeaderOrderState {
   readonly expressionKeyStartCharacter?: number;
 }
 
+type IRsxModuleDiagnosticState =
+  | 'topLevel'
+  | 'defaultsHeaders'
+  | 'expressionPrelude'
+  | 'expressionBody';
+
 interface IRsxExpressionTreeFile {
   readonly kind: 'file';
   readonly uri: vscode.Uri;
@@ -933,26 +939,20 @@ function getHeaderAuthoringKeyAtPosition(
   }
 
   const line = document.lineAt(position.line).text;
-  const match = /^(\s*)([A-Za-z][A-Za-z0-9_]*)(\s*:)?/u.exec(line);
-  if (!match) {
+  const headerKey = scanHeaderAuthoringKey(line);
+  if (!headerKey) {
     return null;
   }
 
-  const key = match[2] ?? '';
-  const keyStartCharacter = (match[1] ?? '').length;
-  const keyEndCharacter = keyStartCharacter + key.length;
+  const keyEndCharacter = headerKey.keyStartCharacter + headerKey.key.length;
   if (
-    position.character < keyStartCharacter ||
+    position.character < headerKey.keyStartCharacter ||
     position.character > keyEndCharacter
   ) {
     return null;
   }
 
-  return {
-    key,
-    keyStartCharacter,
-    hasColon: !!match[3],
-  };
+  return headerKey;
 }
 
 function isFirstNonEmptyLine(
@@ -1475,9 +1475,9 @@ function getRsxHeaderDirectiveTokensForText(text: string): IRsxSemanticToken[] {
   for (const line of lines) {
     const trimmedStart = line.length - line.trimStart().length;
     const trimmed = line.slice(trimmedStart);
-    const keyMatch = trimmed.match(/^([A-Za-z_$][A-Za-z0-9_$]*)\s*:/u);
-    if (keyMatch && RSX_HEADER_DIRECTIVE_KEYS.has(keyMatch[1] ?? '')) {
-      const key = keyMatch[1]!;
+    const header = parseHeaderLine(trimmed);
+    if (header && RSX_HEADER_DIRECTIVE_KEYS.has(header.key)) {
+      const key = header.key;
       tokens.push({
         start: lineOffset + trimmedStart,
         length: key.length,
@@ -1489,16 +1489,14 @@ function getRsxHeaderDirectiveTokensForText(text: string): IRsxSemanticToken[] {
       });
 
       if (key === 'expression') {
-        const expressionNameMatch = trimmed.match(
-          /^expression\s*:\s*([A-Za-z_$][A-Za-z0-9_$]*)/u,
+        const expressionNameStart = getHeaderValueStartCharacter(trimmed);
+        const expressionName = readTypeScriptIdentifierAt(
+          trimmed,
+          expressionNameStart,
         );
-        const expressionName = expressionNameMatch?.[1];
         if (expressionName) {
           tokens.push({
-            start:
-              lineOffset +
-              trimmedStart +
-              (expressionNameMatch[0].length - expressionName.length),
+            start: lineOffset + trimmedStart + expressionNameStart,
             length: expressionName.length,
             tokenType: expressionNameTokenType,
             tokenModifiers: 0,
@@ -2019,7 +2017,10 @@ function createModuleHeaderStandaloneLanguageServiceForOffset(
   }
   const valueStartCharacter = (() => {
     let cursor = separatorIndex + 1;
-    while (cursor < line.text.length && /\s/u.test(line.text[cursor])) {
+    while (
+      cursor < line.text.length &&
+      isLineWhitespaceCharacter(line.text[cursor])
+    ) {
       cursor += 1;
     }
     return cursor;
@@ -2560,8 +2561,7 @@ function getModuleHeaderDiagnostics(
   const diagnostics: vscode.Diagnostic[] = [];
   const lines = text.replace(/\r\n/gu, '\n').split('\n');
   const expressionNameFirstLine = new Map<string, number>();
-  let inDefaultsBlock = false;
-  let inExpressionHeaderBlock = false;
+  let state: IRsxModuleDiagnosticState = 'topLevel';
   let defaultsLineIndex: number | null = null;
   let defaultsHasModel = false;
   let defaultsHeaderOrderState = createHeaderOrderState('defaults block');
@@ -2584,10 +2584,14 @@ function getModuleHeaderDiagnostics(
       continue;
     }
 
-    const indented = /^\s/u.test(line);
-    const topLevelExpressionMatch = /^expression\s*:\s*.+$/u.exec(trimmed);
-    const topLevelDefaultsMatch = /^defaults\s*:\s*$/u.exec(trimmed);
+    const indented = isIndentedLine(line);
     const topLevelHeader = !indented ? parseHeaderLine(line) : null;
+    const topLevelExpressionHeader =
+      topLevelHeader?.key === 'expression' &&
+      topLevelHeader.value.trim().length > 0;
+    const topLevelDefaultsHeader =
+      topLevelHeader?.key === 'defaults' &&
+      topLevelHeader.value.trim().length === 0;
 
     const finalizeExpressionHeaderBlock = (): void => {
       if (
@@ -2611,7 +2615,7 @@ function getModuleHeaderDiagnostics(
       expressionHeaderOrderState = null;
     };
 
-    if (topLevelHeader?.key === 'expression' && !topLevelExpressionMatch) {
+    if (topLevelHeader?.key === 'expression' && !topLevelExpressionHeader) {
       finalizeExpressionHeaderBlock();
       addHeaderKeyDiagnostic({
         diagnostics,
@@ -2620,12 +2624,11 @@ function getModuleHeaderDiagnostics(
         key: topLevelHeader.key,
         message: 'Header "expression" requires an expression name.',
       });
-      inDefaultsBlock = false;
-      inExpressionHeaderBlock = false;
+      state = 'topLevel';
       continue;
     }
 
-    if (topLevelHeader?.key === 'defaults' && !topLevelDefaultsMatch) {
+    if (topLevelHeader?.key === 'defaults' && !topLevelDefaultsHeader) {
       finalizeExpressionHeaderBlock();
       addHeaderKeyDiagnostic({
         diagnostics,
@@ -2634,12 +2637,11 @@ function getModuleHeaderDiagnostics(
         key: topLevelHeader.key,
         message: 'Header "defaults" must not have a value.',
       });
-      inDefaultsBlock = false;
-      inExpressionHeaderBlock = false;
+      state = 'topLevel';
       continue;
     }
 
-    if (!indented && topLevelExpressionMatch) {
+    if (!indented && topLevelExpressionHeader) {
       finalizeExpressionHeaderBlock();
       expressionSeen = true;
       if (topLevelStandaloneHeaderLineIndex !== null) {
@@ -2653,11 +2655,10 @@ function getModuleHeaderDiagnostics(
         });
       }
 
-      const expressionHeaderMatch = /^(\s*expression\s*:\s*)(.+)$/u.exec(line);
-      const expressionNameRaw = expressionHeaderMatch?.[2] ?? '';
+      const expressionNameRaw = topLevelHeader.value;
       const expressionName = expressionNameRaw.trim();
       const expressionNameStart =
-        (expressionHeaderMatch?.[1]?.length ?? 0) +
+        getHeaderValueStartCharacter(line) +
         (expressionNameRaw.length - expressionNameRaw.trimStart().length);
       const expressionNameEnd = expressionNameStart + expressionName.length;
       expressionHeaderOrderState = createHeaderOrderState(
@@ -2669,7 +2670,7 @@ function getModuleHeaderDiagnostics(
         },
       );
 
-      if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/u.test(expressionName)) {
+      if (!ts.isIdentifierText(expressionName, ts.ScriptTarget.Latest)) {
         diagnostics.push(
           new vscode.Diagnostic(
             new vscode.Range(
@@ -2701,12 +2702,11 @@ function getModuleHeaderDiagnostics(
         }
       }
 
-      inDefaultsBlock = false;
-      inExpressionHeaderBlock = true;
+      state = 'expressionPrelude';
       continue;
     }
 
-    if (!indented && topLevelDefaultsMatch) {
+    if (!indented && topLevelDefaultsHeader) {
       finalizeExpressionHeaderBlock();
       if (defaultsLineIndex !== null) {
         addHeaderKeyDiagnostic({
@@ -2740,14 +2740,13 @@ function getModuleHeaderDiagnostics(
       }
       defaultsLineIndex = lineIndex;
       defaultsHeaderOrderState = createHeaderOrderState('defaults block');
-      inDefaultsBlock = true;
-      inExpressionHeaderBlock = false;
+      state = 'defaultsHeaders';
       continue;
     }
 
-    if (inDefaultsBlock) {
+    if (state === 'defaultsHeaders') {
       if (!indented) {
-        inDefaultsBlock = false;
+        state = 'topLevel';
       } else {
         const parsed = parseHeaderLine(line);
         if (parsed) {
@@ -2773,32 +2772,31 @@ function getModuleHeaderDiagnostics(
       }
     }
 
-    if (inExpressionHeaderBlock) {
+    if (state === 'expressionPrelude') {
       if (!indented) {
         finalizeExpressionHeaderBlock();
-        inExpressionHeaderBlock = false;
+        state = 'topLevel';
       } else {
-        const parsed = parseHeaderLine(line);
-        if (parsed) {
-          if (expressionHeaderOrderState) {
-            addHeaderOrderDiagnosticsForLine({
-              diagnostics,
-              lineIndex,
-              keyStartCharacter: parsed.keyStartCharacter,
-              key: parsed.key,
-              state: expressionHeaderOrderState,
-            });
-          }
-          addHeaderDiagnosticsForLine({
-            diagnostics,
-            document,
-            lineIndex,
-            key: parsed.key,
-            value: parsed.value,
-          });
+        const headerLineHandled = addExpressionPreludeHeaderDiagnosticsForLine({
+          diagnostics,
+          document,
+          line,
+          lineIndex,
+          state: expressionHeaderOrderState,
+        });
+        if (!headerLineHandled) {
+          finalizeExpressionHeaderBlock();
+          state = 'expressionBody';
         }
         continue;
       }
+    }
+
+    if (state === 'expressionBody') {
+      if (indented) {
+        continue;
+      }
+      state = 'topLevel';
     }
 
     if (!topLevelHeader || indented) {
@@ -2830,7 +2828,7 @@ function getModuleHeaderDiagnostics(
     });
   }
 
-  if (inExpressionHeaderBlock) {
+  if (state === 'expressionPrelude') {
     const finalLineIndex = Math.max(0, lines.length - 1);
     if (
       expressionHeaderOrderState &&
@@ -2865,57 +2863,141 @@ function getModuleHeaderTypeDiagnostics(
 
   const diagnostics: vscode.Diagnostic[] = [];
   const seen = new Set<string>();
+  let state: IRsxModuleDiagnosticState = 'topLevel';
+
   for (let lineIndex = 0; lineIndex < document.lineCount; lineIndex += 1) {
     const line = document.lineAt(lineIndex);
-    const parsed = parseHeaderLine(line.text);
-    if (!parsed || (parsed.key !== 'model' && parsed.key !== 'return')) {
+    const lineText = line.text;
+    const trimmed = lineText.trim();
+    if (trimmed.length === 0) {
       continue;
     }
 
-    const separatorIndex = line.text.indexOf(':');
-    if (separatorIndex < 0) {
-      continue;
-    }
-    let valueStartCharacter = separatorIndex + 1;
-    while (
-      valueStartCharacter < line.text.length &&
-      /\s/u.test(line.text[valueStartCharacter])
-    ) {
-      valueStartCharacter += 1;
-    }
-    if (valueStartCharacter >= line.text.length) {
+    const indented = isIndentedLine(lineText);
+    const topLevelHeader = !indented ? parseHeaderLine(lineText) : null;
+    const topLevelExpressionHeader =
+      topLevelHeader?.key === 'expression' &&
+      topLevelHeader.value.trim().length > 0;
+    const topLevelDefaultsHeader =
+      topLevelHeader?.key === 'defaults' &&
+      topLevelHeader.value.trim().length === 0;
+
+    if (!indented && topLevelExpressionHeader) {
+      state = 'expressionPrelude';
       continue;
     }
 
-    const valueStartOffset = document.offsetAt(
-      new vscode.Position(lineIndex, valueStartCharacter),
-    );
-    const headerDiagnostics = getFastModuleHeaderTypeDiagnostics({
-      document,
-      value: parsed.value,
-      valueStartOffset,
-    });
+    if (!indented && topLevelDefaultsHeader) {
+      state = 'defaultsHeaders';
+      continue;
+    }
 
-    for (const diagnostic of headerDiagnostics) {
-      const key = `${diagnostic.start}:${diagnostic.end}:${diagnostic.message}`;
-      if (seen.has(key)) {
+    if (state === 'defaultsHeaders') {
+      if (!indented) {
+        state = 'topLevel';
+      } else {
+        addModuleHeaderTypeDiagnosticsForLine({
+          diagnostics,
+          document,
+          lineIndex,
+          lineText,
+          seen,
+        });
         continue;
       }
-      seen.add(key);
-      diagnostics.push(
-        new vscode.Diagnostic(
-          new vscode.Range(
-            document.positionAt(diagnostic.start),
-            document.positionAt(diagnostic.end),
-          ),
-          diagnostic.message,
-          vscode.DiagnosticSeverity.Error,
-        ),
-      );
     }
+
+    if (state === 'expressionPrelude') {
+      if (!indented) {
+        state = 'topLevel';
+      } else {
+        const parsed = parseHeaderLine(lineText);
+        if (!parsed) {
+          state = 'expressionBody';
+          continue;
+        }
+
+        addModuleHeaderTypeDiagnosticsForLine({
+          diagnostics,
+          document,
+          lineIndex,
+          lineText,
+          seen,
+        });
+        continue;
+      }
+    }
+
+    if (state === 'expressionBody') {
+      if (indented) {
+        continue;
+      }
+      state = 'topLevel';
+    }
+
+    if (state !== 'topLevel') {
+      continue;
+    }
+
+    addModuleHeaderTypeDiagnosticsForLine({
+      diagnostics,
+      document,
+      lineIndex,
+      lineText,
+      seen,
+    });
   }
 
   return diagnostics;
+}
+
+function addModuleHeaderTypeDiagnosticsForLine(args: {
+  diagnostics: vscode.Diagnostic[];
+  document: vscode.TextDocument;
+  lineIndex: number;
+  lineText: string;
+  seen: Set<string>;
+}): void {
+  const parsed = parseHeaderLine(args.lineText);
+  if (!parsed || (parsed.key !== 'model' && parsed.key !== 'return')) {
+    return;
+  }
+
+  const separatorIndex = args.lineText.indexOf(':');
+  if (separatorIndex < 0) {
+    return;
+  }
+  const valueStartCharacter = getHeaderValueStartCharacter(args.lineText);
+  if (valueStartCharacter >= args.lineText.length) {
+    return;
+  }
+
+  const valueStartOffset = args.document.offsetAt(
+    new vscode.Position(args.lineIndex, valueStartCharacter),
+  );
+  const headerDiagnostics = getFastModuleHeaderTypeDiagnostics({
+    document: args.document,
+    value: parsed.value,
+    valueStartOffset,
+  });
+
+  for (const diagnostic of headerDiagnostics) {
+    const key = `${diagnostic.start}:${diagnostic.end}:${diagnostic.message}`;
+    if (args.seen.has(key)) {
+      continue;
+    }
+    args.seen.add(key);
+    args.diagnostics.push(
+      new vscode.Diagnostic(
+        new vscode.Range(
+          args.document.positionAt(diagnostic.start),
+          args.document.positionAt(diagnostic.end),
+        ),
+        diagnostic.message,
+        vscode.DiagnosticSeverity.Error,
+      ),
+    );
+  }
 }
 
 function getFastModuleHeaderTypeDiagnostics(args: {
@@ -2964,16 +3046,127 @@ function getFastModuleHeaderTypeDiagnostics(args: {
 function parseHeaderLine(
   line: string,
 ): { key: string; value: string; keyStartCharacter: number } | null {
-  const match = /^(\s*)([A-Za-z][A-Za-z0-9_]*)\s*:\s*(.*)$/u.exec(line);
-  if (!match) {
+  let cursor = 0;
+  while (cursor < line.length && isLineWhitespaceCharacter(line[cursor])) {
+    cursor += 1;
+  }
+
+  const keyStartCharacter = cursor;
+  if (!isHeaderKeyStart(line[cursor])) {
+    return null;
+  }
+
+  cursor += 1;
+  while (cursor < line.length && isHeaderKeyPart(line[cursor])) {
+    cursor += 1;
+  }
+  const key = line.slice(keyStartCharacter, cursor);
+
+  while (cursor < line.length && isLineWhitespaceCharacter(line[cursor])) {
+    cursor += 1;
+  }
+
+  if (line[cursor] !== ':') {
     return null;
   }
 
   return {
-    key: match[2],
-    value: match[3],
-    keyStartCharacter: (match[1] ?? '').length,
+    key,
+    value: line.slice(getHeaderValueStartCharacter(line)),
+    keyStartCharacter,
   };
+}
+
+function scanHeaderAuthoringKey(line: string): {
+  key: string;
+  keyStartCharacter: number;
+  hasColon: boolean;
+} | null {
+  let cursor = 0;
+  while (cursor < line.length && isLineWhitespaceCharacter(line[cursor])) {
+    cursor += 1;
+  }
+
+  const keyStartCharacter = cursor;
+  if (!isHeaderKeyStart(line[cursor])) {
+    return null;
+  }
+
+  cursor += 1;
+  while (cursor < line.length && isHeaderKeyPart(line[cursor])) {
+    cursor += 1;
+  }
+  const key = line.slice(keyStartCharacter, cursor);
+
+  while (cursor < line.length && isLineWhitespaceCharacter(line[cursor])) {
+    cursor += 1;
+  }
+
+  return {
+    key,
+    keyStartCharacter,
+    hasColon: line[cursor] === ':',
+  };
+}
+
+function getHeaderValueStartCharacter(line: string): number {
+  const separatorIndex = line.indexOf(':');
+  if (separatorIndex < 0) {
+    return line.length;
+  }
+
+  let cursor = separatorIndex + 1;
+  while (cursor < line.length && isLineWhitespaceCharacter(line[cursor])) {
+    cursor += 1;
+  }
+  return cursor;
+}
+
+function isIndentedLine(line: string): boolean {
+  return line.length > 0 && isLineWhitespaceCharacter(line[0]);
+}
+
+function isLineWhitespaceCharacter(character: string | undefined): boolean {
+  return character !== undefined && character.trim().length === 0;
+}
+
+function isHeaderKeyStart(character: string | undefined): boolean {
+  if (!character) {
+    return false;
+  }
+  const code = character.charCodeAt(0);
+  return (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+}
+
+function isHeaderKeyPart(character: string | undefined): boolean {
+  if (!character) {
+    return false;
+  }
+  const code = character.charCodeAt(0);
+  return (
+    (code >= 65 && code <= 90) ||
+    (code >= 97 && code <= 122) ||
+    (code >= 48 && code <= 57) ||
+    character === '_'
+  );
+}
+
+function isHeaderCompletionKeyPart(character: string | undefined): boolean {
+  return isHeaderKeyPart(character) || character === '$';
+}
+
+function readTypeScriptIdentifierAt(
+  text: string,
+  start: number,
+): string | null {
+  const scanner = ts.createScanner(
+    ts.ScriptTarget.Latest,
+    false,
+    ts.LanguageVariant.Standard,
+    text.slice(start),
+  );
+  const token = scanner.scan();
+  return token === ts.SyntaxKind.Identifier ? scanner.getTokenText() : null;
 }
 
 function addHeaderDiagnosticsForLine(args: {
@@ -3033,6 +3226,37 @@ function addHeaderDiagnosticsForLine(args: {
       ),
     );
   }
+}
+
+function addExpressionPreludeHeaderDiagnosticsForLine(args: {
+  diagnostics: vscode.Diagnostic[];
+  document: vscode.TextDocument;
+  line: string;
+  lineIndex: number;
+  state: IHeaderOrderState | null;
+}): boolean {
+  const parsed = parseHeaderLine(args.line);
+  if (!parsed) {
+    return false;
+  }
+
+  if (args.state) {
+    addHeaderOrderDiagnosticsForLine({
+      diagnostics: args.diagnostics,
+      lineIndex: args.lineIndex,
+      keyStartCharacter: parsed.keyStartCharacter,
+      key: parsed.key,
+      state: args.state,
+    });
+  }
+  addHeaderDiagnosticsForLine({
+    diagnostics: args.diagnostics,
+    document: args.document,
+    lineIndex: args.lineIndex,
+    key: parsed.key,
+    value: parsed.value,
+  });
+  return true;
 }
 
 function createHeaderOrderState(
@@ -3143,8 +3367,6 @@ function getModuleHeaderCompletions(
   document: vscode.TextDocument,
   position: vscode.Position,
 ): vscode.CompletionItem[] {
-  const text = document.getText();
-
   const linePrefix = document
     .lineAt(position.line)
     .text.slice(0, position.character);
@@ -3152,34 +3374,32 @@ function getModuleHeaderCompletions(
     return [];
   }
 
-  const match = /^(\s*)([A-Za-z_$][A-Za-z0-9_$]*)?$/u.exec(linePrefix);
-  if (!match) {
+  const prefix = scanHeaderCompletionPrefix(linePrefix);
+  if (!prefix) {
     return [];
   }
 
-  const leadingWhitespace = match[1] ?? '';
-  const typedPrefix = match[2] ?? '';
   const previousNonEmptyLine = getPreviousNonEmptyLine(document, position.line);
   const previousTrimmed = previousNonEmptyLine?.trim() ?? '';
   const previousIsIndented = previousNonEmptyLine
-    ? /^\s/u.test(previousNonEmptyLine)
+    ? isIndentedLine(previousNonEmptyLine)
     : false;
-  const hasDefaultsHeader = /^\s*defaults\s*:/mu.test(text);
-  const hasExpressionHeader = /^\s*expression\s*:/mu.test(text);
+  const hasDefaultsHeader = hasTopLevelHeader(document, 'defaults');
+  const hasExpressionHeader = hasTopLevelHeader(document, 'expression');
   const isModuleDocument = hasExpressionHeader || hasDefaultsHeader;
   let candidates: readonly string[] = [];
 
-  if (leadingWhitespace.length > 0) {
+  if (prefix.leadingWhitespace.length > 0) {
     if (
-      /^defaults\s*:\s*$/u.test(previousTrimmed) ||
-      /^expression\s*:\s*.+$/u.test(previousTrimmed) ||
+      isTopLevelDefaultsHeaderLine(previousTrimmed) ||
+      isTopLevelExpressionHeaderLine(previousTrimmed) ||
       isExpressionHeaderLine(previousTrimmed)
     ) {
       candidates = MODULE_EXPRESSION_HEADER_KEYS;
     }
   } else if (
     !previousIsIndented &&
-    (/^expression\s*:\s*.+$/u.test(previousTrimmed) ||
+    (isTopLevelExpressionHeaderLine(previousTrimmed) ||
       isExpressionHeaderLine(previousTrimmed))
   ) {
     candidates = MODULE_EXPRESSION_HEADER_KEYS;
@@ -3193,7 +3413,7 @@ function getModuleHeaderCompletions(
   }
 
   return candidates
-    .filter((candidate) => candidate.startsWith(typedPrefix))
+    .filter((candidate) => candidate.startsWith(prefix.typedPrefix))
     .map((candidate) => {
       const completion = new vscode.CompletionItem(
         candidate,
@@ -3218,14 +3438,71 @@ function getPreviousNonEmptyLine(
   return null;
 }
 
+function scanHeaderCompletionPrefix(linePrefix: string): {
+  leadingWhitespace: string;
+  typedPrefix: string;
+} | null {
+  let cursor = 0;
+  while (
+    cursor < linePrefix.length &&
+    isLineWhitespaceCharacter(linePrefix[cursor])
+  ) {
+    cursor += 1;
+  }
+
+  const keyStart = cursor;
+  while (
+    cursor < linePrefix.length &&
+    isHeaderCompletionKeyPart(linePrefix[cursor])
+  ) {
+    cursor += 1;
+  }
+
+  if (cursor !== linePrefix.length) {
+    return null;
+  }
+
+  return {
+    leadingWhitespace: linePrefix.slice(0, keyStart),
+    typedPrefix: linePrefix.slice(keyStart),
+  };
+}
+
+function hasTopLevelHeader(
+  document: vscode.TextDocument,
+  key: 'defaults' | 'expression',
+): boolean {
+  for (let lineIndex = 0; lineIndex < document.lineCount; lineIndex += 1) {
+    const line = document.lineAt(lineIndex).text;
+    if (isIndentedLine(line)) {
+      continue;
+    }
+    const parsed = parseHeaderLine(line);
+    if (parsed?.key === key) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function isTopLevelDefaultsHeaderLine(line: string): boolean {
+  const parsed = parseHeaderLine(line);
+  return parsed?.key === 'defaults' && parsed.value.trim().length === 0;
+}
+
+function isTopLevelExpressionHeaderLine(line: string): boolean {
+  const parsed = parseHeaderLine(line);
+  return parsed?.key === 'expression' && parsed.value.trim().length > 0;
+}
+
 function isExpressionHeaderLine(line: string): boolean {
-  const match = /^([A-Za-z][A-Za-z0-9_]*)\s*:\s*(.+)$/u.exec(line);
-  if (!match) {
+  const parsed = parseHeaderLine(line);
+  if (!parsed || parsed.value.trim().length === 0) {
     return false;
   }
 
   return MODULE_EXPRESSION_HEADER_KEYS.includes(
-    match[1] as (typeof MODULE_EXPRESSION_HEADER_KEYS)[number],
+    parsed.key as (typeof MODULE_EXPRESSION_HEADER_KEYS)[number],
   );
 }
 

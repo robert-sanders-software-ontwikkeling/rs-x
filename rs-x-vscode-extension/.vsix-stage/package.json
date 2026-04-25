@@ -3,7 +3,7 @@
   "displayName": "RS-X Compiler Support",
   "description": "VS Code extension that enables RS-X expression IntelliSense and diagnostics",
   "icon": "icon.png",
-  "version": "2.0.3-local.20260425161055",
+  "version": "2.0.3-local.20260425191406",
   "publisher": "RobertSanders",
   "engines": {
     "vscode": "^1.90.0"

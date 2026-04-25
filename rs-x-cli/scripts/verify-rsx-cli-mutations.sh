@@ -438,6 +438,27 @@ if ((sourceFile.parseDiagnostics || []).length > 0) {
     return
   fi
 
+  if [[ "$expected_dep" == "@rs-x/vue" && -f "$project_dir/vite.config.ts" ]]; then
+    if [[ ! -f "$project_dir/rsx-vite-plugin.mjs" ]]; then
+      printf '%s: rsx-vite-plugin.mjs was not created.\n' "$label"
+      summary_lines+=("$label: missing vite plugin")
+      overall_status=1
+      return
+    fi
+    if [[ ! -f "$project_dir/rsx-vite-plugin.d.mts" ]]; then
+      printf '%s: rsx-vite-plugin.d.mts was not created.\n' "$label"
+      summary_lines+=("$label: missing vite plugin types")
+      overall_status=1
+      return
+    fi
+    if ! grep -qF "from './rsx-vite-plugin.mjs'" "$project_dir/vite.config.ts"; then
+      printf '%s: vite.config.ts does not import the RS-X Vite plugin.\n' "$label"
+      summary_lines+=("$label: vite plugin not imported")
+      overall_status=1
+      return
+    fi
+  fi
+
   summary_lines+=("$label: pass")
 }
 
