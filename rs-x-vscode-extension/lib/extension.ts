@@ -1,8 +1,11 @@
+import * as path from 'node:path';
+
 import ts from 'typescript';
 import * as vscode from 'vscode';
 
 import {
   createRsxSemanticClassificationContext,
+  getRsxExpressionExports,
   parseRsxFileExpressions,
   resolveRsxSemanticTokenType,
   shouldEmitRsxSemanticToken,
@@ -17,6 +20,9 @@ import {
   getRsxDefinitionsAtPosition,
   getRsxDiagnostics,
   getRsxDocumentSymbols,
+  getRsxHeaderImportDiagnosticsForText,
+  getRsxHeaderImportHoverAtTextPosition,
+  getRsxHeaderImportTypeDefinitionsAtTextPosition,
   getRsxHoverAtPosition,
   getRsxImplementationsAtPosition,
   getRsxReferencesAtPosition,
@@ -24,6 +30,7 @@ import {
   getRsxSemanticTokens,
   getRsxSignatureHelpAtPosition,
   getRsxSyntacticTokensForText,
+  getRsxTypeDefinitionsAtPosition,
   rsxSemanticTokenModifiers,
   rsxSemanticTokenTypes,
 } from './rsx-standalone-language-service';
@@ -31,10 +38,22 @@ import {
 const RSX_LANGUAGE_ID = 'rsx';
 const WRAPPED_EXPRESSION_PREFIX = 'const __rsxExpression = (\n';
 const WRAPPED_EXPRESSION_SUFFIX = '\n);\n';
-const MODULE_TOP_LEVEL_HEADER_KEYS = ['expression', 'defaults'] as const;
+const MODULE_TOP_LEVEL_HEADER_KEYS = ['defaults', 'expression'] as const;
+const STANDALONE_TOP_LEVEL_HEADER_KEYS = ['model', 'return'] as const;
+const FRESH_FILE_TOP_LEVEL_HEADER_KEYS = [
+  ...MODULE_TOP_LEVEL_HEADER_KEYS,
+  ...STANDALONE_TOP_LEVEL_HEADER_KEYS,
+] as const;
 const MODULE_EXPRESSION_HEADER_KEYS = [
   'model',
+  'preparse',
+  'lazy',
+  'lazyGroup',
+  'compiled',
+  'compile',
   'return',
+] as const;
+const MODULE_OPTION_HEADER_KEYS = [
   'preparse',
   'lazy',
   'lazyGroup',
@@ -43,8 +62,20 @@ const MODULE_EXPRESSION_HEADER_KEYS = [
 ] as const;
 const RSX_HEADER_DIRECTIVE_KEYS = new Set<string>([
   ...MODULE_TOP_LEVEL_HEADER_KEYS,
+  ...STANDALONE_TOP_LEVEL_HEADER_KEYS,
   ...MODULE_EXPRESSION_HEADER_KEYS,
 ]);
+const RSX_HEADER_DIRECTIVE_HOVER_TEXT: Record<string, string> = {
+  expression: 'expression: starts a named exported RS-X expression',
+  defaults: 'defaults: shared headers for following expressions',
+  model: 'model: expression input type',
+  return: 'return: expression result type',
+  preparse: 'preparse: pre-parse this expression during build',
+  lazy: 'lazy: defer expression evaluation until observed',
+  lazyGroup: 'lazyGroup: group lazy expression evaluation',
+  compiled: 'compiled: emit compiled expression runtime code',
+  compile: 'compile: emit compiled expression runtime code',
+};
 const HEADER_COMPLETION_TRIGGER_CHARACTERS = [
   ...'abcdefghijklmnopqrstuvwxyz',
   ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
@@ -70,6 +101,14 @@ interface IModuleExpressionStandaloneService {
   standaloneExpressionStart: number;
 }
 
+interface IModuleHeaderStandaloneService {
+  document: NonNullable<ReturnType<typeof createRsxStandaloneLanguageService>>;
+  position: number;
+  key: 'model' | 'return';
+  originalValueStart: number;
+  originalValueEnd: number;
+}
+
 interface IStandaloneServiceCacheEntry {
   version: number;
   service: ReturnType<typeof createRsxStandaloneLanguageService>;
@@ -92,6 +131,37 @@ interface IModuleExpressionCacheEntry {
 }
 
 type IRsxSemanticToken = ReturnType<typeof getRsxSemanticTokens>[number];
+type IRsxExpressionExport = ReturnType<typeof getRsxExpressionExports>[number];
+
+interface IHeaderOrderState {
+  readonly blockLabel: string;
+  readonly seenHeaders: Set<string>;
+  readonly expressionLineIndex?: number;
+  readonly expressionName?: string;
+  readonly expressionKeyStartCharacter?: number;
+}
+
+interface IRsxExpressionTreeFile {
+  readonly kind: 'file';
+  readonly uri: vscode.Uri;
+  readonly label: string;
+  readonly description: string;
+  readonly relativePath: string;
+  readonly expressions: readonly IRsxExpressionTreeExpression[];
+}
+
+interface IRsxExpressionTreeExpression {
+  readonly kind: 'expression';
+  readonly uri: vscode.Uri;
+  readonly exportName: string;
+  readonly expression: IRsxExpressionExport['expression'];
+  readonly start: number;
+  readonly end: number;
+}
+
+type IRsxExpressionTreeItem =
+  | IRsxExpressionTreeFile
+  | IRsxExpressionTreeExpression;
 
 const standaloneServiceCache = new Map<string, IStandaloneServiceCacheEntry>();
 const moduleExpressionCache = new Map<string, IModuleExpressionCacheEntry>();
@@ -119,6 +189,36 @@ type IDiagnosticsMode = 'auto' | 'focused' | 'full';
 export function activate(context: vscode.ExtensionContext): void {
   const diagnostics = vscode.languages.createDiagnosticCollection('rsx');
   context.subscriptions.push(diagnostics);
+  const expressionsProvider = new RsxExpressionsTreeDataProvider();
+  context.subscriptions.push(
+    vscode.window.registerTreeDataProvider(
+      'rsx.expressions',
+      expressionsProvider,
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand('rsx.expressions.refresh', () => {
+      expressionsProvider.refresh();
+    }),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'rsx.expressions.open',
+      async (item?: IRsxExpressionTreeExpression) => {
+        if (item?.kind === 'expression') {
+          await openRsxExpressionTreeItem(item);
+        }
+      },
+    ),
+  );
+  const expressionsWatcher =
+    vscode.workspace.createFileSystemWatcher('**/*.rsx');
+  context.subscriptions.push(expressionsWatcher);
+  context.subscriptions.push(
+    expressionsWatcher.onDidCreate(() => expressionsProvider.refresh()),
+    expressionsWatcher.onDidChange(() => expressionsProvider.refresh()),
+    expressionsWatcher.onDidDelete(() => expressionsProvider.refresh()),
+  );
   const semanticTokensLegend = new vscode.SemanticTokensLegend(
     [...rsxSemanticTokenTypes],
     [...rsxSemanticTokenModifiers],
@@ -142,6 +242,12 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.languages.registerDefinitionProvider(
       RSX_LANGUAGE_ID,
       new RsxDefinitionProvider(),
+    ),
+  );
+  context.subscriptions.push(
+    vscode.languages.registerTypeDefinitionProvider(
+      RSX_LANGUAGE_ID,
+      new RsxTypeDefinitionProvider(),
     ),
   );
   context.subscriptions.push(
@@ -262,14 +368,17 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(
     vscode.workspace.onDidOpenTextDocument((document) => {
+      invalidateRsxDocumentAnalysis(document);
       scheduleModuleExpressionPrewarm(document, 0);
-      refreshDiagnosticsForDocument(document, 'focused', 100);
+      refreshDiagnosticsForDocument(document, 'auto', 100);
     }),
   );
   context.subscriptions.push(
     vscode.workspace.onDidChangeTextDocument((event) => {
-      documentSemanticTokenCache.delete(event.document.uri.toString());
-      refreshDiagnosticsForDocument(event.document, 'focused', 180);
+      invalidateRsxDocumentAnalysis(event.document, {
+        fireSemanticTokensChanged: true,
+      });
+      refreshDiagnosticsForDocument(event.document, 'auto', 180);
     }),
   );
   context.subscriptions.push(
@@ -278,9 +387,12 @@ export function activate(context: vscode.ExtensionContext): void {
     ),
   );
   context.subscriptions.push(
-    vscode.workspace.onDidSaveTextDocument((document) =>
-      refreshDiagnosticsForDocument(document, 'auto', 100),
-    ),
+    vscode.workspace.onDidSaveTextDocument((document) => {
+      invalidateRsxDocumentAnalysis(document, {
+        fireSemanticTokensChanged: true,
+      });
+      refreshDiagnosticsForDocument(document, 'auto', 100);
+    }),
   );
   const onDidChangeActiveTextEditor =
     vscode.window?.onDidChangeActiveTextEditor;
@@ -323,12 +435,214 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   for (const document of vscode.workspace.textDocuments) {
-    refreshDiagnosticsForDocument(document, 'focused', 250);
+    invalidateRsxDocumentAnalysis(document);
+    refreshDiagnosticsForDocument(document, 'auto', 250);
     scheduleModuleExpressionPrewarm(document, 0);
   }
 }
 
 export function deactivate(): void {}
+
+function invalidateRsxDocumentAnalysis(
+  document: vscode.TextDocument,
+  options: { fireSemanticTokensChanged?: boolean } = {},
+): void {
+  if (document.languageId !== RSX_LANGUAGE_ID) {
+    return;
+  }
+
+  const key = document.uri.toString();
+  standaloneServiceCache.delete(key);
+  moduleExpressionCache.delete(key);
+  documentSemanticTokenCache.delete(key);
+  moduleBackgroundWarmRequestIds.set(
+    key,
+    (moduleBackgroundWarmRequestIds.get(key) ?? 0) + 1,
+  );
+
+  if (options.fireSemanticTokensChanged) {
+    semanticTokensChangeEmitter?.fire();
+  }
+}
+
+class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpressionTreeItem> {
+  private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<
+    IRsxExpressionTreeItem | undefined | null | void
+  >();
+
+  public readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
+
+  private files: IRsxExpressionTreeFile[] | null = null;
+
+  public refresh(): void {
+    this.files = null;
+    this.onDidChangeTreeDataEmitter.fire();
+  }
+
+  public getTreeItem(
+    element: IRsxExpressionTreeItem,
+  ): vscode.TreeItem | Thenable<vscode.TreeItem> {
+    if (element.kind === 'file') {
+      const item = new vscode.TreeItem(
+        element.label,
+        vscode.TreeItemCollapsibleState.Expanded,
+      );
+      item.description = element.description;
+      item.resourceUri = element.uri;
+      item.contextValue = 'rsxExpressionFile';
+      item.iconPath = new vscode.ThemeIcon('file-code');
+      item.tooltip = `${element.relativePath}\n${element.uri.fsPath}\n${formatExpressionCount(element.expressions.length)}`;
+      return item;
+    }
+
+    const item = new vscode.TreeItem(
+      element.exportName,
+      vscode.TreeItemCollapsibleState.None,
+    );
+    item.description = element.expression.returnTypeText ?? undefined;
+    item.resourceUri = element.uri;
+    item.contextValue = 'rsxExpression';
+    item.iconPath = new vscode.ThemeIcon('symbol-function');
+    item.command = {
+      command: 'rsx.expressions.open',
+      title: 'Open RS-X Expression',
+      arguments: [element],
+    };
+    item.tooltip = new vscode.MarkdownString(
+      [
+        `**${element.exportName}**`,
+        '',
+        `\`${element.uri.fsPath}\``,
+        '',
+        element.expression.returnTypeText
+          ? `return: \`${element.expression.returnTypeText}\``
+          : '',
+        element.expression.modelTypeText
+          ? `model: \`${element.expression.modelTypeText}\``
+          : '',
+      ]
+        .filter(Boolean)
+        .join('\n'),
+    );
+    return item;
+  }
+
+  public async getChildren(
+    element?: IRsxExpressionTreeItem,
+  ): Promise<IRsxExpressionTreeItem[]> {
+    if (element?.kind === 'file') {
+      return [...element.expressions];
+    }
+
+    if (element) {
+      return [];
+    }
+
+    return this.getFiles();
+  }
+
+  private async getFiles(): Promise<IRsxExpressionTreeFile[]> {
+    if (this.files) {
+      return this.files;
+    }
+
+    const uris = await vscode.workspace.findFiles(
+      '**/*.rsx',
+      '**/{node_modules,dist,out-tsc,coverage,.git}/**',
+    );
+    const files = await Promise.all(
+      uris.map((uri) => readRsxExpressionTreeFile(uri)),
+    );
+
+    this.files = files
+      .filter((file): file is IRsxExpressionTreeFile => file !== null)
+      .sort((left, right) =>
+        left.relativePath.localeCompare(right.relativePath),
+      );
+
+    return this.files;
+  }
+}
+
+async function readRsxExpressionTreeFile(
+  uri: vscode.Uri,
+): Promise<IRsxExpressionTreeFile | null> {
+  try {
+    const bytes = await vscode.workspace.fs.readFile(uri);
+    const text = new TextDecoder('utf8').decode(bytes);
+    const parsed = parseRsxFileExpressions({
+      fileName: uri.fsPath,
+      text,
+    });
+    if (!parsed || parsed.expressions.length === 0) {
+      return null;
+    }
+
+    const expressionExports = getRsxExpressionExports({
+      fileName: uri.fsPath,
+      expressions: parsed.expressions,
+    });
+    const expressions = expressionExports.map(
+      (entry): IRsxExpressionTreeExpression => {
+        const start =
+          typeof entry.expression.nameStart === 'number'
+            ? entry.expression.nameStart
+            : entry.expression.expressionStart;
+        const end =
+          typeof entry.expression.nameEnd === 'number'
+            ? entry.expression.nameEnd
+            : Math.max(
+                entry.expression.expressionStart + 1,
+                entry.expression.expressionEnd,
+              );
+        return {
+          kind: 'expression',
+          uri,
+          exportName: entry.exportName,
+          expression: entry.expression,
+          start,
+          end,
+        };
+      },
+    );
+
+    const relativePath = vscode.workspace.asRelativePath(uri, false);
+    const directoryName = path.dirname(relativePath);
+
+    return {
+      kind: 'file',
+      uri,
+      label: path.basename(relativePath),
+      description:
+        directoryName === '.'
+          ? formatExpressionCount(expressions.length)
+          : `${formatExpressionCount(expressions.length)} · ${directoryName}`,
+      relativePath,
+      expressions,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function formatExpressionCount(count: number): string {
+  return `${count} expression${count === 1 ? '' : 's'}`;
+}
+
+async function openRsxExpressionTreeItem(
+  item: IRsxExpressionTreeExpression,
+): Promise<void> {
+  const document = await vscode.workspace.openTextDocument(item.uri);
+  const editor = await vscode.window.showTextDocument(document);
+  const start = document.positionAt(item.start);
+  const end = document.positionAt(item.end);
+  const range = new vscode.Range(start, end);
+  editor.selection = new vscode.Selection(start, end);
+  editor.revealRange(
+    range,
+    vscode.TextEditorRevealType.InCenterIfOutsideViewport,
+  );
+}
 
 class RsxCompletionItemProvider implements vscode.CompletionItemProvider<vscode.CompletionItem> {
   provideCompletionItems(
@@ -336,9 +650,15 @@ class RsxCompletionItemProvider implements vscode.CompletionItemProvider<vscode.
     position: vscode.Position,
   ): vscode.ProviderResult<vscode.CompletionItem[]> {
     const offset = document.offsetAt(position);
+    const headerCompletions = getModuleHeaderCompletions(document, position);
     const standalone = createStandaloneLanguageServiceForDocument(document);
+    const standaloneCompletions = standalone
+      ? getRsxCompletionsAtPosition(standalone, offset)
+      : [];
+
     if (standalone) {
-      return getRsxCompletionsAtPosition(standalone, offset).map((item) => {
+      const completionByLabel = new Map<string, vscode.CompletionItem>();
+      for (const item of standaloneCompletions) {
         const completion = new vscode.CompletionItem(
           item.name,
           item.kind === 'method'
@@ -348,8 +668,12 @@ class RsxCompletionItemProvider implements vscode.CompletionItemProvider<vscode.
               : vscode.CompletionItemKind.Property,
         );
         completion.insertText = item.name;
-        return completion;
-      });
+        completionByLabel.set(completion.label.toString(), completion);
+      }
+      for (const completion of headerCompletions) {
+        completionByLabel.set(completion.label.toString(), completion);
+      }
+      return [...completionByLabel.values()];
     }
 
     const moduleExpressionService =
@@ -363,10 +687,18 @@ class RsxCompletionItemProvider implements vscode.CompletionItemProvider<vscode.
           moduleExpressionService.position,
         )
       : [];
-    const headerCompletions = getModuleHeaderCompletions(document, position);
+    const moduleHeaderService = moduleExpressionService
+      ? null
+      : createModuleHeaderStandaloneLanguageServiceForOffset(document, offset);
+    const headerValueCompletions = moduleHeaderService
+      ? getRsxCompletionsAtPosition(
+          moduleHeaderService.document,
+          moduleHeaderService.position,
+        )
+      : [];
 
     const completionByLabel = new Map<string, vscode.CompletionItem>();
-    for (const item of expressionCompletions) {
+    for (const item of [...expressionCompletions, ...headerValueCompletions]) {
       const completion = new vscode.CompletionItem(
         item.name,
         item.kind === 'method'
@@ -391,6 +723,14 @@ class RsxHoverProvider implements vscode.HoverProvider {
     document: vscode.TextDocument,
     position: vscode.Position,
   ): vscode.ProviderResult<vscode.Hover> {
+    const directHeaderHover = getDirectModuleHeaderHover(document, position);
+    if (directHeaderHover) {
+      return directHeaderHover;
+    }
+    if (isHeaderAuthoringPosition(document, position)) {
+      return null;
+    }
+
     const standalone = createStandaloneLanguageServiceForDocument(document);
     const offset = document.offsetAt(position);
     const hover = standalone
@@ -402,7 +742,37 @@ class RsxHoverProvider implements vscode.HoverProvider {
               offset,
             );
           if (!moduleExpressionService) {
-            return null;
+            const moduleHeaderService =
+              createModuleHeaderStandaloneLanguageServiceForOffset(
+                document,
+                offset,
+              );
+            if (!moduleHeaderService) {
+              return null;
+            }
+
+            const moduleHeaderHover = getRsxHoverAtPosition(
+              moduleHeaderService.document,
+              moduleHeaderService.position,
+            );
+            if (!moduleHeaderHover) {
+              return null;
+            }
+
+            const mappedHeaderHover = mapModuleHeaderSpanToDocument(
+              moduleHeaderService,
+              moduleHeaderHover.start,
+              moduleHeaderHover.end,
+            );
+            if (!mappedHeaderHover) {
+              return null;
+            }
+
+            return {
+              ...moduleHeaderHover,
+              start: mappedHeaderHover.start,
+              end: mappedHeaderHover.end,
+            };
           }
 
           const moduleHover = getRsxHoverAtPosition(
@@ -439,6 +809,175 @@ class RsxHoverProvider implements vscode.HoverProvider {
   }
 }
 
+function getDirectModuleHeaderHover(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+): vscode.Hover | null {
+  if (document.languageId !== RSX_LANGUAGE_ID) {
+    return null;
+  }
+
+  const line = document.lineAt(position.line);
+  const parsed = parseHeaderLine(line.text);
+  const authoringKey = getHeaderAuthoringKeyAtPosition(document, position);
+  if (
+    !parsed &&
+    authoringKey &&
+    RSX_HEADER_DIRECTIVE_KEYS.has(authoringKey.key)
+  ) {
+    return createHeaderDirectiveHover(
+      authoringKey.key,
+      position.line,
+      authoringKey.keyStartCharacter,
+    );
+  }
+  if (!parsed) {
+    return null;
+  }
+
+  if (
+    RSX_HEADER_DIRECTIVE_KEYS.has(parsed.key) &&
+    position.character >= parsed.keyStartCharacter &&
+    position.character <= parsed.keyStartCharacter + parsed.key.length
+  ) {
+    return createHeaderDirectiveHover(
+      parsed.key,
+      position.line,
+      parsed.keyStartCharacter,
+    );
+  }
+
+  if (parsed.key !== 'model' && parsed.key !== 'return') {
+    return null;
+  }
+
+  if (document.uri.scheme !== 'file') {
+    return null;
+  }
+
+  const directImportHover = getRsxHeaderImportHoverAtTextPosition({
+    fileName: document.uri.fsPath,
+    text: document.getText(),
+    position: document.offsetAt(position),
+  });
+  if (!directImportHover) {
+    return null;
+  }
+
+  return new vscode.Hover(
+    new vscode.MarkdownString().appendCodeblock(
+      directImportHover.text,
+      'typescript',
+    ),
+    new vscode.Range(
+      document.positionAt(directImportHover.start),
+      document.positionAt(directImportHover.end),
+    ),
+  );
+}
+
+function createHeaderDirectiveHover(
+  key: string,
+  lineIndex: number,
+  keyStartCharacter: number,
+): vscode.Hover {
+  return new vscode.Hover(
+    new vscode.MarkdownString().appendCodeblock(
+      RSX_HEADER_DIRECTIVE_HOVER_TEXT[key] ?? `${key}: RS-X header`,
+      'rsx',
+    ),
+    new vscode.Range(
+      new vscode.Position(lineIndex, keyStartCharacter),
+      new vscode.Position(lineIndex, keyStartCharacter + key.length),
+    ),
+  );
+}
+
+function isHeaderAuthoringPosition(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+): boolean {
+  const authoringKey = getHeaderAuthoringKeyAtPosition(document, position);
+  if (!authoringKey) {
+    return false;
+  }
+
+  if (
+    RSX_HEADER_DIRECTIVE_KEYS.has(authoringKey.key) ||
+    [...RSX_HEADER_DIRECTIVE_KEYS].some((key) =>
+      key.startsWith(authoringKey.key),
+    )
+  ) {
+    return true;
+  }
+
+  if (authoringKey.hasColon) {
+    return true;
+  }
+
+  return (
+    isFirstNonEmptyLine(document, position.line) && !hasAnyRsxHeader(document)
+  );
+}
+
+function getHeaderAuthoringKeyAtPosition(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+): {
+  key: string;
+  keyStartCharacter: number;
+  hasColon: boolean;
+} | null {
+  if (document.languageId !== RSX_LANGUAGE_ID) {
+    return null;
+  }
+
+  const line = document.lineAt(position.line).text;
+  const match = /^(\s*)([A-Za-z][A-Za-z0-9_]*)(\s*:)?/u.exec(line);
+  if (!match) {
+    return null;
+  }
+
+  const key = match[2] ?? '';
+  const keyStartCharacter = (match[1] ?? '').length;
+  const keyEndCharacter = keyStartCharacter + key.length;
+  if (
+    position.character < keyStartCharacter ||
+    position.character > keyEndCharacter
+  ) {
+    return null;
+  }
+
+  return {
+    key,
+    keyStartCharacter,
+    hasColon: !!match[3],
+  };
+}
+
+function isFirstNonEmptyLine(
+  document: vscode.TextDocument,
+  lineIndex: number,
+): boolean {
+  for (let index = 0; index < document.lineCount; index += 1) {
+    if (document.lineAt(index).text.trim().length === 0) {
+      continue;
+    }
+    return index === lineIndex;
+  }
+  return false;
+}
+
+function hasAnyRsxHeader(document: vscode.TextDocument): boolean {
+  for (let index = 0; index < document.lineCount; index += 1) {
+    const parsed = parseHeaderLine(document.lineAt(index).text);
+    if (parsed && RSX_HEADER_DIRECTIVE_KEYS.has(parsed.key)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 class RsxDefinitionProvider implements vscode.DefinitionProvider {
   provideDefinition(
     document: vscode.TextDocument,
@@ -473,6 +1012,87 @@ class RsxDefinitionProvider implements vscode.DefinitionProvider {
         offset);
 
     return getRsxDefinitionsAtPosition(lookupDocument, lookupPosition).map(
+      (definition) =>
+        new vscode.Location(
+          vscode.Uri.file(definition.fileName),
+          new vscode.Range(
+            positionForFileOffset(
+              document,
+              definition.fileName,
+              definition.start,
+            ),
+            positionForFileOffset(
+              document,
+              definition.fileName,
+              definition.end,
+            ),
+          ),
+        ),
+    );
+  }
+}
+
+class RsxTypeDefinitionProvider implements vscode.TypeDefinitionProvider {
+  provideTypeDefinition(
+    document: vscode.TextDocument,
+    position: vscode.Position,
+  ): vscode.ProviderResult<vscode.Definition> {
+    const offset = document.offsetAt(position);
+    const headerImportDefinitions =
+      getRsxHeaderImportTypeDefinitionsAtTextPosition({
+        fileName: document.uri.fsPath,
+        text: document.getText(),
+        position: offset,
+      });
+    if (headerImportDefinitions.length > 0) {
+      return headerImportDefinitions.map(
+        (definition) =>
+          new vscode.Location(
+            vscode.Uri.file(definition.fileName),
+            new vscode.Range(
+              positionForFileOffset(
+                document,
+                definition.fileName,
+                definition.start,
+              ),
+              positionForFileOffset(
+                document,
+                definition.fileName,
+                definition.end,
+              ),
+            ),
+          ),
+      );
+    }
+
+    const standalone = createStandaloneLanguageServiceForDocument(document);
+    const moduleExpressionService = standalone
+      ? null
+      : createModuleExpressionStandaloneLanguageServiceForOffset(
+          document,
+          offset,
+        );
+    const moduleHeaderService =
+      standalone || moduleExpressionService
+        ? null
+        : createModuleHeaderStandaloneLanguageServiceForOffset(
+            document,
+            offset,
+          );
+    const lookupDocument =
+      standalone ??
+      moduleExpressionService?.document ??
+      moduleHeaderService?.document;
+    if (!lookupDocument) {
+      return [];
+    }
+    const lookupPosition = standalone
+      ? offset
+      : (moduleExpressionService?.position ??
+        moduleHeaderService?.position ??
+        offset);
+
+    return getRsxTypeDefinitionsAtPosition(lookupDocument, lookupPosition).map(
       (definition) =>
         new vscode.Location(
           vscode.Uri.file(definition.fileName),
@@ -814,8 +1434,7 @@ function resolveSemanticTokensForDocument(
 
   const moduleTokens = getModuleExpressionSemanticTokens(document, 'auto');
   const syntacticTokens = getRsxSyntacticTokensForText(sourceText);
-  const headerDirectiveTokens =
-    getRsxHeaderDirectiveKeywordTokensForText(sourceText);
+  const headerDirectiveTokens = getRsxHeaderDirectiveTokensForText(sourceText);
   const mergedBySpan = new Map<string, IRsxSemanticToken>();
   for (const token of syntacticTokens) {
     mergedBySpan.set(`${token.start}:${token.length}`, token);
@@ -837,11 +1456,16 @@ function resolveSemanticTokensForDocument(
   return tokens;
 }
 
-function getRsxHeaderDirectiveKeywordTokensForText(
-  text: string,
-): IRsxSemanticToken[] {
+function getRsxHeaderDirectiveTokensForText(text: string): IRsxSemanticToken[] {
   const keywordTokenType = rsxSemanticTokenTypes.indexOf('keyword');
-  if (keywordTokenType < 0) {
+  const expressionDirectiveTokenType =
+    rsxSemanticTokenTypes.indexOf('namespace');
+  const expressionNameTokenType = rsxSemanticTokenTypes.indexOf('function');
+  if (
+    keywordTokenType < 0 ||
+    expressionDirectiveTokenType < 0 ||
+    expressionNameTokenType < 0
+  ) {
     return [];
   }
 
@@ -857,9 +1481,30 @@ function getRsxHeaderDirectiveKeywordTokensForText(
       tokens.push({
         start: lineOffset + trimmedStart,
         length: key.length,
-        tokenType: keywordTokenType,
+        tokenType:
+          key === 'expression'
+            ? expressionDirectiveTokenType
+            : keywordTokenType,
         tokenModifiers: 0,
       });
+
+      if (key === 'expression') {
+        const expressionNameMatch = trimmed.match(
+          /^expression\s*:\s*([A-Za-z_$][A-Za-z0-9_$]*)/u,
+        );
+        const expressionName = expressionNameMatch?.[1];
+        if (expressionName) {
+          tokens.push({
+            start:
+              lineOffset +
+              trimmedStart +
+              (expressionNameMatch[0].length - expressionName.length),
+            length: expressionName.length,
+            tokenType: expressionNameTokenType,
+            tokenModifiers: 0,
+          });
+        }
+      }
     }
 
     lineOffset += line.length + 1;
@@ -912,25 +1557,37 @@ function computeDiagnosticsForDocument(
   }
 
   const standalone = createStandaloneLanguageServiceForDocument(document);
+  const headerDiagnostics = [
+    ...getModuleHeaderDiagnostics(document),
+    ...getModuleHeaderTypeDiagnostics(document),
+  ];
   if (!standalone) {
-    return getModuleExpressionDiagnostics(document, mode);
+    return [
+      ...headerDiagnostics,
+      ...getModuleExpressionDiagnostics(document, mode, {
+        includeHeaderDiagnostics: false,
+      }),
+    ];
   }
 
-  return getRsxDiagnostics(standalone).map(
-    (diagnostic) =>
-      new vscode.Diagnostic(
-        new vscode.Range(
-          document.positionAt(diagnostic.start),
-          document.positionAt(diagnostic.end),
+  return [
+    ...headerDiagnostics,
+    ...getRsxDiagnostics(standalone).map(
+      (diagnostic) =>
+        new vscode.Diagnostic(
+          new vscode.Range(
+            document.positionAt(diagnostic.start),
+            document.positionAt(diagnostic.end),
+          ),
+          diagnostic.message,
+          diagnostic.category === 'syntax'
+            ? vscode.DiagnosticSeverity.Error
+            : diagnostic.category === 'semantic'
+              ? vscode.DiagnosticSeverity.Warning
+              : vscode.DiagnosticSeverity.Information,
         ),
-        diagnostic.message,
-        diagnostic.category === 'syntax'
-          ? vscode.DiagnosticSeverity.Error
-          : diagnostic.category === 'semantic'
-            ? vscode.DiagnosticSeverity.Warning
-            : vscode.DiagnosticSeverity.Information,
-      ),
-  );
+    ),
+  ];
 }
 
 async function formatRsxDocument(args: {
@@ -1056,7 +1713,7 @@ function createStandaloneLanguageServiceForDocument(
     return cached.service;
   }
 
-  const service = createRsxStandaloneLanguageService({
+  const service = safeCreateRsxStandaloneLanguageService({
     fileName: document.uri.fsPath,
     text: document.getText(),
   });
@@ -1065,6 +1722,16 @@ function createStandaloneLanguageServiceForDocument(
     service,
   });
   return service;
+}
+
+function safeCreateRsxStandaloneLanguageService(
+  args: Parameters<typeof createRsxStandaloneLanguageService>[0],
+): ReturnType<typeof createRsxStandaloneLanguageService> {
+  try {
+    return createRsxStandaloneLanguageService(args);
+  } catch {
+    return null;
+  }
 }
 
 function getModuleExpressionCacheEntry(
@@ -1200,13 +1867,6 @@ function warmModuleExpressionsInBackground(
       cacheEntry,
       expressionIndex,
     });
-    getOrCreateMappedExpressionSemanticTokens({
-      document: currentDocument,
-      cacheEntry,
-      expressionIndex,
-    });
-    documentSemanticTokenCache.delete(key);
-    semanticTokensChangeEmitter?.fire();
 
     const continuation = setTimeout(() => {
       moduleBackgroundWarmTimers.delete(key);
@@ -1234,6 +1894,9 @@ function prewarmModuleExpressionAnalysis(document: vscode.TextDocument): void {
   if (!cacheEntry || !parsed || parsed.expressions.length === 0) {
     return;
   }
+  if (!shouldUseFocusedModuleAnalysis(document, parsed)) {
+    return;
+  }
 
   const expressionIndexes = resolveExpressionIndexesForMode({
     document,
@@ -1245,9 +1908,9 @@ function prewarmModuleExpressionAnalysis(document: vscode.TextDocument): void {
   }
 
   // Precompute focused diagnostics and semantic tokens so first hover/completion
-  // and first semantic-coloring requests avoid cold-start work.
+  // requests avoid cold-start work. Semantic coloring is handled by the fast
+  // full-file lexer path and should not be warmed expression-by-expression.
   getModuleExpressionDiagnostics(document, 'focused');
-  getModuleExpressionSemanticTokens(document, 'focused');
   // Continue warming non-active expressions incrementally in the background.
   scheduleModuleExpressionBackgroundWarm(document, 150);
 }
@@ -1335,10 +1998,7 @@ function createModuleExpressionStandaloneLanguageServiceForOffset(
 function createModuleHeaderStandaloneLanguageServiceForOffset(
   document: vscode.TextDocument,
   offset: number,
-): {
-  document: NonNullable<ReturnType<typeof createRsxStandaloneLanguageService>>;
-  position: number;
-} | null {
+): IModuleHeaderStandaloneService | null {
   if (
     document.languageId !== RSX_LANGUAGE_ID ||
     document.uri.scheme !== 'file'
@@ -1368,6 +2028,12 @@ function createModuleHeaderStandaloneLanguageServiceForOffset(
     return null;
   }
 
+  const originalValueStart = document.offsetAt(
+    new vscode.Position(position.line, valueStartCharacter),
+  );
+  const originalValueEnd = document.offsetAt(
+    new vscode.Position(position.line, line.text.length),
+  );
   const valueOffset = position.character - valueStartCharacter;
   const modelTypeText = parsed.key === 'model' ? parsed.value : 'unknown';
   const returnTypeText = parsed.key === 'return' ? parsed.value : 'unknown';
@@ -1378,7 +2044,7 @@ function createModuleHeaderStandaloneLanguageServiceForOffset(
     '0',
   ].join('\n');
 
-  const standalone = createRsxStandaloneLanguageService({
+  const standalone = safeCreateRsxStandaloneLanguageService({
     fileName: document.uri.fsPath,
     text: standaloneText,
     virtualFileNameSuffix: `header_${parsed.key}`,
@@ -1393,6 +2059,45 @@ function createModuleHeaderStandaloneLanguageServiceForOffset(
   return {
     document: standalone,
     position: targetPosition,
+    key: parsed.key,
+    originalValueStart,
+    originalValueEnd,
+  };
+}
+
+function mapModuleHeaderSpanToDocument(
+  service: IModuleHeaderStandaloneService,
+  start: number,
+  end: number,
+): { start: number; end: number } | null {
+  const region =
+    service.key === 'model'
+      ? service.document.modelTypeRegion
+      : service.document.returnTypeRegion;
+  if (!region) {
+    return null;
+  }
+
+  if (end < region.originalStart || start > region.originalEnd) {
+    return null;
+  }
+
+  const mappedStart =
+    service.originalValueStart + Math.max(0, start - region.originalStart);
+  const mappedEnd =
+    service.originalValueStart +
+    Math.min(region.originalEnd, Math.max(end, start + 1)) -
+    region.originalStart;
+
+  return {
+    start: Math.max(
+      service.originalValueStart,
+      Math.min(service.originalValueEnd, mappedStart),
+    ),
+    end: Math.max(
+      service.originalValueStart + 1,
+      Math.min(service.originalValueEnd, mappedEnd),
+    ),
   };
 }
 
@@ -1530,6 +2235,7 @@ function getOrCreateMappedExpressionSemanticTokens(args: {
 function getModuleExpressionDiagnostics(
   document: vscode.TextDocument,
   mode: IDiagnosticsMode = 'auto',
+  options: { includeHeaderDiagnostics?: boolean } = {},
 ): vscode.Diagnostic[] {
   if (
     document.languageId !== RSX_LANGUAGE_ID ||
@@ -1540,7 +2246,13 @@ function getModuleExpressionDiagnostics(
 
   const cacheEntry = getModuleExpressionCacheEntry(document);
   const parsed = cacheEntry?.parsed;
-  const diagnostics = getModuleHeaderDiagnostics(document);
+  const diagnostics =
+    options.includeHeaderDiagnostics === false
+      ? []
+      : [
+          ...getModuleHeaderDiagnostics(document),
+          ...getModuleHeaderTypeDiagnostics(document),
+        ];
   if (!cacheEntry || !parsed || parsed.expressions.length === 0) {
     return diagnostics;
   }
@@ -1565,7 +2277,7 @@ function getModuleExpressionDiagnostics(
 
 function getModuleExpressionSemanticTokens(
   document: vscode.TextDocument,
-  mode: IDiagnosticsMode = 'auto',
+  _mode: IDiagnosticsMode = 'auto',
 ): IRsxSemanticToken[] {
   if (
     document.languageId !== RSX_LANGUAGE_ID ||
@@ -1581,25 +2293,11 @@ function getModuleExpressionSemanticTokens(
   }
 
   const tokens: IRsxSemanticToken[] = [];
-  const expressionIndexes = resolveExpressionIndexesForMode({
-    document,
-    parsed,
-    mode,
-  });
-  if (mode === 'auto' && shouldUseFocusedModuleAnalysis(document, parsed)) {
-    for (
-      let expressionIndex = 0;
-      expressionIndex < parsed.expressions.length;
-      expressionIndex += 1
-    ) {
-      const cachedTokens =
-        cacheEntry.semanticTokensByExpressionIndex.get(expressionIndex);
-      if (cachedTokens) {
-        tokens.push(...cachedTokens);
-      }
-    }
-  }
-  for (const expressionIndex of expressionIndexes) {
+  for (
+    let expressionIndex = 0;
+    expressionIndex < parsed.expressions.length;
+    expressionIndex += 1
+  ) {
     tokens.push(
       ...getOrCreateMappedExpressionSemanticTokens({
         document,
@@ -1607,10 +2305,6 @@ function getModuleExpressionSemanticTokens(
         expressionIndex,
       }),
     );
-  }
-
-  if (mode === 'auto' && shouldUseFocusedModuleAnalysis(document, parsed)) {
-    scheduleModuleExpressionBackgroundWarm(document, 120);
   }
 
   const deduped = new Map<string, IRsxSemanticToken>();
@@ -1690,7 +2384,7 @@ function createModuleExpressionStandaloneLanguageService(
   const modelPropertyNamesHint = extractTopLevelModelPropertyNamesFromTypeText(
     expression.modelTypeText,
   );
-  const standalone = createRsxStandaloneLanguageService({
+  const standalone = safeCreateRsxStandaloneLanguageService({
     fileName: document.uri.fsPath,
     text: standaloneText,
     modelPropertyNamesHint,
@@ -1862,15 +2556,26 @@ function getModuleHeaderDiagnostics(
   document: vscode.TextDocument,
 ): vscode.Diagnostic[] {
   const text = document.getText();
-  if (!/^\s*expression\s*:/mu.test(text)) {
-    return [];
-  }
 
   const diagnostics: vscode.Diagnostic[] = [];
   const lines = text.replace(/\r\n/gu, '\n').split('\n');
   const expressionNameFirstLine = new Map<string, number>();
   let inDefaultsBlock = false;
   let inExpressionHeaderBlock = false;
+  let defaultsLineIndex: number | null = null;
+  let defaultsHasModel = false;
+  let defaultsHeaderOrderState = createHeaderOrderState('defaults block');
+  let expressionHeaderOrderState: IHeaderOrderState | null = null;
+  let expressionSeen = false;
+  let topLevelStandaloneHeaderLineIndex: number | null = null;
+  const hasModuleTopLevelHeader = lines.some((line) => {
+    const parsed = parseHeaderLine(line);
+    return (
+      parsed !== null &&
+      parsed.keyStartCharacter === 0 &&
+      (parsed.key === 'defaults' || parsed.key === 'expression')
+    );
+  });
 
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
     const line = lines[lineIndex];
@@ -1882,8 +2587,72 @@ function getModuleHeaderDiagnostics(
     const indented = /^\s/u.test(line);
     const topLevelExpressionMatch = /^expression\s*:\s*.+$/u.exec(trimmed);
     const topLevelDefaultsMatch = /^defaults\s*:\s*$/u.exec(trimmed);
+    const topLevelHeader = !indented ? parseHeaderLine(line) : null;
+
+    const finalizeExpressionHeaderBlock = (): void => {
+      if (
+        expressionHeaderOrderState &&
+        !defaultsHasModel &&
+        !expressionHeaderOrderState.seenHeaders.has('model')
+      ) {
+        const expressionNameText = expressionHeaderOrderState.expressionName
+          ? ` "${expressionHeaderOrderState.expressionName}"`
+          : '';
+        addHeaderKeyDiagnostic({
+          diagnostics,
+          lineIndex:
+            expressionHeaderOrderState.expressionLineIndex ?? lineIndex,
+          keyStartCharacter:
+            expressionHeaderOrderState.expressionKeyStartCharacter ?? 0,
+          key: 'expression',
+          message: `Expression${expressionNameText} must declare a model header because defaults: does not define one.`,
+        });
+      }
+      expressionHeaderOrderState = null;
+    };
+
+    if (topLevelHeader?.key === 'expression' && !topLevelExpressionMatch) {
+      finalizeExpressionHeaderBlock();
+      addHeaderKeyDiagnostic({
+        diagnostics,
+        lineIndex,
+        keyStartCharacter: topLevelHeader.keyStartCharacter,
+        key: topLevelHeader.key,
+        message: 'Header "expression" requires an expression name.',
+      });
+      inDefaultsBlock = false;
+      inExpressionHeaderBlock = false;
+      continue;
+    }
+
+    if (topLevelHeader?.key === 'defaults' && !topLevelDefaultsMatch) {
+      finalizeExpressionHeaderBlock();
+      addHeaderKeyDiagnostic({
+        diagnostics,
+        lineIndex,
+        keyStartCharacter: topLevelHeader.keyStartCharacter,
+        key: topLevelHeader.key,
+        message: 'Header "defaults" must not have a value.',
+      });
+      inDefaultsBlock = false;
+      inExpressionHeaderBlock = false;
+      continue;
+    }
 
     if (!indented && topLevelExpressionMatch) {
+      finalizeExpressionHeaderBlock();
+      expressionSeen = true;
+      if (topLevelStandaloneHeaderLineIndex !== null) {
+        addHeaderKeyDiagnostic({
+          diagnostics,
+          lineIndex,
+          keyStartCharacter: 0,
+          key: 'expression',
+          message:
+            'Module-style .rsx files cannot mix top-level model/return headers with expression blocks. Put shared headers under defaults: or indent them under each expression.',
+        });
+      }
+
       const expressionHeaderMatch = /^(\s*expression\s*:\s*)(.+)$/u.exec(line);
       const expressionNameRaw = expressionHeaderMatch?.[2] ?? '';
       const expressionName = expressionNameRaw.trim();
@@ -1891,6 +2660,14 @@ function getModuleHeaderDiagnostics(
         (expressionHeaderMatch?.[1]?.length ?? 0) +
         (expressionNameRaw.length - expressionNameRaw.trimStart().length);
       const expressionNameEnd = expressionNameStart + expressionName.length;
+      expressionHeaderOrderState = createHeaderOrderState(
+        expressionName ? `expression "${expressionName}"` : 'expression block',
+        {
+          expressionLineIndex: lineIndex,
+          expressionName,
+          expressionKeyStartCharacter: 0,
+        },
+      );
 
       if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/u.test(expressionName)) {
         diagnostics.push(
@@ -1930,6 +2707,39 @@ function getModuleHeaderDiagnostics(
     }
 
     if (!indented && topLevelDefaultsMatch) {
+      finalizeExpressionHeaderBlock();
+      if (defaultsLineIndex !== null) {
+        addHeaderKeyDiagnostic({
+          diagnostics,
+          lineIndex,
+          keyStartCharacter: 0,
+          key: 'defaults',
+          message:
+            'Duplicate "defaults" header. A module .rsx file can only have one defaults block.',
+        });
+      }
+      if (expressionSeen) {
+        addHeaderKeyDiagnostic({
+          diagnostics,
+          lineIndex,
+          keyStartCharacter: 0,
+          key: 'defaults',
+          message:
+            'Header "defaults" must appear before all expression blocks.',
+        });
+      }
+      if (topLevelStandaloneHeaderLineIndex !== null) {
+        addHeaderKeyDiagnostic({
+          diagnostics,
+          lineIndex,
+          keyStartCharacter: 0,
+          key: 'defaults',
+          message:
+            'Header "defaults" must be the first module header. Move shared model/return headers under defaults:.',
+        });
+      }
+      defaultsLineIndex = lineIndex;
+      defaultsHeaderOrderState = createHeaderOrderState('defaults block');
       inDefaultsBlock = true;
       inExpressionHeaderBlock = false;
       continue;
@@ -1941,6 +2751,16 @@ function getModuleHeaderDiagnostics(
       } else {
         const parsed = parseHeaderLine(line);
         if (parsed) {
+          addHeaderOrderDiagnosticsForLine({
+            diagnostics,
+            lineIndex,
+            keyStartCharacter: parsed.keyStartCharacter,
+            key: parsed.key,
+            state: defaultsHeaderOrderState,
+          });
+          if (parsed.key === 'model') {
+            defaultsHasModel = true;
+          }
           addHeaderDiagnosticsForLine({
             diagnostics,
             document,
@@ -1955,10 +2775,20 @@ function getModuleHeaderDiagnostics(
 
     if (inExpressionHeaderBlock) {
       if (!indented) {
+        finalizeExpressionHeaderBlock();
         inExpressionHeaderBlock = false;
       } else {
         const parsed = parseHeaderLine(line);
         if (parsed) {
+          if (expressionHeaderOrderState) {
+            addHeaderOrderDiagnosticsForLine({
+              diagnostics,
+              lineIndex,
+              keyStartCharacter: parsed.keyStartCharacter,
+              key: parsed.key,
+              state: expressionHeaderOrderState,
+            });
+          }
           addHeaderDiagnosticsForLine({
             diagnostics,
             document,
@@ -1971,9 +2801,24 @@ function getModuleHeaderDiagnostics(
       }
     }
 
-    const topLevelHeader = parseHeaderLine(line);
     if (!topLevelHeader || indented) {
       continue;
+    }
+
+    if (hasModuleTopLevelHeader) {
+      if (isModuleExpressionHeaderKey(topLevelHeader.key)) {
+        if (topLevelStandaloneHeaderLineIndex === null) {
+          topLevelStandaloneHeaderLineIndex = lineIndex;
+        }
+        addHeaderKeyDiagnostic({
+          diagnostics,
+          lineIndex,
+          keyStartCharacter: topLevelHeader.keyStartCharacter,
+          key: topLevelHeader.key,
+          message: `Header "${topLevelHeader.key}" must be indented under defaults: or an expression block in module-style .rsx files.`,
+        });
+        continue;
+      }
     }
 
     addHeaderDiagnosticsForLine({
@@ -1982,6 +2827,134 @@ function getModuleHeaderDiagnostics(
       lineIndex,
       key: topLevelHeader.key,
       value: topLevelHeader.value,
+    });
+  }
+
+  if (inExpressionHeaderBlock) {
+    const finalLineIndex = Math.max(0, lines.length - 1);
+    if (
+      expressionHeaderOrderState &&
+      !defaultsHasModel &&
+      !expressionHeaderOrderState.seenHeaders.has('model')
+    ) {
+      const expressionNameText = expressionHeaderOrderState.expressionName
+        ? ` "${expressionHeaderOrderState.expressionName}"`
+        : '';
+      addHeaderKeyDiagnostic({
+        diagnostics,
+        lineIndex:
+          expressionHeaderOrderState.expressionLineIndex ?? finalLineIndex,
+        keyStartCharacter:
+          expressionHeaderOrderState.expressionKeyStartCharacter ?? 0,
+        key: 'expression',
+        message: `Expression${expressionNameText} must declare a model header because defaults: does not define one.`,
+      });
+    }
+  }
+
+  return diagnostics;
+}
+
+function getModuleHeaderTypeDiagnostics(
+  document: vscode.TextDocument,
+): vscode.Diagnostic[] {
+  const text = document.getText();
+  if (!/^\s*expression\s*:/mu.test(text)) {
+    return [];
+  }
+
+  const diagnostics: vscode.Diagnostic[] = [];
+  const seen = new Set<string>();
+  for (let lineIndex = 0; lineIndex < document.lineCount; lineIndex += 1) {
+    const line = document.lineAt(lineIndex);
+    const parsed = parseHeaderLine(line.text);
+    if (!parsed || (parsed.key !== 'model' && parsed.key !== 'return')) {
+      continue;
+    }
+
+    const separatorIndex = line.text.indexOf(':');
+    if (separatorIndex < 0) {
+      continue;
+    }
+    let valueStartCharacter = separatorIndex + 1;
+    while (
+      valueStartCharacter < line.text.length &&
+      /\s/u.test(line.text[valueStartCharacter])
+    ) {
+      valueStartCharacter += 1;
+    }
+    if (valueStartCharacter >= line.text.length) {
+      continue;
+    }
+
+    const valueStartOffset = document.offsetAt(
+      new vscode.Position(lineIndex, valueStartCharacter),
+    );
+    const headerDiagnostics = getFastModuleHeaderTypeDiagnostics({
+      document,
+      value: parsed.value,
+      valueStartOffset,
+    });
+
+    for (const diagnostic of headerDiagnostics) {
+      const key = `${diagnostic.start}:${diagnostic.end}:${diagnostic.message}`;
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      diagnostics.push(
+        new vscode.Diagnostic(
+          new vscode.Range(
+            document.positionAt(diagnostic.start),
+            document.positionAt(diagnostic.end),
+          ),
+          diagnostic.message,
+          vscode.DiagnosticSeverity.Error,
+        ),
+      );
+    }
+  }
+
+  return diagnostics;
+}
+
+function getFastModuleHeaderTypeDiagnostics(args: {
+  document: vscode.TextDocument;
+  value: string;
+  valueStartOffset: number;
+}): Array<{ message: string; start: number; end: number }> {
+  const diagnostics: Array<{ message: string; start: number; end: number }> =
+    [];
+  const prefix = 'type __RSX_HEADER = ';
+  const sourceFile = ts.createSourceFile(
+    `${args.document.uri.fsPath}.header.ts`,
+    `${prefix}${args.value};`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+
+  for (const diagnostic of sourceFile.parseDiagnostics) {
+    const start = Math.max(
+      0,
+      (diagnostic.start ?? prefix.length) - prefix.length,
+    );
+    const length = Math.max(1, diagnostic.length ?? 1);
+    diagnostics.push({
+      message: ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'),
+      start: args.valueStartOffset + start,
+      end: args.valueStartOffset + Math.min(args.value.length, start + length),
+    });
+  }
+
+  for (const diagnostic of getRsxHeaderImportDiagnosticsForText({
+    fileName: args.document.uri.fsPath,
+    headerText: args.value,
+  })) {
+    diagnostics.push({
+      message: diagnostic.message,
+      start: args.valueStartOffset + diagnostic.start,
+      end: args.valueStartOffset + diagnostic.end,
     });
   }
 
@@ -2062,14 +3035,115 @@ function addHeaderDiagnosticsForLine(args: {
   }
 }
 
+function createHeaderOrderState(
+  blockLabel: string,
+  options: {
+    expressionLineIndex?: number;
+    expressionName?: string;
+    expressionKeyStartCharacter?: number;
+  } = {},
+): IHeaderOrderState {
+  return {
+    blockLabel,
+    seenHeaders: new Set<string>(),
+    ...options,
+  };
+}
+
+function addHeaderOrderDiagnosticsForLine(args: {
+  diagnostics: vscode.Diagnostic[];
+  lineIndex: number;
+  keyStartCharacter: number;
+  key: string;
+  state: IHeaderOrderState;
+}): void {
+  if (!isModuleExpressionHeaderKey(args.key)) {
+    return;
+  }
+
+  if (args.state.seenHeaders.has(args.key)) {
+    addHeaderKeyDiagnostic({
+      diagnostics: args.diagnostics,
+      lineIndex: args.lineIndex,
+      keyStartCharacter: args.keyStartCharacter,
+      key: args.key,
+      message: `Duplicate "${args.key}" header in ${args.state.blockLabel}.`,
+    });
+    return;
+  }
+
+  if (
+    args.key === 'model' &&
+    [...args.state.seenHeaders].some((key) => key !== 'model')
+  ) {
+    addHeaderKeyDiagnostic({
+      diagnostics: args.diagnostics,
+      lineIndex: args.lineIndex,
+      keyStartCharacter: args.keyStartCharacter,
+      key: args.key,
+      message: `Header "model" must appear before option and return headers in ${args.state.blockLabel}.`,
+    });
+  }
+
+  if (
+    isModuleOptionHeaderKey(args.key) &&
+    args.state.seenHeaders.has('return')
+  ) {
+    addHeaderKeyDiagnostic({
+      diagnostics: args.diagnostics,
+      lineIndex: args.lineIndex,
+      keyStartCharacter: args.keyStartCharacter,
+      key: args.key,
+      message: `Header "${args.key}" must appear before return: in ${args.state.blockLabel}.`,
+    });
+  }
+
+  args.state.seenHeaders.add(args.key);
+}
+
+function isModuleExpressionHeaderKey(
+  key: string,
+): key is (typeof MODULE_EXPRESSION_HEADER_KEYS)[number] {
+  return MODULE_EXPRESSION_HEADER_KEYS.includes(
+    key as (typeof MODULE_EXPRESSION_HEADER_KEYS)[number],
+  );
+}
+
+function isModuleOptionHeaderKey(
+  key: string,
+): key is (typeof MODULE_OPTION_HEADER_KEYS)[number] {
+  return MODULE_OPTION_HEADER_KEYS.includes(
+    key as (typeof MODULE_OPTION_HEADER_KEYS)[number],
+  );
+}
+
+function addHeaderKeyDiagnostic(args: {
+  diagnostics: vscode.Diagnostic[];
+  lineIndex: number;
+  keyStartCharacter: number;
+  key: string;
+  message: string;
+}): void {
+  args.diagnostics.push(
+    new vscode.Diagnostic(
+      new vscode.Range(
+        new vscode.Position(args.lineIndex, args.keyStartCharacter),
+        new vscode.Position(
+          args.lineIndex,
+          args.keyStartCharacter + Math.max(1, args.key.length),
+        ),
+      ),
+      args.message,
+      vscode.DiagnosticSeverity.Error,
+    ),
+  );
+}
+
 function getModuleHeaderCompletions(
   document: vscode.TextDocument,
   position: vscode.Position,
 ): vscode.CompletionItem[] {
   const text = document.getText();
-  if (!/^\s*expression\s*:/mu.test(text)) {
-    return [];
-  }
 
   const linePrefix = document
     .lineAt(position.line)
@@ -2087,6 +3161,12 @@ function getModuleHeaderCompletions(
   const typedPrefix = match[2] ?? '';
   const previousNonEmptyLine = getPreviousNonEmptyLine(document, position.line);
   const previousTrimmed = previousNonEmptyLine?.trim() ?? '';
+  const previousIsIndented = previousNonEmptyLine
+    ? /^\s/u.test(previousNonEmptyLine)
+    : false;
+  const hasDefaultsHeader = /^\s*defaults\s*:/mu.test(text);
+  const hasExpressionHeader = /^\s*expression\s*:/mu.test(text);
+  const isModuleDocument = hasExpressionHeader || hasDefaultsHeader;
   let candidates: readonly string[] = [];
 
   if (leadingWhitespace.length > 0) {
@@ -2098,12 +3178,18 @@ function getModuleHeaderCompletions(
       candidates = MODULE_EXPRESSION_HEADER_KEYS;
     }
   } else if (
-    /^expression\s*:\s*.+$/u.test(previousTrimmed) ||
-    isExpressionHeaderLine(previousTrimmed)
+    !previousIsIndented &&
+    (/^expression\s*:\s*.+$/u.test(previousTrimmed) ||
+      isExpressionHeaderLine(previousTrimmed))
   ) {
     candidates = MODULE_EXPRESSION_HEADER_KEYS;
+  } else if (isModuleDocument) {
+    candidates =
+      hasDefaultsHeader || hasExpressionHeader
+        ? ['expression']
+        : MODULE_TOP_LEVEL_HEADER_KEYS;
   } else {
-    candidates = MODULE_TOP_LEVEL_HEADER_KEYS;
+    candidates = FRESH_FILE_TOP_LEVEL_HEADER_KEYS;
   }
 
   return candidates

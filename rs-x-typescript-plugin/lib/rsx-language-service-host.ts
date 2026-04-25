@@ -141,18 +141,26 @@ export function patchLanguageServiceHostForRsxImports(args: {
   };
 
   const baseGetScriptSnapshot = host.getScriptSnapshot?.bind(host);
+  const baseReadFile = host.readFile?.bind(host);
+  const readRsxSourceText = (rsxFileName: string): string | undefined => {
+    const rsxSnapshot = baseGetScriptSnapshot?.(rsxFileName);
+    const snapshotText = rsxSnapshot?.getText(0, rsxSnapshot.getLength());
+    if (typeof snapshotText === 'string') {
+      return snapshotText;
+    }
+
+    return baseReadFile?.(rsxFileName) ?? ts.sys.readFile(rsxFileName);
+  };
+
   host.getScriptSnapshot = (fileName) => {
     const rsxFileName = getRsxFileNameFromVirtualDeclaration(fileName);
     if (rsxFileName) {
-      const rsxSnapshot = baseGetScriptSnapshot?.(rsxFileName);
-      const rsxText = rsxSnapshot?.getText(0, rsxSnapshot.getLength());
-      if (typeof rsxText !== 'string') {
-        return undefined;
-      }
-
-      const declarationText = generateRsxModuleDeclaration({
-        fileName: rsxFileName,
-        text: rsxText,
+      const declarationText = getVirtualDeclarationText({
+        info,
+        ts,
+        virtualFileName: fileName,
+        rsxFileName,
+        readRsxSourceText,
         compilerOptions,
         rootNames: host.getScriptFileNames?.() ?? [],
       });
@@ -168,7 +176,11 @@ export function patchLanguageServiceHostForRsxImports(args: {
   host.getScriptVersion = (fileName) => {
     const rsxFileName = getRsxFileNameFromVirtualDeclaration(fileName);
     if (rsxFileName) {
-      return baseGetScriptVersion?.(rsxFileName) ?? '0';
+      return getVirtualDeclarationVersion({
+        rsxFileName,
+        readRsxSourceText,
+        baseVersion: baseGetScriptVersion?.(rsxFileName),
+      });
     }
 
     return baseGetScriptVersion?.(fileName) ?? '0';
@@ -183,20 +195,18 @@ export function patchLanguageServiceHostForRsxImports(args: {
     return baseFileExists?.(fileName) ?? ts.sys.fileExists(fileName);
   };
 
-  const baseReadFile = host.readFile?.bind(host);
   host.readFile = (fileName) => {
     const rsxFileName = getRsxFileNameFromVirtualDeclaration(fileName);
     if (rsxFileName) {
-      const rsxText =
-        baseReadFile?.(rsxFileName) ?? ts.sys.readFile(rsxFileName);
-      return typeof rsxText === 'string'
-        ? (generateRsxModuleDeclaration({
-            fileName: rsxFileName,
-            text: rsxText,
-            compilerOptions,
-            rootNames: host.getScriptFileNames?.() ?? [],
-          }) ?? undefined)
-        : undefined;
+      return getVirtualDeclarationText({
+        info,
+        ts,
+        virtualFileName: fileName,
+        rsxFileName,
+        readRsxSourceText,
+        compilerOptions,
+        rootNames: host.getScriptFileNames?.() ?? [],
+      });
     }
 
     return baseReadFile?.(fileName) ?? ts.sys.readFile(fileName);
@@ -272,4 +282,87 @@ function resolveRelativePath(
 
 function normalizePath(fileName: string): string {
   return fileName.replace(/\\/gu, '/');
+}
+
+function getVirtualDeclarationText(args: {
+  info: tsModule.server.PluginCreateInfo;
+  ts: typeof tsModule;
+  virtualFileName: string;
+  rsxFileName: string;
+  readRsxSourceText: (rsxFileName: string) => string | undefined;
+  compilerOptions: tsModule.CompilerOptions;
+  rootNames: readonly string[];
+}): string | undefined {
+  const rsxText = args.readRsxSourceText(args.rsxFileName);
+  if (typeof rsxText !== 'string') {
+    return undefined;
+  }
+
+  const declarationText = generateRsxModuleDeclaration({
+    fileName: args.rsxFileName,
+    text: rsxText,
+    compilerOptions: args.compilerOptions,
+    rootNames: args.rootNames,
+  });
+  if (typeof declarationText === 'string') {
+    ensureVirtualDeclarationScriptInfo({
+      info: args.info,
+      ts: args.ts,
+      fileName: args.virtualFileName,
+      text: declarationText,
+    });
+  }
+
+  return declarationText ?? undefined;
+}
+
+function getVirtualDeclarationVersion(args: {
+  rsxFileName: string;
+  readRsxSourceText: (rsxFileName: string) => string | undefined;
+  baseVersion: string | undefined;
+}): string {
+  const rsxText = args.readRsxSourceText(args.rsxFileName);
+  if (typeof rsxText !== 'string') {
+    return args.baseVersion ?? '0';
+  }
+
+  return `${args.baseVersion ?? '0'}:${hashText(rsxText)}`;
+}
+
+function hashText(text: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+
+  return (hash >>> 0).toString(16);
+}
+
+function ensureVirtualDeclarationScriptInfo(args: {
+  info: tsModule.server.PluginCreateInfo;
+  ts: typeof tsModule;
+  fileName: string;
+  text: string;
+}): void {
+  const projectService = args.info.project.projectService;
+  if (!projectService?.getOrCreateScriptInfoForNormalizedPath) {
+    return;
+  }
+
+  const normalizedFileName = args.ts.server.toNormalizedPath(args.fileName);
+  const scriptInfo = projectService.getOrCreateScriptInfoForNormalizedPath(
+    normalizedFileName,
+    false,
+    undefined,
+    args.ts.ScriptKind.TS,
+    false,
+    {
+      fileExists: (candidateFileName) =>
+        normalizePath(candidateFileName) === normalizePath(args.fileName),
+    },
+  );
+
+  scriptInfo?.open(args.text);
+  scriptInfo?.attachToProject(args.info.project);
 }

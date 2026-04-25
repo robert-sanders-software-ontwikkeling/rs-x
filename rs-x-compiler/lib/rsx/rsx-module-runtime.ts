@@ -21,6 +21,11 @@ export function generateRsxModuleRuntime(args: {
         "import type { IExpression, IExpressionTree } from '@rs-x/expression-parser';",
         "import type { IIndexWatchRule } from '@rs-x/state-manager';",
         '',
+        'type RsxModelValue<T> = T | IExpression<T> | IExpressionTree<T>;',
+        'type RsxModelInput<T> = T extends object',
+        '  ? { readonly [K in keyof T]: RsxModelValue<T[K]> }',
+        '  : T;',
+        '',
       ]
     : ["import { rsx } from '@rs-x/expression-parser';", ''];
 
@@ -33,7 +38,7 @@ export function generateRsxModuleRuntime(args: {
         : 'IExpressionTree';
       lines.push(
         `export const ${expressionExport.exportName} = (`,
-        `  model: ${expressionExport.expression.modelTypeText},`,
+        `  model: RsxModelInput<${expressionExport.expression.modelTypeText}>,`,
         '  leafIndexWatchRule?: IIndexWatchRule,',
         `): ${expressionType}<${returnType}> =>`,
         `  rsx<${returnType}, ${expressionExport.expression.modelTypeText}>(${JSON.stringify(expressionExport.expression.expression)}, ${formatRsxRuntimeOptions(expressionExport.expression)})(model, leafIndexWatchRule);`,

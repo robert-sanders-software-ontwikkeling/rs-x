@@ -18,6 +18,41 @@ export function getRsxFileNameFromVirtualDeclaration(
     : null;
 }
 
+export function getRsxExpressionExportSourceSpan(args: {
+  fileName: string;
+  text: string;
+  exportName: string;
+}): { start: number; length: number } | null {
+  const parsed = parseRsxFileExpressions(args);
+  if (!parsed || parsed.expressions.length === 0) {
+    return null;
+  }
+
+  const expressionExport = getRsxExpressionExports({
+    fileName: args.fileName,
+    expressions: parsed.expressions,
+  }).find((entry) => entry.exportName === args.exportName);
+  if (!expressionExport) {
+    return null;
+  }
+
+  const expression = expressionExport.expression;
+  if (typeof expression.nameStart === 'number') {
+    return {
+      start: expression.nameStart,
+      length:
+        typeof expression.nameEnd === 'number'
+          ? expression.nameEnd - expression.nameStart
+          : args.exportName.length,
+    };
+  }
+
+  return {
+    start: expression.expressionStart,
+    length: Math.max(1, expression.expressionEnd - expression.expressionStart),
+  };
+}
+
 export function generateRsxModuleDeclaration(args: {
   fileName: string;
   text: string;
@@ -52,11 +87,18 @@ export function generateRsxModuleDeclaration(args: {
     "import type { IExpressionTree } from '@rs-x/expression-parser';",
     "import type { IIndexWatchRule } from '@rs-x/state-manager';",
     '',
+    'type RsxModelValue<T> = T | IExpression<T> | IExpressionTree<T>;',
+    'type RsxModelInput<T> = T extends object',
+    '  ? { readonly [K in keyof T]: RsxModelValue<T[K]> }',
+    '  : T;',
+    '',
   ];
 
   for (const expressionExport of expressionExports) {
     lines.push(`declare const ${expressionExport.exportName}: (`);
-    lines.push(`  model: ${expressionExport.expression.modelTypeText},`);
+    lines.push(
+      `  model: RsxModelInput<${expressionExport.expression.modelTypeText}>,`,
+    );
     lines.push('  leafIndexWatchRule?: IIndexWatchRule,');
     lines.push(
       `) => ${expressionExport.expression.compiled ? 'IExpression' : 'IExpressionTree'}<${expressionExport.returnType}>;`,

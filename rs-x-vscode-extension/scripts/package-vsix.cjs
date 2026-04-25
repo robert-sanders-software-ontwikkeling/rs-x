@@ -164,6 +164,21 @@ if (
     'Bundled TypeScript plugin is missing. Run `pnpm run prepare:plugin` first.',
   );
 }
+if (
+  !fs.existsSync(
+    path.join(
+      extensionRoot,
+      'node_modules',
+      '@rs-x',
+      'vscode-typescript-plugin',
+      'package.json',
+    ),
+  )
+) {
+  throw new Error(
+    'Bundled VS Code TypeScript plugin alias is missing. Run `pnpm run prepare:plugin` first.',
+  );
+}
 
 fs.rmSync(stageRoot, { recursive: true, force: true });
 fs.mkdirSync(stageRoot, { recursive: true });
@@ -173,6 +188,7 @@ copyRecursive(
   path.join(extensionRoot, 'dist', 'extension.js'),
   path.join(stageRoot, 'dist', 'extension.js'),
 );
+copyRecursive(path.join(extensionRoot, 'icons'), path.join(stageRoot, 'icons'));
 copyRecursive(
   path.join(extensionRoot, 'syntaxes'),
   path.join(stageRoot, 'syntaxes'),
@@ -200,6 +216,10 @@ copyRecursive(
 copyRecursive(
   path.join(extensionRoot, 'node_modules', '@rs-x', 'typescript-plugin'),
   path.join(stageRoot, 'node_modules', '@rs-x', 'typescript-plugin'),
+);
+copyRecursive(
+  path.join(extensionRoot, 'node_modules', '@rs-x', 'vscode-typescript-plugin'),
+  path.join(stageRoot, 'node_modules', '@rs-x', 'vscode-typescript-plugin'),
 );
 copyRecursive(
   path.join(workspaceRoot, 'node_modules', 'typescript'),
@@ -250,6 +270,7 @@ const stagedManifest = {
   contributes: baseManifest.contributes,
   dependencies: {
     '@rs-x/typescript-plugin': baseManifest.version,
+    '@rs-x/vscode-typescript-plugin': baseManifest.version,
     '@rs-x/compiler': compilerVersion,
     '@rs-x/expression-parser': expressionParserVersion,
     '@rs-x/core': coreVersion,
@@ -271,10 +292,12 @@ const stagedManifest = {
   },
   files: [
     'dist',
+    'icons',
     'schemas',
     'syntaxes',
     'language-configuration.json',
     'node_modules/@rs-x/typescript-plugin',
+    'node_modules/@rs-x/vscode-typescript-plugin',
     'node_modules/@rs-x/compiler/dist',
     'node_modules/@rs-x/compiler/package.json',
     'node_modules/@rs-x/expression-parser/dist',

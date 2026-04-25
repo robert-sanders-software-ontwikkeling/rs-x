@@ -1,4 +1,4 @@
-import { Observable } from 'rxjs';
+import { isObservable } from 'rxjs';
 
 import { Inject, Injectable } from '../dependency-injection';
 import { PENDING } from '../index-value-accessor';
@@ -134,7 +134,7 @@ export class FastDeepClone implements IDeepClone {
   }
 
   private getSpecialValue(value: unknown): unknown {
-    if (value instanceof Promise || value instanceof Observable) {
+    if (value instanceof Promise || isObservable(value)) {
       const resolvedValue = this._resolvedValueCache.get(value);
       return resolvedValue === undefined ? PENDING : resolvedValue;
     }

@@ -33,6 +33,18 @@ const esModules = [
   '@inversifyjs/prototype-utils',
   '@inversifyjs/reflect-metadata-utils',
 ].join('|');
+const pnpmEsModules = [
+  'rxjs',
+  'resize-observer-polyfill',
+  'superjson',
+  'inversify',
+  '@inversifyjs\\+common',
+  '@inversifyjs\\+container',
+  '@inversifyjs\\+core',
+  '@inversifyjs\\+plugin',
+  '@inversifyjs\\+prototype-utils',
+  '@inversifyjs\\+reflect-metadata-utils',
+].join('|');
 const includePerformanceTests =
   process.env.RSX_INCLUDE_PERFORMANCE_TESTS === 'true';
 
@@ -86,7 +98,9 @@ const jestConfig: Config.InitialOptions = {
     '^.+\\.(scss|css|html)$': 'jest-transform-stub',
   },
 
-  transformIgnorePatterns: [`/node_modules/(?!(${esModules})/)`],
+  transformIgnorePatterns: [
+    `/node_modules/(?!((?:\\.pnpm/(?:${pnpmEsModules})@)|(?:${esModules})/))`,
+  ],
 
   setupFiles: ['<rootDir>/jest.idb.setup.ts'],
 

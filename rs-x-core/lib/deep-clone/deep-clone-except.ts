@@ -1,4 +1,4 @@
-import { Observable } from 'rxjs';
+import { isObservable } from 'rxjs';
 
 import { Inject, Injectable } from '../dependency-injection';
 import { PENDING } from '../index-value-accessor';
@@ -14,7 +14,7 @@ export class DeepCloneValueExcept implements IDeepCloneExcept {
     private readonly _resolvedValueCache: IResolvedValueCache,
   ) {}
   public except(source: unknown): unknown {
-    if (source instanceof Promise || source instanceof Observable) {
+    if (source instanceof Promise || isObservable(source)) {
       const value = this._resolvedValueCache.get(source);
       return value === undefined ? PENDING : value;
     }

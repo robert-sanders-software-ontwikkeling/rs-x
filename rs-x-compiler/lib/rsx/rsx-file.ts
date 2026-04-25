@@ -2,6 +2,8 @@ import ts from 'typescript';
 
 export interface IRsxExpressionMetadata {
   readonly name?: string;
+  readonly nameStart?: number;
+  readonly nameEnd?: number;
   readonly expression: string;
   readonly expressionStart: number;
   readonly expressionEnd: number;
@@ -133,6 +135,12 @@ export function parseRsxFileExpressions(args: {
     if (!isValidExpressionExportName(rawExpressionName)) {
       return null;
     }
+    const expressionNameStartInLine =
+      expressionHeaderLine.text.indexOf(rawExpressionName);
+    const expressionNameStart =
+      expressionNameStartInLine >= 0
+        ? expressionHeaderLine.start + expressionNameStartInLine
+        : expressionHeaderLine.start;
 
     cursor = expressionHeaderLine.next;
     const localHeaders = new Map<string, string>();
@@ -183,6 +191,8 @@ export function parseRsxFileExpressions(args: {
       expression,
       expressionStart,
       name: rawExpressionName,
+      nameStart: expressionNameStart,
+      nameEnd: expressionNameStart + rawExpressionName.length,
     });
     if (!metadata) {
       return null;
@@ -342,6 +352,8 @@ function toExpressionMetadata(args: {
   expression: string;
   expressionStart: number;
   name?: string;
+  nameStart?: number;
+  nameEnd?: number;
 }): IRsxExpressionMetadata | null {
   const modelTypeText = args.headers.get('model')?.trim();
   if (!modelTypeText) {
@@ -362,6 +374,8 @@ function toExpressionMetadata(args: {
 
   return {
     name: args.name,
+    nameStart: args.nameStart,
+    nameEnd: args.nameEnd,
     expression: args.expression,
     expressionStart: args.expressionStart,
     expressionEnd: args.expressionStart + args.expression.length,

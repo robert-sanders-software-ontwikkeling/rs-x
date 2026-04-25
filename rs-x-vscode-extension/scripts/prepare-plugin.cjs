@@ -12,6 +12,12 @@ const targetPackageRoot = path.join(
   '@rs-x',
   'typescript-plugin',
 );
+const vscodePluginAliasRoot = path.join(
+  extensionRoot,
+  'node_modules',
+  '@rs-x',
+  'vscode-typescript-plugin',
+);
 const targetDistDir = path.join(targetPackageRoot, 'dist');
 const targetEntry = path.join(targetDistDir, 'index.js');
 const workspaceRoot = path.resolve(extensionRoot, '..');
@@ -41,6 +47,7 @@ if (!fs.existsSync(sourcePackageJson)) {
 
 async function main() {
   fs.rmSync(targetPackageRoot, { recursive: true, force: true });
+  fs.rmSync(vscodePluginAliasRoot, { recursive: true, force: true });
   fs.mkdirSync(targetDistDir, { recursive: true });
 
   await esbuild.build({
@@ -75,6 +82,20 @@ async function main() {
   fs.writeFileSync(
     path.join(targetPackageRoot, 'package.json'),
     JSON.stringify(packagedManifest, null, 2),
+  );
+
+  fs.mkdirSync(vscodePluginAliasRoot, { recursive: true });
+  fs.writeFileSync(
+    path.join(vscodePluginAliasRoot, 'package.json'),
+    `${JSON.stringify(
+      {
+        name: '@rs-x/vscode-typescript-plugin',
+        version: pluginManifest.version,
+        main: '../typescript-plugin/dist/index.js',
+      },
+      null,
+      2,
+    )}\n`,
   );
 }
 

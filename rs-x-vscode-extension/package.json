@@ -28,6 +28,9 @@
     "expressions"
   ],
   "activationEvents": [
+    "onView:rsx.expressions",
+    "onCommand:rsx.expressions.refresh",
+    "onCommand:rsx.expressions.open",
     "onLanguage:rsx",
     "onLanguage:typescript",
     "onLanguage:typescriptreact",
@@ -38,6 +41,46 @@
   "main": "./dist/extension.js",
   "browser": "./dist/extension.js",
   "contributes": {
+    "commands": [
+      {
+        "command": "rsx.expressions.refresh",
+        "title": "Refresh RS-X Expressions",
+        "category": "RS-X",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "rsx.expressions.open",
+        "title": "Open RS-X Expression",
+        "category": "RS-X"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "rsx",
+          "title": "RS-X",
+          "icon": "icon.png"
+        }
+      ]
+    },
+    "views": {
+      "rsx": [
+        {
+          "id": "rsx.expressions",
+          "name": "Expressions",
+          "type": "tree"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "rsx.expressions.refresh",
+          "when": "view == rsx.expressions",
+          "group": "navigation"
+        }
+      ]
+    },
     "languages": [
       {
         "id": "rsx",
@@ -48,6 +91,10 @@
         "extensions": [
           ".rsx"
         ],
+        "icon": {
+          "light": "./icons/rsx-light.svg",
+          "dark": "./icons/rsx-dark.svg"
+        },
         "configuration": "./language-configuration.json"
       }
     ],
@@ -78,7 +125,7 @@
     ],
     "typescriptServerPlugins": [
       {
-        "name": "@rs-x/typescript-plugin",
+        "name": "@rs-x/vscode-typescript-plugin",
         "enableForWorkspaceTypeScriptVersions": true,
         "languages": [
           "typescript",
@@ -121,11 +168,13 @@
   },
   "files": [
     "dist",
+    "icons",
     "schemas",
     "syntaxes",
     "language-configuration.json",
     "node_modules/@rs-x/typescript-plugin/dist",
     "node_modules/@rs-x/typescript-plugin/package.json",
+    "node_modules/@rs-x/vscode-typescript-plugin/package.json",
     "node_modules/typescript/lib",
     "node_modules/typescript/package.json",
     "node_modules/typescript/LICENSE.txt",

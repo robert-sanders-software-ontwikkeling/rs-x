@@ -3,7 +3,7 @@
   "displayName": "RS-X Compiler Support",
   "description": "VS Code extension that enables RS-X expression IntelliSense and diagnostics",
   "icon": "icon.png",
-  "version": "2.0.3-local.20260424110832",
+  "version": "2.0.3-local.20260425161055",
   "publisher": "RobertSanders",
   "engines": {
     "vscode": "^1.90.0"
@@ -12,6 +12,9 @@
     "Programming Languages"
   ],
   "activationEvents": [
+    "onView:rsx.expressions",
+    "onCommand:rsx.expressions.refresh",
+    "onCommand:rsx.expressions.open",
     "onLanguage:rsx",
     "onLanguage:typescript",
     "onLanguage:typescriptreact",
@@ -21,6 +24,46 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "commands": [
+      {
+        "command": "rsx.expressions.refresh",
+        "title": "Refresh RS-X Expressions",
+        "category": "RS-X",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "rsx.expressions.open",
+        "title": "Open RS-X Expression",
+        "category": "RS-X"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "rsx",
+          "title": "RS-X",
+          "icon": "icon.png"
+        }
+      ]
+    },
+    "views": {
+      "rsx": [
+        {
+          "id": "rsx.expressions",
+          "name": "Expressions",
+          "type": "tree"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "rsx.expressions.refresh",
+          "when": "view == rsx.expressions",
+          "group": "navigation"
+        }
+      ]
+    },
     "languages": [
       {
         "id": "rsx",
@@ -31,6 +74,10 @@
         "extensions": [
           ".rsx"
         ],
+        "icon": {
+          "light": "./icons/rsx-light.svg",
+          "dark": "./icons/rsx-dark.svg"
+        },
         "configuration": "./language-configuration.json"
       }
     ],
@@ -61,7 +108,7 @@
     ],
     "typescriptServerPlugins": [
       {
-        "name": "@rs-x/typescript-plugin",
+        "name": "@rs-x/vscode-typescript-plugin",
         "enableForWorkspaceTypeScriptVersions": true,
         "languages": [
           "typescript",
@@ -75,6 +122,7 @@
   },
   "dependencies": {
     "@rs-x/typescript-plugin": "2.0.2",
+    "@rs-x/vscode-typescript-plugin": "2.0.2",
     "@rs-x/compiler": "2.0.2",
     "@rs-x/expression-parser": "2.0.2",
     "@rs-x/core": "2.0.2",
@@ -96,10 +144,12 @@
   },
   "files": [
     "dist",
+    "icons",
     "schemas",
     "syntaxes",
     "language-configuration.json",
     "node_modules/@rs-x/typescript-plugin",
+    "node_modules/@rs-x/vscode-typescript-plugin",
     "node_modules/@rs-x/compiler/dist",
     "node_modules/@rs-x/compiler/package.json",
     "node_modules/@rs-x/expression-parser/dist",

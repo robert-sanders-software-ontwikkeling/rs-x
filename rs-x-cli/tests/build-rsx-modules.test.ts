@@ -15,6 +15,17 @@ describe('rsx cli .rsx module build output', () => {
       await fs.mkdir(path.join(fixtureRoot, 'src'), { recursive: true });
 
       await fs.writeFile(
+        path.join(fixtureRoot, 'package.json'),
+        JSON.stringify(
+          {
+            type: 'module',
+          },
+          null,
+          2,
+        ),
+      );
+
+      await fs.writeFile(
         path.join(fixtureRoot, 'tsconfig.json'),
         JSON.stringify(
           {
@@ -54,8 +65,8 @@ describe('rsx cli .rsx module build output', () => {
             build: {
               preparse: true,
               compiled: true,
-              preparseFile: 'dist/rsx-aot-preparsed.generated.ts',
-              compiledFile: 'dist/rsx-aot-compiled.generated.ts',
+              preparseFile: 'dist/rsx-generated/rsx-aot-preparsed.generated.js',
+              compiledFile: 'dist/rsx-generated/rsx-aot-compiled.generated.js',
             },
           },
           null,
@@ -76,7 +87,13 @@ describe('rsx cli .rsx module build output', () => {
       );
       await fs.writeFile(
         path.join(fixtureRoot, 'src', 'index.ts'),
-        'export const packageMarker = true;\n',
+        [
+          "import { discountAmount } from './lazy-discount';",
+          '',
+          'export const packageMarker = true;',
+          'export const discountFactory = discountAmount;',
+          '',
+        ].join('\n'),
       );
       await fs.writeFile(
         path.join(fixtureRoot, 'src', 'quote-total.rsx'),
@@ -122,6 +139,8 @@ describe('rsx cli .rsx module build output', () => {
         lazyDeclaration,
         preparsedModule,
         compiledModule,
+        registrationModule,
+        indexModule,
       ] = await Promise.all([
         fs.readFile(path.join(fixtureRoot, 'dist', 'quote-total.js'), 'utf8'),
         fs.readFile(path.join(fixtureRoot, 'dist', 'quote-total.d.ts'), 'utf8'),
@@ -131,13 +150,33 @@ describe('rsx cli .rsx module build output', () => {
           'utf8',
         ),
         fs.readFile(
-          path.join(fixtureRoot, 'dist', 'rsx-aot-preparsed.generated.ts'),
+          path.join(
+            fixtureRoot,
+            'dist',
+            'rsx-generated',
+            'rsx-aot-preparsed.generated.js',
+          ),
           'utf8',
         ),
         fs.readFile(
-          path.join(fixtureRoot, 'dist', 'rsx-aot-compiled.generated.ts'),
+          path.join(
+            fixtureRoot,
+            'dist',
+            'rsx-generated',
+            'rsx-aot-compiled.generated.js',
+          ),
           'utf8',
         ),
+        fs.readFile(
+          path.join(
+            fixtureRoot,
+            'dist',
+            'rsx-generated',
+            'rsx-aot-registration.generated.js',
+          ),
+          'utf8',
+        ),
+        fs.readFile(path.join(fixtureRoot, 'dist', 'index.js'), 'utf8'),
       ]);
 
       expect(totalModule).toContain('subtotal');
@@ -147,16 +186,29 @@ describe('rsx cli .rsx module build output', () => {
 
       expect(lazyModule).toContain('discount');
       expect(lazyModule).toContain('"lazyGroup": "package"');
+      expect(lazyModule).toContain(
+        "import './rsx-generated/rsx-aot-registration.generated.js';",
+      );
       expect(lazyDeclaration).toContain('discountAmount');
 
       expect(preparsedModule).toContain('subtotal');
       expect(compiledModule).toContain('subtotal');
+      expect(registrationModule).toContain(
+        "from './rsx-aot-preparsed.generated.js'",
+      );
+      expect(registrationModule).toContain(
+        "from './rsx-aot-compiled.generated.js'",
+      );
+      expect(indexModule).toContain("from './lazy-discount.js'");
 
       await expect(
         fs.access(path.join(fixtureRoot, 'src', 'quote-total.ts')),
       ).rejects.toThrow();
       await expect(
         fs.access(path.join(fixtureRoot, 'src', 'lazy-discount.ts')),
+      ).rejects.toThrow();
+      await expect(
+        fs.access(path.join(fixtureRoot, 'src', 'rsx-generated')),
       ).rejects.toThrow();
     } finally {
       await fs.rm(fixtureRoot, { recursive: true, force: true });

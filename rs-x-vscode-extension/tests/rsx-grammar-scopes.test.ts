@@ -58,4 +58,35 @@ describe('rsx grammar scopes', () => {
     expect(rsxFileGrammar?.embeddedLanguages).toBeUndefined();
     expect(inlineGrammar?.embeddedLanguages).toBeUndefined();
   });
+
+  it('assigns expression headers their own boundary scopes', () => {
+    const grammar = JSON.parse(
+      readFileSync(
+        path.join(extensionRoot, 'syntaxes/rsx-file.language.json'),
+        'utf8',
+      ),
+    ) as {
+      repository?: {
+        header?: {
+          patterns?: Array<{
+            name?: string;
+            match?: string;
+            captures?: Record<string, { name?: string }>;
+          }>;
+        };
+      };
+    };
+
+    const expressionHeaderPattern = grammar.repository?.header?.patterns?.find(
+      (pattern) => pattern.name === 'meta.directive.expression.rsx',
+    );
+
+    expect(expressionHeaderPattern?.match).toContain('^(expression)');
+    expect(expressionHeaderPattern?.captures?.['1']?.name).toBe(
+      'entity.name.section.rsx',
+    );
+    expect(expressionHeaderPattern?.captures?.['4']?.name).toBe(
+      'entity.name.function.rsx',
+    );
+  });
 });

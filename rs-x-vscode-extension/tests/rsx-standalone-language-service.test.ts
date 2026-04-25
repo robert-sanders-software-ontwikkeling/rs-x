@@ -17,6 +17,8 @@ import {
   getRsxSemanticTokens,
   getRsxSyntacticTokensForText,
   getRsxSignatureHelpAtPosition,
+  getRsxHeaderImportTypeDefinitionsAtTextPosition,
+  getRsxTypeDefinitionsAtPosition,
   rsxSemanticTokenTypes,
 } from '../lib/rsx-standalone-language-service';
 
@@ -73,6 +75,97 @@ describe('rsx standalone language service', () => {
         }),
       ]),
     );
+  });
+
+  it('resolves type definitions from .rsx import type headers', () => {
+    const document = createFixtureDocument();
+    const modelTypeOffset = document.text.indexOf('IModel') + 1;
+    const service = createRsxStandaloneLanguageService({
+      fileName: rsxFixturePath,
+      text: document.text,
+    });
+
+    expect(service).not.toBeNull();
+
+    const definitions = getRsxTypeDefinitionsAtPosition(
+      service!,
+      modelTypeOffset,
+    );
+    const modelText = readFileSync(modelFixturePath, 'utf8');
+    const expectedStart = modelText.indexOf('IModel');
+    expect(definitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          fileName: modelFixturePath,
+          start: expectedStart,
+          end: expectedStart + 'IModel'.length,
+        }),
+      ]),
+    );
+  });
+
+  it('falls back to definitions for .rsx import header module specifiers', () => {
+    const document = createFixtureDocument();
+    const moduleSpecifierOffset =
+      document.text.indexOf('rsx-file-model.fixture') + 1;
+    const service = createRsxStandaloneLanguageService({
+      fileName: rsxFixturePath,
+      text: document.text,
+    });
+
+    expect(service).not.toBeNull();
+
+    const definitions = getRsxTypeDefinitionsAtPosition(
+      service!,
+      moduleSpecifierOffset,
+    );
+    expect(definitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          fileName: modelFixturePath,
+        }),
+      ]),
+    );
+  });
+
+  it('resolves type definitions directly from module-style header text', () => {
+    const text = [
+      'defaults:',
+      "  model: import('./rsx-file-model.fixture').IModel",
+      '',
+      'expression: lineTotalRsx',
+      'return: number',
+      'lineTotal',
+      '',
+    ].join('\n');
+    const typeOffset = text.indexOf('IModel') + 1;
+    const moduleOffset = text.indexOf('rsx-file-model.fixture') + 1;
+
+    const typeDefinitions = getRsxHeaderImportTypeDefinitionsAtTextPosition({
+      fileName: rsxFixturePath,
+      text,
+      position: typeOffset,
+    });
+    const moduleDefinitions = getRsxHeaderImportTypeDefinitionsAtTextPosition({
+      fileName: rsxFixturePath,
+      text,
+      position: moduleOffset,
+    });
+
+    const modelText = readFileSync(modelFixturePath, 'utf8');
+    const expectedStart = modelText.indexOf('IModel');
+    expect(typeDefinitions).toEqual([
+      expect.objectContaining({
+        fileName: modelFixturePath,
+        start: expectedStart,
+        end: expectedStart + 'IModel'.length,
+      }),
+    ]);
+    expect(moduleDefinitions).toEqual([
+      expect.objectContaining({
+        fileName: modelFixturePath,
+      }),
+    ]);
   });
 
   it('finds references for standalone .rsx symbols across the rsx file and model contract', () => {
