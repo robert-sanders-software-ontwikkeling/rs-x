@@ -1,5 +1,10 @@
 import ts from 'typescript';
 
+import {
+  getRsxExpressionExports,
+  getRsxExpressionValueName,
+} from './rsx-module-exports';
+
 export interface IRsxExpressionMetadata {
   readonly name?: string;
   readonly nameStart?: number;
@@ -92,13 +97,13 @@ export function parseRsxFileExpressions(args: {
       continue;
     }
 
-    const header = parseTopLevelHeaderLine(line.text);
+    const header = readTopLevelHeaderAt(normalized, cursor);
     if (!header || !isSupportedRsxHeaderKey(header.key)) {
       break;
     }
 
     globalHeaders.set(header.key, header.value);
-    cursor = line.next;
+    cursor = header.next;
   }
 
   if (!sawExpressionHeader) {
@@ -159,14 +164,14 @@ export function parseRsxFileExpressions(args: {
       }
 
       const header =
-        parseTopLevelHeaderLine(line.text) ??
-        parseIndentedHeaderLine(line.text);
+        readTopLevelHeaderAt(normalized, cursor) ??
+        readIndentedHeaderAt(normalized, cursor);
       if (!header || !isSupportedRsxHeaderKey(header.key)) {
         break;
       }
 
       localHeaders.set(header.key, header.value);
-      cursor = line.next;
+      cursor = header.next;
     }
 
     const expressionStart = skipWhitespace(normalized, cursor);
@@ -251,7 +256,10 @@ export function createRsxBackedProgramForFile(
   const target = compilerOptions.target ?? ts.ScriptTarget.Latest;
   const defaultHost = ts.createCompilerHost(compilerOptions, true);
   const virtualFileName = `${fileName}.ts`;
-  const virtualSourceText = buildVirtualRsxFileSource(metadata.expressions);
+  const virtualSourceText = buildVirtualRsxFileSource({
+    fileName,
+    expressions: metadata.expressions,
+  });
   const virtualSourceFile = ts.createSourceFile(
     virtualFileName,
     virtualSourceText,
@@ -321,14 +329,28 @@ export function createRsxBackedProgramForFile(
   };
 }
 
-function buildVirtualRsxFileSource(
-  expressions: readonly IRsxExpressionMetadata[],
-): string {
+function buildVirtualRsxFileSource(args: {
+  fileName: string;
+  expressions: readonly IRsxExpressionMetadata[];
+}): string {
   const lines: string[] = [];
-  for (let index = 0; index < expressions.length; index += 1) {
-    const expression = expressions[index];
+  const expressionExports = getRsxExpressionExports(args);
+  const localValues = expressionExports.map((expressionExport) => ({
+    valueName: getRsxExpressionValueName(expressionExport.exportName),
+    returnTypeText: expressionExport.expression.returnTypeText,
+  }));
+  for (let index = 0; index < args.expressions.length; index += 1) {
+    const expression = args.expressions[index];
+    const localModelFields = localValues
+      .filter((value) => value.valueName !== localValues[index]?.valueName)
+      .map(
+        (value) =>
+          `readonly ${JSON.stringify(value.valueName)}: ${value.returnTypeText ?? 'unknown'}`,
+      )
+      .join('; ');
+    const localModelType = localModelFields ? ` & { ${localModelFields} }` : '';
     lines.push(
-      `type __RSX_MODEL_${String(index)} = ${expression.modelTypeText};`,
+      `type __RSX_MODEL_${String(index)} = ${expression.modelTypeText}${localModelType};`,
     );
     if (expression.returnTypeText) {
       lines.push(
@@ -337,9 +359,9 @@ function buildVirtualRsxFileSource(
     }
   }
 
-  if (expressions.length > 0) {
+  if (args.expressions.length > 0) {
     lines.push('type __RSX_MODEL = __RSX_MODEL_0;');
-    if (expressions[0].returnTypeText) {
+    if (args.expressions[0].returnTypeText) {
       lines.push('type __RSX_RETURN = __RSX_RETURN_0;');
     }
   }
@@ -355,10 +377,12 @@ function toExpressionMetadata(args: {
   nameStart?: number;
   nameEnd?: number;
 }): IRsxExpressionMetadata | null {
-  const modelTypeText = args.headers.get('model')?.trim();
-  if (!modelTypeText) {
+  const rawModelTypeText = args.headers.get('model')?.trim();
+  if (!rawModelTypeText) {
     return null;
   }
+  const modelTypeText =
+    normalizeRsxModelExpressionReferenceTypeText(rawModelTypeText);
 
   const returnTypeText = args.headers.get('return')?.trim();
   const lazyGroup = parseLazyGroupHeader(args.headers.get('lazyGroup'));
@@ -386,6 +410,89 @@ function toExpressionMetadata(args: {
     lazyGroup,
     compiled,
   };
+}
+
+export function normalizeRsxModelExpressionReferenceTypeText(
+  modelTypeText: string,
+): string {
+  const prefix = 'type __RSX_MODEL = ';
+  const sourceFile = ts.createSourceFile(
+    '/__rsx_model_type_normalize__.ts',
+    `${prefix}${modelTypeText};`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  if (getSourceFileParseDiagnostics(sourceFile).length > 0) {
+    return modelTypeText;
+  }
+
+  const modelAlias = sourceFile.statements.find(
+    (statement): statement is ts.TypeAliasDeclaration =>
+      ts.isTypeAliasDeclaration(statement) &&
+      statement.name.text === '__RSX_MODEL',
+  );
+  if (!modelAlias) {
+    return modelTypeText;
+  }
+
+  const replacements: Array<{ start: number; end: number; text: string }> = [];
+  const visitType = (node: ts.TypeNode): void => {
+    if (ts.isParenthesizedTypeNode(node)) {
+      visitType(node.type);
+      return;
+    }
+    if (ts.isIntersectionTypeNode(node) || ts.isUnionTypeNode(node)) {
+      for (const memberType of node.types) {
+        visitType(memberType);
+      }
+      return;
+    }
+    if (!ts.isTypeLiteralNode(node)) {
+      return;
+    }
+
+    for (const member of node.members) {
+      if (
+        !ts.isPropertySignature(member) ||
+        !member.type ||
+        !isExpressionReferenceTypeNode(member.type)
+      ) {
+        continue;
+      }
+      const start = member.type.getStart(sourceFile) - prefix.length;
+      const end = member.type.getEnd() - prefix.length;
+      if (start < 0 || end <= start) {
+        continue;
+      }
+      replacements.push({
+        start,
+        end,
+        text: `ReturnType<${member.type.getText(sourceFile)}>`,
+      });
+    }
+  };
+
+  visitType(modelAlias.type);
+  if (replacements.length === 0) {
+    return modelTypeText;
+  }
+
+  let normalized = modelTypeText;
+  for (const replacement of replacements.sort(
+    (left, right) => right.start - left.start,
+  )) {
+    normalized = `${normalized.slice(0, replacement.start)}${replacement.text}${normalized.slice(replacement.end)}`;
+  }
+  return normalized;
+}
+
+function isExpressionReferenceTypeNode(
+  node: ts.TypeNode,
+): node is ts.TypeQueryNode | ts.ImportTypeNode {
+  return (
+    ts.isTypeQueryNode(node) || (ts.isImportTypeNode(node) && node.isTypeOf)
+  );
 }
 
 function readLineAt(
@@ -427,13 +534,13 @@ function collectDefaultsHeaders(
       break;
     }
 
-    const parsed = parseIndentedHeaderLine(line.text);
+    const parsed = readIndentedHeaderAt(text, cursor);
     if (!parsed || !isSupportedRsxHeaderKey(parsed.key)) {
       break;
     }
 
     destination.set(parsed.key, parsed.value);
-    cursor = line.next;
+    cursor = parsed.next;
   }
 
   return cursor;
@@ -443,6 +550,18 @@ function hasIndent(line: string): boolean {
   return line.length > 0 && /^\s/u.test(line);
 }
 
+function readTopLevelHeaderAt(
+  text: string,
+  offset: number,
+): { key: string; value: string; next: number } | null {
+  const line = readLineAt(text, offset);
+  if (hasIndent(line.text)) {
+    return null;
+  }
+
+  return readHeaderAt(text, offset, false);
+}
+
 function parseTopLevelHeaderLine(
   line: string,
 ): { key: string; value: string } | null {
@@ -450,8 +569,8 @@ function parseTopLevelHeaderLine(
     return null;
   }
 
-  const match = /^([A-Za-z][A-Za-z0-9_]*)\s*:\s*(.+)$/u.exec(line.trim());
-  if (!match) {
+  const match = /^([A-Za-z][A-Za-z0-9_]*)\s*:\s*(.*)$/u.exec(line);
+  if (!match || match[2].trim().length === 0) {
     return null;
   }
 
@@ -461,18 +580,91 @@ function parseTopLevelHeaderLine(
   };
 }
 
-function parseIndentedHeaderLine(
-  line: string,
-): { key: string; value: string } | null {
-  const match = /^\s+([A-Za-z][A-Za-z0-9_]*)\s*:\s*(.+)$/u.exec(line);
+function readIndentedHeaderAt(
+  text: string,
+  offset: number,
+): { key: string; value: string; next: number } | null {
+  const line = readLineAt(text, offset);
+  if (!hasIndent(line.text)) {
+    return null;
+  }
+
+  return readHeaderAt(text, offset, true);
+}
+
+function readHeaderAt(
+  text: string,
+  offset: number,
+  requireIndent: boolean,
+): { key: string; value: string; next: number } | null {
+  const line = readLineAt(text, offset);
+  const match = requireIndent
+    ? /^\s+([A-Za-z][A-Za-z0-9_]*)\s*:\s*(.*)$/u.exec(line.text)
+    : /^([A-Za-z][A-Za-z0-9_]*)\s*:\s*(.*)$/u.exec(line.text);
   if (!match) {
     return null;
   }
 
-  return {
-    key: match[1],
-    value: match[2].trim(),
-  };
+  const key = match[1];
+  const firstLineValue = match[2].trim();
+  if (key !== 'model' && key !== 'return') {
+    return firstLineValue.length > 0
+      ? {
+          key,
+          value: firstLineValue,
+          next: line.next,
+        }
+      : null;
+  }
+
+  let value = firstLineValue;
+  let next = line.next;
+  while (next < text.length && !isTypeHeaderValueComplete(value)) {
+    const continuationLine = readLineAt(text, next);
+    if (!hasIndent(continuationLine.text)) {
+      break;
+    }
+
+    value = value
+      ? `${value}\n${continuationLine.text.trim()}`
+      : continuationLine.text.trim();
+    next = continuationLine.next;
+  }
+
+  return value.length > 0
+    ? {
+        key,
+        value,
+        next,
+      }
+    : null;
+}
+
+function isTypeHeaderValueComplete(value: string): boolean {
+  if (!value.trim()) {
+    return false;
+  }
+
+  const sourceFile = ts.createSourceFile(
+    '/__rsx_header_type_check__.ts',
+    `type __RSX_HEADER = ${value};`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  return getSourceFileParseDiagnostics(sourceFile).length === 0;
+}
+
+function getSourceFileParseDiagnostics(
+  sourceFile: ts.SourceFile,
+): readonly ts.DiagnosticWithLocation[] {
+  return (
+    (
+      sourceFile as ts.SourceFile & {
+        parseDiagnostics?: readonly ts.DiagnosticWithLocation[];
+      }
+    ).parseDiagnostics ?? []
+  );
 }
 
 function findNextTopLevelExpressionHeaderOffset(

@@ -45,6 +45,12 @@ export function toRsxExportName(fileName: string): string {
   return /^[A-Za-z_$]/u.test(joined) ? joined : `rsx${joined}`;
 }
 
+export function getRsxExpressionValueName(exportName: string): string {
+  return exportName.endsWith('Rsx') && exportName.length > 'Rsx'.length
+    ? exportName.slice(0, -'Rsx'.length)
+    : exportName;
+}
+
 function ensureUniqueExportName(
   preferredName: string,
   usedExportNames: Set<string>,

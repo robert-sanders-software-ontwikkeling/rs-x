@@ -31,6 +31,7 @@
     "onView:rsx.expressions",
     "onCommand:rsx.expressions.refresh",
     "onCommand:rsx.expressions.open",
+    "onCommand:rsx.expressions.preview",
     "onLanguage:rsx",
     "onLanguage:typescript",
     "onLanguage:typescriptreact",
@@ -52,6 +53,12 @@
         "command": "rsx.expressions.open",
         "title": "Open RS-X Expression",
         "category": "RS-X"
+      },
+      {
+        "command": "rsx.expressions.preview",
+        "title": "Preview RS-X Expression Tree",
+        "category": "RS-X",
+        "icon": "$(type-hierarchy)"
       }
     ],
     "viewsContainers": {
@@ -75,9 +82,21 @@
     "menus": {
       "view/title": [
         {
+          "command": "rsx.expressions.preview",
+          "when": "view == rsx.expressions",
+          "group": "navigation"
+        },
+        {
           "command": "rsx.expressions.refresh",
           "when": "view == rsx.expressions",
           "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "rsx.expressions.preview",
+          "when": "view == rsx.expressions && viewItem =~ /rsxExpression/",
+          "group": "inline"
         }
       ]
     },
@@ -98,6 +117,16 @@
         "configuration": "./language-configuration.json"
       }
     ],
+    "configurationDefaults": {
+      "[rsx]": {
+        "editor.quickSuggestions": {
+          "other": "on",
+          "comments": "off",
+          "strings": "on"
+        },
+        "editor.suggestOnTriggerCharacters": true
+      }
+    },
     "jsonValidation": [
       {
         "fileMatch": "rsx.config.json",
@@ -141,7 +170,9 @@
     "build": "tsup lib/extension.ts --format cjs --out-dir dist --external vscode --external typescript",
     "clean": "rimraf dist",
     "prepare:plugin": "node ./scripts/prepare-plugin.cjs",
-    "test:host-smoke": "code --disable-extensions --extensionDevelopmentPath=. --extensionTestsPath=./test-host/smoke.cjs .",
+    "test:host-smoke": "node ./scripts/run-host-smoke.cjs",
+    "test:host-smoke:ci": "node ./scripts/run-host-smoke.cjs --ci",
+    "test:host-smoke:ci:windows": "node ./scripts/run-host-smoke.cjs --ci",
     "vscode:prepublish": "pnpm --filter @rs-x/expression-parser run build && pnpm --filter @rs-x/compiler run build && pnpm --filter @rs-x/typescript-plugin run build && pnpm run build",
     "package": "pnpm run vscode:prepublish && pnpm run prepare:plugin && node ./scripts/package-vsix.cjs",
     "package:local": "pnpm run vscode:prepublish && pnpm run prepare:plugin && node ./scripts/package-vsix.cjs --local-build",
@@ -149,6 +180,7 @@
   },
   "dependencies": {
     "@rs-x/compiler": "workspace:*",
+    "@rs-x/expression-parser": "workspace:*",
     "@rs-x/typescript-plugin": "workspace:*",
     "typescript": "^6.0.2"
   },

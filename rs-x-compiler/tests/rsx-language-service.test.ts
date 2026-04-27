@@ -844,6 +844,16 @@ describe('rsx language service', () => {
         message:
           "Expression result is not assignable to declared return type 'string'.",
       },
+      {
+        category: 'semantic',
+        message:
+          "Expression result is not assignable to declared return type 'number'.",
+      },
+      {
+        category: 'semantic',
+        message:
+          "Expression result is not assignable to declared return type 'Date'.",
+      },
     ]);
   });
 

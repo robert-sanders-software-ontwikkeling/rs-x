@@ -636,6 +636,9 @@ importers:
       '@rs-x/compiler':
         specifier: workspace:*
         version: link:../rs-x-compiler
+      '@rs-x/expression-parser':
+        specifier: workspace:*
+        version: link:../rs-x-expression-parser
       '@rs-x/typescript-plugin':
         specifier: workspace:*
         version: link:../rs-x-typescript-plugin

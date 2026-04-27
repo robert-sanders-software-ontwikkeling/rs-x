@@ -1,10 +1,10 @@
 import ts from 'typescript';
 
+import { parseRsxFileExpressions } from './rsx-file';
 import {
-  createRsxBackedProgramForFile,
-  parseRsxFileExpressions,
-} from './rsx-file';
-import { getRsxExpressionExports } from './rsx-module-exports';
+  getRsxExpressionExports,
+  getRsxExpressionValueName,
+} from './rsx-module-exports';
 
 export function getRsxVirtualDeclarationFileName(fileName: string): string {
   return `${fileName}.d.ts`;
@@ -64,23 +64,31 @@ export function generateRsxModuleDeclaration(args: {
     return null;
   }
 
-  const expressionExports = getRsxExpressionExports({
+  const parsedExpressionExports = getRsxExpressionExports({
     fileName: args.fileName,
     expressions: parsed.expressions,
-  }).map(({ expression, exportName }) => {
-    const returnType =
-      expression.returnTypeText ??
-      inferRsxReturnTypeFromExpression({
-        fileName: args.fileName,
-        text: args.text,
-        modelTypeText: expression.modelTypeText,
-        expression: expression.expression,
-        compilerOptions: args.compilerOptions,
-        rootNames: args.rootNames,
-      }) ??
-      'unknown';
-    return { expression, exportName, returnType };
   });
+  const localValueTypes = new Map<string, string>();
+  const modelPropertyNamesCache = new Map<string, readonly string[]>();
+  const expressionExports = parsedExpressionExports.map(
+    ({ expression, exportName }) => {
+      const returnType =
+        expression.returnTypeText ??
+        inferRsxReturnTypeFromExpression({
+          fileName: args.fileName,
+          text: args.text,
+          modelTypeText: expression.modelTypeText,
+          expression: expression.expression,
+          compilerOptions: args.compilerOptions,
+          rootNames: args.rootNames,
+          localValueTypes,
+          modelPropertyNamesCache,
+        }) ??
+        'unknown';
+      localValueTypes.set(getRsxExpressionValueName(exportName), returnType);
+      return { expression, exportName, returnType };
+    },
+  );
 
   const lines = [
     "import type { IExpression } from '@rs-x/expression-parser';",
@@ -127,6 +135,8 @@ function inferRsxReturnTypeFromExpression(args: {
   expression: string;
   compilerOptions?: ts.CompilerOptions;
   rootNames?: readonly string[];
+  localValueTypes?: ReadonlyMap<string, string>;
+  modelPropertyNamesCache?: Map<string, readonly string[]>;
 }): string | null {
   const options = args.compilerOptions ?? {
     target: ts.ScriptTarget.ES2022,
@@ -136,23 +146,45 @@ function inferRsxReturnTypeFromExpression(args: {
     jsx: ts.JsxEmit.Preserve,
   };
   const scriptTarget = options.target ?? ts.ScriptTarget.Latest;
-  const modelPropertyNames = resolveTopLevelModelPropertyNames({
-    fileName: args.fileName,
-    text: args.text,
-    options,
-    rootNames: args.rootNames,
-  });
+  const modelPropertyNamesCacheKey = `${args.fileName}\n${args.modelTypeText}`;
+  const cachedModelPropertyNames = args.modelPropertyNamesCache?.get(
+    modelPropertyNamesCacheKey,
+  );
+  const modelPropertyNames =
+    cachedModelPropertyNames ??
+    resolveTopLevelModelPropertyNames({
+      fileName: args.fileName,
+      modelTypeText: args.modelTypeText,
+      options,
+    });
+  args.modelPropertyNamesCache?.set(
+    modelPropertyNamesCacheKey,
+    modelPropertyNames,
+  );
 
   const virtualInferenceFileName = `${args.fileName}.__rsx-return-infer__.ts`;
   const declarations = modelPropertyNames
+    .filter((propertyName) => !args.localValueTypes?.has(propertyName))
     .map(
       (propertyName) =>
-        `declare const ${propertyName}: __RSX_MODEL[${JSON.stringify(propertyName)}];`,
+        `declare const ${propertyName}: __RSX_MODEL_VALUE<__RSX_MODEL[${JSON.stringify(propertyName)}]>;`,
+    )
+    .join('\n');
+  const localDeclarations = [...(args.localValueTypes?.entries() ?? [])]
+    .map(
+      ([valueName, returnType]) => `declare const ${valueName}: ${returnType};`,
     )
     .join('\n');
   const inferenceSource = [
+    "import type { IExpression, IExpressionTree } from '@rs-x/expression-parser';",
     `type __RSX_MODEL = ${args.modelTypeText};`,
+    'type __RSX_MODEL_VALUE<T> = T extends IExpression<infer V>',
+    '  ? V',
+    '  : T extends IExpressionTree<infer V>',
+    '    ? V',
+    '    : T;',
     declarations,
+    localDeclarations,
     'const __rsx_expression = (',
     args.expression,
     ');',
@@ -241,26 +273,24 @@ function inferRsxReturnTypeFromExpression(args: {
 
 function resolveTopLevelModelPropertyNames(args: {
   fileName: string;
-  text: string;
+  modelTypeText: string;
   options: ts.CompilerOptions;
-  rootNames?: readonly string[];
 }): string[] {
-  const rootNames = Array.from(
-    new Set([...(args.rootNames ?? []), args.fileName]),
-  );
   const scriptTarget = args.options.target ?? ts.ScriptTarget.Latest;
+  const virtualModelFileName = `${args.fileName}.__rsx-model-props__.ts`;
+  const virtualModelSource = `type __RSX_MODEL = ${args.modelTypeText};\n`;
   const baseHost = ts.createCompilerHost(args.options, true);
   const host: ts.CompilerHost = {
     ...baseHost,
     fileExists(fileName) {
-      if (fileName === args.fileName) {
+      if (fileName === virtualModelFileName) {
         return true;
       }
       return baseHost.fileExists(fileName);
     },
     readFile(fileName) {
-      if (fileName === args.fileName) {
-        return args.text;
+      if (fileName === virtualModelFileName) {
+        return virtualModelSource;
       }
       return baseHost.readFile(fileName);
     },
@@ -270,10 +300,10 @@ function resolveTopLevelModelPropertyNames(args: {
       onError,
       shouldCreateNewSourceFile,
     ) {
-      if (fileName === args.fileName) {
+      if (fileName === virtualModelFileName) {
         return ts.createSourceFile(
-          args.fileName,
-          args.text,
+          virtualModelFileName,
+          virtualModelSource,
           languageVersion ?? scriptTarget,
           true,
           ts.ScriptKind.TS,
@@ -290,21 +320,17 @@ function resolveTopLevelModelPropertyNames(args: {
   };
 
   const program = ts.createProgram({
-    rootNames,
+    rootNames: [virtualModelFileName],
     options: args.options,
     host,
   });
-  const rsxBacked = createRsxBackedProgramForFile(
-    program,
-    args.fileName,
-    args.text,
-  );
-  if (!rsxBacked) {
+  const sourceFile = program.getSourceFile(virtualModelFileName);
+  if (!sourceFile) {
     return [];
   }
 
-  const checker = rsxBacked.program.getTypeChecker();
-  const modelAlias = rsxBacked.virtualSourceFile.statements.find(
+  const checker = program.getTypeChecker();
+  const modelAlias = sourceFile.statements.find(
     (statement): statement is ts.TypeAliasDeclaration =>
       ts.isTypeAliasDeclaration(statement) &&
       statement.name.text === '__RSX_MODEL',

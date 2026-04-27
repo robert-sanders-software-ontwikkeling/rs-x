@@ -6,11 +6,16 @@ import * as vscode from 'vscode';
 import {
   createRsxSemanticClassificationContext,
   getRsxExpressionExports,
+  normalizeRsxModelExpressionReferenceTypeText,
   parseRsxFileExpressions,
   resolveRsxSemanticTokenType,
   shouldEmitRsxSemanticToken,
   tokenizeRsxExpression,
 } from '@rs-x/compiler';
+import {
+  JsEspreeExpressionParser,
+  JsExpressionAstParser,
+} from '@rs-x/expression-parser';
 
 import {
   canRenameRsxSymbolAtPosition,
@@ -36,6 +41,11 @@ import {
 } from './rsx-standalone-language-service';
 
 const RSX_LANGUAGE_ID = 'rsx';
+const RSX_FILE_PATTERN = '**/*.rsx';
+const RSX_DOCUMENT_SELECTOR: vscode.DocumentSelector = [
+  { language: RSX_LANGUAGE_ID },
+  { pattern: RSX_FILE_PATTERN },
+];
 const WRAPPED_EXPRESSION_PREFIX = 'const __rsxExpression = (\n';
 const WRAPPED_EXPRESSION_SUFFIX = '\n);\n';
 const MODULE_TOP_LEVEL_HEADER_KEYS = ['defaults', 'expression'] as const;
@@ -109,6 +119,16 @@ interface IModuleHeaderStandaloneService {
   originalValueEnd: number;
 }
 
+interface ITypeHeaderValueRegion {
+  key: 'model' | 'return';
+  keyStartCharacter: number;
+  value: string;
+  valueStartOffset: number;
+  valueEndOffset: number;
+  startLine: number;
+  endLine: number;
+}
+
 interface IStandaloneServiceCacheEntry {
   version: number;
   service: ReturnType<typeof createRsxStandaloneLanguageService>;
@@ -158,16 +178,107 @@ interface IRsxExpressionTreeFile {
 
 interface IRsxExpressionTreeExpression {
   readonly kind: 'expression';
+  readonly key: string;
   readonly uri: vscode.Uri;
+  readonly relativePath: string;
   readonly exportName: string;
   readonly expression: IRsxExpressionExport['expression'];
   readonly start: number;
   readonly end: number;
+  readonly dependencies: readonly IRsxExpressionDependencyEdge[];
+}
+
+interface IRsxExpressionDependencyEdge {
+  readonly targetKey: string;
+  readonly targetUri: vscode.Uri;
+  readonly targetRelativePath: string;
+  readonly targetExportName: string;
+  readonly targetStart: number;
+  readonly targetEnd: number;
+  readonly identifier: string;
+  readonly matchKind: 'exportName' | 'modelFieldExpressionType';
+}
+
+interface IRsxExpressionDependencyTreeItem {
+  readonly kind: 'dependency';
+  readonly source: IRsxExpressionTreeExpression;
+  readonly edge: IRsxExpressionDependencyEdge;
+  readonly pathKeys: readonly string[];
 }
 
 type IRsxExpressionTreeItem =
   | IRsxExpressionTreeFile
-  | IRsxExpressionTreeExpression;
+  | IRsxExpressionTreeExpression
+  | IRsxExpressionDependencyTreeItem;
+
+interface IRsxExpressionGraphPreviewNode {
+  readonly id: string;
+  readonly key: string;
+  readonly exportName: string;
+  readonly uri: string;
+  readonly expressionText: string;
+  readonly modelTypeText?: string;
+  readonly returnTypeText?: string;
+  readonly start: number;
+  readonly end: number;
+  readonly x: number;
+  readonly y: number;
+}
+
+interface IRsxExpressionGraphPreviewEdge {
+  readonly sourceId: string;
+  readonly targetId: string;
+}
+
+interface IRsxExpressionGraphPreviewData {
+  readonly title: string;
+  readonly nodes: readonly IRsxExpressionGraphPreviewNode[];
+  readonly edges: readonly IRsxExpressionGraphPreviewEdge[];
+  readonly nodeWidth: number;
+  readonly nodeHeight: number;
+  readonly horizontalGap: number;
+  readonly verticalGap: number;
+  readonly padding: number;
+  readonly maxX: number;
+  readonly maxDepth: number;
+}
+
+interface IRsxExpressionGraphLayoutNode {
+  readonly id: string;
+  readonly expression: IRsxExpressionGraphParsedNode | null;
+  parent?: IRsxExpressionGraphLayoutNode;
+  children: IRsxExpressionGraphLayoutNode[];
+  depth: number;
+  number: number;
+  x: number;
+  y: number;
+  prelim: number;
+  mod: number;
+  change: number;
+  shift: number;
+  ancestor: IRsxExpressionGraphLayoutNode;
+  thread?: IRsxExpressionGraphLayoutNode;
+}
+
+interface IRsxExpressionGraphLayoutResult {
+  readonly nodes: readonly IRsxExpressionGraphLayoutNode[];
+  readonly edges: readonly {
+    readonly source: IRsxExpressionGraphLayoutNode;
+    readonly target: IRsxExpressionGraphLayoutNode;
+  }[];
+  readonly maxX: number;
+  readonly maxDepth: number;
+}
+
+interface IRsxExpressionGraphParsedNode {
+  readonly source: IRsxExpressionTreeExpression;
+  readonly expressionString: string;
+  readonly typeText: string;
+  readonly start: number;
+  readonly end: number;
+  readonly hidden: boolean;
+  readonly childExpressions: readonly IRsxExpressionGraphParsedNode[];
+}
 
 const standaloneServiceCache = new Map<string, IStandaloneServiceCacheEntry>();
 const moduleExpressionCache = new Map<string, IModuleExpressionCacheEntry>();
@@ -175,6 +286,7 @@ const documentSemanticTokenCache = new Map<
   string,
   IDocumentSemanticTokenCacheEntry
 >();
+let pendingHeaderSuggestTimer: ReturnType<typeof setTimeout> | null = null;
 const diagnosticsDebounceTimers = new Map<
   string,
   ReturnType<typeof setTimeout>
@@ -189,6 +301,9 @@ const moduleBackgroundWarmRequestIds = new Map<string, number>();
 let semanticTokensChangeEmitter: vscode.EventEmitter<void> | null = null;
 const MODULE_FOCUSED_ANALYSIS_EXPRESSION_THRESHOLD = 50;
 const MODULE_FOCUSED_ANALYSIS_TEXT_LENGTH_THRESHOLD = 20_000;
+const rsxExpressionTreePreviewParser = new JsEspreeExpressionParser(
+  new JsExpressionAstParser(),
+);
 
 type IDiagnosticsMode = 'auto' | 'focused' | 'full';
 
@@ -206,6 +321,14 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('rsx.expressions.refresh', () => {
       expressionsProvider.refresh();
     }),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'rsx.expressions.preview',
+      async (item?: IRsxExpressionTreeItem) => {
+        await openRsxExpressionGraphPreview(expressionsProvider, item);
+      },
+    ),
   );
   context.subscriptions.push(
     vscode.commands.registerCommand(
@@ -232,7 +355,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(
     vscode.languages.registerCompletionItemProvider(
-      RSX_LANGUAGE_ID,
+      RSX_DOCUMENT_SELECTOR,
       new RsxCompletionItemProvider(),
       '.',
       ...HEADER_COMPLETION_TRIGGER_CHARACTERS,
@@ -240,49 +363,49 @@ export function activate(context: vscode.ExtensionContext): void {
   );
   context.subscriptions.push(
     vscode.languages.registerHoverProvider(
-      RSX_LANGUAGE_ID,
+      RSX_DOCUMENT_SELECTOR,
       new RsxHoverProvider(),
     ),
   );
   context.subscriptions.push(
     vscode.languages.registerDefinitionProvider(
-      RSX_LANGUAGE_ID,
+      RSX_DOCUMENT_SELECTOR,
       new RsxDefinitionProvider(),
     ),
   );
   context.subscriptions.push(
     vscode.languages.registerTypeDefinitionProvider(
-      RSX_LANGUAGE_ID,
+      RSX_DOCUMENT_SELECTOR,
       new RsxTypeDefinitionProvider(),
     ),
   );
   context.subscriptions.push(
     vscode.languages.registerReferenceProvider(
-      RSX_LANGUAGE_ID,
+      RSX_DOCUMENT_SELECTOR,
       new RsxReferenceProvider(),
     ),
   );
   context.subscriptions.push(
     vscode.languages.registerImplementationProvider(
-      RSX_LANGUAGE_ID,
+      RSX_DOCUMENT_SELECTOR,
       new RsxImplementationProvider(),
     ),
   );
   context.subscriptions.push(
     vscode.languages.registerRenameProvider(
-      RSX_LANGUAGE_ID,
+      RSX_DOCUMENT_SELECTOR,
       new RsxRenameProvider(),
     ),
   );
   context.subscriptions.push(
     vscode.languages.registerDocumentSymbolProvider(
-      RSX_LANGUAGE_ID,
+      RSX_DOCUMENT_SELECTOR,
       new RsxDocumentSymbolProvider(),
     ),
   );
   context.subscriptions.push(
     vscode.languages.registerCodeActionsProvider(
-      RSX_LANGUAGE_ID,
+      RSX_DOCUMENT_SELECTOR,
       new RsxCodeActionProvider(),
       {
         providedCodeActionKinds: [vscode.CodeActionKind.QuickFix],
@@ -291,7 +414,7 @@ export function activate(context: vscode.ExtensionContext): void {
   );
   context.subscriptions.push(
     vscode.languages.registerSignatureHelpProvider(
-      RSX_LANGUAGE_ID,
+      RSX_DOCUMENT_SELECTOR,
       new RsxSignatureHelpProvider(),
       '(',
       ',',
@@ -305,20 +428,20 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(semanticTokensChangeEmitter);
   context.subscriptions.push(
     vscode.languages.registerDocumentSemanticTokensProvider(
-      RSX_LANGUAGE_ID,
+      RSX_DOCUMENT_SELECTOR,
       semanticTokensProvider,
       semanticTokensLegend,
     ),
   );
   context.subscriptions.push(
     vscode.languages.registerDocumentFormattingEditProvider(
-      RSX_LANGUAGE_ID,
+      RSX_DOCUMENT_SELECTOR,
       new RsxDocumentFormattingEditProvider(),
     ),
   );
   context.subscriptions.push(
     vscode.languages.registerDocumentRangeFormattingEditProvider(
-      RSX_LANGUAGE_ID,
+      RSX_DOCUMENT_SELECTOR,
       new RsxDocumentRangeFormattingEditProvider(),
     ),
   );
@@ -328,7 +451,7 @@ export function activate(context: vscode.ExtensionContext): void {
     mode: IDiagnosticsMode = 'auto',
     debounceMs = 150,
   ) => {
-    if (document.languageId !== RSX_LANGUAGE_ID) {
+    if (!isRsxDocument(document)) {
       return;
     }
 
@@ -352,7 +475,7 @@ export function activate(context: vscode.ExtensionContext): void {
           vscode.workspace.textDocuments.find(
             (candidate) => candidate.uri.toString() === key,
           ) ?? document;
-        if (currentDocument.languageId !== RSX_LANGUAGE_ID) {
+        if (!isRsxDocument(currentDocument)) {
           return;
         }
 
@@ -376,7 +499,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.workspace.onDidOpenTextDocument((document) => {
       invalidateRsxDocumentAnalysis(document);
       scheduleModuleExpressionPrewarm(document, 0);
-      refreshDiagnosticsForDocument(document, 'auto', 100);
+      refreshDiagnosticsForDocument(document, 'focused', 100);
     }),
   );
   context.subscriptions.push(
@@ -384,7 +507,8 @@ export function activate(context: vscode.ExtensionContext): void {
       invalidateRsxDocumentAnalysis(event.document, {
         fireSemanticTokensChanged: true,
       });
-      refreshDiagnosticsForDocument(event.document, 'auto', 180);
+      triggerRsxHeaderSuggestIfNeeded(event);
+      refreshDiagnosticsForDocument(event.document, 'focused', 180);
     }),
   );
   context.subscriptions.push(
@@ -413,7 +537,7 @@ export function activate(context: vscode.ExtensionContext): void {
   }
   context.subscriptions.push(
     vscode.workspace.onDidCloseTextDocument((document) => {
-      if (document.languageId === RSX_LANGUAGE_ID) {
+      if (isRsxDocument(document)) {
         const key = document.uri.toString();
         const timer = diagnosticsDebounceTimers.get(key);
         if (timer) {
@@ -442,18 +566,111 @@ export function activate(context: vscode.ExtensionContext): void {
 
   for (const document of vscode.workspace.textDocuments) {
     invalidateRsxDocumentAnalysis(document);
-    refreshDiagnosticsForDocument(document, 'auto', 250);
+    refreshDiagnosticsForDocument(document, 'focused', 250);
     scheduleModuleExpressionPrewarm(document, 0);
   }
 }
 
-export function deactivate(): void {}
+export function deactivate(): void {
+  if (pendingHeaderSuggestTimer) {
+    clearTimeout(pendingHeaderSuggestTimer);
+    pendingHeaderSuggestTimer = null;
+  }
+}
+
+function isRsxDocument(document: vscode.TextDocument): boolean {
+  return (
+    document.languageId === RSX_LANGUAGE_ID || isRsxDocumentUri(document.uri)
+  );
+}
+
+function isRsxDocumentUri(uri: vscode.Uri): boolean {
+  const pathText = 'path' in uri ? uri.path : uri.fsPath;
+  return pathText.toLowerCase().endsWith('.rsx');
+}
+
+function triggerRsxHeaderSuggestIfNeeded(
+  event: vscode.TextDocumentChangeEvent,
+): void {
+  if (!isRsxDocument(event.document)) {
+    return;
+  }
+
+  const activeEditor = vscode.window.activeTextEditor;
+  if (activeEditor?.document.uri.toString() !== event.document.uri.toString()) {
+    return;
+  }
+
+  const change = event.contentChanges.at(-1);
+  if (!change) {
+    return;
+  }
+
+  const typedHeaderSegment = getTypedHeaderSegment(change.text);
+  if (!typedHeaderSegment) {
+    return;
+  }
+  const position = event.document.positionAt(
+    change.rangeOffset + change.text.length,
+  );
+  const completionPlan = getModuleHeaderCompletionPlan(
+    event.document,
+    position,
+  );
+  if (!completionPlan || completionPlan.candidates.length === 0) {
+    return;
+  }
+
+  if (pendingHeaderSuggestTimer) {
+    clearTimeout(pendingHeaderSuggestTimer);
+  }
+
+  const documentUri = event.document.uri.toString();
+  const triggerSuggest = () => {
+    pendingHeaderSuggestTimer = null;
+    const currentEditor = vscode.window.activeTextEditor;
+    if (currentEditor?.document.uri.toString() !== documentUri) {
+      return;
+    }
+
+    const currentPosition = currentEditor.selection?.active ?? position;
+    const currentPlan = getModuleHeaderCompletionPlan(
+      currentEditor.document,
+      currentPosition,
+    );
+    if (!currentPlan || currentPlan.candidates.length === 0) {
+      return;
+    }
+
+    void vscode.commands.executeCommand('editor.action.triggerSuggest');
+  };
+  const retryDelays = change.text.includes('\n') ? [180, 420] : [180];
+  const triggerSuggestWithRetries = (remainingDelays: number[]) => {
+    triggerSuggest();
+    const nextDelay = remainingDelays.shift();
+    if (nextDelay !== undefined) {
+      pendingHeaderSuggestTimer = setTimeout(
+        () => triggerSuggestWithRetries(remainingDelays),
+        nextDelay,
+      );
+    }
+  };
+  pendingHeaderSuggestTimer = setTimeout(
+    () => triggerSuggestWithRetries([...retryDelays]),
+    60,
+  );
+}
+
+function getTypedHeaderSegment(text: string): string | null {
+  const lineText = text.split(/\r?\n/u).at(-1) ?? '';
+  return /^[A-Za-z_]+$/u.test(lineText) ? lineText : null;
+}
 
 function invalidateRsxDocumentAnalysis(
   document: vscode.TextDocument,
   options: { fireSemanticTokensChanged?: boolean } = {},
 ): void {
-  if (document.languageId !== RSX_LANGUAGE_ID) {
+  if (!isRsxDocument(document)) {
     return;
   }
 
@@ -479,9 +696,14 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
   public readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
   private files: IRsxExpressionTreeFile[] | null = null;
+  private readonly expressionsByKey = new Map<
+    string,
+    IRsxExpressionTreeExpression
+  >();
 
   public refresh(): void {
     this.files = null;
+    this.expressionsByKey.clear();
     this.onDidChangeTreeDataEmitter.fire();
   }
 
@@ -493,42 +715,100 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
         element.label,
         vscode.TreeItemCollapsibleState.Expanded,
       );
-      item.description = element.description;
+      item.description = formatExpressionCount(element.expressions.length);
       item.resourceUri = element.uri;
       item.contextValue = 'rsxExpressionFile';
       item.iconPath = new vscode.ThemeIcon('file-code');
-      item.tooltip = `${element.relativePath}\n${element.uri.fsPath}\n${formatExpressionCount(element.expressions.length)}`;
+      item.tooltip = `${element.label}\n${formatExpressionCount(element.expressions.length)}`;
       return item;
     }
 
+    if (element.kind === 'expression') {
+      const item = new vscode.TreeItem(
+        element.exportName,
+        element.dependencies.length > 0
+          ? vscode.TreeItemCollapsibleState.Collapsed
+          : vscode.TreeItemCollapsibleState.None,
+      );
+      item.description = [
+        element.expression.returnTypeText,
+        element.dependencies.length > 0
+          ? formatDependencyCount(element.dependencies.length)
+          : undefined,
+      ]
+        .filter(Boolean)
+        .join(' · ');
+      item.resourceUri = element.uri;
+      item.contextValue = 'rsxExpression';
+      item.iconPath = new vscode.ThemeIcon('symbol-function');
+      item.command = {
+        command: 'rsx.expressions.open',
+        title: 'Open RS-X Expression',
+        arguments: [element],
+      };
+      item.tooltip = new vscode.MarkdownString(
+        [
+          `**${element.exportName}**`,
+          element.expression.returnTypeText
+            ? `return: \`${element.expression.returnTypeText}\``
+            : '',
+          element.expression.modelTypeText
+            ? `model: \`${element.expression.modelTypeText}\``
+            : '',
+          element.dependencies.length > 0
+            ? `dependencies: ${element.dependencies
+                .map((dependency) => dependency.targetExportName)
+                .join(', ')}`
+            : '',
+        ]
+          .filter(Boolean)
+          .join('\n'),
+      );
+      return item;
+    }
+
+    const target = this.expressionsByKey.get(element.edge.targetKey);
+    const isCycle = element.pathKeys.includes(element.edge.targetKey);
     const item = new vscode.TreeItem(
-      element.exportName,
-      vscode.TreeItemCollapsibleState.None,
+      element.edge.targetExportName,
+      target && target.dependencies.length > 0 && !isCycle
+        ? vscode.TreeItemCollapsibleState.Collapsed
+        : vscode.TreeItemCollapsibleState.None,
     );
-    item.description = element.expression.returnTypeText ?? undefined;
-    item.resourceUri = element.uri;
-    item.contextValue = 'rsxExpression';
-    item.iconPath = new vscode.ThemeIcon('symbol-function');
+    item.description = [
+      element.edge.matchKind === 'modelFieldExpressionType'
+        ? `via ${element.edge.identifier}`
+        : undefined,
+      isCycle ? 'cycle' : undefined,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+    item.resourceUri = element.edge.targetUri;
+    item.contextValue = 'rsxExpressionDependency';
+    item.iconPath = new vscode.ThemeIcon('references');
     item.command = {
       command: 'rsx.expressions.open',
       title: 'Open RS-X Expression',
-      arguments: [element],
+      arguments: [
+        {
+          kind: 'expression',
+          key: element.edge.targetKey,
+          uri: element.edge.targetUri,
+          relativePath: element.edge.targetRelativePath,
+          exportName: element.edge.targetExportName,
+          expression: target?.expression ?? element.source.expression,
+          start: element.edge.targetStart,
+          end: element.edge.targetEnd,
+          dependencies: target?.dependencies ?? [],
+        } satisfies IRsxExpressionTreeExpression,
+      ],
     };
     item.tooltip = new vscode.MarkdownString(
       [
-        `**${element.exportName}**`,
+        `**${element.source.exportName} → ${element.edge.targetExportName}**`,
         '',
-        `\`${element.uri.fsPath}\``,
-        '',
-        element.expression.returnTypeText
-          ? `return: \`${element.expression.returnTypeText}\``
-          : '',
-        element.expression.modelTypeText
-          ? `model: \`${element.expression.modelTypeText}\``
-          : '',
-      ]
-        .filter(Boolean)
-        .join('\n'),
+        `via \`${element.edge.identifier}\``,
+      ].join('\n'),
     );
     return item;
   }
@@ -540,11 +820,43 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
       return [...element.expressions];
     }
 
+    if (element?.kind === 'expression') {
+      return element.dependencies.map((edge) => ({
+        kind: 'dependency',
+        source: element,
+        edge,
+        pathKeys: [element.key],
+      }));
+    }
+
+    if (element?.kind === 'dependency') {
+      if (element.pathKeys.includes(element.edge.targetKey)) {
+        return [];
+      }
+      const target = this.expressionsByKey.get(element.edge.targetKey);
+      if (!target) {
+        return [];
+      }
+      return target.dependencies.map((edge) => ({
+        kind: 'dependency',
+        source: target,
+        edge,
+        pathKeys: [...element.pathKeys, element.edge.targetKey],
+      }));
+    }
+
     if (element) {
       return [];
     }
 
     return this.getFiles();
+  }
+
+  public async getPreviewData(
+    item?: IRsxExpressionTreeItem,
+  ): Promise<IRsxExpressionGraphPreviewData> {
+    const files = await this.getFiles();
+    return createRsxExpressionGraphPreviewData(files, item);
   }
 
   private async getFiles(): Promise<IRsxExpressionTreeFile[]> {
@@ -560,14 +872,870 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
       uris.map((uri) => readRsxExpressionTreeFile(uri)),
     );
 
-    this.files = files
-      .filter((file): file is IRsxExpressionTreeFile => file !== null)
-      .sort((left, right) =>
-        left.relativePath.localeCompare(right.relativePath),
-      );
+    this.files = attachRsxExpressionDependencies(
+      files.filter((file): file is IRsxExpressionTreeFile => file !== null),
+    ).sort((left, right) =>
+      left.relativePath.localeCompare(right.relativePath),
+    );
+    this.expressionsByKey.clear();
+    for (const file of this.files) {
+      for (const expression of file.expressions) {
+        this.expressionsByKey.set(expression.key, expression);
+      }
+    }
 
     return this.files;
   }
+}
+
+async function openRsxExpressionGraphPreview(
+  provider: RsxExpressionsTreeDataProvider,
+  item?: IRsxExpressionTreeItem,
+): Promise<void> {
+  const data = await provider.getPreviewData(item);
+  const panel = vscode.window.createWebviewPanel(
+    'rsx.expressionGraphPreview',
+    data.title,
+    vscode.ViewColumn.Beside,
+    {
+      enableScripts: true,
+      retainContextWhenHidden: true,
+    },
+  );
+
+  panel.webview.html = getRsxExpressionGraphPreviewHtml(data);
+  const panelDisposables: vscode.Disposable[] = [];
+  panel.onDidDispose(() => {
+    for (const disposable of panelDisposables) {
+      disposable.dispose();
+    }
+  });
+  panel.webview.onDidReceiveMessage(
+    async (message: {
+      type?: string;
+      uri?: string;
+      start?: number;
+      end?: number;
+    }) => {
+      if (
+        message?.type !== 'openExpression' ||
+        typeof message.uri !== 'string' ||
+        typeof message.start !== 'number' ||
+        typeof message.end !== 'number'
+      ) {
+        return;
+      }
+
+      await openRsxExpressionLocation({
+        uri: vscode.Uri.parse(message.uri),
+        start: message.start,
+        end: message.end,
+      });
+    },
+    undefined,
+    panelDisposables,
+  );
+}
+
+function createRsxExpressionGraphPreviewData(
+  files: readonly IRsxExpressionTreeFile[],
+  item?: IRsxExpressionTreeItem,
+): IRsxExpressionGraphPreviewData {
+  const expressions = files.flatMap((file) => file.expressions);
+  const expressionByKey = new Map(
+    expressions.map((expression) => [expression.key, expression]),
+  );
+  const incomingKeys = new Set<string>();
+  for (const expression of expressions) {
+    for (const dependency of expression.dependencies) {
+      incomingKeys.add(dependency.targetKey);
+    }
+  }
+
+  const roots = getRsxExpressionGraphPreviewRoots({
+    files,
+    item,
+    expressionByKey,
+    incomingKeys,
+  });
+  const layout = computeRsxExpressionGraphTidyLayout(
+    roots.map((root) => createRsxExpressionGraphParsedRoot(root)),
+  );
+
+  const nodes = layout.nodes
+    .filter((node) => node.expression)
+    .map((node): IRsxExpressionGraphPreviewNode => {
+      const expression = node.expression!;
+      return {
+        id: node.id,
+        key: `${expression.source.key}#${node.id}`,
+        exportName: expression.source.exportName,
+        uri: expression.source.uri.toString(),
+        expressionText: expression.expressionString,
+        modelTypeText: expression.source.expression.modelTypeText,
+        returnTypeText: expression.typeText,
+        start: expression.start,
+        end: expression.end,
+        x: node.x,
+        y: Math.max(0, node.y - 1),
+      };
+    });
+
+  return {
+    title: getRsxExpressionGraphPreviewTitle(item, roots),
+    nodes,
+    edges: layout.edges
+      .filter((edge) => edge.source.expression && edge.target.expression)
+      .map((edge) => ({
+        sourceId: edge.source.id,
+        targetId: edge.target.id,
+      })),
+    nodeWidth: 260,
+    nodeHeight: 160,
+    horizontalGap: 32,
+    verticalGap: 56,
+    padding: 32,
+    maxX: layout.maxX,
+    maxDepth: Math.max(0, layout.maxDepth - 1),
+  };
+}
+
+function createRsxExpressionGraphParsedRoot(
+  expression: IRsxExpressionTreeExpression,
+): IRsxExpressionGraphParsedNode {
+  try {
+    const tree = rsxExpressionTreePreviewParser.parse(
+      expression.expression.expression,
+    );
+    const rootSpan = findRsxExpressionGraphNodeSpan({
+      expressionText: expression.expression.expression,
+      expressionStart: expression.expression.expressionStart,
+      searchStart: expression.expression.expressionStart,
+      searchEnd: expression.expression.expressionEnd,
+      nodeText: tree.expressionString,
+    }) ?? {
+      start: expression.expression.expressionStart,
+      end: expression.expression.expressionEnd,
+    };
+    return convertRsxParsedExpressionTree(tree, expression, rootSpan);
+  } catch {
+    return {
+      source: expression,
+      expressionString: expression.expression.expression,
+      typeText: expression.expression.returnTypeText ?? 'expression',
+      start: expression.expression.expressionStart,
+      end: expression.expression.expressionEnd,
+      hidden: false,
+      childExpressions: [],
+    };
+  }
+}
+
+function convertRsxParsedExpressionTree(
+  tree: {
+    readonly expressionString: string;
+    readonly type: string;
+    readonly hidden?: boolean;
+    readonly childExpressions?: readonly unknown[];
+  },
+  source: IRsxExpressionTreeExpression,
+  span: { readonly start: number; readonly end: number },
+): IRsxExpressionGraphParsedNode {
+  let childSearchStart = span.start;
+  const childExpressions = (tree.childExpressions ?? []).map((child) => {
+    const childTree = child as {
+      readonly expressionString: string;
+      readonly type: string;
+      readonly hidden?: boolean;
+      readonly childExpressions?: readonly unknown[];
+    };
+    const childSpan =
+      findRsxExpressionGraphNodeSpan({
+        expressionText: source.expression.expression,
+        expressionStart: source.expression.expressionStart,
+        searchStart: childSearchStart,
+        searchEnd: span.end,
+        nodeText: childTree.expressionString,
+      }) ??
+      findRsxExpressionGraphNodeSpan({
+        expressionText: source.expression.expression,
+        expressionStart: source.expression.expressionStart,
+        searchStart: span.start,
+        searchEnd: span.end,
+        nodeText: childTree.expressionString,
+      }) ??
+      span;
+    childSearchStart = Math.max(childSearchStart, childSpan.end);
+    return convertRsxParsedExpressionTree(childTree, source, childSpan);
+  });
+
+  return {
+    source,
+    expressionString: tree.expressionString,
+    typeText: tree.type,
+    start: span.start,
+    end: span.end,
+    hidden: tree.hidden === true,
+    childExpressions,
+  };
+}
+
+function findRsxExpressionGraphNodeSpan(args: {
+  readonly expressionText: string;
+  readonly expressionStart: number;
+  readonly searchStart: number;
+  readonly searchEnd: number;
+  readonly nodeText: string;
+}): { start: number; end: number } | null {
+  if (!args.nodeText) {
+    return null;
+  }
+  const relativeSearchStart = Math.max(
+    0,
+    args.searchStart - args.expressionStart,
+  );
+  const relativeSearchEnd = Math.max(
+    relativeSearchStart,
+    args.searchEnd - args.expressionStart,
+  );
+  const relativeIndex = args.expressionText.indexOf(
+    args.nodeText,
+    relativeSearchStart,
+  );
+  if (
+    relativeIndex < 0 ||
+    relativeIndex + args.nodeText.length > relativeSearchEnd
+  ) {
+    return null;
+  }
+  return {
+    start: args.expressionStart + relativeIndex,
+    end: args.expressionStart + relativeIndex + args.nodeText.length,
+  };
+}
+
+function computeRsxExpressionGraphTidyLayout(
+  roots: readonly IRsxExpressionGraphParsedNode[],
+): IRsxExpressionGraphLayoutResult {
+  let sequence = 0;
+  const nodes: IRsxExpressionGraphLayoutNode[] = [];
+  const edges: IRsxExpressionGraphLayoutResult['edges'] = [];
+
+  const makeNode = (nodeArgs: {
+    expression: IRsxExpressionGraphParsedNode | null;
+    parent?: IRsxExpressionGraphLayoutNode;
+    depth: number;
+    number: number;
+  }): IRsxExpressionGraphLayoutNode => {
+    sequence++;
+    const node: IRsxExpressionGraphLayoutNode = {
+      id: `n${sequence}`,
+      expression: nodeArgs.expression,
+      parent: nodeArgs.parent,
+      children: [],
+      depth: nodeArgs.depth,
+      number: nodeArgs.number,
+      x: 0,
+      y: nodeArgs.depth,
+      prelim: 0,
+      mod: 0,
+      change: 0,
+      shift: 0,
+      ancestor: undefined as unknown as IRsxExpressionGraphLayoutNode,
+      thread: undefined,
+    };
+    node.ancestor = node;
+    nodes.push(node);
+    return node;
+  };
+
+  const root = makeNode({
+    expression: null,
+    depth: 0,
+    number: 1,
+  });
+
+  const addVisibleChildren = (
+    parent: IRsxExpressionGraphLayoutNode,
+    expressions: readonly IRsxExpressionGraphParsedNode[],
+    depth: number,
+  ): void => {
+    const visibleExpressions = expressions.flatMap((expression) =>
+      expression.hidden ? expression.childExpressions : [expression],
+    );
+
+    parent.children = visibleExpressions.map((expression, index) => {
+      const child = makeNode({
+        expression,
+        parent,
+        depth,
+        number: index + 1,
+      });
+      if (parent.expression) {
+        edges.push({ source: parent, target: child });
+      }
+      addVisibleChildren(child, expression.childExpressions, depth + 1);
+      return child;
+    });
+  };
+
+  addVisibleChildren(root, roots, 1);
+  return tidyRsxExpressionGraphLayout(root, nodes, edges);
+}
+
+function tidyRsxExpressionGraphLayout(
+  root: IRsxExpressionGraphLayoutNode,
+  nodes: readonly IRsxExpressionGraphLayoutNode[],
+  edges: IRsxExpressionGraphLayoutResult['edges'],
+): IRsxExpressionGraphLayoutResult {
+  const distance = 1;
+  firstWalkRsxExpressionGraph(root, distance);
+
+  const minX = { value: Number.POSITIVE_INFINITY };
+  secondWalkRsxExpressionGraph(root, 0, minX);
+
+  const shift = -minX.value;
+  let maxX = 0;
+  let maxDepth = 0;
+
+  const shiftAll = (node: IRsxExpressionGraphLayoutNode): void => {
+    node.x += shift;
+    maxX = Math.max(maxX, node.x);
+    maxDepth = Math.max(maxDepth, node.depth);
+    for (const child of node.children) {
+      shiftAll(child);
+    }
+  };
+  shiftAll(root);
+
+  return {
+    nodes,
+    edges,
+    maxX,
+    maxDepth,
+  };
+}
+
+function firstWalkRsxExpressionGraph(
+  node: IRsxExpressionGraphLayoutNode,
+  distance: number,
+): void {
+  if (node.children.length === 0) {
+    const leftSibling = getRsxGraphLeftSibling(node);
+    node.prelim = leftSibling ? leftSibling.prelim + distance : 0;
+    return;
+  }
+
+  let defaultAncestor = node.children[0];
+  for (const child of node.children) {
+    firstWalkRsxExpressionGraph(child, distance);
+    defaultAncestor = apportionRsxExpressionGraph(
+      child,
+      defaultAncestor,
+      distance,
+    );
+  }
+
+  executeRsxExpressionGraphShifts(node);
+
+  const left = node.children[0];
+  const right = node.children[node.children.length - 1];
+  const midpoint = (left.prelim + right.prelim) / 2;
+  const leftSibling = getRsxGraphLeftSibling(node);
+
+  if (leftSibling) {
+    node.prelim = leftSibling.prelim + distance;
+    node.mod = node.prelim - midpoint;
+  } else {
+    node.prelim = midpoint;
+  }
+}
+
+function secondWalkRsxExpressionGraph(
+  node: IRsxExpressionGraphLayoutNode,
+  modifier: number,
+  minX: { value: number },
+): void {
+  node.x = node.prelim + modifier;
+  node.y = node.depth;
+  minX.value = Math.min(minX.value, node.x);
+
+  for (const child of node.children) {
+    secondWalkRsxExpressionGraph(child, modifier + node.mod, minX);
+  }
+}
+
+function apportionRsxExpressionGraph(
+  node: IRsxExpressionGraphLayoutNode,
+  defaultAncestor: IRsxExpressionGraphLayoutNode,
+  distance: number,
+): IRsxExpressionGraphLayoutNode {
+  const leftSibling = getRsxGraphLeftSibling(node);
+  if (!leftSibling) {
+    return defaultAncestor;
+  }
+
+  let vir = node;
+  let vor = node;
+  let vil = leftSibling;
+  let vol = getRsxGraphLeftMostSibling(node)!;
+
+  let sir = vir.mod;
+  let sor = vor.mod;
+  let sil = vil.mod;
+  let sol = vol.mod;
+
+  while (getRsxGraphNextRight(vil) && getRsxGraphNextLeft(vir)) {
+    vil = getRsxGraphNextRight(vil)!;
+    vir = getRsxGraphNextLeft(vir)!;
+    vol = getRsxGraphNextLeft(vol)!;
+    vor = getRsxGraphNextRight(vor)!;
+
+    vor.ancestor = node;
+
+    const shift = vil.prelim + sil - (vir.prelim + sir) + distance;
+    if (shift > 0) {
+      const ancestor = getRsxGraphAncestor(vil, node, defaultAncestor);
+      moveRsxExpressionGraphSubtree(ancestor, node, shift);
+      sir += shift;
+      sor += shift;
+    }
+
+    sil += vil.mod;
+    sir += vir.mod;
+    sol += vol.mod;
+    sor += vor.mod;
+  }
+
+  if (getRsxGraphNextRight(vil) && !getRsxGraphNextRight(vor)) {
+    vor.thread = getRsxGraphNextRight(vil);
+    vor.mod += sil - sor;
+  } else if (getRsxGraphNextLeft(vir) && !getRsxGraphNextLeft(vol)) {
+    vol.thread = getRsxGraphNextLeft(vir);
+    vol.mod += sir - sol;
+    defaultAncestor = node;
+  }
+
+  return defaultAncestor;
+}
+
+function executeRsxExpressionGraphShifts(
+  node: IRsxExpressionGraphLayoutNode,
+): void {
+  let shift = 0;
+  let change = 0;
+
+  for (let index = node.children.length - 1; index >= 0; index--) {
+    const child = node.children[index];
+    child.prelim += shift;
+    child.mod += shift;
+    change += child.change;
+    shift += child.shift + change;
+  }
+}
+
+function moveRsxExpressionGraphSubtree(
+  left: IRsxExpressionGraphLayoutNode,
+  right: IRsxExpressionGraphLayoutNode,
+  shift: number,
+): void {
+  const subtrees = right.number - left.number;
+  if (subtrees <= 0) {
+    return;
+  }
+
+  right.change -= shift / subtrees;
+  right.shift += shift;
+  left.change += shift / subtrees;
+
+  right.prelim += shift;
+  right.mod += shift;
+}
+
+function getRsxGraphAncestor(
+  left: IRsxExpressionGraphLayoutNode,
+  node: IRsxExpressionGraphLayoutNode,
+  defaultAncestor: IRsxExpressionGraphLayoutNode,
+): IRsxExpressionGraphLayoutNode {
+  return left.ancestor.parent === node.parent ? left.ancestor : defaultAncestor;
+}
+
+function getRsxGraphLeftSibling(
+  node: IRsxExpressionGraphLayoutNode,
+): IRsxExpressionGraphLayoutNode | undefined {
+  if (!node.parent || node.number <= 1) {
+    return undefined;
+  }
+  return node.parent.children[node.number - 2];
+}
+
+function getRsxGraphLeftMostSibling(
+  node: IRsxExpressionGraphLayoutNode,
+): IRsxExpressionGraphLayoutNode | undefined {
+  return node.parent?.children[0];
+}
+
+function getRsxGraphNextLeft(
+  node: IRsxExpressionGraphLayoutNode,
+): IRsxExpressionGraphLayoutNode | undefined {
+  return node.children[0] ?? node.thread;
+}
+
+function getRsxGraphNextRight(
+  node: IRsxExpressionGraphLayoutNode,
+): IRsxExpressionGraphLayoutNode | undefined {
+  return node.children[node.children.length - 1] ?? node.thread;
+}
+
+function getRsxExpressionGraphPreviewRoots(args: {
+  files: readonly IRsxExpressionTreeFile[];
+  item?: IRsxExpressionTreeItem;
+  expressionByKey: ReadonlyMap<string, IRsxExpressionTreeExpression>;
+  incomingKeys: ReadonlySet<string>;
+}): IRsxExpressionTreeExpression[] {
+  const { files, item, expressionByKey, incomingKeys } = args;
+
+  if (item?.kind === 'expression') {
+    return [expressionByKey.get(item.key) ?? item];
+  }
+
+  if (item?.kind === 'dependency') {
+    const target = expressionByKey.get(item.edge.targetKey);
+    return target ? [target] : [];
+  }
+
+  if (item?.kind === 'file') {
+    return item.expressions
+      .map((expression) => expressionByKey.get(expression.key) ?? expression)
+      .sort(compareRsxExpressionTreeExpression);
+  }
+
+  const allExpressions = files
+    .flatMap((file) => file.expressions)
+    .sort(compareRsxExpressionTreeExpression);
+  const sourceExpressions = allExpressions.filter(
+    (expression) => !incomingKeys.has(expression.key),
+  );
+
+  return sourceExpressions.length > 0 ? sourceExpressions : allExpressions;
+}
+
+function getRsxExpressionGraphPreviewTitle(
+  item: IRsxExpressionTreeItem | undefined,
+  roots: readonly IRsxExpressionTreeExpression[],
+): string {
+  if (item?.kind === 'expression') {
+    return `RS-X Tree: ${item.exportName}`;
+  }
+  if (item?.kind === 'dependency') {
+    return `RS-X Tree: ${item.edge.targetExportName}`;
+  }
+  if (item?.kind === 'file') {
+    return `RS-X Tree: ${item.label}`;
+  }
+  if (roots.length === 1) {
+    return `RS-X Tree: ${roots[0].exportName}`;
+  }
+  return 'RS-X Expression Tree';
+}
+
+function compareRsxExpressionTreeExpression(
+  left: IRsxExpressionTreeExpression,
+  right: IRsxExpressionTreeExpression,
+): number {
+  return (
+    left.relativePath.localeCompare(right.relativePath) ||
+    left.exportName.localeCompare(right.exportName)
+  );
+}
+
+function getRsxExpressionGraphPreviewHtml(
+  data: IRsxExpressionGraphPreviewData,
+): string {
+  const nonce = createWebviewNonce();
+  const encodedData = escapeJsonForHtml(JSON.stringify(data));
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(data.title)}</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --rsx-bg: var(--vscode-editor-background);
+      --rsx-fg: var(--vscode-editor-foreground);
+      --rsx-muted: var(--vscode-descriptionForeground);
+      --rsx-border: var(--vscode-panel-border);
+      --rsx-node-bg: var(--vscode-sideBar-background);
+      --rsx-node-hover: var(--vscode-list-hoverBackground);
+      --rsx-focus: var(--vscode-focusBorder);
+      --rsx-accent: var(--vscode-charts-blue);
+      --rsx-accent-2: var(--vscode-charts-purple);
+      --rsx-badge-bg: var(--vscode-badge-background);
+      --rsx-badge-fg: var(--vscode-badge-foreground);
+      --rsx-code-bg: var(--vscode-textCodeBlock-background);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--rsx-bg);
+      color: var(--rsx-fg);
+      font-family: var(--vscode-font-family);
+      font-size: var(--vscode-font-size);
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 44px;
+      padding: 8px 12px;
+      background: var(--vscode-editorGroupHeader-tabsBackground, var(--rsx-bg));
+      border-bottom: 1px solid var(--rsx-border);
+    }
+
+    .title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .summary {
+      flex: 0 0 auto;
+      color: var(--rsx-muted);
+      font-size: 12px;
+    }
+
+    .viewport {
+      position: relative;
+      overflow: auto;
+      width: 100vw;
+      height: calc(100vh - 45px);
+    }
+
+    .canvas {
+      position: relative;
+      min-width: 100%;
+      min-height: 100%;
+    }
+
+    svg.edges {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    .edge {
+      fill: none;
+      stroke: color-mix(in srgb, var(--rsx-accent) 74%, var(--rsx-muted));
+      stroke-width: 2;
+      opacity: 0.75;
+    }
+
+    .node {
+      position: absolute;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 8px;
+      padding: 0;
+      overflow: hidden;
+      background: color-mix(in srgb, var(--rsx-node-bg) 92%, var(--rsx-bg));
+      border: 1px solid color-mix(in srgb, var(--rsx-border) 78%, var(--rsx-accent));
+      border-radius: 8px;
+      color: var(--rsx-fg);
+      cursor: pointer;
+      outline: none;
+      box-shadow: 0 10px 28px rgb(0 0 0 / 0.18);
+    }
+
+    .node:hover {
+      background: var(--rsx-node-hover);
+      border-color: var(--rsx-focus);
+    }
+
+    .node:focus-visible {
+      border-color: var(--rsx-focus);
+      box-shadow: 0 0 0 1px var(--rsx-focus);
+    }
+
+    .nodeHeader {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      min-width: 0;
+      padding: 10px 11px 0;
+    }
+
+    .nodeType {
+      flex: 0 0 auto;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--rsx-accent-2);
+      font-size: 11px;
+    }
+
+    .nodeExpression {
+      overflow: hidden;
+      margin: 0 10px 10px;
+      border-radius: 6px;
+      padding: 8px;
+      background: var(--rsx-code-bg);
+      color: var(--rsx-fg);
+      font-family: var(--vscode-editor-font-family, monospace);
+      font-size: var(--vscode-editor-font-size, 12px);
+      line-height: 1.35;
+      white-space: pre-wrap;
+    }
+
+    .empty {
+      padding: 24px;
+      color: var(--rsx-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div class="title">${escapeHtml(data.title)}</div>
+    <div class="summary">${data.nodes.length} nodes · ${data.edges.length} edges</div>
+  </div>
+  <div class="viewport">
+    <div class="canvas" id="canvas">
+      <svg class="edges" id="edges" aria-hidden="true"></svg>
+      <div id="nodes"></div>
+    </div>
+  </div>
+  <script nonce="${nonce}">
+    const vscode = acquireVsCodeApi();
+    const graph = ${encodedData};
+    const canvas = document.getElementById('canvas');
+    const edgesSvg = document.getElementById('edges');
+    const nodesHost = document.getElementById('nodes');
+    const nodeById = new Map(graph.nodes.map((node) => [node.id, node]));
+    const unitX = graph.nodeWidth + graph.horizontalGap;
+    const unitY = graph.nodeHeight + graph.verticalGap;
+    const treeWidth = (graph.maxX + 1) * unitX + graph.horizontalGap;
+    const treeHeight = (graph.maxDepth + 1) * unitY + graph.verticalGap;
+    const width = graph.padding * 2 + treeWidth;
+    const height = graph.padding * 2 + treeHeight;
+
+    canvas.style.width = Math.max(width, window.innerWidth) + 'px';
+    canvas.style.height = Math.max(height, window.innerHeight - 45) + 'px';
+    edgesSvg.setAttribute('width', String(Math.max(width, window.innerWidth)));
+    edgesSvg.setAttribute('height', String(Math.max(height, window.innerHeight - 45)));
+    edgesSvg.setAttribute('viewBox', '0 0 ' + Math.max(width, window.innerWidth) + ' ' + Math.max(height, window.innerHeight - 45));
+
+    function positionFor(node) {
+      return {
+        x: graph.padding + node.x * unitX + graph.horizontalGap,
+        y: graph.padding + node.y * unitY + graph.verticalGap,
+      };
+    }
+
+    function esc(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    if (graph.nodes.length === 0) {
+      nodesHost.innerHTML = '<div class="empty">No RS-X expressions found.</div>';
+    }
+
+    for (const edge of graph.edges) {
+      const source = nodeById.get(edge.sourceId);
+      const target = nodeById.get(edge.targetId);
+      if (!source || !target) {
+        continue;
+      }
+      const sourcePos = positionFor(source);
+      const targetPos = positionFor(target);
+      const x1 = sourcePos.x + graph.nodeWidth / 2;
+      const y1 = sourcePos.y + graph.nodeHeight;
+      const x2 = targetPos.x + graph.nodeWidth / 2;
+      const y2 = targetPos.y;
+      const midY = (y1 + y2) / 2;
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('class', 'edge');
+      path.setAttribute('d', 'M ' + x1 + ' ' + y1 + ' C ' + x1 + ' ' + midY + ', ' + x2 + ' ' + midY + ', ' + x2 + ' ' + y2);
+      edgesSvg.appendChild(path);
+
+    }
+
+    for (const node of graph.nodes) {
+      const pos = positionFor(node);
+      const element = document.createElement('button');
+      element.type = 'button';
+      element.className = 'node';
+      element.style.width = graph.nodeWidth + 'px';
+      element.style.height = graph.nodeHeight + 'px';
+      element.style.left = pos.x + 'px';
+      element.style.top = pos.y + 'px';
+      element.title = node.expressionText;
+      element.innerHTML = [
+        '<div class="nodeHeader"><div class="nodeType" title="' + esc(node.returnTypeText || 'RS-X') + '">' + esc(node.returnTypeText || 'RS-X') + '</div></div>',
+        '<pre class="nodeExpression">' + esc(node.expressionText) + '</pre>',
+      ].join('');
+      element.addEventListener('click', () => {
+        vscode.postMessage({
+          type: 'openExpression',
+          uri: node.uri,
+          start: node.start,
+          end: node.end,
+        });
+      });
+      nodesHost.appendChild(element);
+    }
+  </script>
+</body>
+</html>`;
+}
+
+function createWebviewNonce(): string {
+  const alphabet =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let text = '';
+  for (let i = 0; i < 32; i++) {
+    text += alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+  }
+  return text;
+}
+
+function escapeJsonForHtml(json: string): string {
+  return json
+    .replace(/</gu, '\\u003c')
+    .replace(/>/gu, '\\u003e')
+    .replace(/&/gu, '\\u0026')
+    .replace(/\u2028/gu, '\\u2028')
+    .replace(/\u2029/gu, '\\u2029');
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/gu, '&amp;')
+    .replace(/</gu, '&lt;')
+    .replace(/>/gu, '&gt;')
+    .replace(/"/gu, '&quot;')
+    .replace(/'/gu, '&#39;');
 }
 
 async function readRsxExpressionTreeFile(
@@ -588,6 +1756,7 @@ async function readRsxExpressionTreeFile(
       fileName: uri.fsPath,
       expressions: parsed.expressions,
     });
+    const relativePath = vscode.workspace.asRelativePath(uri, false);
     const expressions = expressionExports.map(
       (entry): IRsxExpressionTreeExpression => {
         const start =
@@ -603,16 +1772,18 @@ async function readRsxExpressionTreeFile(
               );
         return {
           kind: 'expression',
+          key: createRsxExpressionTreeKey(uri, entry.exportName),
           uri,
+          relativePath,
           exportName: entry.exportName,
           expression: entry.expression,
           start,
           end,
+          dependencies: [],
         };
       },
     );
 
-    const relativePath = vscode.workspace.asRelativePath(uri, false);
     const directoryName = path.dirname(relativePath);
 
     return {
@@ -631,17 +1802,745 @@ async function readRsxExpressionTreeFile(
   }
 }
 
+function attachRsxExpressionDependencies(
+  files: readonly IRsxExpressionTreeFile[],
+): IRsxExpressionTreeFile[] {
+  const exactExportIndex = new Map<string, IRsxExpressionTreeExpression[]>();
+  for (const expression of files.flatMap((file) => file.expressions)) {
+    addRsxExpressionIndexEntry(
+      exactExportIndex,
+      expression.exportName,
+      expression,
+    );
+  }
+
+  return files.map((file) => ({
+    ...file,
+    expressions: file.expressions.map((expression) => ({
+      ...expression,
+      dependencies: getRsxExpressionDependencies({
+        expression,
+        exactExportIndex,
+      }),
+    })),
+  }));
+}
+
+function getRsxExpressionDependencies(args: {
+  expression: IRsxExpressionTreeExpression;
+  exactExportIndex: ReadonlyMap<
+    string,
+    readonly IRsxExpressionTreeExpression[]
+  >;
+}): IRsxExpressionDependencyEdge[] {
+  const dependencies: IRsxExpressionDependencyEdge[] = [];
+  const seenTargets = new Set<string>();
+  const identifiers = getFreeIdentifiersInRsxExpression(
+    args.expression.expression.expression,
+  );
+  const expressionReferenceModelFieldTargets =
+    getExpressionReferenceModelFieldTargets(
+      args.expression.expression.modelTypeText,
+      args.expression.uri.fsPath,
+    );
+
+  for (const identifier of identifiers) {
+    const exactTargets = getNonSelfExpressionTargets(
+      args.exactExportIndex.get(identifier),
+      args.expression,
+    );
+    const targets =
+      exactTargets.length > 0
+        ? exactTargets.map((target) => ({
+            target,
+            matchKind: 'exportName' as const,
+          }))
+        : getNonSelfExpressionTargets(
+            expressionReferenceModelFieldTargets
+              .get(identifier)
+              ?.flatMap(
+                (targetExportName) =>
+                  args.exactExportIndex.get(targetExportName) ?? [],
+              ),
+            args.expression,
+          ).map((target) => ({
+            target,
+            matchKind: 'modelFieldExpressionType' as const,
+          }));
+
+    for (const { target, matchKind } of targets) {
+      if (seenTargets.has(target.key)) {
+        continue;
+      }
+      seenTargets.add(target.key);
+      dependencies.push({
+        targetKey: target.key,
+        targetUri: target.uri,
+        targetRelativePath: target.relativePath,
+        targetExportName: target.exportName,
+        targetStart: target.start,
+        targetEnd: target.end,
+        identifier,
+        matchKind,
+      });
+    }
+  }
+
+  return dependencies;
+}
+
+function getExpressionReferenceModelFieldTargets(
+  modelTypeText: string | undefined,
+  containingFile: string,
+): ReadonlyMap<string, readonly string[]> {
+  const fieldTargets = new Map<string, string[]>();
+  if (!modelTypeText) {
+    return fieldTargets;
+  }
+
+  const sourceFile = ts.createSourceFile(
+    '__rsx_dependency_model.ts',
+    `type __RsxDependencyModel = ${modelTypeText};`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const modelAlias = sourceFile.statements.find(
+    (statement): statement is ts.TypeAliasDeclaration =>
+      ts.isTypeAliasDeclaration(statement) &&
+      statement.name.text === '__RsxDependencyModel',
+  );
+  if (!modelAlias) {
+    return fieldTargets;
+  }
+
+  collectExpressionReferenceModelFieldTargets(
+    modelAlias.type,
+    sourceFile,
+    containingFile,
+    fieldTargets,
+    new Set<string>(),
+    getImportedIdentifierExportNameMap(sourceFile),
+  );
+  return fieldTargets;
+}
+
+function collectExpressionReferenceModelFieldTargets(
+  type: ts.TypeNode,
+  sourceFile: ts.SourceFile,
+  containingFile: string,
+  fieldTargets: Map<string, string[]>,
+  seenTypeReferences: Set<string>,
+  importedIdentifierExportNames: ReadonlyMap<string, string>,
+): void {
+  if (ts.isParenthesizedTypeNode(type)) {
+    collectExpressionReferenceModelFieldTargets(
+      type.type,
+      sourceFile,
+      containingFile,
+      fieldTargets,
+      seenTypeReferences,
+      importedIdentifierExportNames,
+    );
+    return;
+  }
+
+  if (ts.isIntersectionTypeNode(type)) {
+    for (const memberType of type.types) {
+      collectExpressionReferenceModelFieldTargets(
+        memberType,
+        sourceFile,
+        containingFile,
+        fieldTargets,
+        seenTypeReferences,
+        importedIdentifierExportNames,
+      );
+    }
+    return;
+  }
+
+  const importedModelType = getImportedModelTypeReference(type, sourceFile);
+  if (importedModelType) {
+    const resolvedFileName = resolveRsxDependencyModuleFileName({
+      containingFile,
+      moduleName: importedModelType.moduleName,
+    });
+    if (!resolvedFileName) {
+      return;
+    }
+
+    const importedTargets = resolveExportedModelFieldTargets({
+      fileName: resolvedFileName,
+      typeName: importedModelType.typeName,
+      seenTypeReferences,
+    });
+    mergeModelFieldTargets(fieldTargets, importedTargets);
+    return;
+  }
+
+  if (!ts.isTypeLiteralNode(type)) {
+    return;
+  }
+
+  for (const member of type.members) {
+    if (!ts.isPropertySignature(member) || !member.type) {
+      continue;
+    }
+    const fieldName = getPropertyNameText(member.name);
+    if (!fieldName) {
+      continue;
+    }
+
+    const targetExportNames = getExpressionReferenceTargetExportNames(
+      member.type,
+      sourceFile,
+      importedIdentifierExportNames,
+    );
+    if (targetExportNames.length > 0) {
+      fieldTargets.set(fieldName, targetExportNames);
+    }
+  }
+}
+
+function getPropertyNameText(name: ts.PropertyName): string | null {
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name)) {
+    return name.text;
+  }
+  return null;
+}
+
+function mergeModelFieldTargets(
+  target: Map<string, string[]>,
+  source: ReadonlyMap<string, readonly string[]>,
+): void {
+  for (const [fieldName, sourceTargets] of source) {
+    const existingTargets = target.get(fieldName) ?? [];
+    target.set(fieldName, [...new Set([...existingTargets, ...sourceTargets])]);
+  }
+}
+
+function getImportedModelTypeReference(
+  type: ts.TypeNode,
+  sourceFile: ts.SourceFile,
+): { moduleName: string; typeName: string } | null {
+  const moduleName = getFirstStringLiteralText(type);
+  const typeName = getLastIdentifierText(type);
+  const text = type.getText(sourceFile).trim();
+  if (!moduleName || !typeName || !text.startsWith('import(')) {
+    return null;
+  }
+
+  return {
+    moduleName,
+    typeName,
+  };
+}
+
+function getFirstStringLiteralText(node: ts.Node): string | null {
+  let text: string | null = null;
+  const visit = (candidate: ts.Node): void => {
+    if (text !== null) {
+      return;
+    }
+    if (ts.isStringLiteralLike(candidate)) {
+      text = candidate.text;
+      return;
+    }
+    ts.forEachChild(candidate, visit);
+  };
+  visit(node);
+  return text;
+}
+
+function resolveRsxDependencyModuleFileName(args: {
+  containingFile: string;
+  moduleName: string;
+}): string | null {
+  const options: ts.CompilerOptions = {
+    module: ts.ModuleKind.ES2022,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    target: ts.ScriptTarget.ES2022,
+    strict: true,
+  };
+  const compilerHost = ts.createCompilerHost(options, true);
+  return (
+    ts.resolveModuleName(
+      args.moduleName,
+      args.containingFile,
+      options,
+      compilerHost,
+    ).resolvedModule?.resolvedFileName ?? null
+  );
+}
+
+function resolveExportedModelFieldTargets(args: {
+  fileName: string;
+  typeName: string;
+  seenTypeReferences: Set<string>;
+}): ReadonlyMap<string, readonly string[]> {
+  const fieldTargets = new Map<string, string[]>();
+  const seenKey = `${args.fileName}:${args.typeName}`;
+  if (args.seenTypeReferences.has(seenKey)) {
+    return fieldTargets;
+  }
+  args.seenTypeReferences.add(seenKey);
+
+  const text = ts.sys.readFile(args.fileName);
+  if (typeof text !== 'string') {
+    return fieldTargets;
+  }
+
+  const sourceFile = ts.createSourceFile(
+    args.fileName,
+    text,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const importedIdentifierExportNames =
+    getImportedIdentifierExportNameMap(sourceFile);
+
+  for (const statement of sourceFile.statements) {
+    const directName = getDirectExportedModelTypeName(statement);
+    if (directName?.text === args.typeName) {
+      collectExpressionReferenceModelFieldTargetsFromDeclaration({
+        statement,
+        sourceFile,
+        containingFile: args.fileName,
+        fieldTargets,
+        seenTypeReferences: args.seenTypeReferences,
+        importedIdentifierExportNames,
+      });
+      return fieldTargets;
+    }
+  }
+
+  return fieldTargets;
+}
+
+function collectExpressionReferenceModelFieldTargetsFromDeclaration(args: {
+  statement: ts.Statement;
+  sourceFile: ts.SourceFile;
+  containingFile: string;
+  fieldTargets: Map<string, string[]>;
+  seenTypeReferences: Set<string>;
+  importedIdentifierExportNames: ReadonlyMap<string, string>;
+}): void {
+  if (ts.isInterfaceDeclaration(args.statement)) {
+    collectExpressionReferenceModelFieldTargetsFromMembers({
+      members: args.statement.members,
+      sourceFile: args.sourceFile,
+      fieldTargets: args.fieldTargets,
+      importedIdentifierExportNames: args.importedIdentifierExportNames,
+    });
+    return;
+  }
+
+  if (ts.isTypeAliasDeclaration(args.statement)) {
+    collectExpressionReferenceModelFieldTargets(
+      args.statement.type,
+      args.sourceFile,
+      args.containingFile,
+      args.fieldTargets,
+      args.seenTypeReferences,
+      args.importedIdentifierExportNames,
+    );
+  }
+}
+
+function collectExpressionReferenceModelFieldTargetsFromMembers(args: {
+  members: ts.NodeArray<ts.TypeElement>;
+  sourceFile: ts.SourceFile;
+  fieldTargets: Map<string, string[]>;
+  importedIdentifierExportNames: ReadonlyMap<string, string>;
+}): void {
+  for (const member of args.members) {
+    if (!ts.isPropertySignature(member) || !member.type) {
+      continue;
+    }
+
+    const fieldName = getPropertyNameText(member.name);
+    if (!fieldName) {
+      continue;
+    }
+
+    const targetExportNames = getExpressionReferenceTargetExportNames(
+      member.type,
+      args.sourceFile,
+      args.importedIdentifierExportNames,
+    );
+    if (targetExportNames.length > 0) {
+      args.fieldTargets.set(fieldName, targetExportNames);
+    }
+  }
+}
+
+function getDirectExportedModelTypeName(
+  statement: ts.Statement,
+): ts.Identifier | null {
+  if (
+    (ts.isInterfaceDeclaration(statement) ||
+      ts.isTypeAliasDeclaration(statement)) &&
+    statement.name &&
+    statement.modifiers?.some(
+      (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
+    )
+  ) {
+    return statement.name;
+  }
+
+  return null;
+}
+
+function getImportedIdentifierExportNameMap(
+  sourceFile: ts.SourceFile,
+): ReadonlyMap<string, string> {
+  const importedNames = new Map<string, string>();
+  for (const statement of sourceFile.statements) {
+    if (!ts.isImportDeclaration(statement)) {
+      continue;
+    }
+
+    const namedBindings = statement.importClause?.namedBindings;
+    if (!namedBindings || !ts.isNamedImports(namedBindings)) {
+      continue;
+    }
+
+    for (const element of namedBindings.elements) {
+      importedNames.set(
+        element.name.text,
+        element.propertyName?.text ?? element.name.text,
+      );
+    }
+  }
+
+  return importedNames;
+}
+
+function getExpressionReferenceTargetExportNames(
+  type: ts.TypeNode,
+  sourceFile: ts.SourceFile,
+  importedIdentifierExportNames: ReadonlyMap<string, string> = new Map(),
+): string[] {
+  if (ts.isParenthesizedTypeNode(type)) {
+    return getExpressionReferenceTargetExportNames(
+      type.type,
+      sourceFile,
+      importedIdentifierExportNames,
+    );
+  }
+
+  if (ts.isUnionTypeNode(type) || ts.isIntersectionTypeNode(type)) {
+    return [
+      ...new Set(
+        type.types.flatMap((memberType) =>
+          getExpressionReferenceTargetExportNames(
+            memberType,
+            sourceFile,
+            importedIdentifierExportNames,
+          ),
+        ),
+      ),
+    ];
+  }
+
+  if (!ts.isTypeReferenceNode(type)) {
+    return [];
+  }
+
+  if (getRightmostEntityNameText(type.typeName) !== 'ReturnType') {
+    return [];
+  }
+
+  const targetType = type.typeArguments?.[0];
+  return targetType
+    ? getExpressionExportNameFromTypeQuery(
+        targetType,
+        sourceFile,
+        importedIdentifierExportNames,
+      )
+    : [];
+}
+
+function getRightmostEntityNameText(name: ts.EntityName): string {
+  return ts.isIdentifier(name)
+    ? name.text
+    : getRightmostEntityNameText(name.right);
+}
+
+function getExpressionExportNameFromTypeQuery(
+  type: ts.TypeNode,
+  sourceFile: ts.SourceFile,
+  importedIdentifierExportNames: ReadonlyMap<string, string>,
+): string[] {
+  if (ts.isParenthesizedTypeNode(type)) {
+    return getExpressionExportNameFromTypeQuery(
+      type.type,
+      sourceFile,
+      importedIdentifierExportNames,
+    );
+  }
+
+  if (!type.getText(sourceFile).trimStart().startsWith('typeof ')) {
+    return [];
+  }
+
+  if (!ts.isTypeQueryNode(type)) {
+    const identifier = getLastIdentifierText(type);
+    return identifier
+      ? [importedIdentifierExportNames.get(identifier) ?? identifier]
+      : [];
+  }
+
+  const expressionName = type.exprName;
+  if (ts.isIdentifier(expressionName) || ts.isQualifiedName(expressionName)) {
+    const identifier = getRightmostEntityNameText(expressionName);
+    return [importedIdentifierExportNames.get(identifier) ?? identifier];
+  }
+
+  const qualifier = (expressionName as ts.ImportTypeNode).qualifier;
+  if (qualifier) {
+    const identifier = getRightmostEntityNameText(qualifier);
+    return [importedIdentifierExportNames.get(identifier) ?? identifier];
+  }
+
+  const identifier = getLastIdentifierText(expressionName);
+  return identifier
+    ? [importedIdentifierExportNames.get(identifier) ?? identifier]
+    : [];
+}
+
+function getLastIdentifierText(node: ts.Node): string | null {
+  let identifier: string | null = null;
+  const visit = (candidate: ts.Node): void => {
+    if (ts.isIdentifier(candidate)) {
+      identifier = candidate.text;
+    }
+    ts.forEachChild(candidate, visit);
+  };
+  visit(node);
+  return identifier;
+}
+
+function getFreeIdentifiersInRsxExpression(expressionText: string): string[] {
+  const sourceFile = ts.createSourceFile(
+    '__rsx_dependency_graph.ts',
+    `${WRAPPED_EXPRESSION_PREFIX}${expressionText}${WRAPPED_EXPRESSION_SUFFIX}`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const identifiers = new Set<string>();
+  const rootScope = new Set<string>();
+
+  const visit = (
+    node: ts.Node,
+    scopes: readonly ReadonlySet<string>[],
+  ): void => {
+    if (ts.isTypeNode(node)) {
+      return;
+    }
+
+    if (isFunctionLikeWithBody(node)) {
+      const functionScope = new Set<string>();
+      for (const parameter of node.parameters) {
+        addBindingName(functionScope, parameter.name);
+      }
+      collectLocalDeclarationNames(node.body, functionScope);
+      ts.forEachChild(node.body, (child) =>
+        visit(child, [...scopes, functionScope]),
+      );
+      return;
+    }
+
+    if (ts.isVariableDeclaration(node)) {
+      addBindingName(rootScope, node.name);
+      if (node.initializer) {
+        visit(node.initializer, scopes);
+      }
+      return;
+    }
+
+    if (ts.isIdentifier(node)) {
+      if (
+        isRsxExpressionIdentifierReference(node) &&
+        !isIdentifierDeclaredInScopes(node.text, scopes)
+      ) {
+        identifiers.add(node.text);
+      }
+      return;
+    }
+
+    ts.forEachChild(node, (child) => visit(child, scopes));
+  };
+
+  ts.forEachChild(sourceFile, (child) => visit(child, [rootScope]));
+  return [...identifiers];
+}
+
+function collectLocalDeclarationNames(node: ts.Node, names: Set<string>): void {
+  const visit = (candidate: ts.Node): void => {
+    if (candidate !== node && isFunctionLikeWithBody(candidate)) {
+      return;
+    }
+    if (
+      ts.isVariableDeclaration(candidate) ||
+      ts.isParameter(candidate) ||
+      ts.isBindingElement(candidate)
+    ) {
+      addBindingName(names, candidate.name);
+    }
+    if (
+      (ts.isFunctionDeclaration(candidate) ||
+        ts.isClassDeclaration(candidate)) &&
+      candidate.name
+    ) {
+      names.add(candidate.name.text);
+    }
+    ts.forEachChild(candidate, visit);
+  };
+  ts.forEachChild(node, visit);
+}
+
+function addBindingName(names: Set<string>, name: ts.BindingName): void {
+  if (ts.isIdentifier(name)) {
+    names.add(name.text);
+    return;
+  }
+  for (const element of name.elements) {
+    if (ts.isOmittedExpression(element)) {
+      continue;
+    }
+    addBindingName(names, element.name);
+  }
+}
+
+function isFunctionLikeWithBody(
+  node: ts.Node,
+): node is ts.FunctionLikeDeclaration & { body: ts.ConciseBody } {
+  return (
+    (ts.isArrowFunction(node) ||
+      ts.isFunctionExpression(node) ||
+      ts.isFunctionDeclaration(node) ||
+      ts.isMethodDeclaration(node)) &&
+    !!node.body
+  );
+}
+
+function isRsxExpressionIdentifierReference(
+  identifier: ts.Identifier,
+): boolean {
+  const parent = identifier.parent;
+  if (!parent) {
+    return true;
+  }
+  if (ts.isPropertyAccessExpression(parent) && parent.name === identifier) {
+    return false;
+  }
+  if (ts.isPropertyAssignment(parent) && parent.name === identifier) {
+    return false;
+  }
+  if (
+    (ts.isVariableDeclaration(parent) ||
+      ts.isParameter(parent) ||
+      ts.isBindingElement(parent) ||
+      ts.isFunctionDeclaration(parent) ||
+      ts.isFunctionExpression(parent) ||
+      ts.isMethodDeclaration(parent) ||
+      ts.isClassDeclaration(parent) ||
+      ts.isPropertyDeclaration(parent) ||
+      ts.isPropertySignature(parent) ||
+      ts.isMethodSignature(parent)) &&
+    parent.name === identifier
+  ) {
+    return false;
+  }
+  if (
+    ts.isLabeledStatement(parent) ||
+    ts.isBreakStatement(parent) ||
+    ts.isContinueStatement(parent)
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function isIdentifierDeclaredInScopes(
+  identifier: string,
+  scopes: readonly ReadonlySet<string>[],
+): boolean {
+  return scopes.some((scope) => scope.has(identifier));
+}
+
+function getNonSelfExpressionTargets(
+  targets: readonly IRsxExpressionTreeExpression[] | undefined,
+  expression: IRsxExpressionTreeExpression,
+): IRsxExpressionTreeExpression[] {
+  return (targets ?? []).filter((target) => target.key !== expression.key);
+}
+
+function addRsxExpressionIndexEntry(
+  index: Map<string, IRsxExpressionTreeExpression[]>,
+  key: string,
+  expression: IRsxExpressionTreeExpression,
+): void {
+  const existing = index.get(key);
+  if (existing) {
+    existing.push(expression);
+  } else {
+    index.set(key, [expression]);
+  }
+}
+
+function getModelFieldNameForExpressionExport(
+  exportName: string,
+): string | null {
+  return exportName.endsWith('Rsx') && exportName.length > 'Rsx'.length
+    ? exportName.slice(0, -'Rsx'.length)
+    : null;
+}
+
+function createRsxExpressionTreeKey(
+  uri: vscode.Uri,
+  exportName: string,
+): string {
+  return `${uri.toString()}#${exportName}`;
+}
+
 function formatExpressionCount(count: number): string {
   return `${count} expression${count === 1 ? '' : 's'}`;
+}
+
+function formatDependencyCount(count: number): string {
+  return `${count} dep${count === 1 ? '' : 's'}`;
 }
 
 async function openRsxExpressionTreeItem(
   item: IRsxExpressionTreeExpression,
 ): Promise<void> {
-  const document = await vscode.workspace.openTextDocument(item.uri);
-  const editor = await vscode.window.showTextDocument(document);
-  const start = document.positionAt(item.start);
-  const end = document.positionAt(item.end);
+  await openRsxExpressionLocation(item);
+}
+
+async function openRsxExpressionLocation(args: {
+  uri: vscode.Uri;
+  start: number;
+  end: number;
+}): Promise<void> {
+  const existingEditor = vscode.window.visibleTextEditors.find(
+    (editor) => editor.document.uri.toString() === args.uri.toString(),
+  );
+  const document =
+    existingEditor?.document ??
+    (await vscode.workspace.openTextDocument(args.uri));
+  const editor =
+    existingEditor ??
+    (await vscode.window.showTextDocument(document, {
+      viewColumn: vscode.ViewColumn.Beside,
+      preserveFocus: false,
+      preview: true,
+    }));
+  const start = document.positionAt(args.start);
+  const end = document.positionAt(args.end);
   const range = new vscode.Range(start, end);
   editor.selection = new vscode.Selection(start, end);
   editor.revealRange(
@@ -656,7 +2555,21 @@ class RsxCompletionItemProvider implements vscode.CompletionItemProvider<vscode.
     position: vscode.Position,
   ): vscode.ProviderResult<vscode.CompletionItem[]> {
     const offset = document.offsetAt(position);
-    const headerCompletions = getModuleHeaderCompletions(document, position);
+    const headerCompletionPlan = getModuleHeaderCompletionPlan(
+      document,
+      position,
+    );
+    if (headerCompletionPlan) {
+      return getModuleHeaderCompletionsFromPlan(headerCompletionPlan);
+    }
+    const headerCompletions: vscode.CompletionItem[] = [];
+    if (isNonTypeHeaderValuePosition(document, position)) {
+      return [];
+    }
+    if (isIncompleteTypeHeaderValuePosition(document, position)) {
+      return [];
+    }
+
     const standalone = createStandaloneLanguageServiceForDocument(document);
     const standaloneCompletions = standalone
       ? getRsxCompletionsAtPosition(standalone, offset)
@@ -735,6 +2648,18 @@ class RsxHoverProvider implements vscode.HoverProvider {
     }
     if (isHeaderAuthoringPosition(document, position)) {
       return null;
+    }
+    if (isNonTypeHeaderValuePosition(document, position)) {
+      return null;
+    }
+    if (isIncompleteTypeHeaderValuePosition(document, position)) {
+      return null;
+    }
+
+    const directExpressionReferenceHover =
+      getDirectModuleExpressionReferenceHover(document, position);
+    if (directExpressionReferenceHover) {
+      return directExpressionReferenceHover;
     }
 
     const standalone = createStandaloneLanguageServiceForDocument(document);
@@ -815,27 +2740,129 @@ class RsxHoverProvider implements vscode.HoverProvider {
   }
 }
 
+function getDirectModuleExpressionReferenceHover(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+): vscode.Hover | null {
+  if (!isRsxDocument(document) || document.uri.scheme !== 'file') {
+    return null;
+  }
+
+  const offset = document.offsetAt(position);
+  const cacheEntry = getModuleExpressionCacheEntry(document);
+  const parsed = cacheEntry?.parsed;
+  if (!parsed || parsed.expressions.length === 0) {
+    return null;
+  }
+
+  const expressionIndex = getExpressionIndexAtOffset(parsed, offset);
+  if (expressionIndex < 0) {
+    return null;
+  }
+
+  const expression = parsed.expressions[expressionIndex];
+  const identifier = getIdentifierAtTextOffset(document.getText(), offset);
+  if (
+    !identifier ||
+    identifier.start < expression.expressionStart ||
+    identifier.end > expression.expressionEnd
+  ) {
+    return null;
+  }
+
+  const expressionExports = getRsxExpressionExports({
+    fileName: document.uri.fsPath,
+    expressions: parsed.expressions,
+  });
+  const currentExport = expressionExports.find(
+    (entry) => entry.expression === expression,
+  );
+  const referencedExport = expressionExports.find((entry) => {
+    if (entry === currentExport) {
+      return false;
+    }
+    return (
+      getModelFieldNameForExpressionExport(entry.exportName) === identifier.text
+    );
+  });
+  if (!referencedExport) {
+    return null;
+  }
+
+  return new vscode.Hover(
+    new vscode.MarkdownString().appendCodeblock(
+      `(model property) ${identifier.text}: ReturnType<typeof ${referencedExport.exportName}>`,
+      'typescript',
+    ),
+    new vscode.Range(
+      document.positionAt(identifier.start),
+      document.positionAt(identifier.end),
+    ),
+  );
+}
+
+function getIdentifierAtTextOffset(
+  text: string,
+  offset: number,
+): { text: string; start: number; end: number } | null {
+  const clampedOffset = Math.max(0, Math.min(text.length, offset));
+  const cursor =
+    clampedOffset < text.length && isIdentifierCharacter(text[clampedOffset])
+      ? clampedOffset
+      : clampedOffset > 0 && isIdentifierCharacter(text[clampedOffset - 1])
+        ? clampedOffset - 1
+        : -1;
+  if (cursor < 0) {
+    return null;
+  }
+
+  let start = cursor;
+  while (start > 0 && isIdentifierCharacter(text[start - 1])) {
+    start -= 1;
+  }
+
+  let end = cursor + 1;
+  while (end < text.length && isIdentifierCharacter(text[end])) {
+    end += 1;
+  }
+
+  const identifier = text.slice(start, end);
+  return /^[A-Za-z_$][A-Za-z0-9_$]*$/u.test(identifier)
+    ? { text: identifier, start, end }
+    : null;
+}
+
+function isIdentifierCharacter(character: string | undefined): boolean {
+  return character !== undefined && /[A-Za-z0-9_$]/u.test(character);
+}
+
 function getDirectModuleHeaderHover(
   document: vscode.TextDocument,
   position: vscode.Position,
 ): vscode.Hover | null {
-  if (document.languageId !== RSX_LANGUAGE_ID) {
+  if (!isRsxDocument(document)) {
     return null;
   }
 
   const line = document.lineAt(position.line);
   const parsed = parseHeaderLine(line.text);
   const authoringKey = getHeaderAuthoringKeyAtPosition(document, position);
-  if (
-    !parsed &&
-    authoringKey &&
-    RSX_HEADER_DIRECTIVE_KEYS.has(authoringKey.key)
-  ) {
-    return createHeaderDirectiveHover(
-      authoringKey.key,
-      position.line,
-      authoringKey.keyStartCharacter,
+  if (!parsed && authoringKey) {
+    const matchingHeaderKeys = [...RSX_HEADER_DIRECTIVE_KEYS].filter((key) =>
+      key.startsWith(authoringKey.key),
     );
+    if (
+      RSX_HEADER_DIRECTIVE_KEYS.has(authoringKey.key) ||
+      matchingHeaderKeys.length === 1
+    ) {
+      return createHeaderDirectiveHover(
+        RSX_HEADER_DIRECTIVE_KEYS.has(authoringKey.key)
+          ? authoringKey.key
+          : matchingHeaderKeys[0],
+        position.line,
+        authoringKey.keyStartCharacter,
+      );
+    }
   }
   if (!parsed) {
     return null;
@@ -853,31 +2880,182 @@ function getDirectModuleHeaderHover(
     );
   }
 
+  if (
+    RSX_HEADER_DIRECTIVE_KEYS.has(parsed.key) &&
+    parsed.key !== 'model' &&
+    parsed.key !== 'return' &&
+    position.character >= parsed.keyStartCharacter
+  ) {
+    return createHeaderDirectiveHover(
+      parsed.key,
+      position.line,
+      parsed.keyStartCharacter,
+    );
+  }
+
+  if (document.uri.scheme === 'file') {
+    const sameFileExpressionHover =
+      getRsxHeaderSameFileExpressionReferenceHover(document, position);
+    if (sameFileExpressionHover) {
+      return sameFileExpressionHover;
+    }
+
+    const directImportHover = getRsxHeaderImportHoverAtTextPosition({
+      fileName: document.uri.fsPath,
+      text: document.getText(),
+      position: document.offsetAt(position),
+    });
+    if (directImportHover) {
+      return new vscode.Hover(
+        new vscode.MarkdownString().appendCodeblock(
+          directImportHover.text,
+          'typescript',
+        ),
+        new vscode.Range(
+          document.positionAt(directImportHover.start),
+          document.positionAt(directImportHover.end),
+        ),
+      );
+    }
+  }
+
   if (parsed.key !== 'model' && parsed.key !== 'return') {
     return null;
   }
 
-  if (document.uri.scheme !== 'file') {
+  return null;
+}
+
+function getRsxHeaderSameFileExpressionReferenceHover(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+): vscode.Hover | null {
+  const cacheEntry = getModuleExpressionCacheEntry(document);
+  const parsed = cacheEntry?.parsed;
+  if (!parsed) {
     return null;
   }
 
-  const directImportHover = getRsxHeaderImportHoverAtTextPosition({
+  const expressionExports = getRsxExpressionExports({
     fileName: document.uri.fsPath,
-    text: document.getText(),
-    position: document.offsetAt(position),
+    expressions: parsed.expressions,
   });
-  if (!directImportHover) {
+  const exportByName = new Map(
+    expressionExports.map((expressionExport) => [
+      expressionExport.exportName,
+      expressionExport,
+    ]),
+  );
+
+  const resolveHover = (args: {
+    sourceText: string;
+    targetPosition: number;
+    sourceOffset: number;
+  }): {
+    exportName: string;
+    start: number;
+    end: number;
+    returnTypeText?: string;
+  } | null => {
+    const sourceFile = ts.createSourceFile(
+      '/__rsx_same_file_header_reference.ts',
+      args.sourceText,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TS,
+    );
+    if (sourceFile.parseDiagnostics.length > 0) {
+      return null;
+    }
+
+    let resolved: {
+      exportName: string;
+      start: number;
+      end: number;
+      returnTypeText?: string;
+    } | null = null;
+    const visit = (node: ts.Node): void => {
+      if (resolved) {
+        return;
+      }
+      if (ts.isTypeQueryNode(node) && ts.isIdentifier(node.exprName)) {
+        const start = node.exprName.getStart(sourceFile);
+        const end = node.exprName.getEnd();
+        if (args.targetPosition >= start && args.targetPosition <= end) {
+          const expressionExport = exportByName.get(node.exprName.text);
+          if (expressionExport) {
+            resolved = {
+              exportName: expressionExport.exportName,
+              start: args.sourceOffset + start,
+              end: args.sourceOffset + end,
+              returnTypeText: expressionExport.expression.returnTypeText,
+            };
+            return;
+          }
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(sourceFile);
+    return resolved;
+  };
+
+  const line = document.lineAt(position.line);
+  const trimmedLine = line.text.trim();
+  const trimmedStartCharacter = line.text.indexOf(trimmedLine);
+  const linePrefix = 'type __RSX_HEADER = { ';
+  const lineSourceText = `${linePrefix}${trimmedLine} };`;
+  const lineResolved = resolveHover({
+    sourceText: lineSourceText,
+    targetPosition:
+      linePrefix.length +
+      Math.max(0, position.character - trimmedStartCharacter),
+    sourceOffset:
+      document.offsetAt(
+        new vscode.Position(position.line, trimmedStartCharacter),
+      ) - linePrefix.length,
+  });
+  if (lineResolved) {
+    return createSameFileExpressionReferenceHover(document, lineResolved);
+  }
+
+  const region = getTypeHeaderValueRegionAtPosition(document, position);
+  if (!region || region.key !== 'model') {
     return null;
   }
 
+  const prefix = 'type __RSX_HEADER = ';
+  const regionResolved = resolveHover({
+    sourceText: `${prefix}${region.value};`,
+    targetPosition:
+      prefix.length +
+      Math.max(0, document.offsetAt(position) - region.valueStartOffset),
+    sourceOffset: region.valueStartOffset - prefix.length,
+  });
+  if (!regionResolved) {
+    return null;
+  }
+
+  return createSameFileExpressionReferenceHover(document, regionResolved);
+}
+
+function createSameFileExpressionReferenceHover(
+  document: vscode.TextDocument,
+  resolved: {
+    exportName: string;
+    start: number;
+    end: number;
+    returnTypeText?: string;
+  },
+): vscode.Hover {
+  const hoverText = `(same-file expression) ${resolved.exportName}: ReturnType<typeof ${resolved.exportName}>${
+    resolved.returnTypeText ? `\n// resolves to ${resolved.returnTypeText}` : ''
+  }`;
   return new vscode.Hover(
-    new vscode.MarkdownString().appendCodeblock(
-      directImportHover.text,
-      'typescript',
-    ),
+    new vscode.MarkdownString().appendCodeblock(hoverText, 'typescript'),
     new vscode.Range(
-      document.positionAt(directImportHover.start),
-      document.positionAt(directImportHover.end),
+      document.positionAt(resolved.start),
+      document.positionAt(resolved.end),
     ),
   );
 }
@@ -908,6 +3086,14 @@ function isHeaderAuthoringPosition(
     return false;
   }
 
+  if (!authoringKey.hasColon) {
+    const plan = getModuleHeaderCompletionPlan(document, position);
+    return (
+      (plan !== null && plan.candidates.length > 0) ||
+      isFreshHeaderAuthoringPosition(document, position)
+    );
+  }
+
   if (
     RSX_HEADER_DIRECTIVE_KEYS.has(authoringKey.key) ||
     [...RSX_HEADER_DIRECTIVE_KEYS].some((key) =>
@@ -926,6 +3112,200 @@ function isHeaderAuthoringPosition(
   );
 }
 
+function isFreshHeaderAuthoringPosition(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+): boolean {
+  const authoringKey = getHeaderAuthoringKeyAtPosition(document, position);
+  return (
+    authoringKey !== null &&
+    isFirstNonEmptyLine(document, position.line) &&
+    !hasAnyRsxHeader(document)
+  );
+}
+
+function isNonTypeHeaderValuePosition(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+): boolean {
+  if (!isRsxDocument(document)) {
+    return false;
+  }
+
+  const line = document.lineAt(position.line).text;
+  const parsed = parseHeaderLine(line);
+  if (!parsed || !RSX_HEADER_DIRECTIVE_KEYS.has(parsed.key)) {
+    return false;
+  }
+
+  const valueStart = getHeaderValueStartCharacter(line);
+  if (position.character < valueStart) {
+    return false;
+  }
+
+  return parsed.key !== 'model' && parsed.key !== 'return';
+}
+
+function isIncompleteTypeHeaderValuePosition(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+): boolean {
+  if (!isRsxDocument(document)) {
+    return false;
+  }
+
+  const region = getTypeHeaderValueRegionAtPosition(document, position);
+  if (!region) {
+    return false;
+  }
+
+  return !isTypeHeaderValueSyntacticallyComplete(region.value);
+}
+
+function hasIncompleteTypeHeaderValue(document: vscode.TextDocument): boolean {
+  if (!isRsxDocument(document)) {
+    return false;
+  }
+
+  for (let lineIndex = 0; lineIndex < document.lineCount; lineIndex += 1) {
+    const region = collectTypeHeaderValueRegion(document, lineIndex);
+    if (!region) {
+      continue;
+    }
+    if (!isTypeHeaderValueSyntacticallyComplete(region.value)) {
+      return true;
+    }
+    lineIndex = region.endLine;
+  }
+
+  return false;
+}
+
+function isTypeHeaderValueSyntacticallyComplete(value: string): boolean {
+  if (value.trim().length === 0) {
+    return false;
+  }
+
+  return getTypeHeaderValueParseDiagnostics(value).length === 0;
+}
+
+function shouldSkipStandaloneAnalysisForFreshHeaderAuthoring(
+  document: vscode.TextDocument,
+): boolean {
+  if (!isRsxDocument(document) || hasAnyRsxHeader(document)) {
+    return false;
+  }
+
+  let nonEmptyLineIndex: number | null = null;
+  for (let index = 0; index < document.lineCount; index += 1) {
+    if (document.lineAt(index).text.trim().length === 0) {
+      continue;
+    }
+    if (nonEmptyLineIndex !== null) {
+      return false;
+    }
+    nonEmptyLineIndex = index;
+  }
+  if (nonEmptyLineIndex === null) {
+    return false;
+  }
+
+  const line = document.lineAt(nonEmptyLineIndex).text;
+  const authoringKey = scanHeaderAuthoringKey(line);
+  if (!authoringKey) {
+    return false;
+  }
+
+  const trailingText = line
+    .slice(authoringKey.keyStartCharacter + authoringKey.key.length)
+    .trim();
+  if (authoringKey.hasColon) {
+    return !RSX_HEADER_DIRECTIVE_KEYS.has(authoringKey.key);
+  }
+
+  return trailingText.length === 0;
+}
+
+function shouldSkipStandaloneAnalysisForHeaderAuthoring(
+  document: vscode.TextDocument,
+): boolean {
+  if (shouldSkipStandaloneAnalysisForFreshHeaderAuthoring(document)) {
+    return true;
+  }
+
+  if (!isRsxDocument(document)) {
+    return false;
+  }
+
+  if (!hasExpressionBodyContent(document)) {
+    return true;
+  }
+
+  for (let lineIndex = 0; lineIndex < document.lineCount; lineIndex += 1) {
+    const line = document.lineAt(lineIndex);
+    if (line.text.trim().length === 0 || parseHeaderLine(line.text)) {
+      continue;
+    }
+
+    const authoringKey = scanHeaderAuthoringKey(line.text);
+    if (!authoringKey || authoringKey.hasColon) {
+      continue;
+    }
+
+    const position = new vscode.Position(lineIndex, line.text.length);
+    const plan = getModuleHeaderCompletionPlan(document, position);
+    if (plan && plan.candidates.length > 0) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function hasExpressionBodyContent(document: vscode.TextDocument): boolean {
+  for (let lineIndex = 0; lineIndex < document.lineCount; lineIndex += 1) {
+    const lineText = document.lineAt(lineIndex).text;
+    const trimmed = lineText.trim();
+    if (trimmed.length === 0) {
+      continue;
+    }
+
+    const indented = isIndentedLine(lineText);
+    const parsed = parseHeaderLine(lineText);
+    if (parsed) {
+      if (!indented && parsed.key === 'defaults') {
+        continue;
+      }
+      if (!indented && parsed.key === 'expression') {
+        continue;
+      }
+      continue;
+    }
+
+    const authoringKey = scanHeaderAuthoringKey(lineText);
+    if (authoringKey && !authoringKey.hasColon) {
+      const position = new vscode.Position(lineIndex, lineText.length);
+      const plan = getModuleHeaderCompletionPlan(document, position);
+      if (plan && plan.candidates.length > 0) {
+        continue;
+      }
+    }
+
+    return true;
+  }
+
+  return false;
+}
+
+function isRsxHeaderDiagnosticMessage(message: string): boolean {
+  return (
+    message.startsWith('Unknown RS-X header key ') ||
+    /^Header ".+" /u.test(message) ||
+    /^Expression ".+" must declare a model header/u.test(message) ||
+    /^Duplicate ".+" header/u.test(message)
+  );
+}
+
 function getHeaderAuthoringKeyAtPosition(
   document: vscode.TextDocument,
   position: vscode.Position,
@@ -934,7 +3314,7 @@ function getHeaderAuthoringKeyAtPosition(
   keyStartCharacter: number;
   hasColon: boolean;
 } | null {
-  if (document.languageId !== RSX_LANGUAGE_ID) {
+  if (!isRsxDocument(document)) {
     return null;
   }
 
@@ -1244,6 +3624,10 @@ class RsxDocumentSymbolProvider implements vscode.DocumentSymbolProvider {
   provideDocumentSymbols(
     document: vscode.TextDocument,
   ): vscode.ProviderResult<vscode.DocumentSymbol[]> {
+    if (shouldSkipStandaloneAnalysisForHeaderAuthoring(document)) {
+      return [];
+    }
+
     const standalone = createStandaloneLanguageServiceForDocument(document);
     if (!standalone) {
       return [];
@@ -1261,19 +3645,30 @@ class RsxCodeActionProvider implements vscode.CodeActionProvider {
     range: vscode.Range,
     context: vscode.CodeActionContext,
   ): vscode.ProviderResult<vscode.CodeAction[]> {
+    if (
+      shouldSkipStandaloneAnalysisForHeaderAuthoring(document) ||
+      context.diagnostics.length === 0
+    ) {
+      return [];
+    }
+
+    const actionableDiagnostics = context.diagnostics.filter(
+      (diagnostic) => !isRsxHeaderDiagnosticMessage(String(diagnostic.message)),
+    );
+    if (actionableDiagnostics.length === 0) {
+      return [];
+    }
+
     const standalone = createStandaloneLanguageServiceForDocument(document);
     if (!standalone) {
       return [];
     }
 
     const seen = new Set<string>();
-    const diagnosticContexts =
-      context.diagnostics.length > 0
-        ? context.diagnostics.map((diagnostic) => ({
-            diagnostic,
-            range: diagnostic.range,
-          }))
-        : [{ diagnostic: undefined, range }];
+    const diagnosticContexts = actionableDiagnostics.map((diagnostic) => ({
+      diagnostic,
+      range: diagnostic.range,
+    }));
 
     return diagnosticContexts.flatMap(({ diagnostic, range: targetRange }) =>
       getRsxCodeFixes({
@@ -1422,7 +3817,9 @@ function resolveSemanticTokensForDocument(
     return cached.tokens;
   }
 
-  const standalone = createStandaloneLanguageServiceForDocument(document);
+  const standalone = shouldSkipStandaloneAnalysisForHeaderAuthoring(document)
+    ? null
+    : createStandaloneLanguageServiceForDocument(document);
   if (standalone) {
     const tokens = getRsxSemanticTokens(standalone);
     documentSemanticTokenCache.set(key, {
@@ -1550,15 +3947,19 @@ function computeDiagnosticsForDocument(
   document: vscode.TextDocument,
   mode: IDiagnosticsMode = 'auto',
 ): vscode.Diagnostic[] {
-  if (document.languageId !== RSX_LANGUAGE_ID) {
+  if (!isRsxDocument(document)) {
     return [];
   }
 
-  const standalone = createStandaloneLanguageServiceForDocument(document);
   const headerDiagnostics = [
     ...getModuleHeaderDiagnostics(document),
     ...getModuleHeaderTypeDiagnostics(document),
   ];
+  if (shouldSkipStandaloneAnalysisForHeaderAuthoring(document)) {
+    return headerDiagnostics;
+  }
+
+  const standalone = createStandaloneLanguageServiceForDocument(document);
   if (!standalone) {
     return [
       ...headerDiagnostics,
@@ -1595,6 +3996,9 @@ async function formatRsxDocument(args: {
 }): Promise<string | null> {
   const { document, options, token } = args;
   if (token.isCancellationRequested) {
+    return null;
+  }
+  if (shouldSkipStandaloneAnalysisForHeaderAuthoring(document)) {
     return null;
   }
 
@@ -1698,10 +4102,7 @@ async function formatExpressionBody(args: {
 function createStandaloneLanguageServiceForDocument(
   document: vscode.TextDocument,
 ) {
-  if (
-    document.languageId !== RSX_LANGUAGE_ID ||
-    document.uri.scheme !== 'file'
-  ) {
+  if (!isRsxDocument(document) || document.uri.scheme !== 'file') {
     return null;
   }
 
@@ -1709,6 +4110,17 @@ function createStandaloneLanguageServiceForDocument(
   const cached = standaloneServiceCache.get(key);
   if (cached && cached.version === document.version) {
     return cached.service;
+  }
+
+  if (
+    shouldSkipStandaloneAnalysisForHeaderAuthoring(document) ||
+    hasIncompleteTypeHeaderValue(document)
+  ) {
+    standaloneServiceCache.set(key, {
+      version: document.version,
+      service: null,
+    });
+    return null;
   }
 
   const service = safeCreateRsxStandaloneLanguageService({
@@ -1735,10 +4147,7 @@ function safeCreateRsxStandaloneLanguageService(
 function getModuleExpressionCacheEntry(
   document: vscode.TextDocument,
 ): IModuleExpressionCacheEntry | null {
-  if (
-    document.languageId !== RSX_LANGUAGE_ID ||
-    document.uri.scheme !== 'file'
-  ) {
+  if (!isRsxDocument(document) || document.uri.scheme !== 'file') {
     return null;
   }
 
@@ -1767,10 +4176,7 @@ function scheduleModuleExpressionPrewarm(
   document: vscode.TextDocument,
   delayMs: number,
 ): void {
-  if (
-    document.languageId !== RSX_LANGUAGE_ID ||
-    document.uri.scheme !== 'file'
-  ) {
+  if (!isRsxDocument(document) || document.uri.scheme !== 'file') {
     return;
   }
 
@@ -1799,10 +4205,7 @@ function scheduleModuleExpressionBackgroundWarm(
   document: vscode.TextDocument,
   delayMs: number,
 ): void {
-  if (
-    document.languageId !== RSX_LANGUAGE_ID ||
-    document.uri.scheme !== 'file'
-  ) {
+  if (!isRsxDocument(document) || document.uri.scheme !== 'file') {
     return;
   }
   if (!/^\s*expression\s*:/mu.test(document.getText())) {
@@ -1880,10 +4283,7 @@ function warmModuleExpressionsInBackground(
 }
 
 function prewarmModuleExpressionAnalysis(document: vscode.TextDocument): void {
-  if (
-    document.languageId !== RSX_LANGUAGE_ID ||
-    document.uri.scheme !== 'file'
-  ) {
+  if (!isRsxDocument(document) || document.uri.scheme !== 'file') {
     return;
   }
 
@@ -1941,6 +4341,7 @@ function getModuleExpressionStandaloneLanguageServiceForIndex(
 
   const service = createModuleExpressionStandaloneLanguageService(
     document,
+    cacheEntry.parsed,
     expression,
     expressionIndex,
   );
@@ -1952,10 +4353,7 @@ function createModuleExpressionStandaloneLanguageServiceForOffset(
   document: vscode.TextDocument,
   offset: number,
 ): IModuleExpressionStandaloneService | null {
-  if (
-    document.languageId !== RSX_LANGUAGE_ID ||
-    document.uri.scheme !== 'file'
-  ) {
+  if (!isRsxDocument(document) || document.uri.scheme !== 'file') {
     return null;
   }
 
@@ -1997,50 +4395,29 @@ function createModuleHeaderStandaloneLanguageServiceForOffset(
   document: vscode.TextDocument,
   offset: number,
 ): IModuleHeaderStandaloneService | null {
-  if (
-    document.languageId !== RSX_LANGUAGE_ID ||
-    document.uri.scheme !== 'file'
-  ) {
+  if (!isRsxDocument(document) || document.uri.scheme !== 'file') {
     return null;
   }
 
   const position = document.positionAt(offset);
-  const line = document.lineAt(position.line);
-  const parsed = parseHeaderLine(line.text);
-  if (!parsed || (parsed.key !== 'model' && parsed.key !== 'return')) {
+  const region = getTypeHeaderValueRegionAtPosition(document, position);
+  if (!region) {
     return null;
   }
 
-  const separatorIndex = line.text.indexOf(':');
-  if (separatorIndex < 0) {
-    return null;
-  }
-  const valueStartCharacter = (() => {
-    let cursor = separatorIndex + 1;
-    while (
-      cursor < line.text.length &&
-      isLineWhitespaceCharacter(line.text[cursor])
-    ) {
-      cursor += 1;
-    }
-    return cursor;
-  })();
-  if (position.character < valueStartCharacter) {
+  const valueOffset = offset - region.valueStartOffset;
+  const modelTypeText =
+    region.key === 'model'
+      ? getModuleHeaderModelTypeText(document, region.value)
+      : 'unknown';
+  const returnTypeText = region.key === 'return' ? region.value : 'unknown';
+  if (!isTypeHeaderValueSyntacticallyComplete(region.value)) {
     return null;
   }
 
-  const originalValueStart = document.offsetAt(
-    new vscode.Position(position.line, valueStartCharacter),
-  );
-  const originalValueEnd = document.offsetAt(
-    new vscode.Position(position.line, line.text.length),
-  );
-  const valueOffset = position.character - valueStartCharacter;
-  const modelTypeText = parsed.key === 'model' ? parsed.value : 'unknown';
-  const returnTypeText = parsed.key === 'return' ? parsed.value : 'unknown';
   const standaloneText = [
-    `model: ${modelTypeText}`,
-    `return: ${returnTypeText}`,
+    formatStandaloneTypeHeader('model', modelTypeText),
+    formatStandaloneTypeHeader('return', returnTypeText),
     '',
     '0',
   ].join('\n');
@@ -2048,22 +4425,41 @@ function createModuleHeaderStandaloneLanguageServiceForOffset(
   const standalone = safeCreateRsxStandaloneLanguageService({
     fileName: document.uri.fsPath,
     text: standaloneText,
-    virtualFileNameSuffix: `header_${parsed.key}`,
+    virtualFileNameSuffix: `header_${region.key}`,
   });
   if (!standalone) {
     return null;
   }
 
   const targetPrefix =
-    parsed.key === 'model' ? 'model: ' : `model: ${modelTypeText}\nreturn: `;
+    region.key === 'model' ? 'model: ' : `model: ${modelTypeText}\nreturn: `;
   const targetPosition = targetPrefix.length + Math.max(0, valueOffset);
   return {
     document: standalone,
     position: targetPosition,
-    key: parsed.key,
-    originalValueStart,
-    originalValueEnd,
+    key: region.key,
+    originalValueStart: region.valueStartOffset,
+    originalValueEnd: region.valueEndOffset,
   };
+}
+
+function getModuleHeaderModelTypeText(
+  document: vscode.TextDocument,
+  modelTypeText: string,
+): string {
+  const normalized =
+    normalizeRsxModelExpressionReferenceTypeText(modelTypeText);
+  const cacheEntry = getModuleExpressionCacheEntry(document);
+  const parsed = cacheEntry?.parsed;
+  if (!parsed || document.uri.scheme !== 'file') {
+    return normalized;
+  }
+
+  return qualifySameFileExpressionReferenceTypeText(
+    normalized,
+    document.uri.fsPath,
+    parsed,
+  );
 }
 
 function mapModuleHeaderSpanToDocument(
@@ -2137,7 +4533,9 @@ function getOrCreateMappedExpressionDiagnostics(args: {
     const isReturnMismatchDiagnostic =
       diagnostic.category === 'semantic' &&
       !!moduleExpressionService.expression.returnTypeText &&
-      /is not assignable to type/iu.test(diagnostic.message);
+      /is not assignable to (?:declared return )?type/iu.test(
+        diagnostic.message,
+      );
     if (!overlapsBody && !isReturnMismatchDiagnostic) {
       continue;
     }
@@ -2238,10 +4636,7 @@ function getModuleExpressionDiagnostics(
   mode: IDiagnosticsMode = 'auto',
   options: { includeHeaderDiagnostics?: boolean } = {},
 ): vscode.Diagnostic[] {
-  if (
-    document.languageId !== RSX_LANGUAGE_ID ||
-    document.uri.scheme !== 'file'
-  ) {
+  if (!isRsxDocument(document) || document.uri.scheme !== 'file') {
     return [];
   }
 
@@ -2280,10 +4675,7 @@ function getModuleExpressionSemanticTokens(
   document: vscode.TextDocument,
   _mode: IDiagnosticsMode = 'auto',
 ): IRsxSemanticToken[] {
-  if (
-    document.languageId !== RSX_LANGUAGE_ID ||
-    document.uri.scheme !== 'file'
-  ) {
+  if (!isRsxDocument(document) || document.uri.scheme !== 'file') {
     return [];
   }
 
@@ -2370,25 +4762,40 @@ function getActiveExpressionIndex(
 
 function createModuleExpressionStandaloneLanguageService(
   document: vscode.TextDocument,
+  parsed: NonNullable<IModuleExpressionCacheEntry['parsed']>,
   expression: IParsedRsxExpression,
   expressionIndex: number,
 ): IModuleExpressionStandaloneService | null {
-  const standaloneTextLines = [`model: ${expression.modelTypeText}`];
+  const modelTypeText = getModuleExpressionModelTypeWithSameFileReferences(
+    document,
+    parsed,
+    expression,
+  );
+  if (!isTypeHeaderValueSyntacticallyComplete(modelTypeText)) {
+    return null;
+  }
+
+  const standaloneTextLines = [
+    formatStandaloneTypeHeader('model', modelTypeText),
+  ];
   if (
     expression.returnTypeText &&
     expression.returnTypeText.trim().length > 0
   ) {
-    standaloneTextLines.push(`return: ${expression.returnTypeText.trim()}`);
+    if (!isTypeHeaderValueSyntacticallyComplete(expression.returnTypeText)) {
+      return null;
+    }
+    standaloneTextLines.push(
+      formatStandaloneTypeHeader('return', expression.returnTypeText),
+    );
   }
   standaloneTextLines.push('', expression.expression);
   const standaloneText = standaloneTextLines.join('\n');
-  const modelPropertyNamesHint = extractTopLevelModelPropertyNamesFromTypeText(
-    expression.modelTypeText,
-  );
   const standalone = safeCreateRsxStandaloneLanguageService({
     fileName: document.uri.fsPath,
     text: standaloneText,
-    modelPropertyNamesHint,
+    modelPropertyNamesHint:
+      getTopLevelModelPropertyNamesFromTypeText(modelTypeText),
     virtualFileNameSuffix: createModuleExpressionVirtualFileSuffix(
       expression,
       expressionIndex,
@@ -2409,6 +4816,201 @@ function createModuleExpressionStandaloneLanguageService(
     expression,
     standaloneExpressionStart: expressionBodyStart,
   };
+}
+
+function formatStandaloneTypeHeader(
+  key: 'model' | 'return',
+  value: string,
+): string {
+  const [firstLine = '', ...continuationLines] = value
+    .replace(/\r\n/gu, '\n')
+    .trim()
+    .split('\n');
+  if (continuationLines.length === 0) {
+    return `${key}: ${firstLine.trim()}`;
+  }
+
+  return [
+    `${key}: ${firstLine.trim()}`,
+    ...continuationLines.map((line) => `  ${line.trim()}`),
+  ].join('\n');
+}
+
+function getTopLevelModelPropertyNamesFromTypeText(
+  modelTypeText: string,
+): string[] {
+  const sourceFile = ts.createSourceFile(
+    '/__rsx_model_properties__.ts',
+    `type __RSX_MODEL = ${modelTypeText};`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const modelAlias = sourceFile.statements.find(
+    (statement): statement is ts.TypeAliasDeclaration =>
+      ts.isTypeAliasDeclaration(statement) &&
+      statement.name.text === '__RSX_MODEL',
+  );
+  if (!modelAlias) {
+    return [];
+  }
+
+  const propertyNames = new Set<string>();
+  const visit = (node: ts.TypeNode): void => {
+    if (ts.isParenthesizedTypeNode(node)) {
+      visit(node.type);
+      return;
+    }
+    if (ts.isIntersectionTypeNode(node)) {
+      for (const memberType of node.types) {
+        visit(memberType);
+      }
+      return;
+    }
+    if (!ts.isTypeLiteralNode(node)) {
+      return;
+    }
+    for (const member of node.members) {
+      if (!ts.isPropertySignature(member)) {
+        continue;
+      }
+      const propertyName = getPropertyNameText(member.name);
+      if (propertyName) {
+        propertyNames.add(propertyName);
+      }
+    }
+  };
+  visit(modelAlias.type);
+  return [...propertyNames];
+}
+
+function getModuleExpressionModelTypeWithSameFileReferences(
+  document: vscode.TextDocument,
+  parsed: NonNullable<IModuleExpressionCacheEntry['parsed']>,
+  expression: IParsedRsxExpression,
+): string {
+  const baseModelTypeText = qualifySameFileExpressionReferenceTypeText(
+    normalizeRsxModelExpressionReferenceTypeText(expression.modelTypeText),
+    document.uri.fsPath,
+    parsed,
+  );
+  const expressionExports = getRsxExpressionExports({
+    fileName: document.uri.fsPath,
+    expressions: parsed.expressions,
+  });
+  const referencedIdentifiers = new Set(
+    getFreeIdentifiersInRsxExpression(expression.expression),
+  );
+  const currentExport = expressionExports.find(
+    (entry) => entry.expression === expression,
+  );
+  const localFields = expressionExports
+    .map((entry) => ({
+      exportName: entry.exportName,
+      fieldName: getModelFieldNameForExpressionExport(entry.exportName),
+      returnTypeText: entry.expression.returnTypeText,
+    }))
+    .filter(
+      (
+        entry,
+      ): entry is {
+        exportName: string;
+        fieldName: string;
+        returnTypeText?: string;
+      } =>
+        Boolean(entry.fieldName) &&
+        referencedIdentifiers.has(entry.fieldName) &&
+        entry.fieldName !==
+          (currentExport
+            ? getModelFieldNameForExpressionExport(currentExport.exportName)
+            : undefined),
+    );
+  if (localFields.length === 0) {
+    return baseModelTypeText;
+  }
+  return `${baseModelTypeText} & { ${localFields
+    .map(
+      ({ fieldName, returnTypeText }) =>
+        `readonly ${JSON.stringify(fieldName)}: ${returnTypeText ?? 'never'}`,
+    )
+    .join('; ')} }`;
+}
+
+function qualifySameFileExpressionReferenceTypeText(
+  modelTypeText: string,
+  fileName: string,
+  parsed: NonNullable<IModuleExpressionCacheEntry['parsed']>,
+): string {
+  const expressionExports = getRsxExpressionExports({
+    fileName,
+    expressions: parsed.expressions,
+  });
+  if (expressionExports.length === 0) {
+    return modelTypeText;
+  }
+
+  const expressionReturnTypes = new Map(
+    expressionExports.map((expressionExport) => [
+      expressionExport.exportName,
+      expressionExport.expression.returnTypeText ?? 'unknown',
+    ]),
+  );
+  const prefix = 'type __RSX_MODEL = ';
+  const sourceFile = ts.createSourceFile(
+    '/__rsx_same_file_model_type.ts',
+    `${prefix}${modelTypeText};`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  if (sourceFile.parseDiagnostics.length > 0) {
+    return modelTypeText;
+  }
+  const modelAlias = sourceFile.statements.find(
+    (statement): statement is ts.TypeAliasDeclaration =>
+      ts.isTypeAliasDeclaration(statement) &&
+      statement.name.text === '__RSX_MODEL',
+  );
+  if (!modelAlias) {
+    return modelTypeText;
+  }
+
+  const replacements: Array<{ start: number; end: number; text: string }> = [];
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isTypeReferenceNode(node) &&
+      getRightmostEntityNameText(node.typeName) === 'ReturnType' &&
+      node.typeArguments?.length === 1
+    ) {
+      const targetType = node.typeArguments[0];
+      if (
+        ts.isTypeQueryNode(targetType) &&
+        ts.isIdentifier(targetType.exprName) &&
+        expressionReturnTypes.has(targetType.exprName.text)
+      ) {
+        replacements.push({
+          start: node.getStart(sourceFile) - prefix.length,
+          end: node.getEnd() - prefix.length,
+          text:
+            expressionReturnTypes.get(targetType.exprName.text) ?? 'unknown',
+        });
+        return;
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(modelAlias.type);
+  if (replacements.length === 0) {
+    return modelTypeText;
+  }
+
+  let qualified = modelTypeText;
+  for (const replacement of replacements.sort(
+    (left, right) => right.start - left.start,
+  )) {
+    qualified = `${qualified.slice(0, replacement.start)}${replacement.text}${qualified.slice(replacement.end)}`;
+  }
+  return qualified;
 }
 
 function createModuleExpressionVirtualFileSuffix(
@@ -2441,116 +5043,6 @@ function mapModuleExpressionOffsetToDocument(
   );
 
   return service.expression.expressionStart + relativeOffset;
-}
-
-function extractTopLevelModelPropertyNamesFromTypeText(
-  modelTypeText: string,
-): string[] {
-  const trimmed = modelTypeText.trim();
-  if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) {
-    return [];
-  }
-
-  const body = trimmed.slice(1, -1);
-  const segments: string[] = [];
-  let segmentStart = 0;
-  let braceDepth = 0;
-  let bracketDepth = 0;
-  let parenDepth = 0;
-  let angleDepth = 0;
-  let quote: "'" | '"' | null = null;
-
-  for (let index = 0; index < body.length; index += 1) {
-    const character = body[index];
-    if (quote) {
-      if (character === quote && body[index - 1] !== '\\') {
-        quote = null;
-      }
-      continue;
-    }
-
-    if (character === "'" || character === '"') {
-      quote = character;
-      continue;
-    }
-
-    if (character === '{') {
-      braceDepth += 1;
-      continue;
-    }
-    if (character === '}') {
-      braceDepth = Math.max(0, braceDepth - 1);
-      continue;
-    }
-    if (character === '[') {
-      bracketDepth += 1;
-      continue;
-    }
-    if (character === ']') {
-      bracketDepth = Math.max(0, bracketDepth - 1);
-      continue;
-    }
-    if (character === '(') {
-      parenDepth += 1;
-      continue;
-    }
-    if (character === ')') {
-      parenDepth = Math.max(0, parenDepth - 1);
-      continue;
-    }
-    if (character === '<') {
-      angleDepth += 1;
-      continue;
-    }
-    if (character === '>') {
-      angleDepth = Math.max(0, angleDepth - 1);
-      continue;
-    }
-
-    const atTopLevel =
-      braceDepth === 0 &&
-      bracketDepth === 0 &&
-      parenDepth === 0 &&
-      angleDepth === 0;
-    if (atTopLevel && (character === ';' || character === ',')) {
-      segments.push(body.slice(segmentStart, index));
-      segmentStart = index + 1;
-    }
-  }
-  segments.push(body.slice(segmentStart));
-
-  const names = new Set<string>();
-  for (const rawSegment of segments) {
-    const segment = rawSegment.trim();
-    if (!segment) {
-      continue;
-    }
-
-    const identifierMatch =
-      /^(?:readonly\s+)?([A-Za-z_$][A-Za-z0-9_$]*)(?:\?)?\s*:/u.exec(segment);
-    if (identifierMatch?.[1]) {
-      names.add(identifierMatch[1]);
-      continue;
-    }
-
-    const quotedMatch = /^(?:readonly\s+)?['"]([^'"]+)['"](?:\?)?\s*:/u.exec(
-      segment,
-    );
-    if (
-      quotedMatch?.[1] &&
-      /^[A-Za-z_$][A-Za-z0-9_$]*$/u.test(quotedMatch[1])
-    ) {
-      names.add(quotedMatch[1]);
-      continue;
-    }
-
-    // Fallback to full compiler-backed model property resolution for any
-    // non-simple object member declaration so member-expression behavior
-    // remains correct for advanced model type syntaxes.
-    return [];
-  }
-
-  return [...names];
 }
 
 function getModuleHeaderDiagnostics(
@@ -2750,6 +5242,10 @@ function getModuleHeaderDiagnostics(
       } else {
         const parsed = parseHeaderLine(line);
         if (parsed) {
+          const typeHeaderRegion = collectTypeHeaderValueRegion(
+            document,
+            lineIndex,
+          );
           addHeaderOrderDiagnosticsForLine({
             diagnostics,
             lineIndex,
@@ -2767,6 +5263,9 @@ function getModuleHeaderDiagnostics(
             key: parsed.key,
             value: parsed.value,
           });
+          if (typeHeaderRegion) {
+            lineIndex = typeHeaderRegion.endLine;
+          }
         }
         continue;
       }
@@ -2777,6 +5276,10 @@ function getModuleHeaderDiagnostics(
         finalizeExpressionHeaderBlock();
         state = 'topLevel';
       } else {
+        const typeHeaderRegion = collectTypeHeaderValueRegion(
+          document,
+          lineIndex,
+        );
         const headerLineHandled = addExpressionPreludeHeaderDiagnosticsForLine({
           diagnostics,
           document,
@@ -2787,6 +5290,9 @@ function getModuleHeaderDiagnostics(
         if (!headerLineHandled) {
           finalizeExpressionHeaderBlock();
           state = 'expressionBody';
+        }
+        if (typeHeaderRegion) {
+          lineIndex = typeHeaderRegion.endLine;
         }
         continue;
       }
@@ -2826,6 +5332,10 @@ function getModuleHeaderDiagnostics(
       key: topLevelHeader.key,
       value: topLevelHeader.value,
     });
+    const typeHeaderRegion = collectTypeHeaderValueRegion(document, lineIndex);
+    if (typeHeaderRegion) {
+      lineIndex = typeHeaderRegion.endLine;
+    }
   }
 
   if (state === 'expressionPrelude') {
@@ -2896,11 +5406,10 @@ function getModuleHeaderTypeDiagnostics(
       if (!indented) {
         state = 'topLevel';
       } else {
-        addModuleHeaderTypeDiagnosticsForLine({
+        lineIndex = addModuleHeaderTypeDiagnosticsForLine({
           diagnostics,
           document,
           lineIndex,
-          lineText,
           seen,
         });
         continue;
@@ -2917,11 +5426,10 @@ function getModuleHeaderTypeDiagnostics(
           continue;
         }
 
-        addModuleHeaderTypeDiagnosticsForLine({
+        lineIndex = addModuleHeaderTypeDiagnosticsForLine({
           diagnostics,
           document,
           lineIndex,
-          lineText,
           seen,
         });
         continue;
@@ -2939,11 +5447,10 @@ function getModuleHeaderTypeDiagnostics(
       continue;
     }
 
-    addModuleHeaderTypeDiagnosticsForLine({
+    lineIndex = addModuleHeaderTypeDiagnosticsForLine({
       diagnostics,
       document,
       lineIndex,
-      lineText,
       seen,
     });
   }
@@ -2955,30 +5462,19 @@ function addModuleHeaderTypeDiagnosticsForLine(args: {
   diagnostics: vscode.Diagnostic[];
   document: vscode.TextDocument;
   lineIndex: number;
-  lineText: string;
   seen: Set<string>;
-}): void {
-  const parsed = parseHeaderLine(args.lineText);
-  if (!parsed || (parsed.key !== 'model' && parsed.key !== 'return')) {
-    return;
+}): number {
+  const region = collectTypeHeaderValueRegion(args.document, args.lineIndex);
+  if (!region) {
+    return args.lineIndex;
   }
-
-  const separatorIndex = args.lineText.indexOf(':');
-  if (separatorIndex < 0) {
-    return;
+  if (region.value.trim().length === 0) {
+    return region.endLine;
   }
-  const valueStartCharacter = getHeaderValueStartCharacter(args.lineText);
-  if (valueStartCharacter >= args.lineText.length) {
-    return;
-  }
-
-  const valueStartOffset = args.document.offsetAt(
-    new vscode.Position(args.lineIndex, valueStartCharacter),
-  );
   const headerDiagnostics = getFastModuleHeaderTypeDiagnostics({
     document: args.document,
-    value: parsed.value,
-    valueStartOffset,
+    value: region.value,
+    valueStartOffset: region.valueStartOffset,
   });
 
   for (const diagnostic of headerDiagnostics) {
@@ -2998,6 +5494,7 @@ function addModuleHeaderTypeDiagnosticsForLine(args: {
       ),
     );
   }
+  return region.endLine;
 }
 
 function getFastModuleHeaderTypeDiagnostics(args: {
@@ -3007,19 +5504,12 @@ function getFastModuleHeaderTypeDiagnostics(args: {
 }): Array<{ message: string; start: number; end: number }> {
   const diagnostics: Array<{ message: string; start: number; end: number }> =
     [];
-  const prefix = 'type __RSX_HEADER = ';
-  const sourceFile = ts.createSourceFile(
-    `${args.document.uri.fsPath}.header.ts`,
-    `${prefix}${args.value};`,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS,
-  );
 
-  for (const diagnostic of sourceFile.parseDiagnostics) {
+  for (const diagnostic of getTypeHeaderValueParseDiagnostics(args.value)) {
     const start = Math.max(
       0,
-      (diagnostic.start ?? prefix.length) - prefix.length,
+      (diagnostic.start ?? TYPE_HEADER_VALUE_PARSE_PREFIX.length) -
+        TYPE_HEADER_VALUE_PARSE_PREFIX.length,
     );
     const length = Math.max(1, diagnostic.length ?? 1);
     diagnostics.push({
@@ -3041,6 +5531,91 @@ function getFastModuleHeaderTypeDiagnostics(args: {
   }
 
   return diagnostics;
+}
+
+const TYPE_HEADER_VALUE_PARSE_PREFIX = 'type __RSX_HEADER = ';
+
+function getTypeHeaderValueParseDiagnostics(
+  value: string,
+): readonly ts.DiagnosticWithLocation[] {
+  const sourceFile = ts.createSourceFile(
+    '/__rsx_header_type_check__.ts',
+    `${TYPE_HEADER_VALUE_PARSE_PREFIX}${value};`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+
+  return sourceFile.parseDiagnostics;
+}
+
+function getTypeHeaderValueRegionAtPosition(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+): ITypeHeaderValueRegion | null {
+  for (let lineIndex = position.line; lineIndex >= 0; lineIndex -= 1) {
+    const region = collectTypeHeaderValueRegion(document, lineIndex);
+    if (!region) {
+      continue;
+    }
+    if (position.line > region.endLine) {
+      return null;
+    }
+    if (position.line < region.startLine) {
+      continue;
+    }
+    const positionOffset = document.offsetAt(position);
+    if (
+      positionOffset >= region.valueStartOffset &&
+      positionOffset <= region.valueEndOffset
+    ) {
+      return region;
+    }
+    return null;
+  }
+  return null;
+}
+
+function collectTypeHeaderValueRegion(
+  document: vscode.TextDocument,
+  lineIndex: number,
+): ITypeHeaderValueRegion | null {
+  const line = document.lineAt(lineIndex);
+  const parsed = parseHeaderLine(line.text);
+  if (!parsed || (parsed.key !== 'model' && parsed.key !== 'return')) {
+    return null;
+  }
+
+  const valueStartCharacter = getHeaderValueStartCharacter(line.text);
+  const valueLines = [line.text.slice(valueStartCharacter).trim()];
+  let endLine = lineIndex;
+
+  while (
+    endLine + 1 < document.lineCount &&
+    !isTypeHeaderValueSyntacticallyComplete(valueLines.join('\n'))
+  ) {
+    const nextLine = document.lineAt(endLine + 1).text;
+    if (!isIndentedLine(nextLine)) {
+      break;
+    }
+    valueLines.push(nextLine.trim());
+    endLine += 1;
+  }
+
+  const endLineText = document.lineAt(endLine).text;
+  return {
+    key: parsed.key,
+    keyStartCharacter: parsed.keyStartCharacter,
+    value: valueLines.join('\n').trim(),
+    valueStartOffset: document.offsetAt(
+      new vscode.Position(lineIndex, valueStartCharacter),
+    ),
+    valueEndOffset: document.offsetAt(
+      new vscode.Position(endLine, endLineText.length),
+    ),
+    startLine: lineIndex,
+    endLine,
+  };
 }
 
 function parseHeaderLine(
@@ -3363,20 +5938,41 @@ function addHeaderKeyDiagnostic(args: {
   );
 }
 
-function getModuleHeaderCompletions(
+function getModuleHeaderCompletionsFromPlan(plan: {
+  candidates: readonly string[];
+  insertIndent: string;
+  range: vscode.Range;
+}): vscode.CompletionItem[] {
+  return plan.candidates.map((candidate) => {
+    const completion = new vscode.CompletionItem(
+      candidate,
+      vscode.CompletionItemKind.Property,
+    );
+    completion.range = plan.range;
+    completion.insertText = `${plan.insertIndent}${candidate}: `;
+    completion.sortText = `0_${candidate}`;
+    return completion;
+  });
+}
+
+function getModuleHeaderCompletionPlan(
   document: vscode.TextDocument,
   position: vscode.Position,
-): vscode.CompletionItem[] {
+): {
+  candidates: readonly string[];
+  insertIndent: string;
+  range: vscode.Range;
+} | null {
   const linePrefix = document
     .lineAt(position.line)
     .text.slice(0, position.character);
   if (linePrefix.includes(':')) {
-    return [];
+    return null;
   }
 
   const prefix = scanHeaderCompletionPrefix(linePrefix);
   if (!prefix) {
-    return [];
+    return null;
   }
 
   const previousNonEmptyLine = getPreviousNonEmptyLine(document, position.line);
@@ -3388,21 +5984,30 @@ function getModuleHeaderCompletions(
   const hasExpressionHeader = hasTopLevelHeader(document, 'expression');
   const isModuleDocument = hasExpressionHeader || hasDefaultsHeader;
   let candidates: readonly string[] = [];
+  let insertIndent = '';
+  let rangeStartCharacter = prefix.keyStartCharacter;
 
   if (prefix.leadingWhitespace.length > 0) {
     if (
       isTopLevelDefaultsHeaderLine(previousTrimmed) ||
       isTopLevelExpressionHeaderLine(previousTrimmed) ||
-      isExpressionHeaderLine(previousTrimmed)
+      isExpressionHeaderLineThatCanBeFollowedByMoreHeaders(previousTrimmed)
     ) {
       candidates = MODULE_EXPRESSION_HEADER_KEYS;
     }
   } else if (
     !previousIsIndented &&
-    (isTopLevelExpressionHeaderLine(previousTrimmed) ||
-      isExpressionHeaderLine(previousTrimmed))
+    isTopLevelDefaultsHeaderLine(previousTrimmed)
   ) {
     candidates = MODULE_EXPRESSION_HEADER_KEYS;
+    insertIndent = '  ';
+  } else if (
+    !previousIsIndented &&
+    (isTopLevelExpressionHeaderLine(previousTrimmed) ||
+      isExpressionHeaderLineThatCanBeFollowedByMoreHeaders(previousTrimmed))
+  ) {
+    candidates = MODULE_EXPRESSION_HEADER_KEYS;
+    insertIndent = '  ';
   } else if (isModuleDocument) {
     candidates =
       hasDefaultsHeader || hasExpressionHeader
@@ -3412,17 +6017,34 @@ function getModuleHeaderCompletions(
     candidates = FRESH_FILE_TOP_LEVEL_HEADER_KEYS;
   }
 
-  return candidates
-    .filter((candidate) => candidate.startsWith(prefix.typedPrefix))
-    .map((candidate) => {
-      const completion = new vscode.CompletionItem(
-        candidate,
-        vscode.CompletionItemKind.Property,
-      );
-      completion.insertText = `${candidate}: `;
-      completion.sortText = `0_${candidate}`;
-      return completion;
-    });
+  const hasHeaderCompletionContext = candidates.length > 0;
+  let matchingCandidates = candidates.filter((candidate) =>
+    candidate.startsWith(prefix.typedPrefix),
+  );
+  if (
+    matchingCandidates.length === 0 &&
+    prefix.leadingWhitespace.length > 0 &&
+    isModuleDocument &&
+    prefix.typedPrefix.length > 0 &&
+    'expression'.startsWith(prefix.typedPrefix)
+  ) {
+    matchingCandidates = ['expression'];
+    insertIndent = '';
+    rangeStartCharacter = 0;
+  }
+
+  if (!hasHeaderCompletionContext && matchingCandidates.length === 0) {
+    return null;
+  }
+
+  return {
+    candidates: matchingCandidates,
+    insertIndent,
+    range: new vscode.Range(
+      new vscode.Position(position.line, rangeStartCharacter),
+      position,
+    ),
+  };
 }
 
 function getPreviousNonEmptyLine(
@@ -3440,6 +6062,7 @@ function getPreviousNonEmptyLine(
 
 function scanHeaderCompletionPrefix(linePrefix: string): {
   leadingWhitespace: string;
+  keyStartCharacter: number;
   typedPrefix: string;
 } | null {
   let cursor = 0;
@@ -3464,6 +6087,7 @@ function scanHeaderCompletionPrefix(linePrefix: string): {
 
   return {
     leadingWhitespace: linePrefix.slice(0, keyStart),
+    keyStartCharacter: keyStart,
     typedPrefix: linePrefix.slice(keyStart),
   };
 }
@@ -3495,9 +6119,15 @@ function isTopLevelExpressionHeaderLine(line: string): boolean {
   return parsed?.key === 'expression' && parsed.value.trim().length > 0;
 }
 
-function isExpressionHeaderLine(line: string): boolean {
+function isExpressionHeaderLineThatCanBeFollowedByMoreHeaders(
+  line: string,
+): boolean {
   const parsed = parseHeaderLine(line);
   if (!parsed || parsed.value.trim().length === 0) {
+    return false;
+  }
+
+  if (parsed.key === 'return') {
     return false;
   }
 

@@ -17,6 +17,7 @@ import {
   getRsxSemanticTokens,
   getRsxSyntacticTokensForText,
   getRsxSignatureHelpAtPosition,
+  getRsxHeaderImportDiagnosticsForText,
   getRsxHeaderImportTypeDefinitionsAtTextPosition,
   getRsxTypeDefinitionsAtPosition,
   rsxSemanticTokenTypes,
@@ -42,6 +43,10 @@ const implementationModelFixturePath = path.resolve(
 const modulePerformanceFixturePath = path.resolve(
   workspaceRoot,
   './rs-x-vscode-extension/tests/fixtures/rsx-module-performance.fixture.rsx',
+);
+const rsxHeaderImportExpressionFixturePath = path.resolve(
+  workspaceRoot,
+  './rs-x-vscode-extension/tests/fixtures/rsx-header-import-expression.fixture.rsx',
 );
 
 describe('rsx standalone language service', () => {
@@ -166,6 +171,88 @@ describe('rsx standalone language service', () => {
         fileName: modelFixturePath,
       }),
     ]);
+  });
+
+  it('resolves expression value imports from module-style header text', () => {
+    const text = [
+      'defaults:',
+      '  model: {',
+      "    c: typeof import('./rsx-header-import-expression.fixture').composed,",
+      '    d: 10',
+      '  }',
+      '',
+      'expression: totalRsx',
+      '  c + d',
+      '',
+    ].join('\n');
+    const fileName = path.join(
+      path.dirname(rsxHeaderImportExpressionFixturePath),
+      'consumer.fixture.rsx',
+    );
+    const typeOffset = text.indexOf('composed') + 1;
+    const moduleOffset =
+      text.indexOf('rsx-header-import-expression.fixture') + 1;
+
+    const diagnostics = getRsxHeaderImportDiagnosticsForText({
+      fileName,
+      headerText:
+        "{\n    c: typeof import('./rsx-header-import-expression.fixture').composed,\n    d: 10\n  }",
+    });
+    const typeDefinitions = getRsxHeaderImportTypeDefinitionsAtTextPosition({
+      fileName,
+      text,
+      position: typeOffset,
+    });
+    const moduleDefinitions = getRsxHeaderImportTypeDefinitionsAtTextPosition({
+      fileName,
+      text,
+      position: moduleOffset,
+    });
+
+    const expressionText = readFileSync(
+      rsxHeaderImportExpressionFixturePath,
+      'utf8',
+    );
+    const expectedStart = expressionText.indexOf('composed');
+    expect(diagnostics).toEqual([]);
+    expect(typeDefinitions).toEqual([
+      {
+        fileName: rsxHeaderImportExpressionFixturePath,
+        start: expectedStart,
+        end: expectedStart + 'composed'.length,
+      },
+    ]);
+    expect(moduleDefinitions).toEqual([
+      expect.objectContaining({
+        fileName: rsxHeaderImportExpressionFixturePath,
+      }),
+    ]);
+  });
+
+  it('infers model fields from imported .rsx expression value references', () => {
+    const text = [
+      'model: {',
+      "  c: ReturnType<typeof import('./rsx-header-import-expression.fixture').composed>,",
+      '  d: 10',
+      '  }',
+      '',
+      'c + d',
+    ].join('\n');
+    const fileName = path.join(
+      path.dirname(rsxHeaderImportExpressionFixturePath),
+      'consumer.fixture.rsx',
+    );
+    const service = createRsxStandaloneLanguageService({
+      fileName,
+      text,
+    });
+
+    expect(service).not.toBeNull();
+    expect(getRsxDiagnostics(service!)).toEqual([]);
+
+    const hover = getRsxHoverAtPosition(service!, text.indexOf('c +'))?.text;
+    expect(hover).toContain('model.c: number');
+    expect(hover).not.toContain('any');
   });
 
   it('finds references for standalone .rsx symbols across the rsx file and model contract', () => {
@@ -435,6 +522,31 @@ lines.map((line) => ({
     expect(lineHover?.text).toContain('(parameter) line:');
     expect(lineHover?.text).toContain('lineTotal');
     expect(linesHover?.text).toContain('model.lines:');
+  });
+
+  it('keeps imported intersection model hover on the fast property path', () => {
+    const text = [
+      `model: import('./rsx-file-model.fixture').IModel & { readonly "merchandiseSubtotal": __RSX_UNWRAP_EXPRESSION<import('@rs-x/expression-parser').IExpressionTree<number>> }`,
+      '',
+      'lines.reduce((sum, line) => sum + line.lineTotal, 0) + merchandiseSubtotal',
+    ].join('\n');
+
+    const service = createRsxStandaloneLanguageService({
+      fileName: rsxFixturePath,
+      text,
+    });
+
+    expect(service).not.toBeNull();
+    expect(
+      getRsxHoverAtPosition(service!, text.indexOf('lines.reduce'))?.text,
+    ).toContain('model.lines:');
+    const referenceHover = getRsxHoverAtPosition(
+      service!,
+      text.indexOf('merchandiseSubtotal'),
+    )?.text;
+    expect(referenceHover).toContain('merchandiseSubtotal');
+    expect(referenceHover).toContain('number');
+    expect(referenceHover).not.toContain('any');
   });
 
   it('returns signature help for standalone .rsx call expressions', () => {

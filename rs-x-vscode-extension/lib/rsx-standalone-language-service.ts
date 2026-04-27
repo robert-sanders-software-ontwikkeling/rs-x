@@ -6,8 +6,10 @@ import {
   createRsxBackedProgramForFile,
   createRsxImportAwareCompilerHost,
   generateRsxModuleDeclaration,
+  getRsxExpressionExportSourceSpan,
   getRsxFileNameFromVirtualDeclaration,
   getRsxVirtualDeclarationFileName,
+  normalizeRsxModelExpressionReferenceTypeText,
   parseExpressionDiagnostic,
   rsxSemanticTokenTypes,
   shouldEmitRsxSemanticToken,
@@ -17,6 +19,8 @@ import {
 const RSX_MODEL_PREFIX = 'type __RSX_MODEL = ';
 const RSX_RETURN_PREFIX = 'type __RSX_RETURN = ';
 const RSX_BODY_PREFIX = 'const __rsx_expression';
+const RSX_UNWRAP_EXPRESSION_HELPER =
+  "type __RSX_UNWRAP_EXPRESSION<T> = T extends import('@rs-x/expression-parser').IExpression<infer TValue> ? TValue : T extends import('@rs-x/expression-parser').IExpressionTree<infer TValue> ? TValue : T;\n";
 
 export interface IRsxMappedSpan {
   readonly fileName: string;
@@ -171,7 +175,7 @@ export function createRsxStandaloneLanguageService(args: {
   const fastModelPropertyNames =
     hintedModelPropertyNames.length > 0 || !modelTypeText
       ? null
-      : resolveImportedModelPropertyNames({
+      : resolveFastModelPropertyNames({
           containingFile: args.fileName,
           modelTypeText,
         });
@@ -190,14 +194,7 @@ export function createRsxStandaloneLanguageService(args: {
             projectContext,
           })),
   });
-  const rootNames = Array.from(
-    new Set([
-      ...projectContext.rootNames.filter(
-        (rootName) => rootName !== args.fileName && !rootName.endsWith('.rsx'),
-      ),
-      virtual.virtualFileName,
-    ]),
-  );
+  const rootNames = [virtual.virtualFileName];
   const runtime = getOrCreateStandaloneRuntime({
     fileName: args.fileName,
     virtualFileName: virtual.virtualFileName,
@@ -303,11 +300,22 @@ function getOrCreateStandaloneRuntime(args: {
     resolveModuleNames: (
       moduleNames,
       containingFile,
-      _,
+      reusedNames,
       redirectedReference,
       options,
-    ) =>
-      moduleNames.map(
+    ) => {
+      const resolvedByRsxHost = moduleResolutionHost.resolveModuleNames?.(
+        moduleNames,
+        containingFile,
+        reusedNames,
+        redirectedReference,
+        options ?? args.options,
+      );
+      if (resolvedByRsxHost) {
+        return resolvedByRsxHost;
+      }
+
+      return moduleNames.map(
         (moduleName) =>
           ts.resolveModuleName(
             moduleName,
@@ -317,7 +325,8 @@ function getOrCreateStandaloneRuntime(args: {
             undefined,
             redirectedReference,
           ).resolvedModule,
-      ),
+      );
+    },
   };
   const runtime: IStandaloneRuntime = {
     languageService: ts.createLanguageService(languageServiceHost),
@@ -421,41 +430,15 @@ export function getRsxHeaderImportTypeDefinitionsAtTextPosition(args: {
   text: string;
   position: number;
 }): IRsxMappedSpan[] {
-  const normalizedPosition = Math.max(
-    0,
-    Math.min(args.position, args.text.length),
-  );
-  const lineStart = args.text.lastIndexOf('\n', normalizedPosition - 1) + 1;
-  const nextLineBreak = args.text.indexOf('\n', normalizedPosition);
-  const lineEnd = nextLineBreak >= 0 ? nextLineBreak : args.text.length;
-  const lineText = args.text.slice(lineStart, lineEnd);
-  const headerMatch = /^(\s*)(model|return)\s*:\s*(.*)$/u.exec(lineText);
-  if (!headerMatch) {
-    return [];
-  }
-
-  const separatorIndex = lineText.indexOf(':');
-  if (separatorIndex < 0) {
-    return [];
-  }
-
-  let valueStartCharacter = separatorIndex + 1;
-  while (
-    valueStartCharacter < lineText.length &&
-    /\s/u.test(lineText[valueStartCharacter])
-  ) {
-    valueStartCharacter += 1;
-  }
-
-  const valueStart = lineStart + valueStartCharacter;
-  if (normalizedPosition < valueStart) {
+  const header = getHeaderValueAtTextPosition(args);
+  if (!header) {
     return [];
   }
 
   return resolveHeaderImportTypeDefinitionsInText({
     containingFile: args.fileName,
-    headerText: args.text.slice(valueStart, lineEnd),
-    relativePosition: normalizedPosition - valueStart,
+    headerText: header.text,
+    relativePosition: args.position - header.start,
   });
 }
 
@@ -526,38 +509,99 @@ function getHeaderValueAtTextPosition(args: {
     0,
     Math.min(args.position, args.text.length),
   );
-  const lineStart = args.text.lastIndexOf('\n', normalizedPosition - 1) + 1;
-  const nextLineBreak = args.text.indexOf('\n', normalizedPosition);
-  const lineEnd = nextLineBreak >= 0 ? nextLineBreak : args.text.length;
-  const lineText = args.text.slice(lineStart, lineEnd);
-  const headerMatch = /^(\s*)(model|return)\s*:\s*(.*)$/u.exec(lineText);
-  if (!headerMatch) {
-    return null;
+
+  for (const headerLine of getTextLines(args.text)) {
+    if (headerLine.start > normalizedPosition) {
+      break;
+    }
+
+    const headerMatch = /^(\s*)(model|return)\s*:\s*(.*)$/u.exec(
+      headerLine.text,
+    );
+    if (!headerMatch) {
+      continue;
+    }
+
+    const separatorIndex = headerLine.text.indexOf(':');
+    if (separatorIndex < 0) {
+      continue;
+    }
+
+    let valueStartCharacter = separatorIndex + 1;
+    while (
+      valueStartCharacter < headerLine.text.length &&
+      /\s/u.test(headerLine.text[valueStartCharacter])
+    ) {
+      valueStartCharacter += 1;
+    }
+
+    const valueStart = headerLine.start + valueStartCharacter;
+    const valueLines = [headerLine.text.slice(valueStartCharacter).trim()];
+    let end = headerLine.end;
+    let next = headerLine.next;
+    while (
+      next < args.text.length &&
+      !isStandaloneTypeHeaderValueComplete(valueLines.join('\n'))
+    ) {
+      const continuationLine = readTextLineAt(args.text, next);
+      if (!/^\s/u.test(continuationLine.text)) {
+        break;
+      }
+      valueLines.push(continuationLine.text.trim());
+      end = continuationLine.end;
+      next = continuationLine.next;
+    }
+
+    if (normalizedPosition < valueStart || normalizedPosition > end) {
+      continue;
+    }
+
+    return {
+      text: args.text.slice(valueStart, end),
+      start: valueStart,
+      end,
+      key: headerMatch[2] as 'model' | 'return',
+    };
   }
 
-  const separatorIndex = lineText.indexOf(':');
-  if (separatorIndex < 0) {
-    return null;
-  }
+  return null;
+}
 
-  let valueStartCharacter = separatorIndex + 1;
-  while (
-    valueStartCharacter < lineText.length &&
-    /\s/u.test(lineText[valueStartCharacter])
-  ) {
-    valueStartCharacter += 1;
+function getTextLines(text: string): Array<{
+  text: string;
+  start: number;
+  end: number;
+  next: number;
+}> {
+  const lines: Array<{
+    text: string;
+    start: number;
+    end: number;
+    next: number;
+  }> = [];
+  let offset = 0;
+  while (offset <= text.length) {
+    const line = readTextLineAt(text, offset);
+    lines.push(line);
+    if (line.next <= offset || line.next > text.length) {
+      break;
+    }
+    offset = line.next;
   }
+  return lines;
+}
 
-  const valueStart = lineStart + valueStartCharacter;
-  if (normalizedPosition < valueStart) {
-    return null;
-  }
-
+function readTextLineAt(
+  text: string,
+  offset: number,
+): { text: string; start: number; end: number; next: number } {
+  const lineEndIndex = text.indexOf('\n', offset);
+  const end = lineEndIndex === -1 ? text.length : lineEndIndex;
   return {
-    text: args.text.slice(valueStart, lineEnd),
-    start: valueStart,
-    end: lineEnd,
-    key: headerMatch[2] as 'model' | 'return',
+    text: text.slice(offset, end),
+    start: offset,
+    end,
+    next: lineEndIndex === -1 ? text.length + 1 : end + 1,
   };
 }
 
@@ -781,6 +825,11 @@ function resolveHeaderImportModuleFileName(args: {
   containingFile: string;
   moduleName: string;
 }): string | null {
+  const resolvedRsxFileName = resolveHeaderImportRsxModuleFileName(args);
+  if (resolvedRsxFileName) {
+    return resolvedRsxFileName;
+  }
+
   const projectContext = resolveProjectContext(args.containingFile);
   const compilerHost = ts.createCompilerHost(projectContext.options, true);
   return (
@@ -793,11 +842,133 @@ function resolveHeaderImportModuleFileName(args: {
   );
 }
 
-function resolveImportedModelPropertyNames(args: {
+function resolveHeaderImportRsxModuleFileName(args: {
+  containingFile: string;
+  moduleName: string;
+}): string | null {
+  if (!isRelativeModuleName(args.moduleName)) {
+    return null;
+  }
+
+  const candidates = args.moduleName.endsWith('.rsx')
+    ? [args.moduleName]
+    : [`${args.moduleName}.rsx`, `${args.moduleName}/index.rsx`];
+  for (const candidate of candidates) {
+    const resolvedFileName = resolveRelativePath(
+      args.containingFile,
+      candidate,
+    );
+    if (ts.sys.fileExists(resolvedFileName)) {
+      return resolvedFileName;
+    }
+  }
+
+  return null;
+}
+
+function isRelativeModuleName(moduleName: string): boolean {
+  return (
+    moduleName.startsWith('./') ||
+    moduleName.startsWith('../') ||
+    moduleName === '.' ||
+    moduleName === '..'
+  );
+}
+
+function resolveRelativePath(
+  containingFile: string,
+  moduleName: string,
+): string {
+  const normalizedContainingFile = containingFile.replace(/\\/gu, '/');
+  const containingDirectory = normalizedContainingFile.includes('/')
+    ? normalizedContainingFile.slice(
+        0,
+        normalizedContainingFile.lastIndexOf('/'),
+      )
+    : '.';
+  const joined = `${containingDirectory}/${moduleName}`.replace(/\\/gu, '/');
+  const parts = joined.split('/');
+  const normalizedParts: string[] = [];
+
+  for (const part of parts) {
+    if (!part || part === '.') {
+      continue;
+    }
+    if (part === '..') {
+      normalizedParts.pop();
+      continue;
+    }
+    normalizedParts.push(part);
+  }
+
+  const prefix = joined.startsWith('/') ? '/' : '';
+  return `${prefix}${normalizedParts.join('/')}`;
+}
+
+function resolveFastModelPropertyNames(args: {
   containingFile: string;
   modelTypeText: string;
 }): string[] | null {
-  const importType = parseImportTypeReference(args.modelTypeText);
+  const typeNode = parseModelTypeNode(args.modelTypeText);
+  if (!typeNode) {
+    return null;
+  }
+
+  return resolveModelTypeNodePropertyNames({
+    containingFile: args.containingFile,
+    typeNode,
+    seen: new Set<string>(),
+  });
+}
+
+function parseModelTypeNode(modelTypeText: string): ts.TypeNode | null {
+  const sourceFile = ts.createSourceFile(
+    'rsx-model-type.ts',
+    `type __RSX_Model = ${modelTypeText};`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const statement = sourceFile.statements[0];
+  return statement && ts.isTypeAliasDeclaration(statement)
+    ? statement.type
+    : null;
+}
+
+function resolveModelTypeNodePropertyNames(args: {
+  containingFile: string;
+  typeNode: ts.TypeNode;
+  seen: Set<string>;
+}): string[] | null {
+  if (ts.isParenthesizedTypeNode(args.typeNode)) {
+    return resolveModelTypeNodePropertyNames({
+      ...args,
+      typeNode: args.typeNode.type,
+    });
+  }
+
+  if (ts.isTypeLiteralNode(args.typeNode)) {
+    return getTopLevelPropertyNamesFromMembers(args.typeNode.members);
+  }
+
+  if (ts.isIntersectionTypeNode(args.typeNode)) {
+    const names = new Set<string>();
+    for (const child of args.typeNode.types) {
+      const childNames = resolveModelTypeNodePropertyNames({
+        ...args,
+        typeNode: child,
+      });
+      if (!childNames) {
+        return null;
+      }
+      for (const name of childNames) {
+        names.add(name);
+      }
+    }
+    return [...names];
+  }
+
+  const importType = getImportTypeReferenceFromTypeNode(args.typeNode);
   if (!importType) {
     return null;
   }
@@ -813,24 +984,26 @@ function resolveImportedModelPropertyNames(args: {
   return resolveExportedTypePropertyNames({
     fileName: resolvedFileName,
     name: importType.typeName,
-    seen: new Set<string>(),
+    seen: args.seen,
   });
 }
 
-function parseImportTypeReference(
-  typeText: string,
+function getImportTypeReferenceFromTypeNode(
+  typeNode: ts.TypeNode,
 ): { moduleName: string; typeName: string } | null {
-  const match =
-    /^import\s*\(\s*(['"])([^'"]+)\1\s*\)\s*\.\s*([A-Za-z_$][A-Za-z0-9_$]*)\s*$/u.exec(
-      typeText.trim(),
-    );
-  if (!match) {
+  if (
+    !ts.isImportTypeNode(typeNode) ||
+    !ts.isLiteralTypeNode(typeNode.argument) ||
+    !ts.isStringLiteral(typeNode.argument.literal) ||
+    !typeNode.qualifier ||
+    !ts.isIdentifier(typeNode.qualifier)
+  ) {
     return null;
   }
 
   return {
-    moduleName: match[2],
-    typeName: match[3],
+    moduleName: typeNode.argument.literal.text,
+    typeName: typeNode.qualifier.text,
   };
 }
 
@@ -952,6 +1125,13 @@ function resolveExportedTypeSpan(args: {
   name: string;
   seen: Set<string>;
 }): IRsxMappedSpan | null {
+  if (args.fileName.endsWith('.rsx')) {
+    return resolveRsxExpressionExportSpan({
+      fileName: args.fileName,
+      name: args.name,
+    });
+  }
+
   const seenKey = `${args.fileName}:${args.name}`;
   if (args.seen.has(seenKey)) {
     return null;
@@ -1013,6 +1193,29 @@ function resolveExportedTypeSpan(args: {
   }
 
   return null;
+}
+
+function resolveRsxExpressionExportSpan(args: {
+  fileName: string;
+  name: string;
+}): IRsxMappedSpan | null {
+  const text = ts.sys.readFile(args.fileName);
+  if (typeof text !== 'string') {
+    return null;
+  }
+
+  const span = getRsxExpressionExportSourceSpan({
+    fileName: args.fileName,
+    text,
+    exportName: args.name,
+  });
+  return span
+    ? {
+        fileName: args.fileName,
+        start: span.start,
+        end: span.start + span.length,
+      }
+    : null;
 }
 
 function getDirectExportedTypeName(
@@ -1546,6 +1749,10 @@ export function getRsxDiagnostics(
     for (const diagnostic of values) {
       const diagnosticStart = diagnostic.start ?? 0;
       const diagnosticLength = diagnostic.length ?? 0;
+      const message = ts.flattenDiagnosticMessageText(
+        diagnostic.messageText,
+        '\n',
+      );
       const mapped = mapVirtualSpanToOriginal({
         document,
         fileName: diagnostic.file?.fileName ?? document.virtualFileName,
@@ -1553,6 +1760,25 @@ export function getRsxDiagnostics(
         end: diagnosticStart + diagnosticLength,
       });
       if (!mapped || mapped.fileName !== document.fileName) {
+        if (
+          category === 'semantic' &&
+          isDeclaredReturnAssignabilityDiagnostic(document, diagnostic, message)
+        ) {
+          const start = document.bodyRegion.originalStart;
+          const end = Math.max(document.bodyRegion.originalEnd, start + 1);
+          const declaredReturnMessage =
+            formatDeclaredReturnMismatchMessage(document);
+          const key = `${category}:${start}:${end}:${declaredReturnMessage}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            diagnostics.push({
+              category,
+              message: declaredReturnMessage,
+              start,
+              end,
+            });
+          }
+        }
         continue;
       }
 
@@ -1571,10 +1797,6 @@ export function getRsxDiagnostics(
         continue;
       }
 
-      const message = ts.flattenDiagnosticMessageText(
-        diagnostic.messageText,
-        '\n',
-      );
       const key = `${category}:${start}:${end}:${message}`;
       if (seen.has(key)) {
         continue;
@@ -1606,6 +1828,35 @@ export function getRsxDiagnostics(
 
   diagnostics.sort((left, right) => left.start - right.start);
   return diagnostics;
+}
+
+function isDeclaredReturnAssignabilityDiagnostic(
+  document: IRsxVirtualDocument,
+  diagnostic: ts.DiagnosticWithLocation,
+  message: string,
+): boolean {
+  if (!document.returnTypeRegion) {
+    return false;
+  }
+  if (diagnostic.file?.fileName !== document.virtualFileName) {
+    return false;
+  }
+
+  return /is not assignable to type/iu.test(message);
+}
+
+function formatDeclaredReturnMismatchMessage(
+  document: IRsxVirtualDocument,
+): string {
+  const declaredReturnType = document.returnTypeRegion
+    ? document.originalText
+        .slice(
+          document.returnTypeRegion.originalStart,
+          document.returnTypeRegion.originalEnd,
+        )
+        .trim()
+    : 'unknown';
+  return `Expression result is not assignable to declared return type '${declaredReturnType}'.`;
 }
 
 function resolveUnsupportedBodyMessage(
@@ -1791,34 +2042,35 @@ function buildVirtualDocument(args: {
   modelPropertyNames: readonly string[];
 }): Omit<IRsxVirtualDocument, 'languageService'> {
   const normalizedText = args.text.replace(/\r\n/gu, '\n');
-  const modelTypeMatch = /^(model)\s*:\s*(.+)$/mu.exec(normalizedText);
-  if (!modelTypeMatch || typeof modelTypeMatch.index !== 'number') {
+  const modelTypeRegion = getStandaloneHeaderValueRegion(
+    normalizedText,
+    'model',
+  );
+  if (!modelTypeRegion) {
     throw new Error('RS-X file is missing a model header.');
   }
 
-  const modelTypeOriginalStart =
-    modelTypeMatch.index + modelTypeMatch[0].indexOf(modelTypeMatch[2]);
-  const modelTypeOriginalEnd =
-    modelTypeOriginalStart + modelTypeMatch[2].length;
-
   let virtualText = '';
+  virtualText += RSX_UNWRAP_EXPRESSION_HELPER;
   const modelTypeVirtualStart = virtualText.length + RSX_MODEL_PREFIX.length;
-  virtualText += `${RSX_MODEL_PREFIX}${modelTypeMatch[2]};\n`;
-  const modelTypeVirtualEnd = modelTypeVirtualStart + modelTypeMatch[2].length;
+  virtualText += `${RSX_MODEL_PREFIX}${modelTypeRegion.value};\n`;
+  const modelTypeVirtualEnd =
+    modelTypeVirtualStart + modelTypeRegion.value.length;
 
-  const returnTypeMatch = /^(return)\s*:\s*(.+)$/mu.exec(normalizedText);
+  const returnTypeRegionSource = getStandaloneHeaderValueRegion(
+    normalizedText,
+    'return',
+  );
   let returnTypeRegion: IMappedRegion | undefined;
-  if (returnTypeMatch && typeof returnTypeMatch.index === 'number') {
-    const returnTypeOriginalStart =
-      returnTypeMatch.index + returnTypeMatch[0].indexOf(returnTypeMatch[2]);
+  if (returnTypeRegionSource) {
     const returnTypeVirtualStart =
       virtualText.length + RSX_RETURN_PREFIX.length;
-    virtualText += `${RSX_RETURN_PREFIX}${returnTypeMatch[2]};\n`;
+    virtualText += `${RSX_RETURN_PREFIX}${returnTypeRegionSource.value};\n`;
     returnTypeRegion = {
-      originalStart: returnTypeOriginalStart,
-      originalEnd: returnTypeOriginalStart + returnTypeMatch[2].length,
+      originalStart: returnTypeRegionSource.start,
+      originalEnd: returnTypeRegionSource.end,
       virtualStart: returnTypeVirtualStart,
-      virtualEnd: returnTypeVirtualStart + returnTypeMatch[2].length,
+      virtualEnd: returnTypeVirtualStart + returnTypeRegionSource.value.length,
     };
   }
 
@@ -1826,7 +2078,7 @@ function buildVirtualDocument(args: {
     virtualText += args.modelPropertyNames
       .map(
         (propertyName) =>
-          `declare const ${propertyName}: __RSX_MODEL[${JSON.stringify(propertyName)}];`,
+          `declare const ${propertyName}: __RSX_UNWRAP_EXPRESSION<__RSX_MODEL[${JSON.stringify(propertyName)}]>;`,
       )
       .join('\n');
     virtualText += '\n';
@@ -1850,8 +2102,8 @@ function buildVirtualDocument(args: {
     virtualText,
     modelPropertyNames: args.modelPropertyNames,
     modelTypeRegion: {
-      originalStart: modelTypeOriginalStart,
-      originalEnd: modelTypeOriginalEnd,
+      originalStart: modelTypeRegion.start,
+      originalEnd: modelTypeRegion.end,
       virtualStart: modelTypeVirtualStart,
       virtualEnd: modelTypeVirtualEnd,
     },
@@ -1863,6 +2115,62 @@ function buildVirtualDocument(args: {
       virtualEnd: bodyVirtualStart + bodyOriginalText.length,
     },
   };
+}
+
+function getStandaloneHeaderValueRegion(
+  text: string,
+  key: 'model' | 'return',
+): { value: string; start: number; end: number } | null {
+  let offset = 0;
+  while (offset <= text.length) {
+    const lineEndIndex = text.indexOf('\n', offset);
+    const lineEnd = lineEndIndex === -1 ? text.length : lineEndIndex;
+    const line = text.slice(offset, lineEnd);
+    const match = new RegExp(`^${key}\\s*:\\s*(.*)$`, 'u').exec(line);
+    if (!match) {
+      if (lineEndIndex === -1) {
+        break;
+      }
+      offset = lineEnd + 1;
+      continue;
+    }
+
+    const valueStartInLine = line.indexOf(match[1]);
+    const valueLines = [match[1].trim()];
+    let end = lineEnd;
+    let next = lineEndIndex === -1 ? text.length : lineEnd + 1;
+    while (
+      next < text.length &&
+      !isStandaloneTypeHeaderValueComplete(valueLines.join('\n'))
+    ) {
+      const continuationLineEndIndex = text.indexOf('\n', next);
+      const continuationLineEnd =
+        continuationLineEndIndex === -1
+          ? text.length
+          : continuationLineEndIndex;
+      const continuationLine = text.slice(next, continuationLineEnd);
+      if (!/^\s/u.test(continuationLine)) {
+        break;
+      }
+      valueLines.push(continuationLine.trim());
+      end = continuationLineEnd;
+      next =
+        continuationLineEndIndex === -1 ? text.length : continuationLineEnd + 1;
+    }
+
+    return {
+      value:
+        key === 'model'
+          ? normalizeRsxModelExpressionReferenceTypeText(
+              valueLines.join('\n').trim(),
+            )
+          : valueLines.join('\n').trim(),
+      start: offset + Math.max(0, valueStartInLine),
+      end,
+    };
+  }
+
+  return null;
 }
 
 function formatHoverDisplayText(args: {
@@ -2003,8 +2311,24 @@ function parseRsxFile(text: string): IRsxFileParts | null {
       break;
     }
 
-    headers.push(line.trim());
+    const headerMatch = /^(model|return)\s*:\s*(.*)$/u.exec(line);
+    if (!headerMatch) {
+      break;
+    }
+
+    const headerKey = headerMatch[1];
+    const headerValueLines = [headerMatch[2].trim()];
     index += 1;
+    while (
+      index < lines.length &&
+      !isStandaloneTypeHeaderValueComplete(headerValueLines.join('\n')) &&
+      /^\s/u.test(lines[index] ?? '')
+    ) {
+      headerValueLines.push(lines[index].trim());
+      index += 1;
+    }
+
+    headers.push(`${headerKey}: ${headerValueLines.join('\n').trim()}`);
   }
 
   const body = lines.slice(index).join('\n').trim();
@@ -2015,10 +2339,31 @@ function parseRsxFile(text: string): IRsxFileParts | null {
   return { headers, body };
 }
 
+function isStandaloneTypeHeaderValueComplete(value: string): boolean {
+  if (!value.trim()) {
+    return false;
+  }
+  const sourceFile = ts.createSourceFile(
+    '/__rsx_header_type_check__.ts',
+    `type __RSX_HEADER = ${value};`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  return sourceFile.parseDiagnostics.length === 0;
+}
+
 function getModelTypeText(text: string): string | null {
-  const normalizedText = text.replace(/\r\n/gu, '\n');
-  const modelTypeMatch = /^(model)\s*:\s*(.+)$/mu.exec(normalizedText);
-  return modelTypeMatch ? modelTypeMatch[2].trim() : null;
+  const modelHeader = parseRsxFile(text)?.headers.find((header) =>
+    /^model\s*:/u.test(header),
+  );
+  if (!modelHeader) {
+    return null;
+  }
+  const modelTypeMatch = /^model\s*:\s*([\s\S]+)$/u.exec(modelHeader);
+  return modelTypeMatch
+    ? normalizeRsxModelExpressionReferenceTypeText(modelTypeMatch[1].trim())
+    : null;
 }
 
 function resolveProjectContext(fileName: string): IResolvedProjectContext {
@@ -2389,9 +2734,34 @@ function findRsxBodyStartOffset(text: string): number {
       continue;
     }
 
-    const headerMatch = /^([A-Za-z][A-Za-z0-9_]*)\s*:\s*(.+)$/u.exec(trimmed);
+    const headerMatch = /^([A-Za-z][A-Za-z0-9_]*)\s*:\s*(.*)$/u.exec(trimmed);
     if (!headerMatch || !isSupportedRsxHeaderKey(headerMatch[1])) {
       break;
+    }
+
+    if (headerMatch[1] === 'model' || headerMatch[1] === 'return') {
+      const valueLines = [headerMatch[2].trim()];
+      cursor = nextLineOffset;
+      while (
+        cursor < text.length &&
+        !isStandaloneTypeHeaderValueComplete(valueLines.join('\n'))
+      ) {
+        const continuationLineEndIndex = text.indexOf('\n', cursor);
+        const continuationLineEnd =
+          continuationLineEndIndex === -1
+            ? text.length
+            : continuationLineEndIndex;
+        const continuationLine = text.slice(cursor, continuationLineEnd);
+        if (!/^\s/u.test(continuationLine)) {
+          break;
+        }
+        valueLines.push(continuationLine.trim());
+        cursor =
+          continuationLineEndIndex === -1
+            ? text.length
+            : continuationLineEnd + 1;
+      }
+      continue;
     }
 
     cursor = nextLineOffset;

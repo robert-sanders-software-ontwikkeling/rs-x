@@ -46,8 +46,13 @@ describe('rsx language service host', () => {
       getScriptVersion: () => '1',
       getCurrentDirectory: () => workspaceRoot,
       getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options),
-      fileExists: (fileName) => snapshots.has(fileName),
-      readFile: (fileName) => snapshots.get(fileName),
+      fileExists: (fileName) =>
+        snapshots.has(fileName) || ts.sys.fileExists(fileName),
+      readFile: (fileName) =>
+        snapshots.get(fileName) ?? ts.sys.readFile(fileName),
+      readDirectory: ts.sys.readDirectory,
+      directoryExists: ts.sys.directoryExists,
+      getDirectories: ts.sys.getDirectories,
     };
 
     const info = {
@@ -125,8 +130,13 @@ describe('rsx language service host', () => {
       getScriptVersion: () => '1',
       getCurrentDirectory: () => workspaceRoot,
       getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options),
-      fileExists: (fileName) => snapshots.has(fileName),
-      readFile: (fileName) => snapshots.get(fileName),
+      fileExists: (fileName) =>
+        snapshots.has(fileName) || ts.sys.fileExists(fileName),
+      readFile: (fileName) =>
+        snapshots.get(fileName) ?? ts.sys.readFile(fileName),
+      readDirectory: ts.sys.readDirectory,
+      directoryExists: ts.sys.directoryExists,
+      getDirectories: ts.sys.getDirectories,
     };
 
     const info = {
@@ -563,6 +573,146 @@ describe('rsx language service host', () => {
     );
 
     expect(declarationText).toContain('IExpression<string>');
+  });
+
+  it('infers return type from expression-reference model fields in .rsx files', () => {
+    const rsxPath = path.resolve(
+      workspaceRoot,
+      './rs-x-compiler/tests/fixtures/expression-file-expression-ref-inference.fixture.rsx',
+    );
+    const containingFile = path.resolve(
+      workspaceRoot,
+      './rs-x-compiler/tests/fixtures/rsx-file-import-consumer.fixture.ts',
+    );
+    const snapshots = new Map<string, string>([
+      [
+        rsxPath,
+        [
+          'expression: totalRsx',
+          "  model: { subtotal: import('@rs-x/expression-parser').IExpression<number>; shipping: import('@rs-x/expression-parser').IExpression<number> }",
+          '  subtotal + shipping',
+          '',
+        ].join('\n'),
+      ],
+    ]);
+
+    const languageServiceHost: ts.LanguageServiceHost = {
+      getCompilationSettings: () => ({
+        moduleResolution: ts.ModuleResolutionKind.Bundler,
+        module: ts.ModuleKind.ES2022,
+        target: ts.ScriptTarget.ES2022,
+        strict: true,
+      }),
+      getScriptFileNames: () => [containingFile, rsxPath],
+      getScriptSnapshot: (fileName) => {
+        const text = snapshots.get(fileName);
+        return typeof text === 'string'
+          ? ts.ScriptSnapshot.fromString(text)
+          : undefined;
+      },
+      getScriptVersion: () => '1',
+      getCurrentDirectory: () => workspaceRoot,
+      getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options),
+      fileExists: (fileName) => snapshots.has(fileName),
+      readFile: (fileName) => snapshots.get(fileName),
+    };
+
+    const info = {
+      languageServiceHost,
+      project: {
+        getCompilationSettings: () =>
+          languageServiceHost.getCompilationSettings!(),
+      },
+    } as unknown as ts.server.PluginCreateInfo;
+
+    patchLanguageServiceHostForRsxImports({ info, ts });
+
+    const declarationSnapshot = languageServiceHost.getScriptSnapshot?.(
+      `${rsxPath}.d.ts`,
+    );
+    expect(declarationSnapshot).toBeDefined();
+    const declarationText = declarationSnapshot!.getText(
+      0,
+      declarationSnapshot!.getLength(),
+    );
+
+    expect(declarationText).toContain(') => IExpression<number>;');
+    expect(declarationText).not.toContain(') => IExpression<any>;');
+  });
+
+  it('infers return type from same-file expression references in .rsx files', () => {
+    const rsxPath = path.resolve(
+      workspaceRoot,
+      './rs-x-compiler/tests/fixtures/expression-file-same-file-reference.fixture.rsx',
+    );
+    const containingFile = path.resolve(
+      workspaceRoot,
+      './rs-x-compiler/tests/fixtures/rsx-file-import-consumer.fixture.ts',
+    );
+    const snapshots = new Map<string, string>([
+      [
+        rsxPath,
+        [
+          'defaults:',
+          '  model: { value: number }',
+          '',
+          'expression: subtotalRsx',
+          '  value * 2',
+          '',
+          'expression: totalRsx',
+          '  subtotal + 1',
+          '',
+        ].join('\n'),
+      ],
+    ]);
+
+    const languageServiceHost: ts.LanguageServiceHost = {
+      getCompilationSettings: () => ({
+        moduleResolution: ts.ModuleResolutionKind.Bundler,
+        module: ts.ModuleKind.ES2022,
+        target: ts.ScriptTarget.ES2022,
+        strict: true,
+      }),
+      getScriptFileNames: () => [containingFile, rsxPath],
+      getScriptSnapshot: (fileName) => {
+        const text = snapshots.get(fileName);
+        return typeof text === 'string'
+          ? ts.ScriptSnapshot.fromString(text)
+          : undefined;
+      },
+      getScriptVersion: () => '1',
+      getCurrentDirectory: () => workspaceRoot,
+      getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options),
+      fileExists: (fileName) =>
+        snapshots.has(fileName) || ts.sys.fileExists(fileName),
+      readFile: (fileName) =>
+        snapshots.get(fileName) ?? ts.sys.readFile(fileName),
+      readDirectory: ts.sys.readDirectory,
+      directoryExists: ts.sys.directoryExists,
+      getDirectories: ts.sys.getDirectories,
+    };
+
+    const info = {
+      languageServiceHost,
+      project: {
+        getCompilationSettings: () =>
+          languageServiceHost.getCompilationSettings!(),
+      },
+    } as unknown as ts.server.PluginCreateInfo;
+
+    patchLanguageServiceHostForRsxImports({ info, ts });
+
+    const declarationSnapshot = languageServiceHost.getScriptSnapshot?.(
+      `${rsxPath}.d.ts`,
+    );
+    expect(declarationSnapshot).toBeDefined();
+    const declarationText = declarationSnapshot!.getText(
+      0,
+      declarationSnapshot!.getLength(),
+    );
+
+    expect(declarationText).toContain('declare const totalRsx');
+    expect(declarationText).toContain(') => IExpression<number>;');
   });
 
   it('provides quick info for symbols imported from .rsx modules', () => {

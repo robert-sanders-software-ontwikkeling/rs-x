@@ -151,4 +151,37 @@ describe('.rsx file import typing', () => {
 
     expect(diagnostics).toEqual([]);
   });
+
+  it('allows external .rsx expression references in imported .rsx module model fields', () => {
+    const sourceRsxPath = path.resolve(
+      __dirname,
+      './fixtures/expression-file-external-expression-ref-source.fixture.rsx',
+    );
+    const consumerRsxPath = path.resolve(
+      __dirname,
+      './fixtures/expression-file-external-expression-ref-consumer.fixture.rsx',
+    );
+    const consumerPath = path.resolve(
+      __dirname,
+      './fixtures/rsx-file-external-expression-ref-model-consumer.fixture.ts',
+    );
+
+    const program = createProgram([
+      sourceRsxPath,
+      consumerRsxPath,
+      consumerPath,
+    ]);
+    const diagnostics = ts
+      .getPreEmitDiagnostics(program)
+      .filter((diagnostic) =>
+        diagnostic.file?.fileName.endsWith(
+          'rsx-file-external-expression-ref-model-consumer.fixture.ts',
+        ),
+      )
+      .map((diagnostic) =>
+        ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'),
+      );
+
+    expect(diagnostics).toEqual([]);
+  });
 });
