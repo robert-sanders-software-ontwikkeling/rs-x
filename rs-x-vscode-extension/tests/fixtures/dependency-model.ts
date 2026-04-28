@@ -9,3 +9,11 @@ export interface ImportedCompositionModel {
   shippingFee: ReturnType<typeof shippingFeeRsx>;
   genericExpression: IExpression<number>;
 }
+
+export interface CircularModelA {
+  child: CircularModelB;
+}
+
+export interface CircularModelB {
+  parent: CircularModelA;
+}

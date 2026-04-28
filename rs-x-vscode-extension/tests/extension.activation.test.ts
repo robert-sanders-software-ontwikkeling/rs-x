@@ -1079,6 +1079,10 @@ describe('rsx vscode extension activation', () => {
           'expression: lineRsx',
           '  model: { value: number }',
           '  value',
+          '',
+          'expression: circularModelRsx',
+          "  model: import('./dependency-model').CircularModelA",
+          '  child.parent',
         ].join('\n'),
       ],
       [
@@ -1131,10 +1135,186 @@ describe('rsx vscode extension activation', () => {
         label: string;
         collapsibleState: number;
         description?: string;
+        command?: unknown;
         tooltip?: string | { value?: string };
       };
     };
-    const files = (await provider.getChildren()) as Array<{
+    const roots = (await provider.getChildren()) as Array<{
+      kind: string;
+      section: string;
+      label: string;
+      files?: unknown[];
+      models?: unknown[];
+    }>;
+    expect(roots).toHaveLength(2);
+    const expressionsRoot = roots.find((root) => root.section === 'expressions');
+    const modelsRoot = roots.find((root) => root.section === 'models');
+    expect(expressionsRoot).toEqual(
+      expect.objectContaining({
+        kind: 'root',
+        label: 'Expressions',
+      }),
+    );
+    expect(modelsRoot).toEqual(
+      expect.objectContaining({
+        kind: 'root',
+        label: 'Models',
+      }),
+    );
+    const rootItem = provider.getTreeItem(expressionsRoot);
+    expect(rootItem.description).toBe('14 expressions');
+    const modelsRootItem = provider.getTreeItem(modelsRoot);
+    expect(modelsRootItem.description).toBe('8 models');
+
+    const models = (await provider.getChildren(modelsRoot)) as Array<{
+      kind: string;
+      label: string;
+      uri?: { fsPath: string };
+      start?: number;
+      end?: number;
+      fields?: unknown[];
+      expressions: unknown[];
+    }>;
+    const valueModel = models.find((model) => model.label === '{ value: number }');
+    expect(valueModel).toEqual(
+      expect.objectContaining({
+        kind: 'model',
+      }),
+    );
+    const valueModelItem = provider.getTreeItem(valueModel);
+    expect(valueModelItem.description).toBe('1 field · 5 expressions');
+    expect(valueModelItem.command).toEqual(
+      expect.objectContaining({
+        command: 'rsx.expressions.open',
+      }),
+    );
+    const valueFields = (await provider.getChildren(valueModel)) as Array<{
+      kind: string;
+      label: string;
+      typeText?: string;
+    }>;
+    expect(valueFields).toEqual([
+      expect.objectContaining({
+        kind: 'modelField',
+        label: 'value',
+        typeText: 'number',
+      }),
+    ]);
+    const valueFieldItem = provider.getTreeItem(valueFields[0]);
+    expect(valueFieldItem.description).toBe('number · 4 expressions');
+    const valueExpressionUses = (await provider.getChildren(
+      valueFields[0],
+    )) as Array<{
+      kind: string;
+      expression: { exportName: string };
+      fieldPath: string[];
+    }>;
+    expect(
+      valueExpressionUses.map((use) => use.expression.exportName),
+    ).toEqual([
+      'lineRsx',
+      'shippingFeeRsx',
+      'subtotalRsx',
+      'exactExportUseRsx',
+    ]);
+    expect(valueExpressionUses[0]).toEqual(
+      expect.objectContaining({
+        kind: 'modelFieldExpression',
+        fieldPath: ['value'],
+      }),
+    );
+    const importedModel = models.find((model) =>
+      model.label.includes('ImportedCompositionModel'),
+    );
+    const importedModelPath = path.join(fixtureDirectory, 'dependency-model.ts');
+    const importedModelText = fs.readFileSync(importedModelPath, 'utf8');
+    const importedModelStart = importedModelText.indexOf(
+      'ImportedCompositionModel',
+    );
+    expect(importedModel).toEqual(
+      expect.objectContaining({
+        uri: expect.objectContaining({ fsPath: importedModelPath }),
+        start: importedModelStart,
+        end: importedModelStart + 'ImportedCompositionModel'.length,
+      }),
+    );
+    const importedModelFields = (await provider.getChildren(
+      importedModel,
+    )) as Array<{
+      label: string;
+      uri?: { fsPath: string };
+      start?: number;
+    }>;
+    expect(importedModelFields.map((field) => field.label)).toEqual([
+      'subtotal',
+      'shippingFee',
+      'genericExpression',
+    ]);
+    expect(importedModelFields[0]).toEqual(
+      expect.objectContaining({
+        uri: expect.objectContaining({ fsPath: importedModelPath }),
+        start: importedModelText.indexOf('subtotal:'),
+      }),
+    );
+    const subtotalExpressionUses = (await provider.getChildren(
+      importedModelFields[0],
+    )) as Array<{ expression: { exportName: string }; fieldPath: string[] }>;
+    expect(subtotalExpressionUses).toEqual([
+      expect.objectContaining({
+        expression: expect.objectContaining({
+          exportName: 'importedModelCompositionTotalRsx',
+        }),
+        fieldPath: ['subtotal'],
+      }),
+    ]);
+    const linesModel = models.find((model) => model.label.includes('lines'));
+    const linesFields = (await provider.getChildren(linesModel)) as Array<{
+      label: string;
+    }>;
+    const linesField = linesFields.find((field) => field.label === 'lines');
+    const nestedLineFields = (await provider.getChildren(
+      linesField,
+    )) as Array<{ label: string }>;
+    expect(nestedLineFields.map((field) => field.label)).toEqual([
+      'id',
+      'lineTotal',
+    ]);
+    const lineIdUses = (await provider.getChildren(
+      nestedLineFields[0],
+    )) as Array<{ expression: { exportName: string }; fieldPath: string[] }>;
+    expect(lineIdUses).toEqual([
+      expect.objectContaining({
+        expression: expect.objectContaining({
+          exportName: 'lineProjectionRsx',
+        }),
+        fieldPath: ['lines', 'id'],
+      }),
+    ]);
+    const circularModel = models.find((model) =>
+      model.label.includes('CircularModelA'),
+    );
+    const circularFields = (await provider.getChildren(circularModel)) as Array<{
+      label: string;
+    }>;
+    expect(circularFields.map((field) => field.label)).toEqual(['child']);
+    const childFields = (await provider.getChildren(circularFields[0])) as Array<{
+      kind?: string;
+      label: string;
+    }>;
+    const circularNestedFields = childFields.filter(
+      (field) => field.kind === 'modelField',
+    );
+    expect(circularNestedFields.map((field) => field.label)).toEqual(['parent']);
+    const circularParentChildren = await provider.getChildren(
+      circularNestedFields[0],
+    );
+    expect(
+      circularParentChildren.filter(
+        (child) => (child as { kind?: string }).kind === 'modelField',
+      ),
+    ).toEqual([]);
+
+    const files = (await provider.getChildren(expressionsRoot)) as Array<{
       kind: string;
       label: string;
     }>;
@@ -1348,9 +1528,16 @@ describe('rsx vscode extension activation', () => {
     const provider = registerTreeDataProvider.mock.calls.at(-1)?.[1] as {
       getChildren(element?: unknown): Promise<unknown[]>;
     };
-    const files = await provider.getChildren();
+    const roots = await provider.getChildren();
+    const files = await provider.getChildren(roots[0]);
+    const models = await provider.getChildren(roots[1]);
     const expressions = (await provider.getChildren(files[0])) as unknown[];
     const expression = expressions[0];
+    const model = models[0];
+    const modelFields = await provider.getChildren(model);
+    const modelField = modelFields[0];
+    const modelFieldUses = await provider.getChildren(modelField);
+    const modelFieldUse = modelFieldUses[0];
     const openCommand = registerCommand.mock.calls.find(
       ([command]) => command === 'rsx.expressions.open',
     )?.[1] as ((item: unknown) => Promise<void>) | undefined;
@@ -1388,6 +1575,64 @@ describe('rsx vscode extension activation', () => {
     expect(showTextDocument).not.toHaveBeenCalled();
     expect(editor.revealRange).toHaveBeenCalled();
     visibleTextEditors.length = 0;
+
+    openTextDocument.mockClear();
+    showTextDocument.mockClear();
+    editor.revealRange.mockClear();
+    visibleTextEditors.length = 0;
+    openTextDocument.mockResolvedValueOnce(document);
+    showTextDocument.mockResolvedValueOnce(editor);
+
+    await openCommand?.(model);
+
+    expect(showTextDocument).toHaveBeenCalledWith(
+      document,
+      expect.objectContaining({
+        viewColumn: 2,
+        preview: true,
+      }),
+    );
+    expect(editor.selection).toEqual(
+      expect.objectContaining({
+        start: document.positionAt(text.indexOf('{ value: number }')),
+        end: document.positionAt(
+          text.indexOf('{ value: number }') + '{ value: number }'.length,
+        ),
+      }),
+    );
+
+    openTextDocument.mockClear();
+    showTextDocument.mockClear();
+    editor.revealRange.mockClear();
+    visibleTextEditors.length = 0;
+    openTextDocument.mockResolvedValueOnce(document);
+    showTextDocument.mockResolvedValueOnce(editor);
+
+    await openCommand?.(modelField);
+
+    expect(editor.selection).toEqual(
+      expect.objectContaining({
+        start: document.positionAt(text.indexOf('value: number')),
+        end: document.positionAt(text.indexOf('value: number') + 'value'.length),
+      }),
+    );
+
+    openTextDocument.mockClear();
+    showTextDocument.mockClear();
+    editor.revealRange.mockClear();
+    visibleTextEditors.length = 0;
+    openTextDocument.mockResolvedValueOnce(document);
+    showTextDocument.mockResolvedValueOnce(editor);
+
+    await openCommand?.(modelFieldUse);
+
+    const expressionValueOffset = text.lastIndexOf('value');
+    expect(editor.selection).toEqual(
+      expect.objectContaining({
+        start: document.positionAt(expressionValueOffset),
+        end: document.positionAt(expressionValueOffset + 'value'.length),
+      }),
+    );
   });
 
   it('still reports unknown headers before an expression body starts', () => {

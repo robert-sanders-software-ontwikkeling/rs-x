@@ -176,6 +176,20 @@ interface IRsxExpressionTreeFile {
   readonly expressions: readonly IRsxExpressionTreeExpression[];
 }
 
+interface IRsxExpressionTreeExpressionsRoot {
+  readonly kind: 'root';
+  readonly section: 'expressions';
+  readonly label: string;
+  readonly files: readonly IRsxExpressionTreeFile[];
+}
+
+interface IRsxExpressionTreeModelsRoot {
+  readonly kind: 'root';
+  readonly section: 'models';
+  readonly label: string;
+  readonly models: readonly IRsxExpressionTreeModel[];
+}
+
 interface IRsxExpressionTreeExpression {
   readonly kind: 'expression';
   readonly key: string;
@@ -185,7 +199,53 @@ interface IRsxExpressionTreeExpression {
   readonly expression: IRsxExpressionExport['expression'];
   readonly start: number;
   readonly end: number;
+  readonly modelStart: number;
+  readonly modelEnd: number;
+  readonly modelDefinition?: IRsxExpressionTreeLocation;
+  readonly modelFields: readonly IRsxExpressionTreeModelField[];
   readonly dependencies: readonly IRsxExpressionDependencyEdge[];
+}
+
+interface IRsxExpressionTreeLocation {
+  readonly uri: vscode.Uri;
+  readonly start: number;
+  readonly end: number;
+}
+
+interface IRsxExpressionTreeModel {
+  readonly kind: 'model';
+  readonly key: string;
+  readonly label: string;
+  readonly modelTypeText: string;
+  readonly uri: vscode.Uri;
+  readonly relativePath: string;
+  readonly start: number;
+  readonly end: number;
+  readonly fields: readonly IRsxExpressionTreeModelField[];
+  readonly expressions: readonly IRsxExpressionTreeExpression[];
+}
+
+interface IRsxExpressionTreeModelField {
+  readonly kind: 'modelField';
+  readonly key: string;
+  readonly label: string;
+  readonly path: readonly string[];
+  readonly typeText?: string;
+  readonly uri: vscode.Uri;
+  readonly start: number;
+  readonly end: number;
+  readonly children: readonly IRsxExpressionTreeModelField[];
+  readonly expressionUses: readonly IRsxExpressionTreeModelFieldExpressionUse[];
+}
+
+interface IRsxExpressionTreeModelFieldExpressionUse {
+  readonly kind: 'modelFieldExpression';
+  readonly key: string;
+  readonly fieldPath: readonly string[];
+  readonly expression: IRsxExpressionTreeExpression;
+  readonly uri: vscode.Uri;
+  readonly start: number;
+  readonly end: number;
 }
 
 interface IRsxExpressionDependencyEdge {
@@ -207,8 +267,13 @@ interface IRsxExpressionDependencyTreeItem {
 }
 
 type IRsxExpressionTreeItem =
+  | IRsxExpressionTreeExpressionsRoot
+  | IRsxExpressionTreeModelsRoot
   | IRsxExpressionTreeFile
   | IRsxExpressionTreeExpression
+  | IRsxExpressionTreeModel
+  | IRsxExpressionTreeModelField
+  | IRsxExpressionTreeModelFieldExpressionUse
   | IRsxExpressionDependencyTreeItem;
 
 interface IRsxExpressionGraphPreviewNode {
@@ -333,8 +398,19 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.commands.registerCommand(
       'rsx.expressions.open',
-      async (item?: IRsxExpressionTreeExpression) => {
-        if (item?.kind === 'expression') {
+      async (
+        item?:
+          | IRsxExpressionTreeExpression
+          | IRsxExpressionTreeModel
+          | IRsxExpressionTreeModelField
+          | IRsxExpressionTreeModelFieldExpressionUse,
+      ) => {
+        if (
+          item?.kind === 'expression' ||
+          item?.kind === 'model' ||
+          item?.kind === 'modelField' ||
+          item?.kind === 'modelFieldExpression'
+        ) {
           await openRsxExpressionTreeItem(item);
         }
       },
@@ -710,6 +786,45 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
   public getTreeItem(
     element: IRsxExpressionTreeItem,
   ): vscode.TreeItem | Thenable<vscode.TreeItem> {
+    if (element.kind === 'root') {
+      const expressionCount =
+        element.section === 'expressions'
+          ? element.files.reduce(
+              (count, file) => count + file.expressions.length,
+              0,
+            )
+          : element.models.reduce(
+              (count, model) => count + model.expressions.length,
+              0,
+            );
+      const childCount =
+        element.section === 'expressions'
+          ? element.files.length
+          : element.models.length;
+      const item = new vscode.TreeItem(
+        element.label,
+        childCount > 0
+          ? vscode.TreeItemCollapsibleState.Expanded
+          : vscode.TreeItemCollapsibleState.None,
+      );
+      item.description =
+        element.section === 'expressions'
+          ? formatExpressionCount(expressionCount)
+          : formatModelCount(childCount);
+      item.contextValue =
+        element.section === 'expressions'
+          ? 'rsxExpressionsRoot'
+          : 'rsxExpressionModelsRoot';
+      item.iconPath = new vscode.ThemeIcon(
+        element.section === 'expressions' ? 'symbol-namespace' : 'symbol-struct',
+      );
+      item.tooltip =
+        element.section === 'expressions'
+          ? `${element.label}\n${formatExpressionCount(expressionCount)}`
+          : `${element.label}\n${formatModelCount(childCount)}`;
+      return item;
+    }
+
     if (element.kind === 'file') {
       const item = new vscode.TreeItem(
         element.label,
@@ -767,6 +882,96 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
       return item;
     }
 
+    if (element.kind === 'model') {
+      const item = new vscode.TreeItem(
+        element.label,
+        element.fields.length > 0
+          ? vscode.TreeItemCollapsibleState.Collapsed
+          : vscode.TreeItemCollapsibleState.None,
+      );
+      item.description = [
+        formatFieldCount(element.fields.length),
+        formatExpressionCount(element.expressions.length),
+      ].join(' · ');
+      item.resourceUri = element.uri;
+      item.contextValue = 'rsxExpressionModel';
+      item.iconPath = new vscode.ThemeIcon('symbol-struct');
+      item.command = {
+        command: 'rsx.expressions.open',
+        title: 'Open RS-X Model',
+        arguments: [element],
+      };
+      item.tooltip = new vscode.MarkdownString(
+        [
+          '**Model**',
+          '',
+          `Used by ${formatExpressionCount(element.expressions.length)}.`,
+          '',
+          '```ts',
+          element.modelTypeText,
+          '```',
+        ].join('\n'),
+      );
+      return item;
+    }
+
+    if (element.kind === 'modelField') {
+      const item = new vscode.TreeItem(
+        element.label,
+        element.children.length > 0 || element.expressionUses.length > 0
+          ? vscode.TreeItemCollapsibleState.Collapsed
+          : vscode.TreeItemCollapsibleState.None,
+      );
+      item.description = [
+        element.typeText,
+        element.expressionUses.length > 0
+          ? formatExpressionCount(element.expressionUses.length)
+          : undefined,
+      ]
+        .filter(Boolean)
+        .join(' · ');
+      item.resourceUri = element.uri;
+      item.contextValue = 'rsxModelField';
+      item.iconPath = new vscode.ThemeIcon('symbol-field');
+      item.command = {
+        command: 'rsx.expressions.open',
+        title: 'Open RS-X Model Field',
+        arguments: [element],
+      };
+      item.tooltip = new vscode.MarkdownString(
+        element.typeText
+          ? [`**${element.label}**`, '', '```ts', element.typeText, '```'].join(
+              '\n',
+            )
+          : `**${element.label}**`,
+      );
+      return item;
+    }
+
+    if (element.kind === 'modelFieldExpression') {
+      const item = new vscode.TreeItem(
+        element.expression.exportName,
+        vscode.TreeItemCollapsibleState.None,
+      );
+      item.description = element.fieldPath.join('.');
+      item.resourceUri = element.uri;
+      item.contextValue = 'rsxModelFieldExpression';
+      item.iconPath = new vscode.ThemeIcon('symbol-function');
+      item.command = {
+        command: 'rsx.expressions.open',
+        title: 'Open RS-X Expression Field Usage',
+        arguments: [element],
+      };
+      item.tooltip = new vscode.MarkdownString(
+        [
+          `**${element.expression.exportName}**`,
+          '',
+          `field: \`${element.fieldPath.join('.')}\``,
+        ].join('\n'),
+      );
+      return item;
+    }
+
     const target = this.expressionsByKey.get(element.edge.targetKey);
     const isCycle = element.pathKeys.includes(element.edge.targetKey);
     const item = new vscode.TreeItem(
@@ -799,6 +1004,11 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
           expression: target?.expression ?? element.source.expression,
           start: element.edge.targetStart,
           end: element.edge.targetEnd,
+          modelStart: target?.modelStart ?? element.source.modelStart,
+          modelEnd: target?.modelEnd ?? element.source.modelEnd,
+          modelDefinition:
+            target?.modelDefinition ?? element.source.modelDefinition,
+          modelFields: target?.modelFields ?? element.source.modelFields,
           dependencies: target?.dependencies ?? [],
         } satisfies IRsxExpressionTreeExpression,
       ],
@@ -816,6 +1026,12 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
   public async getChildren(
     element?: IRsxExpressionTreeItem,
   ): Promise<IRsxExpressionTreeItem[]> {
+    if (element?.kind === 'root') {
+      return element.section === 'expressions'
+        ? [...element.files]
+        : [...element.models];
+    }
+
     if (element?.kind === 'file') {
       return [...element.expressions];
     }
@@ -827,6 +1043,18 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
         edge,
         pathKeys: [element.key],
       }));
+    }
+
+    if (element?.kind === 'model') {
+      return [...element.fields];
+    }
+
+    if (element?.kind === 'modelField') {
+      return [...element.children, ...element.expressionUses];
+    }
+
+    if (element?.kind === 'modelFieldExpression') {
+      return [];
     }
 
     if (element?.kind === 'dependency') {
@@ -849,7 +1077,22 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
       return [];
     }
 
-    return this.getFiles();
+    const files = await this.getFiles();
+    const models = getUniqueRsxExpressionModels(files);
+    return [
+      {
+        kind: 'root',
+        section: 'expressions',
+        label: 'Expressions',
+        files,
+      },
+      {
+        kind: 'root',
+        section: 'models',
+        label: 'Models',
+        models,
+      },
+    ];
   }
 
   public async getPreviewData(
@@ -1410,6 +1653,12 @@ function getRsxExpressionGraphPreviewRoots(args: {
       .sort(compareRsxExpressionTreeExpression);
   }
 
+  if (item?.kind === 'model') {
+    return item.expressions
+      .map((expression) => expressionByKey.get(expression.key) ?? expression)
+      .sort(compareRsxExpressionTreeExpression);
+  }
+
   const allExpressions = files
     .flatMap((file) => file.expressions)
     .sort(compareRsxExpressionTreeExpression);
@@ -1431,6 +1680,9 @@ function getRsxExpressionGraphPreviewTitle(
     return `RS-X Tree: ${item.edge.targetExportName}`;
   }
   if (item?.kind === 'file') {
+    return `RS-X Tree: ${item.label}`;
+  }
+  if (item?.kind === 'model') {
     return `RS-X Tree: ${item.label}`;
   }
   if (roots.length === 1) {
@@ -1759,6 +2011,27 @@ async function readRsxExpressionTreeFile(
     const relativePath = vscode.workspace.asRelativePath(uri, false);
     const expressions = expressionExports.map(
       (entry): IRsxExpressionTreeExpression => {
+        const modelSpan = findRsxExpressionModelSourceSpan({
+          text,
+          expressions: parsed.expressions,
+          expression: entry.expression,
+        });
+        const modelDefinition = modelSpan
+          ? getRsxExpressionModelDefinitionLocation({
+              uri,
+              text,
+              start: modelSpan.start,
+              end: modelSpan.end,
+            })
+          : null;
+        const modelFields = modelSpan
+          ? getRsxExpressionModelFields({
+              uri,
+              text,
+              start: modelSpan.start,
+              end: modelSpan.end,
+            })
+          : [];
         const start =
           typeof entry.expression.nameStart === 'number'
             ? entry.expression.nameStart
@@ -1779,6 +2052,10 @@ async function readRsxExpressionTreeFile(
           expression: entry.expression,
           start,
           end,
+          modelStart: modelSpan?.start ?? start,
+          modelEnd: modelSpan?.end ?? end,
+          modelDefinition: modelDefinition ?? undefined,
+          modelFields,
           dependencies: [],
         };
       },
@@ -1800,6 +2077,502 @@ async function readRsxExpressionTreeFile(
   } catch {
     return null;
   }
+}
+
+function findRsxExpressionModelSourceSpan(args: {
+  readonly text: string;
+  readonly expressions: readonly IRsxExpressionExport['expression'][];
+  readonly expression: IRsxExpressionExport['expression'];
+}): { readonly start: number; readonly end: number } | null {
+  const normalized = args.text.replace(/\r\n/gu, '\n');
+  const expressionRegionStart =
+    typeof args.expression.nameEnd === 'number'
+      ? getLineEndOffset(normalized, args.expression.nameEnd)
+      : 0;
+  const localSpan = findLastRsxModelHeaderSpanInRange(
+    normalized,
+    expressionRegionStart,
+    args.expression.expressionStart,
+  );
+  if (localSpan) {
+    return localSpan;
+  }
+
+  const firstNamedExpression = args.expressions.find(
+    (expression) => typeof expression.nameStart === 'number',
+  );
+  const globalEnd =
+    typeof firstNamedExpression?.nameStart === 'number'
+      ? getLineStartOffset(normalized, firstNamedExpression.nameStart)
+      : args.expression.expressionStart;
+  return findLastRsxModelHeaderSpanInRange(normalized, 0, globalEnd);
+}
+
+function findLastRsxModelHeaderSpanInRange(
+  text: string,
+  startOffset: number,
+  endOffset: number,
+): { readonly start: number; readonly end: number } | null {
+  let cursor = Math.max(0, startOffset);
+  let latest: { readonly start: number; readonly end: number } | null = null;
+  while (cursor < endOffset && cursor < text.length) {
+    const lineEnd = getLineEndOffset(text, cursor);
+    const line = text.slice(cursor, Math.min(lineEnd, endOffset));
+    const parsed = parseHeaderLine(line);
+    if (parsed?.key === 'model') {
+      const valueStart = cursor + getHeaderValueStartCharacter(line);
+      let valueEnd = lineEnd;
+      const valueLines = [line.slice(getHeaderValueStartCharacter(line)).trim()];
+      let nextLineStart = getNextLineStartOffset(text, lineEnd);
+      while (
+        nextLineStart < endOffset &&
+        !isTypeHeaderValueSyntacticallyComplete(valueLines.join('\n'))
+      ) {
+        const nextLineEnd = getLineEndOffset(text, nextLineStart);
+        const nextLine = text.slice(
+          nextLineStart,
+          Math.min(nextLineEnd, endOffset),
+        );
+        if (!isIndentedLine(nextLine)) {
+          break;
+        }
+        valueLines.push(nextLine.trim());
+        valueEnd = nextLineEnd;
+        nextLineStart = getNextLineStartOffset(text, nextLineEnd);
+      }
+      latest = {
+        start: valueStart,
+        end: trimEndOffset(text, valueEnd),
+      };
+    }
+
+    const nextCursor = getNextLineStartOffset(text, lineEnd);
+    if (nextCursor <= cursor) {
+      break;
+    }
+    cursor = nextCursor;
+  }
+  return latest;
+}
+
+function getLineStartOffset(text: string, offset: number): number {
+  const lineBreak = text.lastIndexOf('\n', Math.max(0, offset - 1));
+  return lineBreak < 0 ? 0 : lineBreak + 1;
+}
+
+function getLineEndOffset(text: string, offset: number): number {
+  const lineBreak = text.indexOf('\n', offset);
+  return lineBreak < 0 ? text.length : lineBreak;
+}
+
+function getNextLineStartOffset(text: string, lineEndOffset: number): number {
+  return lineEndOffset < text.length ? lineEndOffset + 1 : text.length;
+}
+
+function trimEndOffset(text: string, offset: number): number {
+  let cursor = Math.min(offset, text.length);
+  while (cursor > 0 && isLineWhitespaceCharacter(text[cursor - 1])) {
+    cursor -= 1;
+  }
+  return cursor;
+}
+
+function getRsxExpressionModelDefinitionLocation(args: {
+  readonly uri: vscode.Uri;
+  readonly text: string;
+  readonly start: number;
+  readonly end: number;
+}): IRsxExpressionTreeLocation | null {
+  const headerText = args.text.slice(args.start, args.end);
+  for (const relativePosition of getImportedTypeLookupOffsets(headerText)) {
+    const definitions = getRsxHeaderImportTypeDefinitionsAtTextPosition({
+      fileName: args.uri.fsPath,
+      text: args.text,
+      position: args.start + relativePosition,
+    });
+    const definition = definitions[0];
+    if (definition) {
+      return {
+        uri: vscode.Uri.file(definition.fileName),
+        start: definition.start,
+        end: Math.max(definition.end, definition.start),
+      };
+    }
+  }
+
+  return null;
+}
+
+function getRsxExpressionModelFields(args: {
+  readonly uri: vscode.Uri;
+  readonly text: string;
+  readonly start: number;
+  readonly end: number;
+}): IRsxExpressionTreeModelField[] {
+  const headerText = args.text.slice(args.start, args.end);
+  const prefix = 'type __RSX_MODEL = ';
+  const sourceFile = ts.createSourceFile(
+    '/__rsx_tree_model_fields__.ts',
+    `${prefix}${headerText};`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const modelAlias = sourceFile.statements.find(
+    (statement): statement is ts.TypeAliasDeclaration =>
+      ts.isTypeAliasDeclaration(statement) &&
+      statement.name.text === '__RSX_MODEL',
+  );
+  if (!modelAlias) {
+    return [];
+  }
+
+  return dedupeRsxExpressionTreeModelFields(
+    getRsxExpressionModelFieldsFromTypeNode({
+      containingFile: args.uri.fsPath,
+      sourceFile,
+      uri: args.uri,
+      typeNode: modelAlias.type,
+      offsetMapper: (offset) => args.start + offset - prefix.length,
+      seenTypes: new Set<string>(),
+      keyPrefix: normalizeRsxExpressionModelTreeKey(headerText),
+      pathPrefix: [],
+    }),
+  );
+}
+
+function getRsxExpressionModelFieldsFromTypeNode(args: {
+  readonly containingFile: string;
+  readonly sourceFile: ts.SourceFile;
+  readonly uri: vscode.Uri;
+  readonly typeNode: ts.TypeNode;
+  readonly offsetMapper: (offset: number) => number;
+  readonly seenTypes: Set<string>;
+  readonly keyPrefix: string;
+  readonly pathPrefix: readonly string[];
+}): IRsxExpressionTreeModelField[] {
+  if (ts.isParenthesizedTypeNode(args.typeNode)) {
+    return getRsxExpressionModelFieldsFromTypeNode({
+      ...args,
+      typeNode: args.typeNode.type,
+    });
+  }
+
+  if (ts.isIntersectionTypeNode(args.typeNode)) {
+    return dedupeRsxExpressionTreeModelFields(
+      args.typeNode.types.flatMap((typeNode) =>
+        getRsxExpressionModelFieldsFromTypeNode({
+          ...args,
+          typeNode,
+        }),
+      ),
+    );
+  }
+
+  if (ts.isTypeLiteralNode(args.typeNode)) {
+    return getRsxExpressionModelFieldsFromMembers({
+      ...args,
+      members: args.typeNode.members,
+    });
+  }
+
+  if (ts.isArrayTypeNode(args.typeNode)) {
+    return getRsxExpressionModelFieldsFromTypeNode({
+      ...args,
+      typeNode: args.typeNode.elementType,
+    });
+  }
+
+  if (ts.isTypeReferenceNode(args.typeNode)) {
+    const typeName = getRightmostEntityNameText(args.typeNode.typeName);
+    if (
+      typeName === 'Array' &&
+      args.typeNode.typeArguments &&
+      args.typeNode.typeArguments.length > 0
+    ) {
+      return getRsxExpressionModelFieldsFromTypeNode({
+        ...args,
+        typeNode: args.typeNode.typeArguments[0],
+      });
+    }
+
+    const localDeclaration = getLocalRsxExpressionModelTypeDeclaration(
+      args.sourceFile,
+      typeName,
+    );
+    if (!localDeclaration) {
+      return [];
+    }
+
+    const seenKey = `${args.containingFile}:${typeName}`;
+    if (args.seenTypes.has(seenKey)) {
+      return [];
+    }
+    args.seenTypes.add(seenKey);
+    const fields = getRsxExpressionModelFieldsFromDeclaration({
+      ...args,
+      declaration: localDeclaration,
+    });
+    args.seenTypes.delete(seenKey);
+    return fields;
+  }
+
+  const importedType = getImportedModelTypeReference(args.typeNode, args.sourceFile);
+  if (!importedType) {
+    return [];
+  }
+
+  const resolvedFileName = resolveRsxDependencyModuleFileName({
+    containingFile: args.containingFile,
+    moduleName: importedType.moduleName,
+  });
+  if (!resolvedFileName) {
+    return [];
+  }
+
+  return getExportedRsxExpressionModelFields({
+    fileName: resolvedFileName,
+    typeName: importedType.typeName,
+    seenTypes: args.seenTypes,
+    keyPrefix: `${args.keyPrefix}.${importedType.typeName}`,
+    pathPrefix: args.pathPrefix,
+  });
+}
+
+function getRsxExpressionModelFieldsFromDeclaration(args: {
+  readonly containingFile: string;
+  readonly sourceFile: ts.SourceFile;
+  readonly uri: vscode.Uri;
+  readonly declaration: ts.Declaration;
+  readonly offsetMapper: (offset: number) => number;
+  readonly seenTypes: Set<string>;
+  readonly keyPrefix: string;
+  readonly pathPrefix: readonly string[];
+}): IRsxExpressionTreeModelField[] {
+  if (ts.isInterfaceDeclaration(args.declaration)) {
+    return getRsxExpressionModelFieldsFromMembers({
+      ...args,
+      members: args.declaration.members,
+    });
+  }
+
+  if (ts.isTypeAliasDeclaration(args.declaration)) {
+    return getRsxExpressionModelFieldsFromTypeNode({
+      ...args,
+      typeNode: args.declaration.type,
+    });
+  }
+
+  if (ts.isClassDeclaration(args.declaration)) {
+    return getRsxExpressionModelFieldsFromClassMembers({
+      ...args,
+      members: args.declaration.members,
+    });
+  }
+
+  return [];
+}
+
+function getRsxExpressionModelFieldsFromMembers(args: {
+  readonly containingFile: string;
+  readonly sourceFile: ts.SourceFile;
+  readonly uri: vscode.Uri;
+  readonly members: ts.NodeArray<ts.TypeElement>;
+  readonly offsetMapper: (offset: number) => number;
+  readonly seenTypes: Set<string>;
+  readonly keyPrefix: string;
+  readonly pathPrefix: readonly string[];
+}): IRsxExpressionTreeModelField[] {
+  return args.members.flatMap((member) => {
+    if (
+      (!ts.isPropertySignature(member) && !ts.isMethodSignature(member)) ||
+      !member.type
+    ) {
+      return [];
+    }
+
+    return createRsxExpressionTreeModelField({
+      containingFile: args.containingFile,
+      sourceFile: args.sourceFile,
+      uri: args.uri,
+      name: member.name,
+      typeNode: member.type,
+      offsetMapper: args.offsetMapper,
+      seenTypes: args.seenTypes,
+      keyPrefix: args.keyPrefix,
+      pathPrefix: args.pathPrefix,
+    });
+  });
+}
+
+function getRsxExpressionModelFieldsFromClassMembers(args: {
+  readonly containingFile: string;
+  readonly sourceFile: ts.SourceFile;
+  readonly uri: vscode.Uri;
+  readonly members: ts.NodeArray<ts.ClassElement>;
+  readonly offsetMapper: (offset: number) => number;
+  readonly seenTypes: Set<string>;
+  readonly keyPrefix: string;
+  readonly pathPrefix: readonly string[];
+}): IRsxExpressionTreeModelField[] {
+  return args.members.flatMap((member) => {
+    if (!ts.isPropertyDeclaration(member) || !member.type) {
+      return [];
+    }
+
+    return createRsxExpressionTreeModelField({
+      containingFile: args.containingFile,
+      sourceFile: args.sourceFile,
+      uri: args.uri,
+      name: member.name,
+      typeNode: member.type,
+      offsetMapper: args.offsetMapper,
+      seenTypes: args.seenTypes,
+      keyPrefix: args.keyPrefix,
+      pathPrefix: args.pathPrefix,
+    });
+  });
+}
+
+function createRsxExpressionTreeModelField(args: {
+  readonly containingFile: string;
+  readonly sourceFile: ts.SourceFile;
+  readonly uri: vscode.Uri;
+  readonly name: ts.PropertyName;
+  readonly typeNode: ts.TypeNode;
+  readonly offsetMapper: (offset: number) => number;
+  readonly seenTypes: Set<string>;
+  readonly keyPrefix: string;
+  readonly pathPrefix: readonly string[];
+}): IRsxExpressionTreeModelField[] {
+  const fieldName = getPropertyNameText(args.name);
+  if (!fieldName) {
+    return [];
+  }
+
+  return [
+    {
+      kind: 'modelField',
+      key: `${args.keyPrefix}.${fieldName}`,
+      label: fieldName,
+      path: [...args.pathPrefix, fieldName],
+      typeText: args.typeNode.getText(args.sourceFile),
+      uri: args.uri,
+      start: args.offsetMapper(args.name.getStart(args.sourceFile)),
+      end: args.offsetMapper(args.name.getEnd()),
+      children: getRsxExpressionModelFieldsFromTypeNode({
+        containingFile: args.containingFile,
+        sourceFile: args.sourceFile,
+        uri: args.uri,
+        typeNode: args.typeNode,
+        offsetMapper: args.offsetMapper,
+        seenTypes: args.seenTypes,
+        keyPrefix: `${args.keyPrefix}.${fieldName}`,
+        pathPrefix: [...args.pathPrefix, fieldName],
+      }),
+      expressionUses: [],
+    },
+  ];
+}
+
+function getExportedRsxExpressionModelFields(args: {
+  readonly fileName: string;
+  readonly typeName: string;
+  readonly seenTypes: Set<string>;
+  readonly keyPrefix: string;
+  readonly pathPrefix: readonly string[];
+}): IRsxExpressionTreeModelField[] {
+  const seenKey = `${args.fileName}:${args.typeName}`;
+  if (args.seenTypes.has(seenKey)) {
+    return [];
+  }
+  args.seenTypes.add(seenKey);
+
+  const text = ts.sys.readFile(args.fileName);
+  if (typeof text !== 'string') {
+    args.seenTypes.delete(seenKey);
+    return [];
+  }
+
+  const sourceFile = ts.createSourceFile(
+    args.fileName,
+    text,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const declaration = getLocalRsxExpressionModelTypeDeclaration(
+    sourceFile,
+    args.typeName,
+  );
+  if (!declaration) {
+    args.seenTypes.delete(seenKey);
+    return [];
+  }
+
+  const fields = getRsxExpressionModelFieldsFromDeclaration({
+    containingFile: args.fileName,
+    sourceFile,
+    uri: vscode.Uri.file(args.fileName),
+    declaration,
+    offsetMapper: (offset) => offset,
+    seenTypes: args.seenTypes,
+    keyPrefix: args.keyPrefix,
+    pathPrefix: args.pathPrefix,
+  });
+  args.seenTypes.delete(seenKey);
+  return fields;
+}
+
+function getLocalRsxExpressionModelTypeDeclaration(
+  sourceFile: ts.SourceFile,
+  typeName: string,
+): ts.Declaration | null {
+  return (
+    sourceFile.statements.find(
+      (
+        statement,
+      ): statement is
+        | ts.InterfaceDeclaration
+        | ts.TypeAliasDeclaration
+        | ts.ClassDeclaration =>
+        (ts.isInterfaceDeclaration(statement) ||
+          ts.isTypeAliasDeclaration(statement) ||
+          ts.isClassDeclaration(statement)) &&
+        statement.name?.text === typeName,
+    ) ?? null
+  );
+}
+
+function dedupeRsxExpressionTreeModelFields(
+  fields: readonly IRsxExpressionTreeModelField[],
+): IRsxExpressionTreeModelField[] {
+  const seen = new Set<string>();
+  const uniqueFields: IRsxExpressionTreeModelField[] = [];
+  for (const field of fields) {
+    if (seen.has(field.label)) {
+      continue;
+    }
+    seen.add(field.label);
+    uniqueFields.push(field);
+  }
+  return uniqueFields;
+}
+
+function getImportedTypeLookupOffsets(headerText: string): number[] {
+  const importTypePattern =
+    /import\s*\(\s*(['"])([^'"]+)\1\s*\)\s*\.\s*([A-Za-z_$][A-Za-z0-9_$]*)/gu;
+  const offsets: number[] = [];
+  for (const match of headerText.matchAll(importTypePattern)) {
+    if (typeof match.index !== 'number') {
+      continue;
+    }
+
+    const fullText = match[0];
+    const typeName = match[3];
+    offsets.push(match.index + fullText.lastIndexOf(typeName));
+  }
+  return offsets;
 }
 
 function attachRsxExpressionDependencies(
@@ -1824,6 +2597,300 @@ function attachRsxExpressionDependencies(
       }),
     })),
   }));
+}
+
+function getUniqueRsxExpressionModels(
+  files: readonly IRsxExpressionTreeFile[],
+): IRsxExpressionTreeModel[] {
+  const modelsByKey = new Map<
+    string,
+    {
+      modelTypeText: string;
+      expression: IRsxExpressionTreeExpression;
+      expressions: IRsxExpressionTreeExpression[];
+    }
+  >();
+
+  for (const expression of files.flatMap((file) => file.expressions)) {
+    const key = normalizeRsxExpressionModelTreeKey(
+      expression.expression.modelTypeText,
+    );
+    const existing = modelsByKey.get(key);
+    if (existing) {
+      existing.expressions.push(expression);
+      continue;
+    }
+    modelsByKey.set(key, {
+      modelTypeText: expression.expression.modelTypeText,
+      expression,
+      expressions: [expression],
+    });
+  }
+
+  return [...modelsByKey.entries()]
+    .map(([key, model]): IRsxExpressionTreeModel => ({
+      kind: 'model',
+      key,
+      label: formatRsxExpressionModelTreeLabel(model.modelTypeText),
+      modelTypeText: model.modelTypeText,
+      uri: model.expression.modelDefinition?.uri ?? model.expression.uri,
+      relativePath: model.expression.relativePath,
+      start: model.expression.modelDefinition?.start ?? model.expression.modelStart,
+      end: model.expression.modelDefinition?.end ?? model.expression.modelEnd,
+      fields: attachRsxExpressionModelFieldUses(
+        model.expression.modelFields,
+        model.expressions,
+      ),
+      expressions: model.expressions.sort(compareRsxExpressionTreeExpression),
+    }))
+    .sort(
+      (left, right) =>
+        left.label.localeCompare(right.label) ||
+        left.relativePath.localeCompare(right.relativePath),
+    );
+}
+
+function normalizeRsxExpressionModelTreeKey(modelTypeText: string): string {
+  return modelTypeText.replace(/\s+/gu, ' ').trim();
+}
+
+function formatRsxExpressionModelTreeLabel(modelTypeText: string): string {
+  const label = normalizeRsxExpressionModelTreeKey(modelTypeText);
+  return label.length > 96 ? `${label.slice(0, 93)}...` : label;
+}
+
+function attachRsxExpressionModelFieldUses(
+  fields: readonly IRsxExpressionTreeModelField[],
+  expressions: readonly IRsxExpressionTreeExpression[],
+): IRsxExpressionTreeModelField[] {
+  return fields.map((field) => ({
+    ...field,
+    children: attachRsxExpressionModelFieldUses(field.children, expressions),
+    expressionUses: getRsxExpressionModelFieldExpressionUses(
+      field,
+      expressions,
+    ),
+  }));
+}
+
+function getRsxExpressionModelFieldExpressionUses(
+  field: IRsxExpressionTreeModelField,
+  expressions: readonly IRsxExpressionTreeExpression[],
+): IRsxExpressionTreeModelFieldExpressionUse[] {
+  return expressions
+    .map((expression): IRsxExpressionTreeModelFieldExpressionUse | null => {
+      const span = findRsxExpressionModelFieldUsageSpan({
+        expressionText: expression.expression.expression,
+        fieldPath: field.path,
+      });
+      if (!span) {
+        return null;
+      }
+      const start = expression.expression.expressionStart + span.start;
+      const end = expression.expression.expressionStart + span.end;
+      return {
+        kind: 'modelFieldExpression',
+        key: `${field.key}#${expression.key}#${String(start)}`,
+        fieldPath: field.path,
+        expression,
+        uri: expression.uri,
+        start,
+        end,
+      };
+    })
+    .filter((use): use is IRsxExpressionTreeModelFieldExpressionUse => !!use)
+    .sort((left, right) =>
+      compareRsxExpressionTreeExpression(left.expression, right.expression),
+    );
+}
+
+function findRsxExpressionModelFieldUsageSpan(args: {
+  readonly expressionText: string;
+  readonly fieldPath: readonly string[];
+}): { readonly start: number; readonly end: number } | null {
+  if (args.fieldPath.length === 0) {
+    return null;
+  }
+
+  const sourceFile = ts.createSourceFile(
+    '__rsx_model_field_usage.ts',
+    `${WRAPPED_EXPRESSION_PREFIX}${args.expressionText}${WRAPPED_EXPRESSION_SUFFIX}`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const rootScope = new Set<string>();
+  let match: { start: number; end: number } | null = null;
+
+  const visit = (
+    node: ts.Node,
+    scopes: readonly ReadonlySet<string>[],
+    aliases: ReadonlyMap<string, readonly string[]>,
+  ): void => {
+    if (match || ts.isTypeNode(node)) {
+      return;
+    }
+
+    const callbackAlias = getRsxModelFieldCallbackAlias(node, aliases);
+    if (callbackAlias) {
+      const functionScope = new Set<string>();
+      for (const parameter of callbackAlias.callback.parameters) {
+        addBindingName(functionScope, parameter.name);
+      }
+      collectLocalDeclarationNames(callbackAlias.callback.body, functionScope);
+      const callbackAliases = new Map(aliases);
+      callbackAliases.set(callbackAlias.parameterName, callbackAlias.basePath);
+      ts.forEachChild(callbackAlias.callback.body, (child) =>
+        visit(child, [...scopes, functionScope], callbackAliases),
+      );
+      return;
+    }
+
+    if (isFunctionLikeWithBody(node)) {
+      const functionScope = new Set<string>();
+      for (const parameter of node.parameters) {
+        addBindingName(functionScope, parameter.name);
+      }
+      collectLocalDeclarationNames(node.body, functionScope);
+      ts.forEachChild(node.body, (child) =>
+        visit(child, [...scopes, functionScope], aliases),
+      );
+      return;
+    }
+
+    if (ts.isVariableDeclaration(node)) {
+      addBindingName(rootScope, node.name);
+      if (node.initializer) {
+        visit(node.initializer, scopes, aliases);
+      }
+      return;
+    }
+
+    const fieldAccess = getRsxModelFieldAccessPath(node, aliases);
+    if (
+      fieldAccess &&
+      areRsxModelFieldPathsEqual(fieldAccess.path, args.fieldPath) &&
+      !isIdentifierDeclaredInScopes(fieldAccess.path[0], scopes)
+    ) {
+      match = {
+        start: fieldAccess.start - WRAPPED_EXPRESSION_PREFIX.length,
+        end: fieldAccess.end - WRAPPED_EXPRESSION_PREFIX.length,
+      };
+      return;
+    }
+
+    ts.forEachChild(node, (child) => visit(child, scopes, aliases));
+  };
+
+  ts.forEachChild(sourceFile, (child) => visit(child, [rootScope], new Map()));
+  return match &&
+    match.start >= 0 &&
+    match.end >= match.start &&
+    match.start <= args.expressionText.length
+    ? {
+        start: Math.max(0, match.start),
+        end: Math.min(args.expressionText.length, match.end),
+      }
+    : null;
+}
+
+function getRsxModelFieldCallbackAlias(
+  node: ts.Node,
+  aliases: ReadonlyMap<string, readonly string[]>,
+):
+  | {
+      readonly callback: ts.ArrowFunction | ts.FunctionExpression;
+      readonly parameterName: string;
+      readonly basePath: readonly string[];
+    }
+  | null {
+  if (
+    !ts.isCallExpression(node) ||
+    !ts.isPropertyAccessExpression(node.expression) ||
+    !['map', 'flatMap', 'filter', 'find', 'some', 'every'].includes(
+      node.expression.name.text,
+    )
+  ) {
+    return null;
+  }
+
+  const basePath = getRsxModelFieldAccessPath(
+    node.expression.expression,
+    aliases,
+  )?.path;
+  const callback = node.arguments[0];
+  const parameter = callback?.parameters[0]?.name;
+  if (
+    !basePath ||
+    !callback ||
+    (!ts.isArrowFunction(callback) && !ts.isFunctionExpression(callback)) ||
+    !parameter ||
+    !ts.isIdentifier(parameter)
+  ) {
+    return null;
+  }
+
+  return {
+    callback,
+    parameterName: parameter.text,
+    basePath,
+  };
+}
+
+function getRsxModelFieldAccessPath(
+  node: ts.Node,
+  aliases: ReadonlyMap<string, readonly string[]>,
+): { readonly path: readonly string[]; readonly start: number; readonly end: number } | null {
+  if (ts.isIdentifier(node)) {
+    const alias = aliases.get(node.text);
+    if (!alias && !isRsxExpressionIdentifierReference(node)) {
+      return null;
+    }
+    return {
+      path: alias ?? [node.text],
+      start: node.getStart(),
+      end: node.getEnd(),
+    };
+  }
+
+  if (ts.isPropertyAccessExpression(node)) {
+    const base = getRsxModelFieldAccessPath(node.expression, aliases);
+    if (!base) {
+      return null;
+    }
+    return {
+      path: [...base.path, node.name.text],
+      start: node.name.getStart(),
+      end: node.name.getEnd(),
+    };
+  }
+
+  if (
+    ts.isElementAccessExpression(node) &&
+    ts.isStringLiteralLike(node.argumentExpression)
+  ) {
+    const base = getRsxModelFieldAccessPath(node.expression, aliases);
+    if (!base) {
+      return null;
+    }
+    return {
+      path: [...base.path, node.argumentExpression.text],
+      start: node.argumentExpression.getStart() + 1,
+      end: node.argumentExpression.getEnd() - 1,
+    };
+  }
+
+  return null;
+}
+
+function areRsxModelFieldPathsEqual(
+  left: readonly string[],
+  right: readonly string[],
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every((segment, index) => segment === right[index])
+  );
 }
 
 function getRsxExpressionDependencies(args: {
@@ -2511,12 +3578,24 @@ function formatExpressionCount(count: number): string {
   return `${count} expression${count === 1 ? '' : 's'}`;
 }
 
+function formatModelCount(count: number): string {
+  return `${count} model${count === 1 ? '' : 's'}`;
+}
+
+function formatFieldCount(count: number): string {
+  return `${count} field${count === 1 ? '' : 's'}`;
+}
+
 function formatDependencyCount(count: number): string {
   return `${count} dep${count === 1 ? '' : 's'}`;
 }
 
 async function openRsxExpressionTreeItem(
-  item: IRsxExpressionTreeExpression,
+  item:
+    | IRsxExpressionTreeExpression
+    | IRsxExpressionTreeModel
+    | IRsxExpressionTreeModelField
+    | IRsxExpressionTreeModelFieldExpressionUse,
 ): Promise<void> {
   await openRsxExpressionLocation(item);
 }
