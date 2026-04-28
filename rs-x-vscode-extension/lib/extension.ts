@@ -816,7 +816,9 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
           ? 'rsxExpressionsRoot'
           : 'rsxExpressionModelsRoot';
       item.iconPath = new vscode.ThemeIcon(
-        element.section === 'expressions' ? 'symbol-namespace' : 'symbol-struct',
+        element.section === 'expressions'
+          ? 'symbol-namespace'
+          : 'symbol-struct',
       );
       item.tooltip =
         element.section === 'expressions'
@@ -2122,7 +2124,9 @@ function findLastRsxModelHeaderSpanInRange(
     if (parsed?.key === 'model') {
       const valueStart = cursor + getHeaderValueStartCharacter(line);
       let valueEnd = lineEnd;
-      const valueLines = [line.slice(getHeaderValueStartCharacter(line)).trim()];
+      const valueLines = [
+        line.slice(getHeaderValueStartCharacter(line)).trim(),
+      ];
       let nextLineStart = getNextLineStartOffset(text, lineEnd);
       while (
         nextLineStart < endOffset &&
@@ -2317,7 +2321,10 @@ function getRsxExpressionModelFieldsFromTypeNode(args: {
     return fields;
   }
 
-  const importedType = getImportedModelTypeReference(args.typeNode, args.sourceFile);
+  const importedType = getImportedModelTypeReference(
+    args.typeNode,
+    args.sourceFile,
+  );
   if (!importedType) {
     return [];
   }
@@ -2628,21 +2635,25 @@ function getUniqueRsxExpressionModels(
   }
 
   return [...modelsByKey.entries()]
-    .map(([key, model]): IRsxExpressionTreeModel => ({
-      kind: 'model',
-      key,
-      label: formatRsxExpressionModelTreeLabel(model.modelTypeText),
-      modelTypeText: model.modelTypeText,
-      uri: model.expression.modelDefinition?.uri ?? model.expression.uri,
-      relativePath: model.expression.relativePath,
-      start: model.expression.modelDefinition?.start ?? model.expression.modelStart,
-      end: model.expression.modelDefinition?.end ?? model.expression.modelEnd,
-      fields: attachRsxExpressionModelFieldUses(
-        model.expression.modelFields,
-        model.expressions,
-      ),
-      expressions: model.expressions.sort(compareRsxExpressionTreeExpression),
-    }))
+    .map(
+      ([key, model]): IRsxExpressionTreeModel => ({
+        kind: 'model',
+        key,
+        label: formatRsxExpressionModelTreeLabel(model.modelTypeText),
+        modelTypeText: model.modelTypeText,
+        uri: model.expression.modelDefinition?.uri ?? model.expression.uri,
+        relativePath: model.expression.relativePath,
+        start:
+          model.expression.modelDefinition?.start ??
+          model.expression.modelStart,
+        end: model.expression.modelDefinition?.end ?? model.expression.modelEnd,
+        fields: attachRsxExpressionModelFieldUses(
+          model.expression.modelFields,
+          model.expressions,
+        ),
+        expressions: model.expressions.sort(compareRsxExpressionTreeExpression),
+      }),
+    )
     .sort(
       (left, right) =>
         left.label.localeCompare(right.label) ||
@@ -2797,13 +2808,11 @@ function findRsxExpressionModelFieldUsageSpan(args: {
 function getRsxModelFieldCallbackAlias(
   node: ts.Node,
   aliases: ReadonlyMap<string, readonly string[]>,
-):
-  | {
-      readonly callback: ts.ArrowFunction | ts.FunctionExpression;
-      readonly parameterName: string;
-      readonly basePath: readonly string[];
-    }
-  | null {
+): {
+  readonly callback: ts.ArrowFunction | ts.FunctionExpression;
+  readonly parameterName: string;
+  readonly basePath: readonly string[];
+} | null {
   if (
     !ts.isCallExpression(node) ||
     !ts.isPropertyAccessExpression(node.expression) ||
@@ -2840,7 +2849,11 @@ function getRsxModelFieldCallbackAlias(
 function getRsxModelFieldAccessPath(
   node: ts.Node,
   aliases: ReadonlyMap<string, readonly string[]>,
-): { readonly path: readonly string[]; readonly start: number; readonly end: number } | null {
+): {
+  readonly path: readonly string[];
+  readonly start: number;
+  readonly end: number;
+} | null {
   if (ts.isIdentifier(node)) {
     const alias = aliases.get(node.text);
     if (!alias && !isRsxExpressionIdentifierReference(node)) {
