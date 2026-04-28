@@ -1147,7 +1147,9 @@ describe('rsx vscode extension activation', () => {
       models?: unknown[];
     }>;
     expect(roots).toHaveLength(2);
-    const expressionsRoot = roots.find((root) => root.section === 'expressions');
+    const expressionsRoot = roots.find(
+      (root) => root.section === 'expressions',
+    );
     const modelsRoot = roots.find((root) => root.section === 'models');
     expect(expressionsRoot).toEqual(
       expect.objectContaining({
@@ -1175,7 +1177,9 @@ describe('rsx vscode extension activation', () => {
       fields?: unknown[];
       expressions: unknown[];
     }>;
-    const valueModel = models.find((model) => model.label === '{ value: number }');
+    const valueModel = models.find(
+      (model) => model.label === '{ value: number }',
+    );
     expect(valueModel).toEqual(
       expect.objectContaining({
         kind: 'model',
@@ -1209,14 +1213,9 @@ describe('rsx vscode extension activation', () => {
       expression: { exportName: string };
       fieldPath: string[];
     }>;
-    expect(
-      valueExpressionUses.map((use) => use.expression.exportName),
-    ).toEqual([
-      'lineRsx',
-      'shippingFeeRsx',
-      'subtotalRsx',
-      'exactExportUseRsx',
-    ]);
+    expect(valueExpressionUses.map((use) => use.expression.exportName)).toEqual(
+      ['lineRsx', 'shippingFeeRsx', 'subtotalRsx', 'exactExportUseRsx'],
+    );
     expect(valueExpressionUses[0]).toEqual(
       expect.objectContaining({
         kind: 'modelFieldExpression',
@@ -1226,7 +1225,10 @@ describe('rsx vscode extension activation', () => {
     const importedModel = models.find((model) =>
       model.label.includes('ImportedCompositionModel'),
     );
-    const importedModelPath = path.join(fixtureDirectory, 'dependency-model.ts');
+    const importedModelPath = path.join(
+      fixtureDirectory,
+      'dependency-model.ts',
+    );
     const importedModelText = fs.readFileSync(importedModelPath, 'utf8');
     const importedModelStart = importedModelText.indexOf(
       'ImportedCompositionModel',
@@ -1272,9 +1274,9 @@ describe('rsx vscode extension activation', () => {
       label: string;
     }>;
     const linesField = linesFields.find((field) => field.label === 'lines');
-    const nestedLineFields = (await provider.getChildren(
-      linesField,
-    )) as Array<{ label: string }>;
+    const nestedLineFields = (await provider.getChildren(linesField)) as Array<{
+      label: string;
+    }>;
     expect(nestedLineFields.map((field) => field.label)).toEqual([
       'id',
       'lineTotal',
@@ -1293,18 +1295,24 @@ describe('rsx vscode extension activation', () => {
     const circularModel = models.find((model) =>
       model.label.includes('CircularModelA'),
     );
-    const circularFields = (await provider.getChildren(circularModel)) as Array<{
+    const circularFields = (await provider.getChildren(
+      circularModel,
+    )) as Array<{
       label: string;
     }>;
     expect(circularFields.map((field) => field.label)).toEqual(['child']);
-    const childFields = (await provider.getChildren(circularFields[0])) as Array<{
+    const childFields = (await provider.getChildren(
+      circularFields[0],
+    )) as Array<{
       kind?: string;
       label: string;
     }>;
     const circularNestedFields = childFields.filter(
       (field) => field.kind === 'modelField',
     );
-    expect(circularNestedFields.map((field) => field.label)).toEqual(['parent']);
+    expect(circularNestedFields.map((field) => field.label)).toEqual([
+      'parent',
+    ]);
     const circularParentChildren = await provider.getChildren(
       circularNestedFields[0],
     );
@@ -1613,7 +1621,9 @@ describe('rsx vscode extension activation', () => {
     expect(editor.selection).toEqual(
       expect.objectContaining({
         start: document.positionAt(text.indexOf('value: number')),
-        end: document.positionAt(text.indexOf('value: number') + 'value'.length),
+        end: document.positionAt(
+          text.indexOf('value: number') + 'value'.length,
+        ),
       }),
     );
 
