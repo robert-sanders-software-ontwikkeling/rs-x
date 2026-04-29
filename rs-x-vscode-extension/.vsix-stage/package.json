@@ -3,7 +3,7 @@
   "displayName": "RS-X Compiler Support",
   "description": "VS Code extension that enables RS-X expression IntelliSense and diagnostics",
   "icon": "icon.png",
-  "version": "2.0.3-local.20260427143548",
+  "version": "2.0.3-local.20260429063751",
   "publisher": "RobertSanders",
   "engines": {
     "vscode": "^1.90.0"
@@ -78,7 +78,7 @@
       "view/item/context": [
         {
           "command": "rsx.expressions.preview",
-          "when": "view == rsx.expressions && viewItem =~ /rsxExpression/",
+          "when": "view == rsx.expressions && viewItem == rsxExpression",
           "group": "inline"
         }
       ]

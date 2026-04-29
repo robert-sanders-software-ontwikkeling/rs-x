@@ -95,7 +95,7 @@
       "view/item/context": [
         {
           "command": "rsx.expressions.preview",
-          "when": "view == rsx.expressions && viewItem =~ /rsxExpression/",
+          "when": "view == rsx.expressions && viewItem == rsxExpression",
           "group": "inline"
         }
       ]
@@ -173,7 +173,7 @@
     "test:host-smoke": "node ./scripts/run-host-smoke.cjs",
     "test:host-smoke:ci": "node ./scripts/run-host-smoke.cjs --ci",
     "test:host-smoke:ci:windows": "node ./scripts/run-host-smoke.cjs --ci",
-    "vscode:prepublish": "pnpm --filter @rs-x/expression-parser run build && pnpm --filter @rs-x/compiler run build && pnpm --filter @rs-x/typescript-plugin run build && pnpm run build",
+    "vscode:prepublish": "pnpm --filter @rs-x/core run build && pnpm --filter @rs-x/state-manager run build && pnpm --filter @rs-x/expression-parser run build && pnpm --filter @rs-x/compiler run build && pnpm --filter @rs-x/typescript-plugin run build && pnpm run build",
     "package": "pnpm run vscode:prepublish && pnpm run prepare:plugin && node ./scripts/package-vsix.cjs",
     "package:local": "pnpm run vscode:prepublish && pnpm run prepare:plugin && node ./scripts/package-vsix.cjs --local-build",
     "publish:marketplace": "pnpm run vscode:prepublish && pnpm run prepare:plugin && pnpm exec vsce publish"
