@@ -1,11 +1,20 @@
 import { jest } from '@jest/globals';
 import fs from 'node:fs';
 import path from 'node:path';
-import { TextDecoder } from 'node:util';
+import { TextDecoder, TextEncoder } from 'node:util';
 
 (
-  globalThis as typeof globalThis & { TextDecoder: typeof TextDecoder }
+  globalThis as typeof globalThis & {
+    TextDecoder: typeof TextDecoder;
+    TextEncoder: typeof TextEncoder;
+  }
 ).TextDecoder = TextDecoder;
+(
+  globalThis as typeof globalThis & {
+    TextDecoder: typeof TextDecoder;
+    TextEncoder: typeof TextEncoder;
+  }
+).TextEncoder = TextEncoder;
 
 const registerCompletionItemProvider = jest.fn(() => ({ dispose: jest.fn() }));
 const registerHoverProvider = jest.fn(() => ({ dispose: jest.fn() }));
@@ -37,11 +46,18 @@ const createWebviewPanel = jest.fn(() => ({
   onDidDispose: jest.fn(() => ({ dispose: jest.fn() })),
   dispose: jest.fn(),
 }));
+const showQuickPick = jest.fn();
+const showInputBox = jest.fn();
+const showWarningMessage = jest.fn();
+const showInformationMessage = jest.fn();
 const showTextDocument = jest.fn();
 const visibleTextEditors: unknown[] = [];
 let activeTextEditor: unknown = null;
+let workspaceFolders: unknown[] | undefined;
 const findFiles = jest.fn();
 const readFile = jest.fn();
+const writeFile = jest.fn();
+const createDirectory = jest.fn();
 const openTextDocument = jest.fn();
 const asRelativePath = jest.fn((uri: { fsPath: string }) =>
   uri.fsPath.replace(/^\/workspace\//u, ''),
@@ -87,7 +103,12 @@ jest.mock(
       createFileSystemWatcher,
       findFiles,
       fs: {
+        createDirectory,
         readFile,
+        writeFile,
+      },
+      get workspaceFolders() {
+        return workspaceFolders;
       },
       openTextDocument,
       onDidOpenTextDocument,
@@ -102,7 +123,11 @@ jest.mock(
         return activeTextEditor;
       },
       registerTreeDataProvider,
+      showInputBox,
+      showInformationMessage,
+      showQuickPick,
       showTextDocument,
+      showWarningMessage,
       visibleTextEditors,
     },
     commands: {
@@ -179,6 +204,17 @@ jest.mock(
       }
       static parse(value: string) {
         return new Uri(value.replace(/^file:\/\//u, ''));
+      }
+      static joinPath(base: { fsPath: string }, ...segments: string[]) {
+        return new Uri(
+          [base.fsPath, ...segments].join('/').replace(/\/+/gu, '/'),
+        );
+      }
+      get path() {
+        return this.fsPath;
+      }
+      with(change: { path?: string }) {
+        return new Uri(change.path ?? this.fsPath);
       }
       toString() {
         return `file://${this.fsPath}`;
@@ -263,6 +299,95 @@ describe('rsx vscode extension activation', () => {
     expect(registerDocumentRangeFormattingEditProvider).toHaveBeenCalled();
     expect(registerDocumentSemanticTokensProvider).toHaveBeenCalled();
     expect(context.subscriptions.length).toBeGreaterThan(0);
+  });
+
+  it('creates a module rsx expression from the expressions panel add command', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+    const files = new Map<string, string>([
+      [
+        '/workspace/rsx.config.json',
+        JSON.stringify({
+          cli: { add: { defaultDirectory: 'src/rules' } },
+        }),
+      ],
+    ]);
+
+    registerCommand.mockClear();
+    workspaceFolders = [{ name: 'workspace', uri: createUri('/workspace') }];
+    showQuickPick.mockImplementation(async (items: unknown[]) => items[0]);
+    showInputBox.mockImplementation(
+      async (options: { prompt?: string; value?: string }) => {
+        if (options.prompt === 'Expression export name') {
+          return 'grandTotalRsx';
+        }
+        if (options.prompt === 'Initial expression body') {
+          return 'price * quantity';
+        }
+        if (options.prompt === 'Expression file path') {
+          return options.value;
+        }
+        return undefined;
+      },
+    );
+    readFile.mockImplementation(async (uri: { fsPath: string }) => {
+      const text = files.get(uri.fsPath);
+      if (text === undefined) {
+        throw new Error('ENOENT');
+      }
+      return new TextEncoder().encode(text);
+    });
+    writeFile.mockImplementation(
+      async (uri: { fsPath: string }, bytes: Uint8Array) => {
+        files.set(uri.fsPath, new TextDecoder().decode(bytes));
+      },
+    );
+    createDirectory.mockResolvedValue(undefined as never);
+    openTextDocument.mockImplementation(async (uri: { fsPath: string }) =>
+      createTextDocument(files.get(uri.fsPath) ?? '', { fsPath: uri.fsPath }),
+    );
+    showTextDocument.mockImplementation(async (document: unknown) => ({
+      document,
+      revealRange: jest.fn(),
+    }));
+
+    try {
+      activate(context as never);
+
+      const addCommand = registerCommand.mock.calls.find(
+        ([command]) => command === 'rsx.expressions.add',
+      )?.[1] as (() => Promise<void>) | undefined;
+      expect(addCommand).toBeDefined();
+      await addCommand?.();
+
+      const targetPath = '/workspace/src/rules/grand-total-rsx.expressions.rsx';
+      expect(files.get(targetPath)).toBe(
+        [
+          'expression: grandTotalRsx',
+          '  model: { price: number; quantity: number }',
+          '  price * quantity',
+          '',
+        ].join('\n'),
+      );
+      expect(createDirectory).toHaveBeenCalledWith(
+        expect.objectContaining({ fsPath: '/workspace/src/rules' }),
+      );
+      expect(showInformationMessage).toHaveBeenCalledWith(
+        'Added RS-X expression grandTotalRsx.',
+      );
+    } finally {
+      workspaceFolders = undefined;
+      showQuickPick.mockReset();
+      showInputBox.mockReset();
+      showWarningMessage.mockReset();
+      showInformationMessage.mockReset();
+      readFile.mockReset();
+      writeFile.mockReset();
+      createDirectory.mockReset();
+      openTextDocument.mockReset();
+      showTextDocument.mockReset();
+    }
   });
 
   it('offers top-level header completions in fresh .rsx files', () => {

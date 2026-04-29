@@ -52,7 +52,6 @@ The rs-x VS Code extension provides:
 ## Commands
 
 - `rsx doctor`
-- `rsx add` (aliases: `rsx -a`, `rsx -add`)
 - `rsx install vscode [--force] [--local] [--dry-run]`
 - `rsx install compiler [--pm <pnpm|npm|yarn|bun>] [--next] [--dry-run]`
 - `rsx init [--pm <pnpm|npm|yarn|bun>] [--entry <path>] [--next] [--skip-install] [--skip-vscode] [--verify] [--force] [--local] [--dry-run]`

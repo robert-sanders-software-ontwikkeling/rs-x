@@ -29,6 +29,7 @@
   ],
   "activationEvents": [
     "onView:rsx.expressions",
+    "onCommand:rsx.expressions.add",
     "onCommand:rsx.expressions.refresh",
     "onCommand:rsx.expressions.open",
     "onCommand:rsx.expressions.preview",
@@ -43,6 +44,12 @@
   "browser": "./dist/extension.js",
   "contributes": {
     "commands": [
+      {
+        "command": "rsx.expressions.add",
+        "title": "Add RS-X Expression",
+        "category": "RS-X",
+        "icon": "$(add)"
+      },
       {
         "command": "rsx.expressions.refresh",
         "title": "Refresh RS-X Expressions",
@@ -81,6 +88,11 @@
     },
     "menus": {
       "view/title": [
+        {
+          "command": "rsx.expressions.add",
+          "when": "view == rsx.expressions",
+          "group": "navigation"
+        },
         {
           "command": "rsx.expressions.preview",
           "when": "view == rsx.expressions",

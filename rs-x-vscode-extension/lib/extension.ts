@@ -383,6 +383,11 @@ export function activate(context: vscode.ExtensionContext): void {
     ),
   );
   context.subscriptions.push(
+    vscode.commands.registerCommand('rsx.expressions.add', async () => {
+      await addRsxExpressionFromPanel(expressionsProvider);
+    }),
+  );
+  context.subscriptions.push(
     vscode.commands.registerCommand('rsx.expressions.refresh', () => {
       expressionsProvider.refresh();
     }),
@@ -3639,6 +3644,299 @@ async function openRsxExpressionLocation(args: {
     range,
     vscode.TextEditorRevealType.InCenterIfOutsideViewport,
   );
+}
+
+async function addRsxExpressionFromPanel(
+  provider: RsxExpressionsTreeDataProvider,
+): Promise<void> {
+  const workspaceFolder = await pickRsxWorkspaceFolder();
+  if (!workspaceFolder) {
+    return;
+  }
+
+  const mode = await vscode.window.showQuickPick(
+    [
+      {
+        label: 'Create New Expression File',
+        description: 'Recommended',
+        value: 'create' as const,
+      },
+      {
+        label: 'Add To Existing Expression File',
+        description: 'Append a new expression block',
+        value: 'append' as const,
+      },
+    ],
+    {
+      placeHolder: 'Choose how to add the RS-X expression',
+    },
+  );
+  if (!mode) {
+    return;
+  }
+
+  const expressionName = await vscode.window.showInputBox({
+    title: 'Add RS-X Expression',
+    prompt: 'Expression export name',
+    placeHolder: 'shippingTotal',
+    validateInput: (value) =>
+      isValidRsxExpressionIdentifier(value.trim())
+        ? null
+        : 'Enter a valid TypeScript identifier.',
+  });
+  if (!expressionName) {
+    return;
+  }
+
+  const expressionSource = await vscode.window.showInputBox({
+    title: 'Add RS-X Expression',
+    prompt: 'Initial expression body',
+    value: 'a',
+  });
+  if (expressionSource === undefined) {
+    return;
+  }
+
+  const modelTypeText = createRsxModelTypeTemplate(
+    expressionSource.trim() || 'a',
+  );
+  const expressionBlock = createRsxExpressionBlock({
+    expressionName: expressionName.trim(),
+    expressionSource: expressionSource.trim() || 'a',
+    modelTypeText,
+  });
+
+  const targetUri =
+    mode.value === 'create'
+      ? await pickNewRsxExpressionFileUri(
+          workspaceFolder,
+          expressionName.trim(),
+        )
+      : await pickExistingRsxExpressionFileUri(workspaceFolder);
+  if (!targetUri) {
+    return;
+  }
+
+  const existingText = await readWorkspaceTextFile(targetUri);
+  if (existingText !== null && mode.value === 'create') {
+    const action = await vscode.window.showWarningMessage(
+      `${vscode.workspace.asRelativePath(targetUri, false)} already exists.`,
+      { modal: true },
+      'Append',
+      'Overwrite',
+    );
+    if (!action) {
+      return;
+    }
+    await writeRsxExpressionFile(targetUri, {
+      existingText: action === 'Append' ? existingText : null,
+      expressionBlock,
+    });
+  } else {
+    await writeRsxExpressionFile(targetUri, {
+      existingText,
+      expressionBlock,
+    });
+  }
+
+  const nextText = await readWorkspaceTextFile(targetUri);
+  const expressionStart = Math.max(
+    0,
+    nextText?.lastIndexOf(expressionName.trim()) ?? 0,
+  );
+
+  provider.refresh();
+  await openRsxExpressionLocation({
+    uri: targetUri,
+    start: expressionStart,
+    end: expressionStart + expressionName.trim().length,
+  });
+  vscode.window.showInformationMessage(
+    `Added RS-X expression ${expressionName.trim()}.`,
+  );
+}
+
+async function pickRsxWorkspaceFolder(): Promise<vscode.WorkspaceFolder | null> {
+  const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
+  if (workspaceFolders.length === 0) {
+    vscode.window.showWarningMessage(
+      'Open a workspace before adding an RS-X expression.',
+    );
+    return null;
+  }
+  if (workspaceFolders.length === 1) {
+    return workspaceFolders[0];
+  }
+
+  const selected = await vscode.window.showQuickPick(
+    workspaceFolders.map((folder) => ({
+      label: folder.name,
+      description: folder.uri.fsPath,
+      folder,
+    })),
+    {
+      placeHolder: 'Choose workspace folder',
+    },
+  );
+  return selected?.folder ?? null;
+}
+
+async function pickNewRsxExpressionFileUri(
+  workspaceFolder: vscode.WorkspaceFolder,
+  expressionName: string,
+): Promise<vscode.Uri | null> {
+  const defaultDirectory = await getRsxAddDefaultDirectory(workspaceFolder);
+  const defaultPath = `${defaultDirectory}/${toKebabCase(expressionName)}.expressions.rsx`;
+  const relativePath = await vscode.window.showInputBox({
+    title: 'Add RS-X Expression',
+    prompt: 'Expression file path',
+    value: defaultPath,
+    validateInput: (value) =>
+      normalizeRsxRelativePath(value) !== null
+        ? null
+        : 'Enter a relative .rsx file path inside the workspace.',
+  });
+  if (!relativePath) {
+    return null;
+  }
+
+  const normalizedPath = normalizeRsxRelativePath(relativePath);
+  return normalizedPath === null
+    ? null
+    : vscode.Uri.joinPath(workspaceFolder.uri, ...normalizedPath.split('/'));
+}
+
+async function pickExistingRsxExpressionFileUri(
+  workspaceFolder: vscode.WorkspaceFolder,
+): Promise<vscode.Uri | null> {
+  const workspaceRoot = `${workspaceFolder.uri.fsPath.replace(/[/\\]+$/u, '')}${path.sep}`;
+  const uris = (
+    await vscode.workspace.findFiles(
+      RSX_FILE_PATTERN,
+      '**/{node_modules,dist,out-tsc,coverage,.git}/**',
+    )
+  ).filter(
+    (uri) =>
+      uri.fsPath === workspaceFolder.uri.fsPath ||
+      uri.fsPath.startsWith(workspaceRoot),
+  );
+  if (uris.length === 0) {
+    vscode.window.showWarningMessage(
+      'No existing .rsx files found in this workspace.',
+    );
+    return null;
+  }
+
+  const selected = await vscode.window.showQuickPick(
+    uris
+      .sort((left, right) => left.fsPath.localeCompare(right.fsPath))
+      .map((uri) => ({
+        label: vscode.workspace.asRelativePath(uri, false),
+        uri,
+      })),
+    {
+      placeHolder: 'Choose the .rsx file to update',
+    },
+  );
+  return selected?.uri ?? null;
+}
+
+async function getRsxAddDefaultDirectory(
+  workspaceFolder: vscode.WorkspaceFolder,
+): Promise<string> {
+  const configUri = vscode.Uri.joinPath(workspaceFolder.uri, 'rsx.config.json');
+  try {
+    const text = new TextDecoder('utf8').decode(
+      await vscode.workspace.fs.readFile(configUri),
+    );
+    const config = JSON.parse(text) as {
+      cli?: { add?: { defaultDirectory?: unknown } };
+    };
+    const configured = config.cli?.add?.defaultDirectory;
+    if (typeof configured === 'string' && configured.trim()) {
+      return configured.trim().replace(/\\/gu, '/');
+    }
+  } catch {
+    // Missing or invalid config should not block the UI add flow.
+  }
+  return 'src/expressions';
+}
+
+async function readWorkspaceTextFile(uri: vscode.Uri): Promise<string | null> {
+  try {
+    return new TextDecoder('utf8').decode(
+      await vscode.workspace.fs.readFile(uri),
+    );
+  } catch {
+    return null;
+  }
+}
+
+async function writeRsxExpressionFile(
+  uri: vscode.Uri,
+  args: {
+    readonly existingText: string | null;
+    readonly expressionBlock: string;
+  },
+): Promise<void> {
+  const nextText =
+    args.existingText === null
+      ? `${args.expressionBlock}\n`
+      : `${args.existingText.replace(/\s*$/u, '')}\n\n${args.expressionBlock}\n`;
+  await vscode.workspace.fs.createDirectory(getParentUri(uri));
+  await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(nextText));
+}
+
+function createRsxExpressionBlock(args: {
+  readonly expressionName: string;
+  readonly expressionSource: string;
+  readonly modelTypeText: string;
+}): string {
+  return [
+    `expression: ${args.expressionName}`,
+    `  model: ${args.modelTypeText}`,
+    ...args.expressionSource.split(/\r?\n/u).map((line) => `  ${line}`),
+  ].join('\n');
+}
+
+function createRsxModelTypeTemplate(expressionSource: string): string {
+  const identifiers = getFreeIdentifiersInRsxExpression(expressionSource);
+  if (identifiers.length === 0) {
+    return '{ a: number }';
+  }
+  return `{ ${identifiers.map((identifier) => `${identifier}: number`).join('; ')} }`;
+}
+
+function isValidRsxExpressionIdentifier(value: string): boolean {
+  return ts.isIdentifierText(value, ts.ScriptTarget.Latest);
+}
+
+function getParentUri(uri: vscode.Uri): vscode.Uri {
+  return uri.with({ path: path.posix.dirname(uri.path) });
+}
+
+function normalizeRsxRelativePath(value: string): string | null {
+  const normalized = value.trim().replace(/\\/gu, '/');
+  const segments = normalized.split('/').filter(Boolean);
+  if (
+    normalized.length === 0 ||
+    normalized.startsWith('/') ||
+    segments.some((segment) => segment === '.' || segment === '..') ||
+    !normalized.endsWith('.rsx')
+  ) {
+    return null;
+  }
+  return segments.join('/');
+}
+
+function toKebabCase(value: string): string {
+  return value
+    .replace(/([a-z0-9])([A-Z])/gu, '$1-$2')
+    .replace(/[_\s]+/gu, '-')
+    .replace(/[^A-Za-z0-9-]+/gu, '-')
+    .replace(/-+/gu, '-')
+    .replace(/^-|-$/gu, '')
+    .toLowerCase();
 }
 
 class RsxCompletionItemProvider implements vscode.CompletionItemProvider<vscode.CompletionItem> {

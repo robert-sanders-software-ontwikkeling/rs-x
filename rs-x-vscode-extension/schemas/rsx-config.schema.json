@@ -83,11 +83,11 @@
           "properties": {
             "defaultDirectory": {
               "type": "string",
-              "description": "Default directory suggested by rsx add."
+              "description": "Default directory suggested by the VS Code Expressions panel add action."
             },
             "searchRoots": {
               "type": "array",
-              "description": "Preferred roots used when rsx add ranks existing RS-X expression files.",
+              "description": "Preferred roots used by expression-authoring tools when ranking existing RS-X expression files.",
               "items": {
                 "type": "string"
               }

@@ -689,63 +689,6 @@ fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', 'utf8');
 " "$project_dir"
 }
 
-create_add_default_directory_project() {
-  local project_dir="$1"
-
-  rm -rf "$project_dir"
-  mkdir -p "$project_dir/src"
-
-  cat >"$project_dir/package.json" <<'EOF'
-{
-  "name": "rsx-add-default-dir-verify",
-  "private": true
-}
-EOF
-
-  cat >"$project_dir/rsx.config.json" <<'EOF'
-{
-  "cli": {
-    "add": {
-      "defaultDirectory": "src/custom-expressions",
-      "searchRoots": ["src"]
-    }
-  }
-}
-EOF
-}
-
-create_add_search_roots_project() {
-  local project_dir="$1"
-
-  rm -rf "$project_dir"
-  mkdir -p "$project_dir/src/expressions"
-  mkdir -p "$project_dir/custom-root/expressions"
-
-  cat >"$project_dir/package.json" <<'EOF'
-{
-  "name": "rsx-add-search-roots-verify",
-  "private": true
-}
-EOF
-
-  # Expression file only in the configured custom searchRoot, not in defaultDirectory
-  cat >"$project_dir/custom-root/expressions/existing.expression.ts" <<'EOF'
-import { rsx } from '@rs-x/expression-parser';
-export const existingExpression = rsx('a + b')({ a: 1, b: 2 });
-EOF
-
-  cat >"$project_dir/rsx.config.json" <<'EOF'
-{
-  "cli": {
-    "add": {
-      "defaultDirectory": "src/expressions",
-      "searchRoots": ["custom-root"]
-    }
-  }
-}
-EOF
-}
-
 rm -rf "$base_dir"
 mkdir -p "$base_dir"
 
@@ -754,7 +697,7 @@ printf 'Using package manager: %s\n' "$pm"
 printf 'Using tag flag: %s\n' "$tag_flag"
 
 install_dir="$base_dir/install-compiler-verify"
-generic_dir="$base_dir/init-add-verify"
+generic_dir="$base_dir/init-verify"
 react_init_dir="$base_dir/react-init-verify"
 next_init_dir="$base_dir/next-init-verify"
 vue_init_dir="$base_dir/vue-init-verify"
@@ -763,8 +706,6 @@ react_custom_paths_dir="$base_dir/react-custom-paths-verify"
 vue_custom_paths_dir="$base_dir/vue-custom-paths-verify"
 next_custom_paths_dir="$base_dir/next-custom-paths-verify"
 angular_custom_paths_dir="$base_dir/angular-custom-paths-verify"
-add_default_dir_project_dir="$base_dir/add-default-dir-verify"
-add_search_roots_project_dir="$base_dir/add-search-roots-verify"
 
 printf '\n== install-compiler ==\n'
 rm -rf "$install_dir"
@@ -791,48 +732,42 @@ else
   fi
 fi
 
-printf '\n== init-and-add ==\n'
+printf '\n== init ==\n'
 create_generic_project "$generic_dir"
 
-  if ! run_step_in_dir "init-and-add" "npm install" "$generic_dir" "$base_dir/init-install.log" "$pm" install; then
-    summary_lines+=("init-and-add: npm install failed")
+  if ! run_step_in_dir "init" "npm install" "$generic_dir" "$base_dir/init-install.log" "$pm" install; then
+    summary_lines+=("init: npm install failed")
     overall_status=1
   else
-  if ! run_step_in_dir "init-and-add" "rsx init" "$generic_dir" "$base_dir/init.log" \
+  if ! run_step_in_dir "init" "rsx init" "$generic_dir" "$base_dir/init.log" \
     "${rsx_cmd[@]}" init --pm "$pm" "$tag_flag" "$skip_vscode_flag" --entry src/main.ts
   then
-    summary_lines+=("init-and-add: init failed")
-    overall_status=1
-  elif ! run_step_in_dir_with_input "init-and-add" "rsx add" "$generic_dir" "$base_dir/add.log" \
-    $'sampleExpression\n\nsrc/expressions\nn\n' \
-    "${rsx_cmd[@]}" add
-  then
-    summary_lines+=("init-and-add: add failed")
+    summary_lines+=("init: init failed")
     overall_status=1
   elif [[ ! -f "$generic_dir/rsx.config.json" ]]; then
-    printf 'init-and-add: rsx.config.json was not created.\n'
-    summary_lines+=("init-and-add: missing rsx.config.json")
+    printf 'init: rsx.config.json was not created.\n'
+    summary_lines+=("init: missing rsx.config.json")
     overall_status=1
   elif ! set_build_config_paths "$generic_dir"; then
-    printf 'init-and-add: failed to patch rsx.config.json.\n'
-    summary_lines+=("init-and-add: config patch failed")
+    printf 'init: failed to patch rsx.config.json.\n'
+    summary_lines+=("init: config patch failed")
     overall_status=1
-  elif ! run_step_in_dir "init-and-add" "rsx build" "$generic_dir" "$base_dir/build.log" \
+  elif ! run_step_in_dir "init" "rsx build" "$generic_dir" "$base_dir/build.log" \
     "${rsx_cmd[@]}" build --project tsconfig.json --no-emit --prod
   then
-    summary_lines+=("init-and-add: build failed")
+    summary_lines+=("init: build failed")
     overall_status=1
   elif [[ ! -f "$generic_dir/tmp/generated/custom-preparse.ts" || ! -f "$generic_dir/tmp/generated/custom-compiled.ts" ]]; then
-    printf 'init-and-add: custom rsx.config.json build outputs were not generated.\n'
-    summary_lines+=("init-and-add: custom build outputs missing")
+    printf 'init: custom rsx.config.json build outputs were not generated.\n'
+    summary_lines+=("init: custom build outputs missing")
     overall_status=1
-  elif ! run_step_in_dir "init-and-add" "rsx typecheck" "$generic_dir" "$base_dir/typecheck.log" \
+  elif ! run_step_in_dir "init" "rsx typecheck" "$generic_dir" "$base_dir/typecheck.log" \
     "${rsx_cmd[@]}" typecheck --project tsconfig.json
   then
-    summary_lines+=("init-and-add: typecheck failed")
+    summary_lines+=("init: typecheck failed")
     overall_status=1
   else
-    summary_lines+=("init-and-add: pass")
+    summary_lines+=("init: pass")
   fi
 fi
 
@@ -860,7 +795,7 @@ if [[ -d "$generic_dir" && -f "$generic_dir/rsx.config.json" ]]; then
     summary_lines+=("preparse-disabled: pass")
   fi
 else
-  printf 'preparse-disabled: skipped (init-and-add did not complete).\n'
+  printf 'preparse-disabled: skipped (init did not complete).\n'
   summary_lines+=("preparse-disabled: skipped")
 fi
 
@@ -888,45 +823,8 @@ if [[ -d "$generic_dir" && -f "$generic_dir/rsx.config.json" ]]; then
     summary_lines+=("compiled-disabled: pass")
   fi
 else
-  printf 'compiled-disabled: skipped (init-and-add did not complete).\n'
+  printf 'compiled-disabled: skipped (init did not complete).\n'
   summary_lines+=("compiled-disabled: skipped")
-fi
-
-printf '\n== add-default-directory ==\n'
-create_add_default_directory_project "$add_default_dir_project_dir"
-# Input: name, source (default), no-kebab, dir (accept default from config), mode 1 (create-inline)
-if ! run_step_in_dir_with_input "add-default-directory" "rsx add" "$add_default_dir_project_dir" "$base_dir/add-default-dir.log" \
-  $'myExpr\n\nn\n\n1\n' \
-  "${rsx_cmd[@]}" add
-then
-  summary_lines+=("add-default-directory: rsx add failed")
-  overall_status=1
-elif [[ ! -f "$add_default_dir_project_dir/src/custom-expressions/myExpr.ts" ]]; then
-  printf 'add-default-directory: file not created in configured defaultDirectory.\n'
-  summary_lines+=("add-default-directory: file not in configured defaultDirectory")
-  overall_status=1
-else
-  summary_lines+=("add-default-directory: pass")
-fi
-
-printf '\n== add-search-roots ==\n'
-create_add_search_roots_project "$add_search_roots_project_dir"
-# Input: name, source (default), no-kebab, dir (accept default = src/expressions, which is empty),
-#        mode 3 (update-existing), keepModel (default Y), file 1 (first from fallback search)
-if ! run_step_in_dir_with_input "add-search-roots" "rsx add" "$add_search_roots_project_dir" "$base_dir/add-search-roots.log" \
-  $'newExpr\n\nn\n\n3\n\n1\n' \
-  "${rsx_cmd[@]}" add
-then
-  summary_lines+=("add-search-roots: rsx add failed")
-  overall_status=1
-elif ! grep -q 'custom-root/expressions/existing.expression.ts' "$base_dir/add-search-roots.log"; then
-  printf 'add-search-roots: file from configured searchRoot not found in fallback search.\n'
-  printf 'Log output:\n'
-  cat "$base_dir/add-search-roots.log"
-  summary_lines+=("add-search-roots: searchRoot file not listed")
-  overall_status=1
-else
-  summary_lines+=("add-search-roots: pass")
 fi
 
 run_framework_init_case \
