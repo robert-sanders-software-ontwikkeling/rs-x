@@ -30,6 +30,15 @@ export interface IRsxFileParseResult {
   readonly expressions: readonly IRsxExpressionMetadata[];
 }
 
+export interface IRsxModuleStructureDiagnostic {
+  readonly key: string;
+  readonly message: string;
+  readonly start: number;
+  readonly end: number;
+  readonly line: number;
+  readonly character: number;
+}
+
 export interface IRsxBackedProgram {
   readonly program: ts.Program;
   readonly fileName: string;
@@ -72,6 +81,9 @@ export function parseRsxFileExpressions(args: {
     ts.ScriptKind.TS,
   );
   const normalized = args.text.replace(/\r\n/gu, '\n');
+  if (getRsxModuleStructureDiagnostics(normalized).length > 0) {
+    return null;
+  }
 
   const globalHeaders = new Map<string, string>();
   let cursor = 0;
@@ -223,6 +235,51 @@ export function parseRsxFileExpressions(args: {
     sourceFile,
     expressions,
   };
+}
+
+export function getRsxModuleStructureDiagnostics(
+  text: string,
+): IRsxModuleStructureDiagnostic[] {
+  const normalized = text.replace(/\r\n/gu, '\n');
+  const diagnostics: IRsxModuleStructureDiagnostic[] = [];
+  const hasModuleTopLevelHeader = normalized
+    .split('\n')
+    .some(
+      (line) =>
+        isTopLevelExpressionHeader(line) || isTopLevelDefaultsHeader(line),
+    );
+  if (!hasModuleTopLevelHeader) {
+    return diagnostics;
+  }
+
+  let cursor = 0;
+  let lineNumber = 0;
+  while (cursor < normalized.length) {
+    const line = readLineAt(normalized, cursor);
+    const header = parseTopLevelHeaderLine(line.text);
+    if (
+      header &&
+      isSupportedRsxHeaderKey(header.key) &&
+      header.key !== 'defaults' &&
+      header.key !== 'expression'
+    ) {
+      const character = line.text.indexOf(header.key);
+      diagnostics.push({
+        key: header.key,
+        message: `Header "${header.key}" must be indented under defaults: or an expression block in module-style .rsx files.`,
+        start: line.start + Math.max(0, character),
+        end:
+          line.start +
+          Math.max(header.key.length, character + header.key.length),
+        line: lineNumber,
+        character: Math.max(0, character),
+      });
+    }
+    cursor = line.next;
+    lineNumber += 1;
+  }
+
+  return diagnostics;
 }
 
 export function createRsxBackedProgramForFile(

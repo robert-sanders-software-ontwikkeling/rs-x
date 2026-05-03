@@ -31,8 +31,14 @@
     "onView:rsx.expressions",
     "onCommand:rsx.expressions.add",
     "onCommand:rsx.expressions.refresh",
+    "onCommand:rsx.expressions.search",
     "onCommand:rsx.expressions.open",
     "onCommand:rsx.expressions.preview",
+    "onCommand:rsx.expressions.panel.preview",
+    "onCommand:rsx.expressions.test",
+    "onCommand:rsx.expressions.panel.test",
+    "onCommand:rsx.expressions.test.run",
+    "onCommand:rsx.expressions.test.load",
     "onLanguage:rsx",
     "onLanguage:typescript",
     "onLanguage:typescriptreact",
@@ -57,15 +63,57 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "rsx.expressions.search",
+        "title": "Search RS-X Expressions",
+        "category": "RS-X",
+        "icon": "$(search)"
+      },
+      {
         "command": "rsx.expressions.open",
         "title": "Open RS-X Expression",
         "category": "RS-X"
       },
       {
         "command": "rsx.expressions.preview",
-        "title": "Preview RS-X Expression Tree",
+        "title": "Open RS-X Expression Tree",
         "category": "RS-X",
         "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "rsx.expressions.panel.preview",
+        "title": "Open RS-X Expression Tree",
+        "category": "RS-X",
+        "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "rsx.expressions.test",
+        "title": "Test RS-X Expression",
+        "category": "RS-X",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "rsx.expressions.panel.test",
+        "title": "Test RS-X Expression",
+        "category": "RS-X",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "rsx.expressions.panel.enableDebugHooks",
+        "title": "Enable RS-X Debug Hooks",
+        "category": "RS-X",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "rsx.expressions.test.run",
+        "title": "Run RS-X Model",
+        "category": "RS-X",
+        "icon": "$(play)"
+      },
+      {
+        "command": "rsx.expressions.test.load",
+        "title": "Load RS-X Model",
+        "category": "RS-X",
+        "icon": "$(folder-opened)"
       }
     ],
     "viewsContainers": {
@@ -81,8 +129,8 @@
       "rsx": [
         {
           "id": "rsx.expressions",
-          "name": "Expressions",
-          "type": "tree"
+          "name": "RS-X",
+          "type": "webview"
         }
       ]
     },
@@ -99,7 +147,17 @@
           "group": "navigation"
         },
         {
+          "command": "rsx.expressions.search",
+          "when": "view == rsx.expressions",
+          "group": "navigation"
+        },
+        {
           "command": "rsx.expressions.refresh",
+          "when": "view == rsx.expressions",
+          "group": "navigation"
+        },
+        {
+          "command": "rsx.expressions.panel.enableDebugHooks",
           "when": "view == rsx.expressions",
           "group": "navigation"
         }
@@ -109,6 +167,67 @@
           "command": "rsx.expressions.preview",
           "when": "view == rsx.expressions && viewItem == rsxExpression",
           "group": "inline"
+        },
+        {
+          "command": "rsx.expressions.test",
+          "when": "view == rsx.expressions && viewItem == rsxExpression",
+          "group": "inline"
+        },
+        {
+          "command": "rsx.expressions.test",
+          "when": "view == rsx.expressions && viewItem == rsxExpressionModel",
+          "group": "inline"
+        },
+        {
+          "command": "rsx.expressions.test",
+          "when": "view == rsx.expressions && viewItem == rsxModelField",
+          "group": "inline"
+        },
+        {
+          "command": "rsx.expressions.test",
+          "when": "view == rsx.expressions && viewItem == rsxModelFieldExpression",
+          "group": "inline"
+        }
+      ],
+      "webview/context": [
+        {
+          "command": "rsx.expressions.panel.preview",
+          "when": "webviewId == 'rsx.expressions' && (webviewSection == 'rsxExpression' || webviewSection == 'rsxModelFieldExpression')",
+          "group": "navigation"
+        },
+        {
+          "command": "rsx.expressions.panel.test",
+          "when": "webviewId == 'rsx.expressions' && (webviewSection == 'rsxExpression' || webviewSection == 'rsxExpressionModel' || webviewSection == 'rsxModelField' || webviewSection == 'rsxModelFieldExpression')",
+          "group": "navigation"
+        },
+        {
+          "command": "rsx.expressions.panel.enableDebugHooks",
+          "when": "webviewId == 'rsx.expressions' && webviewSection == 'rsxExpressionInstance'",
+          "group": "debug"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "rsx.expressions.test.run",
+          "when": "resourceFilename =~ /\\.rsx-model\\.ts$/",
+          "group": "navigation"
+        },
+        {
+          "command": "rsx.expressions.test.load",
+          "when": "resourceFilename =~ /\\.rsx-model\\.ts$/",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "rsx.expressions.test.run",
+          "when": "resourceFilename =~ /\\.rsx-model\\.ts$/",
+          "group": "navigation"
+        },
+        {
+          "command": "rsx.expressions.test.load",
+          "when": "resourceFilename =~ /\\.rsx-model\\.ts$/",
+          "group": "navigation"
         }
       ]
     },

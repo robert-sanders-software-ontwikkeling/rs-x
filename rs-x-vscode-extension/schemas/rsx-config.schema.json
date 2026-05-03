@@ -40,6 +40,25 @@
         "compiledResolvedEvaluator": {
           "type": "boolean",
           "description": "Generate resolved-dependency evaluators inside compiled AOT output."
+        },
+        "debugChangeHooks": {
+          "type": "object",
+          "description": "Per-expression RS-X debug change hooks injected into generated .rsx modules during non-production rsx build runs. Ignored when rsx build runs with --prod.",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "group": {
+                "$ref": "#/$defs/debugChangeHook"
+              },
+              "instances": {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/$defs/debugChangeHook"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -93,6 +112,27 @@
               }
             }
           }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "debugChangeHook": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["moduleSpecifier"],
+      "properties": {
+        "moduleSpecifier": {
+          "type": "string",
+          "description": "Module specifier for the user-defined RS-X debug change hook."
+        },
+        "exportName": {
+          "type": "string",
+          "description": "Export name to import from moduleSpecifier. Use default or omit for a default export."
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether this debug hook metadata is active during non-production builds."
         }
       }
     }

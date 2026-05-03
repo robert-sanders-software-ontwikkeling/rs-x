@@ -3,7 +3,7 @@
   "displayName": "RS-X Compiler Support",
   "description": "VS Code extension that enables RS-X expression IntelliSense and diagnostics",
   "icon": "icon.png",
-  "version": "2.0.3-local.20260429063751",
+  "version": "2.0.3-local.20260503113929",
   "publisher": "RobertSanders",
   "engines": {
     "vscode": "^1.90.0"
@@ -13,9 +13,16 @@
   ],
   "activationEvents": [
     "onView:rsx.expressions",
+    "onCommand:rsx.expressions.add",
     "onCommand:rsx.expressions.refresh",
+    "onCommand:rsx.expressions.search",
     "onCommand:rsx.expressions.open",
     "onCommand:rsx.expressions.preview",
+    "onCommand:rsx.expressions.panel.preview",
+    "onCommand:rsx.expressions.test",
+    "onCommand:rsx.expressions.panel.test",
+    "onCommand:rsx.expressions.test.run",
+    "onCommand:rsx.expressions.test.load",
     "onLanguage:rsx",
     "onLanguage:typescript",
     "onLanguage:typescriptreact",
@@ -27,10 +34,22 @@
   "contributes": {
     "commands": [
       {
+        "command": "rsx.expressions.add",
+        "title": "Add RS-X Expression",
+        "category": "RS-X",
+        "icon": "$(add)"
+      },
+      {
         "command": "rsx.expressions.refresh",
         "title": "Refresh RS-X Expressions",
         "category": "RS-X",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "rsx.expressions.search",
+        "title": "Search RS-X Expressions",
+        "category": "RS-X",
+        "icon": "$(search)"
       },
       {
         "command": "rsx.expressions.open",
@@ -39,9 +58,45 @@
       },
       {
         "command": "rsx.expressions.preview",
-        "title": "Preview RS-X Expression Tree",
+        "title": "Open RS-X Expression Tree",
         "category": "RS-X",
         "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "rsx.expressions.panel.preview",
+        "title": "Open RS-X Expression Tree",
+        "category": "RS-X",
+        "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "rsx.expressions.test",
+        "title": "Test RS-X Expression",
+        "category": "RS-X",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "rsx.expressions.panel.test",
+        "title": "Test RS-X Expression",
+        "category": "RS-X",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "rsx.expressions.panel.enableDebugHooks",
+        "title": "Enable RS-X Debug Hooks",
+        "category": "RS-X",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "rsx.expressions.test.run",
+        "title": "Run RS-X Model",
+        "category": "RS-X",
+        "icon": "$(play)"
+      },
+      {
+        "command": "rsx.expressions.test.load",
+        "title": "Load RS-X Model",
+        "category": "RS-X",
+        "icon": "$(folder-opened)"
       }
     ],
     "viewsContainers": {
@@ -57,20 +112,35 @@
       "rsx": [
         {
           "id": "rsx.expressions",
-          "name": "Expressions",
-          "type": "tree"
+          "name": "RS-X",
+          "type": "webview"
         }
       ]
     },
     "menus": {
       "view/title": [
         {
+          "command": "rsx.expressions.add",
+          "when": "view == rsx.expressions",
+          "group": "navigation"
+        },
+        {
           "command": "rsx.expressions.preview",
           "when": "view == rsx.expressions",
           "group": "navigation"
         },
         {
+          "command": "rsx.expressions.search",
+          "when": "view == rsx.expressions",
+          "group": "navigation"
+        },
+        {
           "command": "rsx.expressions.refresh",
+          "when": "view == rsx.expressions",
+          "group": "navigation"
+        },
+        {
+          "command": "rsx.expressions.panel.enableDebugHooks",
           "when": "view == rsx.expressions",
           "group": "navigation"
         }
@@ -80,6 +150,67 @@
           "command": "rsx.expressions.preview",
           "when": "view == rsx.expressions && viewItem == rsxExpression",
           "group": "inline"
+        },
+        {
+          "command": "rsx.expressions.test",
+          "when": "view == rsx.expressions && viewItem == rsxExpression",
+          "group": "inline"
+        },
+        {
+          "command": "rsx.expressions.test",
+          "when": "view == rsx.expressions && viewItem == rsxExpressionModel",
+          "group": "inline"
+        },
+        {
+          "command": "rsx.expressions.test",
+          "when": "view == rsx.expressions && viewItem == rsxModelField",
+          "group": "inline"
+        },
+        {
+          "command": "rsx.expressions.test",
+          "when": "view == rsx.expressions && viewItem == rsxModelFieldExpression",
+          "group": "inline"
+        }
+      ],
+      "webview/context": [
+        {
+          "command": "rsx.expressions.panel.preview",
+          "when": "webviewId == 'rsx.expressions' && (webviewSection == 'rsxExpression' || webviewSection == 'rsxModelFieldExpression')",
+          "group": "navigation"
+        },
+        {
+          "command": "rsx.expressions.panel.test",
+          "when": "webviewId == 'rsx.expressions' && (webviewSection == 'rsxExpression' || webviewSection == 'rsxExpressionModel' || webviewSection == 'rsxModelField' || webviewSection == 'rsxModelFieldExpression')",
+          "group": "navigation"
+        },
+        {
+          "command": "rsx.expressions.panel.enableDebugHooks",
+          "when": "webviewId == 'rsx.expressions' && webviewSection == 'rsxExpressionInstance'",
+          "group": "debug"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "rsx.expressions.test.run",
+          "when": "resourceFilename =~ /\\.rsx-model\\.ts$/",
+          "group": "navigation"
+        },
+        {
+          "command": "rsx.expressions.test.load",
+          "when": "resourceFilename =~ /\\.rsx-model\\.ts$/",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "rsx.expressions.test.run",
+          "when": "resourceFilename =~ /\\.rsx-model\\.ts$/",
+          "group": "navigation"
+        },
+        {
+          "command": "rsx.expressions.test.load",
+          "when": "resourceFilename =~ /\\.rsx-model\\.ts$/",
+          "group": "navigation"
         }
       ]
     },

@@ -2,6 +2,7 @@ import { InjectionContainer } from '@rs-x/core';
 import {
   type IExpression,
   type IExpressionFactory,
+  type IExpressionManager,
   rsx,
   RsXExpressionParserInjectionTokens,
 } from '@rs-x/expression-parser';
@@ -60,3 +61,14 @@ const notAFactory = {
 };
 
 notAFactory.create(model, 'should-not-detect');
+
+declare const expressionManager: IExpressionManager;
+expressionManager.create(model).instance.create({
+  expressionString: 'a + 4',
+});
+expressionManager.create(model).instance.create({
+  expressionString: 'a + 5',
+  compiled: false,
+  lazy: true,
+  lazyGroup: 'manager',
+});

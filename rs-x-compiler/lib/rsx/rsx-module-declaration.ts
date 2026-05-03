@@ -108,6 +108,7 @@ export function generateRsxModuleDeclaration(args: {
       `  model: RsxModelInput<${expressionExport.expression.modelTypeText}>,`,
     );
     lines.push('  leafIndexWatchRule?: IIndexWatchRule,');
+    lines.push('  __rsxDebugInstanceId?: string,');
     lines.push(
       `) => ${expressionExport.expression.compiled ? 'IExpression' : 'IExpressionTree'}<${expressionExport.returnType}>;`,
     );

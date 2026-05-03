@@ -5112,6 +5112,16 @@ function runBuild(flags) {
     flags['compiled-resolved-evaluator'],
     Boolean(rsxBuildConfig.compiledResolvedEvaluator),
   );
+  const debugChangeHooksEnabled =
+    !prodMode &&
+    parseBooleanFlag(
+      flags['debug-change-hooks'],
+      hasConfiguredDebugChangeHooks(projectRoot),
+    );
+  const debugChangeHooksResolver = debugChangeHooksEnabled
+    ? (fileName) =>
+        resolveDebugChangeHooksByExpressionForFile(projectRoot, fileName)
+    : undefined;
   const enableExecutionLogging = parseBooleanFlag(flags.log, false);
 
   if (!fs.existsSync(configPath)) {
@@ -5181,13 +5191,19 @@ function runBuild(flags) {
   if (typeof compilerModule?.setEffectiveTypeScript === 'function') {
     compilerModule.setEffectiveTypeScript(ts);
   }
+  const rsxSourceFiles = findRsxSourceFiles(projectRoot);
+  runRsxModuleStructureValidation({
+    projectRoot,
+    compilerModule,
+    rsxFiles: rsxSourceFiles,
+  });
   runRsxAngularModuleReplacementGeneration({
     context,
     projectRoot,
     compilerModule,
     dryRun,
+    debugChangeHooksResolver,
   });
-  const rsxSourceFiles = findRsxSourceFiles(projectRoot);
   const rootNames = parsedConfig.fileNames;
   const rsxCompilerOptions = { rsxFileNames: rsxSourceFiles };
   const compilerHost =
@@ -5324,6 +5340,7 @@ function runBuild(flags) {
     registrationFile: aotRegistrationFile,
     dryRun,
     noEmit,
+    debugChangeHooksResolver,
   });
 
   if (dryRun) {
@@ -5331,6 +5348,9 @@ function runBuild(flags) {
     logInfo(`[dry-run] source files: ${parsedConfig.fileNames.length}`);
     logInfo(`[dry-run] outDir: ${outDir}`);
     logInfo(`[dry-run] prod mode: ${prodMode ? 'on' : 'off'}`);
+    logInfo(
+      `[dry-run] debug change hooks: ${debugChangeHooksEnabled ? 'on' : 'off'}`,
+    );
     if (noEmit) {
       logInfo('[dry-run] no-emit mode enabled');
     }
@@ -5343,7 +5363,23 @@ function runBuild(flags) {
   }
 
   try {
-    const emitResult = program.emit();
+    const emitResult = program.emit(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      debugChangeHooksEnabled
+        ? {
+            before: [
+              createRsxDebugHookCallSiteTransformer(
+                ts,
+                projectRoot,
+                debugChangeHooksResolver,
+              ),
+            ],
+          }
+        : undefined,
+    );
     if (emitResult.emitSkipped) {
       logError('Build failed: TypeScript emit skipped.');
       process.exit(1);
@@ -5374,9 +5410,17 @@ function runBuild(flags) {
     );
 
   for (const sourceFile of sourceFiles) {
+    const transformedSourceFile = debugChangeHooksEnabled
+      ? transformRsxDebugHookCallSites(
+          ts,
+          sourceFile,
+          projectRoot,
+          debugChangeHooksResolver,
+        )
+      : sourceFile;
     const sourceText = ts
       .createPrinter({ newLine: ts.NewLineKind.LineFeed })
-      .printFile(sourceFile);
+      .printFile(transformedSourceFile);
 
     const transpiled = ts.transpileModule(sourceText, {
       compilerOptions,
@@ -5593,6 +5637,47 @@ function requireTypeScriptModuleFromSource(entryPath, ts) {
       delete require.extensions['.tsx'];
     }
   }
+}
+
+function runRsxModuleStructureValidation({
+  projectRoot,
+  compilerModule,
+  rsxFiles,
+}) {
+  if (
+    !compilerModule ||
+    typeof compilerModule.getRsxModuleStructureDiagnostics !== 'function'
+  ) {
+    return;
+  }
+
+  const diagnostics = [];
+  for (const rsxFile of rsxFiles) {
+    const text = fs.readFileSync(rsxFile, 'utf8');
+    for (const diagnostic of compilerModule.getRsxModuleStructureDiagnostics(
+      text,
+    )) {
+      diagnostics.push({ fileName: rsxFile, diagnostic });
+    }
+  }
+
+  if (diagnostics.length === 0) {
+    return;
+  }
+
+  const formatted = diagnostics
+    .map(({ fileName, diagnostic }) => {
+      const relativePath = path.relative(projectRoot, fileName) || fileName;
+      return `${relativePath}:${diagnostic.line + 1}:${diagnostic.character + 1} - error RSX1002: ${diagnostic.message}`;
+    })
+    .join('\n');
+
+  console.error('');
+  logError(
+    `RS-X module structure validation failed with ${diagnostics.length} error(s).`,
+  );
+  console.error(formatted);
+  process.exit(1);
 }
 
 function runRsxSemanticValidation(
@@ -6178,6 +6263,7 @@ function runRsxAngularModuleReplacementGeneration({
   projectRoot,
   compilerModule,
   dryRun,
+  debugChangeHooksResolver,
 }) {
   if (context !== 'angular') {
     return;
@@ -6207,6 +6293,7 @@ function runRsxAngularModuleReplacementGeneration({
       fileName: rsxFile,
       text: source,
       typed: true,
+      debugChangeHooksByExpression: debugChangeHooksResolver?.(rsxFile),
     });
     if (typeof generatedModule !== 'string') {
       continue;
@@ -6266,6 +6353,7 @@ function runRsxModuleBuildGeneration({
   registrationFile,
   dryRun,
   noEmit,
+  debugChangeHooksResolver,
 }) {
   if (noEmit || rsxFiles.length === 0) {
     return;
@@ -6289,6 +6377,7 @@ function runRsxModuleBuildGeneration({
       fileName: rsxFile,
       text: source,
       typed: false,
+      debugChangeHooksByExpression: debugChangeHooksResolver?.(rsxFile),
     });
     const declarationModule = compilerModule.generateRsxModuleDeclaration({
       fileName: rsxFile,
@@ -7029,6 +7118,294 @@ function ensureRsxConfigFile(projectRoot, template, dryRun) {
 function resolveRsxBuildConfig(projectRoot) {
   const buildConfig = resolveRsxProjectConfig(projectRoot).build ?? {};
   return typeof buildConfig === 'object' && buildConfig ? buildConfig : {};
+}
+
+function createRsxDebugHookCallSiteTransformer(
+  ts,
+  projectRoot,
+  debugChangeHooksResolver,
+) {
+  return (context) => (sourceFile) =>
+    transformRsxDebugHookCallSites(
+      ts,
+      sourceFile,
+      projectRoot,
+      debugChangeHooksResolver,
+      context,
+    );
+}
+
+function transformRsxDebugHookCallSites(
+  ts,
+  sourceFile,
+  projectRoot,
+  debugChangeHooksResolver,
+  context,
+) {
+  const factory = context?.factory ?? ts.factory;
+  const debugChangeHooksByExpression = debugChangeHooksResolver?.(
+    sourceFile.fileName,
+  );
+  const configuredExpressions = new Set(
+    Object.entries(debugChangeHooksByExpression ?? {})
+      .filter(
+        ([, config]) =>
+          config?.instances && typeof config.instances === 'object',
+      )
+      .map(([expressionName]) => expressionName),
+  );
+  if (configuredExpressions.size === 0) {
+    return sourceFile;
+  }
+
+  const visitor = (node) => {
+    if (ts.isCallExpression(node)) {
+      const expressionName = getRsxDebugHookCallExpressionName(
+        ts,
+        node.expression,
+      );
+      if (expressionName && configuredExpressions.has(expressionName)) {
+        const instanceId = createRsxDebugHookInstanceId(
+          projectRoot,
+          sourceFile,
+          node.expression.getStart(sourceFile),
+          expressionName,
+        );
+        const expressionConfig = debugChangeHooksByExpression[expressionName];
+        if (
+          Object.prototype.hasOwnProperty.call(
+            expressionConfig.instances ?? {},
+            instanceId,
+          )
+        ) {
+          const args = [...node.arguments];
+          while (args.length < 2) {
+            args.push(factory.createIdentifier('undefined'));
+          }
+          args[2] = factory.createStringLiteral(instanceId);
+          return factory.updateCallExpression(
+            node,
+            node.expression,
+            node.typeArguments,
+            args,
+          );
+        }
+      }
+    }
+    return ts.visitEachChild(
+      node,
+      visitor,
+      context ?? {
+        factory,
+        getCompilerOptions: () => ({}),
+        hoistFunctionDeclaration: () => undefined,
+        hoistVariableDeclaration: () => undefined,
+        requestEmitHelper: () => undefined,
+        readEmitHelpers: () => undefined,
+        resumeLexicalEnvironment: () => [],
+        startLexicalEnvironment: () => undefined,
+        suspendLexicalEnvironment: () => undefined,
+        enableSubstitution: () => undefined,
+        enableEmitNotification: () => undefined,
+        isSubstitutionEnabled: () => false,
+        isEmitNotificationEnabled: () => false,
+        onSubstituteNode: (_hint, nodeToSubstitute) => nodeToSubstitute,
+        onEmitNode: (_hint, nodeToEmit, emitCallback) =>
+          emitCallback(nodeToEmit),
+        addDiagnostic: () => undefined,
+      },
+    );
+  };
+
+  return ts.visitNode(sourceFile, visitor);
+}
+
+function getRsxDebugHookCallExpressionName(ts, expression) {
+  if (ts.isIdentifier(expression)) {
+    return expression.text;
+  }
+  if (ts.isPropertyAccessExpression(expression)) {
+    return expression.name.text;
+  }
+  return null;
+}
+
+function createRsxDebugHookInstanceId(
+  projectRoot,
+  sourceFile,
+  start,
+  expressionName,
+) {
+  return `${path.relative(projectRoot, sourceFile.fileName).replace(/\\/g, '/')}:${start}:${expressionName}`;
+}
+
+function resolveDebugChangeHooksByExpression(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+  const hooks = {};
+  for (const [expressionName, expressionConfig] of Object.entries(value)) {
+    if (
+      !expressionConfig ||
+      typeof expressionConfig !== 'object' ||
+      Array.isArray(expressionConfig)
+    ) {
+      continue;
+    }
+    const group = normalizeDebugChangeHookConfig(expressionConfig.group);
+    const instances = {};
+    if (
+      expressionConfig.instances &&
+      typeof expressionConfig.instances === 'object' &&
+      !Array.isArray(expressionConfig.instances)
+    ) {
+      for (const [instanceId, instanceHookConfig] of Object.entries(
+        expressionConfig.instances,
+      )) {
+        const instanceHook = normalizeDebugChangeHookConfig(instanceHookConfig);
+        if (instanceHook) {
+          instances[instanceId] = instanceHook;
+        }
+      }
+    }
+    if (group || Object.keys(instances).length > 0) {
+      hooks[expressionName] = { group, instances };
+    }
+  }
+  return hooks;
+}
+
+function resolveDebugChangeHooksByExpressionForFile(projectRoot, fileName) {
+  const merged = {};
+  for (const configPath of resolveRsxConfigPathsForFile(
+    projectRoot,
+    fileName,
+  )) {
+    const config = readJsonFileIfPresent(configPath);
+    mergeDebugChangeHooksByExpression(
+      merged,
+      resolveDebugChangeHooksByExpression(config?.build?.debugChangeHooks),
+    );
+  }
+  return merged;
+}
+
+function resolveRsxConfigPathsForFile(projectRoot, fileName) {
+  const projectRootPath = path.resolve(projectRoot);
+  const filePath = path.resolve(fileName);
+  const startDirectory =
+    fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()
+      ? filePath
+      : path.dirname(filePath);
+  const dirs = [];
+  let currentDirectory = isPathInsideOrEqual(startDirectory, projectRootPath)
+    ? startDirectory
+    : projectRootPath;
+  while (isPathInsideOrEqual(currentDirectory, projectRootPath)) {
+    dirs.push(currentDirectory);
+    if (currentDirectory === projectRootPath) {
+      break;
+    }
+    const parentDirectory = path.dirname(currentDirectory);
+    if (parentDirectory === currentDirectory) {
+      break;
+    }
+    currentDirectory = parentDirectory;
+  }
+  if (!dirs.includes(projectRootPath)) {
+    dirs.push(projectRootPath);
+  }
+  return dirs
+    .reverse()
+    .map((directory) => path.join(directory, 'rsx.config.json'))
+    .filter((configPath) => fs.existsSync(configPath));
+}
+
+function isPathInsideOrEqual(filePath, directoryPath) {
+  const resolvedFilePath = path.resolve(filePath);
+  const resolvedDirectoryPath = path.resolve(directoryPath);
+  return (
+    resolvedFilePath === resolvedDirectoryPath ||
+    resolvedFilePath.startsWith(`${resolvedDirectoryPath}${path.sep}`)
+  );
+}
+
+function mergeDebugChangeHooksByExpression(target, source) {
+  for (const [expressionName, sourceConfig] of Object.entries(source ?? {})) {
+    const targetConfig = target[expressionName] ?? { instances: {} };
+    if (sourceConfig.group) {
+      targetConfig.group = sourceConfig.group;
+    }
+    targetConfig.instances = {
+      ...(targetConfig.instances ?? {}),
+      ...(sourceConfig.instances ?? {}),
+    };
+    target[expressionName] = targetConfig;
+  }
+}
+
+function hasConfiguredDebugChangeHooks(projectRoot) {
+  return findRsxConfigFiles(projectRoot).some((configPath) => {
+    const config = readJsonFileIfPresent(configPath);
+    return (
+      Object.keys(
+        resolveDebugChangeHooksByExpression(config?.build?.debugChangeHooks),
+      ).length > 0
+    );
+  });
+}
+
+function findRsxConfigFiles(rootDir) {
+  const results = [];
+  const ignoredDirectoryNames = new Set([
+    'node_modules',
+    'dist',
+    'out',
+    'out-tsc',
+    'coverage',
+    '.git',
+    '.rsx',
+  ]);
+  const visit = (directory) => {
+    if (!fs.existsSync(directory)) {
+      return;
+    }
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const entryPath = path.join(directory, entry.name);
+      if (entry.isFile() && entry.name === 'rsx.config.json') {
+        results.push(entryPath);
+      } else if (
+        entry.isDirectory() &&
+        !ignoredDirectoryNames.has(entry.name)
+      ) {
+        visit(entryPath);
+      }
+    }
+  };
+  visit(rootDir);
+  return results;
+}
+
+function normalizeDebugChangeHookConfig(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+  const moduleSpecifier =
+    typeof value.moduleSpecifier === 'string'
+      ? value.moduleSpecifier.trim()
+      : '';
+  if (!moduleSpecifier) {
+    return null;
+  }
+  const exportName =
+    typeof value.exportName === 'string' && value.exportName.trim()
+      ? value.exportName.trim()
+      : undefined;
+  return {
+    moduleSpecifier,
+    ...(exportName ? { exportName } : {}),
+    ...(value.enabled === false ? { enabled: false } : {}),
+  };
 }
 
 function resolveRsxCliConfig(projectRoot) {

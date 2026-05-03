@@ -4,10 +4,10 @@ defaults:
   lazyGroup: shipping
 
 expression: total
-return: number
-lines.reduce((sum, line) => sum + line.lineTotal, 0)
+  return: number
+  lines.reduce((sum, line) => sum + line.lineTotal, 0)
 
 expression: firstLineName
-return: string
-compile: false
-lines[0].name
+  return: string
+  compile: false
+  lines[0].name

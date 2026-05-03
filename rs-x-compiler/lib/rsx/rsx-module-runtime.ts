@@ -10,6 +10,15 @@ export function generateRsxModuleRuntime(args: {
   fileName: string;
   text: string;
   typed?: boolean;
+  debugChangeHooksByExpression?: Readonly<
+    Record<
+      string,
+      {
+        readonly group?: RsxDebugHookConfig;
+        readonly instances?: Readonly<Record<string, RsxDebugHookConfig>>;
+      }
+    >
+  >;
 }): string | null {
   const parsed = parseRsxFileExpressions(args);
   if (!parsed || parsed.expressions.length === 0) {
@@ -26,9 +35,20 @@ export function generateRsxModuleRuntime(args: {
       expressionExport.exportName,
     ]),
   );
+  const debugHookReferences = createRsxDebugHookReferences(
+    expressionExports.map((expressionExport) => expressionExport.exportName),
+    args,
+  );
+  const hasDebugHookWrapping = [...debugHookReferences.values()].some(
+    (reference) => reference.group || reference.instances.length > 0,
+  );
+  const rsxImport = hasDebugHookWrapping
+    ? "import { rsx } from '@rs-x/expression-parser';"
+    : "import { rsx } from '@rs-x/expression-parser';";
   const lines = args.typed
     ? [
-        "import { rsx } from '@rs-x/expression-parser';",
+        rsxImport,
+        ...formatRsxDebugChangeHookImports(debugHookReferences),
         "import type { IExpression, IExpressionTree } from '@rs-x/expression-parser';",
         "import type { IIndexWatchRule } from '@rs-x/state-manager';",
         '',
@@ -38,7 +58,7 @@ export function generateRsxModuleRuntime(args: {
         '  : T;',
         '',
       ]
-    : ["import { rsx } from '@rs-x/expression-parser';", ''];
+    : [rsxImport, ...formatRsxDebugChangeHookImports(debugHookReferences), ''];
 
   for (const expressionExport of expressionExports) {
     const dependencies = getSameFileExpressionDependencies({
@@ -61,20 +81,69 @@ export function generateRsxModuleRuntime(args: {
       const expressionType = expressionExport.expression.compiled
         ? 'IExpression'
         : 'IExpressionTree';
-      lines.push(
-        `export const ${expressionExport.exportName} = (`,
-        `  model: RsxModelInput<${expressionExport.expression.modelTypeText}>,`,
-        '  leafIndexWatchRule?: IIndexWatchRule,',
-        `): ${expressionType}<${returnType}> =>`,
-        `  rsx<${returnType}, ${expressionExport.expression.modelTypeText}>(${JSON.stringify(expressionExport.expression.expression)}, ${formatRsxRuntimeOptions(expressionExport.expression)})(${modelExpression}, leafIndexWatchRule);`,
-        '',
+      const debugHookReference = debugHookReferences.get(
+        expressionExport.exportName,
       );
+      if (
+        debugHookReference &&
+        (debugHookReference.group || debugHookReference.instances.length > 0)
+      ) {
+        lines.push(
+          `export const ${expressionExport.exportName} = (`,
+          `  model: RsxModelInput<${expressionExport.expression.modelTypeText}>,`,
+          '  leafIndexWatchRule?: IIndexWatchRule,',
+          '  __rsxDebugInstanceId?: string,',
+          `): ${expressionType}<${returnType}> => {`,
+          `  const expression = rsx<${returnType}, ${expressionExport.expression.modelTypeText}>(${JSON.stringify(expressionExport.expression.expression)}, ${formatRsxRuntimeOptions(expressionExport.expression)})(${modelExpression}, leafIndexWatchRule);`,
+          ...formatRsxDebugHookResolutionLines(debugHookReference),
+          ...formatRsxDebugChangeHookAssignmentLines(
+            args.fileName,
+            expressionExport.exportName,
+            expressionExport.expression,
+          ),
+          '  return expression;',
+          '};',
+          '',
+        );
+      } else {
+        lines.push(
+          `export const ${expressionExport.exportName} = (`,
+          `  model: RsxModelInput<${expressionExport.expression.modelTypeText}>,`,
+          '  leafIndexWatchRule?: IIndexWatchRule,',
+          '  __rsxDebugInstanceId?: string,',
+          `): ${expressionType}<${returnType}> =>`,
+          `  rsx<${returnType}, ${expressionExport.expression.modelTypeText}>(${JSON.stringify(expressionExport.expression.expression)}, ${formatRsxRuntimeOptions(expressionExport.expression)})(${modelExpression}, leafIndexWatchRule);`,
+          '',
+        );
+      }
     } else {
-      lines.push(
-        `export const ${expressionExport.exportName} = (model, leafIndexWatchRule) =>`,
-        `  rsx(${JSON.stringify(expressionExport.expression.expression)}, ${formatRsxRuntimeOptions(expressionExport.expression)})(${modelExpression}, leafIndexWatchRule);`,
-        '',
+      const debugHookReference = debugHookReferences.get(
+        expressionExport.exportName,
       );
+      if (
+        debugHookReference &&
+        (debugHookReference.group || debugHookReference.instances.length > 0)
+      ) {
+        lines.push(
+          `export const ${expressionExport.exportName} = (model, leafIndexWatchRule, __rsxDebugInstanceId) => {`,
+          `  const expression = rsx(${JSON.stringify(expressionExport.expression.expression)}, ${formatRsxRuntimeOptions(expressionExport.expression)})(${modelExpression}, leafIndexWatchRule);`,
+          ...formatRsxDebugHookResolutionLines(debugHookReference),
+          ...formatRsxDebugChangeHookAssignmentLines(
+            args.fileName,
+            expressionExport.exportName,
+            expressionExport.expression,
+          ),
+          '  return expression;',
+          '};',
+          '',
+        );
+      } else {
+        lines.push(
+          `export const ${expressionExport.exportName} = (model, leafIndexWatchRule) =>`,
+          `  rsx(${JSON.stringify(expressionExport.expression.expression)}, ${formatRsxRuntimeOptions(expressionExport.expression)})(${modelExpression}, leafIndexWatchRule);`,
+          '',
+        );
+      }
     }
   }
 
@@ -83,6 +152,170 @@ export function generateRsxModuleRuntime(args: {
   }
 
   return lines.join('\n');
+}
+
+type RsxDebugHookConfig = {
+  readonly moduleSpecifier: string;
+  readonly exportName?: string;
+  readonly enabled?: boolean;
+};
+
+type RsxDebugHookReference = {
+  readonly group?: RsxDebugHookImportReference;
+  readonly instances: readonly RsxDebugHookInstanceReference[];
+};
+
+type RsxDebugHookImportReference = {
+  readonly moduleSpecifier: string;
+  readonly exportName?: string;
+  readonly localName: string;
+};
+
+type RsxDebugHookInstanceReference = {
+  readonly instanceId: string;
+  readonly hook?: RsxDebugHookImportReference;
+};
+
+function createRsxDebugHookReferences(
+  exportNames: readonly string[],
+  args: {
+    readonly debugChangeHooksByExpression?: Readonly<
+      Record<
+        string,
+        {
+          readonly group?: RsxDebugHookConfig;
+          readonly instances?: Readonly<Record<string, RsxDebugHookConfig>>;
+        }
+      >
+    >;
+  },
+): ReadonlyMap<string, RsxDebugHookReference> {
+  const references = new Map<string, RsxDebugHookReference>();
+  for (const exportName of exportNames) {
+    const expressionConfig = args.debugChangeHooksByExpression?.[exportName];
+    if (!expressionConfig) {
+      continue;
+    }
+    const group =
+      expressionConfig.group?.enabled !== false &&
+      expressionConfig.group?.moduleSpecifier
+        ? {
+            ...expressionConfig.group,
+            localName: `__rsxDebugChangeHook_${sanitizeIdentifier(exportName)}`,
+          }
+        : undefined;
+    const instances = Object.entries(expressionConfig.instances ?? {}).map(
+      ([instanceId, hookConfig], index): RsxDebugHookInstanceReference => ({
+        instanceId,
+        hook:
+          hookConfig.enabled === false || !hookConfig.moduleSpecifier
+            ? undefined
+            : {
+                ...hookConfig,
+                localName: `__rsxDebugChangeHook_${sanitizeIdentifier(exportName)}_${index}`,
+              },
+      }),
+    );
+    if (group || instances.length > 0) {
+      references.set(exportName, { group, instances });
+    }
+  }
+  return references;
+}
+
+function formatRsxDebugChangeHookImports(
+  debugHookReferences: ReadonlyMap<string, RsxDebugHookReference>,
+): string[] {
+  const imports: string[] = [];
+  const seen = new Set<string>();
+  for (const debugHookReference of debugHookReferences.values()) {
+    const hooks = [
+      debugHookReference.group,
+      ...debugHookReference.instances.map((instance) => instance.hook),
+    ];
+    for (const debugChangeHook of hooks) {
+      if (!debugChangeHook?.moduleSpecifier) {
+        continue;
+      }
+      const key = `${debugChangeHook.moduleSpecifier}\n${debugChangeHook.exportName ?? ''}\n${debugChangeHook.localName}`;
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      const moduleSpecifier = JSON.stringify(debugChangeHook.moduleSpecifier);
+      const exportName = debugChangeHook.exportName?.trim();
+      if (!exportName || exportName === 'default') {
+        imports.push(
+          `import ${debugChangeHook.localName} from ${moduleSpecifier};`,
+        );
+        continue;
+      }
+      imports.push(
+        `import { ${exportName} as ${debugChangeHook.localName} } from ${moduleSpecifier};`,
+      );
+    }
+  }
+  return imports;
+}
+
+function formatRsxDebugHookResolutionLines(
+  debugHookReference: RsxDebugHookReference,
+): string[] {
+  const instanceEntries = debugHookReference.instances.map(
+    (instance) =>
+      `${JSON.stringify(instance.instanceId)}: ${instance.hook?.localName ?? 'null'}`,
+  );
+  return [
+    `  const __rsxDebugHooksByInstance = { ${instanceEntries.join(', ')} };`,
+    `  const __rsxDebugInstanceHook = __rsxDebugInstanceId && Object.prototype.hasOwnProperty.call(__rsxDebugHooksByInstance, __rsxDebugInstanceId) ? __rsxDebugHooksByInstance[__rsxDebugInstanceId] : undefined;`,
+    `  const __rsxDebugResolvedHook = __rsxDebugInstanceHook === undefined ? ${debugHookReference.group?.localName ?? 'undefined'} : __rsxDebugInstanceHook;`,
+  ];
+}
+
+function formatRsxDebugChangeHookAssignmentLines(
+  fileName: string,
+  exportName: string,
+  expression: {
+    readonly nameStart?: number;
+    readonly nameEnd?: number;
+    readonly expressionStart: number;
+    readonly expressionEnd: number;
+  },
+): string[] {
+  return [
+    '  if (__rsxDebugResolvedHook) {',
+    `    const __rsxDebugMetadata = ${formatRsxDebugInstanceMetadata(fileName, exportName, expression)};`,
+    '    expression.changeHook = (changedExpression, oldValue) => {',
+    '      __rsxDebugResolvedHook(__rsxDebugMetadata, changedExpression, oldValue);',
+    '    };',
+    '  }',
+  ];
+}
+
+function sanitizeIdentifier(value: string): string {
+  const sanitized = value.replace(/[^A-Za-z0-9_$]/gu, '_');
+  return /^[A-Za-z_$]/u.test(sanitized) ? sanitized : `_${sanitized}`;
+}
+
+function formatRsxDebugInstanceMetadata(
+  fileName: string,
+  exportName: string,
+  expression: {
+    readonly nameStart?: number;
+    readonly nameEnd?: number;
+    readonly expressionStart: number;
+    readonly expressionEnd: number;
+  },
+): string {
+  return `{${[
+    `"expressionName":${JSON.stringify(exportName)}`,
+    '"instanceId":__rsxDebugInstanceId',
+    `"source":${JSON.stringify({
+      fileName,
+      start: expression.nameStart ?? expression.expressionStart,
+      end: expression.nameEnd ?? expression.expressionEnd,
+    })}`,
+  ].join(',')}}`;
 }
 
 function formatRsxRuntimeOptions(expression: {

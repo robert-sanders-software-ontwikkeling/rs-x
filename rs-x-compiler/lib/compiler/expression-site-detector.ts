@@ -9,7 +9,11 @@ import { createVueBackedProgramForFile, isVueFileName } from '../vue';
 
 import { effectiveTypeFlags as _typeFlags } from './effective-typescript';
 
-export type ExpressionEntryPointKind = 'rsx' | 'factory-create' | 'rsx-file';
+export type ExpressionEntryPointKind =
+  | 'rsx'
+  | 'factory-create'
+  | 'expression-manager-create'
+  | 'rsx-file';
 
 export interface IExpressionSiteDetection {
   readonly kind: ExpressionEntryPointKind;
@@ -128,6 +132,14 @@ export function detectExpressionSitesInSourceFile(
       if (factoryDetection) {
         detections.push(factoryDetection);
       }
+
+      const managerDetection = tryDetectExpressionManagerEntryPoint(
+        node,
+        checker,
+      );
+      if (managerDetection) {
+        detections.push(managerDetection);
+      }
     }
 
     ts.forEachChild(node, visit);
@@ -135,6 +147,120 @@ export function detectExpressionSitesInSourceFile(
 
   visit(sourceFile);
   return detections;
+}
+
+function tryDetectExpressionManagerEntryPoint(
+  callExpression: ts.CallExpression,
+  checker: ts.TypeChecker,
+): IExpressionSiteDetection | null {
+  if (!ts.isPropertyAccessExpression(callExpression.expression)) {
+    return null;
+  }
+
+  if (callExpression.expression.name.text !== 'create') {
+    return null;
+  }
+
+  if (callExpression.arguments.length < 1) {
+    return null;
+  }
+
+  const expressionData = resolveExpressionManagerCreateData(
+    callExpression.arguments[0],
+    checker,
+  );
+  if (!expressionData) {
+    return null;
+  }
+
+  const receiverType = checker.getTypeAtLocation(
+    callExpression.expression.expression,
+  );
+  if (!isExpressionForContextManagerType(receiverType, checker, new Set())) {
+    return null;
+  }
+
+  return {
+    kind: 'expression-manager-create',
+    expression: expressionData.expressionLiteral.text,
+    preparse: true,
+    lazy: expressionData.lazy,
+    lazyGroup: expressionData.lazyGroup,
+    compiled: expressionData.compiled,
+    expressionSourceFile: expressionData.expressionLiteral.getSourceFile(),
+    expressionStart:
+      expressionData.expressionLiteral.getStart(
+        expressionData.expressionLiteral.getSourceFile(),
+      ) + 1,
+    expressionEnd: expressionData.expressionLiteral.getEnd() - 1,
+    expressionLiteral: expressionData.expressionLiteral,
+    callExpression,
+    sourceFile: callExpression.getSourceFile(),
+  };
+}
+
+function resolveExpressionManagerCreateData(
+  expressionDataArgument: ts.Expression,
+  checker: ts.TypeChecker,
+): {
+  readonly expressionLiteral: ts.StringLiteralLike;
+  readonly compiled: boolean;
+  readonly lazy: boolean;
+  readonly lazyGroup: string | undefined;
+} | null {
+  if (!ts.isObjectLiteralExpression(expressionDataArgument)) {
+    return null;
+  }
+
+  let expressionLiteral: ts.StringLiteralLike | null = null;
+  let compiled = true;
+  let lazy = false;
+  let lazyGroup: string | undefined;
+
+  for (const property of expressionDataArgument.properties) {
+    if (!ts.isPropertyAssignment(property)) {
+      continue;
+    }
+    if (isPropertyName(property.name, 'expressionString')) {
+      expressionLiteral = resolveStaticExpressionLiteral(
+        property.initializer,
+        checker,
+      );
+      continue;
+    }
+    if (isPropertyName(property.name, 'compiled')) {
+      if (property.initializer.kind === ts.SyntaxKind.FalseKeyword) {
+        compiled = false;
+      }
+      if (property.initializer.kind === ts.SyntaxKind.TrueKeyword) {
+        compiled = true;
+      }
+      continue;
+    }
+    if (isPropertyName(property.name, 'lazy')) {
+      if (property.initializer.kind === ts.SyntaxKind.TrueKeyword) {
+        lazy = true;
+      }
+      if (property.initializer.kind === ts.SyntaxKind.FalseKeyword) {
+        lazy = false;
+      }
+      continue;
+    }
+    if (isPropertyName(property.name, 'lazyGroup')) {
+      const lazyGroupLiteral = resolveStaticExpressionLiteral(
+        property.initializer,
+        checker,
+      );
+      if (lazyGroupLiteral) {
+        lazyGroup = lazyGroupLiteral.text;
+        lazy = true;
+      }
+    }
+  }
+
+  return expressionLiteral
+    ? { expressionLiteral, compiled, lazy, lazyGroup }
+    : null;
 }
 
 function tryDetectRsxEntryPoint(
@@ -590,6 +716,42 @@ function isExpressionFactoryType(
   );
 }
 
+function isExpressionForContextManagerType(
+  type: ts.Type,
+  checker: ts.TypeChecker,
+  seenTypes: Set<ts.Type>,
+): boolean {
+  if (seenTypes.has(type)) {
+    return false;
+  }
+  seenTypes.add(type);
+
+  const symbolName = type.getSymbol()?.getName();
+  if (symbolName === 'IExpressionForContextManager') {
+    return true;
+  }
+
+  const aliasName = type.aliasSymbol?.getName();
+  if (aliasName === 'IExpressionForContextManager') {
+    return true;
+  }
+
+  if (type.isUnionOrIntersection()) {
+    return type.types.some((unionType) =>
+      isExpressionForContextManagerType(unionType, checker, seenTypes),
+    );
+  }
+
+  if (isExpressionForContextManagerCreateSignature(type, checker)) {
+    return true;
+  }
+
+  const baseTypes = getBaseTypes(type);
+  return baseTypes.some((baseType) =>
+    isExpressionForContextManagerType(baseType, checker, seenTypes),
+  );
+}
+
 function getBaseTypes(type: ts.Type): readonly ts.Type[] {
   if (!('getBaseTypes' in type)) {
     return [];
@@ -647,6 +809,70 @@ function isExpressionFactoryByCreateSignature(
 
     const returnType = signature.getReturnType();
     return isExpressionLikeReturnType(returnType);
+  });
+}
+
+function isExpressionForContextManagerCreateSignature(
+  type: ts.Type,
+  checker: ts.TypeChecker,
+): boolean {
+  const createProperty = type.getProperty('create');
+  if (!createProperty) {
+    return false;
+  }
+
+  const declaration =
+    createProperty.valueDeclaration ?? createProperty.declarations?.[0];
+  if (!declaration) {
+    return false;
+  }
+
+  const createType = checker.getTypeOfSymbolAtLocation(
+    createProperty,
+    declaration,
+  );
+  const signatures = createType.getCallSignatures();
+  if (signatures.length === 0) {
+    return false;
+  }
+
+  return signatures.some((signature) => {
+    const firstParameter = signature.parameters[0];
+    if (!firstParameter) {
+      return false;
+    }
+
+    const parameterDeclaration =
+      firstParameter.valueDeclaration ?? firstParameter.declarations?.[0];
+    if (!parameterDeclaration) {
+      return false;
+    }
+
+    const firstParameterType = checker.getTypeOfSymbolAtLocation(
+      firstParameter,
+      parameterDeclaration,
+    );
+    if (!firstParameterType.getProperty('expressionString')) {
+      return false;
+    }
+
+    const returnType = signature.getReturnType();
+    const instanceProperty = returnType.getProperty('instance');
+    if (!instanceProperty) {
+      return false;
+    }
+
+    const instanceDeclaration =
+      instanceProperty.valueDeclaration ?? instanceProperty.declarations?.[0];
+    if (!instanceDeclaration) {
+      return false;
+    }
+
+    const instanceType = checker.getTypeOfSymbolAtLocation(
+      instanceProperty,
+      instanceDeclaration,
+    );
+    return isExpressionLikeReturnType(instanceType);
   });
 }
 

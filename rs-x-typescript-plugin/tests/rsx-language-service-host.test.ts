@@ -868,8 +868,8 @@ describe('rsx language service host', () => {
       originalRsxText.trimEnd(),
       '',
       'expression: addedTotal',
-      'return: number',
-      'lines.length',
+      '  return: number',
+      '  lines.length',
       '',
     ].join('\n');
     diskFiles.set(rsxPath, addedExpressionText);

@@ -148,6 +148,20 @@ describe('expression-site detection', () => {
         lazy: false,
         compiled: true,
       },
+      {
+        kind: 'expression-manager-create',
+        expression: 'a + 4',
+        preparse: true,
+        lazy: false,
+        compiled: true,
+      },
+      {
+        kind: 'expression-manager-create',
+        expression: 'a + 5',
+        preparse: true,
+        lazy: true,
+        compiled: false,
+      },
     ]);
   });
 
@@ -277,6 +291,20 @@ describe('expression-site detection', () => {
         preparse: true,
         lazy: false,
         compiled: true,
+      },
+      {
+        kind: 'expression-manager-create',
+        expression: 'a + 4',
+        preparse: true,
+        lazy: false,
+        compiled: true,
+      },
+      {
+        kind: 'expression-manager-create',
+        expression: 'a + 5',
+        preparse: true,
+        lazy: true,
+        compiled: false,
       },
     ]);
   });
