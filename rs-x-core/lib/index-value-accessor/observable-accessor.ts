@@ -1,4 +1,4 @@
-import { BehaviorSubject, isObservable, Subject } from 'rxjs';
+import { isObservable, Subject } from 'rxjs';
 
 import { Inject, Injectable } from '../dependency-injection';
 import { RsXCoreInjectionTokens } from '../rs-x-core.injection-tokens';
@@ -20,19 +20,21 @@ export class ObservableAccessor implements IObservableAccessor {
     private readonly _resolvedValueCache: IResolvedValueCache,
   ) {}
 
-  public getIndexes(): IterableIterator<string> {
-    return [].values();
+  public getIndexes(context: unknown): IterableIterator<string> {
+    const obj = Type.toObject(this.getIndexContext(context));
+    if (!obj) {
+      return [].values();
+    }
+    return Object.keys(obj).values();
   }
 
   public getResolvedValue(context: unknown, index: string): unknown {
-    if (context instanceof BehaviorSubject) return context.value;
-
     const val = this.getIndexedValue(context, index);
     if ((val && typeof val === 'object') || typeof val === 'function') {
       return this._resolvedValueCache.get(val) ?? PENDING;
     }
 
-    return PENDING;
+    return this.hasIndexedValue(context, index) ? val : PENDING;
   }
 
   public hasValue(context: unknown, index: string): boolean {
@@ -53,7 +55,7 @@ export class ObservableAccessor implements IObservableAccessor {
 
   public applies(context: unknown, index: string): boolean {
     const val = this.getIndexedValue(context, index);
-    return isObservable(val);
+    return isObservable(val) || this.hasObservableIndexedValue(context, index);
   }
 
   public setLastValue(observable: LastValueObservable, value: unknown): void {
@@ -65,6 +67,26 @@ export class ObservableAccessor implements IObservableAccessor {
   }
 
   private getIndexedValue(context: unknown, index: string): unknown {
-    return (Type.toObject(context) ?? {})[index];
+    return (Type.toObject(this.getIndexContext(context)) ?? {})[index];
+  }
+
+  private hasIndexedValue(context: unknown, index: string): boolean {
+    const obj = Type.toObject(this.getIndexContext(context));
+    return !!obj && Type.hasProperty(obj, index);
+  }
+
+  private hasObservableIndexedValue(context: unknown, index: string): boolean {
+    if (!isObservable(context)) {
+      return false;
+    }
+    return this.hasIndexedValue(context, index);
+  }
+
+  private getIndexContext(context: unknown): unknown {
+    if (!isObservable(context)) {
+      return context;
+    }
+    const resolvedContext = this._resolvedValueCache.get(context);
+    return resolvedContext === undefined ? context : resolvedContext;
   }
 }

@@ -1,5 +1,6 @@
 import { Injectable, type IValueMetadata } from '@rs-x/core';
 
+import { CompiledExpression } from '../compiled-expression/compiled-expression';
 import { AbstractExpression } from '../expressions/abstract-expression';
 
 @Injectable()
@@ -15,6 +16,8 @@ export class ExpressionMetadata implements IValueMetadata {
   }
 
   public applies(value: unknown): boolean {
-    return value instanceof AbstractExpression;
+    return (
+      value instanceof AbstractExpression || value instanceof CompiledExpression
+    );
   }
 }

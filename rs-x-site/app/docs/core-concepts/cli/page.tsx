@@ -171,7 +171,6 @@ const cliConfigurationCode = dedent`
 const commandReferenceCode = dedent`
   rsx help [command]
   rsx doctor
-  rsx add [-a]
   rsx install vscode [--force] [--local] [--dry-run]
   rsx install compiler [--pm <pnpm|npm|yarn|bun>] [--next] [--dry-run]
   rsx init [--pm <pnpm|npm|yarn|bun>] [--entry <path>] [--next] [--skip-install] [--skip-vscode] [--verify] [--force] [--local] [--dry-run]
@@ -216,8 +215,8 @@ const doctorAndAddCode = dedent`
   # Environment diagnostics
   rsx doctor
 
-  # Interactive expression creator
-  rsx add
+  # Install the editor UI that creates expressions
+  rsx install vscode
 `;
 
 const initProjectCode = dedent`
@@ -249,10 +248,9 @@ const doctorReferenceCode = dedent`
   rsx doctor
 `;
 
-const addReferenceCode = dedent`
-  rsx add
-  rsx -a
-  rsx -add
+const expressionPanelReferenceCode = dedent`
+  # VS Code
+  # RS-X Expressions panel -> Add RS-X Expression
 `;
 
 const installVsCodeReferenceCode = dedent`
@@ -350,15 +348,11 @@ const doc: CoreConceptDoc = {
     {
       title: '7) Add expressions interactively',
       paragraphs: [
-        '`rsx add` walks you through creating or updating expression files without hand-writing the initial boilerplate.',
-        'The first prompt is now an explicit mode choice: create a new one-file expression, create a new expression with a separate model, or update an existing expression file.',
-        'The default flow keeps the model and expression in the same file, which is usually the simplest starting point.',
-        "It also asks for the initial expression string up front, defaulting to `'a'`, so the generated file is closer to what you actually want to evaluate.",
-        'When the expression contains simple top-level identifiers such as `price * quantity`, the generated model is seeded with those keys to reduce follow-up editing.',
-        'If you choose to update an existing file, the CLI shows matching RS-X expression files from the selected directory first, then falls back to the wider project only when needed.',
-        'That wider-project fallback prefers likely source roots such as `src/`, `app/`, and `expressions/` before showing less relevant matches elsewhere in the repository.',
-        'You can configure those defaults in `rsx.config.json` under `cli.add`.',
-        'You can still opt into a separate model file or reuse an existing model file when that better matches the structure of your app.',
+        'Create or append expressions from the RS-X Expressions panel in VS Code instead of using a CLI scaffolder.',
+        'Use the Add RS-X Expression action in the panel title bar to choose whether to create a new `.rsx` file or append to an existing one.',
+        "The flow prompts for the expression export name and the initial expression body, defaulting to `'a'`.",
+        'When the expression contains simple top-level identifiers such as `price * quantity`, the generated model header is seeded with those fields to reduce follow-up editing.',
+        'New files default to `src/expressions`, or the `cli.add.defaultDirectory` value from `rsx.config.json` when configured.',
       ],
     },
     {
@@ -568,13 +562,13 @@ const doc: CoreConceptDoc = {
       code: doctorReferenceCode,
     },
     {
-      title: '14) add',
+      title: '14) expression panel add flow',
       paragraphs: [
-        '`rsx add` is the interactive scaffolder for expression files. It also supports the aliases `rsx -a` and `rsx -add`.',
-        'The flow prompts for the export name, the initial expression string, whether to use kebab-case, the output directory, and whether you want a one-file expression, a separate model file, or an update to an existing file.',
-        'It respects `rsx.config.json` under `cli.add` for defaults such as the preferred directory and search roots.',
+        'Expression creation now lives in the VS Code RS-X Expressions panel.',
+        'The Add RS-X Expression action creates module-style `.rsx` expression blocks and can append to an existing `.rsx` file.',
+        'It respects `rsx.config.json` under `cli.add.defaultDirectory` for the default new-file location.',
       ],
-      code: addReferenceCode,
+      code: expressionPanelReferenceCode,
     },
     {
       title: '15) install vscode',

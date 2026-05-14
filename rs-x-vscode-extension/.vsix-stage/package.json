@@ -3,7 +3,7 @@
   "displayName": "RS-X Compiler Support",
   "description": "VS Code extension that enables RS-X expression IntelliSense and diagnostics",
   "icon": "icon.png",
-  "version": "1.0.2",
+  "version": "2.0.2",
   "publisher": "RobertSanders",
   "engines": {
     "vscode": "^1.90.0"
@@ -12,14 +12,481 @@
     "Programming Languages"
   ],
   "activationEvents": [
+    "onView:rsx.expressions",
+    "onCommand:rsx.project.init",
+    "onCommand:rsx.expressions.add",
+    "onCommand:rsx.expressions.refresh",
+    "onCommand:rsx.expressions.search",
+    "onCommand:rsx.expressions.setCompilerOption",
+    "onCommand:rsx.expressions.open",
+    "onCommand:rsx.expressions.preview",
+    "onCommand:rsx.expressions.report",
+    "onCommand:rsx.expressions.panel.preview",
+    "onCommand:rsx.expressions.panel.report",
+    "onCommand:rsx.expressions.test",
+    "onCommand:rsx.expressions.panel.test",
+    "onCommand:rsx.expressions.test.run",
+    "onCommand:rsx.expressions.test.load",
+    "onLanguage:rsx",
     "onLanguage:typescript",
     "onLanguage:typescriptreact",
     "onLanguage:javascript",
     "onLanguage:javascriptreact",
-    "onLanguage:vue"
+    "onLanguage:vue",
+    "onCommand:rsx.expressions.togglePreparse",
+    "onCommand:rsx.expressions.toggleCompiled",
+    "onCommand:rsx.expressions.toggleLazy",
+    "onCommand:rsx.expressions.editLazyGroup",
+    "onCommand:rsx.expressions.panel.togglePreparse",
+    "onCommand:rsx.expressions.panel.toggleCompiled",
+    "onCommand:rsx.expressions.panel.toggleLazy",
+    "onCommand:rsx.expressions.panel.editLazyGroup",
+    "onCommand:rsx.expressions.panel.deleteAllCompilerOption",
+    "onCommand:rsx.expressions.panel.manageAssignedHooks",
+    "onCommand:rsx.expressions.panel.enableAllExpressionHooks",
+    "onCommand:rsx.expressions.panel.disableAllExpressionHooks",
+    "onCommand:rsx.expressions.panel.unassignAllDebugHooks",
+    "onCommand:rsx.expressions.panel.unassignDebugHook",
+    "onCommand:rsx.expressions.panel.deleteCustomHooks",
+    "onWebviewPanel:rsx.expressionReport"
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "commands": [
+      {
+        "command": "rsx.project.init",
+        "title": "Init RS-X Project",
+        "category": "RS-X",
+        "icon": "$(rocket)"
+      },
+      {
+        "command": "rsx.expressions.add",
+        "title": "Add RS-X Expression",
+        "category": "RS-X",
+        "icon": "$(add)"
+      },
+      {
+        "command": "rsx.expressions.refresh",
+        "title": "Refresh RS-X Expressions",
+        "category": "RS-X",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "rsx.expressions.search",
+        "title": "Search RS-X Expressions",
+        "category": "RS-X",
+        "icon": "$(search)"
+      },
+      {
+        "command": "rsx.expressions.setCompilerOption",
+        "title": "Set RS-X Compiler Option...",
+        "category": "RS-X",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "rsx.expressions.open",
+        "title": "Open RS-X Expression",
+        "category": "RS-X"
+      },
+      {
+        "command": "rsx.expressions.preview",
+        "title": "Open Expression Tree",
+        "category": "RS-X",
+        "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "rsx.expressions.report",
+        "title": "Open Expression Report",
+        "category": "RS-X",
+        "icon": "$(file-text)"
+      },
+      {
+        "command": "rsx.expressions.panel.preview",
+        "title": "Open Expression Tree",
+        "category": "RS-X",
+        "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "rsx.expressions.panel.report",
+        "title": "Open Expression Report",
+        "category": "RS-X",
+        "icon": "$(file-text)"
+      },
+      {
+        "command": "rsx.expressions.test",
+        "title": "Test Expression",
+        "category": "RS-X",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "rsx.expressions.panel.test",
+        "title": "Test Expression",
+        "category": "RS-X",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "rsx.expressions.panel.enableDebugHooks",
+        "title": "Add Hook",
+        "category": "RS-X",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "rsx.expressions.panel.enableConfiguredDebugHooks",
+        "title": "Enable Hook",
+        "category": "RS-X",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "rsx.expressions.panel.manageAssignedHooks",
+        "title": "Manage Assigned Hooks...",
+        "category": "RS-X",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "rsx.expressions.panel.disableDebugHooks",
+        "title": "Disable Expression Hook",
+        "category": "RS-X",
+        "icon": "$(debug-pause)"
+      },
+      {
+        "command": "rsx.expressions.panel.enableAllExpressionHooks",
+        "title": "Enable All Expression Hooks",
+        "category": "RS-X",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "rsx.expressions.panel.disableAllExpressionHooks",
+        "title": "Disable All Expression Hooks",
+        "category": "RS-X",
+        "icon": "$(debug-pause)"
+      },
+      {
+        "command": "rsx.expressions.panel.unassignAllDebugHooks",
+        "title": "Delete All Hooks",
+        "category": "RS-X",
+        "icon": "$(close-all)"
+      },
+      {
+        "command": "rsx.expressions.panel.unassignDebugHook",
+        "title": "Delete Expression Hook",
+        "category": "RS-X",
+        "icon": "$(close)"
+      },
+      {
+        "command": "rsx.expressions.panel.deleteCustomHooks",
+        "title": "Delete",
+        "category": "RS-X",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "rsx.expressions.test.run",
+        "title": "Run RS-X Model",
+        "category": "RS-X",
+        "icon": "$(play)"
+      },
+      {
+        "command": "rsx.expressions.test.load",
+        "title": "Load RS-X Model",
+        "category": "RS-X",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "rsx.expressions.togglePreparse",
+        "title": "Preparse",
+        "category": "RS-X"
+      },
+      {
+        "command": "rsx.expressions.toggleCompiled",
+        "title": "Compiled",
+        "category": "RS-X"
+      },
+      {
+        "command": "rsx.expressions.toggleLazy",
+        "title": "Lazy",
+        "category": "RS-X"
+      },
+      {
+        "command": "rsx.expressions.editLazyGroup",
+        "title": "Lazy group...",
+        "category": "RS-X"
+      },
+      {
+        "command": "rsx.expressions.panel.togglePreparse",
+        "title": "Preparse",
+        "category": "RS-X"
+      },
+      {
+        "command": "rsx.expressions.panel.toggleCompiled",
+        "title": "Compiled",
+        "category": "RS-X"
+      },
+      {
+        "command": "rsx.expressions.panel.toggleLazy",
+        "title": "Lazy",
+        "category": "RS-X"
+      },
+      {
+        "command": "rsx.expressions.panel.editLazyGroup",
+        "title": "Lazy group...",
+        "category": "RS-X"
+      },
+      {
+        "command": "rsx.expressions.panel.deleteAllCompilerOption",
+        "title": "Delete All",
+        "category": "RS-X",
+        "icon": "$(close-all)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "rsx",
+          "title": "RS-X",
+          "icon": "icon.png"
+        }
+      ]
+    },
+    "views": {
+      "rsx": [
+        {
+          "id": "rsx.expressions",
+          "name": "RS-X",
+          "type": "webview"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "rsx.expressions.add",
+          "when": "view == rsx.expressions",
+          "group": "navigation"
+        },
+        {
+          "command": "rsx.expressions.preview",
+          "when": "view == rsx.expressions",
+          "group": "navigation"
+        },
+        {
+          "command": "rsx.expressions.search",
+          "when": "view == rsx.expressions",
+          "group": "navigation"
+        },
+        {
+          "command": "rsx.expressions.refresh",
+          "when": "view == rsx.expressions",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "rsx.project.init",
+          "when": "explorerResourceIsFolder || resourceFilename == package.json",
+          "group": "rsx@1"
+        },
+        {
+          "command": "rsx.expressions.add",
+          "when": "resourceExtname == .rsx",
+          "group": "rsx@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "rsx.expressions.add",
+          "when": "view == rsx.expressions && (viewItem == rsxExpressionFile || viewItem =~ /(^|\\s)rsxExpression(\\s|$)/)",
+          "group": "rsx/add@1"
+        },
+        {
+          "command": "rsx.expressions.preview",
+          "when": "view == rsx.expressions && viewItem == rsxExpression",
+          "group": "inline"
+        },
+        {
+          "command": "rsx.expressions.report",
+          "when": "view == rsx.expressions && viewItem == rsxExpression",
+          "group": "inline"
+        },
+        {
+          "command": "rsx.expressions.test",
+          "when": "view == rsx.expressions && viewItem == rsxExpression",
+          "group": "inline"
+        },
+        {
+          "command": "rsx.expressions.test",
+          "when": "view == rsx.expressions && viewItem == rsxModelField",
+          "group": "inline"
+        },
+        {
+          "command": "rsx.expressions.test",
+          "when": "view == rsx.expressions && viewItem == rsxModelFieldExpression",
+          "group": "inline"
+        },
+        {
+          "command": "rsx.expressions.toggleCompiled",
+          "when": "view == rsx.expressions && viewItem =~ /(^|\\s)rsxExpression(\\s|$)/",
+          "group": "rsx/options@1",
+          "toggled": "viewItem =~ /(^|\\s)rsxCompiled(\\s|$)/"
+        },
+        {
+          "command": "rsx.expressions.togglePreparse",
+          "when": "view == rsx.expressions && viewItem =~ /(^|\\s)rsxExpression(\\s|$)/",
+          "group": "rsx/options@2",
+          "toggled": "viewItem =~ /(^|\\s)rsxPreparse(\\s|$)/"
+        },
+        {
+          "command": "rsx.expressions.toggleLazy",
+          "when": "view == rsx.expressions && viewItem =~ /(^|\\s)rsxExpression(\\s|$)/",
+          "group": "rsx/options@3",
+          "toggled": "viewItem =~ /(^|\\s)rsxLazy(\\s|$)/"
+        }
+      ],
+      "webview/context": [
+        {
+          "command": "rsx.expressions.add",
+          "when": "webviewId == 'rsx.expressions' && (webviewSection == 'rsxExpressionDefinitions' || webviewSection == 'rsxExpressionFile' || webviewSection == 'rsxExpression' || webviewSection == 'rsxExpressionInstance' || webviewSection == 'rsxModelFieldExpression')",
+          "group": "rsx/add@1"
+        },
+        {
+          "command": "rsx.expressions.panel.preview",
+          "when": "webviewId == 'rsx.expressions' && (webviewSection == 'rsxExpression' || webviewSection == 'rsxModelFieldExpression')",
+          "group": "navigation"
+        },
+        {
+          "command": "rsx.expressions.panel.report",
+          "when": "webviewId == 'rsx.expressions' && (webviewSection == 'rsxExpression' || webviewSection == 'rsxExpressionInstance')",
+          "group": "navigation"
+        },
+        {
+          "command": "rsx.expressions.panel.test",
+          "when": "webviewId == 'rsx.expressions' && (webviewSection == 'rsxExpression' || webviewSection == 'rsxModelField' || webviewSection == 'rsxModelFieldExpression')",
+          "group": "navigation"
+        },
+        {
+          "command": "rsx.expressions.panel.manageAssignedHooks",
+          "when": "webviewId == 'rsx.expressions' && (webviewSection == 'rsxExpression' || webviewSection == 'rsxExpressionInstance')",
+          "group": "debug@1"
+        },
+        {
+          "command": "rsx.expressions.panel.unassignDebugHook",
+          "when": "webviewId == 'rsx.expressions' && webviewSection == 'rsxExpressionHookAssignment'",
+          "group": "debug@9"
+        },
+        {
+          "command": "rsx.expressions.panel.enableDebugHooks",
+          "when": "webviewId == 'rsx.expressions' && webviewSection == 'rsxCustomHooks'",
+          "group": "debug"
+        },
+        {
+          "command": "rsx.expressions.panel.deleteCustomHooks",
+          "when": "webviewId == 'rsx.expressions' && (webviewSection == 'rsxCustomHooks' || webviewSection == 'rsxCustomHook') && rsxWebviewCustomHookCanDelete",
+          "group": "debug@9"
+        },
+        {
+          "command": "rsx.expressions.panel.enableAllExpressionHooks",
+          "when": "webviewId == 'rsx.expressions' && webviewSection == 'rsxExpressionHook' && rsxWebviewHookCanEnableAll",
+          "group": "debug@1"
+        },
+        {
+          "command": "rsx.expressions.panel.disableAllExpressionHooks",
+          "when": "webviewId == 'rsx.expressions' && webviewSection == 'rsxExpressionHook' && rsxWebviewHookCanDisableAll",
+          "group": "debug@2"
+        },
+        {
+          "command": "rsx.expressions.panel.unassignAllDebugHooks",
+          "when": "webviewId == 'rsx.expressions' && (webviewSection == 'rsxExpressionHooks' || webviewSection == 'rsxExpressionHook') && rsxWebviewHookCanUnassignAll",
+          "group": "debug@9"
+        },
+        {
+          "command": "rsx.expressions.panel.toggleCompiled",
+          "when": "webviewId == 'rsx.expressions' && webviewSection == 'rsxExpression'",
+          "group": "rsx/options@1",
+          "toggled": "rsxWebviewExpressionCompiled"
+        },
+        {
+          "command": "rsx.expressions.panel.togglePreparse",
+          "when": "webviewId == 'rsx.expressions' && webviewSection == 'rsxExpression'",
+          "group": "rsx/options@2",
+          "toggled": "rsxWebviewExpressionPreparse"
+        },
+        {
+          "command": "rsx.expressions.panel.toggleLazy",
+          "when": "webviewId == 'rsx.expressions' && webviewSection == 'rsxExpression'",
+          "group": "rsx/options@3",
+          "toggled": "rsxWebviewExpressionLazy"
+        },
+        {
+          "command": "rsx.expressions.panel.deleteAllCompilerOption",
+          "when": "webviewId == 'rsx.expressions' && webviewSection == 'rsxExpressionOptionGroup' && rsxWebviewOptionCanDeleteAll",
+          "group": "rsx/options@9"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "rsx.expressions.test.run",
+          "when": "resourceFilename =~ /\\.rsx-model\\.ts$/",
+          "group": "navigation"
+        },
+        {
+          "command": "rsx.expressions.test.load",
+          "when": "resourceFilename =~ /\\.rsx-model\\.ts$/",
+          "group": "navigation"
+        },
+        {
+          "command": "rsx.expressions.toggleCompiled",
+          "when": "editorLangId == rsx || resourceExtname == .rsx",
+          "group": "rsx/options@1"
+        },
+        {
+          "command": "rsx.expressions.togglePreparse",
+          "when": "editorLangId == rsx || resourceExtname == .rsx",
+          "group": "rsx/options@2"
+        },
+        {
+          "command": "rsx.expressions.toggleLazy",
+          "when": "editorLangId == rsx || resourceExtname == .rsx",
+          "group": "rsx/options@3"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "rsx.expressions.test.run",
+          "when": "resourceFilename =~ /\\.rsx-model\\.ts$/",
+          "group": "navigation"
+        },
+        {
+          "command": "rsx.expressions.test.load",
+          "when": "resourceFilename =~ /\\.rsx-model\\.ts$/",
+          "group": "navigation"
+        }
+      ]
+    },
+    "languages": [
+      {
+        "id": "rsx",
+        "aliases": [
+          "RS-X",
+          "rsx"
+        ],
+        "extensions": [
+          ".rsx"
+        ],
+        "icon": {
+          "light": "./icons/rsx-light.svg",
+          "dark": "./icons/rsx-dark.svg"
+        },
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "configurationDefaults": {
+      "[rsx]": {
+        "editor.quickSuggestions": {
+          "other": "on",
+          "comments": "off",
+          "strings": "on"
+        },
+        "editor.suggestOnTriggerCharacters": true
+      }
+    },
     "jsonValidation": [
       {
         "fileMatch": "rsx.config.json",
@@ -27,6 +494,11 @@
       }
     ],
     "grammars": [
+      {
+        "language": "rsx",
+        "scopeName": "source.rsx",
+        "path": "./syntaxes/rsx-file.language.json"
+      },
       {
         "scopeName": "rsx.expression.injection",
         "path": "./syntaxes/rsx-expression.injection.json",
@@ -37,15 +509,12 @@
           "source.jsx",
           "source.vue",
           "text.html.vue"
-        ],
-        "embeddedLanguages": {
-          "meta.embedded.inline.rsx": "typescript"
-        }
+        ]
       }
     ],
     "typescriptServerPlugins": [
       {
-        "name": "@rs-x/typescript-plugin",
+        "name": "@rs-x/vscode-typescript-plugin",
         "enableForWorkspaceTypeScriptVersions": true,
         "languages": [
           "typescript",
@@ -58,14 +527,67 @@
     ]
   },
   "dependencies": {
-    "@rs-x/typescript-plugin": "1.0.2"
+    "@rs-x/cli": "2.0.2",
+    "@rs-x/typescript-plugin": "2.0.2",
+    "@rs-x/vscode-typescript-plugin": "2.0.2",
+    "@rs-x/compiler": "2.0.2",
+    "@rs-x/expression-parser": "2.0.2",
+    "@rs-x/core": "2.0.2",
+    "@rs-x/state-manager": "2.0.2",
+    "astring": "1.9.0",
+    "meriyah": "7.1.0",
+    "rxjs": "7.8.2",
+    "tslib": "2.8.1",
+    "fast-equals": "6.0.0",
+    "inversify": "8.1.0",
+    "reflect-metadata": "0.2.2",
+    "@inversifyjs/common": "2.0.1",
+    "@inversifyjs/container": "2.0.1",
+    "@inversifyjs/core": "10.0.1",
+    "@inversifyjs/plugin": "0.3.1",
+    "@inversifyjs/prototype-utils": "0.2.1",
+    "@inversifyjs/reflect-metadata-utils": "1.5.0",
+    "typescript": "^6.0.2"
   },
   "files": [
     "dist",
+    "icons",
     "schemas",
     "syntaxes",
-    "node_modules/@rs-x/typescript-plugin/dist",
-    "node_modules/@rs-x/typescript-plugin/package.json",
+    "language-configuration.json",
+    "node_modules/@rs-x/typescript-plugin",
+    "node_modules/@rs-x/vscode-typescript-plugin",
+    "node_modules/@rs-x/cli/bin",
+    "node_modules/@rs-x/cli/scripts",
+    "node_modules/@rs-x/cli/templates",
+    "node_modules/@rs-x/cli/package.json",
+    "node_modules/@rs-x/compiler/dist",
+    "node_modules/@rs-x/compiler/package.json",
+    "node_modules/@rs-x/expression-parser/dist",
+    "node_modules/@rs-x/expression-parser/package.json",
+    "node_modules/@rs-x/core/dist",
+    "node_modules/@rs-x/core/package.json",
+    "node_modules/@rs-x/state-manager/dist",
+    "node_modules/@rs-x/state-manager/package.json",
+    "node_modules/typescript/lib",
+    "node_modules/typescript/package.json",
+    "node_modules/typescript/LICENSE.txt",
+    "node_modules/typescript/README.md",
+    "node_modules/typescript/SECURITY.md",
+    "node_modules/typescript/ThirdPartyNoticeText.txt",
+    "node_modules/astring",
+    "node_modules/meriyah",
+    "node_modules/rxjs",
+    "node_modules/tslib",
+    "node_modules/fast-equals",
+    "node_modules/inversify",
+    "node_modules/reflect-metadata",
+    "node_modules/@inversifyjs/common",
+    "node_modules/@inversifyjs/container",
+    "node_modules/@inversifyjs/core",
+    "node_modules/@inversifyjs/plugin",
+    "node_modules/@inversifyjs/prototype-utils",
+    "node_modules/@inversifyjs/reflect-metadata-utils",
     "icon.png",
     "package.json",
     "README.md",

@@ -2,6 +2,7 @@ import { InjectionContainer } from '@rs-x/core';
 import {
   type IExpression,
   type IExpressionFactory,
+  type IExpressionManager,
   rsx,
   RsXExpressionParserInjectionTokens,
 } from '@rs-x/expression-parser';
@@ -17,17 +18,21 @@ interface Model {
 
 declare const model: Model;
 declare const dynamicExpression: string;
+const staticExpression = 'a + b.method().result';
+const factoryStaticExpression = 'a + 3';
 
 rsx('a + b.method().result')(model);
 rsx(`a + b.method().result`)(model);
 rsx('a + b.method().result', { preparse: false })(model);
 rsx('a + b.method().result', { lazy: true })(model);
 rsx('a + b.method().result', { compiled: false })(model);
+rsx(staticExpression)(model);
 rsx(dynamicExpression)(model);
 
 declare const expressionFactory: IExpressionFactory;
 expressionFactory.create(model, 'a + 1');
 expressionFactory.create(model, `a + 1`);
+expressionFactory.create(model, factoryStaticExpression);
 expressionFactory.create(model, dynamicExpression);
 const expressionFactoryFromDi = InjectionContainer.get<IExpressionFactory>(
   RsXExpressionParserInjectionTokens.IExpressionFactory,
@@ -56,3 +61,13 @@ const notAFactory = {
 };
 
 notAFactory.create(model, 'should-not-detect');
+
+declare const expressionManager: IExpressionManager;
+expressionManager.create(model).instance.create({
+  expressionString: 'a + 4',
+});
+expressionManager.create(model).instance.create({
+  expressionString: 'a + 5',
+  compiled: false,
+  lazyGroup: 'manager',
+});

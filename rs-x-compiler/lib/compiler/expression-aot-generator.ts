@@ -18,7 +18,11 @@ export interface IGeneratedAotCompiledExpressionsModule {
   readonly skippedExpressions: readonly string[];
 }
 
-export interface IAotCompiledExpressionGenerationOptions {
+export interface IAotExpressionDetectionOptions {
+  readonly rsxFileNames?: readonly string[];
+}
+
+export interface IAotCompiledExpressionGenerationOptions extends IAotExpressionDetectionOptions {
   readonly includeResolvedEvaluator?: boolean;
 }
 
@@ -148,7 +152,7 @@ export function generateAotCompiledExpressionsModule(
   options: IAotCompiledExpressionGenerationOptions = {},
 ): IGeneratedAotCompiledExpressionsModule {
   const includeResolvedEvaluator = options.includeResolvedEvaluator === true;
-  const detections = detectExpressionSites(program);
+  const detections = detectExpressionSites(program, options);
   const uniqueExpressions = [
     ...new Set(
       detections
@@ -210,8 +214,9 @@ export function generateAotCompiledExpressionsModule(
 
 export function generateAotParsedExpressionCacheModule(
   program: ts.Program,
+  options: IAotExpressionDetectionOptions = {},
 ): IGeneratedAotParsedExpressionCacheModule {
-  const detections = detectExpressionSites(program);
+  const detections = detectExpressionSites(program, options);
   const uniqueExpressions = [
     ...new Set(
       detections
@@ -272,7 +277,7 @@ export function generateAotLazyExpressionPreloadManifestModule(
   options: IAotCompiledExpressionGenerationOptions = {},
 ): IGeneratedAotLazyExpressionPreloadManifestModule {
   const includeResolvedEvaluator = options.includeResolvedEvaluator === true;
-  const detections = detectExpressionSites(program);
+  const detections = detectExpressionSites(program, options);
   const lazyPreparsedExpressions = [
     ...new Set(
       detections
@@ -285,10 +290,7 @@ export function generateAotLazyExpressionPreloadManifestModule(
   const lazyCompiledExpressions = [
     ...new Set(
       detections
-        .filter(
-          (detection) =>
-            detection.preparse && detection.lazy && detection.compiled,
-        )
+        .filter((detection) => detection.lazy && detection.compiled)
         .map((detection) => detection.expression),
     ),
   ];
@@ -409,7 +411,7 @@ export function generateAotLazyExpressionsModule(
   options: IAotCompiledExpressionGenerationOptions = {},
 ): IGeneratedAotLazyExpressionsModule {
   const includeResolvedEvaluator = options.includeResolvedEvaluator === true;
-  const detections = detectExpressionSites(program);
+  const detections = detectExpressionSites(program, options);
 
   // ── Separate ungrouped vs grouped lazy detections ────────────────────────
   const ungroupedDetections = detections.filter((d) => d.lazy && !d.lazyGroup);
@@ -424,9 +426,7 @@ export function generateAotLazyExpressionsModule(
 
   const ungroupedCompiled = [
     ...new Set(
-      ungroupedDetections
-        .filter((d) => d.preparse && d.compiled)
-        .map((d) => d.expression),
+      ungroupedDetections.filter((d) => d.compiled).map((d) => d.expression),
     ),
   ].sort();
 
@@ -498,9 +498,7 @@ export function generateAotLazyExpressionsModule(
     ].sort();
     const compiledExprs = [
       ...new Set(
-        groupDetections
-          .filter((d) => d.preparse && d.compiled)
-          .map((d) => d.expression),
+        groupDetections.filter((d) => d.compiled).map((d) => d.expression),
       ),
     ].sort();
 
@@ -610,7 +608,12 @@ export function generateAotLazyExpressionsModule(
 
   return {
     code,
-    expressions: ungroupedParsedAsts.map((item) => item.expression),
+    expressions: [
+      ...new Set([
+        ...ungroupedParsedAsts.map((item) => item.expression),
+        ...ungroupedCompiledPlans.map((item) => item.expression),
+      ]),
+    ].sort(),
     compiledExpressions: ungroupedCompiledPlans.map((item) => item.expression),
     skippedCompiledExpressions,
     skippedPreparsedExpressions,

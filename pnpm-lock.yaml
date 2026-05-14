@@ -633,9 +633,21 @@ importers:
 
   rs-x-vscode-extension:
     dependencies:
+      '@rs-x/cli':
+        specifier: workspace:*
+        version: link:../rs-x-cli
+      '@rs-x/compiler':
+        specifier: workspace:*
+        version: link:../rs-x-compiler
+      '@rs-x/expression-parser':
+        specifier: workspace:*
+        version: link:../rs-x-expression-parser
       '@rs-x/typescript-plugin':
         specifier: workspace:*
         version: link:../rs-x-typescript-plugin
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.2
     devDependencies:
       '@types/vscode':
         specifier: ^1.110.0
@@ -649,9 +661,6 @@ importers:
       tsup:
         specifier: ^8.5.1
         version: 8.5.1(patch_hash=99553218472ba84091dfd92b4d0e9fc93d6cda44eae2e3eff00ab4b267286f89)(@microsoft/api-extractor@7.58.1(@types/node@25.5.2))(@swc/core@1.15.24)(jiti@2.6.1)(postcss@8.5.9)(tsx@4.21.0)(typescript@6.0.2)
-      typescript:
-        specifier: ^6.0.2
-        version: 6.0.2
 
   rs-x-vue:
     dependencies:
@@ -2717,6 +2726,7 @@ packages:
 
   '@ungap/structured-clone@1.3.0':
     resolution: {integrity: sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g==}
+    deprecated: Potential CWE-502 - Update to 1.3.1 or higher
 
   '@unrs/resolver-binding-android-arm-eabi@1.11.1':
     resolution: {integrity: sha512-ppLRUgHVaGRWUx0R0Ut06Mjo9gBaBkg3v/8AxusGLhsIotbBLuRk51rAzqLC8gq6NyyAojEXglNjzf6R948DNw==}

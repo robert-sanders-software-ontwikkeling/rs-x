@@ -1,8 +1,3 @@
-import {
-  ChangeDetectorRef,
-  NgZone,
-  runInInjectionContext,
-} from '@angular/core';
 import { BehaviorSubject, type Subscription } from 'rxjs';
 import { vi } from 'vitest';
 
@@ -16,13 +11,14 @@ import {
 } from '@rs-x/expression-parser';
 
 import { RsxPipe } from './rsx.pipe';
-import { IExpressionFactoryToken } from './rsx.providers';
-
 describe('RsxPipe', () => {
   let pipe: RsxPipe;
-  let cdr: ChangeDetectorRef;
-  let ngZone: NgZone;
   let expressionFactory: IExpressionFactory;
+  const injector = Type.cast<{
+    get: () => null;
+  }>({
+    get: () => null,
+  });
 
   beforeAll(async () => {
     await InjectionContainer.load(RsXExpressionParserModule);
@@ -36,30 +32,7 @@ describe('RsxPipe', () => {
   });
 
   beforeEach(() => {
-    cdr = Type.cast({
-      markForCheck: vi.fn(),
-    });
-    ngZone = Type.cast({
-      run: (callback: () => void) => callback(),
-    });
-
-    pipe = runInInjectionContext(
-      {
-        get: (token: unknown) => {
-          if (token === ChangeDetectorRef) {
-            return cdr;
-          }
-          if (token === NgZone) {
-            return ngZone;
-          }
-          if (token === IExpressionFactoryToken) {
-            return expressionFactory;
-          }
-          throw new Error(`No provider for ${token}`);
-        },
-      },
-      () => new RsxPipe(),
-    );
+    pipe = new RsxPipe(injector);
   });
 
   it('will thrown an error when not passing in null|undefined, IExpression, or string', async () => {
@@ -274,60 +247,14 @@ describe('RsxPipe', () => {
     expect(disposeSpy).toHaveBeenCalled();
   });
 
-  it('re-enters Angular zone when an expression emits outside the zone', async () => {
-    const runSpy = vi.fn((callback: () => void) => callback());
-    ngZone = Type.cast({
-      run: runSpy,
-    });
-
-    pipe = runInInjectionContext(
-      {
-        get: (token: unknown) => {
-          if (token === ChangeDetectorRef) {
-            return cdr;
-          }
-          if (token === NgZone) {
-            return ngZone;
-          }
-          if (token === IExpressionFactoryToken) {
-            return expressionFactory;
-          }
-          throw new Error(`No provider for ${token}`);
-        },
-      },
-      () => new RsxPipe(),
-    );
-
-    const zoneCheckSpy = vi
-      .spyOn(NgZone, 'isInAngularZone')
-      .mockReturnValue(false);
-
+  it('can be constructed without Angular pipe-factory dependencies', async () => {
     const expression = expressionFactory.create({ x: 1 }, 'x + 2');
     try {
       pipe.transform(expression);
       await Promise.resolve();
 
-      expect(runSpy).toHaveBeenCalled();
+      expect(pipe.transform(expression)).toBe(3);
     } finally {
-      zoneCheckSpy.mockRestore();
-      expression.dispose();
-    }
-  });
-
-  it('marks for check directly when already inside Angular zone', async () => {
-    const zoneCheckSpy = vi
-      .spyOn(NgZone, 'isInAngularZone')
-      .mockReturnValue(true);
-    const markForCheckSpy = vi.spyOn(cdr, 'markForCheck');
-
-    const expression = expressionFactory.create({ x: 2 }, 'x + 2');
-    try {
-      pipe.transform(expression);
-      await Promise.resolve();
-
-      expect(markForCheckSpy).toHaveBeenCalled();
-    } finally {
-      zoneCheckSpy.mockRestore();
       expression.dispose();
     }
   });

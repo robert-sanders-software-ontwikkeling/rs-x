@@ -1,4 +1,4 @@
-import { Observable } from 'rxjs';
+import { isObservable } from 'rxjs';
 
 import { Injectable } from '../dependency-injection';
 
@@ -17,6 +17,6 @@ export class ObservableMetadata implements IValueMetadata {
   }
 
   public applies(value: unknown): boolean {
-    return value instanceof Observable;
+    return isObservable(value);
   }
 }

@@ -1,7 +1,9 @@
 import { type IDisposableOwner, Inject, Injectable } from '@rs-x/core';
 import { type IProxyTarget } from '@rs-x/state-manager';
 
+import { CompiledExpression } from '../compiled-expression/compiled-expression';
 import { AbstractExpression } from '../expressions/abstract-expression';
+import type { IExpression } from '../expressions/expression-parser.interface';
 import { RsXExpressionParserInjectionTokens } from '../rs-x-expression-parser-injection-tokes';
 
 import type { IExpressionObserverProxyPairFactory } from './expression-observer-proxy-pair.factory.type';
@@ -19,7 +21,7 @@ export class ExpressionObserverProxyPairFactory implements IExpressionObserverPr
 
   public create(
     owner: IDisposableOwner,
-    proxyTarget: IProxyTarget<AbstractExpression>,
+    proxyTarget: IProxyTarget<IExpression>,
   ): IExpressionObserverProxyPair {
     return {
       observer: this._expressionObserverFactory.create({
@@ -30,6 +32,12 @@ export class ExpressionObserverProxyPairFactory implements IExpressionObserverPr
   }
 
   public applies(object: unknown): boolean {
-    return object instanceof AbstractExpression;
+    return isExpressionReference(object);
   }
+}
+
+function isExpressionReference(value: unknown): value is IExpression {
+  return (
+    value instanceof AbstractExpression || value instanceof CompiledExpression
+  );
 }

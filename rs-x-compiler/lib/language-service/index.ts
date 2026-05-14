@@ -12,3 +12,4 @@ export function createLanguageServiceScaffold(): ILanguageServiceScaffold {
 
 export * from './rsx-expression-lexing';
 export * from './rsx-language-service';
+export * from './rsx-semantic-token-classification';

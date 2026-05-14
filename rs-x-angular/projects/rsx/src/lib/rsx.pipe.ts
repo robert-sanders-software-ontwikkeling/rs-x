@@ -1,21 +1,20 @@
 import {
   ChangeDetectorRef,
-  inject,
-  NgZone,
+  Injector,
   type OnDestroy,
   Pipe,
   type PipeTransform,
 } from '@angular/core';
 import { Subscription } from 'rxjs';
 
-import { Type, UnsupportedException } from '@rs-x/core';
+import { InjectionContainer, Type, UnsupportedException } from '@rs-x/core';
 import {
   AbstractExpression,
   CompiledExpression,
   type IExpression,
+  type IExpressionFactory,
+  RsXExpressionParserInjectionTokens,
 } from '@rs-x/expression-parser';
-
-import { IExpressionFactoryToken } from './rsx.providers';
 
 @Pipe({
   name: 'rsx',
@@ -23,9 +22,7 @@ import { IExpressionFactoryToken } from './rsx.providers';
   standalone: true,
 })
 export class RsxPipe implements PipeTransform, OnDestroy {
-  private readonly _changeDetectorRef = inject(ChangeDetectorRef);
-  private readonly _ngZone = inject(NgZone);
-  private readonly _expressionFactory = inject(IExpressionFactoryToken);
+  private _changeDetectorRef?: ChangeDetectorRef;
   private _expression?: IExpression<unknown>;
   private _changedSubscription?: Subscription;
   private _lastExpressionString?: string;
@@ -33,10 +30,13 @@ export class RsxPipe implements PipeTransform, OnDestroy {
   private _ownsExpression = false;
   private _value: unknown;
 
+  public constructor(private readonly _injector: Injector) {}
+
   public transform<T>(
     expression: string | IExpression<T> | null | undefined,
     context?: object,
   ): T {
+    this.captureChangeDetectorRef();
     const isExpression = this.isExpressionInstance(expression);
     if (
       (isExpression && this._expression !== expression) ||
@@ -65,7 +65,10 @@ export class RsxPipe implements PipeTransform, OnDestroy {
     } else if (Type.isString(expression)) {
       this._lastExpressionString = expression;
       if (context) {
-        this._expression = this._expressionFactory.create(context, expression);
+        this._expression = this.getExpressionFactory().create(
+          context,
+          expression,
+        );
         this._ownsExpression = true;
       }
     } else if (!Type.isNullOrUndefined(expression)) {
@@ -90,14 +93,22 @@ export class RsxPipe implements PipeTransform, OnDestroy {
   }
 
   private requestViewCheck(): void {
-    if (NgZone.isInAngularZone()) {
-      this._changeDetectorRef.markForCheck();
+    this._changeDetectorRef?.markForCheck();
+  }
+
+  private getExpressionFactory(): IExpressionFactory {
+    return InjectionContainer.get(
+      RsXExpressionParserInjectionTokens.IExpressionFactory,
+    );
+  }
+
+  private captureChangeDetectorRef(): void {
+    if (this._changeDetectorRef) {
       return;
     }
-
-    this._ngZone.run(() => {
-      this._changeDetectorRef.markForCheck();
-    });
+    this._changeDetectorRef =
+      this._injector.get(ChangeDetectorRef, null, { optional: true }) ??
+      undefined;
   }
 
   private disposeExpression(): void {

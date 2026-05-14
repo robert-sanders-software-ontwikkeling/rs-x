@@ -1,9 +1,12 @@
 import { generate as astToString } from 'astring';
 import type {
+  ArrowFunctionExpression,
   Expression,
+  FunctionExpression as EstreeFunctionExpression,
   Literal,
   MemberExpression,
   Node,
+  Pattern,
   PrivateIdentifier,
   Super,
 } from 'estree';
@@ -446,6 +449,16 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
       string,
       ICompiledExpressionWatchDependency
     >();
+    const localScopeStack: string[][] = [];
+
+    const isLocallyBound = (identifierName: string): boolean => {
+      for (let i = localScopeStack.length - 1; i >= 0; i -= 1) {
+        if (localScopeStack[i].includes(identifierName)) {
+          return true;
+        }
+      }
+      return false;
+    };
 
     const visit = (
       node: unknown,
@@ -458,7 +471,22 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
         return;
       }
 
+      if (
+        node.type === 'ArrowFunctionExpression' ||
+        node.type === 'FunctionExpression'
+      ) {
+        const localBindings = this.collectFunctionLocalBindings(node);
+        localScopeStack.push(localBindings);
+        visit(node.body, node, 'body', parent, parentKey);
+        localScopeStack.pop();
+        return;
+      }
+
       if (node.type === 'Identifier') {
+        if (isLocallyBound(node.name)) {
+          return;
+        }
+
         if (!this.shouldSkipIdentifier(node, parent, parentKey, false)) {
           dependencies.add(node.name);
         }
@@ -481,6 +509,9 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
             const ownerPath = isMemberPropertySegment
               ? this.getStaticPath(memberParent.object)
               : [];
+            if (ownerPath.length > 0 && isLocallyBound(ownerPath[0])) {
+              return;
+            }
             const dependencyId = `${ownerPath.join('.')}|${node.name}`;
             const existing = watchDependencies.get(dependencyId);
             const dependency: ICompiledExpressionWatchDependency = {
@@ -525,6 +556,53 @@ export class CompiledExpressionCompiler implements ICompiledExpressionCompiler {
 
     visit(expression);
     return { dependencies, watchDependencies };
+  }
+
+  private collectFunctionLocalBindings(
+    functionNode: ArrowFunctionExpression | EstreeFunctionExpression,
+  ): string[] {
+    const localBindings = new Set<string>();
+    for (const parameter of functionNode.params) {
+      this.collectPatternIdentifiers(parameter, localBindings);
+    }
+
+    return [...localBindings];
+  }
+
+  private collectPatternIdentifiers(
+    pattern: Pattern,
+    identifiers: Set<string>,
+  ): void {
+    switch (pattern.type) {
+      case 'Identifier':
+        identifiers.add(pattern.name);
+        return;
+      case 'AssignmentPattern':
+        this.collectPatternIdentifiers(pattern.left, identifiers);
+        return;
+      case 'RestElement':
+        this.collectPatternIdentifiers(pattern.argument, identifiers);
+        return;
+      case 'ArrayPattern':
+        for (const element of pattern.elements) {
+          if (element) {
+            this.collectPatternIdentifiers(element, identifiers);
+          }
+        }
+        return;
+      case 'ObjectPattern':
+        for (const property of pattern.properties) {
+          if (property.type === 'RestElement') {
+            this.collectPatternIdentifiers(property.argument, identifiers);
+            continue;
+          }
+
+          this.collectPatternIdentifiers(property.value, identifiers);
+        }
+        return;
+      default:
+        return;
+    }
   }
 
   private shouldSkipIdentifier(

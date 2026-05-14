@@ -48,83 +48,6 @@ const RUNTIME_PACKAGES = [
 const COMPILER_PACKAGES = ['@rs-x/compiler', '@rs-x/typescript-plugin'];
 const RSX_PACKAGE_VERSION = 'latest';
 const PROJECT_TEMPLATES = ['angular', 'vuejs', 'react', 'nextjs', 'nodejs'];
-const TS_RESERVED_WORDS = new Set([
-  'abstract',
-  'any',
-  'as',
-  'asserts',
-  'async',
-  'await',
-  'bigint',
-  'boolean',
-  'break',
-  'case',
-  'catch',
-  'class',
-  'const',
-  'continue',
-  'debugger',
-  'declare',
-  'default',
-  'delete',
-  'do',
-  'else',
-  'enum',
-  'export',
-  'extends',
-  'false',
-  'finally',
-  'for',
-  'from',
-  'function',
-  'get',
-  'if',
-  'implements',
-  'import',
-  'in',
-  'infer',
-  'instanceof',
-  'interface',
-  'is',
-  'keyof',
-  'let',
-  'module',
-  'namespace',
-  'never',
-  'new',
-  'null',
-  'number',
-  'object',
-  'of',
-  'package',
-  'private',
-  'protected',
-  'public',
-  'readonly',
-  'return',
-  'satisfies',
-  'set',
-  'static',
-  'string',
-  'super',
-  'switch',
-  'symbol',
-  'this',
-  'throw',
-  'true',
-  'try',
-  'type',
-  'typeof',
-  'undefined',
-  'unique',
-  'unknown',
-  'var',
-  'void',
-  'while',
-  'with',
-  'yield',
-]);
-
 function parseArgs(argv) {
   const raw = argv.slice(2);
   const positionals = [];
@@ -218,7 +141,9 @@ function getVsCodeCliCandidates() {
   } = process.env;
 
   const windowsInstallRoots = [
-    LOCALAPPDATA ? path.join(LOCALAPPDATA, 'Programs', 'Microsoft VS Code') : null,
+    LOCALAPPDATA
+      ? path.join(LOCALAPPDATA, 'Programs', 'Microsoft VS Code')
+      : null,
     ProgramFiles ? path.join(ProgramFiles, 'Microsoft VS Code') : null,
     programFilesX86 ? path.join(programFilesX86, 'Microsoft VS Code') : null,
   ].filter(Boolean);
@@ -500,13 +425,15 @@ function installVsCodeExtension(flags) {
   installBundledVsix(vsCodeCli, dryRun, force);
 }
 
-function resolveBundledVsix() {
-  const packageRoot = path.resolve(__dirname, '..');
-  const candidates = fs
-    .readdirSync(packageRoot)
-    .filter((name) => /^rs-x-vscode-extension-.*\.vsix$/u.test(name))
-    .map((name) => path.join(packageRoot, name));
+function resolveLatestVsixInDirectory(directoryPath) {
+  if (!fs.existsSync(directoryPath)) {
+    return null;
+  }
 
+  const candidates = fs
+    .readdirSync(directoryPath)
+    .filter((name) => /^rs-x-vscode-extension-.*\.vsix$/u.test(name))
+    .map((name) => path.join(directoryPath, name));
   if (candidates.length === 0) {
     return null;
   }
@@ -519,6 +446,11 @@ function resolveBundledVsix() {
     .sort((a, b) => b.mtimeMs - a.mtimeMs)[0];
 
   return latest?.fullPath ?? null;
+}
+
+function resolveBundledVsix() {
+  const packageRoot = path.resolve(__dirname, '..');
+  return resolveLatestVsixInDirectory(packageRoot);
 }
 
 function installBundledVsix(vsCodeCli, dryRun, force) {
@@ -560,26 +492,38 @@ function installLocalVsix(vsCodeCli, dryRun, force) {
   const extensionPackage = JSON.parse(
     fs.readFileSync(extensionPackagePath, 'utf8'),
   );
+  const localPackageScript =
+    typeof extensionPackage.scripts?.['package:local'] === 'string'
+      ? 'package:local'
+      : 'package';
   const vsixFileName = `${extensionPackage.name}-${extensionPackage.version}.vsix`;
   const preferredVsixPath = path.join(extensionDir, 'dist', vsixFileName);
   const legacyVsixPath = path.join(extensionDir, vsixFileName);
+  const extensionDistDir = path.join(extensionDir, 'dist');
 
-  logInfo('Packaging local rs-x-vscode-extension...');
-  run('pnpm', ['--filter', 'rs-x-vscode-extension', 'run', 'package'], {
-    dryRun,
-    cwd: repoRoot,
-  });
+  logInfo(`Packaging local rs-x-vscode-extension (${localPackageScript})...`);
+  run(
+    'pnpm',
+    ['--filter', 'rs-x-vscode-extension', 'run', localPackageScript],
+    {
+      dryRun,
+      cwd: repoRoot,
+    },
+  );
 
-  const vsixPath =
-    !dryRun && fs.existsSync(preferredVsixPath)
-      ? preferredVsixPath
-      : !dryRun && fs.existsSync(legacyVsixPath)
-        ? legacyVsixPath
-        : preferredVsixPath;
+  const vsixPath = !dryRun
+    ? (resolveLatestVsixInDirectory(extensionDistDir) ??
+      resolveLatestVsixInDirectory(extensionDir) ??
+      (fs.existsSync(preferredVsixPath)
+        ? preferredVsixPath
+        : fs.existsSync(legacyVsixPath)
+          ? legacyVsixPath
+          : preferredVsixPath))
+    : preferredVsixPath;
 
   if (!dryRun && !fs.existsSync(vsixPath)) {
     logWarn(
-      `Expected VSIX not found at ${preferredVsixPath}. Skipping installation.`,
+      `No VSIX found in ${extensionDistDir}. Expected at least ${preferredVsixPath}. Skipping installation.`,
     );
     return;
   }
@@ -695,7 +639,9 @@ function runDoctor() {
   console.log(
     '  - Run `rsx project <framework>` to scaffold a starter, or `rsx init` inside an existing app.',
   );
-  console.log('  - Use `rsx add` to create your first expression file.');
+  console.log(
+    '  - Use the RS-X Expressions panel in VS Code to create expression files.',
+  );
 }
 
 function findNearestPackageRoot(startDirectory) {
@@ -805,32 +751,6 @@ function findDuplicateRsxPackages(projectRoot) {
     .map(([name, versions]) => ({ name, versions }));
 }
 
-function isValidTsIdentifier(input) {
-  if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/u.test(input)) {
-    return false;
-  }
-
-  return !TS_RESERVED_WORDS.has(input);
-}
-
-function toKebabCase(input) {
-  return input
-    .replace(/([a-z0-9])([A-Z])/gu, '$1-$2')
-    .replace(/[_\s]+/gu, '-')
-    .replace(/[^a-zA-Z0-9-]/gu, '-')
-    .replace(/-+/gu, '-')
-    .replace(/^-|-$/gu, '')
-    .toLowerCase();
-}
-
-function ensureTsExtension(fileName) {
-  if (/\.[cm]?[jt]sx?$/u.test(fileName)) {
-    return fileName;
-  }
-
-  return `${fileName}.ts`;
-}
-
 async function createPromptSession() {
   if (process.stdin.isTTY) {
     const rl = readline.createInterface({
@@ -884,612 +804,6 @@ async function askUntilNonEmpty(rl, prompt) {
       return answer;
     }
     logWarn('Value is required.');
-  }
-}
-
-async function askUntilValidIdentifier(rl) {
-  while (true) {
-    const answer = (
-      await rl.question('Expression export name (TS identifier): ')
-    ).trim();
-    if (!answer) {
-      logWarn('Name is required.');
-      continue;
-    }
-
-    if (isValidTsIdentifier(answer)) {
-      return answer;
-    }
-
-    logWarn(`"${answer}" is not a valid TypeScript identifier.`);
-  }
-}
-
-function normalizeYesNo(answer, defaultValue) {
-  const normalized = answer.trim().toLowerCase();
-  if (!normalized) {
-    return defaultValue;
-  }
-
-  if (normalized === 'y' || normalized === 'yes') {
-    return true;
-  }
-
-  if (normalized === 'n' || normalized === 'no') {
-    return false;
-  }
-
-  return defaultValue;
-}
-
-function stripTsLikeExtension(fileName) {
-  return fileName.replace(/\.[cm]?[jt]sx?$/u, '');
-}
-
-function inferModelKeysFromExpression(expressionSource) {
-  const matches = expressionSource.matchAll(
-    /(?<![\w$.])([A-Za-z_$][A-Za-z0-9_$]*)(?![\w$])/gu,
-  );
-  const identifiers = [];
-  const ignoredIdentifiers = new Set([
-    'undefined',
-    'null',
-    'true',
-    'false',
-    'Math',
-    'Date',
-    'Number',
-    'String',
-    'Boolean',
-    'Array',
-    'Object',
-    'JSON',
-    'console',
-  ]);
-
-  for (const match of matches) {
-    const identifier = match[1];
-    if (
-      TS_RESERVED_WORDS.has(identifier) ||
-      ignoredIdentifiers.has(identifier)
-    ) {
-      continue;
-    }
-    if (!identifiers.includes(identifier)) {
-      identifiers.push(identifier);
-    }
-  }
-
-  return identifiers;
-}
-
-function createModelTemplate(expressionSource) {
-  const modelKeys = inferModelKeysFromExpression(expressionSource);
-  const modelBody =
-    modelKeys.length > 0
-      ? modelKeys.map((key) => `  ${key}: 1,`).join('\n')
-      : '  a: 1,';
-
-  return `export const model = {
-${modelBody}
-};
-`;
-}
-
-function createInlineExpressionTemplate(expressionName, expressionSource) {
-  return `import { rsx } from '@rs-x/expression-parser';
-
-${createModelTemplate(expressionSource).trim()}
-
-export const ${expressionName} = rsx(${JSON.stringify(expressionSource)})(model);
-`;
-}
-
-function createInlineExpressionAppendTemplate(
-  expressionName,
-  expressionSource,
-  fileContent,
-) {
-  const hasRsxImport = fileContent.includes("from '@rs-x/expression-parser'");
-  const hasModelExport = /\bexport\s+const\s+model\s*=/u.test(fileContent);
-  const sections = [];
-
-  if (!hasRsxImport) {
-    sections.push("import { rsx } from '@rs-x/expression-parser';");
-  }
-
-  if (!hasModelExport) {
-    sections.push(createModelTemplate(expressionSource).trim());
-  }
-
-  sections.push(
-    `export const ${expressionName} = rsx(${JSON.stringify(expressionSource)})(model);`,
-  );
-  return `\n${sections.join('\n\n')}\n`;
-}
-
-function createExpressionTemplate(
-  expressionName,
-  expressionSource,
-  modelImportPath,
-  modelExportName,
-) {
-  return `import { rsx } from '@rs-x/expression-parser';
-import { ${modelExportName} } from '${modelImportPath}';
-
-export const ${expressionName} = rsx(${JSON.stringify(expressionSource)})(${modelExportName});
-`;
-}
-
-function findExpressionFiles(searchRoot) {
-  const results = [];
-  const expressionPattern =
-    /\b(?:export\s+)?const\s+[A-Za-z_$][\w$]*\s*=\s*rsx\(/u;
-
-  function visit(currentPath) {
-    if (!fs.existsSync(currentPath)) {
-      return;
-    }
-
-    const stat = fs.statSync(currentPath);
-    if (stat.isDirectory()) {
-      const baseName = path.basename(currentPath);
-      if (
-        baseName === 'node_modules' ||
-        baseName === 'dist' ||
-        baseName === 'build' ||
-        baseName === '.git' ||
-        baseName === '.next' ||
-        baseName === 'coverage' ||
-        baseName === '.tests' ||
-        baseName === 'tmp'
-      ) {
-        return;
-      }
-
-      for (const entry of fs.readdirSync(currentPath)) {
-        visit(path.join(currentPath, entry));
-      }
-      return;
-    }
-
-    if (!/\.[cm]?[jt]sx?$/u.test(currentPath)) {
-      return;
-    }
-
-    const content = fs.readFileSync(currentPath, 'utf8');
-    if (
-      content.includes("from '@rs-x/expression-parser'") &&
-      expressionPattern.test(content)
-    ) {
-      results.push(currentPath);
-    }
-  }
-
-  visit(searchRoot);
-  return results.sort((left, right) => left.localeCompare(right));
-}
-
-function resolveRsxCliAddConfig(projectRoot) {
-  const cliConfig = resolveRsxCliConfig(projectRoot);
-  const addConfig = cliConfig.add ?? {};
-  const defaultSearchRoots = ['src', 'app', 'expressions'];
-  const configuredSearchRoots = Array.isArray(addConfig.searchRoots)
-    ? addConfig.searchRoots.filter(
-        (value) => typeof value === 'string' && value.trim() !== '',
-      )
-    : defaultSearchRoots;
-  const defaultDirectory =
-    typeof addConfig.defaultDirectory === 'string' &&
-    addConfig.defaultDirectory.trim() !== ''
-      ? addConfig.defaultDirectory.trim()
-      : 'src/expressions';
-
-  return {
-    defaultDirectory,
-    searchRoots: configuredSearchRoots,
-  };
-}
-
-function filterPreferredExpressionFiles(candidates, projectRoot, addConfig) {
-  const preferredRootPrefixes = addConfig.searchRoots
-    .map((rootPath) =>
-      path.isAbsolute(rootPath) ? rootPath : path.join(projectRoot, rootPath),
-    )
-    .map((value) => `${value.replace(/\\/gu, '/')}/`);
-
-  const preferredCandidates = candidates.filter((candidate) => {
-    const normalizedCandidate = candidate.replace(/\\/gu, '/');
-    return preferredRootPrefixes.some((prefix) =>
-      normalizedCandidate.startsWith(prefix),
-    );
-  });
-
-  return preferredCandidates.length > 0 ? preferredCandidates : candidates;
-}
-
-function rankExpressionFiles(candidates, resolvedDirectory, projectRoot) {
-  const sourceRootPatterns = ['/src/', '/app/', '/expressions/'];
-
-  function score(filePath) {
-    const normalized = filePath.replace(/\\/gu, '/');
-    let value = 0;
-
-    if (normalized.startsWith(resolvedDirectory.replace(/\\/gu, '/'))) {
-      value += 1000;
-    }
-
-    if (sourceRootPatterns.some((pattern) => normalized.includes(pattern))) {
-      value += 100;
-    }
-
-    const relativeSegments = path
-      .relative(projectRoot, filePath)
-      .replace(/\\/gu, '/')
-      .split('/').length;
-    value -= relativeSegments;
-    return value;
-  }
-
-  return [...candidates].sort((left, right) => {
-    const scoreDifference = score(right) - score(left);
-    if (scoreDifference !== 0) {
-      return scoreDifference;
-    }
-    return left.localeCompare(right);
-  });
-}
-
-async function askForExistingExpressionFile(rl, resolvedDirectory) {
-  const projectRoot = process.cwd();
-  const addConfig = resolveRsxCliAddConfig(projectRoot);
-  const directoryCandidates = filterPreferredExpressionFiles(
-    findExpressionFiles(resolvedDirectory),
-    projectRoot,
-    addConfig,
-  );
-  const fallbackCandidates =
-    directoryCandidates.length > 0
-      ? []
-      : rankExpressionFiles(
-          filterPreferredExpressionFiles(
-            findExpressionFiles(projectRoot),
-            projectRoot,
-            addConfig,
-          ),
-          resolvedDirectory,
-          projectRoot,
-        );
-  const candidates =
-    directoryCandidates.length > 0 ? directoryCandidates : fallbackCandidates;
-
-  if (candidates.length > 0) {
-    console.log(
-      directoryCandidates.length > 0
-        ? 'Existing expression files in the selected directory:'
-        : 'Existing expression files in the current project:',
-    );
-    candidates.forEach((candidate, index) => {
-      console.log(
-        `  ${index + 1}. ${path.relative(process.cwd(), candidate).replace(/\\/gu, '/')}`,
-      );
-    });
-    console.log('  0. Enter a custom path');
-  }
-
-  while (true) {
-    const answer = (
-      await rl.question(
-        candidates.length > 0
-          ? 'Choose a file number or enter a file path: '
-          : 'Existing file path (relative to output dir or absolute): ',
-      )
-    ).trim();
-
-    if (!answer && candidates.length > 0) {
-      logWarn('Please choose a file or enter a path.');
-      continue;
-    }
-
-    if (candidates.length > 0 && /^\d+$/u.test(answer)) {
-      const selectedIndex = Number.parseInt(answer, 10);
-      if (selectedIndex === 0) {
-        const customPath = await askUntilNonEmpty(
-          rl,
-          'Existing file path (relative to output dir or absolute): ',
-        );
-        const resolvedPath = path.isAbsolute(customPath)
-          ? customPath
-          : path.resolve(resolvedDirectory, customPath);
-
-        if (!fs.existsSync(resolvedPath)) {
-          logWarn(`File not found: ${resolvedPath}`);
-          continue;
-        }
-
-        return resolvedPath;
-      }
-
-      if (selectedIndex >= 1 && selectedIndex <= candidates.length) {
-        return candidates[selectedIndex - 1];
-      }
-
-      logWarn(`"${answer}" is not a valid file number.`);
-      continue;
-    }
-
-    const resolvedPath = path.isAbsolute(answer)
-      ? answer
-      : path.resolve(resolvedDirectory, answer);
-
-    if (!fs.existsSync(resolvedPath)) {
-      logWarn(`File not found: ${resolvedPath}`);
-      continue;
-    }
-
-    return resolvedPath;
-  }
-}
-
-async function askForIdentifierWithDefault(rl, prompt, defaultValue) {
-  while (true) {
-    const answer = (await rl.question(prompt)).trim();
-    if (!answer) {
-      return defaultValue;
-    }
-
-    if (isValidTsIdentifier(answer)) {
-      return answer;
-    }
-
-    logWarn(`"${answer}" is not a valid TypeScript identifier.`);
-  }
-}
-
-async function askForExpressionSource(rl) {
-  while (true) {
-    const answer = (
-      await rl.question("Initial expression string ['a']: ")
-    ).trim();
-
-    if (!answer) {
-      return 'a';
-    }
-
-    return answer;
-  }
-}
-
-async function askForDirectoryPath(rl, defaultDirectory) {
-  while (true) {
-    const prompt = defaultDirectory
-      ? `Directory path (relative or absolute) [${defaultDirectory}]: `
-      : 'Directory path (relative or absolute): ';
-    const answer = (await rl.question(prompt)).trim();
-
-    if (answer) {
-      return answer;
-    }
-
-    if (defaultDirectory) {
-      return defaultDirectory;
-    }
-
-    logWarn('Please enter a directory path.');
-  }
-}
-
-async function askForAddMode(rl) {
-  console.log('Choose add mode:');
-  console.log(
-    '  1. Create new expression file (model in same file) [Recommended]',
-  );
-  console.log('  2. Create new expression file with separate model');
-  console.log('  3. Update an existing expression file');
-
-  while (true) {
-    const answer = (await rl.question('Add mode [1]: ')).trim();
-
-    if (!answer || answer === '1') {
-      return 'create-inline';
-    }
-    if (answer === '2') {
-      return 'create-separate';
-    }
-    if (answer === '3') {
-      return 'update-existing';
-    }
-
-    logWarn(`"${answer}" is not a valid add mode. Use 1, 2, or 3.`);
-  }
-}
-
-async function runAdd() {
-  const rl = await createPromptSession();
-
-  try {
-    const projectRoot = process.cwd();
-    const addConfig = resolveRsxCliAddConfig(projectRoot);
-    const expressionName = await askUntilValidIdentifier(rl);
-    const expressionSource = await askForExpressionSource(rl);
-
-    const kebabAnswer = await rl.question('Use kebab-case file name? [Y/n]: ');
-    const useKebabCase = normalizeYesNo(kebabAnswer, true);
-
-    const directoryInput = await askForDirectoryPath(
-      rl,
-      addConfig.defaultDirectory,
-    );
-    const resolvedDirectory = path.isAbsolute(directoryInput)
-      ? directoryInput
-      : path.resolve(projectRoot, directoryInput);
-
-    const baseFileName = useKebabCase
-      ? toKebabCase(expressionName)
-      : expressionName;
-    const expressionFileName = ensureTsExtension(baseFileName);
-    const expressionFileBase = stripTsLikeExtension(expressionFileName);
-    const modelFileName = `${expressionFileBase}.model.ts`;
-    const expressionPath = path.join(resolvedDirectory, expressionFileName);
-    const modelPath = path.join(resolvedDirectory, modelFileName);
-    const addMode = await askForAddMode(rl);
-    const updateExistingFile = addMode === 'update-existing';
-    const keepModelInSameFile =
-      addMode === 'create-inline'
-        ? true
-        : addMode === 'create-separate'
-          ? false
-          : normalizeYesNo(
-              await rl.question('Keep model in the same file? [Y/n]: '),
-              true,
-            );
-
-    if (updateExistingFile) {
-      const resolvedExistingFilePath = await askForExistingExpressionFile(
-        rl,
-        resolvedDirectory,
-      );
-      const existingFileContent = fs.readFileSync(
-        resolvedExistingFilePath,
-        'utf8',
-      );
-      let appendContent;
-
-      if (keepModelInSameFile) {
-        appendContent = createInlineExpressionAppendTemplate(
-          expressionName,
-          expressionSource,
-          existingFileContent,
-        );
-      } else {
-        const useExistingModelAnswer = await rl.question(
-          'Use existing model file? [y/N]: ',
-        );
-        const useExistingModel = normalizeYesNo(useExistingModelAnswer, false);
-        let modelImportPath = './model';
-        let modelExportName = 'model';
-
-        if (useExistingModel) {
-          const existingModelPathInput = await askUntilNonEmpty(
-            rl,
-            'Existing model file path (relative to output dir or absolute): ',
-          );
-          const resolvedExistingModelPath = path.isAbsolute(
-            existingModelPathInput,
-          )
-            ? existingModelPathInput
-            : path.resolve(resolvedDirectory, existingModelPathInput);
-
-          if (!fs.existsSync(resolvedExistingModelPath)) {
-            logError(`Model file not found: ${resolvedExistingModelPath}`);
-            return;
-          }
-
-          modelImportPath = toModuleImportPath(
-            resolvedExistingFilePath,
-            resolvedExistingModelPath,
-          );
-          modelExportName = await askForIdentifierWithDefault(
-            rl,
-            'Model export name [model]: ',
-            'model',
-          );
-        }
-
-        appendContent = `\n${createExpressionTemplate(
-          expressionName,
-          expressionSource,
-          modelImportPath,
-          modelExportName,
-        )}`;
-      }
-
-      fs.appendFileSync(resolvedExistingFilePath, appendContent, 'utf8');
-      logOk(`Updated ${resolvedExistingFilePath}`);
-      return;
-    }
-
-    const useExistingModel = !keepModelInSameFile
-      ? normalizeYesNo(
-          await rl.question('Use existing model file? [y/N]: '),
-          false,
-        )
-      : false;
-
-    if (
-      fs.existsSync(expressionPath) ||
-      (!keepModelInSameFile && !useExistingModel && fs.existsSync(modelPath))
-    ) {
-      const overwriteAnswer = await rl.question(
-        `One or more target files already exist. Overwrite? [y/N]: `,
-      );
-      const shouldOverwrite = normalizeYesNo(overwriteAnswer, false);
-      if (!shouldOverwrite) {
-        logInfo('Cancelled. Existing file was not modified.');
-        return;
-      }
-    }
-
-    fs.mkdirSync(resolvedDirectory, { recursive: true });
-    let modelImportPath = `./${expressionFileBase}.model`;
-    let modelExportName = 'model';
-
-    if (keepModelInSameFile) {
-      fs.writeFileSync(
-        expressionPath,
-        createInlineExpressionTemplate(expressionName, expressionSource),
-        'utf8',
-      );
-      logOk(`Created ${expressionPath}`);
-      return;
-    }
-
-    if (useExistingModel) {
-      const existingModelPathInput = await askUntilNonEmpty(
-        rl,
-        'Existing model file path (relative to output dir or absolute): ',
-      );
-      const resolvedExistingModelPath = path.isAbsolute(existingModelPathInput)
-        ? existingModelPathInput
-        : path.resolve(resolvedDirectory, existingModelPathInput);
-
-      if (!fs.existsSync(resolvedExistingModelPath)) {
-        logError(`Model file not found: ${resolvedExistingModelPath}`);
-        return;
-      }
-
-      modelImportPath = toModuleImportPath(
-        expressionPath,
-        resolvedExistingModelPath,
-      );
-      modelExportName = await askForIdentifierWithDefault(
-        rl,
-        'Model export name [model]: ',
-        'model',
-      );
-    } else {
-      fs.writeFileSync(
-        modelPath,
-        createModelTemplate(expressionSource),
-        'utf8',
-      );
-      logOk(`Created ${modelPath}`);
-    }
-
-    fs.writeFileSync(
-      expressionPath,
-      createExpressionTemplate(
-        expressionName,
-        expressionSource,
-        modelImportPath,
-        modelExportName,
-      ),
-      'utf8',
-    );
-
-    logOk(`Created ${expressionPath}`);
-  } finally {
-    rl.close();
   }
 }
 
@@ -1744,6 +1058,71 @@ function upsertTypescriptPluginInTsConfig(configPath, dryRun) {
   }
 
   compilerOptions.plugins = plugins;
+  tsConfig.compilerOptions = compilerOptions;
+
+  if (dryRun) {
+    logInfo(`[dry-run] patch ${configPath}`);
+    return;
+  }
+
+  fs.writeFileSync(
+    configPath,
+    `${JSON.stringify(tsConfig, null, 2)}\n`,
+    'utf8',
+  );
+}
+
+function ensureGenericTypescriptConfig(projectRoot, dryRun) {
+  const tsConfigPath = path.join(projectRoot, 'tsconfig.json');
+  if (!fs.existsSync(tsConfigPath)) {
+    if (dryRun) {
+      logInfo(`[dry-run] create ${tsConfigPath}`);
+      return tsConfigPath;
+    }
+    fs.writeFileSync(tsConfigPath, createProjectTsConfig(), 'utf8');
+    logOk(`Created ${tsConfigPath}`);
+    return tsConfigPath;
+  }
+
+  patchGenericTypescriptConfig(tsConfigPath, dryRun);
+  return tsConfigPath;
+}
+
+function patchGenericTypescriptConfig(configPath, dryRun) {
+  const tsConfig = parseJsonc(fs.readFileSync(configPath, 'utf8'));
+  const compilerOptions = tsConfig.compilerOptions ?? {};
+  const plugins = Array.isArray(compilerOptions.plugins)
+    ? compilerOptions.plugins
+    : [];
+
+  if (
+    !plugins.some(
+      (plugin) =>
+        plugin &&
+        typeof plugin === 'object' &&
+        plugin.name === '@rs-x/typescript-plugin',
+    )
+  ) {
+    plugins.push({ name: '@rs-x/typescript-plugin' });
+  }
+
+  compilerOptions.plugins = plugins;
+
+  if (
+    typeof compilerOptions.moduleResolution === 'string' &&
+    ['node', 'node10', 'nodejs'].includes(
+      compilerOptions.moduleResolution.toLowerCase(),
+    )
+  ) {
+    compilerOptions.moduleResolution = 'Node16';
+    if (
+      typeof compilerOptions.module !== 'string' ||
+      compilerOptions.module.toLowerCase() === 'commonjs'
+    ) {
+      compilerOptions.module = 'Node16';
+    }
+  }
+
   tsConfig.compilerOptions = compilerOptions;
 
   if (dryRun) {
@@ -2047,8 +1426,8 @@ function createProjectTsConfig() {
       {
         compilerOptions: {
           target: 'ES2022',
-          module: 'CommonJS',
-          moduleResolution: 'Node',
+          module: 'Node16',
+          moduleResolution: 'Node16',
           strict: true,
           esModuleInterop: true,
           skipLibCheck: true,
@@ -2056,6 +1435,7 @@ function createProjectTsConfig() {
           emitDecoratorMetadata: true,
           outDir: 'dist',
           rootDir: 'src',
+          sourceMap: true,
           plugins: [
             {
               name: '@rs-x/typescript-plugin',
@@ -2324,10 +1704,10 @@ export const model: IModel = {
   );
 
   writeFileWithDryRun(
-    path.join(projectRoot, 'src/expressions/sample.expression.ts'),
+    path.join(projectRoot, 'src/rsx/expressions/sample.expression.ts'),
     `import { rsx } from '@rs-x/expression-parser';
 
-import { model } from '../model';
+import { model } from '../../model.js';
 
 export const sampleExpression = rsx('a + b')(model);
 `,
@@ -2336,8 +1716,8 @@ export const sampleExpression = rsx('a + b')(model);
 
   writeFileWithDryRun(
     path.join(projectRoot, 'src/main.ts'),
-    `import { sampleExpression } from './expressions/sample.expression';
-import { initRsx } from './rsx-bootstrap';
+    `import { sampleExpression } from './rsx/expressions/sample.expression.js';
+import { initRsx } from './rsx-bootstrap.js';
 
 async function main(): Promise<void> {
   await initRsx();
@@ -2657,9 +2037,10 @@ function applyAngularDemoStarter(projectRoot, projectName, pm, flags) {
     );
   }
 
-  const demoRegistrationFile = path.join(
+  const demoRegistrationFile = resolveRsxBuildFilePath(
     projectRoot,
-    'src/rsx-generated/rsx-aot-registration.generated.ts',
+    defaultRsxBuildConfigForTemplate('angular'),
+    'registrationFile',
   );
   ensureAngularBuildUsesRegistrationWrapper({
     projectRoot,
@@ -2794,10 +2175,18 @@ function applyReactDemoStarter(projectRoot, projectName, pm, flags) {
     dryRun,
     typeof reactBuildConfig.preparseFile === 'string'
       ? path.resolve(projectRoot, reactBuildConfig.preparseFile)
-      : path.resolve(projectRoot, defaultReactBuildConfig.preparseFile),
+      : resolveRsxBuildFilePath(
+          projectRoot,
+          defaultReactBuildConfig,
+          'preparseFile',
+        ),
     typeof reactBuildConfig.compiledFile === 'string'
       ? path.resolve(projectRoot, reactBuildConfig.compiledFile)
-      : path.resolve(projectRoot, defaultReactBuildConfig.compiledFile),
+      : resolveRsxBuildFilePath(
+          projectRoot,
+          defaultReactBuildConfig,
+          'compiledFile',
+        ),
   );
 
   const tsConfigPath = path.join(projectRoot, 'tsconfig.json');
@@ -2911,10 +2300,18 @@ function applyVueDemoStarter(projectRoot, projectName, pm, flags) {
     dryRun,
     typeof vueBuildConfig.preparseFile === 'string'
       ? path.resolve(projectRoot, vueBuildConfig.preparseFile)
-      : path.resolve(projectRoot, defaultVueBuildConfig.preparseFile),
+      : resolveRsxBuildFilePath(
+          projectRoot,
+          defaultVueBuildConfig,
+          'preparseFile',
+        ),
     typeof vueBuildConfig.compiledFile === 'string'
       ? path.resolve(projectRoot, vueBuildConfig.compiledFile)
-      : path.resolve(projectRoot, defaultVueBuildConfig.compiledFile),
+      : resolveRsxBuildFilePath(
+          projectRoot,
+          defaultVueBuildConfig,
+          'compiledFile',
+        ),
   );
 
   const tsConfigAppPath = path.join(projectRoot, 'tsconfig.app.json');
@@ -3024,10 +2421,18 @@ function applyNextDemoStarter(projectRoot, projectName, pm, flags) {
     dryRun,
     typeof nextBuildConfig.preparseFile === 'string'
       ? path.resolve(projectRoot, nextBuildConfig.preparseFile)
-      : path.resolve(projectRoot, defaultNextBuildConfig.preparseFile),
+      : resolveRsxBuildFilePath(
+          projectRoot,
+          defaultNextBuildConfig,
+          'preparseFile',
+        ),
     typeof nextBuildConfig.compiledFile === 'string'
       ? path.resolve(projectRoot, nextBuildConfig.compiledFile)
-      : path.resolve(projectRoot, defaultNextBuildConfig.compiledFile),
+      : resolveRsxBuildFilePath(
+          projectRoot,
+          defaultNextBuildConfig,
+          'compiledFile',
+        ),
   );
 
   const tsConfigPath = path.join(projectRoot, 'tsconfig.json');
@@ -3512,13 +2917,13 @@ function ensureRsxBootstrapFile(
   const useTs = bootstrapFile.endsWith('.ts');
 
   const compiledSpecifier = compiledFilePath
-    ? toImportSpecifier(bootstrapFile, compiledFilePath)
+    ? toRuntimeImportSpecifier(bootstrapFile, compiledFilePath)
     : './rsx-generated/rsx-aot-compiled.generated';
   const preparseSpecifier = preparseFilePath
-    ? toImportSpecifier(bootstrapFile, preparseFilePath)
+    ? toRuntimeImportSpecifier(bootstrapFile, preparseFilePath)
     : './rsx-generated/rsx-aot-preparsed.generated';
   const lazyManifestSpecifier = lazyManifestFilePath
-    ? toImportSpecifier(bootstrapFile, lazyManifestFilePath)
+    ? toRuntimeImportSpecifier(bootstrapFile, lazyManifestFilePath)
     : './rsx-generated/rsx-aot-lazy-manifest.generated';
 
   const [compiledDir, compiledFile] = splitDynamicImport(compiledSpecifier);
@@ -3815,6 +3220,29 @@ function resolveLazyGroupAotFilePath(basePayloadFilePath, groupName) {
   return path.join(dir, `rsx-aot-lazy-group-${safeName}.generated${ext}`);
 }
 
+function resolveInferredAotRegistrationFile({
+  preparseFile,
+  compiledFile,
+  preparseEnabled,
+  compiledEnabled,
+}) {
+  const baseFile =
+    preparseEnabled && preparseFile
+      ? preparseFile
+      : compiledEnabled && compiledFile
+        ? compiledFile
+        : null;
+  if (!baseFile) {
+    return null;
+  }
+
+  const ext = path.extname(baseFile) || '.ts';
+  return path.join(
+    path.dirname(baseFile),
+    `rsx-aot-registration.generated${ext}`,
+  );
+}
+
 function toRuntimeLazyImportSpecifier(projectRoot, fromFile, toFile) {
   const publicDir = path.join(projectRoot, 'public');
   const resolvedPublicDir = fs.existsSync(publicDir)
@@ -3839,6 +3267,14 @@ function toModuleImportPath(fromFile, targetFile) {
     .replace(/\\/gu, '/');
   const withDot = relative.startsWith('.') ? relative : `./${relative}`;
   return stripFileExtension(withDot);
+}
+
+function toNodeEsmModuleImportPath(fromFile, targetFile) {
+  const relative = path
+    .relative(path.dirname(fromFile), targetFile)
+    .replace(/\\/gu, '/')
+    .replace(/\.[cm]?tsx?$/u, '.js');
+  return relative.startsWith('.') ? relative : `./${relative}`;
 }
 
 function injectImport(source, importStatement) {
@@ -4533,11 +3969,30 @@ function patchEntryFileForRsx(entryFile, bootstrapFile, context, dryRun) {
   }
 
   if (original.includes('rsx-bootstrap')) {
+    if (context === 'generic') {
+      const updated = patchGenericBootstrapImportExtension(
+        original,
+        entryFile,
+        bootstrapFile,
+      );
+      if (updated !== original) {
+        return writeValidatedPatch(
+          entryFile,
+          updated,
+          dryRun,
+          '',
+          `Patched ${entryFile}`,
+        );
+      }
+    }
     logInfo(`Entry already wired for RS-X bootstrap: ${entryFile}`);
     return true;
   }
 
-  const importPath = toModuleImportPath(entryFile, bootstrapFile);
+  const importPath =
+    context === 'generic'
+      ? toNodeEsmModuleImportPath(entryFile, bootstrapFile)
+      : toModuleImportPath(entryFile, bootstrapFile);
   let updated = original;
 
   if (context === 'angular') {
@@ -4572,6 +4027,34 @@ function patchEntryFileForRsx(entryFile, bootstrapFile, context, dryRun) {
   );
 }
 
+function patchGenericBootstrapImportExtension(
+  source,
+  entryFile,
+  bootstrapFile,
+) {
+  const extensionlessImportPath = toModuleImportPath(entryFile, bootstrapFile);
+  const nodeEsmImportPath = toNodeEsmModuleImportPath(entryFile, bootstrapFile);
+  if (extensionlessImportPath === nodeEsmImportPath) {
+    return source;
+  }
+
+  return source
+    .replace(
+      new RegExp(
+        `from\\s+(['"])${escapeRegExp(extensionlessImportPath)}\\1`,
+        'gu',
+      ),
+      `from '${nodeEsmImportPath}'`,
+    )
+    .replace(
+      new RegExp(
+        `import\\(\\s*(['"])${escapeRegExp(extensionlessImportPath)}\\1\\s*\\)`,
+        'gu',
+      ),
+      `import('${nodeEsmImportPath}')`,
+    );
+}
+
 function runBootstrapInit(flags) {
   const dryRun = Boolean(flags['dry-run']);
   const skipInstall = Boolean(flags['skip-install']);
@@ -4579,6 +4062,8 @@ function runBootstrapInit(flags) {
   const pm = resolveCliPackageManager(projectRoot, flags.pm);
   const tag = resolveConfiguredInstallTag(projectRoot, flags);
   const context = detectProjectContext(projectRoot);
+
+  ensureRsxInitPackageJson(projectRoot, dryRun);
 
   if (!skipInstall) {
     installRuntimePackages(pm, dryRun, tag, projectRoot, flags);
@@ -4600,11 +4085,19 @@ function runBootstrapInit(flags) {
   const resolvedPreparseFile =
     typeof rsxBuildConfig.preparseFile === 'string'
       ? path.resolve(projectRoot, rsxBuildConfig.preparseFile)
-      : path.resolve(projectRoot, defaultBuildConfig.preparseFile);
+      : resolveRsxBuildFilePath(
+          projectRoot,
+          defaultBuildConfig,
+          'preparseFile',
+        );
   const resolvedCompiledFile =
     typeof rsxBuildConfig.compiledFile === 'string'
       ? path.resolve(projectRoot, rsxBuildConfig.compiledFile)
-      : path.resolve(projectRoot, defaultBuildConfig.compiledFile);
+      : resolveRsxBuildFilePath(
+          projectRoot,
+          defaultBuildConfig,
+          'compiledFile',
+        );
   const resolvedLazyAotFiles = resolveLazyAotFilePaths(
     resolvedPreparseFile,
     resolvedCompiledFile,
@@ -4641,6 +4134,12 @@ function runBootstrapInit(flags) {
         '  // wrap app children with <RsxBootstrapGate>...</RsxBootstrapGate>',
       );
     }
+  } else if (effectiveContext === 'generic') {
+    logInfo(`Detected context: ${effectiveContext}`);
+    if (entryFile) {
+      logInfo(`Detected entry file: ${entryFile}`);
+    }
+    logInfo('Generic init does not modify source entry files.');
   } else {
     logInfo(`Detected context: ${effectiveContext}`);
     logInfo(`Using entry file: ${entryFile}`);
@@ -4694,8 +4193,104 @@ function runBootstrapInit(flags) {
   }
 
   ensureRsxConfigFile(projectRoot, effectiveContext, dryRun);
+  if (effectiveContext === 'generic') {
+    ensureGenericTypescriptConfig(projectRoot, dryRun);
+  }
 
-  logOk('RS-X bootstrap wiring completed.');
+  logOk(
+    effectiveContext === 'generic'
+      ? 'RS-X generic init completed.'
+      : 'RS-X bootstrap wiring completed.',
+  );
+}
+
+function ensureRsxInitPackageJson(projectRoot, dryRun) {
+  const packageJsonPath = path.join(projectRoot, 'package.json');
+  if (!fs.existsSync(packageJsonPath)) {
+    const packageJson = {
+      name: sanitizePackageName(path.basename(projectRoot)),
+      version: '0.1.0',
+      private: true,
+      type: 'commonjs',
+      scripts: createDefaultRsxInitScripts(),
+    };
+    if (dryRun) {
+      logInfo(`[dry-run] create ${packageJsonPath}`);
+      return true;
+    }
+    fs.writeFileSync(
+      packageJsonPath,
+      `${JSON.stringify(packageJson, null, 2)}\n`,
+      'utf8',
+    );
+    logOk(`Created ${packageJsonPath}`);
+    return true;
+  }
+
+  let packageJson;
+  try {
+    packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  } catch {
+    logWarn(
+      `Could not parse ${packageJsonPath}. Skipping RS-X package script setup.`,
+    );
+    return false;
+  }
+  if (
+    !packageJson ||
+    typeof packageJson !== 'object' ||
+    Array.isArray(packageJson)
+  ) {
+    logWarn(
+      `${packageJsonPath} must contain a JSON object before RS-X scripts can be added.`,
+    );
+    return false;
+  }
+  const scripts = {
+    ...(packageJson.scripts && typeof packageJson.scripts === 'object'
+      ? packageJson.scripts
+      : {}),
+  };
+  let changed = false;
+  for (const [scriptName, scriptValue] of Object.entries(
+    createDefaultRsxInitScripts(),
+  )) {
+    if (scripts[scriptName] !== scriptValue) {
+      scripts[scriptName] = scriptValue;
+      changed = true;
+    }
+  }
+  if (!changed) {
+    return true;
+  }
+  packageJson.scripts = scripts;
+  if (dryRun) {
+    logInfo(`[dry-run] patch ${packageJsonPath} (RS-X scripts)`);
+    return true;
+  }
+  fs.writeFileSync(
+    packageJsonPath,
+    `${JSON.stringify(packageJson, null, 2)}\n`,
+    'utf8',
+  );
+  logOk(`Patched ${packageJsonPath} (RS-X scripts)`);
+  return true;
+}
+
+function createDefaultRsxInitScripts() {
+  return {
+    'build:rsx': 'rsx build --project tsconfig.json',
+    'typecheck:rsx': 'rsx typecheck --project tsconfig.json',
+  };
+}
+
+function sanitizePackageName(value) {
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]+/gu, '-')
+      .replace(/^-+|-+$/gu, '') || 'rsx-project'
+  );
 }
 
 function ensureAngularProvidersInEntry(entryFile, dryRun) {
@@ -4890,7 +4485,10 @@ function createRsxWebpackLoaderFile(projectRoot, dryRun) {
   const loaderPath = path.join(projectRoot, 'rsx-webpack-loader.cjs');
   const loaderSource = `const path = require('node:path');
 const ts = require('typescript');
-const { createExpressionCachePreloadTransformer } = require('@rs-x/compiler');
+const {
+  createExpressionCachePreloadTransformer,
+  generateRsxModuleRuntime,
+} = require('@rs-x/compiler');
 
 function normalizeFileName(fileName) {
   return path.resolve(fileName).replace(/\\\\/gu, '/');
@@ -4917,6 +4515,9 @@ function buildTransformedSourceMap(tsconfigPath) {
     rootNames: parsed.fileNames,
     options: parsed.options,
   });
+  if (typeof createExpressionCachePreloadTransformer !== 'function') {
+    return new Map();
+  }
   const transformer = createExpressionCachePreloadTransformer(program);
   const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
   const transformedByFile = new Map();
@@ -4943,6 +4544,15 @@ function buildTransformedSourceMap(tsconfigPath) {
 
 module.exports = function rsxWebpackLoader(source) {
   const callback = this.async();
+  if (this.resourcePath.endsWith('.rsx')) {
+    const transformedRsxModule = generateRsxModuleRuntime?.({
+      fileName: normalizeFileName(this.resourcePath),
+      text: source,
+    });
+    callback(null, transformedRsxModule ?? source);
+    return;
+  }
+
   const tsconfigPath = normalizeFileName(
     path.resolve(this.rootContext || process.cwd(), 'tsconfig.json'),
   );
@@ -4972,10 +4582,12 @@ function wireRsxVitePlugin(projectRoot, dryRun) {
   const viteConfigPath = viteConfigCandidates.find((candidate) =>
     fs.existsSync(candidate),
   );
+  const pluginPath = path.join(projectRoot, 'rsx-vite-plugin.mjs');
+  const pluginTypesPath = path.join(projectRoot, 'rsx-vite-plugin.d.mts');
   const stalePluginFiles = [
     path.join(projectRoot, 'rsx-vite-plugin.ts'),
-    path.join(projectRoot, 'rsx-vite-plugin.mjs'),
     path.join(projectRoot, 'rsx-vite-plugin.d.ts'),
+    path.join(projectRoot, 'rsx-vite-plugin.mjs.d.ts'),
   ];
 
   if (!viteConfigPath) {
@@ -4985,29 +4597,89 @@ function wireRsxVitePlugin(projectRoot, dryRun) {
     return;
   }
 
+  const pluginSource = `import fs from 'node:fs';
+import path from 'node:path';
+
+import { generateRsxModuleRuntime } from '@rs-x/compiler';
+
+function normalizeFileName(fileName) {
+  return path.resolve(fileName).replace(/\\\\/gu, '/');
+}
+
+function resolveRsxCandidate(importer, source) {
+  if (!importer || !(source.startsWith('./') || source.startsWith('../'))) {
+    return null;
+  }
+
+  const importerDirectory = path.dirname(importer);
+  const candidates = source.endsWith('.rsx')
+    ? [path.resolve(importerDirectory, source)]
+    : [
+        path.resolve(importerDirectory, \`\${source}.rsx\`),
+        path.resolve(importerDirectory, source, 'index.rsx'),
+      ];
+
+  return candidates.find((candidate) => fs.existsSync(candidate)) ?? null;
+}
+
+export function rsxVitePlugin() {
+  return {
+    name: 'rs-x-rsx-module',
+    enforce: 'pre',
+    resolveId(source, importer) {
+      const resolved = resolveRsxCandidate(importer, source);
+      return resolved ? normalizeFileName(resolved) : null;
+    },
+    load(id) {
+      if (!id.endsWith('.rsx')) {
+        return null;
+      }
+
+      const source = fs.readFileSync(id, 'utf8');
+      return generateRsxModuleRuntime({
+        fileName: normalizeFileName(id),
+        text: source,
+      });
+    },
+  };
+}
+`;
+  const pluginTypesSource = `import type { Plugin } from 'vite';
+
+export declare function rsxVitePlugin(): Plugin;
+`;
+
+  if (dryRun) {
+    logInfo(`[dry-run] create ${pluginPath}`);
+    logInfo(`[dry-run] create ${pluginTypesPath}`);
+  } else {
+    fs.writeFileSync(pluginPath, pluginSource, 'utf8');
+    logOk(`Created ${pluginPath}`);
+    fs.writeFileSync(pluginTypesPath, pluginTypesSource, 'utf8');
+    logOk(`Created ${pluginTypesPath}`);
+  }
+
   const original = fs.readFileSync(viteConfigPath, 'utf8');
-  const updated = original
-    .replace(
-      /import\s+\{\s*rsxVitePlugin\s*\}\s+from\s+['"]\.\/rsx-vite-plugin(?:\.mjs)?['"];\n?/gu,
-      '',
-    )
-    .replace(/rsxVitePlugin\(\)\s*,\s*/gu, '')
-    .replace(/,\s*rsxVitePlugin\(\)/gu, '')
-    .replace(/\[\s*rsxVitePlugin\(\)\s*\]/gu, '[]');
+  let updated = original;
+  if (!updated.includes('rsxVitePlugin')) {
+    updated = `import { rsxVitePlugin } from './rsx-vite-plugin.mjs';\n${updated}`;
+  }
+  if (!/plugins\s*:\s*\[[\s\S]*?rsxVitePlugin\(\)/u.test(updated)) {
+    updated = updated.replace(
+      /plugins\s*:\s*\[/u,
+      'plugins: [rsxVitePlugin(), ',
+    );
+  }
 
   if (updated !== original) {
     if (dryRun) {
-      logInfo(
-        `[dry-run] patch ${viteConfigPath} (remove legacy RS-X Vite plugin)`,
-      );
+      logInfo(`[dry-run] patch ${viteConfigPath} (RS-X .rsx module plugin)`);
     } else {
       fs.writeFileSync(viteConfigPath, updated, 'utf8');
-      logOk(`Patched ${viteConfigPath} (removed legacy RS-X Vite plugin).`);
+      logOk(`Patched ${viteConfigPath} with RS-X .rsx module plugin.`);
     }
   } else {
-    logInfo(
-      `Vite config already uses the default plugin list: ${viteConfigPath}`,
-    );
+    logInfo(`Vite config already includes RS-X plugin: ${viteConfigPath}`);
   }
 
   for (const staleFile of stalePluginFiles) {
@@ -5033,6 +4705,21 @@ const __rsxApply = (nextConfigOrFactory) => {
   return {
     ...nextConfig,
     webpack(config, options) {
+      config.resolve = config.resolve ?? {};
+      config.resolve.extensions = Array.from(
+        new Set(['.rsx', ...(config.resolve.extensions ?? [])]),
+      );
+
+      config.module.rules.unshift({
+        test: /\\.rsx$/u,
+        exclude: /node_modules/u,
+        use: [
+          {
+            loader: __rsxWebpackLoaderPath,
+          },
+        ],
+      });
+
       config.module.rules.unshift({
         test: /\\.[jt]sx?$/u,
         exclude: /node_modules/u,
@@ -5068,6 +4755,21 @@ function __rsxApply(nextConfigOrFactory) {
   return {
     ...nextConfig,
     webpack(config, options) {
+      config.resolve = config.resolve ?? {};
+      config.resolve.extensions = Array.from(
+        new Set(['.rsx', ...(config.resolve.extensions ?? [])]),
+      );
+
+      config.module.rules.unshift({
+        test: /\\.rsx$/u,
+        exclude: /node_modules/u,
+        use: [
+          {
+            loader: __rsxWebpackLoaderPath,
+          },
+        ],
+      });
+
       config.module.rules.unshift({
         test: /\\.[jt]sx?$/u,
         exclude: /node_modules/u,
@@ -5101,6 +4803,21 @@ function __rsxApply(nextConfigOrFactory: any): any {
   return {
     ...nextConfig,
     webpack(config: any, options: any) {
+      config.resolve = config.resolve ?? {};
+      config.resolve.extensions = Array.from(
+        new Set(['.rsx', ...(config.resolve.extensions ?? [])]),
+      );
+
+      config.module.rules.unshift({
+        test: /\\.rsx$/u,
+        exclude: /node_modules/u,
+        use: [
+          {
+            loader: __rsxWebpackLoaderPath,
+          },
+        ],
+      });
+
       config.module.rules.unshift({
         test: /\\.[jt]sx?$/u,
         exclude: /node_modules/u,
@@ -5491,7 +5208,11 @@ function runSetupAngular(flags) {
   const rsxRegistrationFile =
     typeof rsxBuildConfig.registrationFile === 'string'
       ? path.resolve(projectRoot, rsxBuildConfig.registrationFile)
-      : path.resolve(projectRoot, defaultAngularBuildConfig.registrationFile);
+      : resolveRsxBuildFilePath(
+          projectRoot,
+          defaultAngularBuildConfig,
+          'registrationFile',
+        );
   const angularJsonPath = path.join(projectRoot, 'angular.json');
   if (fs.existsSync(angularJsonPath)) {
     const angularJson = JSON.parse(fs.readFileSync(angularJsonPath, 'utf8'));
@@ -5622,7 +5343,11 @@ function runBuild(flags) {
       : typeof rsxBuildConfig.preparseFile === 'string'
         ? path.resolve(projectRoot, rsxBuildConfig.preparseFile)
         : context === 'angular'
-          ? path.join(projectRoot, 'src', 'rsx-aot-preparsed.generated.ts')
+          ? resolveRsxBuildFilePath(
+              projectRoot,
+              defaultRsxBuildConfigForTemplate('angular'),
+              'preparseFile',
+            )
           : null;
   const aotCompiledFile =
     typeof flags['aot-compiled-file'] === 'string'
@@ -5630,14 +5355,27 @@ function runBuild(flags) {
       : typeof rsxBuildConfig.compiledFile === 'string'
         ? path.resolve(projectRoot, rsxBuildConfig.compiledFile)
         : context === 'angular'
-          ? path.join(projectRoot, 'src', 'rsx-aot-compiled.generated.ts')
+          ? resolveRsxBuildFilePath(
+              projectRoot,
+              defaultRsxBuildConfigForTemplate('angular'),
+              'compiledFile',
+            )
           : null;
   const aotRegistrationFile =
     typeof rsxBuildConfig.registrationFile === 'string'
       ? path.resolve(projectRoot, rsxBuildConfig.registrationFile)
       : context === 'angular'
-        ? path.join(projectRoot, 'src', 'rsx-aot-registration.generated.ts')
-        : null;
+        ? resolveRsxBuildFilePath(
+            projectRoot,
+            defaultRsxBuildConfigForTemplate('angular'),
+            'registrationFile',
+          )
+        : resolveInferredAotRegistrationFile({
+            preparseFile: aotPreparseFile,
+            compiledFile: aotCompiledFile,
+            preparseEnabled: aotPreparseEnabled,
+            compiledEnabled: aotCompiledEnabled,
+          });
   const aotLazyFiles = resolveLazyAotFilePaths(
     aotPreparseFile,
     aotCompiledFile,
@@ -5648,6 +5386,16 @@ function runBuild(flags) {
     flags['compiled-resolved-evaluator'],
     Boolean(rsxBuildConfig.compiledResolvedEvaluator),
   );
+  const debugChangeHooksEnabled =
+    !prodMode &&
+    parseBooleanFlag(
+      flags['debug-change-hooks'],
+      hasConfiguredDebugChangeHooks(projectRoot),
+    );
+  const debugChangeHooksResolver = debugChangeHooksEnabled
+    ? (fileName) =>
+        resolveDebugChangeHooksByExpressionForFile(projectRoot, fileName)
+    : undefined;
   const enableExecutionLogging = parseBooleanFlag(flags.log, false);
 
   if (!fs.existsSync(configPath)) {
@@ -5710,10 +5458,45 @@ function runBuild(flags) {
     ...parsedConfig.options,
     outDir,
   };
+  const generatedCompilerOptions = createGeneratedCompilerOptions(
+    ts,
+    compilerOptions,
+    projectRoot,
+  );
+  const compilerModule = resolveRsxCompilerModule(projectRoot, ts);
+  // Sync TypeScript TypeFlags so the compiler uses the project's TS version constants.
+  // This prevents flag mismatches when the project uses a newer TypeScript (e.g. TS 6.x)
+  // than the one bundled with @rs-x/compiler.
+  if (typeof compilerModule?.setEffectiveTypeScript === 'function') {
+    compilerModule.setEffectiveTypeScript(ts);
+  }
+  const rsxSourceFiles = findRsxSourceFiles(projectRoot);
+  runRsxModuleStructureValidation({
+    projectRoot,
+    compilerModule,
+    rsxFiles: rsxSourceFiles,
+  });
+  runRsxAngularModuleReplacementGeneration({
+    context,
+    projectRoot,
+    compilerModule,
+    dryRun,
+    debugChangeHooksResolver,
+  });
+  const rootNames = parsedConfig.fileNames;
+  const rsxCompilerOptions = { rsxFileNames: rsxSourceFiles };
+  const compilerHost =
+    typeof compilerModule?.createRsxImportAwareCompilerHost === 'function'
+      ? compilerModule.createRsxImportAwareCompilerHost({
+          options: compilerOptions,
+          rootNames,
+        })
+      : undefined;
 
   const program = ts.createProgram({
-    rootNames: parsedConfig.fileNames,
+    rootNames,
     options: compilerOptions,
+    host: compilerHost,
   });
   const ignoredGeneratedFiles = new Set(
     [aotPreparseFile, aotCompiledFile]
@@ -5762,18 +5545,20 @@ function runBuild(flags) {
     process.exit(1);
   }
 
-  const compilerModule = resolveRsxCompilerModule(projectRoot);
-  // Sync TypeScript TypeFlags so the compiler uses the project's TS version constants.
-  // This prevents flag mismatches when the project uses a newer TypeScript (e.g. TS 6.x)
-  // than the one bundled with @rs-x/compiler.
-  if (typeof compilerModule?.setEffectiveTypeScript === 'function') {
-    compilerModule.setEffectiveTypeScript(ts);
-  }
-  runRsxSemanticValidation(program, projectRoot, compilerModule);
+  runRsxSemanticValidation(
+    program,
+    projectRoot,
+    compilerModule,
+    rsxCompilerOptions,
+  );
   runRsxAotPreparseGeneration({
     program,
     projectRoot,
     compilerModule,
+    ts,
+    compilerOptions,
+    generatedCompilerOptions,
+    rsxCompilerOptions,
     enabled: aotPreparseEnabled,
     outputFile: aotPreparseFile,
     dryRun,
@@ -5782,6 +5567,10 @@ function runBuild(flags) {
     program,
     projectRoot,
     compilerModule,
+    ts,
+    compilerOptions,
+    generatedCompilerOptions,
+    rsxCompilerOptions,
     enabled: aotCompiledEnabled,
     outputFile: aotCompiledFile,
     includeResolvedEvaluator,
@@ -5791,6 +5580,10 @@ function runBuild(flags) {
     program,
     projectRoot,
     compilerModule,
+    ts,
+    compilerOptions,
+    generatedCompilerOptions,
+    rsxCompilerOptions,
     enabled: aotPreparseEnabled,
     manifestOutputFile: aotLazyFiles.manifestFilePath,
     payloadOutputFile: aotLazyFiles.payloadFilePath,
@@ -5798,7 +5591,7 @@ function runBuild(flags) {
     enableExecutionLogging,
     dryRun,
   });
-  runRsxAngularAotRegistrationInjection({
+  runRsxAotRegistrationGeneration({
     context,
     projectRoot,
     configPath,
@@ -5808,8 +5601,30 @@ function runBuild(flags) {
     compiledEnabled: aotCompiledEnabled,
     compiledFile: aotCompiledFile,
     lazyManifestFile: aotLazyFiles.manifestFilePath,
+    ts,
+    compilerOptions,
+    generatedCompilerOptions,
     enableExecutionLogging,
     dryRun,
+  });
+  const commonSourceDirectory =
+    compilerOptions.rootDir ??
+    program.getCommonSourceDirectory() ??
+    projectRoot;
+  runRsxModuleBuildGeneration({
+    projectRoot,
+    compilerModule,
+    ts,
+    compilerOptions,
+    generatedCompilerOptions,
+    rootNames,
+    rsxFiles: rsxSourceFiles,
+    commonSourceDirectory,
+    outDir,
+    registrationFile: aotRegistrationFile,
+    dryRun,
+    noEmit,
+    debugChangeHooksResolver,
   });
 
   if (dryRun) {
@@ -5817,6 +5632,9 @@ function runBuild(flags) {
     logInfo(`[dry-run] source files: ${parsedConfig.fileNames.length}`);
     logInfo(`[dry-run] outDir: ${outDir}`);
     logInfo(`[dry-run] prod mode: ${prodMode ? 'on' : 'off'}`);
+    logInfo(
+      `[dry-run] debug change hooks: ${debugChangeHooksEnabled ? 'on' : 'off'}`,
+    );
     if (noEmit) {
       logInfo('[dry-run] no-emit mode enabled');
     }
@@ -5829,12 +5647,33 @@ function runBuild(flags) {
   }
 
   try {
-    const emitResult = program.emit();
+    const emitResult = program.emit(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      debugChangeHooksEnabled
+        ? {
+            before: [
+              createRsxDebugHookCallSiteTransformer(
+                ts,
+                projectRoot,
+                debugChangeHooksResolver,
+              ),
+            ],
+          }
+        : undefined,
+    );
     if (emitResult.emitSkipped) {
       logError('Build failed: TypeScript emit skipped.');
       process.exit(1);
     }
 
+    patchEsmRelativeImportExtensions({
+      projectRoot,
+      outDir,
+      dryRun: false,
+    });
     logOk(`Build completed. Output: ${outDir}`);
     return;
   } catch (error) {
@@ -5847,10 +5686,6 @@ function runBuild(flags) {
   fs.rmSync(outDir, { recursive: true, force: true });
   fs.mkdirSync(outDir, { recursive: true });
 
-  const commonSourceDirectory =
-    compilerOptions.rootDir ??
-    program.getCommonSourceDirectory() ??
-    projectRoot;
   const sourceFiles = program
     .getSourceFiles()
     .filter((sourceFile) => !sourceFile.isDeclarationFile)
@@ -5859,9 +5694,17 @@ function runBuild(flags) {
     );
 
   for (const sourceFile of sourceFiles) {
+    const transformedSourceFile = debugChangeHooksEnabled
+      ? transformRsxDebugHookCallSites(
+          ts,
+          sourceFile,
+          projectRoot,
+          debugChangeHooksResolver,
+        )
+      : sourceFile;
     const sourceText = ts
       .createPrinter({ newLine: ts.NewLineKind.LineFeed })
-      .printFile(sourceFile);
+      .printFile(transformedSourceFile);
 
     const transpiled = ts.transpileModule(sourceText, {
       compilerOptions,
@@ -5880,6 +5723,11 @@ function runBuild(flags) {
     fs.writeFileSync(outputPath, transpiled.outputText, 'utf8');
   }
 
+  patchEsmRelativeImportExtensions({
+    projectRoot,
+    outDir,
+    dryRun: false,
+  });
   logOk(`Build completed via transpile fallback. Output: ${outDir}`);
 }
 
@@ -5890,7 +5738,90 @@ function runTypecheck(flags) {
   });
 }
 
-function resolveRsxCompilerModule(projectRoot) {
+function patchEsmRelativeImportExtensions({ projectRoot, outDir, dryRun }) {
+  if (!usesEsmPackageType(projectRoot) || !fs.existsSync(outDir)) {
+    return;
+  }
+
+  let patchedCount = 0;
+  const visit = (directory) => {
+    const entries = fs.readdirSync(directory, { withFileTypes: true });
+    for (const entry of entries) {
+      const entryPath = path.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        visit(entryPath);
+        continue;
+      }
+
+      if (!entry.isFile() || !entry.name.endsWith('.js')) {
+        continue;
+      }
+
+      const source = fs.readFileSync(entryPath, 'utf8');
+      const patched = patchEsmRelativeImportExtensionText(source);
+      if (patched === source) {
+        continue;
+      }
+
+      patchedCount += 1;
+      if (!dryRun) {
+        fs.writeFileSync(entryPath, patched, 'utf8');
+      }
+    }
+  };
+
+  visit(outDir);
+
+  if (patchedCount > 0) {
+    logOk(
+      `Patched ESM relative import extensions (${patchedCount} files): ${path.relative(projectRoot, outDir)}`,
+    );
+  }
+}
+
+function usesEsmPackageType(projectRoot) {
+  const packageJsonPath = path.join(projectRoot, 'package.json');
+  if (!fs.existsSync(packageJsonPath)) {
+    return false;
+  }
+
+  try {
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    return packageJson?.type === 'module';
+  } catch {
+    return false;
+  }
+}
+
+function patchEsmRelativeImportExtensionText(source) {
+  return source.replace(
+    /\b(from\s*['"]|import\s*\(\s*['"]|import\s+['"])(\.\.?\/[^'"]+)(['"]\s*\)?)/gu,
+    (match, prefix, specifier, suffix) => {
+      if (
+        specifier.endsWith('.js') ||
+        specifier.endsWith('.mjs') ||
+        specifier.endsWith('.cjs') ||
+        specifier.endsWith('.json') ||
+        specifier.includes('?') ||
+        specifier.includes('#')
+      ) {
+        return match;
+      }
+
+      return `${prefix}${specifier}.js${suffix}`;
+    },
+  );
+}
+
+function resolveRsxCompilerModule(projectRoot, ts) {
+  const compilerSourceModule = resolveRsxCompilerModuleFromSource(
+    projectRoot,
+    ts,
+  );
+  if (compilerSourceModule) {
+    return compilerSourceModule;
+  }
+
   const siblingCompilerPath = path.resolve(
     __dirname,
     '..',
@@ -5908,6 +5839,11 @@ function resolveRsxCompilerModule(projectRoot) {
     return compilerModule;
   }
 
+  const ownCompilerModule = resolveOwnCliModule('@rs-x/compiler');
+  if (ownCompilerModule) {
+    return ownCompilerModule;
+  }
+
   const repoRoot = findRepoRoot(projectRoot);
   const localCompilerPath = repoRoot
     ? path.join(repoRoot, 'rs-x-compiler', 'dist', 'index.cjs')
@@ -5919,7 +5855,134 @@ function resolveRsxCompilerModule(projectRoot) {
   return null;
 }
 
-function runRsxSemanticValidation(program, projectRoot, compilerModule) {
+function resolveOwnCliModule(packageName) {
+  try {
+    return require(packageName);
+  } catch {
+    return null;
+  }
+}
+
+function resolveRsxCompilerModuleFromSource(projectRoot, ts) {
+  if (!ts || typeof ts.transpileModule !== 'function') {
+    return null;
+  }
+
+  const repoRoot = findRepoRoot(projectRoot);
+  const candidateRoots = new Set([
+    path.resolve(__dirname, '..', '..', 'rs-x-compiler'),
+    repoRoot ? path.join(repoRoot, 'rs-x-compiler') : null,
+  ]);
+
+  for (const candidateRoot of candidateRoots) {
+    if (!candidateRoot) {
+      continue;
+    }
+    const sourceEntryPath = path.join(candidateRoot, 'lib', 'index.ts');
+    if (!fs.existsSync(sourceEntryPath)) {
+      continue;
+    }
+
+    const compilerModule = requireTypeScriptModuleFromSource(
+      sourceEntryPath,
+      ts,
+    );
+    if (
+      compilerModule &&
+      typeof compilerModule.validateExpressionSites === 'function'
+    ) {
+      return compilerModule;
+    }
+  }
+
+  return null;
+}
+
+function requireTypeScriptModuleFromSource(entryPath, ts) {
+  const previousTsLoader = require.extensions['.ts'];
+  const previousTsxLoader = require.extensions['.tsx'];
+  const transpileLoader = (module, filename) => {
+    const source = fs.readFileSync(filename, 'utf8');
+    const transpiled = ts.transpileModule(source, {
+      compilerOptions: {
+        module: ts.ModuleKind.CommonJS,
+        target: ts.ScriptTarget.ES2022,
+        moduleResolution: ts.ModuleResolutionKind.NodeJs,
+        esModuleInterop: true,
+      },
+      fileName: filename,
+      reportDiagnostics: false,
+    });
+    module._compile(transpiled.outputText, filename);
+  };
+
+  require.extensions['.ts'] = transpileLoader;
+  require.extensions['.tsx'] = transpileLoader;
+  try {
+    return require(entryPath);
+  } catch {
+    return null;
+  } finally {
+    if (previousTsLoader) {
+      require.extensions['.ts'] = previousTsLoader;
+    } else {
+      delete require.extensions['.ts'];
+    }
+    if (previousTsxLoader) {
+      require.extensions['.tsx'] = previousTsxLoader;
+    } else {
+      delete require.extensions['.tsx'];
+    }
+  }
+}
+
+function runRsxModuleStructureValidation({
+  projectRoot,
+  compilerModule,
+  rsxFiles,
+}) {
+  if (
+    !compilerModule ||
+    typeof compilerModule.getRsxModuleStructureDiagnostics !== 'function'
+  ) {
+    return;
+  }
+
+  const diagnostics = [];
+  for (const rsxFile of rsxFiles) {
+    const text = fs.readFileSync(rsxFile, 'utf8');
+    for (const diagnostic of compilerModule.getRsxModuleStructureDiagnostics(
+      text,
+    )) {
+      diagnostics.push({ fileName: rsxFile, diagnostic });
+    }
+  }
+
+  if (diagnostics.length === 0) {
+    return;
+  }
+
+  const formatted = diagnostics
+    .map(({ fileName, diagnostic }) => {
+      const relativePath = path.relative(projectRoot, fileName) || fileName;
+      return `${relativePath}:${diagnostic.line + 1}:${diagnostic.character + 1} - error RSX1002: ${diagnostic.message}`;
+    })
+    .join('\n');
+
+  console.error('');
+  logError(
+    `RS-X module structure validation failed with ${diagnostics.length} error(s).`,
+  );
+  console.error(formatted);
+  process.exit(1);
+}
+
+function runRsxSemanticValidation(
+  program,
+  projectRoot,
+  compilerModule,
+  rsxCompilerOptions = {},
+) {
   if (
     !compilerModule ||
     typeof compilerModule.validateExpressionSites !== 'function'
@@ -5929,7 +5992,10 @@ function runRsxSemanticValidation(program, projectRoot, compilerModule) {
     process.exit(1);
   }
 
-  const validatedSites = compilerModule.validateExpressionSites(program);
+  const validatedSites = compilerModule.validateExpressionSites(
+    program,
+    rsxCompilerOptions,
+  );
   const rsxDiagnostics = validatedSites.flatMap((site) =>
     site.diagnostics.map((diagnostic) => ({
       diagnostic,
@@ -5947,7 +6013,10 @@ function runRsxSemanticValidation(program, projectRoot, compilerModule) {
       const absolutePath = sourceFile.fileName;
       const relativePath =
         path.relative(projectRoot, absolutePath) || absolutePath;
-      const expressionStart = site.expressionLiteral.getStart(sourceFile) + 1;
+      const expressionStart =
+        typeof site.expressionStart === 'number'
+          ? site.expressionStart
+          : site.expressionLiteral.getStart(sourceFile) + 1;
       const location =
         sourceFile.getLineAndCharacterOfPosition(expressionStart);
       const category = diagnostic.category === 'syntax' ? 'RSX1001' : 'RSX1000';
@@ -5967,6 +6036,10 @@ function runRsxAotPreparseGeneration({
   program,
   projectRoot,
   compilerModule,
+  ts,
+  compilerOptions,
+  generatedCompilerOptions,
+  rsxCompilerOptions = {},
   enabled,
   outputFile,
   dryRun,
@@ -5985,15 +6058,22 @@ function runRsxAotPreparseGeneration({
     return;
   }
 
-  const generated =
-    compilerModule.generateAotParsedExpressionCacheModule(program);
+  const generated = compilerModule.generateAotParsedExpressionCacheModule(
+    program,
+    rsxCompilerOptions,
+  );
   const header = [
     '// @ts-nocheck',
     '/* eslint-disable */',
     '/* This file is auto-generated by rsx build. Do not edit manually. */',
     '',
   ].join('\n');
-  const content = `${header}${generated.code}`;
+  const content = prepareGeneratedModuleContent({
+    content: `${header}${generated.code}`,
+    outputFile,
+    ts,
+    compilerOptions: generatedCompilerOptions,
+  });
 
   if (dryRun) {
     logInfo(
@@ -6013,6 +6093,10 @@ function runRsxAotCompiledGeneration({
   program,
   projectRoot,
   compilerModule,
+  ts,
+  compilerOptions,
+  generatedCompilerOptions,
+  rsxCompilerOptions = {},
   enabled,
   outputFile,
   includeResolvedEvaluator,
@@ -6035,6 +6119,7 @@ function runRsxAotCompiledGeneration({
   const generated = compilerModule.generateAotCompiledExpressionsModule(
     program,
     {
+      ...rsxCompilerOptions,
       includeResolvedEvaluator,
     },
   );
@@ -6044,7 +6129,12 @@ function runRsxAotCompiledGeneration({
     '/* This file is auto-generated by rsx build. Do not edit manually. */',
     '',
   ].join('\n');
-  const content = `${header}${generated.code}`;
+  const content = prepareGeneratedModuleContent({
+    content: `${header}${generated.code}`,
+    outputFile,
+    ts,
+    compilerOptions: generatedCompilerOptions,
+  });
 
   if (dryRun) {
     logInfo(
@@ -6060,10 +6150,72 @@ function runRsxAotCompiledGeneration({
   );
 }
 
+function prepareGeneratedModuleContent({
+  content,
+  outputFile,
+  ts,
+  compilerOptions,
+}) {
+  if (!/\.[cm]?js$/u.test(outputFile)) {
+    return content;
+  }
+
+  return ts.transpileModule(content, {
+    compilerOptions: withoutGeneratedSourceMaps(compilerOptions),
+    fileName: outputFile,
+    reportDiagnostics: false,
+  }).outputText;
+}
+
+function createGeneratedCompilerOptions(ts, compilerOptions, projectRoot) {
+  if (!isPackageTypeModule(projectRoot)) {
+    return compilerOptions;
+  }
+
+  const moduleKind = compilerOptions.module;
+  const nodeModuleKinds = new Set(
+    [
+      ts.ModuleKind?.Node16,
+      ts.ModuleKind?.NodeNext,
+      ts.ModuleKind?.CommonJS,
+    ].filter((value) => typeof value === 'number'),
+  );
+  if (!nodeModuleKinds.has(moduleKind)) {
+    return compilerOptions;
+  }
+
+  return {
+    ...compilerOptions,
+    module:
+      ts.ModuleKind.ES2022 ?? ts.ModuleKind.ES2020 ?? ts.ModuleKind.ESNext,
+    moduleResolution:
+      ts.ModuleResolutionKind?.Bundler ?? compilerOptions.moduleResolution,
+  };
+}
+
+function isPackageTypeModule(projectRoot) {
+  const packageJsonPath = path.join(projectRoot, 'package.json');
+  const packageJson = readJsonFileIfPresent(packageJsonPath);
+  return packageJson?.type === 'module';
+}
+
+function withoutGeneratedSourceMaps(compilerOptions) {
+  return {
+    ...compilerOptions,
+    sourceMap: false,
+    inlineSourceMap: false,
+    inlineSources: false,
+  };
+}
+
 function runRsxAotLazyGeneration({
   program,
   projectRoot,
   compilerModule,
+  ts,
+  compilerOptions,
+  generatedCompilerOptions,
+  rsxCompilerOptions = {},
   enabled,
   manifestOutputFile,
   payloadOutputFile,
@@ -6088,6 +6240,7 @@ function runRsxAotLazyGeneration({
   const payloadGenerated = compilerModule.generateAotLazyExpressionsModule(
     program,
     {
+      ...rsxCompilerOptions,
       includeResolvedEvaluator,
     },
   );
@@ -6228,8 +6381,18 @@ function runRsxAotLazyGeneration({
   }
   manifestLines.push('}', '');
 
-  const manifestContent = `${header}${manifestLines.join('\n')}`;
-  const payloadContent = `${header}${payloadGenerated.code}`;
+  const manifestContent = prepareGeneratedModuleContent({
+    content: `${header}${manifestLines.join('\n')}`,
+    outputFile: manifestOutputFile,
+    ts,
+    compilerOptions: generatedCompilerOptions,
+  });
+  const payloadContent = prepareGeneratedModuleContent({
+    content: `${header}${payloadGenerated.code}`,
+    outputFile: payloadOutputFile,
+    ts,
+    compilerOptions: generatedCompilerOptions,
+  });
 
   if (dryRun) {
     logInfo(
@@ -6263,7 +6426,12 @@ function runRsxAotLazyGeneration({
       payloadOutputFile,
       groupName,
     );
-    const groupContent = `${header}${groupModule.code}`;
+    const groupContent = prepareGeneratedModuleContent({
+      content: `${header}${groupModule.code}`,
+      outputFile: groupFilePath,
+      ts,
+      compilerOptions: generatedCompilerOptions,
+    });
     fs.writeFileSync(groupFilePath, groupContent, 'utf8');
     logOk(
       `Generated RS-X lazy AOT group payload ${groupName} (${groupModule.expressions.length} preparsed, ${groupModule.compiledExpressions.length} compiled): ${path.relative(projectRoot, groupFilePath)}`,
@@ -6271,7 +6439,7 @@ function runRsxAotLazyGeneration({
   }
 }
 
-function runRsxAngularAotRegistrationInjection({
+function runRsxAotRegistrationGeneration({
   context,
   projectRoot,
   configPath,
@@ -6281,13 +6449,12 @@ function runRsxAngularAotRegistrationInjection({
   compiledEnabled,
   compiledFile,
   lazyManifestFile,
+  ts,
+  compilerOptions,
+  generatedCompilerOptions,
   enableExecutionLogging,
   dryRun,
 }) {
-  if (context !== 'angular') {
-    return;
-  }
-
   if (!registrationFile) {
     return;
   }
@@ -6306,20 +6473,26 @@ function runRsxAngularAotRegistrationInjection({
   }
 
   if (preparseEnabled && preparseFile) {
-    const preparseImport = toImportSpecifier(registrationFile, preparseFile);
+    const preparseImport = toRuntimeImportSpecifier(
+      registrationFile,
+      preparseFile,
+    );
     registrationLines.push(
       `import { registerRsxAotParsedExpressionCache } from '${preparseImport}';`,
     );
   }
 
   if (compiledEnabled && compiledFile) {
-    const compiledImport = toImportSpecifier(registrationFile, compiledFile);
+    const compiledImport = toRuntimeImportSpecifier(
+      registrationFile,
+      compiledFile,
+    );
     registrationLines.push(
       `import { registerRsxAotCompiledExpressions } from '${compiledImport}';`,
     );
   }
   if (preparseEnabled && lazyManifestFile) {
-    const lazyManifestImport = toImportSpecifier(
+    const lazyManifestImport = toRuntimeImportSpecifier(
       registrationFile,
       lazyManifestFile,
     );
@@ -6403,25 +6576,511 @@ function runRsxAngularAotRegistrationInjection({
 
   registrationLines.push('');
 
-  const registrationContent = `${registrationLines.join('\n')}`;
+  const registrationContent = prepareGeneratedModuleContent({
+    content: `${registrationLines.join('\n')}`,
+    outputFile: registrationFile,
+    ts,
+    compilerOptions: generatedCompilerOptions,
+  });
+  const label =
+    context === 'angular'
+      ? 'RS-X Angular AOT registration'
+      : 'RS-X AOT registration';
   if (dryRun) {
-    logInfo(
-      `[dry-run] generate RS-X Angular AOT registration: ${registrationFile}`,
-    );
+    logInfo(`[dry-run] generate ${label}: ${registrationFile}`);
   } else {
     fs.mkdirSync(path.dirname(registrationFile), { recursive: true });
     fs.writeFileSync(registrationFile, registrationContent, 'utf8');
     logOk(
-      `Generated RS-X Angular AOT registration: ${path.relative(projectRoot, registrationFile)}`,
+      `Generated ${label}: ${path.relative(projectRoot, registrationFile)}`,
     );
   }
 
-  ensureAngularBuildUsesRegistrationWrapper({
+  if (context === 'angular') {
+    ensureAngularBuildUsesRegistrationWrapper({
+      projectRoot,
+      configPath,
+      registrationFile,
+      dryRun,
+    });
+  }
+}
+
+function runRsxAngularModuleReplacementGeneration({
+  context,
+  projectRoot,
+  compilerModule,
+  dryRun,
+  debugChangeHooksResolver,
+}) {
+  if (context !== 'angular') {
+    return;
+  }
+
+  if (
+    !compilerModule ||
+    typeof compilerModule.generateRsxModuleRuntime !== 'function'
+  ) {
+    logWarn(
+      'Skipping RS-X .rsx module generation: compiler does not expose generateRsxModuleRuntime.',
+    );
+    return;
+  }
+
+  const sourceRoot = path.join(projectRoot, 'src');
+  if (!fs.existsSync(sourceRoot)) {
+    return;
+  }
+
+  const rsxFiles = findRsxSourceFiles(sourceRoot);
+  let generatedCount = 0;
+
+  for (const rsxFile of rsxFiles) {
+    const source = fs.readFileSync(rsxFile, 'utf8');
+    const debugChangeHooksByExpression = debugChangeHooksResolver?.(rsxFile);
+    const generatedModule = applyDebugChangeHookFallbackToRsxRuntime(
+      compilerModule.generateRsxModuleRuntime({
+        fileName: rsxFile,
+        text: source,
+        typed: true,
+        debugChangeHooksByExpression,
+      }),
+      debugChangeHooksByExpression,
+    );
+    if (typeof generatedModule !== 'string') {
+      continue;
+    }
+
+    const outputFile = rsxFile.replace(/\.rsx$/u, '.ts');
+    if (fs.existsSync(outputFile)) {
+      const existingContent = fs.readFileSync(outputFile, 'utf8');
+      if (
+        !existingContent.includes('This file is auto-generated by rsx build')
+      ) {
+        logWarn(
+          `Skipping RS-X .rsx import module because a TypeScript file already exists: ${toProjectRelativePath(projectRoot, outputFile)}`,
+        );
+        continue;
+      }
+    }
+    const outputContent = [
+      '// @ts-nocheck',
+      '/* eslint-disable */',
+      '/* This file is auto-generated by rsx build. Do not edit manually. */',
+      '',
+      generatedModule,
+    ].join('\n');
+
+    if (dryRun) {
+      logInfo(
+        `[dry-run] generate RS-X .rsx import module: ${toProjectRelativePath(projectRoot, outputFile)}`,
+      );
+    } else {
+      fs.mkdirSync(path.dirname(outputFile), { recursive: true });
+      fs.writeFileSync(outputFile, outputContent, 'utf8');
+    }
+    generatedCount += 1;
+  }
+
+  patchAngularRsxModuleFileReplacements({
     projectRoot,
-    configPath,
-    registrationFile,
+    replacements: [],
     dryRun,
   });
+
+  if (!dryRun && generatedCount > 0) {
+    logOk(`Generated RS-X .rsx import modules (${generatedCount} files).`);
+  }
+}
+
+function applyDebugChangeHookFallbackToRsxRuntime(
+  runtimeModule,
+  debugChangeHooksByExpression,
+) {
+  if (
+    typeof runtimeModule !== 'string' ||
+    !debugChangeHooksByExpression ||
+    runtimeModule.includes('__rsxDebugChangeHook_')
+  ) {
+    return runtimeModule;
+  }
+
+  let nextModule = runtimeModule;
+  const importLines = [];
+  const seenImports = new Set();
+
+  for (const [expressionName, expressionConfig] of Object.entries(
+    debugChangeHooksByExpression,
+  )) {
+    const groupHooks = normalizeDebugHookConfigList(expressionConfig.group).map(
+      (hookConfig, index) => ({
+        ...hookConfig,
+        localName:
+          index === 0
+            ? `__rsxDebugChangeHook_${sanitizeIdentifier(expressionName)}`
+            : `__rsxDebugChangeHook_${sanitizeIdentifier(expressionName)}_group_${index}`,
+      }),
+    );
+    const instanceEntries = Object.entries(
+      expressionConfig.instances ?? {},
+    ).map(([instanceId, hookConfig], instanceIndex) => ({
+      instanceId,
+      hooks: normalizeDebugHookConfigList(hookConfig).map(
+        (instanceHookConfig, hookIndex) => ({
+          ...instanceHookConfig,
+          localName:
+            hookIndex === 0
+              ? `__rsxDebugChangeHook_${sanitizeIdentifier(expressionName)}_${instanceIndex}`
+              : `__rsxDebugChangeHook_${sanitizeIdentifier(expressionName)}_${instanceIndex}_${hookIndex}`,
+        }),
+      ),
+    }));
+    if (
+      groupHooks.length === 0 &&
+      instanceEntries.every((entry) => entry.hooks.length === 0)
+    ) {
+      continue;
+    }
+
+    for (const hookConfig of [
+      ...groupHooks,
+      ...instanceEntries.flatMap((entry) => entry.hooks),
+    ]) {
+      const key = `${hookConfig.moduleSpecifier}\n${hookConfig.exportName ?? ''}\n${hookConfig.localName}`;
+      if (seenImports.has(key)) {
+        continue;
+      }
+      seenImports.add(key);
+      const moduleSpecifier = JSON.stringify(hookConfig.moduleSpecifier);
+      if (!hookConfig.exportName || hookConfig.exportName === 'default') {
+        importLines.push(
+          `import ${hookConfig.localName} from ${moduleSpecifier};`,
+        );
+      } else {
+        importLines.push(
+          `import { ${hookConfig.exportName} as ${hookConfig.localName} } from ${moduleSpecifier};`,
+        );
+      }
+    }
+
+    const expressionPattern = new RegExp(
+      `export const ${escapeRegExp(expressionName)} = \\(model, leafIndexWatchRule\\) =>\\s*([\\s\\S]*?);\\n`,
+      'u',
+    );
+    const instanceObject = instanceEntries
+      .filter((entry) => entry.hooks.length > 0)
+      .map(
+        (entry) =>
+          `${JSON.stringify(entry.instanceId)}: [${entry.hooks
+            .map((hook) => hook.localName)
+            .join(', ')}]`,
+      )
+      .join(', ');
+    const groupArray = `[${groupHooks.map((hook) => hook.localName).join(', ')}]`;
+    nextModule = nextModule.replace(
+      expressionPattern,
+      [
+        `export const ${expressionName} = (model, leafIndexWatchRule, __rsxDebugInstanceId) => {`,
+        '  const expression = $1;',
+        `  const __rsxDebugHooksByInstance = { ${instanceObject} };`,
+        '  const __rsxDebugInstanceHooks = __rsxDebugInstanceId && Object.prototype.hasOwnProperty.call(__rsxDebugHooksByInstance, __rsxDebugInstanceId) ? __rsxDebugHooksByInstance[__rsxDebugInstanceId] : undefined;',
+        `  const __rsxDebugResolvedHooks = __rsxDebugInstanceHooks === undefined ? ${groupArray} : __rsxDebugInstanceHooks;`,
+        '  if (__rsxDebugResolvedHooks.length > 0) {',
+        '    expression.changeHook = (changedExpression, oldValue) => {',
+        '      for (const __rsxDebugResolvedHook of __rsxDebugResolvedHooks) {',
+        '        __rsxDebugResolvedHook(changedExpression, oldValue);',
+        '      }',
+        '    };',
+        '  }',
+        '  return expression;',
+        '};',
+        '',
+      ].join('\n'),
+    );
+  }
+
+  if (importLines.length === 0) {
+    return nextModule;
+  }
+
+  const importInsertIndex = nextModule.lastIndexOf(
+    "import { rsx } from '@rs-x/expression-parser';",
+  );
+  if (importInsertIndex === -1) {
+    return nextModule;
+  }
+  const lineEnd = nextModule.indexOf('\n', importInsertIndex);
+  if (lineEnd === -1) {
+    return nextModule;
+  }
+  return `${nextModule.slice(0, lineEnd + 1)}${importLines.join('\n')}\n${nextModule.slice(lineEnd + 1)}`;
+}
+
+function normalizeDebugHookConfigList(value) {
+  if (!value) {
+    return [];
+  }
+  return (Array.isArray(value) ? value : [value]).filter(
+    (hookConfig) =>
+      hookConfig &&
+      hookConfig.enabled !== false &&
+      typeof hookConfig.moduleSpecifier === 'string' &&
+      hookConfig.moduleSpecifier.trim(),
+  );
+}
+
+function sanitizeIdentifier(value) {
+  const sanitized = String(value).replace(/[^A-Za-z0-9_$]/gu, '_');
+  return /^[A-Za-z_$]/u.test(sanitized) ? sanitized : `_${sanitized}`;
+}
+
+function runRsxModuleBuildGeneration({
+  projectRoot,
+  compilerModule,
+  ts,
+  compilerOptions,
+  generatedCompilerOptions,
+  rootNames,
+  rsxFiles,
+  commonSourceDirectory,
+  outDir,
+  registrationFile,
+  dryRun,
+  noEmit,
+  debugChangeHooksResolver,
+}) {
+  if (noEmit || rsxFiles.length === 0) {
+    return;
+  }
+
+  if (
+    !compilerModule ||
+    typeof compilerModule.generateRsxModuleRuntime !== 'function' ||
+    typeof compilerModule.generateRsxModuleDeclaration !== 'function'
+  ) {
+    logWarn(
+      'Skipping RS-X .rsx module build output: compiler does not expose module generators.',
+    );
+    return;
+  }
+
+  let generatedCount = 0;
+  for (const rsxFile of rsxFiles) {
+    const source = fs.readFileSync(rsxFile, 'utf8');
+    const debugChangeHooksByExpression = debugChangeHooksResolver?.(rsxFile);
+    const runtimeModule = applyDebugChangeHookFallbackToRsxRuntime(
+      compilerModule.generateRsxModuleRuntime({
+        fileName: rsxFile,
+        text: source,
+        typed: false,
+        debugChangeHooksByExpression,
+      }),
+      debugChangeHooksByExpression,
+    );
+    const declarationModule = compilerModule.generateRsxModuleDeclaration({
+      fileName: rsxFile,
+      text: source,
+      compilerOptions,
+      rootNames,
+    });
+
+    if (
+      typeof runtimeModule !== 'string' ||
+      typeof declarationModule !== 'string'
+    ) {
+      continue;
+    }
+
+    const outputBase = resolveRsxModuleOutputBase({
+      projectRoot,
+      commonSourceDirectory,
+      outDir,
+      rsxFile,
+    });
+    const jsOutputFile = `${outputBase}.js`;
+    const declarationOutputFile = `${outputBase}.d.ts`;
+    const runtimeSource = registrationFile
+      ? [
+          `import '${toRuntimeImportSpecifier(jsOutputFile, registrationFile)}';`,
+          '',
+          runtimeModule,
+        ].join('\n')
+      : runtimeModule;
+    const transpiled = ts.transpileModule(runtimeSource, {
+      compilerOptions: withoutGeneratedSourceMaps(generatedCompilerOptions),
+      fileName: `${rsxFile}.ts`,
+      reportDiagnostics: false,
+    });
+    const jsContent = [
+      '/* eslint-disable */',
+      '/* This file is auto-generated by rsx build. Do not edit manually. */',
+      '',
+      transpiled.outputText,
+    ].join('\n');
+    const declarationContent = [
+      '/* eslint-disable */',
+      '/* This file is auto-generated by rsx build. Do not edit manually. */',
+      '',
+      declarationModule,
+    ].join('\n');
+
+    if (dryRun) {
+      logInfo(
+        `[dry-run] generate RS-X .rsx package module: ${toProjectRelativePath(projectRoot, jsOutputFile)}`,
+      );
+      logInfo(
+        `[dry-run] generate RS-X .rsx declaration: ${toProjectRelativePath(projectRoot, declarationOutputFile)}`,
+      );
+    } else {
+      fs.mkdirSync(path.dirname(jsOutputFile), { recursive: true });
+      fs.writeFileSync(jsOutputFile, jsContent, 'utf8');
+      fs.writeFileSync(declarationOutputFile, declarationContent, 'utf8');
+    }
+    generatedCount += 1;
+  }
+
+  if (!dryRun && generatedCount > 0) {
+    logOk(
+      `Generated RS-X .rsx package modules (${generatedCount} files): ${path.relative(projectRoot, outDir)}`,
+    );
+  }
+}
+
+function resolveRsxModuleOutputBase({
+  projectRoot,
+  commonSourceDirectory,
+  outDir,
+  rsxFile,
+}) {
+  const sourceBase = path.resolve(commonSourceDirectory);
+  let relativePath = path.relative(sourceBase, rsxFile);
+  if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+    relativePath = path.relative(projectRoot, rsxFile);
+  }
+
+  return path.join(outDir, relativePath).replace(/\.rsx$/u, '');
+}
+
+function findRsxSourceFiles(root) {
+  const results = [];
+  const entries = fs.readdirSync(root, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const entryPath = path.join(root, entry.name);
+    if (entry.isDirectory()) {
+      if (
+        entry.name === 'node_modules' ||
+        entry.name === 'dist' ||
+        entry.name === 'rsx-generated' ||
+        entryPath.includes(`${path.sep}rsx-generated${path.sep}`)
+      ) {
+        continue;
+      }
+      results.push(...findRsxSourceFiles(entryPath));
+      continue;
+    }
+
+    if (entry.isFile() && entry.name.endsWith('.rsx')) {
+      results.push(entryPath);
+    }
+  }
+
+  return results.sort((left, right) => left.localeCompare(right));
+}
+
+function patchAngularRsxModuleFileReplacements({
+  projectRoot,
+  replacements,
+  dryRun,
+}) {
+  const angularJsonPath = path.join(projectRoot, 'angular.json');
+  if (!fs.existsSync(angularJsonPath)) {
+    return;
+  }
+
+  let angularJson;
+  try {
+    angularJson = JSON.parse(fs.readFileSync(angularJsonPath, 'utf8'));
+  } catch {
+    logWarn(
+      'Failed to parse angular.json. Skipping RS-X .rsx module replacement wiring.',
+    );
+    return;
+  }
+
+  let changed = false;
+  const projects = angularJson.projects ?? {};
+  for (const projectConfig of Object.values(projects)) {
+    const buildOptions = projectConfig?.architect?.build?.options;
+    if (!buildOptions || typeof buildOptions !== 'object') {
+      continue;
+    }
+
+    if (buildOptions.loader?.['.rsx']) {
+      delete buildOptions.loader['.rsx'];
+      if (Object.keys(buildOptions.loader).length === 0) {
+        delete buildOptions.loader;
+      }
+      changed = true;
+    }
+
+    const existing = Array.isArray(buildOptions.fileReplacements)
+      ? buildOptions.fileReplacements
+      : [];
+    const hadFileReplacements = Array.isArray(buildOptions.fileReplacements);
+    const retained = existing.filter((replacement) => {
+      const replacementReplace =
+        typeof replacement?.replace === 'string'
+          ? normalizeProjectPath(replacement.replace)
+          : '';
+      const replacementWith =
+        typeof replacement?.with === 'string'
+          ? normalizeProjectPath(replacement.with)
+          : '';
+      return !(
+        replacementReplace.endsWith('.rsx') &&
+        (replacementWith.endsWith('.rsx.ts') ||
+          replacementWith.includes('/rsx-generated/rsx-modules/'))
+      );
+    });
+    const nextFileReplacements = [...retained, ...replacements];
+
+    if (
+      JSON.stringify(existing) !== JSON.stringify(nextFileReplacements) ||
+      (hadFileReplacements && buildOptions.fileReplacements !== existing)
+    ) {
+      if (nextFileReplacements.length > 0) {
+        buildOptions.fileReplacements = nextFileReplacements;
+      } else {
+        delete buildOptions.fileReplacements;
+      }
+      changed = true;
+    }
+  }
+
+  if (!changed) {
+    return;
+  }
+
+  if (dryRun) {
+    logInfo(`[dry-run] patch ${angularJsonPath} (RS-X .rsx import modules)`);
+    return;
+  }
+
+  fs.writeFileSync(
+    angularJsonPath,
+    `${JSON.stringify(angularJson, null, 2)}\n`,
+    'utf8',
+  );
+  logOk('Patched angular.json with RS-X .rsx import module replacements.');
+}
+
+function toProjectRelativePath(projectRoot, filePath) {
+  return normalizeProjectPath(path.relative(projectRoot, filePath));
+}
+
+function normalizeProjectPath(filePath) {
+  return filePath.replace(/\\/gu, '/');
 }
 
 function toImportSpecifier(fromFile, toFile) {
@@ -6432,6 +7091,25 @@ function toImportSpecifier(fromFile, toFile) {
     return withoutExtension;
   }
   return `./${withoutExtension}`;
+}
+
+function toRuntimeImportSpecifier(fromFile, toFile) {
+  const fromDir = path.dirname(fromFile);
+  const relativePath = path.relative(fromDir, toFile).replace(/\\/g, '/');
+  const normalized =
+    relativePath.startsWith('./') || relativePath.startsWith('../')
+      ? relativePath
+      : `./${relativePath}`;
+
+  if (/\.[cm]?js$/u.test(normalized)) {
+    return normalized;
+  }
+
+  return normalized.replace(/\.[cm]?tsx?$/u, '');
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
 }
 
 // Splits an import specifier into [dirPart, filePart] for use in dynamic import
@@ -6580,6 +7258,13 @@ function resolveAngularOriginalBrowserEntryPath(
   wrapperFilePath,
 ) {
   if (path.resolve(browserEntryPath) !== path.resolve(wrapperFilePath)) {
+    const wrappedOriginal = readAngularRegistrationWrapperOriginalEntry(
+      projectRoot,
+      browserEntryPath,
+    );
+    if (wrappedOriginal) {
+      return wrappedOriginal;
+    }
     return browserEntryPath;
   }
 
@@ -6587,12 +7272,25 @@ function resolveAngularOriginalBrowserEntryPath(
     return resolveEntryFile(projectRoot, 'angular', undefined);
   }
 
+  return (
+    readAngularRegistrationWrapperOriginalEntry(projectRoot, wrapperFilePath) ??
+    resolveEntryFile(projectRoot, 'angular', undefined)
+  );
+}
+
+function readAngularRegistrationWrapperOriginalEntry(
+  projectRoot,
+  wrapperFilePath,
+) {
+  if (!fs.existsSync(wrapperFilePath)) {
+    return null;
+  }
   const wrapperContent = fs.readFileSync(wrapperFilePath, 'utf8');
   const match = wrapperContent.match(
     /RS-X original browser entry:\s*([^\n*]+?)\s*\*\//u,
   );
   if (!match?.[1]) {
-    return resolveEntryFile(projectRoot, 'angular', undefined);
+    return null;
   }
 
   return path.resolve(projectRoot, match[1].trim());
@@ -6659,6 +7357,35 @@ function validateRsxConfigShape(config, filePath) {
     process.exit(1);
   }
 
+  if (config.projects !== undefined) {
+    if (!Array.isArray(config.projects)) {
+      logError(
+        `Invalid RS-X config in ${filePath}: "projects" must be an array.`,
+      );
+      process.exit(1);
+    }
+    for (const [index, project] of config.projects.entries()) {
+      if (typeof project !== 'object' || !project || Array.isArray(project)) {
+        logError(
+          `Invalid RS-X config in ${filePath}: "projects.${index}" must be an object.`,
+        );
+        process.exit(1);
+      }
+      if (typeof project.name !== 'string' || !project.name.trim()) {
+        logError(
+          `Invalid RS-X config in ${filePath}: "projects.${index}.name" must be a non-empty string.`,
+        );
+        process.exit(1);
+      }
+      if (typeof project.root !== 'string' || !project.root.trim()) {
+        logError(
+          `Invalid RS-X config in ${filePath}: "projects.${index}.root" must be a non-empty string.`,
+        );
+        process.exit(1);
+      }
+    }
+  }
+
   const build = config.build;
   if (build !== undefined) {
     if (typeof build !== 'object' || !build || Array.isArray(build)) {
@@ -6669,6 +7396,15 @@ function validateRsxConfigShape(config, filePath) {
     }
 
     const stringKeys = ['preparseFile', 'compiledFile', 'registrationFile'];
+    if (
+      build.buildFolder !== undefined &&
+      typeof build.buildFolder !== 'string'
+    ) {
+      logError(
+        `Invalid RS-X config in ${filePath}: "build.buildFolder" must be a string.`,
+      );
+      process.exit(1);
+    }
     const extraStringKeys = ['tsconfig', 'outDir'];
     for (const key of extraStringKeys) {
       if (build[key] !== undefined && typeof build[key] !== 'string') {
@@ -6770,11 +7506,35 @@ function validateRsxConfigShape(config, filePath) {
       }
 
       if (
+        add.baseDirectory !== undefined &&
+        typeof add.baseDirectory !== 'string'
+      ) {
+        logError(
+          `Invalid RS-X config in ${filePath}: "cli.add.baseDirectory" must be a string.`,
+        );
+        process.exit(1);
+      }
+      if (
         add.defaultDirectory !== undefined &&
         typeof add.defaultDirectory !== 'string'
       ) {
         logError(
           `Invalid RS-X config in ${filePath}: "cli.add.defaultDirectory" must be a string.`,
+        );
+        process.exit(1);
+      }
+      if (
+        add.modelDirectory !== undefined &&
+        typeof add.modelDirectory !== 'string'
+      ) {
+        logError(
+          `Invalid RS-X config in ${filePath}: "cli.add.modelDirectory" must be a string.`,
+        );
+        process.exit(1);
+      }
+      if (add.sourceRoot !== undefined && typeof add.sourceRoot !== 'string') {
+        logError(
+          `Invalid RS-X config in ${filePath}: "cli.add.sourceRoot" must be a string.`,
         );
         process.exit(1);
       }
@@ -6833,14 +7593,14 @@ function resolveRsxProjectConfig(projectRoot) {
 function defaultCliAddConfigForTemplate(template) {
   if (template === 'next' || template === 'nextjs') {
     return {
-      defaultDirectory: 'app/expressions',
-      searchRoots: ['app', 'src', 'expressions'],
+      baseDirectory: 'app/rsx',
+      searchRoots: ['app/rsx', 'app', 'src/rsx', 'src', 'expressions'],
     };
   }
 
   return {
-    defaultDirectory: 'src/expressions',
-    searchRoots: ['src', 'app', 'expressions'],
+    baseDirectory: 'src/rsx',
+    searchRoots: ['src/rsx', 'src', 'app/rsx', 'app', 'expressions'],
   };
 }
 
@@ -6859,23 +7619,24 @@ function defaultCliConfigForTemplate(template) {
 }
 
 function defaultRsxBuildConfigForTemplate(template) {
-  if (template === 'next' || template === 'nextjs') {
+  if (template === 'generic' || template === 'nodejs') {
     return {
       preparse: true,
-      preparseFile: 'app/rsx-generated/rsx-aot-preparsed.generated.ts',
+      buildFolder: 'dist/.rsx-generated',
+      preparseFile: 'rsx-aot-preparsed.generated.js',
       compiled: true,
-      compiledFile: 'app/rsx-generated/rsx-aot-compiled.generated.ts',
-      registrationFile: 'app/rsx-generated/rsx-aot-registration.generated.ts',
+      compiledFile: 'rsx-aot-compiled.generated.js',
+      registrationFile: 'rsx-aot-registration.generated.js',
       compiledResolvedEvaluator: false,
     };
   }
-
   return {
     preparse: true,
-    preparseFile: 'src/rsx-generated/rsx-aot-preparsed.generated.ts',
+    buildFolder: '.rsx-generated',
+    preparseFile: 'rsx-aot-preparsed.generated.ts',
     compiled: true,
-    compiledFile: 'src/rsx-generated/rsx-aot-compiled.generated.ts',
-    registrationFile: 'src/rsx-generated/rsx-aot-registration.generated.ts',
+    compiledFile: 'rsx-aot-compiled.generated.ts',
+    registrationFile: 'rsx-aot-registration.generated.ts',
     compiledResolvedEvaluator: false,
   };
 }
@@ -6888,15 +7649,7 @@ function resolveNextRsxBuildConfig(projectRoot, entryFile) {
     fs.existsSync(path.join(projectRoot, 'src', 'app'));
 
   if (useSrcApp) {
-    return {
-      preparse: true,
-      preparseFile: 'src/app/rsx-generated/rsx-aot-preparsed.generated.ts',
-      compiled: true,
-      compiledFile: 'src/app/rsx-generated/rsx-aot-compiled.generated.ts',
-      registrationFile:
-        'src/app/rsx-generated/rsx-aot-registration.generated.ts',
-      compiledResolvedEvaluator: false,
-    };
+    return defaultRsxBuildConfigForTemplate('next');
   }
 
   return defaultRsxBuildConfigForTemplate('next');
@@ -6916,6 +7669,14 @@ function ensureRsxConfigFile(projectRoot, template, dryRun) {
 
   const existingConfig = readJsonFileIfPresent(configPath);
   const nextConfig = mergeRsxConfig(defaultConfig, existingConfig ?? {});
+  migrateLegacyGeneratedBuildDefaults(nextConfig);
+  migrateGenericRuntimeBuildDefaults(nextConfig, template);
+  migrateLegacyGeneratedCliAddDefaults(nextConfig, template);
+  nextConfig.projects = upsertRsxConfigProjectEntry(
+    nextConfig.projects,
+    getDefaultRsxProjectName(projectRoot),
+    '.',
+  );
 
   if (
     (template === 'next' || template === 'nextjs') &&
@@ -6937,11 +7698,28 @@ function ensureRsxConfigFile(projectRoot, template, dryRun) {
     existingConfig &&
     JSON.stringify(existingConfig) === JSON.stringify(nextConfig)
   ) {
-    return false;
+    const ancestorConfigPath = findNearestAncestorRsxConfigPath(projectRoot);
+    return ancestorConfigPath
+      ? ensureRsxProjectEntryInConfig(
+          ancestorConfigPath,
+          projectRoot,
+          getDefaultRsxProjectName(projectRoot),
+          dryRun,
+        )
+      : false;
   }
 
   if (dryRun) {
     logInfo(`[dry-run] ${existingConfig ? 'patch' : 'create'} ${configPath}`);
+    const ancestorConfigPath = findNearestAncestorRsxConfigPath(projectRoot);
+    if (ancestorConfigPath) {
+      ensureRsxProjectEntryInConfig(
+        ancestorConfigPath,
+        projectRoot,
+        getDefaultRsxProjectName(projectRoot),
+        dryRun,
+      );
+    }
     return true;
   }
 
@@ -6951,12 +7729,546 @@ function ensureRsxConfigFile(projectRoot, template, dryRun) {
     'utf8',
   );
   logOk(`${existingConfig ? 'Patched' : 'Created'} ${configPath}`);
+  const ancestorConfigPath = findNearestAncestorRsxConfigPath(projectRoot);
+  if (ancestorConfigPath) {
+    ensureRsxProjectEntryInConfig(
+      ancestorConfigPath,
+      projectRoot,
+      getDefaultRsxProjectName(projectRoot),
+      dryRun,
+    );
+  }
   return true;
+}
+
+function migrateGenericRuntimeBuildDefaults(config, template) {
+  if (template !== 'generic' && template !== 'nodejs') {
+    return;
+  }
+  const build = config.build;
+  if (!build || typeof build !== 'object' || Array.isArray(build)) {
+    return;
+  }
+  const usesOldGenericBuildFolder =
+    build.buildFolder === '.rsx-generated' || build.buildFolder === undefined;
+  const usesOldGeneratedTypeScriptFiles =
+    build.preparseFile === 'rsx-aot-preparsed.generated.ts' &&
+    build.compiledFile === 'rsx-aot-compiled.generated.ts' &&
+    build.registrationFile === 'rsx-aot-registration.generated.ts';
+  if (!usesOldGenericBuildFolder || !usesOldGeneratedTypeScriptFiles) {
+    return;
+  }
+  build.buildFolder = 'dist/.rsx-generated';
+  build.preparseFile = 'rsx-aot-preparsed.generated.js';
+  build.compiledFile = 'rsx-aot-compiled.generated.js';
+  build.registrationFile = 'rsx-aot-registration.generated.js';
+}
+
+function migrateLegacyGeneratedCliAddDefaults(config, template) {
+  const add = config.cli?.add;
+  if (!add || typeof add !== 'object' || Array.isArray(add)) {
+    return;
+  }
+  const defaultAdd = defaultCliAddConfigForTemplate(template);
+  if (
+    add.baseDirectory === undefined &&
+    add.defaultDirectory === 'src/expressions'
+  ) {
+    add.baseDirectory = 'src/rsx';
+    delete add.defaultDirectory;
+  }
+  if (
+    add.baseDirectory === undefined &&
+    add.defaultDirectory === 'app/expressions'
+  ) {
+    add.baseDirectory = 'app/rsx';
+    delete add.defaultDirectory;
+  }
+  if (add.sourceRoot === 'src' || add.sourceRoot === 'app') {
+    delete add.sourceRoot;
+  }
+  if (!Array.isArray(add.searchRoots)) {
+    add.searchRoots = defaultAdd.searchRoots;
+  }
+}
+
+function migrateLegacyGeneratedBuildDefaults(config) {
+  const build = config.build;
+  if (!build || typeof build !== 'object' || Array.isArray(build)) {
+    return;
+  }
+  const legacyPrefixes = [
+    'src/rsx-generated/',
+    'app/rsx-generated/',
+    'src/app/rsx-generated/',
+  ];
+  const legacyFileNames = {
+    preparseFile: 'rsx-aot-preparsed.generated.ts',
+    compiledFile: 'rsx-aot-compiled.generated.ts',
+    registrationFile: 'rsx-aot-registration.generated.ts',
+  };
+  const hasOnlyLegacyGeneratedFiles = Object.entries(legacyFileNames).every(
+    ([key, fileName]) =>
+      typeof build[key] === 'string' &&
+      legacyPrefixes.some((prefix) => build[key] === `${prefix}${fileName}`),
+  );
+  if (!hasOnlyLegacyGeneratedFiles) {
+    return;
+  }
+  build.buildFolder = '.rsx-generated';
+  for (const [key, fileName] of Object.entries(legacyFileNames)) {
+    build[key] = fileName;
+  }
+}
+
+function findNearestAncestorRsxConfigPath(projectRoot) {
+  let current = path.dirname(path.resolve(projectRoot));
+  while (true) {
+    const configPath = path.join(current, 'rsx.config.json');
+    if (fs.existsSync(configPath)) {
+      return configPath;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) {
+      return null;
+    }
+    current = parent;
+  }
+}
+
+function ensureRsxProjectEntryInConfig(
+  configPath,
+  projectRoot,
+  projectName,
+  dryRun,
+) {
+  const existingConfig = readJsonFileIfPresent(configPath);
+  if (!existingConfig || typeof existingConfig !== 'object') {
+    return false;
+  }
+  const configRoot = path.dirname(configPath);
+  const relativeRoot = path
+    .relative(configRoot, projectRoot)
+    .replace(/\\/gu, '/');
+  const nextProjects = upsertRsxConfigProjectEntry(
+    existingConfig.projects,
+    projectName,
+    relativeRoot || '.',
+  );
+  if (
+    JSON.stringify(existingConfig.projects ?? []) ===
+    JSON.stringify(nextProjects)
+  ) {
+    return false;
+  }
+  const nextConfig = { ...existingConfig, projects: nextProjects };
+  if (dryRun) {
+    logInfo(`[dry-run] patch ${configPath} (projects)`);
+    return true;
+  }
+  fs.writeFileSync(
+    configPath,
+    `${JSON.stringify(nextConfig, null, 2)}\n`,
+    'utf8',
+  );
+  logOk(`Patched ${configPath} (projects).`);
+  return true;
+}
+
+function upsertRsxConfigProjectEntry(projects, name, root) {
+  const normalizedRoot = normalizeRsxProjectRoot(root);
+  const existingProjects = Array.isArray(projects)
+    ? projects.filter(
+        (project) =>
+          project &&
+          typeof project === 'object' &&
+          typeof project.root === 'string',
+      )
+    : [];
+  const existingIndex = existingProjects.findIndex(
+    (project) => normalizeRsxProjectRoot(project.root) === normalizedRoot,
+  );
+  const nextProject = {
+    ...(existingIndex >= 0 ? existingProjects[existingIndex] : {}),
+    name,
+    root: normalizedRoot,
+  };
+  if (existingIndex >= 0) {
+    return existingProjects.map((project, index) =>
+      index === existingIndex ? nextProject : project,
+    );
+  }
+  return [...existingProjects, nextProject];
+}
+
+function normalizeRsxProjectRoot(root) {
+  const normalized = String(root || '.')
+    .trim()
+    .replace(/\\/gu, '/');
+  return normalized.replace(/\/+/gu, '/').replace(/\/$/u, '') || '.';
+}
+
+function getDefaultRsxProjectName(projectRoot) {
+  const packageJsonPath = path.join(projectRoot, 'package.json');
+  const packageJson = readJsonFileIfPresent(packageJsonPath);
+  if (
+    packageJson &&
+    typeof packageJson.name === 'string' &&
+    packageJson.name.trim()
+  ) {
+    return packageJson.name.trim();
+  }
+  return path.basename(path.resolve(projectRoot));
 }
 
 function resolveRsxBuildConfig(projectRoot) {
   const buildConfig = resolveRsxProjectConfig(projectRoot).build ?? {};
-  return typeof buildConfig === 'object' && buildConfig ? buildConfig : {};
+  return normalizeRsxBuildConfig(buildConfig);
+}
+
+function normalizeRsxBuildConfig(buildConfig) {
+  if (
+    !buildConfig ||
+    typeof buildConfig !== 'object' ||
+    Array.isArray(buildConfig)
+  ) {
+    return {};
+  }
+  const normalized = { ...buildConfig };
+  const buildFolder =
+    typeof normalized.buildFolder === 'string' && normalized.buildFolder.trim()
+      ? normalized.buildFolder.trim()
+      : '.rsx-generated';
+  normalized.buildFolder = buildFolder;
+  for (const key of ['preparseFile', 'compiledFile', 'registrationFile']) {
+    if (typeof normalized[key] !== 'string' || !normalized[key].trim()) {
+      continue;
+    }
+    normalized[key] = resolveRsxBuildConfigFileValue(
+      buildFolder,
+      normalized[key],
+    );
+  }
+  return normalized;
+}
+
+function resolveRsxBuildConfigFileValue(buildFolder, fileValue) {
+  const normalizedFile = fileValue.trim().replace(/\\/g, '/');
+  if (path.isAbsolute(normalizedFile) || normalizedFile.includes('/')) {
+    return normalizedFile;
+  }
+  return path.posix.join(buildFolder.replace(/\\/g, '/'), normalizedFile);
+}
+
+function resolveRsxBuildFilePath(projectRoot, buildConfig, key) {
+  const fileValue = buildConfig?.[key];
+  const buildFolder =
+    typeof buildConfig?.buildFolder === 'string' &&
+    buildConfig.buildFolder.trim()
+      ? buildConfig.buildFolder
+      : '.rsx-generated';
+  if (typeof fileValue !== 'string' || !fileValue.trim()) {
+    return null;
+  }
+  return path.resolve(
+    projectRoot,
+    resolveRsxBuildConfigFileValue(buildFolder, fileValue),
+  );
+}
+
+function createRsxDebugHookCallSiteTransformer(
+  ts,
+  projectRoot,
+  debugChangeHooksResolver,
+) {
+  return (context) => (sourceFile) =>
+    transformRsxDebugHookCallSites(
+      ts,
+      sourceFile,
+      projectRoot,
+      debugChangeHooksResolver,
+      context,
+    );
+}
+
+function transformRsxDebugHookCallSites(
+  ts,
+  sourceFile,
+  projectRoot,
+  debugChangeHooksResolver,
+  context,
+) {
+  const factory = context?.factory ?? ts.factory;
+  const debugChangeHooksByExpression = debugChangeHooksResolver?.(
+    sourceFile.fileName,
+  );
+  const configuredExpressions = new Set(
+    Object.entries(debugChangeHooksByExpression ?? {})
+      .filter(
+        ([, config]) =>
+          config?.instances && typeof config.instances === 'object',
+      )
+      .map(([expressionName]) => expressionName),
+  );
+  if (configuredExpressions.size === 0) {
+    return sourceFile;
+  }
+
+  const visitor = (node) => {
+    if (ts.isCallExpression(node)) {
+      const expressionName = getRsxDebugHookCallExpressionName(
+        ts,
+        node.expression,
+      );
+      if (expressionName && configuredExpressions.has(expressionName)) {
+        const instanceId = createRsxDebugHookInstanceId(
+          projectRoot,
+          sourceFile,
+          node.expression.getStart(sourceFile),
+          expressionName,
+        );
+        const expressionConfig = debugChangeHooksByExpression[expressionName];
+        if (
+          Object.prototype.hasOwnProperty.call(
+            expressionConfig.instances ?? {},
+            instanceId,
+          )
+        ) {
+          const args = [...node.arguments];
+          while (args.length < 2) {
+            args.push(factory.createIdentifier('undefined'));
+          }
+          args[2] = factory.createStringLiteral(instanceId);
+          return factory.updateCallExpression(
+            node,
+            node.expression,
+            node.typeArguments,
+            args,
+          );
+        }
+      }
+    }
+    return ts.visitEachChild(
+      node,
+      visitor,
+      context ?? {
+        factory,
+        getCompilerOptions: () => ({}),
+        hoistFunctionDeclaration: () => undefined,
+        hoistVariableDeclaration: () => undefined,
+        requestEmitHelper: () => undefined,
+        readEmitHelpers: () => undefined,
+        resumeLexicalEnvironment: () => [],
+        startLexicalEnvironment: () => undefined,
+        suspendLexicalEnvironment: () => undefined,
+        enableSubstitution: () => undefined,
+        enableEmitNotification: () => undefined,
+        isSubstitutionEnabled: () => false,
+        isEmitNotificationEnabled: () => false,
+        onSubstituteNode: (_hint, nodeToSubstitute) => nodeToSubstitute,
+        onEmitNode: (_hint, nodeToEmit, emitCallback) =>
+          emitCallback(nodeToEmit),
+        addDiagnostic: () => undefined,
+      },
+    );
+  };
+
+  return ts.visitNode(sourceFile, visitor);
+}
+
+function getRsxDebugHookCallExpressionName(ts, expression) {
+  if (ts.isIdentifier(expression)) {
+    return expression.text;
+  }
+  if (ts.isPropertyAccessExpression(expression)) {
+    return expression.name.text;
+  }
+  return null;
+}
+
+function createRsxDebugHookInstanceId(
+  projectRoot,
+  sourceFile,
+  start,
+  expressionName,
+) {
+  return `${path.relative(projectRoot, sourceFile.fileName).replace(/\\/g, '/')}:${start}:${expressionName}`;
+}
+
+function resolveDebugChangeHooksByExpression(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+  const hooks = {};
+  for (const [expressionName, expressionConfig] of Object.entries(value)) {
+    if (
+      !expressionConfig ||
+      typeof expressionConfig !== 'object' ||
+      Array.isArray(expressionConfig)
+    ) {
+      continue;
+    }
+    const group = normalizeDebugChangeHookConfig(expressionConfig.group);
+    const instances = {};
+    if (
+      expressionConfig.instances &&
+      typeof expressionConfig.instances === 'object' &&
+      !Array.isArray(expressionConfig.instances)
+    ) {
+      for (const [instanceId, instanceHookConfig] of Object.entries(
+        expressionConfig.instances,
+      )) {
+        const instanceHook = normalizeDebugChangeHookConfig(instanceHookConfig);
+        if (instanceHook) {
+          instances[instanceId] = instanceHook;
+        }
+      }
+    }
+    if (group || Object.keys(instances).length > 0) {
+      hooks[expressionName] = { group, instances };
+    }
+  }
+  return hooks;
+}
+
+function resolveDebugChangeHooksByExpressionForFile(projectRoot, fileName) {
+  const merged = {};
+  for (const configPath of resolveRsxConfigPathsForFile(
+    projectRoot,
+    fileName,
+  )) {
+    const config = readJsonFileIfPresent(configPath);
+    mergeDebugChangeHooksByExpression(
+      merged,
+      resolveDebugChangeHooksByExpression(config?.build?.debugChangeHooks),
+    );
+  }
+  return merged;
+}
+
+function resolveRsxConfigPathsForFile(projectRoot, fileName) {
+  const projectRootPath = path.resolve(projectRoot);
+  const filePath = path.resolve(fileName);
+  const startDirectory =
+    fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()
+      ? filePath
+      : path.dirname(filePath);
+  const dirs = [];
+  let currentDirectory = isPathInsideOrEqual(startDirectory, projectRootPath)
+    ? startDirectory
+    : projectRootPath;
+  while (isPathInsideOrEqual(currentDirectory, projectRootPath)) {
+    dirs.push(currentDirectory);
+    if (currentDirectory === projectRootPath) {
+      break;
+    }
+    const parentDirectory = path.dirname(currentDirectory);
+    if (parentDirectory === currentDirectory) {
+      break;
+    }
+    currentDirectory = parentDirectory;
+  }
+  if (!dirs.includes(projectRootPath)) {
+    dirs.push(projectRootPath);
+  }
+  return dirs
+    .reverse()
+    .map((directory) => path.join(directory, 'rsx.config.json'))
+    .filter((configPath) => fs.existsSync(configPath));
+}
+
+function isPathInsideOrEqual(filePath, directoryPath) {
+  const resolvedFilePath = path.resolve(filePath);
+  const resolvedDirectoryPath = path.resolve(directoryPath);
+  return (
+    resolvedFilePath === resolvedDirectoryPath ||
+    resolvedFilePath.startsWith(`${resolvedDirectoryPath}${path.sep}`)
+  );
+}
+
+function mergeDebugChangeHooksByExpression(target, source) {
+  for (const [expressionName, sourceConfig] of Object.entries(source ?? {})) {
+    const targetConfig = target[expressionName] ?? { instances: {} };
+    if (sourceConfig.group) {
+      targetConfig.group = sourceConfig.group;
+    }
+    targetConfig.instances = {
+      ...(targetConfig.instances ?? {}),
+      ...(sourceConfig.instances ?? {}),
+    };
+    target[expressionName] = targetConfig;
+  }
+}
+
+function hasConfiguredDebugChangeHooks(projectRoot) {
+  return findRsxConfigFiles(projectRoot).some((configPath) => {
+    const config = readJsonFileIfPresent(configPath);
+    return (
+      Object.keys(
+        resolveDebugChangeHooksByExpression(config?.build?.debugChangeHooks),
+      ).length > 0
+    );
+  });
+}
+
+function findRsxConfigFiles(rootDir) {
+  const results = [];
+  const ignoredDirectoryNames = new Set([
+    'node_modules',
+    'dist',
+    'out',
+    'out-tsc',
+    'coverage',
+    '.git',
+    '.rsx',
+  ]);
+  const visit = (directory) => {
+    if (!fs.existsSync(directory)) {
+      return;
+    }
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const entryPath = path.join(directory, entry.name);
+      if (entry.isFile() && entry.name === 'rsx.config.json') {
+        results.push(entryPath);
+      } else if (
+        entry.isDirectory() &&
+        !ignoredDirectoryNames.has(entry.name)
+      ) {
+        visit(entryPath);
+      }
+    }
+  };
+  visit(rootDir);
+  return results;
+}
+
+function normalizeDebugChangeHookConfig(value) {
+  if (Array.isArray(value)) {
+    const hooks = value
+      .map((entry) => normalizeDebugChangeHookConfig(entry))
+      .flat()
+      .filter(Boolean);
+    return hooks.length > 0 ? hooks : null;
+  }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+  const moduleSpecifier =
+    typeof value.moduleSpecifier === 'string'
+      ? value.moduleSpecifier.trim()
+      : '';
+  if (!moduleSpecifier) {
+    return null;
+  }
+  const exportName =
+    typeof value.exportName === 'string' && value.exportName.trim()
+      ? value.exportName.trim()
+      : undefined;
+  return {
+    moduleSpecifier,
+    ...(exportName ? { exportName } : {}),
+    ...(value.enabled === false ? { enabled: false } : {}),
+  };
 }
 
 function resolveRsxCliConfig(projectRoot) {
@@ -7008,7 +8320,6 @@ function printGeneralHelp() {
   console.log('');
   console.log('Commands:');
   console.log('  doctor                  Run environment checks');
-  console.log('  add | -a | -add         Interactive expression scaffolder');
   console.log('  install vscode          Install VS Code extension');
   console.log('  install compiler        Install compiler tooling packages');
   console.log(
@@ -7032,7 +8343,6 @@ function printGeneralHelp() {
   console.log('  rsx help init');
   console.log('  rsx help project');
   console.log('  rsx install vscode --help');
-  console.log('  rsx add');
 }
 
 function printDoctorHelp() {
@@ -7043,41 +8353,6 @@ function printDoctorHelp() {
   console.log('  - Node.js >= 20');
   console.log('  - VS Code CLI (code)');
   console.log('  - Package manager (pnpm/npm/yarn/bun)');
-}
-
-function printAddHelp() {
-  console.log('Usage:');
-  console.log('  rsx add');
-  console.log('  rsx -a');
-  console.log('  rsx -add');
-  console.log('');
-  console.log('What it does:');
-  console.log(
-    '  - Prompts for expression export name (must be valid TS identifier)',
-  );
-  console.log("  - Prompts for the initial expression string (default: 'a')");
-  console.log(
-    '  - Seeds the generated model with top-level identifiers found in that expression when possible',
-  );
-  console.log(
-    '  - Prompts whether file name should be kebab-case (default: yes)',
-  );
-  console.log('  - Prompts for output directory (relative or absolute)');
-  console.log(
-    '  - Prompts for add mode: new one-file, new separate-model, or update existing',
-  );
-  console.log(
-    '  - Defaults to keeping the model in the same file as the expression',
-  );
-  console.log(
-    '  - If you choose an existing file, shows a list of files that already contain RS-X expressions',
-  );
-  console.log(
-    '  - Can still create or reuse a separate model file when you opt out of same-file mode',
-  );
-  console.log(
-    '  - Respects rsx.config.json (`cli.add`) for add defaults and file discovery',
-  );
 }
 
 function printInstallHelp(target) {
@@ -7128,7 +8403,10 @@ function printInitHelp() {
     '  - Detects project context and wires RS-X bootstrap in the entry file',
   );
   console.log('  - Writes rsx build config plus build/typecheck scripts');
-  console.log('  - Creates rsx.config.json with CLI defaults you can override');
+  console.log(
+    '  - Creates/updates rsx.config.json with CLI defaults you can override',
+  );
+  console.log('  - Registers the current folder in rsx.config.json projects');
   console.log('  - Applies framework-specific transform/build integration');
   console.log('  - Does not install the VS Code extension automatically');
   console.log('');
@@ -7297,11 +8575,6 @@ function printHelpFor(command, target) {
     return;
   }
 
-  if (command === 'add' || command === '-a' || command === '-add') {
-    printAddHelp();
-    return;
-  }
-
   if (command === 'install') {
     printInstallHelp(target);
     return;
@@ -7396,14 +8669,6 @@ function main() {
 
   if (command === 'doctor') {
     runDoctor();
-    return;
-  }
-
-  if (command === 'add' || command === '-a' || command === '-add') {
-    runAdd().catch((error) => {
-      logError(error instanceof Error ? error.message : String(error));
-      process.exit(1);
-    });
     return;
   }
 

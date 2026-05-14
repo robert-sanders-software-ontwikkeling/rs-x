@@ -65,9 +65,9 @@ pnpm test
 - `pnpm build:vscode-extension` : builds **rs-x-vscode-extension** project
 - `pnpm package:vscode-extension` : packages VS Code extension (VSIX)
 - `pnpm install:vscode-extension` : package + install local RS-X VS Code extension (includes TS plugin)
-- `pnpm install:compiler-tooling` : install `@rs-x/compiler` + `@rs-x/typescript-plugin`
+- `pnpm install:compiler-tooling` : build local compiler tooling packages used by the monorepo (`@rs-x/expression-parser`, `@rs-x/compiler`, `@rs-x/typescript-plugin`)
 - `pnpm init:rsx` : init project (packages + async RS-X bootstrap wiring + VS Code extension)
-- `pnpm setup:developer-tooling` : install compiler tooling + local VS Code extension
+- `pnpm setup:developer-tooling` : build local compiler tooling + install the local VS Code extension
 - `pnpm test` : run all tests
 - `pnpm test:angular` : run Angular tests
 - `pnpm test:react` : run React tests
@@ -84,7 +84,6 @@ You can also use the CLI directly:
 - `npx @rs-x/cli init`
 - `npx @rs-x/cli install compiler`
 - `npx @rs-x/cli install vscode`
-- `npx @rs-x/cli setup`
 
 For local monorepo development (use local VSIX build): `npx @rs-x/cli install vscode --local`
 

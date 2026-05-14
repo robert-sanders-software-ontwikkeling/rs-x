@@ -1,6 +1,7 @@
 import { generate as astToString } from 'astring';
 import type {
   ArrayExpression as EstreeArrayExpression,
+  ArrowFunctionExpression as EstreeArrowFunctionExpression,
   AssignmentExpression as EstreeAssignmentExpression,
   BinaryExpression,
   BinaryOperator,
@@ -51,6 +52,7 @@ import { ComputedIndexExpression } from './expressions/computed-index-expression
 import { ConditionalExpression } from './expressions/conditional-expression';
 import { ConstantBigIntExpression } from './expressions/constant-bigint-expression';
 import { ConstantBooleanExpression } from './expressions/constant-boolean-expression';
+import { ConstantExpression } from './expressions/constant-expression';
 import { ConstantNullExpression } from './expressions/constant-null-expression';
 import { ConstantNumberExpression } from './expressions/constant-number-expression';
 import { ConstantRegExpExpression } from './expressions/constant-regexp-expression';
@@ -96,6 +98,7 @@ import {
 } from './js-expression-ast-parser';
 enum SyntaxExpressionType {
   UnaryExpression = 'UnaryExpression',
+  ArrowFunctionExpression = 'ArrowFunctionExpression',
   BinaryExpression = 'BinaryExpression',
   AssignmentExpression = 'AssignmentExpression',
   ConditionalExpression = 'ConditionalExpression',
@@ -146,6 +149,7 @@ export class ExpressionTreeBuilder {
   };
   private readonly expressionFactories: {
     [SyntaxExpressionType.UnaryExpression]: ExpressionFactory<UnaryExpression>;
+    [SyntaxExpressionType.ArrowFunctionExpression]: ExpressionFactory<EstreeArrowFunctionExpression>;
     [SyntaxExpressionType.BinaryExpression]: ExpressionFactory<BinaryExpression>;
     [SyntaxExpressionType.AssignmentExpression]: ExpressionFactory<EstreeAssignmentExpression>;
     [SyntaxExpressionType.Literal]: ExpressionFactory<Literal>;
@@ -180,6 +184,8 @@ export class ExpressionTreeBuilder {
   constructor() {
     this.expressionFactories = {
       [SyntaxExpressionType.UnaryExpression]: this.createUnaryExpression,
+      [SyntaxExpressionType.ArrowFunctionExpression]:
+        this.createFunctionExpression,
       [SyntaxExpressionType.BinaryExpression]: this.createBinaryExpression,
       [SyntaxExpressionType.AssignmentExpression]:
         this.createAssignmentExpression,
@@ -332,6 +338,46 @@ export class ExpressionTreeBuilder {
   ): AbstractExpression => {
     return this.unaryExpressionFactories[expression.operator](expression);
   };
+
+  private createFunctionExpression = (
+    expression: EstreeArrowFunctionExpression,
+  ): AbstractExpression => {
+    const source = this.getExpressionSource(expression);
+    const functionExpressionSource =
+      this.translateArrowToFunctionExpression(expression);
+    const functionValue = new Function(
+      `return ${functionExpressionSource};`,
+    )() as AnyFunction;
+    const constantFunctionExpression = new ConstantExpression<AnyFunction>(
+      ExpressionType.Function,
+      source,
+      functionValue,
+    );
+
+    constantFunctionExpression.clone = (): ConstantExpression<AnyFunction> =>
+      new ConstantExpression<AnyFunction>(
+        ExpressionType.Function,
+        source,
+        functionValue,
+      );
+
+    return constantFunctionExpression;
+  };
+
+  private translateArrowToFunctionExpression(
+    expression: EstreeArrowFunctionExpression,
+  ): string {
+    const paramsSource = expression.params
+      .map((parameter) => astToString(Type.cast<Node>(parameter)))
+      .join(', ');
+    const bodySource =
+      expression.body.type === 'BlockStatement'
+        ? astToString(expression.body)
+        : `{ return ${astToString(Type.cast<Node>(expression.body))}; }`;
+    const asyncPrefix = expression.async ? 'async ' : '';
+
+    return `(${asyncPrefix}function(${paramsSource}) ${bodySource})`;
+  }
 
   private createConditionalExpression = (
     expression: EstreeConditionalExpression,

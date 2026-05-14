@@ -84,16 +84,25 @@ function pnpmInfoExists(pkgName) {
 }
 
 // ---------------- PATCH ANGULAR ----------------
-function toMajorRange(version) {
-  const [major, minor] = version.split('.').map(Number);
+function toPeerRange(version) {
+  const baseVersion = version.split('-')[0];
+  const [major, minor] = baseVersion.split('.').map(Number);
   const hasPrerelease = version.includes('-');
 
-  if (major === 0) {
-    // pre-1.0: minor is the breaking boundary
-    return hasPrerelease ? `>=0.${minor}.0-0` : `^0.${minor}.0`;
+  if (!Number.isFinite(major) || !Number.isFinite(minor)) {
+    return version;
   }
 
-  return hasPrerelease ? `>=${major}.0.0-0` : `^${major}.0.0`;
+  // npm/semver does not treat ranges like ">=2.0.0-0" as matching arbitrary
+  // prereleases (for example 2.0.3-next.1). Include the exact prerelease plus
+  // the stable major/minor range.
+  if (major === 0) {
+    const stableRange = `^0.${minor}.0`;
+    return hasPrerelease ? `${version} || ${stableRange}` : stableRange;
+  }
+
+  const stableRange = `^${major}.0.0`;
+  return hasPrerelease ? `${version} || ${stableRange}` : stableRange;
 }
 
 function patchAngularPackage() {
@@ -111,13 +120,13 @@ function patchAngularPackage() {
   const parserVersion = getLocalPackageVersion('rs-x-expression-parser');
 
   pkgJson.peerDependencies ??= {};
-  pkgJson.peerDependencies['@rs-x/core'] = toMajorRange(coreVersion);
+  pkgJson.peerDependencies['@rs-x/core'] = toPeerRange(coreVersion);
   pkgJson.peerDependencies['@rs-x/expression-parser'] =
-    toMajorRange(parserVersion);
+    toPeerRange(parserVersion);
 
   fs.writeFileSync(pkgJsonPath, JSON.stringify(pkgJson, null, 2));
   console.log(
-    '✅ Patched Angular peerDependencies using MAJOR ranges (prerelease-aware)',
+    '✅ Patched Angular peerDependencies with prerelease-safe ranges',
   );
 }
 

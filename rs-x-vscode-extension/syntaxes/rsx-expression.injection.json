@@ -31,7 +31,7 @@
       "contentName": "meta.embedded.inline.rsx",
       "patterns": [
         {
-          "include": "source.ts"
+          "include": "#rsx-expression"
         }
       ]
     },
@@ -52,7 +52,7 @@
       "contentName": "meta.embedded.inline.rsx",
       "patterns": [
         {
-          "include": "source.ts"
+          "include": "#rsx-expression"
         }
       ]
     },
@@ -73,7 +73,186 @@
       "contentName": "meta.embedded.inline.rsx",
       "patterns": [
         {
-          "include": "source.ts"
+          "include": "#rsx-expression"
+        }
+      ]
+    },
+    "rsx-expression": {
+      "patterns": [
+        {
+          "include": "#comments"
+        },
+        {
+          "include": "#strings"
+        },
+        {
+          "include": "#numbers"
+        },
+        {
+          "include": "#keywords"
+        },
+        {
+          "include": "#properties"
+        },
+        {
+          "include": "#functions"
+        },
+        {
+          "include": "#identifiers"
+        },
+        {
+          "include": "#operators"
+        },
+        {
+          "include": "#punctuation"
+        }
+      ]
+    },
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.ts",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.ts",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.ts",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.ts",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.ts",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.ts",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.template.ts",
+          "begin": "`",
+          "end": "`",
+          "patterns": [
+            {
+              "name": "constant.character.escape.ts",
+              "match": "\\\\."
+            },
+            {
+              "name": "punctuation.definition.template-expression.begin.ts",
+              "match": "\\$\\{"
+            },
+            {
+              "name": "punctuation.definition.template-expression.end.ts",
+              "match": "\\}"
+            }
+          ]
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.ts",
+          "match": "\\b(?:0[xX][0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+|\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?n?)\\b"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.ts",
+          "match": "\\b(?:true|false|null|undefined|NaN|Infinity)\\b"
+        },
+        {
+          "name": "keyword.operator.expression.ts",
+          "match": "\\b(?:as|await|delete|in|instanceof|new|satisfies|typeof|void|yield)\\b"
+        },
+        {
+          "name": "variable.language.this.ts",
+          "match": "\\bthis\\b"
+        }
+      ]
+    },
+    "properties": {
+      "patterns": [
+        {
+          "name": "variable.other.property.ts",
+          "match": "(?<=\\.)\\s*([A-Za-z_$][\\w$]*)",
+          "captures": {
+            "1": {
+              "name": "variable.other.property.ts"
+            }
+          }
+        },
+        {
+          "name": "variable.other.property.ts",
+          "match": "\\b([A-Za-z_$][\\w$]*)(?=\\s*:)",
+          "captures": {
+            "1": {
+              "name": "variable.other.property.ts"
+            }
+          }
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "entity.name.function.ts",
+          "match": "\\b([A-Za-z_$][\\w$]*)(?=\\s*\\()"
+        }
+      ]
+    },
+    "identifiers": {
+      "patterns": [
+        {
+          "name": "variable.other.property.rsx",
+          "match": "\\b[A-Za-z_$][\\w$]*\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "meta.rsx.symbol",
+          "match": "=>|===|!==|==|!=|<=|>=|&&|\\|\\||\\?\\?|\\?\\.|\\*\\*|[+\\-*/%<>=!&|^~?:]"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.separator.comma.ts",
+          "match": ","
+        },
+        {
+          "name": "punctuation.terminator.statement.ts",
+          "match": ";"
+        },
+        {
+          "name": "punctuation.accessor.ts",
+          "match": "\\."
+        },
+        {
+          "name": "punctuation.definition.bracket.ts",
+          "match": "[()\\[\\]{}]"
         }
       ]
     }

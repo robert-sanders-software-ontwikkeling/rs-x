@@ -3,20 +3,68 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const extensionRoot = path.resolve(__dirname, '..');
+const workspaceRoot = path.resolve(extensionRoot, '..');
 const stageRoot = path.join(extensionRoot, '.vsix-stage');
 const baseManifest = JSON.parse(
   fs.readFileSync(path.join(extensionRoot, 'package.json'), 'utf8'),
 );
+const localBuild =
+  process.argv.includes('--local-build') ||
+  process.env.RSX_LOCAL_VSIX === '1' ||
+  process.env.RSX_LOCAL_VSIX === 'true';
+const packagedExtensionVersion = resolvePackagedExtensionVersion(
+  baseManifest.version,
+  localBuild,
+);
 const outputDir = path.join(extensionRoot, 'dist');
 const outputPath = path.join(
   outputDir,
-  `rs-x-vscode-extension-${baseManifest.version}.vsix`,
+  `rs-x-vscode-extension-${packagedExtensionVersion}.vsix`,
 );
 const vsceCliPath = require.resolve('@vscode/vsce/vsce');
 
+function pad2(value) {
+  return String(value).padStart(2, '0');
+}
+
+function toVersionTimestamp(date) {
+  return [
+    date.getUTCFullYear(),
+    pad2(date.getUTCMonth() + 1),
+    pad2(date.getUTCDate()),
+    pad2(date.getUTCHours()),
+    pad2(date.getUTCMinutes()),
+    pad2(date.getUTCSeconds()),
+  ].join('');
+}
+
+function resolvePackagedExtensionVersion(baseVersion, useLocalVersion) {
+  if (!useLocalVersion) {
+    return baseVersion;
+  }
+
+  const explicitVersion = process.env.RSX_LOCAL_VSIX_VERSION?.trim();
+  if (explicitVersion) {
+    return explicitVersion;
+  }
+
+  const suffix = `local.${toVersionTimestamp(new Date())}`;
+  const stableVersionMatch = baseVersion.match(/^(\d+)\.(\d+)\.(\d+)/u);
+  if (!stableVersionMatch) {
+    return baseVersion.includes('-')
+      ? `${baseVersion}.${suffix}`
+      : `${baseVersion}-${suffix}`;
+  }
+
+  const major = stableVersionMatch[1];
+  const minor = stableVersionMatch[2];
+  const patch = Number(stableVersionMatch[3]);
+  return `${major}.${minor}.${patch + 1}-${suffix}`;
+}
+
 function copyRecursive(sourcePath, targetPath) {
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-  fs.cpSync(sourcePath, targetPath, { recursive: true });
+  fs.cpSync(sourcePath, targetPath, { recursive: true, dereference: true });
 }
 
 function run(command, args, options = {}) {
@@ -32,6 +80,116 @@ function run(command, args, options = {}) {
   if (result.status !== 0) {
     process.exit(result.status ?? 1);
   }
+}
+
+function copyWorkspacePackage(packageName, packageDirectory) {
+  const sourceRoot = path.join(workspaceRoot, packageDirectory);
+  const sourceManifestPath = path.join(sourceRoot, 'package.json');
+  const sourceDistPath = path.join(sourceRoot, 'dist');
+
+  if (!fs.existsSync(sourceManifestPath)) {
+    throw new Error(
+      `Workspace package manifest missing: ${sourceManifestPath}`,
+    );
+  }
+  if (!fs.existsSync(sourceDistPath)) {
+    throw new Error(`Workspace package dist missing: ${sourceDistPath}`);
+  }
+
+  const sourceManifest = JSON.parse(
+    fs.readFileSync(sourceManifestPath, 'utf8'),
+  );
+  const targetRoot = path.join(
+    stageRoot,
+    'node_modules',
+    ...packageName.split('/'),
+  );
+
+  copyRecursive(sourceDistPath, path.join(targetRoot, 'dist'));
+
+  const packagedManifest = {
+    name: sourceManifest.name,
+    version: sourceManifest.version,
+    type: sourceManifest.type,
+    main: sourceManifest.main,
+    module: sourceManifest.module,
+    types: sourceManifest.types,
+    exports: sourceManifest.exports,
+  };
+
+  fs.writeFileSync(
+    path.join(targetRoot, 'package.json'),
+    `${JSON.stringify(packagedManifest, null, 2)}\n`,
+  );
+
+  return sourceManifest.version;
+}
+
+function copyWorkspaceCliPackage() {
+  const packageName = '@rs-x/cli';
+  const sourceRoot = path.join(workspaceRoot, 'rs-x-cli');
+  const sourceManifestPath = path.join(sourceRoot, 'package.json');
+  const sourceManifest = JSON.parse(
+    fs.readFileSync(sourceManifestPath, 'utf8'),
+  );
+  const targetRoot = path.join(stageRoot, 'node_modules', '@rs-x', 'cli');
+
+  copyRecursive(path.join(sourceRoot, 'bin'), path.join(targetRoot, 'bin'));
+  copyRecursive(
+    path.join(sourceRoot, 'scripts'),
+    path.join(targetRoot, 'scripts'),
+  );
+  copyRecursive(
+    path.join(sourceRoot, 'templates'),
+    path.join(targetRoot, 'templates'),
+  );
+
+  const packagedManifest = {
+    name: sourceManifest.name,
+    version: sourceManifest.version,
+    type: sourceManifest.type,
+    main: sourceManifest.main,
+    bin: sourceManifest.bin,
+    exports: sourceManifest.exports,
+    dependencies: sourceManifest.dependencies,
+  };
+
+  fs.writeFileSync(
+    path.join(targetRoot, 'package.json'),
+    `${JSON.stringify(packagedManifest, null, 2)}\n`,
+  );
+
+  return sourceManifest.version;
+}
+
+function copyThirdPartyPackage(packageName) {
+  const sourcePath = path.join(
+    workspaceRoot,
+    'node_modules',
+    ...packageName.split('/'),
+  );
+  if (!fs.existsSync(sourcePath)) {
+    throw new Error(
+      `Required dependency missing from workspace node_modules: ${sourcePath}`,
+    );
+  }
+
+  copyRecursive(
+    sourcePath,
+    path.join(stageRoot, 'node_modules', ...packageName.split('/')),
+  );
+}
+
+function patchStagedPackageManifest(packageName, patcher) {
+  const manifestPath = path.join(
+    stageRoot,
+    'node_modules',
+    ...packageName.split('/'),
+    'package.json',
+  );
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  patcher(manifest);
+  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
 if (!fs.existsSync(path.join(extensionRoot, 'dist', 'extension.js'))) {
@@ -55,12 +213,31 @@ if (
     'Bundled TypeScript plugin is missing. Run `pnpm run prepare:plugin` first.',
   );
 }
+if (
+  !fs.existsSync(
+    path.join(
+      extensionRoot,
+      'node_modules',
+      '@rs-x',
+      'vscode-typescript-plugin',
+      'package.json',
+    ),
+  )
+) {
+  throw new Error(
+    'Bundled VS Code TypeScript plugin alias is missing. Run `pnpm run prepare:plugin` first.',
+  );
+}
 
 fs.rmSync(stageRoot, { recursive: true, force: true });
 fs.mkdirSync(stageRoot, { recursive: true });
 fs.mkdirSync(outputDir, { recursive: true });
 
-copyRecursive(path.join(extensionRoot, 'dist'), path.join(stageRoot, 'dist'));
+copyRecursive(
+  path.join(extensionRoot, 'dist', 'extension.js'),
+  path.join(stageRoot, 'dist', 'extension.js'),
+);
+copyRecursive(path.join(extensionRoot, 'icons'), path.join(stageRoot, 'icons'));
 copyRecursive(
   path.join(extensionRoot, 'syntaxes'),
   path.join(stageRoot, 'syntaxes'),
@@ -68,6 +245,10 @@ copyRecursive(
 copyRecursive(
   path.join(extensionRoot, 'schemas'),
   path.join(stageRoot, 'schemas'),
+);
+copyRecursive(
+  path.join(extensionRoot, 'language-configuration.json'),
+  path.join(stageRoot, 'language-configuration.json'),
 );
 copyRecursive(
   path.join(extensionRoot, 'README.md'),
@@ -85,13 +266,82 @@ copyRecursive(
   path.join(extensionRoot, 'node_modules', '@rs-x', 'typescript-plugin'),
   path.join(stageRoot, 'node_modules', '@rs-x', 'typescript-plugin'),
 );
+fs.rmSync(
+  path.join(
+    stageRoot,
+    'node_modules',
+    '@rs-x',
+    'typescript-plugin',
+    'node_modules',
+  ),
+  { recursive: true, force: true },
+);
+copyRecursive(
+  path.join(extensionRoot, 'node_modules', '@rs-x', 'vscode-typescript-plugin'),
+  path.join(stageRoot, 'node_modules', '@rs-x', 'vscode-typescript-plugin'),
+);
+fs.rmSync(
+  path.join(
+    stageRoot,
+    'node_modules',
+    '@rs-x',
+    'vscode-typescript-plugin',
+    'node_modules',
+  ),
+  { recursive: true, force: true },
+);
+copyRecursive(
+  path.join(workspaceRoot, 'node_modules', 'typescript'),
+  path.join(stageRoot, 'node_modules', 'typescript'),
+);
+
+const compilerVersion = copyWorkspacePackage('@rs-x/compiler', 'rs-x-compiler');
+const expressionParserVersion = copyWorkspacePackage(
+  '@rs-x/expression-parser',
+  'rs-x-expression-parser',
+);
+const coreVersion = copyWorkspacePackage('@rs-x/core', 'rs-x-core');
+const stateManagerVersion = copyWorkspacePackage(
+  '@rs-x/state-manager',
+  'rs-x-state-manager',
+);
+const cliVersion = copyWorkspaceCliPackage();
+patchStagedPackageManifest('@rs-x/typescript-plugin', (manifest) => {
+  manifest.dependencies = {
+    ...(manifest.dependencies ?? {}),
+    '@rs-x/compiler': compilerVersion,
+  };
+  delete manifest.devDependencies;
+});
+patchStagedPackageManifest('@rs-x/vscode-typescript-plugin', (manifest) => {
+  delete manifest.devDependencies;
+});
+
+const thirdPartyPackageNames = [
+  'astring',
+  'meriyah',
+  'rxjs',
+  'tslib',
+  'fast-equals',
+  'inversify',
+  'reflect-metadata',
+  '@inversifyjs/common',
+  '@inversifyjs/container',
+  '@inversifyjs/core',
+  '@inversifyjs/plugin',
+  '@inversifyjs/prototype-utils',
+  '@inversifyjs/reflect-metadata-utils',
+];
+for (const packageName of thirdPartyPackageNames) {
+  copyThirdPartyPackage(packageName);
+}
 
 const stagedManifest = {
   name: baseManifest.name,
   displayName: baseManifest.displayName,
   description: baseManifest.description,
   icon: baseManifest.icon,
-  version: baseManifest.version,
+  version: packagedExtensionVersion,
   publisher: baseManifest.publisher,
   engines: baseManifest.engines,
   categories: baseManifest.categories,
@@ -99,14 +349,67 @@ const stagedManifest = {
   main: baseManifest.main,
   contributes: baseManifest.contributes,
   dependencies: {
+    '@rs-x/cli': cliVersion,
     '@rs-x/typescript-plugin': baseManifest.version,
+    '@rs-x/vscode-typescript-plugin': baseManifest.version,
+    '@rs-x/compiler': compilerVersion,
+    '@rs-x/expression-parser': expressionParserVersion,
+    '@rs-x/core': coreVersion,
+    '@rs-x/state-manager': stateManagerVersion,
+    astring: '1.9.0',
+    meriyah: '7.1.0',
+    rxjs: '7.8.2',
+    tslib: '2.8.1',
+    'fast-equals': '6.0.0',
+    inversify: '8.1.0',
+    'reflect-metadata': '0.2.2',
+    '@inversifyjs/common': '2.0.1',
+    '@inversifyjs/container': '2.0.1',
+    '@inversifyjs/core': '10.0.1',
+    '@inversifyjs/plugin': '0.3.1',
+    '@inversifyjs/prototype-utils': '0.2.1',
+    '@inversifyjs/reflect-metadata-utils': '1.5.0',
+    typescript: baseManifest.dependencies.typescript,
   },
   files: [
     'dist',
+    'icons',
     'schemas',
     'syntaxes',
-    'node_modules/@rs-x/typescript-plugin/dist',
-    'node_modules/@rs-x/typescript-plugin/package.json',
+    'language-configuration.json',
+    'node_modules/@rs-x/typescript-plugin',
+    'node_modules/@rs-x/vscode-typescript-plugin',
+    'node_modules/@rs-x/cli/bin',
+    'node_modules/@rs-x/cli/scripts',
+    'node_modules/@rs-x/cli/templates',
+    'node_modules/@rs-x/cli/package.json',
+    'node_modules/@rs-x/compiler/dist',
+    'node_modules/@rs-x/compiler/package.json',
+    'node_modules/@rs-x/expression-parser/dist',
+    'node_modules/@rs-x/expression-parser/package.json',
+    'node_modules/@rs-x/core/dist',
+    'node_modules/@rs-x/core/package.json',
+    'node_modules/@rs-x/state-manager/dist',
+    'node_modules/@rs-x/state-manager/package.json',
+    'node_modules/typescript/lib',
+    'node_modules/typescript/package.json',
+    'node_modules/typescript/LICENSE.txt',
+    'node_modules/typescript/README.md',
+    'node_modules/typescript/SECURITY.md',
+    'node_modules/typescript/ThirdPartyNoticeText.txt',
+    'node_modules/astring',
+    'node_modules/meriyah',
+    'node_modules/rxjs',
+    'node_modules/tslib',
+    'node_modules/fast-equals',
+    'node_modules/inversify',
+    'node_modules/reflect-metadata',
+    'node_modules/@inversifyjs/common',
+    'node_modules/@inversifyjs/container',
+    'node_modules/@inversifyjs/core',
+    'node_modules/@inversifyjs/plugin',
+    'node_modules/@inversifyjs/prototype-utils',
+    'node_modules/@inversifyjs/reflect-metadata-utils',
     'icon.png',
     'package.json',
     'README.md',
@@ -125,4 +428,9 @@ run(
   { cwd: stageRoot },
 );
 
+if (localBuild) {
+  console.log(
+    `[rs-x-vscode-extension] Local VSIX version: ${packagedExtensionVersion}`,
+  );
+}
 console.log(`VSIX generated at ${outputPath}`);

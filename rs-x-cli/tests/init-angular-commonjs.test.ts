@@ -121,10 +121,10 @@ bootstrapApplication(class AppComponent {}).catch(console.error);
         ]),
       );
       expect(buildOptions.browser).toBe(
-        'src/rsx-generated/rsx-angular-browser-entry.generated.ts',
+        '.rsx-generated/rsx-angular-browser-entry.generated.ts',
       );
       expect(buildOptions.polyfills ?? []).not.toContain(
-        'src/rsx-generated/rsx-aot-registration.generated.ts',
+        '.rsx-generated/rsx-aot-registration.generated.ts',
       );
       expect(
         angularJson.projects.app.architect.build.configurations.production

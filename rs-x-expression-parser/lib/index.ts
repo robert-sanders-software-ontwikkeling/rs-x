@@ -4,6 +4,7 @@ export * from './expresion-change-transaction-manager.interface';
 export * from './expression-cache';
 export * from './expression-change-playback';
 export * from './expression-change-tracker';
+export * from './expression-debug-hook';
 export * from './expression-engine';
 export * from './expression-evaluate-manager';
 export * from './expression-factory';

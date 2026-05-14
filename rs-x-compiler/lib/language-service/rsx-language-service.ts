@@ -1,12 +1,18 @@
 import ts from 'typescript';
 
-import { detectExpressionSitesInSourceFile } from '../compiler/expression-site-detector';
+import {
+  createExpressionSiteDetectionsFromRsxBackedProgram,
+  detectExpressionSites,
+  detectExpressionSitesInSourceFile,
+  type IExpressionSiteDetection,
+} from '../compiler/expression-site-detector';
 import {
   isDateLikeType,
   supportedDateProperties,
   validateExpressionSite,
 } from '../compiler/expression-site-validator';
 import type { CompilerDiagnosticCategory } from '../diagnostics';
+import { createRsxBackedProgramForFile, type IRsxBackedProgram } from '../rsx';
 import { createVueBackedProgramForFile } from '../vue';
 
 export interface IRsxExpressionRegion {
@@ -62,21 +68,75 @@ interface IRsxExpressionContext {
   readonly checker: ts.TypeChecker;
 }
 
+type LocalBindings = ReadonlyMap<string, ts.Type>;
+
+const emptyLocalBindings: LocalBindings = new Map();
+
+function getExpressionSourceFileName(site: IExpressionSiteDetection): string {
+  return site.expressionSourceFile.fileName;
+}
+
+function getExpressionLiteralBounds(site: IExpressionSiteDetection): {
+  start: number;
+  end: number;
+} {
+  return {
+    start: site.expressionStart,
+    end: site.expressionEnd,
+  };
+}
+
+function getRelevantExpressionSites(
+  program: ts.Program,
+  fileName: string,
+): IExpressionSiteDetection[] {
+  return detectExpressionSites(program, {
+    includePartialRsxInvocations: true,
+  }).filter((site) => getExpressionSourceFileName(site) === fileName);
+}
+
+function getRsxBackedDetections(
+  rsxBacked: IRsxBackedProgram,
+): IExpressionSiteDetection[] {
+  return createExpressionSiteDetectionsFromRsxBackedProgram(rsxBacked);
+}
+
 export function findRsxExpressionRegionAtPosition(
   program: ts.Program,
   fileName: string,
   position: number,
 ): IRsxExpressionRegion | null {
-  const context = resolveExpressionContext(program, fileName, position);
-  if (!context) {
+  const resolved = resolveProgramForFile(program, fileName);
+  const sourceFile =
+    resolved.rsxBacked?.sourceFile ??
+    resolved.program.getSourceFile(resolved.fileName);
+  if (!sourceFile) {
     return null;
   }
 
-  return {
-    expression: context.expression,
-    start: context.expressionStart,
-    end: context.expressionEnd,
-  };
+  const checker = resolved.program.getTypeChecker();
+  const sites = resolved.rsxBacked
+    ? getRsxBackedDetections(resolved.rsxBacked)
+    : sourceFile.fileName === resolved.fileName
+      ? getRelevantExpressionSites(resolved.program, resolved.fileName)
+      : detectExpressionSitesInSourceFile(sourceFile, checker, {
+          includePartialRsxInvocations: true,
+        });
+
+  for (const site of sites) {
+    const { start, end } = getExpressionLiteralBounds(site);
+    if (position < start || position > end) {
+      continue;
+    }
+
+    return {
+      expression: site.expression,
+      start,
+      end,
+    };
+  }
+
+  return null;
 }
 
 export function getRsxCompletionsAtPosition(
@@ -91,19 +151,48 @@ export function getRsxCompletionsAtPosition(
 
   const expressionOffset = position - context.expressionStart;
   const prefixSource = context.expression.slice(0, expressionOffset);
-  const constructorPrefix = resolveConstructorCompletionPrefix(prefixSource);
+  const inlineFunctionContext = resolveInlineFunctionBodyContext(
+    context,
+    expressionOffset,
+  );
+  const activePrefixSource =
+    inlineFunctionContext?.prefixSource ?? prefixSource;
+  const localBindings =
+    inlineFunctionContext?.localBindings ?? emptyLocalBindings;
+  const constructorPrefix =
+    resolveConstructorCompletionPrefix(activePrefixSource);
   if (constructorPrefix !== null) {
     return resolveConstructorCompletions(context, constructorPrefix);
   }
 
-  const completionTarget = resolveCompletionTarget(prefixSource);
-  const targetType = completionTarget.chain.length
-    ? resolveChainType(
-        context.modelType,
-        completionTarget.chain,
-        context.checker,
-      )
-    : context.modelType;
+  const completionTarget = resolveCompletionTarget(activePrefixSource);
+  if (!completionTarget.chain.length) {
+    const names = [
+      ...context.modelType
+        .getProperties()
+        .map((property) => property.getName()),
+      ...localBindings.keys(),
+    ]
+      .filter((name) => name.startsWith(completionTarget.prefix))
+      .filter((name, index, collection) => collection.indexOf(name) === index)
+      .sort();
+
+    return names.map((name) => ({
+      name,
+      kind: localBindings.has(name)
+        ? ('property' as const)
+        : isCallableProperty(context.modelType, name, context.checker)
+          ? ('method' as const)
+          : ('property' as const),
+    }));
+  }
+
+  const targetType = resolveChainType(
+    context.modelType,
+    completionTarget.chain,
+    context.checker,
+    localBindings,
+  );
 
   if (!targetType) {
     return [];
@@ -136,17 +225,50 @@ export function getRsxDiagnosticsForFile(
   fileName: string,
 ): IRsxDiagnostic[] {
   const resolved = resolveProgramForFile(program, fileName);
-  const sourceFile = resolved.program.getSourceFile(resolved.fileName);
+  const sourceFile =
+    resolved.rsxBacked?.sourceFile ??
+    resolved.program.getSourceFile(resolved.fileName);
   if (!sourceFile) {
     return [];
   }
 
   const checker = resolved.program.getTypeChecker();
-  const sites = detectExpressionSitesInSourceFile(sourceFile, checker);
+  if (resolved.rsxBacked) {
+    return getRsxBackedDetections(resolved.rsxBacked).flatMap((site) => {
+      const result = validateExpressionSite(site, site.typeChecker ?? checker);
+      const literalBounds = getExpressionLiteralBounds(site);
+      return result.diagnostics.map((diagnostic) => {
+        const tokenRange = resolveDiagnosticTokenRangeInExpression({
+          expression: site.expression,
+          token: diagnostic.token,
+        });
+        const start =
+          tokenRange === null
+            ? literalBounds.start
+            : literalBounds.start + tokenRange.start;
+        const end =
+          tokenRange === null
+            ? literalBounds.end
+            : literalBounds.start + tokenRange.end;
+
+        return {
+          category: diagnostic.category,
+          message: diagnostic.message,
+          start,
+          end,
+        };
+      });
+    });
+  }
+
+  const sites = resolved.rsxBacked
+    ? getRsxBackedDetections(resolved.rsxBacked)
+    : sourceFile.fileName === resolved.fileName
+      ? getRelevantExpressionSites(resolved.program, resolved.fileName)
+      : detectExpressionSitesInSourceFile(sourceFile, checker);
   return sites.flatMap((site) => {
-    const result = validateExpressionSite(site, checker);
-    const literalStart = site.expressionLiteral.getStart(sourceFile) + 1;
-    const literalEnd = site.expressionLiteral.getEnd() - 1;
+    const result = validateExpressionSite(site, site.typeChecker ?? checker);
+    const literalBounds = getExpressionLiteralBounds(site);
     const expressionText = site.expression;
 
     return result.diagnostics.map((diagnostic) => {
@@ -155,9 +277,13 @@ export function getRsxDiagnosticsForFile(
         token: diagnostic.token,
       });
       const start =
-        tokenRange === null ? literalStart : literalStart + tokenRange.start;
+        tokenRange === null
+          ? literalBounds.start
+          : literalBounds.start + tokenRange.start;
       const end =
-        tokenRange === null ? literalEnd : literalStart + tokenRange.end;
+        tokenRange === null
+          ? literalBounds.end
+          : literalBounds.start + tokenRange.end;
 
       return {
         category: diagnostic.category,
@@ -202,6 +328,10 @@ export function getRsxHoverAtPosition(
   }
 
   const expressionOffset = position - context.expressionStart;
+  const localBindings = resolveInlineFunctionLocalBindings(
+    context,
+    expressionOffset,
+  );
   const tokenRange = resolveIdentifierTokenRange(
     context.expression,
     expressionOffset,
@@ -220,6 +350,7 @@ export function getRsxHoverAtPosition(
     context.modelType,
     chain,
     context.checker,
+    localBindings,
   );
   if (!resolvedType) {
     return null;
@@ -319,23 +450,62 @@ function resolveExpressionContext(
   position: number,
 ): IRsxExpressionContext | null {
   const resolved = resolveProgramForFile(program, fileName);
-  const sourceFile = resolved.program.getSourceFile(resolved.fileName);
+  const sourceFile =
+    resolved.rsxBacked?.sourceFile ??
+    resolved.program.getSourceFile(resolved.fileName);
   if (!sourceFile) {
     return null;
   }
 
   const checker = resolved.program.getTypeChecker();
-  const sites = detectExpressionSitesInSourceFile(sourceFile, checker);
+  if (resolved.rsxBacked) {
+    const sites = getRsxBackedDetections(resolved.rsxBacked);
+    for (const site of sites) {
+      const expressionStart = site.expressionStart;
+      const expressionEnd = site.expressionEnd;
+      if (position < expressionStart || position > expressionEnd) {
+        continue;
+      }
+
+      const modelType = site.modelTypeNode
+        ? checker.getTypeFromTypeNode(site.modelTypeNode)
+        : null;
+      if (!modelType) {
+        continue;
+      }
+
+      return {
+        sourceFile,
+        expression: site.expression,
+        expressionStart,
+        expressionEnd,
+        modelType,
+        checker,
+      };
+    }
+    return null;
+  }
+
+  const sites = resolved.rsxBacked
+    ? getRsxBackedDetections(resolved.rsxBacked)
+    : sourceFile.fileName === resolved.fileName
+      ? getRelevantExpressionSites(resolved.program, resolved.fileName)
+      : detectExpressionSitesInSourceFile(sourceFile, checker);
 
   for (const site of sites) {
-    const expressionStart = site.expressionLiteral.getStart(sourceFile) + 1;
-    const expressionEnd = site.expressionLiteral.getEnd() - 1;
+    const { start: expressionStart, end: expressionEnd } =
+      getExpressionLiteralBounds(site);
     if (position < expressionStart || position > expressionEnd) {
       continue;
     }
 
-    const modelNode = site.callExpression.arguments[0];
-    if (!modelNode) {
+    const modelType = site.modelTypeNode
+      ? checker.getTypeFromTypeNode(site.modelTypeNode)
+      : (() => {
+          const modelNode = site.callExpression?.arguments[0];
+          return modelNode ? checker.getTypeAtLocation(modelNode) : null;
+        })();
+    if (!modelType) {
       return null;
     }
 
@@ -344,9 +514,468 @@ function resolveExpressionContext(
       expression: site.expression,
       expressionStart,
       expressionEnd,
-      modelType: checker.getTypeAtLocation(modelNode),
+      modelType,
       checker,
     };
+  }
+
+  return null;
+}
+
+function resolveInlineFunctionBodyContext(
+  context: IRsxExpressionContext,
+  expressionOffset: number,
+): { prefixSource: string; localBindings: LocalBindings } | null {
+  const sourcePrefix = 'const __rsx_expr__ = ';
+  const sourceFile = ts.createSourceFile(
+    '__rsx_expr__.ts',
+    `${sourcePrefix}${context.expression};`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const absoluteOffset = sourcePrefix.length + expressionOffset;
+  const match = findInlineFunctionMatchAtOffset(
+    sourceFile,
+    absoluteOffset,
+    false,
+  );
+  if (!match) {
+    return null;
+  }
+
+  const localBindings = resolveInlineFunctionBindings(context, match);
+  if (localBindings.size === 0) {
+    return null;
+  }
+
+  const bodyStartOffset = Math.max(
+    0,
+    match.functionNode.body.getStart(sourceFile) - sourcePrefix.length,
+  );
+
+  return {
+    prefixSource: context.expression.slice(bodyStartOffset, expressionOffset),
+    localBindings,
+  };
+}
+
+function resolveInlineFunctionLocalBindings(
+  context: IRsxExpressionContext,
+  expressionOffset: number,
+): LocalBindings {
+  const sourcePrefix = 'const __rsx_expr__ = ';
+  const sourceFile = ts.createSourceFile(
+    '__rsx_expr__.ts',
+    `${sourcePrefix}${context.expression};`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const absoluteOffset = sourcePrefix.length + expressionOffset;
+  const match = findInlineFunctionMatchAtOffset(
+    sourceFile,
+    absoluteOffset,
+    true,
+  );
+  return match
+    ? resolveInlineFunctionBindings(context, match)
+    : emptyLocalBindings;
+}
+
+function findInlineFunctionMatchAtOffset(
+  sourceFile: ts.SourceFile,
+  absoluteOffset: number,
+  includeParameters: boolean,
+): {
+  functionNode: ts.ArrowFunction | ts.FunctionExpression;
+  callExpression: ts.CallExpression;
+} | null {
+  let bestMatch: {
+    functionNode: ts.ArrowFunction | ts.FunctionExpression;
+    callExpression: ts.CallExpression;
+  } | null = null;
+
+  const visit = (node: ts.Node): void => {
+    if (
+      (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) &&
+      absoluteOffset >=
+        (includeParameters
+          ? node.getStart(sourceFile)
+          : node.body.getStart(sourceFile)) &&
+      absoluteOffset <= node.getEnd()
+    ) {
+      const callExpression = findParentCallExpression(node);
+      if (callExpression) {
+        const bestWidth = bestMatch
+          ? bestMatch.functionNode.body.getWidth(sourceFile)
+          : Number.POSITIVE_INFINITY;
+        const nextWidth = node.body.getWidth(sourceFile);
+        if (nextWidth <= bestWidth) {
+          bestMatch = { functionNode: node, callExpression };
+        }
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  ts.forEachChild(sourceFile, visit);
+  return bestMatch;
+}
+
+function findParentCallExpression(
+  functionNode: ts.ArrowFunction | ts.FunctionExpression,
+): ts.CallExpression | null {
+  let current: ts.Node = functionNode;
+
+  while (current.parent) {
+    if (
+      ts.isCallExpression(current.parent) &&
+      current.parent.arguments.some((argument) => argument === current)
+    ) {
+      return current.parent;
+    }
+
+    if (!ts.isParenthesizedExpression(current.parent)) {
+      current = current.parent;
+      continue;
+    }
+
+    current = current.parent;
+  }
+
+  return null;
+}
+
+function resolveInlineFunctionBindings(
+  context: IRsxExpressionContext,
+  match: {
+    functionNode: ts.ArrowFunction | ts.FunctionExpression;
+    callExpression: ts.CallExpression;
+  },
+): LocalBindings {
+  const callbackIndex = match.callExpression.arguments.findIndex(
+    (argument) => argument === match.functionNode,
+  );
+  if (callbackIndex < 0) {
+    return emptyLocalBindings;
+  }
+
+  const arrayMethodBindings = resolveArrayMethodInlineFunctionBindings(
+    context,
+    match,
+    callbackIndex,
+  );
+  if (arrayMethodBindings.size > 0) {
+    return arrayMethodBindings;
+  }
+
+  const callableType = resolveTsExpressionType(
+    match.callExpression.expression,
+    context.modelType,
+    context.checker,
+  );
+  if (!callableType) {
+    return emptyLocalBindings;
+  }
+
+  const outerSignature = pickSignatureByArgumentCount(
+    callableType.getCallSignatures(),
+    match.callExpression.arguments.length,
+  );
+  if (!outerSignature) {
+    return emptyLocalBindings;
+  }
+
+  const parameter = outerSignature.getParameters()[callbackIndex];
+  const declaration =
+    parameter?.valueDeclaration ?? parameter?.declarations?.[0];
+  if (!parameter || !declaration) {
+    return emptyLocalBindings;
+  }
+
+  const callbackType = context.checker.getTypeOfSymbolAtLocation(
+    parameter,
+    declaration,
+  );
+  const callbackSignature = pickSignatureByArgumentCount(
+    callbackType.getCallSignatures(),
+    match.functionNode.parameters.length,
+  );
+  if (!callbackSignature) {
+    return emptyLocalBindings;
+  }
+
+  const bindings = new Map<string, ts.Type>();
+  const callbackParameters = callbackSignature.getParameters();
+  for (
+    let index = 0;
+    index < match.functionNode.parameters.length &&
+    index < callbackParameters.length;
+    index += 1
+  ) {
+    const parameterNode = match.functionNode.parameters[index];
+    if (!ts.isIdentifier(parameterNode.name)) {
+      continue;
+    }
+
+    const callbackParameter = callbackParameters[index];
+    const callbackDeclaration =
+      callbackParameter?.valueDeclaration ??
+      callbackParameter?.declarations?.[0];
+    if (!callbackParameter || !callbackDeclaration) {
+      continue;
+    }
+
+    bindings.set(
+      parameterNode.name.text,
+      context.checker.getTypeOfSymbolAtLocation(
+        callbackParameter,
+        callbackDeclaration,
+      ),
+    );
+  }
+
+  return bindings;
+}
+
+function resolveArrayMethodInlineFunctionBindings(
+  context: IRsxExpressionContext,
+  match: {
+    functionNode: ts.ArrowFunction | ts.FunctionExpression;
+    callExpression: ts.CallExpression;
+  },
+  callbackIndex: number,
+): LocalBindings {
+  if (
+    callbackIndex !== 0 ||
+    !ts.isPropertyAccessExpression(match.callExpression.expression)
+  ) {
+    return emptyLocalBindings;
+  }
+
+  const methodName = match.callExpression.expression.name.text;
+  const targetType = resolveTsExpressionType(
+    match.callExpression.expression.expression,
+    context.modelType,
+    context.checker,
+  );
+  if (!targetType) {
+    return emptyLocalBindings;
+  }
+
+  const elementType = resolveArrayElementType(targetType, context.checker);
+  if (!elementType) {
+    return emptyLocalBindings;
+  }
+
+  const bindings = new Map<string, ts.Type>();
+  const parameterNodes = match.functionNode.parameters;
+
+  const bindParameter = (index: number, type: ts.Type | null): void => {
+    const parameterNode = parameterNodes[index];
+    if (!parameterNode || !ts.isIdentifier(parameterNode.name) || !type) {
+      return;
+    }
+
+    bindings.set(parameterNode.name.text, type);
+  };
+
+  switch (methodName) {
+    case 'map':
+    case 'filter':
+    case 'find':
+    case 'some':
+    case 'every':
+    case 'forEach':
+      bindParameter(0, elementType);
+      bindParameter(1, context.checker.getNumberType());
+      bindParameter(2, targetType);
+      return bindings;
+    case 'reduce': {
+      const seedArgument = match.callExpression.arguments[1];
+      const accumulatorType =
+        seedArgument && ts.isExpression(seedArgument)
+          ? (resolveTsExpressionType(
+              seedArgument,
+              context.modelType,
+              context.checker,
+            ) ?? elementType)
+          : elementType;
+      bindParameter(0, accumulatorType);
+      bindParameter(1, elementType);
+      bindParameter(2, context.checker.getNumberType());
+      bindParameter(3, targetType);
+      return bindings;
+    }
+    default:
+      return emptyLocalBindings;
+  }
+}
+
+function resolveArrayElementType(
+  targetType: ts.Type,
+  checker: ts.TypeChecker,
+): ts.Type | null {
+  const nonNullableTarget = checker.getNonNullableType(targetType);
+  const numberIndexType = nonNullableTarget.getNumberIndexType();
+  if (numberIndexType) {
+    return checker.getNonNullableType(numberIndexType);
+  }
+
+  const typeArguments = checker.getTypeArguments(
+    nonNullableTarget as ts.TypeReference,
+  );
+  return typeArguments[0] ? checker.getNonNullableType(typeArguments[0]) : null;
+}
+
+function pickSignatureByArgumentCount(
+  signatures: readonly ts.Signature[],
+  argumentCount: number,
+): ts.Signature | null {
+  for (const signature of signatures) {
+    const parameters = signature.getParameters();
+    const hasRest = parameters.some((parameter) => {
+      const declaration = parameter.valueDeclaration;
+      return Boolean(
+        declaration &&
+        ts.isParameter(declaration) &&
+        declaration.dotDotDotToken,
+      );
+    });
+
+    if (
+      argumentCount <= parameters.length ||
+      (hasRest && argumentCount >= parameters.length - 1)
+    ) {
+      return signature;
+    }
+  }
+
+  return signatures[0] ?? null;
+}
+
+function resolveTsExpressionType(
+  node: ts.Expression,
+  modelType: ts.Type,
+  checker: ts.TypeChecker,
+  localBindings: LocalBindings = emptyLocalBindings,
+): ts.Type | null {
+  if (ts.isNumericLiteral(node)) {
+    return checker.getNumberType();
+  }
+
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+    return checker.getStringType();
+  }
+
+  if (
+    node.kind === ts.SyntaxKind.TrueKeyword ||
+    node.kind === ts.SyntaxKind.FalseKeyword
+  ) {
+    return checker.getBooleanType();
+  }
+
+  if (ts.isParenthesizedExpression(node)) {
+    return resolveTsExpressionType(
+      node.expression,
+      modelType,
+      checker,
+      localBindings,
+    );
+  }
+
+  if (ts.isIdentifier(node)) {
+    const localBinding = localBindings.get(node.text);
+    if (localBinding) {
+      return checker.getNonNullableType(localBinding);
+    }
+
+    const property = modelType.getProperty(node.text);
+    const declaration =
+      property?.valueDeclaration ?? property?.declarations?.[0];
+    if (!property || !declaration) {
+      return null;
+    }
+
+    return checker.getNonNullableType(
+      checker.getTypeOfSymbolAtLocation(property, declaration),
+    );
+  }
+
+  if (ts.isPropertyAccessExpression(node)) {
+    const targetType = resolveTsExpressionType(
+      node.expression,
+      modelType,
+      checker,
+      localBindings,
+    );
+    if (!targetType) {
+      return null;
+    }
+
+    const property = checker
+      .getNonNullableType(targetType)
+      .getProperty(node.name.text);
+    const declaration =
+      property?.valueDeclaration ?? property?.declarations?.[0];
+    if (!property || !declaration) {
+      return null;
+    }
+
+    return checker.getNonNullableType(
+      checker.getTypeOfSymbolAtLocation(property, declaration),
+    );
+  }
+
+  if (ts.isElementAccessExpression(node)) {
+    const targetType = resolveTsExpressionType(
+      node.expression,
+      modelType,
+      checker,
+      localBindings,
+    );
+    if (!targetType) {
+      return null;
+    }
+
+    const nonNullableTarget = checker.getNonNullableType(targetType);
+    const literalArgument = node.argumentExpression;
+    if (literalArgument && ts.isNumericLiteral(literalArgument)) {
+      return (
+        nonNullableTarget.getNumberIndexType() ??
+        checker.getTypeArguments(nonNullableTarget as ts.TypeReference)[0] ??
+        null
+      );
+    }
+
+    if (literalArgument && ts.isStringLiteral(literalArgument)) {
+      const property = nonNullableTarget.getProperty(literalArgument.text);
+      const declaration =
+        property?.valueDeclaration ?? property?.declarations?.[0];
+      if (property && declaration) {
+        return checker.getTypeOfSymbolAtLocation(property, declaration);
+      }
+    }
+  }
+
+  if (ts.isCallExpression(node)) {
+    const callableType = resolveTsExpressionType(
+      node.expression,
+      modelType,
+      checker,
+      localBindings,
+    );
+    const signature = callableType
+      ? pickSignatureByArgumentCount(
+          callableType.getCallSignatures(),
+          node.arguments.length,
+        )
+      : null;
+    return signature
+      ? checker.getNonNullableType(signature.getReturnType())
+      : null;
   }
 
   return null;
@@ -355,7 +984,16 @@ function resolveExpressionContext(
 function resolveProgramForFile(
   program: ts.Program,
   fileName: string,
-): { program: ts.Program; fileName: string } {
+): { program: ts.Program; fileName: string; rsxBacked?: IRsxBackedProgram } {
+  const rsxBacked = createRsxBackedProgramForFile(program, fileName);
+  if (rsxBacked) {
+    return {
+      program: rsxBacked.program,
+      fileName,
+      rsxBacked,
+    };
+  }
+
   return (
     createVueBackedProgramForFile(program, fileName) ?? {
       program,
@@ -452,10 +1090,25 @@ function resolveChainType(
   modelType: ts.Type,
   chain: readonly string[],
   checker: ts.TypeChecker,
+  localBindings: LocalBindings = emptyLocalBindings,
 ): ts.Type | null {
   let currentType: ts.Type | null = modelType;
+  let startIndex = 0;
 
-  for (const segment of chain) {
+  const firstSegment = chain[0];
+  const localRootMatch = firstSegment?.match(/^([A-Za-z_$][\w$]*)$/u);
+  if (localRootMatch) {
+    const localRootType = localBindings.get(localRootMatch[1]);
+    if (localRootType) {
+      currentType = checker.getNonNullableType(
+        unwrapRsxExpressionType(localRootType, checker),
+      );
+      startIndex = 1;
+    }
+  }
+
+  for (let index = startIndex; index < chain.length; index += 1) {
+    const segment = chain[index];
     if (!currentType) {
       return null;
     }

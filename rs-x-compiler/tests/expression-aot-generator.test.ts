@@ -13,9 +13,9 @@ import {
 
 const workspaceRoot = path.resolve(__dirname, '../..');
 
-function createProgram(entryFile: string): ts.Program {
+function createProgram(entryFile: string | string[]): ts.Program {
   return ts.createProgram({
-    rootNames: [entryFile],
+    rootNames: Array.isArray(entryFile) ? entryFile : [entryFile],
     options: {
       baseUrl: workspaceRoot,
       ignoreDeprecations: '6.0',
@@ -92,6 +92,60 @@ rsx('a + b')(model);
       'expandCompactCompiledPlans(compactPlans, true)',
     );
     expect(generated.code).toContain('wrapForRuntimeEvaluation');
+  });
+
+  it('includes imported const expressions in compiled AOT generation', async () => {
+    const fixtureDir = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'rsx-aot-generator-imported-compiled-'),
+    );
+    const expressionsPath = path.join(fixtureDir, 'expressions.ts');
+    const consumerPath = path.join(fixtureDir, 'consumer.ts');
+
+    await fs.writeFile(
+      expressionsPath,
+      `
+export const sharedCompiledExpression = 'a + b';
+`,
+      'utf8',
+    );
+
+    await fs.writeFile(
+      consumerPath,
+      `
+import { rsx } from '@rs-x/expression-parser';
+import { sharedCompiledExpression } from './expressions';
+
+const model = { a: 1, b: 2 };
+rsx(sharedCompiledExpression)(model);
+`,
+      'utf8',
+    );
+
+    const program = createProgram([expressionsPath, consumerPath]);
+    const generated = generateAotCompiledExpressionsModule(program);
+
+    expect(generated.expressions).toEqual(['a + b']);
+    expect(generated.skippedExpressions).toEqual([]);
+    expect(generated.code).toContain('a + b');
+  });
+
+  it('includes .rsx file expressions in compiled AOT generation', async () => {
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/expression-file.fixture.rsx',
+    );
+    const modelPath = path.resolve(
+      __dirname,
+      './fixtures/rsx-file-model.fixture.ts',
+    );
+
+    const program = createProgram([fixturePath, modelPath]);
+    const generated = generateAotCompiledExpressionsModule(program);
+
+    expect(generated.expressions).toEqual([
+      'lines.reduce((sum, line) => sum + line.lineTotal, 0)',
+    ]);
+    expect(generated.skippedExpressions).toEqual([]);
   });
 
   it('skips expressions with rsx preparse disabled', async () => {
@@ -192,6 +246,61 @@ rsx('a * b')(model);
     expect(generated.code).toContain('registerPreparsedExpressionAsts');
     expect(generated.code).toContain('@rs-x/expression-parser/aot-runtime');
     expect(generated.code).toContain('BinaryExpression');
+  });
+
+  it('includes imported const expressions in parsed/preparsed AOT generation', async () => {
+    const fixtureDir = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'rsx-aot-generator-imported-parsed-'),
+    );
+    const expressionsPath = path.join(fixtureDir, 'expressions.ts');
+    const consumerPath = path.join(fixtureDir, 'consumer.ts');
+
+    await fs.writeFile(
+      expressionsPath,
+      `
+export const sharedParsedExpression = 'a + b';
+`,
+      'utf8',
+    );
+
+    await fs.writeFile(
+      consumerPath,
+      `
+import { rsx } from '@rs-x/expression-parser';
+import { sharedParsedExpression } from './expressions';
+
+const model = { a: 1, b: 2 };
+rsx(sharedParsedExpression)(model);
+`,
+      'utf8',
+    );
+
+    const program = createProgram([expressionsPath, consumerPath]);
+    const generated = generateAotParsedExpressionCacheModule(program);
+
+    expect(generated.expressions).toEqual(['a + b']);
+    expect(generated.skippedExpressions).toEqual([]);
+    expect(generated.code).toContain('registerPreparsedExpressionAsts');
+    expect(generated.code).toContain('BinaryExpression');
+  });
+
+  it('includes .rsx file expressions in parsed/preparsed AOT generation', async () => {
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/expression-file.fixture.rsx',
+    );
+    const modelPath = path.resolve(
+      __dirname,
+      './fixtures/rsx-file-model.fixture.ts',
+    );
+
+    const program = createProgram([fixturePath, modelPath]);
+    const generated = generateAotParsedExpressionCacheModule(program);
+
+    expect(generated.expressions).toEqual([
+      'lines.reduce((sum, line) => sum + line.lineTotal, 0)',
+    ]);
+    expect(generated.skippedExpressions).toEqual([]);
   });
 
   it('skips expressions with rsx preparse disabled', async () => {
@@ -340,6 +449,7 @@ rsx('a + b')(model);
 rsx('b + c', { lazy: true })(model);
 rsx('c + d', { lazy: true, preparse: true })(model);
 rsx('d + a', { preparse: false, lazy: true })(model);
+rsx('a + c', { preparse: false, compiled: false, lazy: true })(model);
 `,
       'utf8',
     );
@@ -347,13 +457,14 @@ rsx('d + a', { preparse: false, lazy: true })(model);
     const program = createProgram(fixturePath);
     const generated = generateAotLazyExpressionPreloadManifestModule(program);
 
-    expect(generated.expressions).toEqual(['b + c', 'c + d']);
+    expect(generated.expressions).toEqual(['b + c', 'c + d', 'd + a']);
     expect(generated.code).toContain('registerRsxAotLazyExpressionPreloaders');
     expect(generated.code).toContain('@rs-x/expression-parser/aot-runtime');
     expect(generated.code).toContain('b + c');
     expect(generated.code).toContain('c + d');
+    expect(generated.code).toContain('d + a');
     expect(generated.code).not.toContain('a + b');
-    expect(generated.code).not.toContain('d + a');
+    expect(generated.code).not.toContain('a + c');
   });
 });
 
@@ -374,6 +485,7 @@ rsx('b + c', { lazy: true })(model);
 rsx('c + d', { lazy: true, preparse: true })(model);
 rsx('d + a', { lazy: true, compiled: false })(model);
 rsx('a + c', { lazy: true, preparse: false })(model);
+rsx('b + d', { lazy: true, preparse: false, compiled: false })(model);
 `,
       'utf8',
     );
@@ -381,8 +493,8 @@ rsx('a + c', { lazy: true, preparse: false })(model);
     const program = createProgram(fixturePath);
     const generated = generateAotLazyExpressionsModule(program);
 
-    expect(generated.expressions).toEqual(['b + c', 'c + d', 'd + a']);
-    expect(generated.compiledExpressions).toEqual(['b + c', 'c + d']);
+    expect(generated.expressions).toEqual(['a + c', 'b + c', 'c + d', 'd + a']);
+    expect(generated.compiledExpressions).toEqual(['a + c', 'b + c', 'c + d']);
     expect(generated.skippedCompiledExpressions).toEqual([]);
     expect(generated.skippedPreparsedExpressions).toEqual([]);
     expect(generated.groups).toEqual({});
@@ -396,8 +508,9 @@ rsx('a + c', { lazy: true, preparse: false })(model);
     expect(generated.code).toContain('b + c');
     expect(generated.code).toContain('c + d');
     expect(generated.code).toContain('d + a');
+    expect(generated.code).toContain('a + c');
     expect(generated.code).not.toContain('a + b');
-    expect(generated.code).not.toContain('a + c');
+    expect(generated.code).not.toContain('b + d');
   });
 
   it('throws when lazyGroup is set to the reserved __rsx_ungrouped__ sentinel', async () => {

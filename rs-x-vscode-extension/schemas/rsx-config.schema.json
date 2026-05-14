@@ -5,6 +5,25 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
+    "projects": {
+      "type": "array",
+      "description": "Explicit RS-X project roots used by editor tooling to group expressions in monorepos. Paths are relative to this rsx.config.json file.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "root"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Display name for the project in the RS-X panel."
+          },
+          "root": {
+            "type": "string",
+            "description": "Project root path relative to this rsx.config.json file."
+          }
+        }
+      }
+    },
     "build": {
       "type": "object",
       "additionalProperties": false,
@@ -21,9 +40,13 @@
           "type": "string",
           "description": "Default output directory used by rsx build when --out-dir is omitted."
         },
+        "buildFolder": {
+          "type": "string",
+          "description": "Folder for generated RS-X build artifacts. Relative paths are resolved from the project root."
+        },
         "preparseFile": {
           "type": "string",
-          "description": "Path to the generated preparsed AST cache module."
+          "description": "Generated preparsed AST cache module file name, or a custom path. File names are resolved inside build.buildFolder."
         },
         "compiled": {
           "type": "boolean",
@@ -31,15 +54,34 @@
         },
         "compiledFile": {
           "type": "string",
-          "description": "Path to the generated compiled-expression cache module."
+          "description": "Generated compiled-expression cache module file name, or a custom path. File names are resolved inside build.buildFolder."
         },
         "registrationFile": {
           "type": "string",
-          "description": "Path to the generated registration module that loads AOT output into runtime caches."
+          "description": "Generated registration module file name, or a custom path. File names are resolved inside build.buildFolder."
         },
         "compiledResolvedEvaluator": {
           "type": "boolean",
           "description": "Generate resolved-dependency evaluators inside compiled AOT output."
+        },
+        "debugChangeHooks": {
+          "type": "object",
+          "description": "Per-expression RS-X debug change hooks injected into generated .rsx modules during non-production rsx build runs. Ignored when rsx build runs with --prod.",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "group": {
+                "$ref": "#/$defs/debugChangeHookList"
+              },
+              "instances": {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/$defs/debugChangeHookList"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -81,18 +123,69 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "baseDirectory": {
+              "type": "string",
+              "description": "Base directory used by RS-X add flows. Defaults to src/rsx; expression files default to <baseDirectory>/expressions and model files to <baseDirectory>/model."
+            },
             "defaultDirectory": {
               "type": "string",
-              "description": "Default directory suggested by rsx add."
+              "description": "Default expression directory suggested by the VS Code Expressions panel add action. Overrides baseDirectory for expression files."
+            },
+            "modelDirectory": {
+              "type": "string",
+              "description": "Default model directory suggested by the VS Code Expressions panel add action. Overrides baseDirectory for generated model files."
+            },
+            "sourceRoot": {
+              "type": "string",
+              "description": "Default source root used by RS-X panel actions that create support TypeScript files such as debug hooks. When omitted, tools use baseDirectory or derive this from defaultDirectory."
             },
             "searchRoots": {
               "type": "array",
-              "description": "Preferred roots used when rsx add ranks existing RS-X expression files.",
+              "description": "Preferred roots used by expression-authoring tools when ranking existing RS-X expression files.",
               "items": {
                 "type": "string"
               }
             }
           }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "debugChangeHookList": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/debugChangeHook"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/debugChangeHook"
+          }
+        }
+      ]
+    },
+    "debugChangeHook": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["moduleSpecifier"],
+      "properties": {
+        "moduleSpecifier": {
+          "type": "string",
+          "description": "Module specifier for the user-defined RS-X debug change hook."
+        },
+        "exportName": {
+          "type": "string",
+          "description": "Export name to import from moduleSpecifier. Use default or omit for a default export."
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether this debug hook metadata is active during non-production builds."
+        },
+        "standardHook": {
+          "type": "string",
+          "enum": ["breakpoint", "log"],
+          "description": "Built-in RS-X debug hook kind. Used by editor tooling to keep standard hook assignments grouped under their standard nodes."
         }
       }
     }

@@ -71,16 +71,15 @@ const doc: CoreConceptDoc = {
     <>
       <p>
         Place an <span className="codeInline">rsx.config.json</span> file in
-        your project root to configure both the RS-X build pipeline and the
-        interactive CLI. The file has two top-level sections:{' '}
+        your project root to configure both the RS-X build pipeline and the RS-X
+        authoring tools. The file has two top-level sections:{' '}
         <span className="codeInline">build</span> (controls what{' '}
         <span className="codeInline">rsx build</span> and{' '}
         <span className="codeInline">rsx typecheck</span> generate) and{' '}
         <span className="codeInline">cli</span> (controls defaults for{' '}
         <span className="codeInline">rsx init</span>,{' '}
-        <span className="codeInline">rsx project</span>,{' '}
-        <span className="codeInline">rsx add</span>, and package manager
-        selection).
+        <span className="codeInline">rsx project</span>, the VS Code Expressions
+        panel add flow, and package manager selection).
       </p>
       <p style={{ marginTop: 8 }}>
         The CLI validates the file at runtime and the VS Code extension
@@ -90,12 +89,12 @@ const doc: CoreConceptDoc = {
     </>
   ),
   whyItMatters:
-    'Having one config file per project keeps build settings and interactive CLI defaults together and version-controlled. Every teammate and CI run uses the same tsconfig path, AOT output locations, package manager, and add defaults — without command-line flags.',
+    'Having one config file per project keeps build settings and authoring defaults together and version-controlled. Every teammate and CI run uses the same tsconfig path, AOT output locations, package manager, and add defaults without command-line flags.',
   keyPoints: [
     'Place rsx.config.json in the project root alongside package.json.',
     'rsx init and rsx project generate a starter rsx.config.json automatically.',
     'The build section mirrors rsx build/typecheck flags and sets per-project defaults.',
-    'The cli section sets defaults for package manager, install channel, init/project verification, and rsx add behavior.',
+    'The cli section sets defaults for package manager, install channel, init/project verification, and the VS Code expression add flow.',
     'The CLI validates the file on every command that reads config — bad config fails early with a clear message.',
     'The VS Code extension contributes a JSON schema so rsx.config.json gets red squiggles, completions, and hover docs.',
   ],
@@ -218,7 +217,7 @@ const doc: CoreConceptDoc = {
       title: 'cli.add.defaultDirectory',
       paragraphs: [
         'Type: string | Default: "src/expressions"',
-        'The default directory suggested by rsx add when creating a new expression file.',
+        'The default directory suggested by the VS Code Expressions panel when creating a new expression file.',
         'Set to "app/expressions" for Next.js projects.',
         'The user can change the directory during the interactive flow regardless of this default.',
       ],
@@ -227,7 +226,7 @@ const doc: CoreConceptDoc = {
       title: 'cli.add.searchRoots',
       paragraphs: [
         'Type: string[] | Default: ["src", "app", "expressions"]',
-        'Preferred source roots used when rsx add ranks existing RS-X expression files for the "update existing file" flow.',
+        'Preferred source roots used by expression-authoring tools when ranking existing RS-X expression files for the "update existing file" flow.',
         'Entries are plain path prefixes relative to the project root. Files under these roots are ranked above files elsewhere in the repo.',
         'Useful in monorepos or unusual directory layouts where the default src/app/expressions ranking does not match your project structure.',
       ],
