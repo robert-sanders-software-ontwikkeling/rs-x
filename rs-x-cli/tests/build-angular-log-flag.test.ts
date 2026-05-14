@@ -107,7 +107,11 @@ rsx<number>('a + b')(model);
       );
 
       const registration = await fs.readFile(
-        path.join(fixtureRoot, 'src', 'rsx-aot-registration.generated.ts'),
+        path.join(
+          fixtureRoot,
+          '.rsx-generated',
+          'rsx-aot-registration.generated.ts',
+        ),
         'utf8',
       );
 

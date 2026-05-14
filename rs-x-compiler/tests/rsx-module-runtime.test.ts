@@ -20,7 +20,6 @@ describe('.rsx module runtime generation', () => {
       text: [
         'defaults:',
         "  model: import('./rsx-file-model.fixture').IModel",
-        '  lazy: true',
         '  lazyGroup: shipping',
         '',
         'expression: total',
@@ -38,10 +37,10 @@ describe('.rsx module runtime generation', () => {
     expect(runtime).toContain('export const total =');
     expect(runtime).toContain('export const firstLineName =');
     expect(runtime).toContain(
-      'rsx("lines.reduce((sum, line) => sum + line.lineTotal, 0)", {"preparse":true,"lazy":true,"compiled":true,"lazyGroup":"shipping"})(model, leafIndexWatchRule);',
+      'rsx("lines.reduce((sum, line) => sum + line.lineTotal, 0)", {"preparse":true,"compiled":true,"lazyGroup":"shipping"})(model, leafIndexWatchRule);',
     );
     expect(runtime).toContain(
-      'rsx("lines[0].name", {"preparse":true,"lazy":true,"compiled":false,"lazyGroup":"shipping"})(model, leafIndexWatchRule);',
+      'rsx("lines[0].name", {"preparse":true,"compiled":false,"lazyGroup":"shipping"})(model, leafIndexWatchRule);',
     );
     expect(runtime).not.toContain('applyRsxDebugChangeHook');
     expect(runtime).toContain('export default total;');
@@ -113,10 +112,14 @@ describe('.rsx module runtime generation', () => {
       'expression.changeHook = (changedExpression, oldValue) => {',
     );
     expect(runtime).toContain(
-      '__rsxDebugResolvedHook(__rsxDebugMetadata, changedExpression, oldValue);',
+      'for (const __rsxDebugResolvedHook of __rsxDebugResolvedHooks) {',
     );
-    expect(runtime).toContain('"expressionName":"doubledRsx"');
-    expect(runtime).toContain(`"fileName":${JSON.stringify(fileName)}`);
+    expect(runtime).toContain(
+      '__rsxDebugResolvedHook(changedExpression, oldValue);',
+    );
+    expect(runtime).not.toContain('__rsxDebugMetadata');
+    expect(runtime).not.toContain('"expressionName":"doubledRsx"');
+    expect(runtime).not.toContain(`"fileName":${JSON.stringify(fileName)}`);
     expect(runtime).toContain('export default doubledRsx;');
   });
 
@@ -164,17 +167,75 @@ describe('.rsx module runtime generation', () => {
     );
     expect(runtime).not.toContain('disabledInstanceHook');
     expect(runtime).toContain(
-      '"src/app.ts:10:doubledRsx": __rsxDebugChangeHook_doubledRsx_0',
+      '"src/app.ts:10:doubledRsx": [__rsxDebugChangeHook_doubledRsx_0]',
     );
-    expect(runtime).toContain('"src/app.ts:20:doubledRsx": null');
+    expect(runtime).toContain('"src/app.ts:20:doubledRsx": []');
     expect(runtime).toContain(
-      'const __rsxDebugResolvedHook = __rsxDebugInstanceHook === undefined ? __rsxDebugChangeHook_doubledRsx : __rsxDebugInstanceHook;',
+      'const __rsxDebugResolvedHooks = __rsxDebugInstanceHooks === undefined ? [__rsxDebugChangeHook_doubledRsx] : __rsxDebugInstanceHooks;',
     );
-    expect(runtime).toContain(
-      'const __rsxDebugMetadata = {"expressionName":"doubledRsx","instanceId":__rsxDebugInstanceId,',
-    );
+    expect(runtime).not.toContain('__rsxDebugMetadata');
     expect(runtime).toContain(
       'expression.changeHook = (changedExpression, oldValue) => {',
+    );
+  });
+
+  it('emits one change-hook wrapper that calls every configured hook', () => {
+    const fileName = path.resolve(
+      workspaceRoot,
+      './rs-x-compiler/tests/fixtures/expression-file-multi.fixture.rsx',
+    );
+    const runtime = generateRsxModuleRuntime({
+      fileName,
+      text: [
+        'defaults:',
+        '  model: { value: number }',
+        '',
+        'expression: doubledRsx',
+        '  return: number',
+        '  value * 2',
+      ].join('\n'),
+      debugChangeHooksByExpression: {
+        doubledRsx: {
+          group: [
+            {
+              moduleSpecifier: './breakpoint-hook',
+              exportName: 'breakpointHook',
+            },
+            {
+              moduleSpecifier: './log-hook',
+              exportName: 'logHook',
+            },
+          ],
+          instances: {
+            'src/app.ts:10:doubledRsx': [
+              {
+                moduleSpecifier: './instance-breakpoint-hook',
+                exportName: 'instanceBreakpointHook',
+              },
+              {
+                moduleSpecifier: './instance-log-hook',
+                exportName: 'instanceLogHook',
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    expect(runtime).toContain(
+      'import { breakpointHook as __rsxDebugChangeHook_doubledRsx } from "./breakpoint-hook";',
+    );
+    expect(runtime).toContain(
+      'import { logHook as __rsxDebugChangeHook_doubledRsx_group_1 } from "./log-hook";',
+    );
+    expect(runtime).toContain(
+      '"src/app.ts:10:doubledRsx": [__rsxDebugChangeHook_doubledRsx_0, __rsxDebugChangeHook_doubledRsx_0_1]',
+    );
+    expect(runtime).toContain(
+      'const __rsxDebugResolvedHooks = __rsxDebugInstanceHooks === undefined ? [__rsxDebugChangeHook_doubledRsx, __rsxDebugChangeHook_doubledRsx_group_1] : __rsxDebugInstanceHooks;',
+    );
+    expect(runtime).toContain(
+      'for (const __rsxDebugResolvedHook of __rsxDebugResolvedHooks) {',
     );
   });
 

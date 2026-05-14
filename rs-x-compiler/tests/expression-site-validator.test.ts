@@ -2,7 +2,11 @@ import path from 'node:path';
 
 import ts from 'typescript';
 
-import { validateExpressionSites } from '../lib/compiler/expression-site-validator';
+import {
+  invalidLazyGroupLazyDiagnosticMessage,
+  invalidLazyPreparseDiagnosticMessage,
+  validateExpressionSites,
+} from '../lib/compiler/expression-site-validator';
 
 const workspaceRoot = path.resolve(__dirname, '../..');
 
@@ -280,6 +284,73 @@ describe('expression-site validation', () => {
       { expression: 'invoiceDate.milliseconds', messages: [] },
       { expression: 'invoiceDate.utcMilliseconds', messages: [] },
       { expression: 'invoiceDate.time', messages: [] },
+    ]);
+  });
+
+  it('reports lazy expressions without preparse or compiled output across detected expression sites', () => {
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/lazy-option-validation.fixture.ts',
+    );
+
+    const program = createProgram(fixturePath);
+    const results = validateExpressionSites(program)
+      .filter((site) => site.sourceFile.fileName === fixturePath)
+      .map((site) => ({
+        kind: site.kind,
+        expression: site.expression,
+        diagnostics: site.diagnostics.map((diagnostic) => diagnostic.message),
+      }));
+
+    expect(results).toEqual([
+      {
+        kind: 'rsx',
+        expression: 'a + b',
+        diagnostics: [invalidLazyPreparseDiagnosticMessage],
+      },
+      {
+        kind: 'rsx',
+        expression: 'a - b',
+        diagnostics: [invalidLazyPreparseDiagnosticMessage],
+      },
+      {
+        kind: 'rsx',
+        expression: 'a + b + 1',
+        diagnostics: [invalidLazyGroupLazyDiagnosticMessage],
+      },
+      {
+        kind: 'rsx',
+        expression: 'a * b',
+        diagnostics: [],
+      },
+      {
+        kind: 'rsx',
+        expression: 'a + b * 2',
+        diagnostics: [],
+      },
+      {
+        kind: 'rsx',
+        expression: 'a - b * 2',
+        diagnostics: [],
+      },
+      {
+        kind: 'rsx',
+        expression: 'a / b',
+        diagnostics: [],
+      },
+      {
+        kind: 'factory-create',
+        expression: 'a + b',
+        diagnostics: [],
+      },
+      {
+        kind: 'expression-manager-create',
+        expression: 'a + b',
+        diagnostics: [
+          "Identifier 'a' does not exist on model type.",
+          "Identifier 'b' does not exist on model type.",
+        ],
+      },
     ]);
   });
 });

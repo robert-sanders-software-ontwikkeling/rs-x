@@ -127,14 +127,16 @@ rsx<number>('a + b')(model);
 
       expect(mainContents).toBe(originalMain);
       expect(mainContents).not.toContain('rsx-aot-registration.generated');
-      expect(wrapperPath).toBe('src/rsx-angular-browser-entry.generated.ts');
+      expect(wrapperPath).toBe(
+        '.rsx-generated/rsx-angular-browser-entry.generated.ts',
+      );
       expect(buildOptions.polyfills ?? []).not.toContain(
-        'src/rsx-aot-registration.generated.ts',
+        '.rsx-generated/rsx-aot-registration.generated.ts',
       );
       expect(wrapperContents).toContain(
         "import './rsx-aot-registration.generated';",
       );
-      expect(wrapperContents).toContain("import './main';");
+      expect(wrapperContents).toContain("import '../src/main';");
     } finally {
       await fs.rm(fixtureRoot, { recursive: true, force: true });
     }
@@ -256,14 +258,18 @@ rsx<number>('a + b')(model);
       );
 
       const wrapperContents = await fs.readFile(
-        path.join(fixtureRoot, 'src', 'rsx-angular-browser-entry.generated.ts'),
+        path.join(
+          fixtureRoot,
+          '.rsx-generated',
+          'rsx-angular-browser-entry.generated.ts',
+        ),
         'utf8',
       );
 
       expect(wrapperContents).toContain(
         "import './rsx-aot-registration.generated';",
       );
-      expect(wrapperContents).toContain("import './main';");
+      expect(wrapperContents).toContain("import '../src/main';");
     } finally {
       await fs.rm(fixtureRoot, { recursive: true, force: true });
     }
@@ -374,14 +380,20 @@ rsx<number>('a + b')(model);
       );
 
       const wrapperContents = await fs.readFile(
-        path.join(fixtureRoot, 'src', 'rsx-angular-browser-entry.generated.ts'),
+        path.join(
+          fixtureRoot,
+          '.rsx-generated',
+          'rsx-angular-browser-entry.generated.ts',
+        ),
         'utf8',
       );
 
       expect(wrapperContents).toContain(
         "import './rsx-aot-registration.generated';",
       );
-      expect(wrapperContents).toContain("import './main';");
+      expect(wrapperContents).toContain(
+        "import '../src/rsx-angular-browser-entry.generated';",
+      );
     } finally {
       await fs.rm(fixtureRoot, { recursive: true, force: true });
     }

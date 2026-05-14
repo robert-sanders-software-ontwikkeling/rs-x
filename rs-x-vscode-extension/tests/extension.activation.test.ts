@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { TextDecoder, TextEncoder } from 'node:util';
 
+import { invalidLazyPreparseDiagnosticMessage } from '../../rs-x-compiler/lib/compiler/expression-site-validator';
+
 (
   globalThis as typeof globalThis & {
     TextDecoder: typeof TextDecoder;
@@ -38,6 +40,7 @@ const registerDocumentSemanticTokensProvider = jest.fn(() => ({
 }));
 const registerTreeDataProvider = jest.fn(() => ({ dispose: jest.fn() }));
 const registerWebviewViewProvider = jest.fn(() => ({ dispose: jest.fn() }));
+const registerWebviewPanelSerializer = jest.fn(() => ({ dispose: jest.fn() }));
 const registerCommand = jest.fn(() => ({ dispose: jest.fn() }));
 const executeCommand = jest.fn();
 const createWebviewPanel = jest.fn(() => ({
@@ -58,6 +61,13 @@ const showWarningMessage = jest.fn();
 const showInformationMessage = jest.fn();
 const showTextDocument = jest.fn();
 const createTextEditorDecorationType = jest.fn(() => ({ dispose: jest.fn() }));
+const terminalShow = jest.fn();
+const terminalSendText = jest.fn();
+const createTerminal = jest.fn(() => ({
+  show: terminalShow,
+  sendText: terminalSendText,
+  dispose: jest.fn(),
+}));
 const visibleTextEditors: unknown[] = [];
 const tabGroupsClose = jest.fn(async () => true);
 const tabGroupsOnDidChangeTabs = jest.fn(() => ({ dispose: jest.fn() }));
@@ -154,7 +164,9 @@ jest.mock(
       showQuickPick,
       showTextDocument,
       showWarningMessage,
+      createTerminal,
       createTextEditorDecorationType,
+      registerWebviewPanelSerializer,
       tabGroups: {
         get all() {
           return tabGroupsAll;
@@ -196,9 +208,22 @@ jest.mock(
         this.replacements.push({ uri, range, text });
       }
     },
+    TextEdit: class TextEdit {
+      constructor(
+        public readonly range: unknown,
+        public readonly newText: string,
+      ) {}
+      static insert(position: unknown, newText: string) {
+        return new TextEdit({ start: position, end: position }, newText);
+      }
+    },
     CompletionItem: class CompletionItem {
       insertText?: string;
       sortText?: string;
+      detail?: string;
+      documentation?: unknown;
+      range?: unknown;
+      additionalTextEdits?: unknown[];
       constructor(
         public readonly label: string,
         public readonly kind: number,
@@ -378,6 +403,37 @@ describe('rsx vscode extension activation', () => {
     expect(context.subscriptions.length).toBeGreaterThan(0);
   });
 
+  it('runs CLI init from the Explorer-selected project folder', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+    const packageJsonPath = path.resolve(__dirname, '../../package.json');
+    const projectRoot = path.dirname(packageJsonPath);
+
+    registerCommand.mockClear();
+    createTerminal.mockClear();
+    terminalShow.mockClear();
+    terminalSendText.mockClear();
+    activate(context as never);
+
+    const command = registerCommand.mock.calls.find(
+      ([commandName]) => commandName === 'rsx.project.init',
+    )?.[1] as ((resource?: { fsPath: string }) => Promise<void>) | undefined;
+
+    await command?.(createUri(packageJsonPath));
+
+    expect(createTerminal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'RS-X Init',
+        cwd: projectRoot,
+      }),
+    );
+    expect(terminalShow).toHaveBeenCalled();
+    expect(terminalSendText).toHaveBeenCalledWith(
+      expect.stringMatching(/\sinit$/u),
+    );
+  });
+
   it('creates a module rsx expression from the expressions panel add command', async () => {
     const context = {
       subscriptions: [] as Array<{ dispose(): void }>,
@@ -467,7 +523,605 @@ describe('rsx vscode extension activation', () => {
     }
   });
 
-  it('enables non-production debug change hooks from the expressions panel command', async () => {
+  it('adds a module rsx expression directly to an explorer-selected rsx file', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+    const targetUri = createUri(
+      '/workspace/src/rules/shipping.expressions.rsx',
+    );
+    const files = new Map<string, string>([
+      [
+        targetUri.fsPath,
+        [
+          'expression: shippingTotalRsx',
+          '  model: { price: number; quantity: number }',
+          '  price * quantity',
+          '',
+        ].join('\n'),
+      ],
+    ]);
+
+    registerCommand.mockClear();
+    workspaceFolders = [{ name: 'workspace', uri: createUri('/workspace') }];
+    showQuickPick.mockClear();
+    showInputBox.mockImplementation(
+      async (options: { prompt?: string; value?: string }) => {
+        if (options.prompt === 'Expression export name') {
+          return 'shippingTaxRsx';
+        }
+        if (options.prompt === 'Initial expression body') {
+          return 'shippingTotal * taxRate';
+        }
+        return undefined;
+      },
+    );
+    readFile.mockImplementation(async (uri: { fsPath: string }) => {
+      const text = files.get(uri.fsPath);
+      if (text === undefined) {
+        throw new Error('ENOENT');
+      }
+      return new TextEncoder().encode(text);
+    });
+    writeFile.mockImplementation(
+      async (uri: { fsPath: string }, bytes: Uint8Array) => {
+        files.set(uri.fsPath, new TextDecoder().decode(bytes));
+      },
+    );
+    createDirectory.mockResolvedValue(undefined as never);
+    openTextDocument.mockImplementation(async (uri: { fsPath: string }) =>
+      createTextDocument(files.get(uri.fsPath) ?? '', { fsPath: uri.fsPath }),
+    );
+    showTextDocument.mockImplementation(async (document: unknown) => ({
+      document,
+      revealRange: jest.fn(),
+    }));
+
+    try {
+      activate(context as never);
+
+      const addCommand = registerCommand.mock.calls.find(
+        ([command]) => command === 'rsx.expressions.add',
+      )?.[1] as ((resource?: { fsPath: string }) => Promise<void>) | undefined;
+      expect(addCommand).toBeDefined();
+      await addCommand?.(targetUri);
+
+      expect(showQuickPick).not.toHaveBeenCalled();
+      expect(files.get(targetUri.fsPath)).toBe(
+        [
+          'expression: shippingTotalRsx',
+          '  model: { price: number; quantity: number }',
+          '  price * quantity',
+          '',
+          'expression: shippingTaxRsx',
+          '  model: { shippingTotal: number; taxRate: number }',
+          '  shippingTotal * taxRate',
+          '',
+        ].join('\n'),
+      );
+      expect(showInformationMessage).toHaveBeenCalledWith(
+        'Added RS-X expression shippingTaxRsx.',
+      );
+    } finally {
+      workspaceFolders = undefined;
+      showQuickPick.mockReset();
+      showInputBox.mockReset();
+      showInformationMessage.mockReset();
+      readFile.mockReset();
+      writeFile.mockReset();
+      createDirectory.mockReset();
+      openTextDocument.mockReset();
+      showTextDocument.mockReset();
+    }
+  });
+
+  it('opens the panel add expression form for an rsx context target', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+    const targetUri = createUri(
+      '/workspace/src/rules/shipping.expressions.rsx',
+    );
+
+    registerCommand.mockClear();
+    workspaceFolders = [{ name: 'workspace', uri: createUri('/workspace') }];
+    findFiles.mockResolvedValue([targetUri] as never);
+    readFile.mockImplementation(async () => {
+      throw new Error('ENOENT');
+    });
+
+    try {
+      activate(context as never);
+      const searchView = {
+        webview: {
+          html: '',
+          options: {},
+          onDidReceiveMessage: jest.fn(() => ({ dispose: jest.fn() })),
+          postMessage: jest.fn(),
+        },
+        onDidDispose: jest.fn(() => ({ dispose: jest.fn() })),
+      };
+      const searchProvider = registerWebviewViewProvider.mock.calls
+        .filter(([viewId]) => viewId === 'rsx.expressions')
+        .at(-1)?.[1] as
+        | {
+            view?: unknown;
+          }
+        | undefined;
+      if (searchProvider) {
+        searchProvider.view = searchView;
+      }
+
+      const addCommand = registerCommand.mock.calls.find(
+        ([command]) => command === 'rsx.expressions.add',
+      )?.[1] as ((resource?: { fsPath: string }) => Promise<void>) | undefined;
+      await addCommand?.(targetUri);
+
+      expect(showQuickPick).not.toHaveBeenCalled();
+      expect(searchView.webview.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'addExpressionForm',
+          rootUri: 'file:///workspace',
+          directory: 'src/rules',
+          fileName: 'shipping',
+          existingFilePath: 'src/rules/shipping.expressions.rsx',
+          lockExpressionFile: true,
+          expressionSource: '',
+          files: ['src/rules/shipping.expressions.rsx'],
+          modelFiles: [],
+          newModelDirectory: 'src/rsx/models',
+          newModelFileName: 'new-expression.model',
+          newModelInterfaceName: 'NewExpressionModel',
+        }),
+      );
+      if (searchProvider) {
+        searchProvider.view = null;
+      }
+    } finally {
+      workspaceFolders = undefined;
+      findFiles.mockReset();
+      readFile.mockReset();
+      showQuickPick.mockReset();
+      registerCommand.mockClear();
+    }
+  });
+
+  it('opens the panel add expression form for an rsx tree file target', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+    const workspaceUri = createUri('/workspace-defaults-lock');
+    const targetUri = createUri(
+      '/workspace-defaults-lock/src/rsx/expressions/ab.expressions.rsx',
+    );
+    const modelUri = createUri(
+      '/workspace-defaults-lock/src/rsx/models/ab.model.ts',
+    );
+    const files = new Map<string, string>([
+      [
+        targetUri.fsPath,
+        [
+          'defaults:',
+          "  model: import('../models/ab.model').AB",
+          '',
+          'expression: aPlusB',
+          '  a + b',
+        ].join('\n'),
+      ],
+      [modelUri.fsPath, 'export interface AB { a: number; b: number }'],
+    ]);
+
+    registerCommand.mockClear();
+    workspaceFolders = [{ name: 'workspace', uri: workspaceUri }];
+    findFiles.mockImplementation(async (pattern: string) => {
+      if (pattern === '**/*.rsx') {
+        return [targetUri] as never;
+      }
+      if (
+        pattern.includes(
+          '{model,contract,types,type,interface,interfaces,schema,dto}',
+        )
+      ) {
+        return [modelUri] as never;
+      }
+      return [] as never;
+    });
+    readFile.mockImplementation(async (uri: { fsPath: string }) => {
+      const text = files.get(uri.fsPath);
+      if (text === undefined) {
+        throw new Error('ENOENT');
+      }
+      return Buffer.from(text, 'utf8');
+    });
+
+    try {
+      activate(context as never);
+      const searchView = {
+        webview: {
+          html: '',
+          options: {},
+          onDidReceiveMessage: jest.fn(() => ({ dispose: jest.fn() })),
+          postMessage: jest.fn(),
+        },
+        onDidDispose: jest.fn(() => ({ dispose: jest.fn() })),
+      };
+      const searchProvider = registerWebviewViewProvider.mock.calls
+        .filter(([viewId]) => viewId === 'rsx.expressions')
+        .at(-1)?.[1] as
+        | {
+            view?: unknown;
+          }
+        | undefined;
+      if (searchProvider) {
+        searchProvider.view = searchView;
+      }
+
+      const addCommand = registerCommand.mock.calls.find(
+        ([command]) => command === 'rsx.expressions.add',
+      )?.[1] as
+        | ((resource?: {
+            kind?: string;
+            uri?: { fsPath: string; toString(): string };
+          }) => Promise<void>)
+        | undefined;
+      await addCommand?.({
+        kind: 'file',
+        uri: targetUri,
+      });
+
+      expect(searchView.webview.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'addExpressionForm',
+          rootUri: 'file:///workspace-defaults-lock',
+          directory: 'src/rsx/expressions',
+          fileName: 'ab',
+          existingFilePath: 'src/rsx/expressions/ab.expressions.rsx',
+          lockExpressionFile: true,
+          lockModelContract: false,
+          selectedModelFilePath: 'src/rsx/models/ab.model.ts',
+          selectedModelInterfaceName: 'AB',
+          defaultsModelSelections: {
+            'src/rsx/expressions/ab.expressions.rsx': {
+              modelFilePath: 'src/rsx/models/ab.model.ts',
+              modelInterfaceName: 'AB',
+            },
+          },
+          files: ['src/rsx/expressions/ab.expressions.rsx'],
+          modelFiles: [
+            {
+              path: 'src/rsx/models/ab.model.ts',
+              contracts: ['AB'],
+            },
+          ],
+        }),
+      );
+      if (searchProvider) {
+        searchProvider.view = null;
+      }
+    } finally {
+      workspaceFolders = undefined;
+      findFiles.mockReset();
+      readFile.mockReset();
+      registerCommand.mockClear();
+    }
+  });
+
+  it('uses an existing matching defaults model when adding a panel expression', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+    const targetUri = createUri(
+      '/workspace/src/rsx/expressions/math.expressions.rsx',
+    );
+    const files = new Map<string, string>([
+      [
+        targetUri.fsPath,
+        [
+          'defaults:',
+          "  model: import('../models/ab.model').AB",
+          '',
+          'expression: aPlusB',
+          '  a + b',
+          '',
+        ].join('\n'),
+      ],
+    ]);
+
+    registerCommand.mockClear();
+    workspaceFolders = [{ name: 'workspace', uri: createUri('/workspace') }];
+    findFiles.mockResolvedValue([] as never);
+    readFile.mockImplementation(async (uri: { fsPath: string }) => {
+      const text = files.get(uri.fsPath);
+      if (text === undefined) {
+        throw new Error('ENOENT');
+      }
+      return new TextEncoder().encode(text);
+    });
+    writeFile.mockImplementation(
+      async (uri: { fsPath: string }, bytes: Uint8Array) => {
+        files.set(uri.fsPath, new TextDecoder().decode(bytes));
+      },
+    );
+    createDirectory.mockResolvedValue(undefined as never);
+    openTextDocument.mockImplementation(async (uri: { fsPath: string }) =>
+      createTextDocument(files.get(uri.fsPath) ?? '', { fsPath: uri.fsPath }),
+    );
+    showTextDocument.mockImplementation(async (document: unknown) => ({
+      document,
+      revealRange: jest.fn(),
+    }));
+
+    try {
+      activate(context as never);
+      let messageHandler:
+        | ((message: Record<string, unknown>) => Promise<void>)
+        | undefined;
+      const searchView = {
+        webview: {
+          html: '',
+          options: {},
+          onDidReceiveMessage: jest.fn((handler) => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          postMessage: jest.fn(),
+        },
+        onDidDispose: jest.fn(() => ({ dispose: jest.fn() })),
+      };
+      const searchProvider = registerWebviewViewProvider.mock.calls
+        .filter(([viewId]) => viewId === 'rsx.expressions')
+        .at(-1)?.[1] as
+        | {
+            resolveWebviewView(view: unknown): void;
+          }
+        | undefined;
+      searchProvider?.resolveWebviewView(searchView);
+
+      await messageHandler?.({
+        type: 'createExpression',
+        rootUri: 'file:///workspace',
+        expressionName: 'aMultiplyB',
+        expressionSource: 'a * b',
+        useExistingModel: true,
+        shareModel: true,
+        modelFilePath: 'src/rsx/models/ab.model.ts',
+        modelInterfaceName: 'AB',
+        existingFilePath: 'src/rsx/expressions/math.expressions.rsx',
+        relativePath: 'src/rsx/expressions/math.expressions.rsx',
+      });
+
+      expect(files.get(targetUri.fsPath)).toBe(
+        [
+          'defaults:',
+          "  model: import('../models/ab.model').AB",
+          '',
+          'expression: aPlusB',
+          '  a + b',
+          '',
+          'expression: aMultiplyB',
+          '  a * b',
+          '',
+        ].join('\n'),
+      );
+      expect(files.get(targetUri.fsPath)).not.toContain(
+        "expression: aMultiplyB\n  model: import('../models/ab.model').AB",
+      );
+    } finally {
+      workspaceFolders = undefined;
+      findFiles.mockReset();
+      readFile.mockReset();
+      writeFile.mockReset();
+      createDirectory.mockReset();
+      openTextDocument.mockReset();
+      showTextDocument.mockReset();
+      registerCommand.mockClear();
+    }
+  });
+
+  it('uses the rsx base directory for new expression and model defaults', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+    const configUri = createUri('/workspace/rsx.config.json');
+
+    registerCommand.mockClear();
+    workspaceFolders = [{ name: 'workspace', uri: createUri('/workspace') }];
+    findFiles.mockResolvedValue([] as never);
+    readFile.mockImplementation(async (uri: { fsPath: string }) => {
+      if (uri.fsPath === configUri.fsPath) {
+        return Buffer.from(
+          JSON.stringify({
+            cli: {
+              add: {
+                baseDirectory: 'src/rsx',
+                defaultDirectory: 'src/expressions',
+              },
+            },
+          }),
+          'utf8',
+        );
+      }
+      throw new Error('ENOENT');
+    });
+
+    try {
+      activate(context as never);
+      const searchView = {
+        webview: {
+          html: '',
+          options: {},
+          onDidReceiveMessage: jest.fn(() => ({ dispose: jest.fn() })),
+          postMessage: jest.fn(),
+        },
+        onDidDispose: jest.fn(() => ({ dispose: jest.fn() })),
+      };
+      const searchProvider = registerWebviewViewProvider.mock.calls
+        .filter(([viewId]) => viewId === 'rsx.expressions')
+        .at(-1)?.[1] as
+        | {
+            view?: unknown;
+          }
+        | undefined;
+      if (searchProvider) {
+        searchProvider.view = searchView;
+      }
+
+      const addCommand = registerCommand.mock.calls.find(
+        ([command]) => command === 'rsx.expressions.add',
+      )?.[1] as (() => Promise<void>) | undefined;
+      await addCommand?.();
+
+      expect(searchView.webview.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'addExpressionForm',
+          directory: 'src/rsx/expressions',
+          fileName: 'new-expression-rsx',
+          existingFilePath: '',
+          newModelDirectory: 'src/rsx/models',
+        }),
+      );
+      if (searchProvider) {
+        searchProvider.view = null;
+      }
+    } finally {
+      workspaceFolders = undefined;
+      findFiles.mockReset();
+      readFile.mockReset();
+      registerCommand.mockClear();
+    }
+  });
+
+  it('treats cli add defaultDirectory equal to the rsx base as a base directory', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+    const configUri = createUri('/workspace/rsx.config.json');
+
+    registerCommand.mockClear();
+    workspaceFolders = [{ name: 'workspace', uri: createUri('/workspace') }];
+    findFiles.mockResolvedValue([] as never);
+    readFile.mockImplementation(async (uri: { fsPath: string }) => {
+      if (uri.fsPath === configUri.fsPath) {
+        return Buffer.from(
+          JSON.stringify({
+            cli: {
+              add: {
+                defaultDirectory: 'src/rsx',
+              },
+            },
+          }),
+          'utf8',
+        );
+      }
+      throw new Error('ENOENT');
+    });
+
+    try {
+      activate(context as never);
+      const searchView = {
+        webview: {
+          html: '',
+          options: {},
+          onDidReceiveMessage: jest.fn(() => ({ dispose: jest.fn() })),
+          postMessage: jest.fn(),
+        },
+        onDidDispose: jest.fn(() => ({ dispose: jest.fn() })),
+      };
+      const searchProvider = registerWebviewViewProvider.mock.calls
+        .filter(([viewId]) => viewId === 'rsx.expressions')
+        .at(-1)?.[1] as
+        | {
+            view?: unknown;
+          }
+        | undefined;
+      if (searchProvider) {
+        searchProvider.view = searchView;
+      }
+
+      const addCommand = registerCommand.mock.calls.find(
+        ([command]) => command === 'rsx.expressions.add',
+      )?.[1] as (() => Promise<void>) | undefined;
+      await addCommand?.();
+
+      expect(searchView.webview.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'addExpressionForm',
+          directory: 'src/rsx/expressions',
+          newModelDirectory: 'src/rsx/models',
+        }),
+      );
+      if (searchProvider) {
+        searchProvider.view = null;
+      }
+    } finally {
+      workspaceFolders = undefined;
+      findFiles.mockReset();
+      readFile.mockReset();
+      registerCommand.mockClear();
+    }
+  });
+
+  it('uses configured source root for the add hook form default path', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+    const rsxUri = createUri('/workspace/src/app/expressions/matrix.rsx');
+    const files = new Map<string, string>([
+      [
+        '/workspace/rsx.config.json',
+        JSON.stringify({
+          cli: { add: { defaultDirectory: 'src/app/expressions' } },
+        }),
+      ],
+    ]);
+    workspaceFolders = [{ name: 'workspace', uri: createUri('/workspace') }];
+    readFile.mockImplementation(async (uri: { fsPath: string }) => {
+      const text = files.get(uri.fsPath);
+      if (text === undefined) {
+        throw new Error('ENOENT');
+      }
+      return new TextEncoder().encode(text);
+    });
+
+    try {
+      activate(context as never);
+      const searchView = {
+        webview: {
+          html: '',
+          options: {},
+          onDidReceiveMessage: jest.fn(() => ({ dispose: jest.fn() })),
+          postMessage: jest.fn(),
+        },
+        onDidDispose: jest.fn(() => ({ dispose: jest.fn() })),
+      };
+      const searchProvider = registerWebviewViewProvider.mock.calls
+        .filter(([viewId]) => viewId === 'rsx.expressions')
+        .at(-1)?.[1] as
+        | {
+            resolveWebviewView(view: unknown): void;
+            enableDebugHooksSelected(
+              key?: string,
+              anchorUri?: { fsPath: string; toString(): string },
+            ): Promise<void>;
+          }
+        | undefined;
+      searchProvider?.resolveWebviewView(searchView);
+
+      await searchProvider?.enableDebugHooksSelected('customHooks', rsxUri);
+
+      expect(searchView.webview.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'addHookForm',
+          relativePath: 'src/app/rsx-debug-change-hook.ts',
+        }),
+      );
+    } finally {
+      workspaceFolders = undefined;
+      readFile.mockReset();
+    }
+  });
+
+  it('enables and merges non-production debug change hooks from the expressions panel command', async () => {
     const context = {
       subscriptions: [] as Array<{ dispose(): void }>,
     };
@@ -521,12 +1175,14 @@ describe('rsx vscode extension activation', () => {
               key?: string,
               anchorUri?: { fsPath: string; toString(): string },
             ): Promise<void>;
+            assignDebugHookForPanelKeys(
+              action: { scope: 'group'; standardHook: 'breakpoint' },
+              keys: readonly string[],
+            ): Promise<void>;
           }
         | undefined;
-      await searchProvider?.enableDebugHooksSelected(
-        `expression:${rsxUri.toString()}#remoteAreaFeeRsx`,
-        rsxUri,
-      );
+      const expressionKey = `expression:${rsxUri.toString()}#remoteAreaFeeRsx`;
+      await searchProvider?.enableDebugHooksSelected(expressionKey, rsxUri);
       expect(showQuickPick.mock.calls[0]?.[0]).not.toEqual(
         expect.arrayContaining([
           expect.objectContaining({ label: 'Use module specifier' }),
@@ -545,7 +1201,7 @@ describe('rsx vscode extension activation', () => {
           debugChangeHooks: {
             remoteAreaFeeRsx: {
               group: {
-                moduleSpecifier: '../remote-area-fee-debug-change-hook',
+                moduleSpecifier: '../rsx/remote-area-fee-debug-change-hook',
                 exportName: 'remoteAreaFeeDebugChangeHook',
                 enabled: true,
               },
@@ -554,13 +1210,50 @@ describe('rsx vscode extension activation', () => {
         },
       });
       expect(
-        files.get('/workspace/src/remote-area-fee-debug-change-hook.ts'),
-      ).toContain(
-        'export const remoteAreaFeeDebugChangeHook: RsxDebugChangeHook',
-      );
+        files.get('/workspace/src/rsx/remote-area-fee-debug-change-hook.ts'),
+      ).toContain('export const remoteAreaFeeDebugChangeHook: ChangeHook = (');
+      expect(
+        files.get('/workspace/src/rsx/remote-area-fee-debug-change-hook.ts'),
+      ).toContain("import type { ChangeHook } from '@rs-x/expression-parser';");
+      expect(
+        files.get('/workspace/src/rsx/remote-area-fee-debug-change-hook.ts'),
+      ).not.toContain('IRsxDebugHookInstance');
+      expect(
+        files.get('/workspace/src/rsx/remote-area-fee-debug-change-hook.ts'),
+      ).not.toContain('RsxDebugChangeHook');
       expect(showInformationMessage).toHaveBeenCalledWith(
-        'Enabled RS-X debug change hook remoteAreaFeeDebugChangeHook from ../remote-area-fee-debug-change-hook for group remoteAreaFeeRsx.',
+        'Enabled RS-X debug change hook remoteAreaFeeDebugChangeHook from ../rsx/remote-area-fee-debug-change-hook for expression default remoteAreaFeeRsx.',
       );
+
+      await searchProvider?.assignDebugHookForPanelKeys(
+        { scope: 'group', standardHook: 'breakpoint' },
+        [expressionKey],
+      );
+      expect(
+        JSON.parse(files.get('/workspace/rsx.config.json') ?? '{}').build
+          .debugChangeHooks.remoteAreaFeeRsx.group,
+      ).toEqual([
+        {
+          moduleSpecifier: '../rsx/remote-area-fee-debug-change-hook',
+          exportName: 'remoteAreaFeeDebugChangeHook',
+          enabled: true,
+        },
+        {
+          moduleSpecifier: '../rsx/hooks/rsx-standard-debug-hooks',
+          exportName: 'rsxBreakpointDebugHook',
+          enabled: true,
+          standardHook: 'breakpoint',
+        },
+      ]);
+      expect(
+        files.get('/workspace/src/rsx/hooks/rsx-standard-debug-hooks.ts'),
+      ).toContain('export const rsxBreakpointDebugHook: ChangeHook = (');
+      expect(
+        files.get('/workspace/src/rsx/hooks/rsx-standard-debug-hooks.ts'),
+      ).toContain("import type { ChangeHook } from '@rs-x/expression-parser';");
+      expect(
+        files.get('/workspace/src/rsx/hooks/rsx-standard-debug-hooks.ts'),
+      ).not.toContain('RsxDebugChangeHook');
     } finally {
       workspaceFolders = undefined;
       findFiles.mockReset();
@@ -643,17 +1336,30 @@ describe('rsx vscode extension activation', () => {
       expect(
         nestedConfig.build.debugChangeHooks.remoteAreaFeeRsx.group,
       ).toEqual({
-        moduleSpecifier: '../remote-area-fee-debug-change-hook',
+        moduleSpecifier: '../rsx/remote-area-fee-debug-change-hook',
         exportName: 'remoteAreaFeeDebugChangeHook',
         enabled: true,
       });
       expect(
         files.get(
-          '/workspace/packages/shop/src/remote-area-fee-debug-change-hook.ts',
+          '/workspace/packages/shop/src/rsx/remote-area-fee-debug-change-hook.ts',
         ),
-      ).toContain(
-        'export const remoteAreaFeeDebugChangeHook: RsxDebugChangeHook',
-      );
+      ).toContain('export const remoteAreaFeeDebugChangeHook: ChangeHook = (');
+      expect(
+        files.get(
+          '/workspace/packages/shop/src/rsx/remote-area-fee-debug-change-hook.ts',
+        ),
+      ).toContain("import type { ChangeHook } from '@rs-x/expression-parser';");
+      expect(
+        files.get(
+          '/workspace/packages/shop/src/rsx/remote-area-fee-debug-change-hook.ts',
+        ),
+      ).not.toContain('IRsxDebugHookInstance');
+      expect(
+        files.get(
+          '/workspace/packages/shop/src/rsx/remote-area-fee-debug-change-hook.ts',
+        ),
+      ).not.toContain('RsxDebugChangeHook');
     } finally {
       workspaceFolders = undefined;
       findFiles.mockReset();
@@ -1130,6 +1836,174 @@ describe('rsx vscode extension activation', () => {
     );
   });
 
+  it('offers rsx dot TypeScript completions for compatible expression model contracts', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+    const rsxUri = createUri(
+      '/workspace/src/rsx/expressions/math.expressions.rsx',
+    );
+    const rsxText = [
+      'expression: aPlusB',
+      '  model: { a: number; b: number }',
+      '  a + b',
+      '',
+      'expression: cOnly',
+      '  model: { c: number }',
+      '  c',
+      '',
+    ].join('\n');
+    workspaceFolders = [{ name: 'workspace', uri: createUri('/workspace') }];
+    findFiles.mockImplementation(async (pattern: string) =>
+      pattern === '**/*.rsx' ? [rsxUri] : [],
+    );
+    readFile.mockImplementation(async (uri: { fsPath: string }) => {
+      if (uri.fsPath === rsxUri.fsPath) {
+        return Buffer.from(rsxText, 'utf8');
+      }
+      throw new Error(`No mock file for ${uri.fsPath}`);
+    });
+    registerCompletionItemProvider.mockClear();
+
+    try {
+      activate(context as never);
+      const provider = registerCompletionItemProvider.mock.calls.find(
+        ([selector]) =>
+          Array.isArray(selector) &&
+          selector.some(
+            (entry: { language?: string }) => entry.language === 'typescript',
+          ),
+      )?.[1] as
+        | {
+            provideCompletionItems(
+              document: ReturnType<typeof createTextDocument>,
+              position: { line: number; character: number },
+            ): Promise<
+              Array<{
+                label: string;
+                insertText?: string;
+                additionalTextEdits?: Array<{ newText?: string }>;
+              }>
+            >;
+          }
+        | undefined;
+      const document = createTextDocument(
+        [
+          'interface AB { a: number; b: number }',
+          'function run(model: AB) {',
+          '  const expr = rsx.',
+          '}',
+        ].join('\n'),
+        { languageId: 'typescript', fsPath: '/workspace/src/app.ts' },
+      );
+
+      const completions = await provider?.provideCompletionItems(document, {
+        line: 2,
+        character: '  const expr = rsx.'.length,
+      });
+
+      expect(completions).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            label: 'aPlusB',
+            insertText: 'aPlusB(model)',
+            filterText: 'rsx.aPlusB',
+          }),
+        ]),
+      );
+      expect(completions).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            label: 'cOnly',
+            insertText: 'cOnly(model)',
+            filterText: 'rsx.cOnly',
+          }),
+        ]),
+      );
+      expect(
+        completions?.find((completion) => completion.label === 'aPlusB')
+          ?.additionalTextEdits?.[0]?.newText,
+      ).toBe("import { aPlusB } from './rsx/expressions/math.expressions';\n");
+    } finally {
+      workspaceFolders = undefined;
+      findFiles.mockReset();
+      readFile.mockReset();
+      registerCompletionItemProvider.mockClear();
+    }
+  });
+
+  it('offers rsx dot TypeScript completions with a model placeholder when no candidate exists', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+    const rsxUri = createUri(
+      '/workspace/src/rsx/expressions/ab.expressions.rsx',
+    );
+    workspaceFolders = [{ name: 'workspace', uri: createUri('/workspace') }];
+    findFiles.mockImplementation(async (pattern: string) =>
+      pattern === '**/*.rsx' ? [rsxUri] : [],
+    );
+    readFile.mockImplementation(async (uri: { fsPath: string }) => {
+      if (uri.fsPath === rsxUri.fsPath) {
+        return Buffer.from(
+          [
+            'defaults:',
+            "  model: import('../models/ab.model').AB",
+            '',
+            'expression: aPlusB',
+            '  a + b',
+            '',
+          ].join('\n'),
+          'utf8',
+        );
+      }
+      throw new Error(`No mock file for ${uri.fsPath}`);
+    });
+    registerCompletionItemProvider.mockClear();
+
+    try {
+      activate(context as never);
+      const provider = registerCompletionItemProvider.mock.calls.find(
+        ([selector]) =>
+          Array.isArray(selector) &&
+          selector.some(
+            (entry: { language?: string }) => entry.language === 'typescript',
+          ),
+      )?.[1] as
+        | {
+            provideCompletionItems(
+              document: ReturnType<typeof createTextDocument>,
+              position: { line: number; character: number },
+            ): Promise<Array<{ label: string; insertText?: string }>>;
+          }
+        | undefined;
+      const document = createTextDocument('const expr = rsx.', {
+        languageId: 'typescript',
+        fsPath: '/workspace/src/main.ts',
+      });
+
+      const completions = await provider?.provideCompletionItems(document, {
+        line: 0,
+        character: 'const expr = rsx.'.length,
+      });
+
+      expect(completions).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            label: 'aPlusB',
+            insertText: 'aPlusB(model)',
+            filterText: 'rsx.aPlusB',
+          }),
+        ]),
+      );
+    } finally {
+      workspaceFolders = undefined;
+      findFiles.mockReset();
+      readFile.mockReset();
+      registerCompletionItemProvider.mockClear();
+    }
+  });
+
   it('supports multi-line model headers and typeof expression-reference shorthand', () => {
     const context = {
       subscriptions: [] as Array<{ dispose(): void }>,
@@ -1398,7 +2272,7 @@ describe('rsx vscode extension activation', () => {
     );
   });
 
-  it('keeps initial module diagnostics focused so opening .rsx files does not block IntelliSense behind whole-file analysis', () => {
+  it('reports defaults model diagnostics for every expression in normal-sized module files', () => {
     const context = {
       subscriptions: [] as Array<{ dispose(): void }>,
     };
@@ -1414,15 +2288,118 @@ describe('rsx vscode extension activation', () => {
     jest.useFakeTimers();
     const document = createTextDocument(
       [
-        'expression: firstRsx',
-        '  model: { value: number }',
-        '  value + 1',
+        'defaults:',
+        '  model: {}',
         '',
-        'expression: secondRsx',
-        '  model: { value: number }',
-        '  value.toUpperCase()',
+        'expression: aPlusB',
+        '  a + b',
+        '',
+        'expression: aMultiplyB',
+        '  a * b',
       ].join('\n'),
     );
+    openHandler(document);
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
+
+    const diagnostics = diagnosticCollection.set.mock.calls.at(-1)?.[1] as
+      | Array<{ message: string }>
+      | undefined;
+    const unknownModelDiagnostics = (diagnostics ?? []).filter((diagnostic) =>
+      /Cannot find name '(?:a|b)'/u.test(diagnostic.message),
+    );
+    expect(
+      unknownModelDiagnostics.map((diagnostic) => diagnostic.message),
+    ).toEqual([
+      "Cannot find name 'a'.",
+      "Cannot find name 'b'.",
+      "Cannot find name 'a'.",
+      "Cannot find name 'b'.",
+    ]);
+  });
+
+  it('refreshes open rsx diagnostics when an imported model file is saved', () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+
+    activate(context as never);
+
+    const diagnosticCollection = createDiagnosticCollection.mock.results.at(-1)
+      ?.value as { set: jest.Mock };
+    const saveHandler = onDidSaveTextDocument.mock.calls.at(-1)?.[0] as (
+      document: unknown,
+    ) => void;
+    const importedRsxDocument = createTextDocument(
+      [
+        'defaults:',
+        "  model: import('../models/ab.model').IAbModel",
+        '',
+        'expression: aPlusB',
+        '  a + b',
+      ].join('\n'),
+      { fsPath: '/workspace/src/rsx/expressions/ab.expressions.rsx' },
+    );
+    const unrelatedRsxDocument = createTextDocument(
+      [
+        'defaults:',
+        "  model: import('../models/other.model').IOtherModel",
+        '',
+        'expression: otherRsx',
+        '  value',
+      ].join('\n'),
+      { fsPath: '/workspace/src/rsx/expressions/other.expressions.rsx' },
+    );
+    const modelDocument = createTextDocument('export interface IAbModel {}', {
+      languageId: 'typescript',
+      fsPath: '/workspace/src/rsx/models/ab.model.ts',
+    });
+    try {
+      textDocuments.push(importedRsxDocument, unrelatedRsxDocument);
+      diagnosticCollection.set.mockClear();
+
+      jest.useFakeTimers();
+      saveHandler(modelDocument);
+      jest.runOnlyPendingTimers();
+      jest.useRealTimers();
+
+      expect(
+        diagnosticCollection.set.mock.calls.map(
+          ([uri]: [{ fsPath: string }, unknown]) => uri.fsPath,
+        ),
+      ).toEqual(['/workspace/src/rsx/expressions/ab.expressions.rsx']);
+    } finally {
+      jest.useRealTimers();
+      textDocuments.splice(0, textDocuments.length);
+    }
+  });
+
+  it('keeps initial module diagnostics focused so opening .rsx files does not block IntelliSense behind whole-file analysis', () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+
+    activate(context as never);
+
+    const diagnosticCollection = createDiagnosticCollection.mock.results.at(-1)
+      ?.value as { set: jest.Mock };
+    const openHandler = onDidOpenTextDocument.mock.calls.at(-1)?.[0] as (
+      document: unknown,
+    ) => void;
+
+    jest.useFakeTimers();
+    const largeModelType = `{ value: number; ${Array.from(
+      { length: 40 },
+      (_, index) => `padding${index}: number`,
+    ).join('; ')} }`;
+    const expressionBlocks = Array.from({ length: 60 }, (_, index) =>
+      [
+        `expression: expression${index}Rsx`,
+        `  model: ${largeModelType}`,
+        index === 1 ? '  value.toUpperCase()' : '  value + 1',
+      ].join('\n'),
+    );
+    const document = createTextDocument(expressionBlocks.join('\n\n'));
     openHandler(document);
     jest.runOnlyPendingTimers();
     jest.useRealTimers();
@@ -1434,6 +2411,53 @@ describe('rsx vscode extension activation', () => {
       expect.arrayContaining([
         expect.objectContaining({
           message: expect.stringContaining('toUpperCase'),
+        }),
+      ]),
+    );
+  });
+
+  it('reports a required body diagnostic for generated expression placeholders', () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+
+    activate(context as never);
+
+    const diagnosticCollection = createDiagnosticCollection.mock.results.at(-1)
+      ?.value as { set: jest.Mock };
+    const openHandler = onDidOpenTextDocument.mock.calls.at(-1)?.[0] as (
+      document: unknown,
+    ) => void;
+    const text = [
+      'defaults:',
+      '  model: { a: number }',
+      '',
+      'expression: aPlusB',
+      '  /* expression body required */',
+    ].join('\n');
+    const document = createTextDocument(text, {
+      fsPath: '/workspace/src/rules/a-plus-b.expressions.rsx',
+    });
+
+    jest.useFakeTimers();
+    activeTextEditor = {
+      document,
+      selection: {
+        active: document.positionAt(text.indexOf('expression body required')),
+      },
+    };
+    openHandler(document);
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
+    activeTextEditor = null;
+
+    const diagnostics = diagnosticCollection.set.mock.calls.at(-1)?.[1] as
+      | Array<{ message: string }>
+      | undefined;
+    expect(diagnostics ?? []).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          message: 'Expression body is required.',
         }),
       ]),
     );
@@ -1522,7 +2546,7 @@ describe('rsx vscode extension activation', () => {
       ],
     ]);
 
-    findFiles.mockResolvedValueOnce([modelUri, derivedUri]);
+    findFiles.mockResolvedValue([modelUri, derivedUri]);
     readFile.mockImplementation((uri: { fsPath: string }) =>
       Buffer.from(fixtureText.get(uri.fsPath) ?? '', 'utf8'),
     );
@@ -1629,6 +2653,10 @@ describe('rsx vscode extension activation', () => {
         typeText: 'number',
       }),
     ]);
+
+    expect(
+      models.filter((model) => model.label === 'ShippingQuoteModelContract'),
+    ).toHaveLength(1);
     const valueFieldItem = provider.getTreeItem(valueFields[0]);
     expect(valueFieldItem.description).toBe('number · 4 expressions');
     expect(valueFieldItem.iconPath).toEqual(
@@ -1984,29 +3012,218 @@ describe('rsx vscode extension activation', () => {
     expect(searchView.webview.html).toContain('class="treeToggle"');
     expect(searchView.webview.html).toContain('const expandedKeys');
     expect(searchView.webview.html).toContain('let currentTree');
+    expect(searchView.webview.html).toContain('vscode.getState');
+    expect(searchView.webview.html).toContain('vscode.setState');
+    expect(searchView.webview.html).toContain("type: 'ready'");
+    expect(searchView.webview.html).toContain("type: 'restoreSelection'");
+    expect(searchView.webview.html).toContain(
+      'function restoreEditorSelection()',
+    );
+    expect(searchView.webview.html).toContain('function getSelectedLocation()');
     expect(searchView.webview.html).toContain('data-expanded="');
     expect(searchView.webview.html).toContain('hasChildren && isExpanded');
     expect(searchView.webview.html).toContain(
-      'grid-template-columns: 18px 18px minmax(0, 1fr);',
+      'const isExpanded = expandedKeys.has(key);',
     );
-    expect(searchView.webview.html).toContain('position: absolute;');
+    expect(searchView.webview.html).not.toContain('hasHookChild');
+    expect(searchView.webview.html).toContain(
+      'grid-template-columns: 18px 18px minmax(0, 1fr) auto;',
+    );
+    expect(searchView.webview.html).toContain(
+      'grid-template-rows: auto auto auto auto;',
+    );
+    expect(searchView.webview.html).toContain('align-content: start;');
+    expect(searchView.webview.html).toContain('#hookPickerHost {');
+    expect(searchView.webview.html).toContain('min-height: max-content;');
+    expect(searchView.webview.html).toContain('overflow: visible;');
+    expect(searchView.webview.html).toContain('justify-self: end;');
     expect(searchView.webview.html).toContain('cursor: pointer;');
     expect(searchView.webview.html).toContain(
       "const canPreview = node.kind === 'expression' || node.kind === 'instanceGroup';",
     );
+    expect(searchView.webview.html).toContain(
+      "const canTest = node.kind === 'expression' || node.kind === 'field' || node.kind === 'instanceGroup';",
+    );
+    expect(searchView.webview.html).not.toContain(
+      "node.kind === 'model' || node.kind === 'field'",
+    );
     expect(searchView.webview.html).toContain('data-vscode-context');
     expect(searchView.webview.html).toContain('preventDefaultContextMenuItems');
     expect(searchView.webview.html).toContain("addEventListener('contextmenu'");
+    expect(searchView.webview.html).toContain(
+      'function hasRsxWebviewContextMenu',
+    );
+    expect(searchView.webview.html).toContain('event.stopPropagation();');
+    expect(searchView.webview.html).toContain(
+      "hookPickerState?.mode !== 'addExpression'",
+    );
+    expect(searchView.webview.html).toContain(
+      'isEditableContextMenuTarget(target) || hasRsxWebviewContextMenu(target)',
+    );
+    expect(searchView.webview.html).toContain('{ capture: true }');
+    expect(searchView.webview.html).not.toContain(
+      "addEventListener('pointerdown'",
+    );
     expect(searchView.webview.html).toContain("type: 'select'");
     expect(searchView.webview.html).toContain('data-action="preview"');
     expect(searchView.webview.html).toContain('data-action="test"');
-    expect(searchView.webview.html).toContain('data-action="enableDebugHooks"');
-    expect(searchView.webview.html).toContain('renderDebugActionIcon');
+    expect(searchView.webview.html).toContain('id="hookPickerHost"');
+    expect(searchView.webview.html).toContain('assignedHooksPicker');
+    expect(searchView.webview.html).toContain('addHookForm');
+    expect(searchView.webview.html).toContain('addExpressionForm');
+    expect(searchView.webview.html).toContain('modelFileSelected');
+    expect(searchView.webview.html).toContain("type: 'createCustomHook'");
+    expect(searchView.webview.html).toContain("type: 'createExpression'");
+    expect(searchView.webview.html).toContain("type: 'selectModelFile'");
+    expect(searchView.webview.html).toContain(
+      'data-hook-form-field="exportName"',
+    );
+    expect(searchView.webview.html).toContain(
+      'data-expression-form-field="expressionName"',
+    );
+    expect(searchView.webview.html).toContain('hookFormInlineField');
+    expect(searchView.webview.html).toContain(
+      'const lockExpressionFile = message.lockExpressionFile === true;',
+    );
+    expect(searchView.webview.html).toContain('lockExpressionFile ?');
+    expect(searchView.webview.html).toContain('.expressionPicker {');
+    expect(searchView.webview.html).toContain(
+      '<section class="expressionPicker" role="dialog" aria-label="Add expression">',
+    );
+    expect(searchView.webview.html).not.toContain(
+      '<section class="hookPicker expressionPicker"',
+    );
+    expect(searchView.webview.html).toContain('display: flex;');
+    expect(searchView.webview.html).toContain('flex-direction: column;');
+    expect(searchView.webview.html).toContain('height: fit-content;');
+    expect(searchView.webview.html).toContain('min-height: max-content;');
+    expect(searchView.webview.html).toContain('max-height: none !important;');
+    expect(searchView.webview.html).toContain(
+      'overflow-y: visible !important;',
+    );
+    expect(searchView.webview.html).toContain(
+      '.expressionPicker .hookFormFields {',
+    );
+    expect(searchView.webview.html).toContain('grid-template-columns: 1fr;');
+    expect(searchView.webview.html).toContain('>Browse</button>');
+    expect(searchView.webview.html).not.toContain(
+      'Select model file...</button>',
+    );
+    expect(searchView.webview.html).toContain(
+      'data-hook-picker-action="createHook"',
+    );
+    expect(searchView.webview.html).toContain(
+      'data-hook-picker-action="createExpression"',
+    );
+    expect(searchView.webview.html).toContain(
+      'data-hook-picker-action="selectModelFile"',
+    );
+    expect(searchView.webview.html).toContain('contracts.length === 1');
+    expect(searchView.webview.html).toContain(
+      "String(message.file.contracts[0] || '')",
+    );
+    expect(searchView.webview.html).toContain(
+      'data-expression-form-field="shareModel"',
+    );
+    expect(searchView.webview.html).toContain('relativePath: existingFilePath');
+    expect(searchView.webview.html).toContain('expandAncestorsForKey');
+    expect(searchView.webview.html).not.toContain(
+      'relativePath: existingFilePath || [directory, fileName]',
+    );
+    expect(searchView.webview.html).toContain("type: 'applyAssignedHooks'");
+    expect(searchView.webview.html).toContain('positionHookPicker');
+    expect(searchView.webview.html).toContain(
+      'data-hook-picker-action="apply"',
+    );
+    expect(searchView.webview.html).toContain('rsxWebviewHookCanUnassignAll');
+    expect(searchView.webview.html).toContain('rsxWebviewCustomHookCanDelete');
+    expect(searchView.webview.html).toContain(
+      'function getCommandActionKeyFromEventTarget',
+    );
+    expect(searchView.webview.html).toContain(
+      'function getCommandActionKeyForVisualKey',
+    );
+    expect(searchView.webview.html).toContain(
+      'function collectExpressionCommandKeysForTreeNode',
+    );
+    expect(searchView.webview.html).toContain(
+      "node.kind === 'instance' || node.kind === 'file'",
+    );
+    expect(searchView.webview.html).toContain('data-command-key="');
+    expect(searchView.webview.html).toContain('data-expression-key');
+    expect(searchView.webview.html).toContain('data-drag-visual-key');
+    expect(searchView.webview.html).toContain('activeDropFeedbackTarget');
+    expect(searchView.webview.html).toContain('function setDropFeedbackTarget');
+    expect(searchView.webview.html).toContain(
+      'outline: 2px solid var(--vscode-focusBorder);',
+    );
+    expect(searchView.webview.html).toContain('.treeRow.dropTarget::before');
+    expect(searchView.webview.html).toContain('rsxExpressionOptionGroup');
+    expect(searchView.webview.html).toContain('rsxWebviewOptionCanDeleteAll');
+    expect(searchView.webview.html).toContain('function isDeletableTreeNode');
+    expect(searchView.webview.html).toContain("type: 'deleteSelected'");
+    expect(searchView.webview.html).toContain("event.key === 'Delete'");
+    expect(searchView.webview.html).toContain(
+      "vscode.postMessage({ type: 'select', key: actionKey, visualKey });",
+    );
+    expect(searchView.webview.html).toContain(
+      'const anchorKey = String(message.anchorKey ?? key);',
+    );
+    expect(searchView.webview.html).toContain(
+      "return 'rsxExpressionHookAssignment';",
+    );
+    expect(searchView.webview.html).toContain("return 'rsxExpressionFile';");
+    expect(searchView.webview.html).toContain(
+      "String(key).endsWith(':expressions:definitions')",
+    );
+    expect(searchView.webview.html).toContain(
+      "rsxWebviewHookEnabled: node.hookState === 'enabled'",
+    );
+    expect(searchView.webview.html).toContain(
+      "rsxWebviewHookDisabled: node.hookState === 'disabled'",
+    );
+    expect(searchView.webview.html).toContain(
+      'key: commandKey,\n        visualKey,\n        uri: button.dataset.uri,',
+    );
+    expect(searchView.webview.html).not.toContain(
+      'data-action="enableDebugHooks"',
+    );
+    expect(searchView.webview.html).not.toContain(
+      'data-action="enableConfiguredDebugHooks"',
+    );
+    expect(searchView.webview.html).not.toContain(
+      'data-action="disableDebugHooks"',
+    );
+    expect(searchView.webview.html).not.toContain(
+      'data-action="deleteDebugHooks"',
+    );
+    expect(searchView.webview.html).not.toContain('renderDebugActionIcon');
+    expect(searchView.webview.html).not.toContain('hookSwitch');
+    expect(searchView.webview.html).not.toContain('hookDisabledText');
+    expect(searchView.webview.html).toContain('hookDisabledRow');
     expect(searchView.webview.html).toContain('class="treeRoot"');
     expect(searchView.webview.html).toContain('data-root-key="');
     expect(searchView.webview.html).toContain('function selectNode(key)');
     expect(searchView.webview.html).toContain(
       'vscode-list-activeSelectionBackground',
+    );
+    expect(searchView.webview.html).toContain('--rsx-selected-fg:');
+    expect(searchView.webview.html).toContain('--rsx-selected-bg:');
+    expect(searchView.webview.html).toContain('--rsx-selected-border:');
+    expect(searchView.webview.html).toContain(
+      '.treeNode[data-selected="true"] > .treeRow',
+    );
+    expect(searchView.webview.html).toContain('color: var(--rsx-selected-fg);');
+    expect(searchView.webview.html).toContain(
+      'background: var(--rsx-selected-bg);',
+    );
+    expect(searchView.webview.html).toContain(
+      'outline: 1px solid var(--rsx-selected-border);',
+    );
+    expect(searchView.webview.html).toContain('outline-offset: 1px;');
+    expect(searchView.webview.html).toContain('padding: 0 4px;');
+    expect(searchView.webview.html).not.toContain(
+      'outline-offset: -1px;\n      background: var(--rsx-selected-bg);',
     );
     await new Promise((resolve) => setTimeout(resolve, 0));
     const initialPanelMessage = searchView.webview.postMessage.mock.calls.at(
@@ -2033,13 +3250,48 @@ describe('rsx vscode extension activation', () => {
     expect(initialPanelMessage?.tree?.map((node) => node.label)).toEqual([
       'Expressions',
       'Models',
-      'Expression instances',
     ]);
+    expect(initialPanelMessage?.tree?.[0]?.children).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: 'Definitions' }),
+        expect.objectContaining({ label: 'Instances' }),
+        expect.objectContaining({ label: 'Eager' }),
+        expect.objectContaining({ label: 'Lazy' }),
+        expect.objectContaining({ label: 'Compiled' }),
+        expect.objectContaining({ label: 'Preparsed' }),
+      ]),
+    );
     expect(initialPanelMessage?.tree?.[0]?.children).not.toContainEqual(
       expect.objectContaining({ label: 'Models' }),
     );
     expect(JSON.stringify(initialPanelMessage?.tree)).toContain('subtotalRsx');
     expect(JSON.stringify(initialPanelMessage?.tree)).toContain('subtotal');
+
+    searchView.webview.postMessage.mockClear();
+    await searchMessageHandler?.({ type: 'ready', query: '' });
+    const restoredPanelMessage = searchView.webview.postMessage.mock.calls.at(
+      -1,
+    )?.[0] as
+      | {
+          type?: string;
+          query?: string;
+          mode?: string;
+          tree?: Array<{
+            label: string;
+          }>;
+        }
+      | undefined;
+    expect(restoredPanelMessage).toEqual(
+      expect.objectContaining({
+        type: 'results',
+        query: '',
+        mode: 'tree',
+      }),
+    );
+    expect(restoredPanelMessage?.tree?.map((node) => node.label)).toEqual([
+      'Expressions',
+      'Models',
+    ]);
 
     await searchMessageHandler?.({ type: 'search', query: 'subtotal' });
     const liveSearchMessage = searchView.webview.postMessage.mock.calls.at(
@@ -2051,7 +3303,9 @@ describe('rsx vscode extension activation', () => {
           mode?: string;
           results?: Array<{
             kind: string;
+            key: string;
             label: string;
+            description?: string;
             uri: string;
             start: number;
             end: number;
@@ -2068,6 +3322,18 @@ describe('rsx vscode extension activation', () => {
     expect(liveSearchMessage?.results?.map((result) => result.kind)).toEqual(
       expect.arrayContaining(['expression', 'field']),
     );
+    for (const result of liveSearchMessage?.results ?? []) {
+      for (const text of [result.label, result.description]) {
+        if (!text) {
+          continue;
+        }
+        expect(text).not.toMatch(
+          /(?:^|[\s·])(?:\.{1,2}[\\/]|[A-Za-z]:[\\/]|\/|(?:src|app|rules|domain|packages)[\\/])/u,
+        );
+        expect(text).not.toMatch(/\.[cm]?[tj]sx?:\d+/u);
+        expect(text).not.toContain(' from ./');
+      }
+    }
     expect(
       liveSearchMessage?.results?.some(
         (result) =>
@@ -2114,6 +3380,45 @@ describe('rsx vscode extension activation', () => {
     expect(searchEditor.setDecorations).toHaveBeenCalledWith(
       expect.anything(),
       [expect.anything()],
+    );
+
+    openTextDocument.mockClear();
+    showTextDocument.mockClear();
+    searchEditor.revealRange.mockClear();
+    searchEditor.setDecorations.mockClear();
+    visibleTextEditors.length = 0;
+    openTextDocument.mockResolvedValueOnce(searchDocument);
+    showTextDocument.mockResolvedValueOnce(searchEditor);
+
+    await searchMessageHandler?.({
+      type: 'restoreSelection',
+      key: subtotalSearchResult?.key,
+      uri: subtotalSearchResult?.uri,
+      start: subtotalSearchResult?.start,
+      end: subtotalSearchResult?.end,
+    });
+
+    expect(showTextDocument).toHaveBeenCalledWith(
+      searchDocument,
+      expect.objectContaining({
+        viewColumn: 1,
+        preview: true,
+      }),
+    );
+    expect(searchEditor.selection).toEqual(
+      expect.objectContaining({
+        start: searchDocument.positionAt(subtotalSearchResult?.start ?? 0),
+        end: searchDocument.positionAt(subtotalSearchResult?.start ?? 0),
+      }),
+    );
+    expect(searchEditor.setDecorations).toHaveBeenCalledWith(
+      expect.anything(),
+      [
+        expect.objectContaining({
+          start: searchDocument.positionAt(subtotalSearchResult?.start ?? 0),
+          end: searchDocument.positionAt(subtotalSearchResult?.end ?? 0),
+        }),
+      ],
     );
     tabGroupsAll = [];
 
@@ -2254,7 +3559,7 @@ describe('rsx vscode extension activation', () => {
     ].join('\n');
     const consumerText = [
       "import { remoteAreaFeeRsx } from '../rules/shipping.expressions.rsx';",
-      'const fee = remoteAreaFeeRsx({ remoteArea: true });',
+      "const fee = remoteAreaFeeRsx({ remoteArea: true }, undefined, 'manual-instance');",
     ].join('\n');
     const configText = JSON.stringify({
       build: {
@@ -2264,6 +3569,13 @@ describe('rsx vscode extension activation', () => {
               moduleSpecifier: './src/rsx-debug-change-hook',
               exportName: 'rsxDebugChangeHook',
               enabled: true,
+            },
+            instances: {
+              'manual-instance': {
+                moduleSpecifier: './src/rsx-instance-debug-change-hook',
+                exportName: 'rsxInstanceDebugChangeHook',
+                enabled: true,
+              },
             },
           },
         },
@@ -2311,61 +3623,229 @@ describe('rsx vscode extension activation', () => {
             key: string;
             label: string;
             description?: string;
-            badge?: string;
-            badgeTitle?: string;
+            hookState?: string;
+            hookLabel?: string;
+            hookModuleSpecifier?: string;
+            hookExportName?: string;
             children?: Array<{
+              key?: string;
+              actionKey?: string;
               label: string;
+              kind?: string;
               description?: string;
-              badge?: string;
-              badgeTitle?: string;
+              uri?: string;
+              hookState?: string;
+              hookLabel?: string;
               children?: Array<{
                 kind: string;
+                actionKey?: string;
                 uri: string;
                 start: number;
                 end: number;
+                label?: string;
                 description?: string;
-                badge?: string;
-                badgeTitle?: string;
+                hookState?: string;
+                hookLabel?: string;
               }>;
             }>;
           }>
         >;
+        getTreeItem(element: unknown): {
+          label?: string;
+          description?: string | boolean;
+        };
       };
       const tree = await provider.getPanelTree();
-      const instancesRoot = tree.find((node) => node.key === 'root:instances');
+      const assertNoVisiblePathText = (
+        nodes: readonly Array<{
+          label?: string;
+          description?: string;
+          children?: readonly {
+            label?: string;
+            description?: string;
+            children?: readonly unknown[];
+          }[];
+        }>,
+      ): void => {
+        for (const node of nodes) {
+          for (const text of [node.label, node.description]) {
+            if (!text) {
+              continue;
+            }
+            expect(text).not.toMatch(
+              /(?:^|[\s·])(?:\.{1,2}[\\/]|[A-Za-z]:[\\/]|\/|(?:src|app|rules|domain|packages)[\\/])/u,
+            );
+            expect(text).not.toMatch(/[\\/].*\.[cm]?[tj]sx?:\d+/u);
+            expect(text).not.toMatch(/\.rsx:\d+/u);
+            expect(text).not.toContain(' from ./');
+          }
+          assertNoVisiblePathText(
+            (node.children ?? []) as Parameters<
+              typeof assertNoVisiblePathText
+            >[0],
+          );
+        }
+      };
+      assertNoVisiblePathText(tree);
+      const definitionsRoot = tree
+        .find((node) => node.key === 'root:expressions')
+        ?.children?.find((node) => node.label === 'Definitions');
+      const definitionsHooks = definitionsRoot?.children?.[0];
+      const definitionExpression = definitionsRoot?.children
+        ?.find((node) => node.label === 'shipping.expressions.rsx')
+        ?.children?.find((node) => node.label === 'remoteAreaFeeRsx');
+      const eagerExpression = tree
+        .find((node) => node.key === 'root:expressions')
+        ?.children?.find((node) => node.label === 'Eager')
+        ?.children?.find((node) => node.label === 'remoteAreaFeeRsx');
+      const instancesRoot = tree
+        .find((node) => node.key === 'root:expressions')
+        ?.children?.find((node) => node.label === 'Instances');
+      const instancesHooks = instancesRoot?.children?.[0];
       const group = instancesRoot?.children?.find(
-        (node) => node.label === 'remoteAreaFeeRsx',
+        (node) =>
+          node.label === 'Definition' &&
+          node.description?.startsWith('remoteAreaFeeRsx'),
       );
       const instance = group?.children?.[0];
 
-      expect(instancesRoot?.label).toBe('Expression instances');
+      expect(tree.map((node) => node.key)).not.toContain('root:hooks');
+      expect(definitionsHooks).toEqual(
+        expect.objectContaining({
+          key: 'hooks:definitions',
+          label: 'Assigned hooks',
+          kind: 'hookGroup',
+          description: '3 hooks',
+          canUnassignHookAll: true,
+        }),
+      );
+      expect(definitionsHooks?.children?.slice(0, 2)).toEqual([
+        expect.objectContaining({
+          kind: 'hookConfig',
+          label: 'Breakpoint',
+          standardHook: 'breakpoint',
+          canDeleteHook: false,
+        }),
+        expect.objectContaining({
+          kind: 'hookConfig',
+          label: 'Log',
+          standardHook: 'log',
+          canDeleteHook: false,
+        }),
+      ]);
+      const definitionConfiguredHook = definitionsHooks?.children?.find(
+        (node) => node.label === 'rsxDebugChangeHook',
+      );
+      expect(definitionConfiguredHook).toEqual(
+        expect.objectContaining({
+          kind: 'hookConfig',
+          label: 'rsxDebugChangeHook',
+          canUnassignHookAll: true,
+        }),
+      );
+      expect(definitionConfiguredHook?.description).toBeUndefined();
+      expect(definitionConfiguredHook?.children?.[0]).toEqual(
+        expect.objectContaining({
+          kind: 'expression',
+          label: 'remoteAreaFeeRsx',
+        }),
+      );
+      expect(definitionExpression).toEqual(
+        expect.objectContaining({
+          kind: 'expression',
+          label: 'remoteAreaFeeRsx',
+        }),
+      );
+      expect(definitionExpression?.hookState).toBeUndefined();
+      expect(definitionExpression?.hookLabel).toBeUndefined();
+      expect(eagerExpression).toEqual(
+        expect.objectContaining({
+          kind: 'expression',
+          label: 'remoteAreaFeeRsx',
+        }),
+      );
+      expect(eagerExpression?.hookState).toBeUndefined();
+      expect(eagerExpression?.hookLabel).toBeUndefined();
+      expect(eagerExpression?.children).toBeUndefined();
+      expect(instancesHooks).toEqual(
+        expect.objectContaining({
+          key: 'hooks:instances',
+          label: 'Assigned hooks',
+          kind: 'hookGroup',
+          description: '3 hooks',
+          canUnassignHookAll: true,
+        }),
+      );
+      expect(instancesHooks?.children?.map((node) => node.label)).toEqual([
+        'Breakpoint',
+        'Log',
+        'rsxInstanceDebugChangeHook',
+      ]);
+      const instanceConfiguredHook = instancesHooks?.children?.find(
+        (node) => node.label === 'rsxInstanceDebugChangeHook',
+      );
+      expect(instanceConfiguredHook).toEqual(
+        expect.objectContaining({
+          canUnassignHookAll: true,
+        }),
+      );
+      expect(instanceConfiguredHook?.children?.[0]).toEqual(
+        expect.objectContaining({
+          kind: 'instance',
+          label: 'shipping.ts:2',
+          description: 'remoteAreaFeeRsx',
+          actionKey: expect.stringContaining(
+            `instance:${rsxUri.toString()}#remoteAreaFeeRsx:`,
+          ),
+          uri: consumerUri.toString(),
+        }),
+      );
+      expect(instanceConfiguredHook?.children?.[0]?.children).toEqual([
+        expect.objectContaining({
+          kind: 'expression',
+          label: 'Definition',
+          actionKey: `expression:${rsxUri.toString()}#remoteAreaFeeRsx`,
+          uri: rsxUri.toString(),
+        }),
+      ]);
+      expect(instancesRoot?.label).toBe('Instances');
       expect(group).toEqual(
         expect.objectContaining({
-          description: '1 instance',
-          badge: 'HOOK',
-          badgeTitle: expect.stringContaining(
-            'rsxDebugChangeHook from ./src/rsx-debug-change-hook',
-          ),
+          kind: 'instanceGroup',
+          label: 'Definition',
+          description: 'remoteAreaFeeRsx · 1 instance',
+          uri: rsxUri.toString(),
         }),
       );
       expect(instance).toEqual(
         expect.objectContaining({
           kind: 'instance',
-          badge: 'HOOK',
-          badgeTitle: expect.stringContaining(
-            'rsxDebugChangeHook from ./src/rsx-debug-change-hook',
-          ),
+          label: 'shipping.ts:2',
+          description: 'remoteAreaFeeRsx',
           uri: consumerUri.toString(),
           start: consumerText.indexOf('remoteAreaFeeRsx({'),
           end:
             consumerText.indexOf('remoteAreaFeeRsx({') +
             'remoteAreaFeeRsx'.length,
-          description: expect.stringContaining(
-            'hook: rsxDebugChangeHook from ./src/rsx-debug-change-hook',
-          ),
+          tooltip: 'src/app/shipping.ts:2',
         }),
       );
+      expect(instance?.hookState).toBeUndefined();
+      expect(instance?.children).toBeUndefined();
       const searchResults = await provider.search('remoteAreaFee');
+      for (const result of searchResults) {
+        const item = provider.getTreeItem(result);
+        for (const text of [item.label, item.description]) {
+          if (!text || typeof text !== 'string') {
+            continue;
+          }
+          expect(text).not.toMatch(
+            /(?:^|[\s·])(?:\.{1,2}[\\/]|[A-Za-z]:[\\/]|\/|(?:src|app|rules|domain|packages)[\\/])/u,
+          );
+          expect(text).not.toMatch(/\.[cm]?[tj]sx?:\d+/u);
+          expect(text).not.toContain(' from ./');
+        }
+      }
       const instanceSearchResult = searchResults.find(
         (result) => result.target.kind === 'expressionInstance',
       );
@@ -2377,6 +3857,172 @@ describe('rsx vscode extension activation', () => {
             consumerText.indexOf('remoteAreaFeeRsx({') + 'remoteAreaFee'.length,
         }),
       );
+    } finally {
+      workspaceFolders = undefined;
+      findFiles.mockReset();
+      readFile.mockReset();
+    }
+  });
+
+  it('shows configured definition hook nodes even when no instances are discovered', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+    workspaceFolders = [{ name: 'workspace', uri: createUri('/workspace') }];
+    const rsxUri = createUri('/workspace/src/rules/shipping.expressions.rsx');
+    const configUri = createUri('/workspace/rsx.config.json');
+    const hookUri = createUri('/workspace/src/hooks/custom-debug-hook.ts');
+    const rsxText = [
+      'expression: remoteAreaFeeRsx',
+      '  model: { remoteArea: boolean }',
+      '  remoteArea ? 14 : 0',
+    ].join('\n');
+    const configText = JSON.stringify({
+      build: {
+        debugChangeHooks: {
+          remoteAreaFeeRsx: {
+            group: {
+              moduleSpecifier: './src/rsx-debug-change-hook',
+              exportName: 'rsxDebugChangeHook',
+              enabled: true,
+            },
+          },
+        },
+      },
+    });
+    const hookText = [
+      "import type { ChangeHook } from '@rs-x/expression-parser';",
+      '',
+      'export const customDebugHook: ChangeHook = () => {};',
+    ].join('\n');
+    const files = new Map<string, string>([
+      [rsxUri.fsPath, rsxText],
+      [configUri.fsPath, configText],
+      [hookUri.fsPath, hookText],
+    ]);
+    findFiles.mockImplementation(async (pattern: string) =>
+      pattern === '**/*.rsx' ? [rsxUri] : [hookUri],
+    );
+    readFile.mockImplementation((target: { fsPath: string }) => {
+      const text = files.get(target.fsPath);
+      if (text === undefined) {
+        throw new Error(`No mock file for ${target.fsPath}`);
+      }
+      return Buffer.from(text, 'utf8');
+    });
+
+    try {
+      activate(context as never);
+
+      const provider = getRegisteredExpressionsProvider() as {
+        getPanelTree(): Promise<
+          Array<{
+            key: string;
+            children?: Array<{
+              label: string;
+              children?: Array<{
+                label: string;
+                children?: Array<{
+                  kind: string;
+                  label: string;
+                  description?: string;
+                }>;
+              }>;
+            }>;
+          }>
+        >;
+      };
+      const tree = await provider.getPanelTree();
+      const expressionRoot = tree.find(
+        (node) => node.key === 'root:expressions',
+      );
+      const customHooks = expressionRoot?.children?.find(
+        (node) => node.label === 'Hooks',
+      );
+      const definitionsRoot = tree
+        .find((node) => node.key === 'root:expressions')
+        ?.children?.find((node) => node.label === 'Definitions');
+      const definitionHooks = definitionsRoot?.children?.[0];
+      const configuredHook = definitionHooks?.children?.find(
+        (node) => node.label === 'rsxDebugChangeHook',
+      );
+      const definitionExpression = definitionsRoot?.children
+        ?.find((node) => node.label === 'shipping.expressions.rsx')
+        ?.children?.find((node) => node.label === 'remoteAreaFeeRsx');
+
+      expect(customHooks).toEqual(
+        expect.objectContaining({
+          key: 'customHooks',
+          label: 'Hooks',
+          kind: 'customHookGroup',
+          description: '1 hook',
+          canDeleteCustomHooks: true,
+        }),
+      );
+      expect(customHooks?.children?.[0]).toEqual(
+        expect.objectContaining({
+          kind: 'customHook',
+          label: 'customDebugHook',
+          uri: hookUri.toString(),
+          canDeleteCustomHooks: true,
+          hookDropAction: expect.objectContaining({
+            moduleSpecifier: expect.stringContaining('custom-debug-hook'),
+            hookUri: hookUri.toString(),
+            exportName: 'customDebugHook',
+          }),
+        }),
+      );
+      expect(definitionHooks).toEqual(
+        expect.objectContaining({
+          key: 'hooks:definitions',
+          label: 'Assigned hooks',
+          kind: 'hookGroup',
+          description: '4 hooks',
+        }),
+      );
+      expect(definitionHooks?.children?.slice(0, 2)).toEqual([
+        expect.objectContaining({
+          kind: 'hookConfig',
+          label: 'Breakpoint',
+          standardHook: 'breakpoint',
+          canDeleteHook: false,
+        }),
+        expect.objectContaining({
+          kind: 'hookConfig',
+          label: 'Log',
+          standardHook: 'log',
+          canDeleteHook: false,
+        }),
+      ]);
+      expect(configuredHook).toEqual(
+        expect.objectContaining({
+          kind: 'hookConfig',
+          label: 'rsxDebugChangeHook',
+          hookModuleSpecifier: './src/rsx-debug-change-hook',
+          hookAnchorUri: rsxUri.toString(),
+        }),
+      );
+      expect(
+        definitionHooks?.children?.find(
+          (node) => node.label === 'customDebugHook',
+        ),
+      ).toEqual(
+        expect.objectContaining({
+          kind: 'customHook',
+          hookDropAction: expect.objectContaining({
+            scope: 'group',
+            hookUri: hookUri.toString(),
+            exportName: 'customDebugHook',
+          }),
+        }),
+      );
+      expect(definitionExpression).toEqual(
+        expect.objectContaining({
+          kind: 'expression',
+          label: 'remoteAreaFeeRsx',
+        }),
+      );
+      expect(definitionExpression?.hookState).toBeUndefined();
     } finally {
       workspaceFolders = undefined;
       findFiles.mockReset();
@@ -2458,15 +4104,20 @@ describe('rsx vscode extension activation', () => {
         >;
       };
       const tree = await provider.getPanelTree();
-      const instancesRoot = tree.find((node) => node.key === 'root:instances');
+      const instancesRoot = tree
+        .find((node) => node.key === 'root:expressions')
+        ?.children?.find((node) => node.label === 'Instances');
       const group = instancesRoot?.children?.find(
-        (node) => node.label === 'remoteAreaFeeRsx',
+        (node) =>
+          node.label === 'Definition' &&
+          node.description?.startsWith('remoteAreaFeeRsx'),
       );
       const instance = group?.children?.[0];
 
       expect(group).toEqual(
         expect.objectContaining({
-          description: '6 instances',
+          label: 'Definition',
+          description: 'remoteAreaFeeRsx · 6 instances',
         }),
       );
       expect(group?.children).toEqual(
@@ -2532,6 +4183,490 @@ describe('rsx vscode extension activation', () => {
     }
   });
 
+  it('keeps a configured debug hook visible after enabling it from the panel', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+    workspaceFolders = [{ name: 'workspace', uri: createUri('/workspace') }];
+    const rsxUri = createUri('/workspace/src/rules/shipping.expressions.rsx');
+    const localRsxUri = createUri('/workspace/src/rules/local.expressions.rsx');
+    const consumerUri = createUri('/workspace/src/app/shipping.ts');
+    const configUri = createUri('/workspace/rsx.config.json');
+    const rsxText = [
+      'expression: remoteAreaFeeRsx',
+      '  model: { remoteArea: boolean }',
+      '  remoteArea ? 14 : 0',
+    ].join('\n');
+    const localRsxText = [
+      'expression: localAreaFeeRsx',
+      '  model: { localArea: boolean }',
+      '  localArea ? 4 : 0',
+    ].join('\n');
+    const consumerText = [
+      "import { remoteAreaFeeRsx } from '../rules/shipping.expressions.rsx';",
+      "import { localAreaFeeRsx } from '../rules/local.expressions.rsx';",
+      'const fee = remoteAreaFeeRsx({ remoteArea: true });',
+      'const localFee = localAreaFeeRsx({ localArea: true });',
+    ].join('\n');
+    const files = new Map<string, string>([
+      [rsxUri.fsPath, rsxText],
+      [localRsxUri.fsPath, localRsxText],
+      [consumerUri.fsPath, consumerText],
+      [
+        configUri.fsPath,
+        JSON.stringify({
+          build: {
+            debugChangeHooks: {
+              remoteAreaFeeRsx: {
+                group: {
+                  moduleSpecifier: './src/rsx-debug-change-hook',
+                  exportName: 'rsxDebugChangeHook',
+                  enabled: false,
+                },
+              },
+            },
+          },
+        }),
+      ],
+    ]);
+    findFiles.mockImplementation(async (pattern: string) => {
+      if (pattern === '**/*.rsx') {
+        return [rsxUri, localRsxUri];
+      }
+      return [consumerUri];
+    });
+    readFile.mockImplementation((target: { fsPath: string }) => {
+      const text = files.get(target.fsPath);
+      if (text === undefined) {
+        throw new Error(`No mock file for ${target.fsPath}`);
+      }
+      return Buffer.from(text, 'utf8');
+    });
+    writeFile.mockImplementation(
+      async (uri: { fsPath: string }, bytes: Uint8Array) => {
+        files.set(uri.fsPath, new TextDecoder().decode(bytes));
+      },
+    );
+
+    try {
+      activate(context as never);
+
+      const searchProvider = registerWebviewViewProvider.mock.calls
+        .filter(([viewId]) => viewId === 'rsx.expressions')
+        .at(-1)?.[1] as
+        | {
+            setDebugHooksEnabledSelected(
+              enabled: boolean,
+              key?: string,
+              anchorUri?: { fsPath: string; toString(): string },
+            ): Promise<void>;
+          }
+        | undefined;
+      const provider = getRegisteredExpressionsProvider() as {
+        getPanelTree(): Promise<
+          Array<{
+            key: string;
+            children?: Array<{
+              key: string;
+              label: string;
+              hookState?: string;
+              hookLabel?: string;
+            }>;
+          }>
+        >;
+      };
+
+      const beforeTree = await provider.getPanelTree();
+      const beforeExpression = beforeTree
+        .find((node) => node.key === 'root:expressions')
+        ?.children?.find((node) => node.label === 'Definitions')
+        ?.children?.find((node) => node.label === 'shipping.expressions.rsx')
+        ?.children?.find((node) => node.label === 'remoteAreaFeeRsx');
+      expect(beforeExpression).toEqual(
+        expect.objectContaining({
+          kind: 'expression',
+          label: 'remoteAreaFeeRsx',
+        }),
+      );
+      expect(beforeExpression?.hookState).toBeUndefined();
+      const beforeHook = beforeTree
+        .find((node) => node.key === 'root:expressions')
+        ?.children?.find((node) => node.label === 'Definitions')
+        ?.children?.find((node) => node.key === 'hooks:definitions')
+        ?.children?.find((node) => node.label === 'rsxDebugChangeHook');
+      expect(beforeHook).toEqual(
+        expect.objectContaining({
+          kind: 'hookConfig',
+          hookState: 'disabled',
+          hookLabel: expect.stringContaining(
+            'rsxDebugChangeHook from ./src/rsx-debug-change-hook',
+          ),
+        }),
+      );
+
+      await searchProvider?.setDebugHooksEnabledSelected(
+        true,
+        beforeExpression?.key,
+        rsxUri,
+      );
+
+      expect(JSON.parse(files.get(configUri.fsPath) ?? '{}')).toEqual({
+        build: {
+          debugChangeHooks: {
+            remoteAreaFeeRsx: {
+              group: {
+                moduleSpecifier: './src/rsx-debug-change-hook',
+                exportName: 'rsxDebugChangeHook',
+                enabled: true,
+              },
+            },
+          },
+        },
+      });
+
+      const afterTree = await provider.getPanelTree();
+      const afterExpression = afterTree
+        .find((node) => node.key === 'root:expressions')
+        ?.children?.find((node) => node.label === 'Definitions')
+        ?.children?.find((node) => node.label === 'shipping.expressions.rsx')
+        ?.children?.find((node) => node.label === 'remoteAreaFeeRsx');
+      expect(afterExpression).toEqual(
+        expect.objectContaining({
+          kind: 'expression',
+          label: 'remoteAreaFeeRsx',
+        }),
+      );
+      expect(afterExpression?.hookState).toBeUndefined();
+      const afterHook = afterTree
+        .find((node) => node.key === 'root:expressions')
+        ?.children?.find((node) => node.label === 'Definitions')
+        ?.children?.find((node) => node.key === 'hooks:definitions')
+        ?.children?.find((node) => node.label === 'rsxDebugChangeHook');
+      expect(afterHook).toEqual(
+        expect.objectContaining({
+          kind: 'hookConfig',
+          hookState: 'enabled',
+          hookLabel: expect.stringContaining(
+            'rsxDebugChangeHook from ./src/rsx-debug-change-hook',
+          ),
+        }),
+      );
+    } finally {
+      workspaceFolders = undefined;
+      findFiles.mockReset();
+      readFile.mockReset();
+      writeFile.mockReset();
+      showInformationMessage.mockReset();
+    }
+  });
+
+  it('shows standard debug hook assignments under the standard hook node', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+    workspaceFolders = [{ name: 'workspace', uri: createUri('/workspace') }];
+    const rsxUri = createUri('/workspace/src/rules/shipping.expressions.rsx');
+    const consumerUri = createUri('/workspace/src/app/shipping.ts');
+    const configUri = createUri('/workspace/rsx.config.json');
+    const rsxText = [
+      'expression: remoteAreaFeeRsx',
+      '  model: { remoteArea: boolean }',
+      '  remoteArea ? 14 : 0',
+    ].join('\n');
+    const consumerText = [
+      "import { remoteAreaFeeRsx } from '../rules/shipping.expressions.rsx';",
+      'const fee = remoteAreaFeeRsx({ remoteArea: true });',
+    ].join('\n');
+    const files = new Map<string, string>([
+      [rsxUri.fsPath, rsxText],
+      [consumerUri.fsPath, consumerText],
+      [
+        configUri.fsPath,
+        JSON.stringify({
+          build: {
+            debugChangeHooks: {
+              remoteAreaFeeRsx: {
+                group: {
+                  moduleSpecifier: './src/rsx-debug-change-hook',
+                  exportName: 'rsxBreakpointDebugHook',
+                  enabled: true,
+                },
+              },
+            },
+          },
+        }),
+      ],
+    ]);
+    findFiles.mockImplementation(async (pattern: string) => {
+      if (pattern === '**/*.rsx') {
+        return [rsxUri];
+      }
+      if (pattern === '**/rsx.config.json') {
+        return [configUri];
+      }
+      return [consumerUri];
+    });
+    readFile.mockImplementation((target: { fsPath: string }) => {
+      const text = files.get(target.fsPath);
+      if (text !== undefined) {
+        return Buffer.from(text, 'utf8');
+      }
+      throw new Error(`No mock file for ${target.fsPath}`);
+    });
+    writeFile.mockImplementation(
+      async (uri: { fsPath: string }, bytes: Uint8Array) => {
+        files.set(uri.fsPath, new TextDecoder().decode(bytes));
+      },
+    );
+
+    try {
+      activate(context as never);
+      const provider = getRegisteredExpressionsProvider() as {
+        getPanelTree(): Promise<
+          Array<{
+            key: string;
+            label: string;
+            children?: Array<{
+              key: string;
+              label: string;
+              hookState?: string;
+              children?: Array<{
+                key: string;
+                actionKey?: string;
+                label: string;
+                hookState?: string;
+              }>;
+            }>;
+          }>
+        >;
+      };
+      const searchProvider = registerWebviewViewProvider.mock.calls
+        .filter(([viewId]) => viewId === 'rsx.expressions')
+        .at(-1)?.[1] as
+        | {
+            setSelectedActionKey(
+              key: string,
+              visualKey?: string,
+            ): Promise<void>;
+            setDebugHooksEnabledSelected(enabled: boolean): Promise<void>;
+          }
+        | undefined;
+
+      const hooks = (await provider.getPanelTree())
+        .find((node) => node.key === 'root:expressions')
+        ?.children?.find((node) => node.label === 'Definitions')
+        ?.children?.find((node) => node.key === 'hooks:definitions')?.children;
+      const breakpoint = hooks?.find((node) => node.label === 'Breakpoint');
+
+      expect(breakpoint?.children?.map((node) => node.label)).toEqual([
+        'remoteAreaFeeRsx',
+      ]);
+      expect(breakpoint?.hookState).toBe('enabled');
+      const assignment = breakpoint?.children?.[0];
+      expect(assignment?.hookState).toBe('enabled');
+      expect(hooks?.map((node) => node.label)).not.toContain(
+        'rsxBreakpointDebugHook',
+      );
+
+      await searchProvider?.setSelectedActionKey(
+        assignment?.actionKey ?? '',
+        assignment?.key,
+      );
+      await searchProvider?.setDebugHooksEnabledSelected(false);
+
+      expect(
+        JSON.parse(files.get(configUri.fsPath) ?? '{}').build.debugChangeHooks
+          .remoteAreaFeeRsx.group,
+      ).toEqual({
+        moduleSpecifier: './src/rsx-debug-change-hook',
+        exportName: 'rsxBreakpointDebugHook',
+        enabled: false,
+      });
+
+      const disabledBreakpoint = (await provider.getPanelTree())
+        .find((node) => node.key === 'root:expressions')
+        ?.children?.find((node) => node.label === 'Definitions')
+        ?.children?.find((node) => node.key === 'hooks:definitions')
+        ?.children?.find((node) => node.label === 'Breakpoint');
+      expect(disabledBreakpoint?.children?.map((node) => node.label)).toEqual([
+        'remoteAreaFeeRsx',
+      ]);
+      expect(disabledBreakpoint?.hookState).toBe('disabled');
+      expect(disabledBreakpoint?.children?.[0]?.hookState).toBe('disabled');
+    } finally {
+      workspaceFolders = undefined;
+      findFiles.mockReset();
+      readFile.mockReset();
+      writeFile.mockReset();
+    }
+  });
+
+  it('uses explicit debugInstanceId values from factory tables for hook lookup', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+    workspaceFolders = [{ name: 'workspace', uri: createUri('/workspace') }];
+    const rsxUri = createUri('/workspace/src/rules/shipping.expressions.rsx');
+    const consumerUri = createUri('/workspace/src/app/expression-cases.ts');
+    const configUri = createUri('/workspace/rsx.config.json');
+    const rsxText = [
+      'expression: remoteAreaFeeRsx',
+      '  model: { remoteArea: boolean }',
+      '  remoteArea ? 14 : 0',
+    ].join('\n');
+    const consumerText = [
+      "import { remoteAreaFeeRsx as remoteAreaFeeFactory } from '../rules/shipping.expressions.rsx';",
+      '',
+      'export const cases = [',
+      '  {',
+      "    id: 'remote-area',",
+      "    debugInstanceId: 'manual:remote-area',",
+      '    create: remoteAreaFeeFactory,',
+      '  },',
+      '];',
+    ].join('\n');
+    const files = new Map<string, string>([
+      [rsxUri.fsPath, rsxText],
+      [consumerUri.fsPath, consumerText],
+      [
+        configUri.fsPath,
+        JSON.stringify({
+          build: {
+            debugChangeHooks: {
+              remoteAreaFeeRsx: {
+                instances: {
+                  'manual:remote-area': {
+                    moduleSpecifier: './src/rsx-debug-change-hook',
+                    exportName: 'rsxDebugChangeHook',
+                    enabled: true,
+                  },
+                },
+              },
+            },
+          },
+        }),
+      ],
+    ]);
+    findFiles.mockImplementation(async (pattern: string) => {
+      if (pattern === '**/*.rsx') {
+        return [rsxUri];
+      }
+      return [consumerUri];
+    });
+    readFile.mockImplementation((target: { fsPath: string }) => {
+      const text = files.get(target.fsPath);
+      if (text === undefined) {
+        throw new Error(`No mock file for ${target.fsPath}`);
+      }
+      return Buffer.from(text, 'utf8');
+    });
+
+    try {
+      activate(context as never);
+
+      const provider = getRegisteredExpressionsProvider() as {
+        getPanelTree(): Promise<
+          Array<{
+            key: string;
+            children?: Array<{
+              label: string;
+              children?: Array<{
+                kind: string;
+                hookState?: string;
+                hookLabel?: string;
+                description?: string;
+              }>;
+            }>;
+          }>
+        >;
+      };
+      const tree = await provider.getPanelTree();
+      const instancesRoot = tree
+        .find((node) => node.key === 'root:expressions')
+        ?.children?.find((node) => node.label === 'Instances');
+      const instanceHooks = instancesRoot?.children?.[0];
+      const group = instancesRoot?.children?.find(
+        (node) =>
+          node.label === 'Definition' &&
+          node.description?.startsWith('remoteAreaFeeRsx'),
+      );
+      const instance = group?.children?.[0];
+
+      expect(group).toEqual(
+        expect.objectContaining({
+          kind: 'instanceGroup',
+          label: 'Definition',
+          description: 'remoteAreaFeeRsx · 1 instance',
+        }),
+      );
+      expect(instance).toEqual(
+        expect.objectContaining({
+          kind: 'instance',
+          label: 'expression-cases.ts:7',
+          description: 'remoteAreaFeeRsx',
+          tooltip: 'src/app/expression-cases.ts:7',
+        }),
+      );
+      expect(instance?.hookState).toBeUndefined();
+      expect(instance?.hookLabel).toBeUndefined();
+      expect(instanceHooks).toEqual(
+        expect.objectContaining({
+          key: 'hooks:instances',
+          label: 'Assigned hooks',
+          kind: 'hookGroup',
+          description: '3 hooks',
+        }),
+      );
+      expect(instanceHooks?.children?.slice(0, 2)).toEqual([
+        expect.objectContaining({
+          kind: 'hookConfig',
+          label: 'Breakpoint',
+          standardHook: 'breakpoint',
+          canDeleteHook: false,
+        }),
+        expect.objectContaining({
+          kind: 'hookConfig',
+          label: 'Log',
+          standardHook: 'log',
+          canDeleteHook: false,
+        }),
+      ]);
+      const instanceConfiguredHook = instanceHooks?.children?.find(
+        (node) => node.label === 'rsxDebugChangeHook',
+      );
+      expect(instanceConfiguredHook).toEqual(
+        expect.objectContaining({
+          kind: 'hookConfig',
+          label: 'rsxDebugChangeHook',
+        }),
+      );
+      expect(instanceConfiguredHook?.description).toBeUndefined();
+      expect(instanceConfiguredHook?.children?.[0]).toEqual(
+        expect.objectContaining({
+          kind: 'instance',
+          label: 'expression-cases.ts:7',
+          description: 'remoteAreaFeeRsx',
+          actionKey: expect.stringContaining(
+            `instance:${rsxUri.toString()}#remoteAreaFeeRsx:`,
+          ),
+          uri: consumerUri.toString(),
+        }),
+      );
+      expect(instanceConfiguredHook?.children?.[0]?.children).toEqual([
+        expect.objectContaining({
+          kind: 'expression',
+          label: 'Definition',
+          actionKey: `expression:${rsxUri.toString()}#remoteAreaFeeRsx`,
+          uri: rsxUri.toString(),
+        }),
+      ]);
+    } finally {
+      workspaceFolders = undefined;
+      findFiles.mockReset();
+      readFile.mockReset();
+    }
+  });
+
   it('keeps the previous panel tree during a transient empty rsx file scan', async () => {
     const context = {
       subscriptions: [] as Array<{ dispose(): void }>,
@@ -2583,6 +4718,7 @@ describe('rsx vscode extension activation', () => {
       expect(
         initialTree
           .find((node) => node.key === 'root:expressions')
+          ?.children?.find((node) => node.label === 'Definitions')
           ?.children?.map((node) => node.label),
       ).toContain('shipping.expressions.rsx');
 
@@ -2593,6 +4729,7 @@ describe('rsx vscode extension activation', () => {
       expect(
         treeAfterTransientEmptyScan
           .find((node) => node.key === 'root:expressions')
+          ?.children?.find((node) => node.label === 'Definitions')
           ?.children?.map((node) => node.label),
       ).toContain('shipping.expressions.rsx');
     } finally {
@@ -2638,9 +4775,9 @@ describe('rsx vscode extension activation', () => {
 
     activate(context as never);
 
-    const previewCommand = registerCommand.mock.calls.find(
-      ([command]) => command === 'rsx.expressions.preview',
-    )?.[1] as (() => Promise<void>) | undefined;
+    const previewCommand = registerCommand.mock.calls
+      .filter(([command]) => command === 'rsx.expressions.preview')
+      .at(-1)?.[1] as (() => Promise<void>) | undefined;
     expect(previewCommand).toBeDefined();
 
     await previewCommand?.();
@@ -2674,6 +4811,373 @@ describe('rsx vscode extension activation', () => {
         end: expectedStart + 'subtotal'.length,
       }),
     );
+  });
+
+  it('opens an expression report with config, rsx, and code settings', async () => {
+    const workspaceStateValues = new Map<string, unknown>();
+    const workspaceState = {
+      get: jest.fn((key: string) => workspaceStateValues.get(key)),
+      update: jest.fn(async (key: string, value: unknown) => {
+        workspaceStateValues.set(key, value);
+      }),
+    };
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+      workspaceState,
+    };
+    workspaceFolders = [{ name: 'workspace', uri: createUri('/workspace') }];
+    const rootConfigUri = createUri('/workspace/rsx.config.json');
+    const nestedConfigUri = createUri('/workspace/src/rsx.config.json');
+    const rsxUri = createUri('/workspace/src/rules/totals.expressions.rsx');
+    const consumerUri = createUri('/workspace/src/app.ts');
+    const rsxText = [
+      'defaults:',
+      '  model: { base: number; adjustment: number }',
+      '  preparse: false',
+      '',
+      'expression: totalRsx',
+      '  compiled: true',
+      '  lazy: true',
+      '  return: number',
+      '  base + adjustment',
+    ].join('\n');
+    const consumerText = [
+      "import { totalRsx } from './rules/totals.expressions.rsx';",
+      "const total = totalRsx({ base: 1, adjustment: 2 }, undefined, 'manual-total');",
+    ].join('\n');
+    const files = new Map<string, string>([
+      [
+        rootConfigUri.fsPath,
+        JSON.stringify({
+          build: { format: 'esm', compiled: false },
+          cli: { add: { defaultDirectory: 'src/rules' } },
+        }),
+      ],
+      [
+        nestedConfigUri.fsPath,
+        JSON.stringify({
+          build: {
+            debugChangeHooks: {
+              totalRsx: {
+                group: [
+                  {
+                    moduleSpecifier: './breakpoint-hook',
+                    exportName: 'breakpointHook',
+                  },
+                  { moduleSpecifier: './log-hook', exportName: 'logHook' },
+                ],
+                instances: {
+                  'manual-total': {
+                    moduleSpecifier: './instance-hook',
+                    exportName: 'instanceHook',
+                  },
+                },
+              },
+              otherRsx: {
+                group: {
+                  moduleSpecifier: './other-hook',
+                  exportName: 'otherHook',
+                },
+              },
+            },
+          },
+        }),
+      ],
+      [rsxUri.fsPath, rsxText],
+      [consumerUri.fsPath, consumerText],
+    ]);
+    findFiles.mockImplementation(async (pattern: string) =>
+      pattern === '**/*.rsx' ? [rsxUri] : [consumerUri],
+    );
+    readFile.mockImplementation(async (uri: { fsPath: string }) => {
+      const text = files.get(uri.fsPath);
+      if (text === undefined) {
+        throw new Error(`No mock file for ${uri.fsPath}`);
+      }
+      return Buffer.from(text, 'utf8');
+    });
+
+    try {
+      registerCommand.mockClear();
+      createWebviewPanel.mockClear();
+      activate(context as never);
+      const provider = getRegisteredExpressionsProvider() as {
+        getPanelActionTarget(key: string): Promise<unknown>;
+      };
+      const target = await provider.getPanelActionTarget(
+        `expression:${rsxUri.toString()}#totalRsx`,
+      );
+      const command = registerCommand.mock.calls
+        .filter(([commandName]) => commandName === 'rsx.expressions.report')
+        .at(-1)?.[1] as ((item?: unknown) => Promise<void>) | undefined;
+
+      await command?.(target);
+      expect(workspaceState.update).toHaveBeenCalledWith(
+        'rsx.expressionReport.lastTargetKey',
+        `expression:${rsxUri.toString()}#totalRsx`,
+      );
+
+      const panel = createWebviewPanel.mock.results.at(-1)?.value as
+        | {
+            viewColumn: number;
+            webview: { html: string; onDidReceiveMessage: jest.Mock };
+            onDidChangeViewState: jest.Mock;
+            onDidDispose: jest.Mock;
+          }
+        | undefined;
+      expect(panel?.webview.html).toContain('RS-X Report: totalRsx');
+      expect(panel?.webview.html).toContain('Settings');
+      expect(panel?.webview.html).toContain('Expression behavior');
+      expect(panel?.webview.html).toMatch(
+        /Expression behavior[\s\S]*compiled[\s\S]*true[\s\S]*src\/rules\/totals\.expressions\.rsx \(\.rsx definition\)/u,
+      );
+      expect(panel?.webview.html).toContain('Build');
+      expect(panel?.webview.html).toContain('build.format');
+      expect(panel?.webview.html).not.toContain('build.compiled');
+      expect(panel?.webview.html).toContain('Hooks');
+      expect(panel?.webview.html).not.toContain('Debug hooks');
+      expect(panel?.webview.html).toContain('hookCards');
+      expect(panel?.webview.html).toContain('hookCardHeader');
+      expect(panel?.webview.html).toContain(
+        'data-action="openDebugHookImplementation"',
+      );
+      expect(panel?.webview.html).toContain(
+        'data-hook-module-specifier="./breakpoint-hook"',
+      );
+      expect(panel?.webview.html).toContain(
+        'data-hook-export-name="breakpointHook"',
+      );
+      expect(panel?.webview.html).toContain(
+        'data-hook-anchor-uri="file:///workspace/src/rules/totals.expressions.rsx"',
+      );
+      expect(
+        panel?.webview.html.match(/Definition hook \d/gu) ?? [],
+      ).toHaveLength(0);
+      expect(panel?.webview.html).toContain('detailLabel');
+      expect(panel?.webview.html).toContain('breakpointHook');
+      expect(panel?.webview.html).not.toContain('>Name<');
+      expect(panel?.webview.html).toContain('detailSource');
+      expect(panel?.webview.html).toContain('Definition (all instances)');
+      expect(panel?.webview.html).toContain(
+        'src/rules/totals.expressions.rsx · expression definition',
+      );
+      const nestedConfigText = files.get(nestedConfigUri.fsPath) ?? '';
+      const groupKeyStart = nestedConfigText.indexOf('"group"');
+      const moduleValueStart = nestedConfigText.indexOf('"./breakpoint-hook"');
+      const expressionNameStart = rsxText.indexOf('totalRsx');
+      expect(panel?.webview.html).toContain(
+        `<span class="detailLabel">Scope</span><button type="button" class="value detailValue" data-uri="file:///workspace/src/rules/totals.expressions.rsx" data-start="${expressionNameStart}" data-end="${expressionNameStart + 'totalRsx'.length}">Definition (all instances)</button>`,
+      );
+      expect(groupKeyStart).toBeGreaterThanOrEqual(0);
+      expect(panel?.webview.html).toContain(
+        `<span class="detailLabel">Configured as</span><button type="button" class="value detailValue" data-uri="file:///workspace/src/rsx.config.json" data-start="${groupKeyStart}" data-end="${groupKeyStart + '"group"'.length}">Definition hook entry</button>`,
+      );
+      expect(panel?.webview.html).toContain(
+        'src/rsx.config.json · build.debugChangeHooks.totalRsx.group.0',
+      );
+      expect(panel?.webview.html).toContain(
+        `<span class="detailLabel">Module</span><button type="button" class="value detailValue" data-uri="file:///workspace/src/rsx.config.json" data-start="${moduleValueStart}" data-end="${moduleValueStart + '"./breakpoint-hook"'.length}">./breakpoint-hook</button>`,
+      );
+      expect(panel?.webview.html).toContain('default: enabled when omitted');
+      expect(panel?.webview.html).toContain('Module');
+      expect(panel?.webview.html).toContain('./breakpoint-hook');
+      expect(panel?.webview.html).toContain(
+        'build.debugChangeHooks.totalRsx.group.0.moduleSpecifier',
+      );
+      expect(panel?.webview.html).toContain('Export');
+      expect(panel?.webview.html).toContain(
+        'build.debugChangeHooks.totalRsx.group.0.exportName',
+      );
+      expect(panel?.webview.html).toContain('logHook');
+      expect(
+        panel?.webview.html.match(/class="hookCard"/gu) ?? [],
+      ).toHaveLength(2);
+      expect(panel?.webview.html).not.toContain('definition: breakpointHook');
+      expect(panel?.webview.html).not.toContain('module: ./breakpoint-hook');
+      expect(panel?.webview.html).not.toContain('export: breakpointHook');
+      expect(panel?.webview.html).not.toContain('definition.exportName');
+      expect(panel?.webview.html).not.toContain('definition.moduleSpecifier');
+      expect(panel?.webview.html).not.toContain('Definition hook: totalRsx');
+      expect(panel?.webview.html).not.toContain('otherRsx');
+      expect(panel?.webview.html).not.toContain('otherHook');
+      expect(panel?.webview.html).not.toContain(
+        'build.debugChangeHooks.totalRsx.group.exportName',
+      );
+      expect(panel?.webview.html).not.toContain('.rsx Definition Settings');
+      expect(panel?.webview.html).not.toContain('Defaults headers');
+      expect(panel?.webview.html).toContain('preparse');
+      expect(panel?.webview.html).toContain('Expression declaration');
+      expect(panel?.webview.html).toContain('Expression');
+      expect(panel?.webview.html).toContain('tok-variable');
+      expect(panel?.webview.html).toContain('base');
+      expect(panel?.webview.html).toContain('adjustment');
+      expect(panel?.webview.html).toContain('compiled');
+      expect(panel?.webview.html).toContain('Usages');
+      expect(panel?.webview.html).toContain('Usage 1');
+      expect(panel?.webview.html).toContain('debugInstanceId');
+      expect(panel?.webview.html).toContain('data-uri="');
+      expect(panel?.webview.html).toContain(
+        'vscode.setState?.({ targetKey });',
+      );
+      expect(panel?.webview.html).toContain(
+        JSON.stringify(`expression:${rsxUri.toString()}#totalRsx`),
+      );
+      const reportSerializer = registerWebviewPanelSerializer.mock.calls.find(
+        ([viewType]) => viewType === 'rsx.expressionReport',
+      )?.[1] as
+        | {
+            deserializeWebviewPanel(
+              panel: {
+                title?: string;
+                viewColumn: number;
+                webview: {
+                  html: string;
+                  options?: unknown;
+                  onDidReceiveMessage: jest.Mock;
+                };
+                onDidChangeViewState: jest.Mock;
+                onDidDispose: jest.Mock;
+              },
+              state: unknown,
+            ): Promise<void>;
+          }
+        | undefined;
+      expect(reportSerializer).toBeDefined();
+      const restoredPanel = createWebviewPanel() as {
+        title?: string;
+        viewColumn: number;
+        webview: {
+          html: string;
+          options?: unknown;
+          onDidReceiveMessage: jest.Mock;
+        };
+        onDidChangeViewState: jest.Mock;
+        onDidDispose: jest.Mock;
+      };
+      await reportSerializer?.deserializeWebviewPanel(restoredPanel, {
+        targetKey: `expression:${rsxUri.toString()}#totalRsx`,
+      });
+      expect(restoredPanel.webview.options).toEqual({ enableScripts: true });
+      expect(restoredPanel.title).toBe('RS-X Report: totalRsx');
+      expect(restoredPanel.webview.html).toContain('RS-X Report: totalRsx');
+      expect(restoredPanel.webview.html).toContain('breakpointHook');
+      const fallbackRestoredPanel = createWebviewPanel() as {
+        title?: string;
+        viewColumn: number;
+        webview: {
+          html: string;
+          options?: unknown;
+          onDidReceiveMessage: jest.Mock;
+        };
+        onDidChangeViewState: jest.Mock;
+        onDidDispose: jest.Mock;
+      };
+      await reportSerializer?.deserializeWebviewPanel(
+        fallbackRestoredPanel,
+        {},
+      );
+      expect(workspaceState.get).toHaveBeenCalledWith(
+        'rsx.expressionReport.lastTargetKey',
+      );
+      expect(fallbackRestoredPanel.title).toBe('RS-X Report: totalRsx');
+      expect(fallbackRestoredPanel.webview.html).toContain('breakpointHook');
+      const reportMessageHandler = (
+        panel?.webview as
+          | {
+              onDidReceiveMessage: jest.Mock;
+            }
+          | undefined
+      )?.onDidReceiveMessage.mock.calls.at(-1)?.[0] as
+        | ((message: unknown) => Promise<void>)
+        | undefined;
+      const vscode = await import('vscode');
+      const closedReportGroup = { viewColumn: 7, tabs: [] };
+      const tabChangeHandler = tabGroupsOnDidChangeTabs.mock.calls.at(
+        -1,
+      )?.[0] as ((event: { closed: unknown[] }) => void) | undefined;
+      tabGroupsAll = [closedReportGroup];
+      tabGroupsClose.mockClear();
+      tabChangeHandler?.({
+        closed: [
+          {
+            group: closedReportGroup,
+            input: new vscode.TabInputWebview('rsx.expressionReport'),
+          },
+        ],
+      });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(tabGroupsClose).toHaveBeenCalledWith([closedReportGroup], true);
+
+      const reportDocument = createTextDocument(rsxText, {
+        fsPath: rsxUri.fsPath,
+      });
+      const reportEditor = {
+        document: reportDocument,
+        viewColumn: 1,
+        revealRange: jest.fn(),
+        setDecorations: jest.fn(),
+      };
+      openTextDocument.mockClear();
+      showTextDocument.mockClear();
+      openTextDocument.mockResolvedValueOnce(reportDocument);
+      showTextDocument.mockResolvedValueOnce(reportEditor);
+      await reportMessageHandler?.({
+        type: 'open',
+        uri: rsxUri.toString(),
+        start: expressionNameStart,
+        end: expressionNameStart + 'totalRsx'.length,
+      });
+      expect(showTextDocument).toHaveBeenCalledWith(
+        reportDocument,
+        expect.objectContaining({
+          viewColumn: 1,
+          preview: false,
+        }),
+      );
+      expect(panel?.onDidChangeViewState).toHaveBeenCalled();
+      const movedReportGroup = { viewColumn: 3, tabs: [] };
+      const reportViewStateHandler = panel?.onDidChangeViewState.mock.calls.at(
+        -1,
+      )?.[0] as
+        | ((event: { webviewPanel: { viewColumn: number } }) => void)
+        | undefined;
+      reportViewStateHandler?.({ webviewPanel: movedReportGroup });
+      const reportDisposeHandler = panel?.onDidDispose.mock.calls.at(
+        -1,
+      )?.[0] as (() => void) | undefined;
+      tabGroupsAll = [movedReportGroup];
+      tabGroupsClose.mockClear();
+      reportDisposeHandler?.();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(tabGroupsClose).toHaveBeenCalledWith([movedReportGroup], true);
+
+      const instanceStart = consumerText.indexOf('totalRsx({');
+      const instanceTarget = await provider.getPanelActionTarget(
+        `instance:${rsxUri.toString()}#totalRsx:${consumerUri.toString()}:${instanceStart}`,
+      );
+      await command?.(instanceTarget);
+      const instancePanel = createWebviewPanel.mock.results.at(-1)?.value as
+        | { webview: { html: string } }
+        | undefined;
+      expect(instancePanel?.webview.html).toContain(
+        'RS-X Report: totalRsx instance',
+      );
+      expect(instancePanel?.webview.html).toContain('instanceHook');
+      expect(instancePanel?.webview.html).toContain(
+        'data-hook-module-specifier="./instance-hook"',
+      );
+      expect(instancePanel?.webview.html).not.toContain('breakpointHook');
+      expect(instancePanel?.webview.html).not.toContain('logHook');
+      expect(instancePanel?.webview.html).toContain(
+        'Specific instance (manual-total)',
+      );
+      expect(instancePanel?.webview.html).toContain('Instance hook entry');
+    } finally {
+      workspaceFolders = undefined;
+      findFiles.mockReset();
+      readFile.mockReset();
+      createWebviewPanel.mockClear();
+    }
   });
 
   it('opens a model-backed expression tester for expression and field selections', async () => {
@@ -4114,19 +6618,37 @@ describe('rsx vscode extension activation', () => {
     expect(editor.revealRange).toHaveBeenCalled();
     expect(createTextEditorDecorationType).toHaveBeenCalledWith(
       expect.objectContaining({
-        backgroundColor: 'rgba(255, 214, 10, 0.45)',
-        border: '2px solid',
-        borderColor: '#ffd60a',
+        isWholeLine: true,
+        borderWidth: '0 0 0 4px',
+        borderStyle: 'solid',
+        borderColor: expect.objectContaining({ id: 'focusBorder' }),
+        overviewRulerColor: expect.objectContaining({
+          id: 'focusBorder',
+        }),
+      }),
+    );
+    expect(createTextEditorDecorationType).toHaveBeenCalledWith(
+      expect.objectContaining({
+        backgroundColor: 'rgba(0, 95, 184, 0.82)',
+        color: '#ffffff',
       }),
     );
     expect(createTextEditorDecorationType).not.toHaveBeenCalledWith(
       expect.objectContaining({
-        isWholeLine: true,
+        textDecoration: expect.anything(),
+        border: expect.anything(),
+        outline: expect.anything(),
+        outlineColor: expect.anything(),
+        outlineOffset: expect.anything(),
       }),
     );
     expect(editor.setDecorations).toHaveBeenCalledWith(expect.anything(), [
       expect.anything(),
     ]);
+    expect(editor.setDecorations).not.toHaveBeenCalledWith(
+      expect.anything(),
+      [],
+    );
     expect(editor.setDecorations).not.toHaveBeenCalledWith(
       expect.anything(),
       [],
@@ -4164,11 +6686,17 @@ describe('rsx vscode extension activation', () => {
     expect(editor.selection).toEqual(
       expect.objectContaining({
         start: document.positionAt(text.indexOf('{ value: number }')),
+        end: document.positionAt(text.indexOf('{ value: number }')),
+      }),
+    );
+    expect(editor.setDecorations).toHaveBeenLastCalledWith(expect.anything(), [
+      expect.objectContaining({
+        start: document.positionAt(text.indexOf('{ value: number }')),
         end: document.positionAt(
           text.indexOf('{ value: number }') + '{ value: number }'.length,
         ),
       }),
-    );
+    ]);
     tabGroupsClose.mockClear();
     const tabsChanged = tabGroupsOnDidChangeTabs.mock.calls.at(-1)?.[0] as
       | ((event: { closed: unknown[] }) => void)
@@ -4191,11 +6719,17 @@ describe('rsx vscode extension activation', () => {
     expect(editor.selection).toEqual(
       expect.objectContaining({
         start: document.positionAt(text.indexOf('value: number')),
+        end: document.positionAt(text.indexOf('value: number')),
+      }),
+    );
+    expect(editor.setDecorations).toHaveBeenLastCalledWith(expect.anything(), [
+      expect.objectContaining({
+        start: document.positionAt(text.indexOf('value: number')),
         end: document.positionAt(
           text.indexOf('value: number') + 'value'.length,
         ),
       }),
-    );
+    ]);
 
     openTextDocument.mockClear();
     showTextDocument.mockClear();
@@ -4210,9 +6744,15 @@ describe('rsx vscode extension activation', () => {
     expect(editor.selection).toEqual(
       expect.objectContaining({
         start: document.positionAt(expressionValueOffset),
-        end: document.positionAt(expressionValueOffset + 'value'.length),
+        end: document.positionAt(expressionValueOffset),
       }),
     );
+    expect(editor.setDecorations).toHaveBeenLastCalledWith(expect.anything(), [
+      expect.objectContaining({
+        start: document.positionAt(expressionValueOffset),
+        end: document.positionAt(expressionValueOffset + 'value'.length),
+      }),
+    ]);
   });
 
   it('still reports unknown headers before an expression body starts', () => {
@@ -4248,6 +6788,840 @@ describe('rsx vscode extension activation', () => {
         }),
       ]),
     );
+  });
+
+  it('reports invalid lazy options while editing module .rsx headers', () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+
+    activate(context as never);
+
+    const diagnosticCollection = createDiagnosticCollection.mock.results.at(-1)
+      ?.value as { set: jest.Mock };
+    const openHandler = onDidOpenTextDocument.mock.calls.at(-1)?.[0] as (
+      document: unknown,
+    ) => void;
+
+    jest.useFakeTimers();
+    const document = createTextDocument(
+      [
+        'defaults:',
+        '  model: { base: number; adjustment: number }',
+        '',
+        'expression: matrixPreparsedTreeLazyNoneRsx',
+        '  preparse: false',
+        '  compiled: false',
+        '  lazy: true',
+        '  return: number',
+        '  base + adjustment + 252',
+        '',
+        'expression: matrixLazyGroupImplicitRsx',
+        '  preparse: false',
+        '  compiled: false',
+        '  lazyGroup: matrix',
+        '  return: number',
+        '  base + adjustment + 259',
+      ].join('\n'),
+    );
+    openHandler(document);
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
+
+    const diagnostics = diagnosticCollection.set.mock.calls.at(-1)?.[1] as
+      | Array<{ message: string }>
+      | undefined;
+    expect(diagnostics ?? []).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          message: invalidLazyPreparseDiagnosticMessage,
+        }),
+      ]),
+    );
+    expect(
+      (diagnostics ?? []).filter(
+        (diagnostic) =>
+          diagnostic.message === invalidLazyPreparseDiagnosticMessage,
+      ),
+    ).toHaveLength(2);
+  });
+
+  it('sets module .rsx compiler options from the editor context menu command', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+
+    registerCommand.mockClear();
+    showQuickPick.mockImplementation(async (items: Array<{ label: string }>) =>
+      items.find((item) => item.label === 'Toggle lazy'),
+    );
+    activate(context as never);
+
+    const command = registerCommand.mock.calls.find(
+      ([commandName]) => commandName === 'rsx.expressions.setCompilerOption',
+    )?.[1] as (() => Promise<void>) | undefined;
+    const text = [
+      'defaults:',
+      '  model: { base: number; adjustment: number }',
+      '',
+      'expression: totalRsx',
+      '  preparse: true',
+      '  compiled: false',
+      '  return: number',
+      '  base + adjustment',
+    ].join('\n');
+    const document = createTextDocument(text, {
+      fsPath: '/workspace/src/rules/total.expressions.rsx',
+    });
+    activeTextEditor = {
+      document,
+      selection: {
+        active: { line: 5, character: 4 },
+      },
+    };
+
+    await command?.();
+
+    const edit = applyEdit.mock.calls.at(-1)?.[0] as
+      | { replacements?: Array<{ range: unknown; text: string }> }
+      | undefined;
+    expect(edit?.replacements).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          text: '  lazy: true\n',
+        }),
+      ]),
+    );
+    expect(showWarningMessage).not.toHaveBeenCalledWith(
+      invalidLazyPreparseDiagnosticMessage,
+    );
+    activeTextEditor = null;
+    showQuickPick.mockReset();
+    applyEdit.mockClear();
+  });
+
+  it('sets module .rsx compiler options from an expression panel node context menu command', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+
+    registerCommand.mockClear();
+    openTextDocument.mockClear();
+    activate(context as never);
+
+    const command = registerCommand.mock.calls.find(
+      ([commandName]) => commandName === 'rsx.expressions.toggleLazy',
+    )?.[1] as ((item?: unknown) => Promise<void>) | undefined;
+    const text = [
+      'defaults:',
+      '  model: { base: number; adjustment: number }',
+      '',
+      'expression: totalRsx',
+      '  preparse: true',
+      '  compiled: false',
+      '  return: number',
+      '  base + adjustment',
+    ].join('\n');
+    const document = createTextDocument(text, {
+      fsPath: '/workspace/src/rules/total.expressions.rsx',
+    });
+    openTextDocument.mockResolvedValueOnce(document);
+    activeTextEditor = null;
+
+    await command?.({
+      kind: 'expression',
+      uri: document.uri,
+      start: text.indexOf('totalRsx'),
+    });
+
+    expect(openTextDocument).toHaveBeenCalledWith(document.uri);
+    const edit = applyEdit.mock.calls.at(-1)?.[0] as
+      | { replacements?: Array<{ range: unknown; text: string }> }
+      | undefined;
+    expect(edit?.replacements).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          text: '  lazy: true\n',
+        }),
+      ]),
+    );
+    activeTextEditor = null;
+    applyEdit.mockClear();
+    openTextDocument.mockReset();
+  });
+
+  it('organizes expression panel nodes and applies compiler options to dropped selections', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+    const rsxUri = createUri('/workspace/src/rules/matrix.expressions.rsx');
+    const text = [
+      'expression: eagerRsx',
+      '  model: {}',
+      '  preparse: false',
+      '  compiled: false',
+      '  return: number',
+      '  1',
+      '',
+      'expression: groupedLazyRsx',
+      '  model: {}',
+      '  preparse: true',
+      '  compiled: false',
+      '  lazyGroup: matrix',
+      '  return: number',
+      '  2',
+      '',
+      'expression: compiledGroupedLazyRsx',
+      '  model: {}',
+      '  preparse: true',
+      '  compiled: true',
+      '  lazyGroup: matrix',
+      '  return: number',
+      '  3',
+    ].join('\n');
+    workspaceFolders = [{ name: 'workspace', uri: createUri('/workspace') }];
+    findFiles.mockResolvedValue([rsxUri]);
+    readFile.mockImplementation(async (uri: { fsPath: string }) => {
+      if (uri.fsPath !== rsxUri.fsPath) {
+        throw new Error(`No mock file for ${uri.fsPath}`);
+      }
+      return Buffer.from(text, 'utf8');
+    });
+    const saveDocument = jest.fn(async () => true);
+    applyEdit.mockResolvedValue(true as never);
+    openTextDocument.mockImplementation(async (uri: { fsPath: string }) => ({
+      ...createTextDocument(text, { fsPath: uri.fsPath }),
+      save: saveDocument,
+    }));
+
+    try {
+      activate(context as never);
+      const provider = getRegisteredExpressionsProvider() as {
+        getPanelTree(): Promise<
+          Array<{
+            key: string;
+            label: string;
+            children?: Array<{
+              key: string;
+              label: string;
+              dropAction?: { option: string; value?: string };
+              deleteOptionAction?: { option: string; remove?: boolean };
+              canDeleteOptionAll?: boolean;
+              children?: Array<{
+                key: string;
+                label: string;
+                description?: string;
+                tooltip?: string;
+                children?: Array<{
+                  key: string;
+                  label: string;
+                  description?: string;
+                  tooltip?: string;
+                }>;
+              }>;
+            }>;
+          }>
+        >;
+      };
+      const searchProvider = registerWebviewViewProvider.mock.calls
+        .filter(([viewId]) => viewId === 'rsx.expressions')
+        .at(-1)?.[1] as
+        | {
+            setCompilerOptionForPanelKeys(
+              action: { option: string; value?: string; remove?: boolean },
+              keys: readonly string[],
+            ): Promise<void>;
+          }
+        | undefined;
+
+      const tree = await provider.getPanelTree();
+      const panelKeys = new Map<string, string[]>();
+      const collectPanelKeys = (
+        nodes: Array<{
+          key: string;
+          label: string;
+          children?: Array<{
+            key: string;
+            label: string;
+            children?: unknown[];
+          }>;
+        }>,
+        pathParts: string[] = [],
+      ): void => {
+        for (const node of nodes) {
+          const pathText = [...pathParts, node.label].join(' > ');
+          panelKeys.set(node.key, [
+            ...(panelKeys.get(node.key) ?? []),
+            pathText,
+          ]);
+          collectPanelKeys(
+            (node.children ?? []) as Array<{
+              key: string;
+              label: string;
+              children?: unknown[];
+            }>,
+            [...pathParts, node.label],
+          );
+        }
+      };
+      collectPanelKeys(tree);
+      expect(
+        [...panelKeys.entries()].filter(([, paths]) => paths.length > 1),
+      ).toEqual([]);
+      expect(tree.map((node) => node.label)).toEqual(['Expressions', 'Models']);
+      const expressionRoot = tree.find(
+        (node) => node.key === 'root:expressions',
+      );
+      expect(expressionRoot?.children?.map((node) => node.label)).toEqual([
+        'Hooks',
+        'Definitions',
+        'Instances',
+        'Eager',
+        'Lazy',
+        'Compiled',
+        'Preparsed',
+      ]);
+      const definitions = expressionRoot?.children?.find(
+        (node) => node.label === 'Definitions',
+      );
+      const eager = expressionRoot?.children?.find(
+        (node) => node.label === 'Eager',
+      );
+      const lazy = expressionRoot?.children?.find(
+        (node) => node.label === 'Lazy',
+      );
+      const compiled = expressionRoot?.children?.find(
+        (node) => node.label === 'Compiled',
+      );
+
+      expect(definitions?.children?.[0]).toEqual(
+        expect.objectContaining({
+          key: 'hooks:definitions',
+          label: 'Assigned hooks',
+          kind: 'hookGroup',
+        }),
+      );
+      expect(definitions?.children?.[1]).toEqual(
+        expect.objectContaining({ label: 'matrix.expressions.rsx' }),
+      );
+      expect(
+        definitions?.children?.[1]?.children?.map((node) => node.label),
+      ).toEqual(['compiledGroupedLazyRsx', 'eagerRsx', 'groupedLazyRsx']);
+      expect(eager).toEqual(
+        expect.objectContaining({
+          dropAction: { option: 'lazy', value: 'false' },
+        }),
+      );
+      expect(lazy?.children).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ label: 'Default' }),
+          expect.objectContaining({ label: 'matrix' }),
+        ]),
+      );
+      const lazyMatrixExpression = lazy?.children
+        ?.find((node) => node.label === 'matrix')
+        ?.children?.find((node) => node.label === 'groupedLazyRsx');
+      expect(
+        lazy?.children
+          ?.find((node) => node.label === 'matrix')
+          ?.children?.map((node) => node.label),
+      ).toEqual(['compiledGroupedLazyRsx', 'groupedLazyRsx']);
+      const lazyMatrixCompiledExpression = lazy?.children
+        ?.find((node) => node.label === 'matrix')
+        ?.children?.find((node) => node.label === 'compiledGroupedLazyRsx');
+      const compiledGroupedExpression = compiled?.children?.find(
+        (node) => node.label === 'compiledGroupedLazyRsx',
+      );
+      expect(lazyMatrixExpression).toEqual(
+        expect.objectContaining({
+          label: 'groupedLazyRsx',
+          description: 'number',
+          tooltip: 'src/rules/matrix.expressions.rsx',
+        }),
+      );
+      expect(lazyMatrixExpression?.description).not.toContain('src/');
+      expect(lazyMatrixExpression?.description).not.toContain('.rsx');
+      expect(lazyMatrixCompiledExpression?.key).toContain(
+        '::scope:expressions%3AlazyGroup%3Amatrix',
+      );
+      expect(compiledGroupedExpression?.key).toContain(
+        '::scope:expressions%3Acompiled',
+      );
+      expect(compiledGroupedExpression?.key).not.toBe(
+        lazyMatrixCompiledExpression?.key,
+      );
+      expect(compiled).toEqual(
+        expect.objectContaining({
+          dropAction: { option: 'compiled', value: 'true' },
+          deleteOptionAction: { option: 'compiled', remove: true },
+          canDeleteOptionAll: true,
+        }),
+      );
+      const compiledExpressionKeys =
+        compiled?.children?.map((node) => node.key) ?? [];
+      applyEdit.mockClear();
+      await searchProvider?.setCompilerOptionForPanelKeys(
+        { option: 'compiled', remove: true },
+        compiledExpressionKeys,
+      );
+      expect(applyEdit).toHaveBeenCalledTimes(1);
+      expect(saveDocument).toHaveBeenCalledTimes(1);
+      expect(
+        (
+          applyEdit.mock.calls[0]?.[0] as {
+            replacements?: Array<{ text: string }>;
+          }
+        ).replacements?.[0]?.text,
+      ).toBe('');
+      textDocuments.push(
+        createTextDocument(text.replace('compiled: false', 'compiled: true'), {
+          fsPath: rsxUri.fsPath,
+        }),
+      );
+      provider.refresh?.();
+      const refreshedTree = await provider.getPanelTree();
+      const refreshedExpressionRoot = refreshedTree.find(
+        (node) => node.key === 'root:expressions',
+      );
+      const refreshedCompiled = refreshedExpressionRoot?.children?.find(
+        (node) => node.label === 'Compiled',
+      );
+      expect(refreshedCompiled?.children?.map((node) => node.label)).toEqual([
+        'compiledGroupedLazyRsx',
+        'eagerRsx',
+      ]);
+      textDocuments.splice(0, textDocuments.length);
+      applyEdit.mockClear();
+      saveDocument.mockClear();
+
+      const expressionKeys =
+        definitions?.children?.[1]?.children?.map((node) => node.key) ?? [];
+      const firstExpressionKey = expressionKeys[0] ?? '';
+      await searchProvider?.setCompilerOptionForPanelKeys(
+        { option: 'compiled', value: 'true' },
+        expressionKeys,
+      );
+
+      expect(applyEdit).toHaveBeenCalledTimes(3);
+      expect(saveDocument).toHaveBeenCalledTimes(3);
+      expect(
+        applyEdit.mock.calls.map(
+          ([edit]) =>
+            (
+              edit as {
+                replacements?: Array<{ text: string }>;
+              }
+            ).replacements?.[0]?.text,
+        ),
+      ).toEqual(['true', 'true', 'true']);
+
+      applyEdit.mockClear();
+      saveDocument.mockClear();
+      await searchProvider?.setCompilerOptionForPanelKeys(
+        { option: 'compiled', value: 'false' },
+        expressionKeys,
+      );
+      await searchProvider?.setCompilerOptionForPanelKeys(
+        { option: 'compiled', value: 'true' },
+        [`instanceGroup:${firstExpressionKey.replace(/^expression:/u, '')}`],
+      );
+      await searchProvider?.setCompilerOptionForPanelKeys(
+        { option: 'compiled', value: 'true' },
+        ['model:anyModel'],
+      );
+
+      expect(applyEdit).not.toHaveBeenCalled();
+      expect(saveDocument).not.toHaveBeenCalled();
+    } finally {
+      workspaceFolders = undefined;
+      findFiles.mockReset();
+      readFile.mockReset();
+      openTextDocument.mockReset();
+      textDocuments.splice(0, textDocuments.length);
+      applyEdit.mockClear();
+    }
+  });
+
+  it('groups expression panel roots by explicit rsx config projects', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+    const shopUri = createUri(
+      '/workspace/apps/shop/src/rules/shop.expressions.rsx',
+    );
+    const adminUri = createUri(
+      '/workspace/apps/admin/src/rules/admin.expressions.rsx',
+    );
+    const configUri = createUri('/workspace/rsx.config.json');
+    const shopText = [
+      'expression: shopTotalRsx',
+      '  model: { total: number }',
+      '  return: number',
+      '  total',
+    ].join('\n');
+    const adminText = [
+      'expression: adminTotalRsx',
+      '  model: { total: number }',
+      '  return: number',
+      '  total',
+    ].join('\n');
+    const configText = JSON.stringify({
+      projects: [
+        { name: 'shop', root: 'apps/shop' },
+        { name: 'admin', root: 'apps/admin' },
+      ],
+    });
+    workspaceFolders = [{ name: 'workspace', uri: createUri('/workspace') }];
+    findFiles.mockImplementation(async (pattern: string) => {
+      if (pattern === '**/*.rsx') {
+        return [shopUri, adminUri];
+      }
+      if (pattern === '**/rsx.config.json') {
+        return [configUri];
+      }
+      return [];
+    });
+    readFile.mockImplementation(async (uri: { fsPath: string }) => {
+      if (uri.fsPath === shopUri.fsPath) {
+        return Buffer.from(shopText, 'utf8');
+      }
+      if (uri.fsPath === adminUri.fsPath) {
+        return Buffer.from(adminText, 'utf8');
+      }
+      if (uri.fsPath === configUri.fsPath) {
+        return Buffer.from(configText, 'utf8');
+      }
+      throw new Error(`No mock file for ${uri.fsPath}`);
+    });
+
+    try {
+      activate(context as never);
+      const provider = getRegisteredExpressionsProvider() as {
+        getPanelTree(): Promise<
+          Array<{
+            label: string;
+            children?: Array<{ key: string; label: string }>;
+          }>
+        >;
+      };
+
+      const tree = await provider.getPanelTree();
+      expect(tree.map((node) => node.label)).toEqual(['admin', 'shop']);
+      expect(tree[0]?.children?.map((node) => node.label)).toEqual([
+        'Expressions',
+        'Models',
+      ]);
+      expect(tree[1]?.children?.map((node) => node.key)).toEqual([
+        expect.stringContaining('root:expressions'),
+        expect.stringContaining('root:models'),
+      ]);
+    } finally {
+      workspaceFolders = undefined;
+      findFiles.mockReset();
+      readFile.mockReset();
+    }
+  });
+
+  it('does not treat nested rsx config overrides as panel projects', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+    const rootUri = createUri('/workspace/src/app/expressions/root-matrix.rsx');
+    const overrideUri = createUri(
+      '/workspace/src/app/expressions/override/nested-matrix.rsx',
+    );
+    const overrideConfigUri = createUri(
+      '/workspace/src/app/expressions/override/rsx.config.json',
+    );
+    const packageUri = createUri('/workspace/package.json');
+    const rootText = [
+      'expression: rootMatrixRsx',
+      '  model: { value: number }',
+      '  return: number',
+      '  value',
+    ].join('\n');
+    const overrideText = [
+      'expression: overrideMatrixRsx',
+      '  model: { value: number }',
+      '  return: number',
+      '  value + 1',
+    ].join('\n');
+    workspaceFolders = [{ name: 'workspace', uri: createUri('/workspace') }];
+    findFiles.mockImplementation(async (pattern: string) => {
+      if (pattern === '**/*.rsx') {
+        return [rootUri, overrideUri];
+      }
+      if (pattern === '**/rsx.config.json') {
+        return [overrideConfigUri];
+      }
+      return [];
+    });
+    readFile.mockImplementation(async (uri: { fsPath: string }) => {
+      if (uri.fsPath === rootUri.fsPath) {
+        return Buffer.from(rootText, 'utf8');
+      }
+      if (uri.fsPath === overrideUri.fsPath) {
+        return Buffer.from(overrideText, 'utf8');
+      }
+      if (uri.fsPath === overrideConfigUri.fsPath) {
+        return Buffer.from(
+          JSON.stringify({ build: { debugChangeHooks: {} } }),
+          'utf8',
+        );
+      }
+      if (uri.fsPath === packageUri.fsPath) {
+        return Buffer.from(JSON.stringify({ name: 'matrix' }), 'utf8');
+      }
+      throw new Error(`No mock file for ${uri.fsPath}`);
+    });
+
+    try {
+      activate(context as never);
+      const provider = getRegisteredExpressionsProvider() as {
+        getPanelTree(): Promise<Array<{ label: string; children?: unknown[] }>>;
+      };
+
+      const tree = await provider.getPanelTree();
+      expect(tree.map((node) => node.label)).toEqual(['Expressions', 'Models']);
+      expect(tree.map((node) => node.label)).not.toContain('override');
+    } finally {
+      workspaceFolders = undefined;
+      findFiles.mockReset();
+      readFile.mockReset();
+    }
+  });
+
+  it('contributes RS-X compiler option commands to expression panel node context menus', () => {
+    const manifest = JSON.parse(
+      fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8'),
+    ) as {
+      activationEvents: string[];
+      contributes: {
+        commands: Array<{
+          command: string;
+          title: string;
+        }>;
+        menus: Record<
+          string,
+          Array<{
+            command: string;
+            when?: string;
+            group?: string;
+            toggled?: string;
+          }>
+        >;
+      };
+    };
+    const expressionMenuCommands = [
+      ...new Set(
+        (manifest.contributes.menus['view/item/context'] ?? [])
+          .filter(
+            (item) =>
+              item.when ===
+              'view == rsx.expressions && viewItem =~ /(^|\\s)rsxExpression(\\s|$)/',
+          )
+          .map((item) => item.command),
+      ),
+    ];
+
+    expect(expressionMenuCommands).toEqual(
+      expect.arrayContaining([
+        'rsx.expressions.toggleCompiled',
+        'rsx.expressions.togglePreparse',
+        'rsx.expressions.toggleLazy',
+      ]),
+    );
+    expect(expressionMenuCommands).not.toContain(
+      'rsx.expressions.editLazyGroup',
+    );
+    const webviewMenuCommands = [
+      ...new Set(
+        (manifest.contributes.menus['webview/context'] ?? [])
+          .filter((item) =>
+            item.when?.startsWith(
+              "webviewId == 'rsx.expressions' && webviewSection == 'rsxExpression'",
+            ),
+          )
+          .map((item) => item.command),
+      ),
+    ];
+    expect(webviewMenuCommands).toEqual(
+      expect.arrayContaining([
+        'rsx.expressions.panel.toggleCompiled',
+        'rsx.expressions.panel.togglePreparse',
+        'rsx.expressions.panel.toggleLazy',
+      ]),
+    );
+    expect(manifest.contributes.menus['webview/context']).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          command: 'rsx.expressions.panel.manageAssignedHooks',
+          when: "webviewId == 'rsx.expressions' && (webviewSection == 'rsxExpression' || webviewSection == 'rsxExpressionInstance')",
+        }),
+        expect.objectContaining({
+          command: 'rsx.expressions.panel.unassignDebugHook',
+          when: "webviewId == 'rsx.expressions' && webviewSection == 'rsxExpressionHookAssignment'",
+        }),
+        expect.objectContaining({
+          command: 'rsx.expressions.panel.enableAllExpressionHooks',
+          when: "webviewId == 'rsx.expressions' && webviewSection == 'rsxExpressionHook' && rsxWebviewHookCanEnableAll",
+        }),
+        expect.objectContaining({
+          command: 'rsx.expressions.panel.disableAllExpressionHooks',
+          when: "webviewId == 'rsx.expressions' && webviewSection == 'rsxExpressionHook' && rsxWebviewHookCanDisableAll",
+        }),
+        expect.objectContaining({
+          command: 'rsx.expressions.panel.unassignAllDebugHooks',
+          when: "webviewId == 'rsx.expressions' && (webviewSection == 'rsxExpressionHooks' || webviewSection == 'rsxExpressionHook') && rsxWebviewHookCanUnassignAll",
+        }),
+        expect.objectContaining({
+          command: 'rsx.expressions.panel.deleteCustomHooks',
+          when: "webviewId == 'rsx.expressions' && (webviewSection == 'rsxCustomHooks' || webviewSection == 'rsxCustomHook') && rsxWebviewCustomHookCanDelete",
+        }),
+        expect.objectContaining({
+          command: 'rsx.expressions.panel.deleteAllCompilerOption',
+          when: "webviewId == 'rsx.expressions' && webviewSection == 'rsxExpressionOptionGroup' && rsxWebviewOptionCanDeleteAll",
+        }),
+        expect.objectContaining({
+          command: 'rsx.expressions.add',
+          when: "webviewId == 'rsx.expressions' && (webviewSection == 'rsxExpressionDefinitions' || webviewSection == 'rsxExpressionFile' || webviewSection == 'rsxExpression' || webviewSection == 'rsxExpressionInstance' || webviewSection == 'rsxModelFieldExpression')",
+        }),
+      ]),
+    );
+    const modelTestMenuItems = Object.values(manifest.contributes.menus)
+      .flat()
+      .filter(
+        (item) =>
+          (item.command === 'rsx.expressions.test' ||
+            item.command === 'rsx.expressions.panel.test') &&
+          item.when?.includes('rsxExpressionModel'),
+      );
+    expect(modelTestMenuItems).toEqual([]);
+    expect(manifest.activationEvents).toContain('onCommand:rsx.project.init');
+    expect(manifest.contributes.commands).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          command: 'rsx.project.init',
+          title: 'Init RS-X Project',
+        }),
+      ]),
+    );
+    expect(manifest.contributes.menus['explorer/context']).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          command: 'rsx.project.init',
+          when: 'explorerResourceIsFolder || resourceFilename == package.json',
+        }),
+      ]),
+    );
+    expect(webviewMenuCommands).not.toContain(
+      'rsx.expressions.panel.editLazyGroup',
+    );
+    expect(JSON.stringify(manifest.contributes.commands)).not.toContain(
+      'rsx.expressions.panel.deleteDebugHooks',
+    );
+    expect(JSON.stringify(manifest.contributes.menus)).not.toContain(
+      'rsx.expressions.panel.deleteDebugHooks',
+    );
+    expect(
+      (manifest.contributes.menus['webview/context'] ?? [])
+        .filter((item) => item.when?.includes('rsxExpressionHookAssignment'))
+        .map((item) => item.command),
+    ).toEqual(['rsx.expressions.panel.unassignDebugHook']);
+    const webviewOptionMenuItems = (
+      manifest.contributes.menus['webview/context'] ?? []
+    )
+      .filter((item) => item.group?.startsWith('rsx/options@'))
+      .map((item) => ({
+        command: item.command,
+        when: item.when,
+        toggled: item.toggled,
+      }));
+    expect(webviewOptionMenuItems).toEqual([
+      {
+        command: 'rsx.expressions.panel.toggleCompiled',
+        when: "webviewId == 'rsx.expressions' && webviewSection == 'rsxExpression'",
+        toggled: 'rsxWebviewExpressionCompiled',
+      },
+      {
+        command: 'rsx.expressions.panel.togglePreparse',
+        when: "webviewId == 'rsx.expressions' && webviewSection == 'rsxExpression'",
+        toggled: 'rsxWebviewExpressionPreparse',
+      },
+      {
+        command: 'rsx.expressions.panel.toggleLazy',
+        when: "webviewId == 'rsx.expressions' && webviewSection == 'rsxExpression'",
+        toggled: 'rsxWebviewExpressionLazy',
+      },
+      {
+        command: 'rsx.expressions.panel.deleteAllCompilerOption',
+        when: "webviewId == 'rsx.expressions' && webviewSection == 'rsxExpressionOptionGroup' && rsxWebviewOptionCanDeleteAll",
+        toggled: undefined,
+      },
+    ]);
+    expect(
+      Object.values(manifest.contributes.menus)
+        .flat()
+        .filter((item) => item.group?.startsWith('rsx/options@'))
+        .map((item) => item.command),
+    ).not.toContain('rsx.expressions.editLazyGroup');
+    expect(
+      Object.values(manifest.contributes.menus)
+        .flat()
+        .filter((item) => item.group?.startsWith('rsx/options@'))
+        .map((item) => item.command),
+    ).not.toContain('rsx.expressions.panel.editLazyGroup');
+    expect(
+      manifest.contributes.commands
+        .filter((item) => item.command.endsWith('Checked'))
+        .map((item) => item.title),
+    ).toEqual([]);
+    expect(JSON.stringify(manifest.contributes.commands)).not.toContain('\\t✓');
+  });
+
+  it('blocks invalid lazy option changes from the editor context menu command', async () => {
+    const context = {
+      subscriptions: [] as Array<{ dispose(): void }>,
+    };
+
+    registerCommand.mockClear();
+    showWarningMessage.mockClear();
+    showQuickPick.mockImplementation(async (items: Array<{ label: string }>) =>
+      items.find((item) => item.label === 'Toggle lazy'),
+    );
+    activate(context as never);
+
+    const command = registerCommand.mock.calls.find(
+      ([commandName]) => commandName === 'rsx.expressions.setCompilerOption',
+    )?.[1] as (() => Promise<void>) | undefined;
+    const text = [
+      'defaults:',
+      '  model: { base: number; adjustment: number }',
+      '',
+      'expression: totalRsx',
+      '  preparse: false',
+      '  compiled: false',
+      '  return: number',
+      '  base + adjustment',
+    ].join('\n');
+    const document = createTextDocument(text, {
+      fsPath: '/workspace/src/rules/total.expressions.rsx',
+    });
+    activeTextEditor = {
+      document,
+      selection: {
+        active: { line: 5, character: 4 },
+      },
+    };
+
+    await command?.();
+
+    expect(showWarningMessage).toHaveBeenCalledWith(
+      invalidLazyPreparseDiagnosticMessage,
+    );
+    expect(applyEdit).not.toHaveBeenCalled();
+    activeTextEditor = null;
+    showQuickPick.mockReset();
   });
 
   it('keeps fresh header typing on the fast path instead of analyzing it as an expression', () => {
@@ -4601,6 +7975,8 @@ function createUri(fsPath: string) {
   return {
     scheme: 'file',
     fsPath,
+    path: fsPath,
+    with: (change: { path?: string }) => createUri(change.path ?? fsPath),
     toString: () => `file://${fsPath}`,
   };
 }

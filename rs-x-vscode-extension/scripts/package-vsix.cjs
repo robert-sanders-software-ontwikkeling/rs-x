@@ -125,6 +125,43 @@ function copyWorkspacePackage(packageName, packageDirectory) {
   return sourceManifest.version;
 }
 
+function copyWorkspaceCliPackage() {
+  const packageName = '@rs-x/cli';
+  const sourceRoot = path.join(workspaceRoot, 'rs-x-cli');
+  const sourceManifestPath = path.join(sourceRoot, 'package.json');
+  const sourceManifest = JSON.parse(
+    fs.readFileSync(sourceManifestPath, 'utf8'),
+  );
+  const targetRoot = path.join(stageRoot, 'node_modules', '@rs-x', 'cli');
+
+  copyRecursive(path.join(sourceRoot, 'bin'), path.join(targetRoot, 'bin'));
+  copyRecursive(
+    path.join(sourceRoot, 'scripts'),
+    path.join(targetRoot, 'scripts'),
+  );
+  copyRecursive(
+    path.join(sourceRoot, 'templates'),
+    path.join(targetRoot, 'templates'),
+  );
+
+  const packagedManifest = {
+    name: sourceManifest.name,
+    version: sourceManifest.version,
+    type: sourceManifest.type,
+    main: sourceManifest.main,
+    bin: sourceManifest.bin,
+    exports: sourceManifest.exports,
+    dependencies: sourceManifest.dependencies,
+  };
+
+  fs.writeFileSync(
+    path.join(targetRoot, 'package.json'),
+    `${JSON.stringify(packagedManifest, null, 2)}\n`,
+  );
+
+  return sourceManifest.version;
+}
+
 function copyThirdPartyPackage(packageName) {
   const sourcePath = path.join(
     workspaceRoot,
@@ -141,6 +178,18 @@ function copyThirdPartyPackage(packageName) {
     sourcePath,
     path.join(stageRoot, 'node_modules', ...packageName.split('/')),
   );
+}
+
+function patchStagedPackageManifest(packageName, patcher) {
+  const manifestPath = path.join(
+    stageRoot,
+    'node_modules',
+    ...packageName.split('/'),
+    'package.json',
+  );
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  patcher(manifest);
+  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
 if (!fs.existsSync(path.join(extensionRoot, 'dist', 'extension.js'))) {
@@ -217,9 +266,29 @@ copyRecursive(
   path.join(extensionRoot, 'node_modules', '@rs-x', 'typescript-plugin'),
   path.join(stageRoot, 'node_modules', '@rs-x', 'typescript-plugin'),
 );
+fs.rmSync(
+  path.join(
+    stageRoot,
+    'node_modules',
+    '@rs-x',
+    'typescript-plugin',
+    'node_modules',
+  ),
+  { recursive: true, force: true },
+);
 copyRecursive(
   path.join(extensionRoot, 'node_modules', '@rs-x', 'vscode-typescript-plugin'),
   path.join(stageRoot, 'node_modules', '@rs-x', 'vscode-typescript-plugin'),
+);
+fs.rmSync(
+  path.join(
+    stageRoot,
+    'node_modules',
+    '@rs-x',
+    'vscode-typescript-plugin',
+    'node_modules',
+  ),
+  { recursive: true, force: true },
 );
 copyRecursive(
   path.join(workspaceRoot, 'node_modules', 'typescript'),
@@ -236,6 +305,17 @@ const stateManagerVersion = copyWorkspacePackage(
   '@rs-x/state-manager',
   'rs-x-state-manager',
 );
+const cliVersion = copyWorkspaceCliPackage();
+patchStagedPackageManifest('@rs-x/typescript-plugin', (manifest) => {
+  manifest.dependencies = {
+    ...(manifest.dependencies ?? {}),
+    '@rs-x/compiler': compilerVersion,
+  };
+  delete manifest.devDependencies;
+});
+patchStagedPackageManifest('@rs-x/vscode-typescript-plugin', (manifest) => {
+  delete manifest.devDependencies;
+});
 
 const thirdPartyPackageNames = [
   'astring',
@@ -269,6 +349,7 @@ const stagedManifest = {
   main: baseManifest.main,
   contributes: baseManifest.contributes,
   dependencies: {
+    '@rs-x/cli': cliVersion,
     '@rs-x/typescript-plugin': baseManifest.version,
     '@rs-x/vscode-typescript-plugin': baseManifest.version,
     '@rs-x/compiler': compilerVersion,
@@ -298,6 +379,10 @@ const stagedManifest = {
     'language-configuration.json',
     'node_modules/@rs-x/typescript-plugin',
     'node_modules/@rs-x/vscode-typescript-plugin',
+    'node_modules/@rs-x/cli/bin',
+    'node_modules/@rs-x/cli/scripts',
+    'node_modules/@rs-x/cli/templates',
+    'node_modules/@rs-x/cli/package.json',
     'node_modules/@rs-x/compiler/dist',
     'node_modules/@rs-x/compiler/package.json',
     'node_modules/@rs-x/expression-parser/dist',

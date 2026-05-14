@@ -26,6 +26,12 @@ export interface IValidatedExpressionSite extends IExpressionSiteDetection {
   readonly diagnostics: readonly ICompilerDiagnostic[];
 }
 
+export const invalidLazyPreparseDiagnosticMessage =
+  'RS-X lazy expressions require preparse: true or compiled: true because lazy payloads are generated from pre-parsed AOT metadata or compiled expression plans.';
+
+export const invalidLazyGroupLazyDiagnosticMessage =
+  'RS-X lazyGroup already enables lazy loading; remove the lazy option when lazyGroup is set.';
+
 interface IResolvedType {
   readonly tsType?: ts.Type;
   readonly primitive?:
@@ -78,6 +84,7 @@ export function validateExpressionSite(
   parser = new JsEspreeExpressionParser(new JsExpressionAstParser()),
 ): IValidatedExpressionSite {
   const diagnostics: ICompilerDiagnostic[] = [];
+  validateCompilerOptions(site, diagnostics);
   const modelType = resolveModelType(site, checker);
 
   if (!modelType) {
@@ -126,6 +133,24 @@ export function validateExpressionSite(
     ...site,
     diagnostics,
   };
+}
+
+function validateCompilerOptions(
+  site: IExpressionSiteDetection,
+  diagnostics: ICompilerDiagnostic[],
+): void {
+  if (site.lazyGroup && site.lazySpecified) {
+    diagnostics.push({
+      category: 'semantic',
+      message: invalidLazyGroupLazyDiagnosticMessage,
+    });
+  }
+  if (site.lazy && !site.preparse && !site.compiled) {
+    diagnostics.push({
+      category: 'semantic',
+      message: invalidLazyPreparseDiagnosticMessage,
+    });
+  }
 }
 
 function resolveModelType(

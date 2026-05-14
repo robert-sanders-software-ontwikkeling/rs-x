@@ -7,6 +7,10 @@ import {
   getRsxDiagnostics,
   rsxSemanticTokenTypes,
 } from '../../rs-x-vscode-extension/lib/rsx-standalone-language-service';
+import {
+  invalidLazyGroupLazyDiagnosticMessage,
+  invalidLazyPreparseDiagnosticMessage,
+} from '../../rs-x-compiler/lib/compiler/expression-site-validator';
 
 const workspaceRoot = path.resolve(__dirname, '../..');
 const inlineFixtureFileName = path.resolve(
@@ -22,7 +26,12 @@ const inlineFixtureText = `
 declare module '@rs-x/expression-parser' {
   export function rsx<TModel>(
     expression: string,
-    options?: { lazy?: boolean },
+    options?: {
+      compiled?: boolean;
+      lazy?: boolean;
+      lazyGroup?: string;
+      preparse?: boolean;
+    },
   ): (model: TModel) => unknown;
 }
 
@@ -236,6 +245,62 @@ describe('rsx inline expression parity', () => {
       expect.arrayContaining(['Delete operator is not supported']),
     );
   });
+
+  it('reports invalid lazy options for inline rsx expressions', () => {
+    const sourceText = `
+declare module '@rs-x/expression-parser' {
+  export function rsx<TModel>(
+    expression: string,
+    options?: {
+      compiled?: boolean;
+      lazy?: boolean;
+      lazyGroup?: string;
+      preparse?: boolean;
+    },
+  ): (model: TModel) => unknown;
+}
+
+import { rsx } from '@rs-x/expression-parser';
+
+type Model = {
+  a: number;
+  b: number;
+};
+
+const model: Model = {
+  a: 1,
+  b: 2,
+};
+
+const invalidLazy = rsx<Model>('a + b', { preparse: false, compiled: false, lazy: true })(model);
+const invalidLazyGroup = rsx<Model>('a - b', { preparse: false, compiled: false, lazyGroup: 'invalid' })(model);
+const invalidLazyWithLazyGroup = rsx<Model>('a + b + 1', { compiled: true, lazy: true, lazyGroup: 'duplicate' })(model);
+const validLazy = rsx<Model>('a * b', { lazy: true })(model);
+const validCompiledLazy = rsx<Model>('a + b * 2', { preparse: false, compiled: true, lazy: true })(model);
+const validCompiledLazyGroup = rsx<Model>('a - b * 2', { preparse: false, compiled: true, lazyGroup: 'validCompiled' })(model);
+`.trimStart();
+
+    const service = createPluginLanguageService(sourceText);
+    const messages = service
+      .getSemanticDiagnostics(inlineFixtureFileName)
+      .filter((diagnostic) => diagnostic.source === '@rs-x/typescript-plugin')
+      .map((diagnostic) =>
+        typeof diagnostic.messageText === 'string'
+          ? diagnostic.messageText
+          : ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'),
+      )
+      .filter(
+        (message) =>
+          message === invalidLazyPreparseDiagnosticMessage ||
+          message === invalidLazyGroupLazyDiagnosticMessage,
+      );
+
+    expect(messages).toEqual([
+      invalidLazyPreparseDiagnosticMessage,
+      invalidLazyPreparseDiagnosticMessage,
+      invalidLazyGroupLazyDiagnosticMessage,
+    ]);
+  });
 });
 
 function createPluginLanguageService(sourceText: string): ts.LanguageService {
@@ -413,7 +478,12 @@ function getInlineUnsupportedMessages(args: {
 declare module '@rs-x/expression-parser' {
   export function rsx<TModel>(
     expression: string,
-    options?: { lazy?: boolean },
+    options?: {
+      compiled?: boolean;
+      lazy?: boolean;
+      lazyGroup?: string;
+      preparse?: boolean;
+    },
   ): (model: TModel) => unknown;
 }
 

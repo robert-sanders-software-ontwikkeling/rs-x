@@ -14,8 +14,10 @@ export function generateRsxModuleRuntime(args: {
     Record<
       string,
       {
-        readonly group?: RsxDebugHookConfig;
-        readonly instances?: Readonly<Record<string, RsxDebugHookConfig>>;
+        readonly group?: RsxDebugHookConfig | readonly RsxDebugHookConfig[];
+        readonly instances?: Readonly<
+          Record<string, RsxDebugHookConfig | readonly RsxDebugHookConfig[]>
+        >;
       }
     >
   >;
@@ -40,7 +42,7 @@ export function generateRsxModuleRuntime(args: {
     args,
   );
   const hasDebugHookWrapping = [...debugHookReferences.values()].some(
-    (reference) => reference.group || reference.instances.length > 0,
+    (reference) => reference.group.length > 0 || reference.instances.length > 0,
   );
   const rsxImport = hasDebugHookWrapping
     ? "import { rsx } from '@rs-x/expression-parser';"
@@ -86,7 +88,8 @@ export function generateRsxModuleRuntime(args: {
       );
       if (
         debugHookReference &&
-        (debugHookReference.group || debugHookReference.instances.length > 0)
+        (debugHookReference.group.length > 0 ||
+          debugHookReference.instances.length > 0)
       ) {
         lines.push(
           `export const ${expressionExport.exportName} = (`,
@@ -96,11 +99,7 @@ export function generateRsxModuleRuntime(args: {
           `): ${expressionType}<${returnType}> => {`,
           `  const expression = rsx<${returnType}, ${expressionExport.expression.modelTypeText}>(${JSON.stringify(expressionExport.expression.expression)}, ${formatRsxRuntimeOptions(expressionExport.expression)})(${modelExpression}, leafIndexWatchRule);`,
           ...formatRsxDebugHookResolutionLines(debugHookReference),
-          ...formatRsxDebugChangeHookAssignmentLines(
-            args.fileName,
-            expressionExport.exportName,
-            expressionExport.expression,
-          ),
+          ...formatRsxDebugChangeHookAssignmentLines(),
           '  return expression;',
           '};',
           '',
@@ -122,17 +121,14 @@ export function generateRsxModuleRuntime(args: {
       );
       if (
         debugHookReference &&
-        (debugHookReference.group || debugHookReference.instances.length > 0)
+        (debugHookReference.group.length > 0 ||
+          debugHookReference.instances.length > 0)
       ) {
         lines.push(
           `export const ${expressionExport.exportName} = (model, leafIndexWatchRule, __rsxDebugInstanceId) => {`,
           `  const expression = rsx(${JSON.stringify(expressionExport.expression.expression)}, ${formatRsxRuntimeOptions(expressionExport.expression)})(${modelExpression}, leafIndexWatchRule);`,
           ...formatRsxDebugHookResolutionLines(debugHookReference),
-          ...formatRsxDebugChangeHookAssignmentLines(
-            args.fileName,
-            expressionExport.exportName,
-            expressionExport.expression,
-          ),
+          ...formatRsxDebugChangeHookAssignmentLines(),
           '  return expression;',
           '};',
           '',
@@ -161,7 +157,7 @@ type RsxDebugHookConfig = {
 };
 
 type RsxDebugHookReference = {
-  readonly group?: RsxDebugHookImportReference;
+  readonly group: readonly RsxDebugHookImportReference[];
   readonly instances: readonly RsxDebugHookInstanceReference[];
 };
 
@@ -173,7 +169,7 @@ type RsxDebugHookImportReference = {
 
 type RsxDebugHookInstanceReference = {
   readonly instanceId: string;
-  readonly hook?: RsxDebugHookImportReference;
+  readonly hooks: readonly RsxDebugHookImportReference[];
 };
 
 function createRsxDebugHookReferences(
@@ -183,8 +179,10 @@ function createRsxDebugHookReferences(
       Record<
         string,
         {
-          readonly group?: RsxDebugHookConfig;
-          readonly instances?: Readonly<Record<string, RsxDebugHookConfig>>;
+          readonly group?: RsxDebugHookConfig | readonly RsxDebugHookConfig[];
+          readonly instances?: Readonly<
+            Record<string, RsxDebugHookConfig | readonly RsxDebugHookConfig[]>
+          >;
         }
       >
     >;
@@ -196,31 +194,44 @@ function createRsxDebugHookReferences(
     if (!expressionConfig) {
       continue;
     }
-    const group =
-      expressionConfig.group?.enabled !== false &&
-      expressionConfig.group?.moduleSpecifier
-        ? {
-            ...expressionConfig.group,
-            localName: `__rsxDebugChangeHook_${sanitizeIdentifier(exportName)}`,
-          }
-        : undefined;
+    const group = normalizeRsxDebugHookConfigs(expressionConfig.group).map(
+      (hookConfig, index) => ({
+        ...hookConfig,
+        localName:
+          index === 0
+            ? `__rsxDebugChangeHook_${sanitizeIdentifier(exportName)}`
+            : `__rsxDebugChangeHook_${sanitizeIdentifier(exportName)}_group_${index}`,
+      }),
+    );
     const instances = Object.entries(expressionConfig.instances ?? {}).map(
       ([instanceId, hookConfig], index): RsxDebugHookInstanceReference => ({
         instanceId,
-        hook:
-          hookConfig.enabled === false || !hookConfig.moduleSpecifier
-            ? undefined
-            : {
-                ...hookConfig,
-                localName: `__rsxDebugChangeHook_${sanitizeIdentifier(exportName)}_${index}`,
-              },
+        hooks: normalizeRsxDebugHookConfigs(hookConfig).map(
+          (instanceHookConfig, hookIndex) => ({
+            ...instanceHookConfig,
+            localName:
+              hookIndex === 0
+                ? `__rsxDebugChangeHook_${sanitizeIdentifier(exportName)}_${index}`
+                : `__rsxDebugChangeHook_${sanitizeIdentifier(exportName)}_${index}_${hookIndex}`,
+          }),
+        ),
       }),
     );
-    if (group || instances.length > 0) {
+    if (group.length > 0 || instances.length > 0) {
       references.set(exportName, { group, instances });
     }
   }
   return references;
+}
+
+function normalizeRsxDebugHookConfigs(
+  value: RsxDebugHookConfig | readonly RsxDebugHookConfig[] | undefined,
+): readonly RsxDebugHookConfig[] {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+  return values.filter(
+    (hookConfig) =>
+      hookConfig.enabled !== false && Boolean(hookConfig.moduleSpecifier),
+  );
 }
 
 function formatRsxDebugChangeHookImports(
@@ -230,8 +241,8 @@ function formatRsxDebugChangeHookImports(
   const seen = new Set<string>();
   for (const debugHookReference of debugHookReferences.values()) {
     const hooks = [
-      debugHookReference.group,
-      ...debugHookReference.instances.map((instance) => instance.hook),
+      ...debugHookReference.group,
+      ...debugHookReference.instances.flatMap((instance) => instance.hooks),
     ];
     for (const debugChangeHook of hooks) {
       if (!debugChangeHook?.moduleSpecifier) {
@@ -261,32 +272,25 @@ function formatRsxDebugChangeHookImports(
 function formatRsxDebugHookResolutionLines(
   debugHookReference: RsxDebugHookReference,
 ): string[] {
+  const groupHooks = `[${debugHookReference.group.map((hook) => hook.localName).join(', ')}]`;
   const instanceEntries = debugHookReference.instances.map(
     (instance) =>
-      `${JSON.stringify(instance.instanceId)}: ${instance.hook?.localName ?? 'null'}`,
+      `${JSON.stringify(instance.instanceId)}: [${instance.hooks.map((hook) => hook.localName).join(', ')}]`,
   );
   return [
     `  const __rsxDebugHooksByInstance = { ${instanceEntries.join(', ')} };`,
-    `  const __rsxDebugInstanceHook = __rsxDebugInstanceId && Object.prototype.hasOwnProperty.call(__rsxDebugHooksByInstance, __rsxDebugInstanceId) ? __rsxDebugHooksByInstance[__rsxDebugInstanceId] : undefined;`,
-    `  const __rsxDebugResolvedHook = __rsxDebugInstanceHook === undefined ? ${debugHookReference.group?.localName ?? 'undefined'} : __rsxDebugInstanceHook;`,
+    `  const __rsxDebugInstanceHooks = __rsxDebugInstanceId && Object.prototype.hasOwnProperty.call(__rsxDebugHooksByInstance, __rsxDebugInstanceId) ? __rsxDebugHooksByInstance[__rsxDebugInstanceId] : undefined;`,
+    `  const __rsxDebugResolvedHooks = __rsxDebugInstanceHooks === undefined ? ${groupHooks} : __rsxDebugInstanceHooks;`,
   ];
 }
 
-function formatRsxDebugChangeHookAssignmentLines(
-  fileName: string,
-  exportName: string,
-  expression: {
-    readonly nameStart?: number;
-    readonly nameEnd?: number;
-    readonly expressionStart: number;
-    readonly expressionEnd: number;
-  },
-): string[] {
+function formatRsxDebugChangeHookAssignmentLines(): string[] {
   return [
-    '  if (__rsxDebugResolvedHook) {',
-    `    const __rsxDebugMetadata = ${formatRsxDebugInstanceMetadata(fileName, exportName, expression)};`,
+    '  if (__rsxDebugResolvedHooks.length > 0) {',
     '    expression.changeHook = (changedExpression, oldValue) => {',
-    '      __rsxDebugResolvedHook(__rsxDebugMetadata, changedExpression, oldValue);',
+    '      for (const __rsxDebugResolvedHook of __rsxDebugResolvedHooks) {',
+    '        __rsxDebugResolvedHook(changedExpression, oldValue);',
+    '      }',
     '    };',
     '  }',
   ];
@@ -297,42 +301,23 @@ function sanitizeIdentifier(value: string): string {
   return /^[A-Za-z_$]/u.test(sanitized) ? sanitized : `_${sanitized}`;
 }
 
-function formatRsxDebugInstanceMetadata(
-  fileName: string,
-  exportName: string,
-  expression: {
-    readonly nameStart?: number;
-    readonly nameEnd?: number;
-    readonly expressionStart: number;
-    readonly expressionEnd: number;
-  },
-): string {
-  return `{${[
-    `"expressionName":${JSON.stringify(exportName)}`,
-    '"instanceId":__rsxDebugInstanceId',
-    `"source":${JSON.stringify({
-      fileName,
-      start: expression.nameStart ?? expression.expressionStart,
-      end: expression.nameEnd ?? expression.expressionEnd,
-    })}`,
-  ].join(',')}}`;
-}
-
 function formatRsxRuntimeOptions(expression: {
   readonly preparse: boolean;
   readonly lazy: boolean;
   readonly lazyGroup?: string;
   readonly compiled: boolean;
 }): string {
-  const options: Record<string, boolean | string> = {
-    preparse: expression.preparse,
-    lazy: expression.lazy,
-    compiled: expression.compiled,
-  };
-
-  if (expression.lazyGroup) {
-    options.lazyGroup = expression.lazyGroup;
-  }
+  const options: Record<string, boolean | string> = expression.lazyGroup
+    ? {
+        preparse: expression.preparse,
+        compiled: expression.compiled,
+        lazyGroup: expression.lazyGroup,
+      }
+    : {
+        preparse: expression.preparse,
+        lazy: expression.lazy,
+        compiled: expression.compiled,
+      };
 
   return JSON.stringify(options);
 }

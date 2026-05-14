@@ -125,8 +125,8 @@ const expectedByFramework = {
     deps: ['@rs-x/angular', '@rs-x/compiler', '@rs-x/typescript-plugin'],
     files: ['src/main.ts', 'src/app/app.component.ts'],
     config: {
-      buildPrefix: 'src/rsx-generated/',
-      defaultDirectory: 'src/expressions'
+      buildFolder: '.rsx-generated',
+      baseDirectory: 'src/rsx'
     }
   },
   react: {
@@ -135,8 +135,8 @@ const expectedByFramework = {
     files: ['src/main.tsx', 'src/rsx-bootstrap.ts', 'src/app/app.tsx'],
     bootstrap: 'src/rsx-bootstrap.ts',
     config: {
-      buildPrefix: 'src/rsx-generated/',
-      defaultDirectory: 'src/expressions'
+      buildFolder: '.rsx-generated',
+      baseDirectory: 'src/rsx'
     }
   },
   vue: {
@@ -145,8 +145,8 @@ const expectedByFramework = {
     files: ['src/main.ts', 'src/App.vue', 'src/lib/rsx-bootstrap.ts'],
     bootstrap: 'src/lib/rsx-bootstrap.ts',
     config: {
-      buildPrefix: 'src/rsx-generated/',
-      defaultDirectory: 'src/expressions'
+      buildFolder: '.rsx-generated',
+      baseDirectory: 'src/rsx'
     }
   },
   next: {
@@ -155,8 +155,8 @@ const expectedByFramework = {
     files: ['app/layout.tsx', 'app/page.tsx', 'components/demo-app.tsx', 'lib/rsx-bootstrap.ts'],
     bootstrap: 'lib/rsx-bootstrap.ts',
     config: {
-      buildPrefix: 'app/rsx-generated/',
-      defaultDirectory: 'app/expressions'
+      buildFolder: '.rsx-generated',
+      baseDirectory: 'app/rsx'
     }
   }
 };
@@ -183,14 +183,20 @@ if (!rsxConfig.build || typeof rsxConfig.build !== 'object') {
 if (!rsxConfig.cli || !rsxConfig.cli.add || typeof rsxConfig.cli.add !== 'object') {
   throw new Error('Missing rsx.config.json cli.add section');
 }
-if (typeof rsxConfig.build.preparseFile !== 'string' || !rsxConfig.build.preparseFile.startsWith(expected.config.buildPrefix)) {
+if (rsxConfig.build.buildFolder !== expected.config.buildFolder) {
+  throw new Error('Unexpected rsx.config.json build.buildFolder: ' + rsxConfig.build.buildFolder);
+}
+if (rsxConfig.build.preparseFile !== 'rsx-aot-preparsed.generated.ts') {
   throw new Error('Unexpected rsx.config.json build.preparseFile: ' + rsxConfig.build.preparseFile);
 }
-if (typeof rsxConfig.build.compiledFile !== 'string' || !rsxConfig.build.compiledFile.startsWith(expected.config.buildPrefix)) {
+if (rsxConfig.build.compiledFile !== 'rsx-aot-compiled.generated.ts') {
   throw new Error('Unexpected rsx.config.json build.compiledFile: ' + rsxConfig.build.compiledFile);
 }
-if (rsxConfig.cli.add.defaultDirectory !== expected.config.defaultDirectory) {
-  throw new Error('Unexpected rsx.config.json cli.add.defaultDirectory: ' + rsxConfig.cli.add.defaultDirectory);
+if (rsxConfig.cli.add.baseDirectory !== expected.config.baseDirectory) {
+  throw new Error('Unexpected rsx.config.json cli.add.baseDirectory: ' + rsxConfig.cli.add.baseDirectory);
+}
+if (rsxConfig.cli.add.defaultDirectory !== undefined) {
+  throw new Error('Unexpected legacy rsx.config.json cli.add.defaultDirectory: ' + rsxConfig.cli.add.defaultDirectory);
 }
 if (typeof expected.bootstrap === 'string') {
   const bootstrapContents = fs.readFileSync(expected.bootstrap, 'utf8');

@@ -69,6 +69,5 @@ expressionManager.create(model).instance.create({
 expressionManager.create(model).instance.create({
   expressionString: 'a + 5',
   compiled: false,
-  lazy: true,
   lazyGroup: 'manager',
 });

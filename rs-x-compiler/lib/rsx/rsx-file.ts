@@ -16,6 +16,7 @@ export interface IRsxExpressionMetadata {
   readonly returnTypeText?: string;
   readonly preparse: boolean;
   readonly lazy: boolean;
+  readonly lazySpecified: boolean;
   readonly lazyGroup?: string;
   readonly compiled: boolean;
 }
@@ -444,6 +445,7 @@ function toExpressionMetadata(args: {
   const returnTypeText = args.headers.get('return')?.trim();
   const lazyGroup = parseLazyGroupHeader(args.headers.get('lazyGroup'));
   const lazyValue = parseBooleanHeader(args.headers.get('lazy'));
+  const lazySpecified = args.headers.has('lazy');
   const compileValue = parseBooleanHeader(
     args.headers.get('compiled') ?? args.headers.get('compile'),
   );
@@ -464,6 +466,7 @@ function toExpressionMetadata(args: {
     returnTypeText,
     preparse,
     lazy,
+    lazySpecified,
     lazyGroup,
     compiled,
   };

@@ -33,6 +33,7 @@
     "provenance": true
   },
   "dependencies": {
+    "@rs-x/compiler": "2.0.2",
     "typescript": "^6.0.2"
   },
   "scripts": {

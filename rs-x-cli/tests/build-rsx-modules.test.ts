@@ -191,12 +191,14 @@ describe('rsx cli .rsx module build output', () => {
       expect(totalModule).toContain('subtotal');
       expect(totalModule).toContain('"compiled": true');
       expect(totalModule).not.toContain('applyRsxDebugChangeHook');
+      expect(totalModule).not.toContain('sourceMappingURL');
       expect(totalDeclaration).toContain('QuoteModel');
       expect(totalDeclaration).toContain('IExpression<number>');
 
       expect(lazyModule).toContain('discount');
       expect(lazyModule).toContain('"lazyGroup": "package"');
       expect(lazyModule).not.toContain('applyRsxDebugChangeHook');
+      expect(lazyModule).not.toContain('sourceMappingURL');
       expect(lazyModule).toContain(
         "import './rsx-generated/rsx-aot-registration.generated.js';",
       );
@@ -210,6 +212,7 @@ describe('rsx cli .rsx module build output', () => {
       expect(registrationModule).toContain(
         "from './rsx-aot-compiled.generated.js'",
       );
+      expect(registrationModule).not.toContain('sourceMappingURL');
       expect(indexModule).toContain("from './lazy-discount.js'");
 
       await expect(
@@ -446,10 +449,16 @@ describe('rsx cli .rsx module build output', () => {
             build: {
               debugChangeHooks: {
                 feeRsx: {
-                  group: {
-                    moduleSpecifier: './group-hook',
-                    exportName: 'groupHook',
-                  },
+                  group: [
+                    {
+                      moduleSpecifier: './group-hook',
+                      exportName: 'groupHook',
+                    },
+                    {
+                      moduleSpecifier: './log-hook',
+                      exportName: 'logHook',
+                    },
+                  ],
                   instances: {
                     [instanceId]: {
                       moduleSpecifier: './instance-hook',
@@ -472,8 +481,8 @@ describe('rsx cli .rsx module build output', () => {
       await fs.writeFile(
         path.join(fixtureRoot, 'src', 'group-hook.ts'),
         [
-          'export const groupHook = (metadata: unknown, changedExpression: unknown, oldValue: unknown) => {',
-          "  ((globalThis as any).__rsxHookCalls ??= []).push({ hook: 'group', metadata, changedExpression: Boolean(changedExpression), oldValue });",
+          'export const groupHook = (changedExpression: unknown, oldValue: unknown) => {',
+          "  ((globalThis as any).__rsxHookCalls ??= []).push({ hook: 'group', changedExpression: Boolean(changedExpression), oldValue });",
           '};',
           '',
         ].join('\n'),
@@ -481,8 +490,17 @@ describe('rsx cli .rsx module build output', () => {
       await fs.writeFile(
         path.join(fixtureRoot, 'src', 'instance-hook.ts'),
         [
-          'export const instanceHook = (metadata: unknown, changedExpression: unknown, oldValue: unknown) => {',
-          "  ((globalThis as any).__rsxHookCalls ??= []).push({ hook: 'instance', metadata, changedExpression: Boolean(changedExpression), oldValue });",
+          'export const instanceHook = (changedExpression: unknown, oldValue: unknown) => {',
+          "  ((globalThis as any).__rsxHookCalls ??= []).push({ hook: 'instance', changedExpression: Boolean(changedExpression), oldValue });",
+          '};',
+          '',
+        ].join('\n'),
+      );
+      await fs.writeFile(
+        path.join(fixtureRoot, 'src', 'log-hook.ts'),
+        [
+          'export const logHook = (changedExpression: unknown, oldValue: unknown) => {',
+          "  ((globalThis as any).__rsxHookCalls ??= []).push({ hook: 'log', changedExpression: Boolean(changedExpression), oldValue });",
           '};',
           '',
         ].join('\n'),
@@ -529,10 +547,16 @@ describe('rsx cli .rsx module build output', () => {
         'import { groupHook as __rsxDebugChangeHook_feeRsx } from "./group-hook.js";',
       );
       expect(feeModule).toContain(
+        'import { logHook as __rsxDebugChangeHook_feeRsx_group_1 } from "./log-hook.js";',
+      );
+      expect(feeModule).toContain(
         'import { instanceHook as __rsxDebugChangeHook_feeRsx_0 } from "./instance-hook.js";',
       );
       expect(feeModule).toContain(
-        `${JSON.stringify(instanceId)}: __rsxDebugChangeHook_feeRsx_0`,
+        '__rsxDebugInstanceHooks === undefined ? [__rsxDebugChangeHook_feeRsx, __rsxDebugChangeHook_feeRsx_group_1] : __rsxDebugInstanceHooks',
+      );
+      expect(feeModule).toContain(
+        `${JSON.stringify(instanceId)}: [__rsxDebugChangeHook_feeRsx_0]`,
       );
       expect(feeModule).toContain(
         'expression.changeHook = (changedExpression, oldValue) => {',
@@ -552,10 +576,6 @@ describe('rsx cli .rsx module build output', () => {
         expect.objectContaining({
           hook: 'instance',
           changedExpression: true,
-          metadata: expect.objectContaining({
-            expressionName: 'feeRsx',
-            instanceId,
-          }),
         }),
       ]);
     } finally {

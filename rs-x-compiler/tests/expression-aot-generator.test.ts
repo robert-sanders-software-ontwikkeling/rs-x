@@ -449,6 +449,7 @@ rsx('a + b')(model);
 rsx('b + c', { lazy: true })(model);
 rsx('c + d', { lazy: true, preparse: true })(model);
 rsx('d + a', { preparse: false, lazy: true })(model);
+rsx('a + c', { preparse: false, compiled: false, lazy: true })(model);
 `,
       'utf8',
     );
@@ -456,13 +457,14 @@ rsx('d + a', { preparse: false, lazy: true })(model);
     const program = createProgram(fixturePath);
     const generated = generateAotLazyExpressionPreloadManifestModule(program);
 
-    expect(generated.expressions).toEqual(['b + c', 'c + d']);
+    expect(generated.expressions).toEqual(['b + c', 'c + d', 'd + a']);
     expect(generated.code).toContain('registerRsxAotLazyExpressionPreloaders');
     expect(generated.code).toContain('@rs-x/expression-parser/aot-runtime');
     expect(generated.code).toContain('b + c');
     expect(generated.code).toContain('c + d');
+    expect(generated.code).toContain('d + a');
     expect(generated.code).not.toContain('a + b');
-    expect(generated.code).not.toContain('d + a');
+    expect(generated.code).not.toContain('a + c');
   });
 });
 
@@ -483,6 +485,7 @@ rsx('b + c', { lazy: true })(model);
 rsx('c + d', { lazy: true, preparse: true })(model);
 rsx('d + a', { lazy: true, compiled: false })(model);
 rsx('a + c', { lazy: true, preparse: false })(model);
+rsx('b + d', { lazy: true, preparse: false, compiled: false })(model);
 `,
       'utf8',
     );
@@ -490,8 +493,8 @@ rsx('a + c', { lazy: true, preparse: false })(model);
     const program = createProgram(fixturePath);
     const generated = generateAotLazyExpressionsModule(program);
 
-    expect(generated.expressions).toEqual(['b + c', 'c + d', 'd + a']);
-    expect(generated.compiledExpressions).toEqual(['b + c', 'c + d']);
+    expect(generated.expressions).toEqual(['a + c', 'b + c', 'c + d', 'd + a']);
+    expect(generated.compiledExpressions).toEqual(['a + c', 'b + c', 'c + d']);
     expect(generated.skippedCompiledExpressions).toEqual([]);
     expect(generated.skippedPreparsedExpressions).toEqual([]);
     expect(generated.groups).toEqual({});
@@ -505,8 +508,9 @@ rsx('a + c', { lazy: true, preparse: false })(model);
     expect(generated.code).toContain('b + c');
     expect(generated.code).toContain('c + d');
     expect(generated.code).toContain('d + a');
+    expect(generated.code).toContain('a + c');
     expect(generated.code).not.toContain('a + b');
-    expect(generated.code).not.toContain('a + c');
+    expect(generated.code).not.toContain('b + d');
   });
 
   it('throws when lazyGroup is set to the reserved __rsx_ungrouped__ sentinel', async () => {

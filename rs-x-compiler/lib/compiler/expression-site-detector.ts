@@ -20,6 +20,7 @@ export interface IExpressionSiteDetection {
   readonly expression: string;
   readonly preparse: boolean;
   readonly lazy: boolean;
+  readonly lazySpecified: boolean;
   /** Named lazy group. When set, implies lazy: true. */
   readonly lazyGroup: string | undefined;
   readonly compiled: boolean;
@@ -185,6 +186,7 @@ function tryDetectExpressionManagerEntryPoint(
     expression: expressionData.expressionLiteral.text,
     preparse: true,
     lazy: expressionData.lazy,
+    lazySpecified: expressionData.lazySpecified,
     lazyGroup: expressionData.lazyGroup,
     compiled: expressionData.compiled,
     expressionSourceFile: expressionData.expressionLiteral.getSourceFile(),
@@ -206,6 +208,7 @@ function resolveExpressionManagerCreateData(
   readonly expressionLiteral: ts.StringLiteralLike;
   readonly compiled: boolean;
   readonly lazy: boolean;
+  readonly lazySpecified: boolean;
   readonly lazyGroup: string | undefined;
 } | null {
   if (!ts.isObjectLiteralExpression(expressionDataArgument)) {
@@ -215,6 +218,7 @@ function resolveExpressionManagerCreateData(
   let expressionLiteral: ts.StringLiteralLike | null = null;
   let compiled = true;
   let lazy = false;
+  let lazySpecified = false;
   let lazyGroup: string | undefined;
 
   for (const property of expressionDataArgument.properties) {
@@ -238,6 +242,7 @@ function resolveExpressionManagerCreateData(
       continue;
     }
     if (isPropertyName(property.name, 'lazy')) {
+      lazySpecified = true;
       if (property.initializer.kind === ts.SyntaxKind.TrueKeyword) {
         lazy = true;
       }
@@ -259,7 +264,7 @@ function resolveExpressionManagerCreateData(
   }
 
   return expressionLiteral
-    ? { expressionLiteral, compiled, lazy, lazyGroup }
+    ? { expressionLiteral, compiled, lazy, lazySpecified, lazyGroup }
     : null;
 }
 
@@ -296,6 +301,7 @@ function tryDetectRsxEntryPoint(
       expression: expressionLiteral.text,
       preparse: rsxOptions.preparse,
       lazy: rsxOptions.lazy,
+      lazySpecified: rsxOptions.lazySpecified,
       lazyGroup: rsxOptions.lazyGroup,
       compiled: rsxOptions.compiled,
       expressionSourceFile: expressionLiteral.getSourceFile(),
@@ -347,6 +353,7 @@ function tryDetectRsxEntryPoint(
     expression: expressionLiteral.text,
     preparse: rsxOptions.preparse,
     lazy: rsxOptions.lazy,
+    lazySpecified: rsxOptions.lazySpecified,
     lazyGroup: rsxOptions.lazyGroup,
     compiled: rsxOptions.compiled,
     expressionSourceFile: expressionLiteral.getSourceFile(),
@@ -487,6 +494,7 @@ function tryDetectFactoryEntryPoint(
     expression: expressionLiteral.text,
     preparse: true,
     lazy: false,
+    lazySpecified: false,
     lazyGroup: undefined,
     compiled: true,
     expressionSourceFile: expressionLiteral.getSourceFile(),
@@ -529,6 +537,7 @@ function detectExpressionSitesInRsxBackedProgram(
       expression: expression.expression,
       preparse: expression.preparse,
       lazy: expression.lazy,
+      lazySpecified: expression.lazySpecified,
       lazyGroup: expression.lazyGroup,
       compiled: expression.compiled,
       expressionSourceFile: rsxProgram.sourceFile,
@@ -559,16 +568,18 @@ export function createExpressionSiteDetectionFromRsxBackedProgram(
 function resolveRsxOptions(optionArgument?: ts.Expression): {
   preparse: boolean;
   lazy: boolean;
+  lazySpecified: boolean;
   lazyGroup: string | undefined;
   compiled: boolean;
 } {
   let preparse = true;
   let lazy = false;
+  let lazySpecified = false;
   let lazyGroup: string | undefined;
   let compiled = true;
 
   if (!optionArgument || !ts.isObjectLiteralExpression(optionArgument)) {
-    return { preparse, lazy, lazyGroup, compiled };
+    return { preparse, lazy, lazySpecified, lazyGroup, compiled };
   }
 
   for (let i = 0; i < optionArgument.properties.length; i += 1) {
@@ -588,6 +599,7 @@ function resolveRsxOptions(optionArgument?: ts.Expression): {
     }
 
     if (isPropertyName(property.name, 'lazy')) {
+      lazySpecified = true;
       if (property.initializer.kind === ts.SyntaxKind.TrueKeyword) {
         lazy = true;
       }
@@ -615,7 +627,7 @@ function resolveRsxOptions(optionArgument?: ts.Expression): {
     }
   }
 
-  return { preparse, lazy, lazyGroup, compiled };
+  return { preparse, lazy, lazySpecified, lazyGroup, compiled };
 }
 
 function isPropertyName(

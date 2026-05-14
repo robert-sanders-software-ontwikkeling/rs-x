@@ -1,3 +1,4 @@
+import * as fs from 'node:fs';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 
@@ -10,6 +11,8 @@ import {
   getRsxExpressionExports,
   getRsxExpressionValueName,
   getRsxModuleStructureDiagnostics,
+  invalidLazyGroupLazyDiagnosticMessage,
+  invalidLazyPreparseDiagnosticMessage,
   normalizeRsxModelExpressionReferenceTypeText,
   parseRsxFileExpressions,
   resolveRsxSemanticTokenType,
@@ -50,6 +53,17 @@ import {
 
 const RSX_LANGUAGE_ID = 'rsx';
 const RSX_FILE_PATTERN = '**/*.rsx';
+const RSX_MODEL_CONTRACT_FILE_STEM_PATTERN =
+  '*.{model,contract,types,type,interface,interfaces,schema,dto}';
+const RSX_MODEL_CONTRACT_FILE_PATTERN =
+  '**/*.{model,contract,types,type,interface,interfaces,schema,dto}.{ts,tsx,mts,cts}';
+const RSX_WORKSPACE_SCAN_EXCLUDE =
+  '**/{node_modules,dist,out-tsc,coverage,.git,.rsx}/**';
+const RSX_ADD_DEFAULT_BASE_DIRECTORY = 'src/rsx';
+const RSX_ADD_DEFAULT_EXPRESSIONS_DIRECTORY = `${RSX_ADD_DEFAULT_BASE_DIRECTORY}/expressions`;
+const RSX_ADD_DEFAULT_MODEL_DIRECTORY = `${RSX_ADD_DEFAULT_BASE_DIRECTORY}/models`;
+const RSX_EXPRESSION_BODY_PLACEHOLDER = '/* expression body required */';
+const RSX_EXPRESSION_BODY_REQUIRED_MESSAGE = 'Expression body is required.';
 const RSX_DOCUMENT_SELECTOR: vscode.DocumentSelector = [
   { language: RSX_LANGUAGE_ID },
   { pattern: RSX_FILE_PATTERN },
@@ -102,6 +116,45 @@ const HEADER_COMPLETION_TRIGGER_CHARACTERS = [
 const RSX_DOCUMENT_SEMANTIC_TOKEN_POLICY = Object.freeze({
   emitOperatorTokens: false,
 });
+const RSX_STANDARD_DEBUG_HOOKS: Readonly<
+  Record<
+    IRsxStandardDebugHookKind,
+    {
+      readonly label: string;
+      readonly description: string;
+      readonly exportName: string;
+    }
+  >
+> = {
+  breakpoint: {
+    label: 'Breakpoint',
+    description: 'breaks on change',
+    exportName: 'rsxBreakpointDebugHook',
+  },
+  log: {
+    label: 'Log',
+    description: 'logs expression, id, value',
+    exportName: 'rsxLogDebugHook',
+  },
+};
+const RSX_COMPILER_OPTION_CONTEXT_COMMANDS = [
+  {
+    command: 'rsx.expressions.togglePreparse',
+    action: { option: 'preparse', toggle: true },
+  },
+  {
+    command: 'rsx.expressions.toggleCompiled',
+    action: { option: 'compiled', toggle: true },
+  },
+  {
+    command: 'rsx.expressions.toggleLazy',
+    action: { option: 'lazy', toggle: true },
+  },
+  {
+    command: 'rsx.expressions.editLazyGroup',
+    action: { option: 'lazyGroup' },
+  },
+] as const;
 
 interface IRsxFileParts {
   headers: string[];
@@ -169,6 +222,21 @@ interface IHeaderOrderState {
   readonly expressionKeyStartCharacter?: number;
 }
 
+interface IModuleOptionHeaderValue {
+  readonly value: string;
+  readonly lineIndex: number;
+  readonly keyStartCharacter: number;
+  readonly key: string;
+}
+
+interface IModuleOptionState {
+  compiled?: IModuleOptionHeaderValue;
+  compile?: IModuleOptionHeaderValue;
+  preparse?: IModuleOptionHeaderValue;
+  lazy?: IModuleOptionHeaderValue;
+  lazyGroup?: IModuleOptionHeaderValue;
+}
+
 type IRsxModuleDiagnosticState =
   | 'topLevel'
   | 'defaultsHeaders'
@@ -182,6 +250,17 @@ interface IRsxExpressionTreeFile {
   readonly description: string;
   readonly relativePath: string;
   readonly expressions: readonly IRsxExpressionTreeExpression[];
+}
+
+interface IRsxExpressionTreeProjectRoot {
+  readonly kind: 'projectRoot';
+  readonly key: string;
+  readonly label: string;
+  readonly description: string;
+  readonly rootUri: vscode.Uri;
+  readonly files: readonly IRsxExpressionTreeFile[];
+  readonly models: readonly IRsxExpressionTreeModel[];
+  readonly explicit: boolean;
 }
 
 interface IRsxExpressionTreeExpressionsRoot {
@@ -215,7 +294,67 @@ interface IRsxExpressionTreeExpressionInstance {
   readonly end: number;
   readonly line: number;
   readonly column: number;
-  readonly debugHook?: IRsxExpressionTreeDebugHook;
+  readonly instanceId: string;
+  readonly debugHooks?: readonly IRsxExpressionTreeDebugHook[];
+}
+
+interface IRsxExpressionReportData {
+  readonly targetKey: string;
+  readonly expressionName: string;
+  readonly expressionText: string;
+  readonly expressionUri: string;
+  readonly expressionStart: number;
+  readonly expressionEnd: number;
+  readonly expressionSource: string;
+  readonly title: string;
+  readonly sections: readonly IRsxExpressionReportSection[];
+}
+
+interface IRsxExpressionReportSection {
+  readonly title: string;
+  readonly rows: readonly IRsxExpressionReportRow[];
+}
+
+interface IRsxExpressionReportRow {
+  readonly setting: string;
+  readonly label?: string;
+  readonly value: string;
+  readonly details?: readonly IRsxExpressionReportDetail[];
+  readonly action?: 'openDebugHookImplementation';
+  readonly hookModuleSpecifier?: string;
+  readonly hookExportName?: string;
+  readonly hookAnchorUri?: string;
+  readonly source?: string;
+  readonly uri?: string;
+  readonly start?: number;
+  readonly end?: number;
+}
+
+interface IRsxExpressionReportDetail {
+  readonly label: string;
+  readonly value: string;
+  readonly source?: string;
+  readonly uri?: string;
+  readonly start?: number;
+  readonly end?: number;
+}
+
+interface IRsxExpressionReportRsxRows {
+  readonly actualRows: readonly IRsxExpressionReportRow[];
+}
+
+interface IRsxExpressionReportScopeTargets {
+  readonly definition: IRsxExpressionTreeLocation;
+  readonly instances: ReadonlyMap<string, IRsxExpressionTreeLocation>;
+}
+
+interface IRsxExpressionReportTarget {
+  readonly expression: IRsxExpressionTreeExpression;
+  readonly instance?: IRsxExpressionTreeExpressionInstance;
+}
+
+interface IRsxExpressionReportWebviewState {
+  readonly targetKey?: string;
 }
 
 interface IRsxExpressionTreeDebugHook {
@@ -224,6 +363,18 @@ interface IRsxExpressionTreeDebugHook {
   readonly label: string;
   readonly enabled: boolean;
   readonly scope: 'group' | 'instance';
+  readonly configUri?: vscode.Uri;
+  readonly standardHook?: IRsxStandardDebugHookKind;
+}
+
+type IRsxStandardDebugHookKind = 'breakpoint' | 'log';
+
+interface IRsxExpressionTreeDebugHookEntry {
+  readonly group?: readonly IRsxExpressionTreeDebugHook[];
+  readonly instances: ReadonlyMap<
+    string,
+    readonly IRsxExpressionTreeDebugHook[]
+  >;
 }
 
 interface IRsxDebugHookPanelTarget {
@@ -264,6 +415,11 @@ interface IRsxExpressionTreeModel {
   readonly end: number;
   readonly fields: readonly IRsxExpressionTreeModelField[];
   readonly expressions: readonly IRsxExpressionTreeExpression[];
+}
+
+interface IRsxModelContractFile {
+  readonly path: string;
+  readonly contracts: readonly string[];
 }
 
 interface IRsxExpressionTreeModelField {
@@ -333,16 +489,61 @@ interface IRsxExpressionPanelTreeNode {
   readonly label: string;
   readonly kind: string;
   readonly description?: string;
-  readonly badge?: string;
-  readonly badgeTitle?: string;
+  readonly tooltip?: string;
+  readonly actionKey?: string;
+  readonly dropAction?: IRsxExpressionPanelDropAction;
+  readonly deleteOptionAction?: IRsxCompilerOptionCommandAction;
+  readonly hookDropAction?: IRsxExpressionPanelHookDropAction;
+  readonly preparse?: boolean;
+  readonly compiled?: boolean;
+  readonly lazy?: boolean;
+  readonly lazyGroup?: boolean;
   readonly hookState?: 'enabled' | 'disabled';
+  readonly hookLabel?: string;
+  readonly hookModuleSpecifier?: string;
+  readonly hookExportName?: string;
+  readonly hookAnchorUri?: string;
+  readonly hookAssignmentTargetKey?: string;
+  readonly standardHook?: IRsxStandardDebugHookKind;
+  readonly canDeleteHook?: boolean;
+  readonly canUnassignHookAll?: boolean;
+  readonly canEnableHookAssignments?: boolean;
+  readonly canDisableHookAssignments?: boolean;
+  readonly canDeleteCustomHooks?: boolean;
+  readonly canDeleteOptionAll?: boolean;
   readonly uri?: string;
   readonly start?: number;
   readonly end?: number;
   readonly children?: readonly IRsxExpressionPanelTreeNode[];
 }
 
+interface IRsxExpressionPanelDropAction {
+  readonly option: 'preparse' | 'compiled' | 'lazy' | 'lazyGroup';
+  readonly value?: string;
+  readonly clearLazyGroup?: boolean;
+}
+
+interface IRsxExpressionPanelHookDropAction {
+  readonly scope?: 'group' | 'instance';
+  readonly moduleSpecifier?: string;
+  readonly hookUri?: string;
+  readonly exportName?: string;
+  readonly enabled?: boolean;
+  readonly standardHook?: IRsxStandardDebugHookKind;
+}
+
+interface IRsxDebugChangeHookCandidate {
+  readonly label: string;
+  readonly description: string;
+  readonly moduleSpecifier: string;
+  readonly exportName: string;
+  readonly uri: vscode.Uri;
+  readonly start: number;
+  readonly end: number;
+}
+
 type IRsxExpressionTreeItem =
+  | IRsxExpressionTreeProjectRoot
   | IRsxExpressionTreeExpressionsRoot
   | IRsxExpressionTreeModelsRoot
   | IRsxExpressionTreeFile
@@ -585,7 +786,23 @@ const expressionTesterSessions = new Map<
 >();
 const rsxManagedEditorGroupColumns = new Set<number>();
 let rsxEditorOpenInProgressUntil = 0;
-let rsxRevealDecorationType: vscode.TextEditorDecorationType | null = null;
+let rsxEditorLineHighlightDecorationType: vscode.TextEditorDecorationType | null =
+  null;
+let rsxEditorRangeUnderlineDecorationType: vscode.TextEditorDecorationType | null =
+  null;
+const rsxModelContractFileCache = new Map<
+  string,
+  {
+    readonly stamp: number;
+    readonly files: readonly IRsxModelContractFile[];
+  }
+>();
+const RSX_EDITOR_RANGE_HIGHLIGHT_COLOR = 'focusBorder';
+const RSX_EDITOR_RANGE_SELECTION_BACKGROUND = 'rgba(0, 95, 184, 0.82)';
+const RSX_EDITOR_RANGE_SELECTION_FOREGROUND = '#ffffff';
+const RSX_EXPRESSION_REPORT_LAST_TARGET_KEY =
+  'rsx.expressionReport.lastTargetKey';
+let rsxExpressionReportStateStore: vscode.Memento | undefined;
 
 type IDiagnosticsMode = 'auto' | 'focused' | 'full';
 
@@ -703,6 +920,7 @@ function isRsxManagedTab(tab: vscode.Tab): boolean {
   if (
     tab.input instanceof vscode.TabInputWebview &&
     (tab.input.viewType === 'rsx.expressionGraphPreview' ||
+      tab.input.viewType === 'rsx.expressionReport' ||
       tab.input.viewType === 'rsx.expressionTesterReport')
   ) {
     rememberRsxEditorGroupColumn(tab.group.viewColumn);
@@ -721,11 +939,109 @@ function isRsxManagedTab(tab: vscode.Tab): boolean {
   return false;
 }
 
+function registerRsxWebviewPanelSerializers(
+  context: vscode.ExtensionContext,
+  expressionsProvider: RsxExpressionsTreeDataProvider,
+): void {
+  rsxExpressionReportStateStore = context.workspaceState;
+  context.subscriptions.push(
+    vscode.window.registerWebviewPanelSerializer('rsx.expressionReport', {
+      async deserializeWebviewPanel(
+        panel: vscode.WebviewPanel,
+        state: unknown,
+      ): Promise<void> {
+        const reportState = isRsxExpressionReportWebviewState(state)
+          ? state
+          : {};
+        panel.webview.options = { enableScripts: true };
+        await initializeRsxExpressionReportPanel(
+          expressionsProvider,
+          panel,
+          reportState.targetKey ??
+            rsxExpressionReportStateStore?.get<string>(
+              RSX_EXPRESSION_REPORT_LAST_TARGET_KEY,
+            ),
+        );
+      },
+    }),
+  );
+}
+
+function isRsxExpressionReportWebviewState(
+  value: unknown,
+): value is IRsxExpressionReportWebviewState {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    (!('targetKey' in value) ||
+      typeof (value as { readonly targetKey?: unknown }).targetKey === 'string')
+  );
+}
+
+async function initRsxProjectFromExplorer(
+  resource?: vscode.Uri,
+  selectedResources?: readonly vscode.Uri[],
+): Promise<void> {
+  const projectRoot = resolveRsxProjectInitRoot(resource, selectedResources);
+  if (!projectRoot) {
+    vscode.window.showWarningMessage(
+      'Select a project folder before initializing RS-X.',
+    );
+    return;
+  }
+  const terminal = vscode.window.createTerminal({
+    name: 'RS-X Init',
+    cwd: projectRoot.fsPath,
+  });
+  terminal.show();
+  terminal.sendText(`${getBundledRsxCliInitCommand()} init`);
+}
+
+function resolveRsxProjectInitRoot(
+  resource?: vscode.Uri,
+  selectedResources?: readonly vscode.Uri[],
+): vscode.Uri | undefined {
+  const selected = resource ?? selectedResources?.[0];
+  if (selected) {
+    return getRsxProjectInitRootFromUri(selected);
+  }
+  const activeDocumentUri = vscode.window.activeTextEditor?.document.uri;
+  if (activeDocumentUri) {
+    return getRsxProjectInitRootFromUri(activeDocumentUri);
+  }
+  return vscode.workspace.workspaceFolders?.[0]?.uri;
+}
+
+function getRsxProjectInitRootFromUri(uri: vscode.Uri): vscode.Uri {
+  try {
+    const stat = fs.statSync(uri.fsPath);
+    if (stat.isDirectory()) {
+      return uri;
+    }
+  } catch {
+    // If the resource no longer exists, fall back to its containing directory.
+  }
+  return vscode.Uri.file(path.dirname(uri.fsPath));
+}
+
+function getBundledRsxCliInitCommand(): string {
+  try {
+    return `node ${quoteShellArg(createRequire(__filename).resolve('@rs-x/cli'))}`;
+  } catch {
+    return 'rsx';
+  }
+}
+
+function quoteShellArg(value: string): string {
+  return `"${value.replace(/(["\\$`])/gu, '\\$1')}"`;
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   const diagnostics = vscode.languages.createDiagnosticCollection('rsx');
   context.subscriptions.push(diagnostics);
   registerRsxEditorGroupCleanup(context);
   const expressionsProvider = new RsxExpressionsTreeDataProvider();
+  registerRsxWebviewPanelSerializers(context, expressionsProvider);
   const expressionsSearchViewProvider = new RsxExpressionSearchViewProvider(
     expressionsProvider,
   );
@@ -737,9 +1053,12 @@ export function activate(context: vscode.ExtensionContext): void {
     ),
   );
   context.subscriptions.push(
-    vscode.commands.registerCommand('rsx.expressions.add', async () => {
-      await addRsxExpressionFromPanel(expressionsProvider);
-    }),
+    vscode.commands.registerCommand(
+      'rsx.expressions.add',
+      async (resource?: vscode.Uri) => {
+        await expressionsSearchViewProvider.addExpressionSelected(resource);
+      },
+    ),
   );
   context.subscriptions.push(
     vscode.commands.registerCommand('rsx.expressions.refresh', () => {
@@ -753,6 +1072,37 @@ export function activate(context: vscode.ExtensionContext): void {
   );
   context.subscriptions.push(
     vscode.commands.registerCommand(
+      'rsx.project.init',
+      async (resource?: vscode.Uri, selectedResources?: vscode.Uri[]) => {
+        await initRsxProjectFromExplorer(resource, selectedResources);
+      },
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'rsx.expressions.setCompilerOption',
+      async (
+        argument?: IRsxCompilerOptionCommandAction | IRsxExpressionTreeItem,
+      ) => {
+        await setRsxCompilerOptionFromEditorContext(
+          isRsxCompilerOptionCommandAction(argument) ? argument : undefined,
+          isRsxExpressionTreeItemArgument(argument) ? argument : undefined,
+        );
+      },
+    ),
+  );
+  for (const command of RSX_COMPILER_OPTION_CONTEXT_COMMANDS) {
+    context.subscriptions.push(
+      vscode.commands.registerCommand(
+        command.command,
+        async (item?: IRsxExpressionTreeItem) => {
+          await setRsxCompilerOptionFromEditorContext(command.action, item);
+        },
+      ),
+    );
+  }
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
       'rsx.expressions.preview',
       async (item?: IRsxExpressionTreeItem) => {
         await openRsxExpressionGraphPreview(expressionsProvider, item);
@@ -764,6 +1114,22 @@ export function activate(context: vscode.ExtensionContext): void {
       'rsx.expressions.panel.preview',
       async () => {
         await expressionsSearchViewProvider.previewSelected();
+      },
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'rsx.expressions.report',
+      async (item?: IRsxExpressionTreeItem) => {
+        await openRsxExpressionReport(expressionsProvider, item);
+      },
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'rsx.expressions.panel.report',
+      async () => {
+        await expressionsSearchViewProvider.reportSelected();
       },
     ),
   );
@@ -788,9 +1154,136 @@ export function activate(context: vscode.ExtensionContext): void {
   );
   context.subscriptions.push(
     vscode.commands.registerCommand(
+      'rsx.expressions.panel.togglePreparse',
+      async () => {
+        await expressionsSearchViewProvider.setCompilerOptionSelected({
+          option: 'preparse',
+          toggle: true,
+        });
+      },
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'rsx.expressions.panel.toggleCompiled',
+      async () => {
+        await expressionsSearchViewProvider.setCompilerOptionSelected({
+          option: 'compiled',
+          toggle: true,
+        });
+      },
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'rsx.expressions.panel.toggleLazy',
+      async () => {
+        await expressionsSearchViewProvider.setCompilerOptionSelected({
+          option: 'lazy',
+          toggle: true,
+        });
+      },
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'rsx.expressions.panel.editLazyGroup',
+      async () => {
+        await expressionsSearchViewProvider.setCompilerOptionSelected({
+          option: 'lazyGroup',
+        });
+      },
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'rsx.expressions.panel.deleteAllCompilerOption',
+      async () => {
+        await expressionsSearchViewProvider.deleteAllCompilerOptionsSelected();
+      },
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
       'rsx.expressions.panel.enableDebugHooks',
       async () => {
         await expressionsSearchViewProvider.enableDebugHooksSelected();
+      },
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'rsx.expressions.panel.enableConfiguredDebugHooks',
+      async () => {
+        await expressionsSearchViewProvider.setDebugHooksEnabledSelected(true);
+      },
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'rsx.expressions.panel.manageAssignedHooks',
+      async () => {
+        await expressionsSearchViewProvider.manageAssignedHooksSelected();
+      },
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'rsx.expressions.panel.disableDebugHooks',
+      async () => {
+        await expressionsSearchViewProvider.setDebugHooksEnabledSelected(false);
+      },
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'rsx.expressions.panel.enableAllExpressionHooks',
+      async () => {
+        await expressionsSearchViewProvider.setAllDebugHookAssignmentsEnabledSelected(
+          true,
+        );
+      },
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'rsx.expressions.panel.disableAllExpressionHooks',
+      async () => {
+        await expressionsSearchViewProvider.setAllDebugHookAssignmentsEnabledSelected(
+          false,
+        );
+      },
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'rsx.expressions.panel.deleteDebugHooks',
+      async () => {
+        await expressionsSearchViewProvider.deleteDebugHooksSelected();
+      },
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'rsx.expressions.panel.unassignAllDebugHooks',
+      async () => {
+        await expressionsSearchViewProvider.unassignAllDebugHookAssignmentsSelected();
+      },
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'rsx.expressions.panel.unassignDebugHook',
+      async () => {
+        await expressionsSearchViewProvider.unassignDebugHookAssignmentSelected();
+      },
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'rsx.expressions.panel.deleteCustomHooks',
+      async () => {
+        await expressionsSearchViewProvider.deleteCustomHooksSelected();
       },
     ),
   );
@@ -869,6 +1362,23 @@ export function activate(context: vscode.ExtensionContext): void {
     [...rsxSemanticTokenModifiers],
   );
 
+  context.subscriptions.push(
+    vscode.languages.registerCompletionItemProvider(
+      [
+        { language: 'typescript' },
+        { language: 'typescriptreact' },
+        { language: 'javascript' },
+        { language: 'javascriptreact' },
+      ],
+      new RsxTypeScriptExpressionInstanceCompletionProvider(
+        expressionsProvider,
+      ),
+      '.',
+    ),
+  );
+  if (process.env.JEST_WORKER_ID === undefined) {
+    void expressionsProvider.getAllExpressionDefinitions();
+  }
   context.subscriptions.push(
     vscode.languages.registerCompletionItemProvider(
       RSX_DOCUMENT_SELECTOR,
@@ -1032,8 +1542,29 @@ export function activate(context: vscode.ExtensionContext): void {
       scheduleModuleExpressionPrewarm(event.document, 60),
     ),
   );
+  const refreshOpenRsxDocumentsAfterDependencyChange = (
+    dependencyDocument: vscode.TextDocument,
+  ) => {
+    for (const document of vscode.workspace.textDocuments) {
+      if (
+        !isRsxDocument(document) ||
+        !doesRsxDocumentImportFile(document, dependencyDocument.uri.fsPath)
+      ) {
+        continue;
+      }
+      invalidateRsxDocumentAnalysis(document, {
+        fireSemanticTokensChanged: true,
+      });
+      refreshDiagnosticsForDocument(document, 'auto', 100);
+      scheduleModuleExpressionPrewarm(document, 0);
+    }
+  };
   context.subscriptions.push(
     vscode.workspace.onDidSaveTextDocument((document) => {
+      if (isRsxDependencyDocument(document)) {
+        refreshOpenRsxDocumentsAfterDependencyChange(document);
+        return;
+      }
       invalidateRsxDocumentAnalysis(document, {
         fireSemanticTokensChanged: true,
       });
@@ -1103,6 +1634,81 @@ function isRsxDocument(document: vscode.TextDocument): boolean {
 function isRsxDocumentUri(uri: vscode.Uri): boolean {
   const pathText = 'path' in uri ? uri.path : uri.fsPath;
   return pathText.toLowerCase().endsWith('.rsx');
+}
+
+function isRsxDependencyDocument(document: vscode.TextDocument): boolean {
+  if (document.uri.scheme !== 'file' || isRsxDocument(document)) {
+    return false;
+  }
+  return hasTypeScriptFileExtension(document.uri.fsPath);
+}
+
+function doesRsxDocumentImportFile(
+  document: vscode.TextDocument,
+  dependencyFileName: string,
+): boolean {
+  if (document.uri.scheme !== 'file') {
+    return false;
+  }
+  const dependencyPath = path.normalize(path.resolve(dependencyFileName));
+  const containingDirectory = path.dirname(document.uri.fsPath);
+  for (const specifier of getRsxImportSpecifiers(document.getText())) {
+    if (!specifier.startsWith('.')) {
+      continue;
+    }
+    const resolvedImportPath = path.resolve(containingDirectory, specifier);
+    if (isResolvedImportPathForFile(resolvedImportPath, dependencyPath)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function getRsxImportSpecifiers(text: string): string[] {
+  const specifiers: string[] = [];
+  const importCallPattern =
+    /\bimport\s*\(\s*(['"])(?<specifier>[^'"]+)\1\s*\)/gu;
+  for (const match of text.matchAll(importCallPattern)) {
+    const specifier = match.groups?.specifier?.trim();
+    if (specifier) {
+      specifiers.push(specifier);
+    }
+  }
+  return specifiers;
+}
+
+function isResolvedImportPathForFile(
+  resolvedImportPath: string,
+  filePath: string,
+): boolean {
+  const normalizedImportPath = path.normalize(resolvedImportPath);
+  const normalizedFilePath = path.normalize(filePath);
+  if (normalizedImportPath === normalizedFilePath) {
+    return true;
+  }
+  if (hasTypeScriptFileExtension(normalizedImportPath)) {
+    return false;
+  }
+  return getTypeScriptImportResolutionCandidates(normalizedImportPath).some(
+    (candidate) => path.normalize(candidate) === normalizedFilePath,
+  );
+}
+
+function hasTypeScriptFileExtension(filePath: string): boolean {
+  return /\.(?:[cm]?ts|tsx)$/iu.test(filePath);
+}
+
+function getTypeScriptImportResolutionCandidates(basePath: string): string[] {
+  return [
+    `${basePath}.ts`,
+    `${basePath}.tsx`,
+    `${basePath}.mts`,
+    `${basePath}.cts`,
+    path.join(basePath, 'index.ts'),
+    path.join(basePath, 'index.tsx'),
+    path.join(basePath, 'index.mts'),
+    path.join(basePath, 'index.cts'),
+  ];
 }
 
 function triggerRsxHeaderSuggestIfNeeded(
@@ -1228,6 +1834,7 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
     this.files = null;
     this.expressionInstanceGroups = null;
     this.expressionsByKey.clear();
+    rsxModelContractFileCache.clear();
     this.onDidChangeTreeDataEmitter.fire();
   }
 
@@ -1245,6 +1852,26 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
   ): vscode.TreeItem | Thenable<vscode.TreeItem> {
     if (element.kind === 'searchResult') {
       return this.getSearchResultTreeItem(element);
+    }
+
+    if (element.kind === 'projectRoot') {
+      const expressionCount = element.files.reduce(
+        (count, file) => count + file.expressions.length,
+        0,
+      );
+      const item = new vscode.TreeItem(
+        element.label,
+        vscode.TreeItemCollapsibleState.Expanded,
+      );
+      item.description = [
+        formatExpressionCount(expressionCount),
+        formatModelCount(element.models.length),
+      ].join(' · ');
+      item.resourceUri = element.rootUri;
+      item.contextValue = 'rsxProjectRoot';
+      item.iconPath = createRsxTreeIcon('root-folder', 'charts.blue');
+      item.tooltip = `${element.description}\n${formatExpressionCount(expressionCount)}\n${formatModelCount(element.models.length)}`;
+      return item;
     }
 
     if (element.kind === 'root') {
@@ -1296,7 +1923,7 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
       item.resourceUri = element.uri;
       item.contextValue = 'rsxExpressionFile';
       item.iconPath = createRsxTreeIcon('file-code', 'descriptionForeground');
-      item.tooltip = `${element.label}\n${formatExpressionCount(element.expressions.length)}`;
+      item.tooltip = `${element.relativePath}\n${formatExpressionCount(element.expressions.length)}`;
       return item;
     }
 
@@ -1316,7 +1943,7 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
         .filter(Boolean)
         .join(' · ');
       item.resourceUri = element.uri;
-      item.contextValue = 'rsxExpression';
+      item.contextValue = getRsxExpressionTreeItemContextValue(element);
       item.iconPath = createRsxTreeIcon('symbol-function', 'charts.green');
       item.command = {
         command: 'rsx.expressions.open',
@@ -1504,15 +2131,11 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
         target.exportName,
         vscode.TreeItemCollapsibleState.None,
       );
-      item.description = [
-        'expression',
-        target.expression.returnTypeText,
-        target.relativePath,
-      ]
+      item.description = ['expression', target.expression.returnTypeText]
         .filter(Boolean)
         .join(' · ');
       item.resourceUri = target.uri;
-      item.contextValue = 'rsxExpression';
+      item.contextValue = getRsxExpressionTreeItemContextValue(target);
       item.iconPath = createRsxTreeIcon('symbol-function', 'charts.green');
       item.command = {
         command: 'rsx.expressions.open',
@@ -1543,7 +2166,6 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
         'model',
         formatFieldCount(target.fields.length),
         formatExpressionCount(target.expressions.length),
-        target.relativePath,
       ].join(' · ');
       item.resourceUri = target.uri;
       item.contextValue = 'rsxExpressionModel';
@@ -1569,16 +2191,22 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
       );
       item.description = [
         'instance',
-        target.debugHook ? `hook: ${target.debugHook.label}` : undefined,
-        `${target.relativePath}:${target.line + 1}`,
+        target.debugHooks && target.debugHooks.length > 0
+          ? `hooks: ${target.debugHooks.length}`
+          : undefined,
+        `line ${target.line + 1}`,
       ]
         .filter(Boolean)
         .join(' · ');
       item.resourceUri = target.uri;
       item.contextValue = 'rsxExpressionInstance';
       item.iconPath = createRsxTreeIcon(
-        target.debugHook ? 'debug-alt' : 'circle-outline',
-        target.debugHook ? 'charts.orange' : 'charts.blue',
+        target.debugHooks && target.debugHooks.length > 0
+          ? 'debug-alt'
+          : 'circle-outline',
+        target.debugHooks && target.debugHooks.length > 0
+          ? 'charts.orange'
+          : 'charts.blue',
       );
       item.command = {
         command: 'rsx.expressions.open',
@@ -1589,7 +2217,9 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
         [
           `**${target.expression.exportName} instance**`,
           '',
-          target.debugHook ? `hook: \`${target.debugHook.label}\`` : '',
+          target.debugHooks && target.debugHooks.length > 0
+            ? `hooks: ${target.debugHooks.map((hook) => `\`${hook.label}\``).join(', ')}`
+            : '',
           `file: \`${target.relativePath}:${target.line + 1}:${target.column + 1}\``,
         ]
           .filter(Boolean)
@@ -1633,6 +2263,23 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
   ): Promise<IRsxExpressionTreeItem[]> {
     if (element?.kind === 'searchResult') {
       return [];
+    }
+
+    if (element?.kind === 'projectRoot') {
+      return [
+        {
+          kind: 'root',
+          section: 'expressions',
+          label: 'Expressions',
+          files: element.files,
+        },
+        {
+          kind: 'root',
+          section: 'models',
+          label: 'Models',
+          models: element.models,
+        },
+      ];
     }
 
     if (element?.kind === 'root') {
@@ -1696,6 +2343,13 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
         this.searchQuery,
       );
     }
+    const projectRoots = await getRsxExpressionTreeProjectRoots(files);
+    if (
+      projectRoots.length > 1 ||
+      projectRoots.some((project) => project.explicit)
+    ) {
+      return projectRoots;
+    }
     return [
       {
         kind: 'root',
@@ -1730,6 +2384,18 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
     return createRsxExpressionTesterData(files, item);
   }
 
+  public async getExpressionReportData(
+    item?: IRsxExpressionTreeItem,
+  ): Promise<IRsxExpressionReportData | null> {
+    const files = await this.getFiles();
+    const instanceGroups = await this.getExpressionInstanceGroups(files);
+    const target = getReportExpressionTarget(files, item);
+    if (!target) {
+      return null;
+    }
+    return createRsxExpressionReportData(target, instanceGroups);
+  }
+
   public async getExpressionByKey(
     key: string,
   ): Promise<IRsxExpressionTreeExpression | undefined> {
@@ -1744,12 +2410,15 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
     | IRsxExpressionTreeModel
     | IRsxExpressionTreeModelField
     | IRsxExpressionTreeModelFieldExpressionUse
+    | IRsxExpressionTreeExpressionInstanceGroup
+    | IRsxExpressionTreeExpressionInstance
     | undefined
   > {
     const files = await this.getFiles();
     return findRsxExpressionPanelActionTarget(
       files,
       getUniqueRsxExpressionModels(files),
+      await this.getExpressionInstanceGroups(files),
       key,
     );
   }
@@ -1802,11 +2471,81 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
 
   public async getPanelTree(): Promise<IRsxExpressionPanelTreeNode[]> {
     const files = await this.getFiles();
-    return createRsxExpressionPanelTreeNodes(
-      files,
-      getUniqueRsxExpressionModels(files),
-      await this.getExpressionInstanceGroups(files),
-    );
+    const models = getUniqueRsxExpressionModels(files);
+    const instanceGroups = await this.getExpressionInstanceGroups(files);
+    const defaultDebugHooks =
+      await getRsxExpressionPanelDefaultDebugHooks(files);
+    const customDebugHooks = await getRsxExpressionPanelCustomDebugHooks(files);
+    const projectRoots = await getRsxExpressionTreeProjectRoots(files);
+    if (
+      projectRoots.length <= 1 &&
+      !projectRoots.some((project) => project.explicit)
+    ) {
+      return createRsxExpressionPanelTreeNodes(
+        files,
+        models,
+        instanceGroups,
+        defaultDebugHooks,
+        customDebugHooks,
+      );
+    }
+    return projectRoots.map((project) => {
+      const projectExpressionKeys = new Set(
+        project.files.flatMap((file) =>
+          file.expressions.map((expression) => expression.key),
+        ),
+      );
+      const projectDefaultDebugHooks = new Map(
+        [...defaultDebugHooks.entries()].filter(([key]) =>
+          projectExpressionKeys.has(key),
+        ),
+      );
+      const projectInstanceGroups = instanceGroups.filter((group) =>
+        projectExpressionKeys.has(group.expression.key),
+      );
+      const children = createRsxExpressionPanelTreeNodes(
+        project.files,
+        project.models,
+        projectInstanceGroups,
+        projectDefaultDebugHooks,
+        customDebugHooks,
+      );
+      return {
+        key: project.key,
+        label: project.label,
+        kind: 'project',
+        description: project.description,
+        children: prefixRsxExpressionPanelStructuralKeys(children, project.key),
+      };
+    });
+  }
+
+  public async getAddExpressionFormModels(): Promise<
+    Array<{
+      readonly label: string;
+      readonly value: string;
+      readonly detail?: string;
+    }>
+  > {
+    const files = await this.getFiles();
+    return getUniqueRsxExpressionModels(files).map((model) => ({
+      label: model.label,
+      value: model.modelTypeText,
+      detail: model.relativePath,
+    }));
+  }
+
+  public async getAllExpressionDefinitions(): Promise<
+    readonly IRsxExpressionTreeExpression[]
+  > {
+    const files = await this.getFiles();
+    return files.flatMap((file) => file.expressions);
+  }
+
+  public async getPanelNode(
+    key: string,
+  ): Promise<IRsxExpressionPanelTreeNode | undefined> {
+    return findRsxExpressionPanelNode(await this.getPanelTree(), key);
   }
 
   private async getExpressionInstanceGroups(
@@ -1827,10 +2566,11 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
 
     let uris: readonly vscode.Uri[];
     try {
-      uris = await vscode.workspace.findFiles(
+      const found = await vscode.workspace.findFiles(
         '**/*.rsx',
         '**/{node_modules,dist,out-tsc,coverage,.git}/**',
       );
+      uris = Array.isArray(found) ? found : [];
     } catch {
       uris = [];
     }
@@ -1887,6 +2627,22 @@ class RsxExpressionsTreeDataProvider implements vscode.TreeDataProvider<IRsxExpr
     }, 350);
     this.emptyRsxScanRetryTimer.unref?.();
   }
+}
+
+function getRsxExpressionTreeItemContextValue(
+  expression: IRsxExpressionTreeExpression,
+): string {
+  return [
+    'rsxExpression',
+    expression.expression.preparse ? 'rsxPreparse' : undefined,
+    expression.expression.compiled ? 'rsxCompiled' : undefined,
+    expression.expression.lazy && !expression.expression.lazyGroup
+      ? 'rsxLazy'
+      : undefined,
+    expression.expression.lazyGroup ? 'rsxLazyGroup' : undefined,
+  ]
+    .filter(Boolean)
+    .join(' ');
 }
 
 async function openRsxExpressionGraphPreview(
@@ -1958,6 +2714,7 @@ class RsxExpressionSearchViewProvider implements vscode.WebviewViewProvider {
   private view: vscode.WebviewView | null = null;
   private searchRequestId = 0;
   private selectedActionKey: string | null = null;
+  private selectedVisualKey: string | null = null;
   private currentQuery = '';
 
   public constructor(
@@ -1994,13 +2751,80 @@ class RsxExpressionSearchViewProvider implements vscode.WebviewViewProvider {
       async (message: {
         type?: string;
         query?: string;
+        selectedKey?: string;
         key?: string;
+        keys?: string[];
         uri?: string;
+        dropAction?: IRsxExpressionPanelDropAction;
+        hookDropAction?: IRsxExpressionPanelHookDropAction;
+        hookModuleSpecifier?: string;
+        hookExportName?: string;
+        hookAnchorUri?: string;
+        hooks?: IRsxDebugHookAssignment[];
+        exportName?: string;
+        expressionName?: string;
+        expressionSource?: string;
+        modelTypeText?: string;
+        useExistingModel?: boolean;
+        shareModel?: boolean;
+        modelFilePath?: string;
+        modelInterfaceName?: string;
+        modelFile?: IRsxModelContractFile;
+        newModelDirectory?: string;
+        newModelFileName?: string;
+        newModelInterfaceName?: string;
+        relativePath?: string;
+        directory?: string;
+        fileName?: string;
+        existingFilePath?: string;
+        rootUri?: string;
         start?: number;
         end?: number;
+        visualKey?: string;
       }) => {
+        if (message?.type === 'ready') {
+          if (typeof message.selectedKey === 'string') {
+            await this.setSelectedActionKey(
+              message.selectedKey,
+              message.selectedKey,
+            );
+          }
+          await this.updateSearchResults(
+            typeof message.query === 'string'
+              ? message.query
+              : this.currentQuery,
+          );
+          return;
+        }
         if (message?.type === 'select' && typeof message.key === 'string') {
-          this.selectedActionKey = message.key;
+          await this.setSelectedActionKey(
+            message.key,
+            typeof message.visualKey === 'string'
+              ? message.visualKey
+              : undefined,
+          );
+          return;
+        }
+        if (
+          message?.type === 'dropExpressions' &&
+          Array.isArray(message.keys) &&
+          isRsxExpressionPanelDropAction(message.dropAction)
+        ) {
+          await this.setCompilerOptionForPanelKeys(
+            message.dropAction,
+            message.keys,
+          );
+          return;
+        }
+        if (
+          message?.type === 'dropDebugHookAssignments' &&
+          Array.isArray(message.keys) &&
+          isRsxExpressionPanelHookDropAction(message.hookDropAction)
+        ) {
+          await this.assignDebugHookForPanelKeys(
+            message.hookDropAction,
+            message.keys,
+          );
           return;
         }
         if (message?.type === 'search' && typeof message.query === 'string') {
@@ -2045,8 +2869,133 @@ class RsxExpressionSearchViewProvider implements vscode.WebviewViewProvider {
           );
           return;
         }
+        if (message?.type === 'deleteSelected') {
+          await this.deleteSelectedPanelNode(
+            typeof message.key === 'string' ? message.key : undefined,
+            typeof message.visualKey === 'string'
+              ? message.visualKey
+              : undefined,
+          );
+          return;
+        }
+        if (message?.type === 'unassignAllDebugHooks') {
+          await this.unassignAllDebugHookAssignmentsSelected(
+            typeof message.key === 'string' ? message.key : undefined,
+          );
+          return;
+        }
+        if (message?.type === 'deleteCustomHooks') {
+          await this.deleteCustomHooksSelected(
+            typeof message.key === 'string' ? message.key : undefined,
+          );
+          return;
+        }
         if (
-          (message?.type === 'preview' || message?.type === 'test') &&
+          message?.type === 'createCustomHook' &&
+          typeof message.exportName === 'string' &&
+          typeof message.relativePath === 'string'
+        ) {
+          await this.createCustomHookFromPanel({
+            exportName: message.exportName,
+            relativePath: message.relativePath,
+          });
+          return;
+        }
+        if (
+          message?.type === 'selectModelFile' &&
+          typeof message.rootUri === 'string'
+        ) {
+          await this.selectModelFileFromPanel(
+            vscode.Uri.parse(message.rootUri),
+          );
+          return;
+        }
+        if (
+          message?.type === 'createExpression' &&
+          typeof message.expressionName === 'string' &&
+          typeof message.relativePath === 'string' &&
+          typeof message.rootUri === 'string'
+        ) {
+          await this.createExpressionFromPanel({
+            expressionName: message.expressionName,
+            expressionSource:
+              typeof message.expressionSource === 'string'
+                ? message.expressionSource
+                : '',
+            modelTypeText:
+              typeof message.modelTypeText === 'string'
+                ? message.modelTypeText
+                : undefined,
+            useExistingModel: message.useExistingModel === true,
+            shareModel: message.shareModel === true,
+            modelFilePath:
+              typeof message.modelFilePath === 'string'
+                ? message.modelFilePath
+                : undefined,
+            modelInterfaceName:
+              typeof message.modelInterfaceName === 'string'
+                ? message.modelInterfaceName
+                : undefined,
+            newModelDirectory:
+              typeof message.newModelDirectory === 'string'
+                ? message.newModelDirectory
+                : undefined,
+            newModelFileName:
+              typeof message.newModelFileName === 'string'
+                ? message.newModelFileName
+                : undefined,
+            newModelInterfaceName:
+              typeof message.newModelInterfaceName === 'string'
+                ? message.newModelInterfaceName
+                : undefined,
+            relativePath: message.relativePath,
+            directory:
+              typeof message.directory === 'string'
+                ? message.directory
+                : undefined,
+            fileName:
+              typeof message.fileName === 'string'
+                ? message.fileName
+                : undefined,
+            existingFilePath:
+              typeof message.existingFilePath === 'string'
+                ? message.existingFilePath
+                : undefined,
+            rootUri: vscode.Uri.parse(message.rootUri),
+          });
+          return;
+        }
+        if (
+          message?.type === 'applyAssignedHooks' &&
+          typeof message.key === 'string' &&
+          Array.isArray(message.hooks)
+        ) {
+          await this.applyAssignedHooksForPanelKey(message.key, message.hooks);
+          return;
+        }
+        if (
+          message?.type === 'openDebugHookImplementation' &&
+          typeof message.hookModuleSpecifier === 'string'
+        ) {
+          await openRsxDebugHookImplementation({
+            moduleSpecifier: message.hookModuleSpecifier,
+            exportName:
+              typeof message.hookExportName === 'string'
+                ? message.hookExportName
+                : undefined,
+            anchorUri:
+              typeof message.hookAnchorUri === 'string'
+                ? vscode.Uri.parse(message.hookAnchorUri)
+                : typeof message.uri === 'string'
+                  ? vscode.Uri.parse(message.uri)
+                  : undefined,
+          });
+          return;
+        }
+        if (
+          (message?.type === 'preview' ||
+            message?.type === 'test' ||
+            message?.type === 'report') &&
           typeof message.key === 'string'
         ) {
           const target = await this.provider.getPanelActionTarget(message.key);
@@ -2057,15 +3006,27 @@ class RsxExpressionSearchViewProvider implements vscode.WebviewViewProvider {
             await openRsxExpressionGraphPreview(this.provider, target);
             return;
           }
+          if (message.type === 'report') {
+            await openRsxExpressionReport(this.provider, target);
+            return;
+          }
           await openRsxExpressionTester(this.provider, target);
           return;
         }
         if (
-          message?.type === 'open' &&
+          (message?.type === 'open' || message?.type === 'restoreSelection') &&
           typeof message.uri === 'string' &&
           typeof message.start === 'number' &&
           typeof message.end === 'number'
         ) {
+          if (typeof message.key === 'string') {
+            await this.setSelectedActionKey(
+              message.key,
+              typeof message.visualKey === 'string'
+                ? message.visualKey
+                : undefined,
+            );
+          }
           await openRsxExpressionLocation(
             {
               uri: vscode.Uri.parse(message.uri),
@@ -2099,11 +3060,399 @@ class RsxExpressionSearchViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  public async reportSelected(): Promise<void> {
+    const target = await this.getSelectedActionTarget();
+    if (target) {
+      await openRsxExpressionReport(this.provider, target);
+    }
+  }
+
+  public async addExpressionSelected(
+    resourceOrItem?: vscode.Uri | IRsxExpressionTreeItem,
+  ): Promise<void> {
+    const resourceFileUri = getAddExpressionResourceFileUri(resourceOrItem);
+    const selectedUri = await this.getSelectedActionUri();
+    const selectedFileUri =
+      !resourceFileUri && isRsxFileUri(selectedUri) ? selectedUri : undefined;
+    const lockExpressionFile =
+      Boolean(resourceFileUri) ||
+      isRsxExpressionPanelFileKey(this.selectedActionKey) ||
+      isRsxExpressionPanelFileKey(this.selectedVisualKey);
+    if (this.view) {
+      await this.showAddExpressionForm({
+        knownFileUri: resourceFileUri,
+        anchorFileUri: selectedFileUri,
+        lockExpressionFile,
+        key: this.selectedVisualKey ?? this.selectedActionKey ?? undefined,
+      });
+      return;
+    }
+    await vscode.commands.executeCommand('workbench.view.extension.rsx');
+    if (this.view) {
+      await this.showAddExpressionForm({
+        knownFileUri: resourceFileUri,
+        anchorFileUri: selectedFileUri,
+        lockExpressionFile,
+        key: this.selectedVisualKey ?? this.selectedActionKey ?? undefined,
+      });
+      return;
+    }
+    await addRsxExpressionFromPanel(this.provider, {
+      knownFileUri: resourceFileUri,
+      anchorFileUri: selectedFileUri,
+      forceKnownFile: Boolean(resourceFileUri),
+    });
+  }
+
+  private async selectModelFileFromPanel(rootUri: vscode.Uri): Promise<void> {
+    const workspaceFolder = getWorkspaceFolderForUri(rootUri);
+    if (!workspaceFolder || !this.view) {
+      return;
+    }
+    const selected = await vscode.window.showOpenDialog({
+      canSelectFiles: true,
+      canSelectFolders: false,
+      canSelectMany: false,
+      defaultUri: workspaceFolder.uri,
+      filters: { TypeScript: ['ts', 'tsx', 'mts', 'cts'] },
+      title: 'Select RS-X model contract file',
+    });
+    const uri = selected?.[0];
+    if (!uri) {
+      return;
+    }
+    if (!isUriInsideDirectory(uri, workspaceFolder.uri)) {
+      vscode.window.showWarningMessage(
+        'Select a TypeScript model file inside the current workspace.',
+      );
+      return;
+    }
+    const text = await readWorkspaceTextFile(uri);
+    if (text === null) {
+      vscode.window.showWarningMessage(
+        'Unable to read the selected model file.',
+      );
+      return;
+    }
+    const sourceFile = ts.createSourceFile(
+      uri.fsPath,
+      text,
+      ts.ScriptTarget.Latest,
+      true,
+      getScriptKindForRsxInstanceScan(uri.fsPath),
+    );
+    const file: IRsxModelContractFile = {
+      path: getProjectRelativePath(workspaceFolder.uri, uri),
+      contracts: getModelContractNamesFromSourceFile(sourceFile),
+    };
+    await this.view.webview.postMessage({
+      type: 'modelFileSelected',
+      file,
+    });
+  }
+
+  private async showAddExpressionForm(args: {
+    readonly knownFileUri?: vscode.Uri;
+    readonly anchorFileUri?: vscode.Uri;
+    readonly lockExpressionFile?: boolean;
+    readonly key?: string;
+  }): Promise<void> {
+    if (!this.view) {
+      return;
+    }
+    const workspaceFolder = await pickRsxWorkspaceFolder(
+      args.knownFileUri ?? args.anchorFileUri,
+    );
+    if (!workspaceFolder) {
+      return;
+    }
+    const expressionName = 'newExpressionRsx';
+    const defaultDirectory = await getRsxAddDefaultDirectory(workspaceFolder);
+    const defaultUri = vscode.Uri.joinPath(
+      workspaceFolder.uri,
+      ...`${defaultDirectory}/${toKebabCase(expressionName)}.expressions.rsx`
+        .split('/')
+        .filter(Boolean),
+    );
+    const targetUri = args.knownFileUri ?? args.anchorFileUri ?? defaultUri;
+    const relativePath = getProjectRelativePath(workspaceFolder.uri, targetUri);
+    const splitPath = splitRsxExpressionFormPath(relativePath);
+    const modelDefaults = createRsxModelDefaults(
+      expressionName,
+      await getRsxAddModelDirectory(workspaceFolder),
+    );
+    const modelFiles = await getRsxModelContractFiles(workspaceFolder);
+    const files = await getExistingRsxExpressionRelativePaths(workspaceFolder);
+    const defaultsModelSelections =
+      await getAddExpressionDefaultsModelSelections({
+        workspaceFolder,
+        expressionFilePaths: files,
+        modelFiles,
+      });
+    const defaultsModelSelection = await getAddExpressionDefaultsModelSelection(
+      {
+        workspaceFolder,
+        expressionUri: targetUri,
+        modelFiles,
+      },
+    );
+    await this.view.webview.postMessage({
+      type: 'addExpressionForm',
+      key: args.key ?? this.selectedVisualKey ?? this.selectedActionKey,
+      title: 'Add Expression',
+      rootUri: workspaceFolder.uri.toString(),
+      expressionName,
+      expressionSource: '',
+      directory: splitPath.directory,
+      fileName: splitPath.fileName,
+      existingFilePath:
+        (args.knownFileUri ?? args.anchorFileUri) ? relativePath : '',
+      lockExpressionFile: args.lockExpressionFile === true,
+      lockModelContract: false,
+      selectedModelFilePath: defaultsModelSelection?.modelFilePath,
+      selectedModelInterfaceName: defaultsModelSelection?.modelInterfaceName,
+      defaultsModelSelections,
+      files,
+      modelFiles,
+      newModelDirectory: modelDefaults.directory,
+      newModelFileName: modelDefaults.fileName,
+      newModelInterfaceName: modelDefaults.interfaceName,
+      shareModel: !(args.knownFileUri ?? args.anchorFileUri),
+    });
+  }
+
+  private async createExpressionFromPanel(args: {
+    readonly rootUri: vscode.Uri;
+    readonly expressionName: string;
+    readonly expressionSource: string;
+    readonly modelTypeText?: string;
+    readonly useExistingModel?: boolean;
+    readonly shareModel?: boolean;
+    readonly modelFilePath?: string;
+    readonly modelInterfaceName?: string;
+    readonly newModelDirectory?: string;
+    readonly newModelFileName?: string;
+    readonly newModelInterfaceName?: string;
+    readonly relativePath?: string;
+    readonly directory?: string;
+    readonly fileName?: string;
+    readonly existingFilePath?: string;
+  }): Promise<void> {
+    const workspaceFolder = getWorkspaceFolderForUri(args.rootUri);
+    if (!workspaceFolder) {
+      vscode.window.showWarningMessage(
+        'Open a workspace before adding an RS-X expression.',
+      );
+      return;
+    }
+    const relativePath =
+      args.existingFilePath?.trim() ||
+      args.relativePath?.trim() ||
+      createRsxExpressionRelativePathFromParts({
+        directory: args.directory ?? '',
+        fileName: args.fileName ?? args.expressionName,
+      });
+    const normalizedExpressionPath = normalizeRsxRelativePath(relativePath);
+    if (!normalizedExpressionPath) {
+      vscode.window.showWarningMessage(
+        'Enter a relative .rsx file path inside the workspace.',
+      );
+      return;
+    }
+    const expressionUri = vscode.Uri.joinPath(
+      workspaceFolder.uri,
+      ...normalizedExpressionPath.split('/'),
+    );
+    const modelTypeText = await resolveAddExpressionModelType({
+      workspaceFolder,
+      expressionUri,
+      expressionName: args.expressionName,
+      useExistingModel: args.useExistingModel,
+      modelFilePath: args.modelFilePath,
+      modelInterfaceName: args.modelInterfaceName,
+      newModelDirectory: args.newModelDirectory,
+      newModelFileName: args.newModelFileName,
+      newModelInterfaceName: args.newModelInterfaceName,
+    });
+    if (!modelTypeText) {
+      return;
+    }
+    const created = await createRsxExpressionInFile(
+      this.provider,
+      workspaceFolder,
+      {
+        expressionName: args.expressionName,
+        expressionSource: args.expressionSource,
+        modelTypeText,
+        shareModel: args.shareModel === true,
+        relativePath: normalizedExpressionPath,
+      },
+    );
+    if (!created) {
+      return;
+    }
+    const key = `expression:${created.uri.toString()}#${created.expressionName}`;
+    await this.setSelectedActionKey(key, key);
+    await this.updateSearchResults(this.currentQuery);
+  }
+
+  public async setCompilerOptionSelected(
+    action: IRsxCompilerOptionCommandAction,
+  ): Promise<void> {
+    const target = await this.getSelectedExpressionActionTarget();
+    if (!target) {
+      return;
+    }
+    await setRsxCompilerOptionFromEditorContext(action, target);
+    this.provider.refresh();
+  }
+
+  public async setCompilerOptionForPanelKeys(
+    action: IRsxCompilerOptionCommandAction,
+    keys: readonly string[],
+  ): Promise<void> {
+    const allowedDropActions = collectRsxExpressionPanelDropActionKeys(
+      await this.provider.getPanelTree(),
+    );
+    if (
+      action.remove !== true &&
+      !allowedDropActions.has(getRsxExpressionPanelDropActionKey(action))
+    ) {
+      return;
+    }
+
+    const uniqueKeys = [...new Set(keys)].filter(isRsxPanelExpressionDragKey);
+    let changed = false;
+    for (const key of uniqueKeys) {
+      const target = await this.provider.getPanelActionTarget(key);
+      if (target?.kind !== 'expression') {
+        continue;
+      }
+      await setRsxCompilerOptionFromEditorContext(action, target);
+      changed = true;
+    }
+    if (changed) {
+      this.provider.refresh();
+    }
+  }
+
+  public async deleteAllCompilerOptionsSelected(): Promise<void> {
+    const targetKey =
+      this.selectedVisualKey ?? this.selectedActionKey ?? undefined;
+    if (!targetKey) {
+      return;
+    }
+    const node = await this.provider.getPanelNode(targetKey);
+    if (
+      node?.kind !== 'expressionOptionGroup' ||
+      !node.deleteOptionAction ||
+      node.canDeleteOptionAll !== true
+    ) {
+      return;
+    }
+    await this.setCompilerOptionForPanelKeys(
+      node.deleteOptionAction,
+      collectRsxExpressionPanelNodeExpressionKeys(node),
+    );
+  }
+
+  public async assignDebugHookForPanelKeys(
+    action: IRsxExpressionPanelHookDropAction,
+    keys: readonly string[],
+  ): Promise<void> {
+    const uniqueKeys = [...new Set(keys)].filter(isRsxPanelDebugHookDragKey);
+    let changed = false;
+    for (const key of uniqueKeys) {
+      const target = await this.provider.getPanelActionDebugHookTarget(key);
+      if (!target?.expressionName) {
+        continue;
+      }
+      if (action.scope === 'group' && target.instanceId) {
+        continue;
+      }
+      if (action.scope === 'instance' && !target.instanceId) {
+        continue;
+      }
+      const anchorUri = await this.provider.getPanelActionUri(key);
+      if (action.standardHook) {
+        changed =
+          (await assignStandardRsxDebugChangeHookForWorkspace(
+            anchorUri,
+            target,
+            action.standardHook,
+          )) || changed;
+      } else if (action.hookUri) {
+        const hookUri = vscode.Uri.parse(action.hookUri);
+        changed =
+          (await assignExistingRsxDebugChangeHookForWorkspace(
+            anchorUri,
+            target,
+            {
+              moduleSpecifier: getRsxDebugHookModuleSpecifier(
+                anchorUri ?? hookUri,
+                hookUri,
+              ),
+              exportName: action.exportName,
+              enabled: action.enabled !== false,
+            },
+          )) || changed;
+      } else if (action.moduleSpecifier) {
+        changed =
+          (await assignExistingRsxDebugChangeHookForWorkspace(
+            anchorUri,
+            target,
+            {
+              moduleSpecifier: action.moduleSpecifier,
+              exportName: action.exportName,
+              enabled: action.enabled !== false,
+            },
+          )) || changed;
+      } else {
+        await enableRsxDebugChangeHooksForWorkspace(anchorUri, target);
+        changed = true;
+      }
+    }
+    if (changed) {
+      this.provider.refresh();
+    }
+  }
+
   public async enableDebugHooksSelected(
     key?: string,
     anchorUri?: vscode.Uri,
   ): Promise<void> {
     const targetKey = key ?? this.selectedActionKey ?? undefined;
+    if (targetKey === 'customHooks') {
+      if (this.view) {
+        const projectRootUri = resolveRsxDebugHookProjectRoot(
+          anchorUri ?? (await this.getSelectedActionUri()),
+        );
+        if (!projectRootUri) {
+          vscode.window.showWarningMessage(
+            'Open a workspace before creating an RS-X hook.',
+          );
+          return;
+        }
+        const hookUri = getDefaultRsxDebugChangeHookUri(
+          projectRootUri,
+          undefined,
+          await getRsxAddSourceRootDirectory(projectRootUri),
+        );
+        await this.view.webview.postMessage({
+          type: 'addHookForm',
+          key: targetKey,
+          title: 'Add Hook',
+          exportName: getDefaultRsxDebugChangeHookExportName(),
+          relativePath: getProjectRelativePath(projectRootUri, hookUri),
+        });
+        return;
+      }
+      await createRsxDebugChangeHookForWorkspace(
+        anchorUri ?? (await this.getSelectedActionUri()),
+      );
+      this.provider.refresh();
+      return;
+    }
     await enableRsxDebugChangeHooksForWorkspace(
       anchorUri ?? (await this.getSelectedActionUri()),
       targetKey
@@ -2118,6 +3467,30 @@ class RsxExpressionSearchViewProvider implements vscode.WebviewViewProvider {
     key?: string,
     anchorUri?: vscode.Uri,
   ): Promise<void> {
+    const visualKey = key ? undefined : this.selectedVisualKey;
+    const visualNode = visualKey
+      ? await this.provider.getPanelNode(visualKey)
+      : undefined;
+    if (visualNode?.hookDropAction && visualNode.hookAssignmentTargetKey) {
+      const target = await this.provider.getPanelActionDebugHookTarget(
+        visualNode.hookAssignmentTargetKey,
+      );
+      if (target?.expressionName) {
+        const changed = await setRsxDebugHookAssignmentEnabledForWorkspace(
+          anchorUri ??
+            (await this.provider.getPanelActionUri(
+              visualNode.hookAssignmentTargetKey,
+            )),
+          target,
+          visualNode.hookDropAction,
+          enabled,
+        );
+        if (changed) {
+          this.provider.refresh();
+        }
+      }
+      return;
+    }
     const targetKey = key ?? this.selectedActionKey ?? undefined;
     await setRsxDebugChangeHooksEnabledForWorkspace(
       anchorUri ?? (await this.getSelectedActionUri()),
@@ -2127,6 +3500,116 @@ class RsxExpressionSearchViewProvider implements vscode.WebviewViewProvider {
       enabled,
     );
     this.provider.refresh();
+  }
+
+  public async manageAssignedHooksSelected(
+    key?: string,
+    anchorUri?: vscode.Uri,
+  ): Promise<void> {
+    const targetKey = key ?? this.selectedActionKey ?? undefined;
+    const target = targetKey
+      ? await this.provider.getPanelActionDebugHookTarget(targetKey)
+      : undefined;
+    if (!target?.expressionName) {
+      vscode.window.showWarningMessage(
+        'Select an RS-X expression definition or expression instance before managing hooks.',
+      );
+      return;
+    }
+    if (this.view) {
+      const effectiveAnchorUri =
+        anchorUri ?? (await this.getSelectedActionUri());
+      const configRootUri =
+        await resolveRsxDebugHookConfigRootForWrite(effectiveAnchorUri);
+      if (!configRootUri) {
+        vscode.window.showWarningMessage(
+          'Open a workspace before managing RS-X debug hooks.',
+        );
+        return;
+      }
+      const items = await getRsxDebugHookAssignmentItems(
+        configRootUri,
+        effectiveAnchorUri,
+        target,
+      );
+      await this.view.webview.postMessage({
+        type: 'assignedHooksPicker',
+        key: targetKey,
+        anchorKey: this.selectedVisualKey ?? targetKey,
+        title: target.instanceId
+          ? `${target.expressionName} instance hooks`
+          : `${target.expressionName} definition hooks`,
+        items,
+      });
+      return;
+    }
+    const changed = await manageRsxDebugChangeHooksForWorkspace(
+      anchorUri ?? (await this.getSelectedActionUri()),
+      target,
+    );
+    if (changed) {
+      this.provider.refresh();
+    }
+  }
+
+  public async applyAssignedHooksForPanelKey(
+    key: string,
+    hooks: readonly IRsxDebugHookAssignment[],
+  ): Promise<void> {
+    const target = await this.provider.getPanelActionDebugHookTarget(key);
+    if (!target?.expressionName) {
+      return;
+    }
+    const changed = await writeSelectedRsxDebugHookAssignmentsForWorkspace(
+      await this.provider.getPanelActionUri(key),
+      target,
+      hooks,
+    );
+    if (changed) {
+      this.provider.refresh();
+    }
+  }
+
+  public async setAllDebugHookAssignmentsEnabledSelected(
+    enabled: boolean,
+    key?: string,
+  ): Promise<void> {
+    const visualKey =
+      key ?? this.selectedVisualKey ?? this.selectedActionKey ?? undefined;
+    if (!visualKey) {
+      return;
+    }
+    const node = await this.provider.getPanelNode(visualKey);
+    if (!node?.children?.length) {
+      return;
+    }
+    let changed = false;
+    for (const assignmentNode of node.children) {
+      if (
+        !assignmentNode.hookDropAction ||
+        !assignmentNode.hookAssignmentTargetKey
+      ) {
+        continue;
+      }
+      const target = await this.provider.getPanelActionDebugHookTarget(
+        assignmentNode.hookAssignmentTargetKey,
+      );
+      if (!target?.expressionName) {
+        continue;
+      }
+      changed =
+        (await setRsxDebugHookAssignmentEnabledForWorkspace(
+          await this.provider.getPanelActionUri(
+            assignmentNode.hookAssignmentTargetKey,
+          ),
+          target,
+          assignmentNode.hookDropAction,
+          enabled,
+        )) || changed;
+    }
+    if (changed) {
+      this.provider.refresh();
+    }
   }
 
   public async deleteDebugHooksSelected(
@@ -2143,11 +3626,236 @@ class RsxExpressionSearchViewProvider implements vscode.WebviewViewProvider {
     this.provider.refresh();
   }
 
+  public async deleteSelectedPanelNode(
+    key?: string,
+    visualKey?: string,
+  ): Promise<void> {
+    const targetVisualKey =
+      visualKey ??
+      this.selectedVisualKey ??
+      this.selectedActionKey ??
+      undefined;
+    const targetActionKey =
+      key ?? this.selectedActionKey ?? targetVisualKey ?? undefined;
+    if (!targetVisualKey && !targetActionKey) {
+      return;
+    }
+    const node =
+      (targetVisualKey
+        ? await this.provider.getPanelNode(targetVisualKey)
+        : undefined) ??
+      (targetActionKey
+        ? await this.provider.getPanelNode(targetActionKey)
+        : undefined);
+    if (!node) {
+      return;
+    }
+    if (
+      node.kind === 'expressionOptionGroup' &&
+      node.deleteOptionAction &&
+      node.canDeleteOptionAll === true
+    ) {
+      await this.setCompilerOptionForPanelKeys(
+        node.deleteOptionAction,
+        collectRsxExpressionPanelNodeExpressionKeys(node),
+      );
+      return;
+    }
+    if (
+      (node.kind === 'customHookGroup' || node.kind === 'customHook') &&
+      node.canDeleteCustomHooks === true
+    ) {
+      await this.deleteCustomHooksSelected(node.key);
+      return;
+    }
+    if (node.hookDropAction && node.hookAssignmentTargetKey) {
+      await this.unassignDebugHookAssignmentSelected(node.key);
+      return;
+    }
+    if (
+      (node.kind === 'hookGroup' || node.kind === 'hookConfig') &&
+      node.canUnassignHookAll === true
+    ) {
+      await this.unassignAllDebugHookAssignmentsSelected(node.key);
+    }
+  }
+
+  public async unassignAllDebugHookAssignmentsSelected(
+    key?: string,
+  ): Promise<void> {
+    const targetKey = key ?? this.selectedActionKey ?? undefined;
+    if (!targetKey) {
+      return;
+    }
+    const node = await this.provider.getPanelNode(targetKey);
+    if (!node || !node.children || node.children.length === 0) {
+      return;
+    }
+    if (node.kind === 'hookGroup') {
+      let changed = false;
+      for (const hookNode of node.children) {
+        if (!hookNode.hookDropAction || !hookNode.children) {
+          continue;
+        }
+        for (const assignmentNode of hookNode.children) {
+          const childKey = assignmentNode.actionKey ?? assignmentNode.key;
+          const target =
+            await this.provider.getPanelActionDebugHookTarget(childKey);
+          if (!target?.expressionName) {
+            continue;
+          }
+          changed =
+            (await unassignRsxDebugChangeHookForWorkspace(
+              await this.provider.getPanelActionUri(childKey),
+              target,
+              hookNode.hookDropAction,
+            )) || changed;
+        }
+      }
+      if (changed) {
+        this.provider.refresh();
+        vscode.window.showInformationMessage(
+          `Unassigned all hooks from ${node.label}.`,
+        );
+      }
+      return;
+    }
+    if (!node.hookDropAction) {
+      return;
+    }
+    let changed = false;
+    for (const child of node.children) {
+      const childKey = child.actionKey ?? child.key;
+      const target =
+        await this.provider.getPanelActionDebugHookTarget(childKey);
+      if (!target?.expressionName) {
+        continue;
+      }
+      changed =
+        (await unassignRsxDebugChangeHookForWorkspace(
+          await this.provider.getPanelActionUri(childKey),
+          target,
+          node.hookDropAction,
+        )) || changed;
+    }
+    if (changed) {
+      this.provider.refresh();
+      vscode.window.showInformationMessage(
+        `Unassigned RS-X hook ${node.label} from all listed targets.`,
+      );
+    }
+  }
+
+  public async unassignDebugHookAssignmentSelected(
+    key?: string,
+  ): Promise<void> {
+    const visualKey =
+      key ?? this.selectedVisualKey ?? this.selectedActionKey ?? undefined;
+    if (!visualKey) {
+      return;
+    }
+    const node = await this.provider.getPanelNode(visualKey);
+    if (!node?.hookDropAction) {
+      return;
+    }
+    const targetKey =
+      node.hookAssignmentTargetKey ?? node.actionKey ?? node.key;
+    const target = await this.provider.getPanelActionDebugHookTarget(targetKey);
+    if (!target?.expressionName) {
+      return;
+    }
+    const changed = await unassignRsxDebugChangeHookForWorkspace(
+      await this.provider.getPanelActionUri(targetKey),
+      target,
+      node.hookDropAction,
+    );
+    if (changed) {
+      this.provider.refresh();
+      vscode.window.showInformationMessage(
+        `Unassigned hook from ${node.label}.`,
+      );
+    }
+  }
+
+  public async createCustomHookFromPanel(args: {
+    readonly exportName: string;
+    readonly relativePath: string;
+  }): Promise<void> {
+    const projectRootUri = resolveRsxDebugHookProjectRoot(
+      await this.getSelectedActionUri(),
+    );
+    if (!projectRootUri) {
+      vscode.window.showWarningMessage(
+        'Open a workspace before creating an RS-X hook.',
+      );
+      return;
+    }
+    const hookUri = getRsxPanelHookFormUri(projectRootUri, args.relativePath);
+    if (!hookUri) {
+      vscode.window.showWarningMessage(
+        'Enter a hook file path inside the workspace.',
+      );
+      return;
+    }
+    const exportName = args.exportName.trim();
+    if (!isValidTypeScriptIdentifier(exportName)) {
+      vscode.window.showWarningMessage('Enter a valid hook export name.');
+      return;
+    }
+    await createOrAppendRsxDebugChangeHookFile(hookUri, exportName);
+    this.provider.refresh();
+    await openRsxDebugHookImplementation({
+      moduleSpecifier: getRsxDebugHookModuleSpecifier(projectRootUri, hookUri),
+      exportName,
+      anchorUri: projectRootUri,
+      preview: false,
+    });
+  }
+
+  public async deleteCustomHooksSelected(key?: string): Promise<void> {
+    const targetKey = key ?? this.selectedActionKey ?? undefined;
+    if (!targetKey) {
+      return;
+    }
+    const node = await this.provider.getPanelNode(targetKey);
+    const hookTargets =
+      node?.kind === 'customHookGroup'
+        ? (node.children ?? []).filter((child) => child.kind === 'customHook')
+        : node?.kind === 'customHook'
+          ? [node]
+          : [];
+    if (hookTargets.length === 0) {
+      return;
+    }
+    let changed = false;
+    for (const hookNode of hookTargets) {
+      if (!hookNode.uri || !hookNode.hookDropAction?.exportName) {
+        continue;
+      }
+      changed =
+        (await deleteRsxCustomDebugHookForWorkspace({
+          hookUri: vscode.Uri.parse(hookNode.uri),
+          exportName: hookNode.hookDropAction.exportName,
+          moduleSpecifier: hookNode.hookDropAction.moduleSpecifier,
+        })) || changed;
+    }
+    if (changed) {
+      this.provider.refresh();
+      vscode.window.showInformationMessage(
+        hookTargets.length === 1
+          ? `Deleted hook ${hookTargets[0]?.label ?? ''}.`
+          : `Deleted ${hookTargets.length} hooks.`,
+      );
+    }
+  }
+
   private async getSelectedActionTarget(): Promise<
     | IRsxExpressionTreeExpression
     | IRsxExpressionTreeModel
     | IRsxExpressionTreeModelField
     | IRsxExpressionTreeModelFieldExpressionUse
+    | IRsxExpressionTreeExpressionInstanceGroup
+    | IRsxExpressionTreeExpressionInstance
     | undefined
   > {
     return this.selectedActionKey
@@ -2155,10 +3863,52 @@ class RsxExpressionSearchViewProvider implements vscode.WebviewViewProvider {
       : undefined;
   }
 
+  private async getSelectedExpressionActionTarget(): Promise<
+    IRsxExpressionTreeExpression | undefined
+  > {
+    const target = await this.getSelectedActionTarget();
+    return target?.kind === 'expression' ? target : undefined;
+  }
+
   private async getSelectedActionUri(): Promise<vscode.Uri | undefined> {
     return this.selectedActionKey
       ? this.provider.getPanelActionUri(this.selectedActionKey)
       : undefined;
+  }
+
+  private async setSelectedActionKey(
+    key: string,
+    visualKey?: string,
+  ): Promise<void> {
+    this.selectedActionKey = key;
+    if (visualKey) {
+      this.selectedVisualKey = visualKey;
+    }
+    await this.updateSelectedExpressionOptionContexts();
+  }
+
+  private async updateSelectedExpressionOptionContexts(): Promise<void> {
+    const target = await this.getSelectedExpressionActionTarget();
+    await vscode.commands.executeCommand(
+      'setContext',
+      'rsxWebviewExpressionPreparse',
+      target?.expression.preparse === true,
+    );
+    await vscode.commands.executeCommand(
+      'setContext',
+      'rsxWebviewExpressionCompiled',
+      target?.expression.compiled === true,
+    );
+    await vscode.commands.executeCommand(
+      'setContext',
+      'rsxWebviewExpressionLazy',
+      target?.expression.lazy === true && !target.expression.lazyGroup,
+    );
+    await vscode.commands.executeCommand(
+      'setContext',
+      'rsxWebviewExpressionLazyGroup',
+      Boolean(target?.expression.lazyGroup),
+    );
   }
 
   private async updateSearchResults(query: string): Promise<void> {
@@ -2174,10 +3924,30 @@ class RsxExpressionSearchViewProvider implements vscode.WebviewViewProvider {
       type: 'results',
       query,
       mode: trimmedQuery ? 'search' : 'tree',
+      selectedKey: this.selectedVisualKey ?? this.selectedActionKey,
       tree,
       results: results.map(createRsxExpressionSearchViewResult),
     });
   }
+}
+
+function getAddExpressionResourceFileUri(
+  resourceOrItem?: vscode.Uri | IRsxExpressionTreeItem,
+): vscode.Uri | undefined {
+  if (
+    resourceOrItem &&
+    'fsPath' in resourceOrItem &&
+    isRsxFileUri(resourceOrItem)
+  ) {
+    return resourceOrItem;
+  }
+  return resourceOrItem?.kind === 'file' && isRsxFileUri(resourceOrItem.uri)
+    ? resourceOrItem.uri
+    : undefined;
+}
+
+function isRsxExpressionPanelFileKey(key: string | undefined): boolean {
+  return typeof key === 'string' && key.startsWith('file:');
 }
 
 function createRsxExpressionSearchViewResult(
@@ -2187,9 +3957,11 @@ function createRsxExpressionSearchViewResult(
   readonly label: string;
   readonly kind: string;
   readonly description: string;
-  readonly badge?: string;
-  readonly badgeTitle?: string;
-  readonly hookState?: 'enabled' | 'disabled';
+  readonly tooltip?: string;
+  readonly preparse?: boolean;
+  readonly compiled?: boolean;
+  readonly lazy?: boolean;
+  readonly lazyGroup?: boolean;
   readonly uri: string;
   readonly start: number;
   readonly end: number;
@@ -2200,9 +3972,12 @@ function createRsxExpressionSearchViewResult(
       key: getRsxExpressionTreeSearchResultKey(result),
       label: target.exportName,
       kind: 'expression',
-      description: [target.expression.returnTypeText, target.relativePath]
-        .filter(Boolean)
-        .join(' · '),
+      description: target.expression.returnTypeText ?? '',
+      tooltip: target.relativePath,
+      preparse: target.expression.preparse,
+      compiled: target.expression.compiled,
+      lazy: target.expression.lazy === true && !target.expression.lazyGroup,
+      lazyGroup: Boolean(target.expression.lazyGroup),
       uri: result.matchUri.toString(),
       start: result.matchStart,
       end: result.matchEnd,
@@ -2216,8 +3991,8 @@ function createRsxExpressionSearchViewResult(
       description: [
         formatFieldCount(target.fields.length),
         formatExpressionCount(target.expressions.length),
-        target.relativePath,
       ].join(' · '),
+      tooltip: target.relativePath,
       uri: result.matchUri.toString(),
       start: result.matchStart,
       end: result.matchEnd,
@@ -2228,27 +4003,8 @@ function createRsxExpressionSearchViewResult(
       key: getRsxExpressionTreeSearchResultKey(result),
       label: `${target.expression.exportName} instance`,
       kind: 'instance',
-      description: [
-        target.debugHook
-          ? `${target.debugHook.enabled ? 'hook' : 'hook disabled'}: ${target.debugHook.label}`
-          : undefined,
-        `${target.relativePath}:${target.line + 1}`,
-      ]
-        .filter(Boolean)
-        .join(' · '),
-      badge: target.debugHook
-        ? target.debugHook.enabled
-          ? 'HOOK'
-          : 'OFF'
-        : undefined,
-      badgeTitle: target.debugHook
-        ? `RS-X debug hook${target.debugHook.enabled ? '' : ' disabled'}: ${target.debugHook.label}`
-        : undefined,
-      hookState: target.debugHook
-        ? target.debugHook.enabled
-          ? 'enabled'
-          : 'disabled'
-        : undefined,
+      description: `line ${target.line + 1}`,
+      tooltip: `${target.relativePath}:${target.line + 1}`,
       uri: result.matchUri.toString(),
       start: result.matchStart,
       end: result.matchEnd,
@@ -2275,105 +4031,908 @@ function createRsxExpressionPanelTreeNodes(
   files: readonly IRsxExpressionTreeFile[],
   models: readonly IRsxExpressionTreeModel[],
   instanceGroups: readonly IRsxExpressionTreeExpressionInstanceGroup[] = [],
+  defaultDebugHooks: ReadonlyMap<
+    string,
+    readonly IRsxExpressionTreeDebugHook[]
+  > = new Map(),
+  customDebugHooks: readonly IRsxDebugChangeHookCandidate[] = [],
 ): IRsxExpressionPanelTreeNode[] {
+  const expressions = files.flatMap((file) => file.expressions);
   return [
     {
       key: 'root:expressions',
       label: 'Expressions',
       kind: 'section',
-      description: formatExpressionCount(
-        files.reduce((count, file) => count + file.expressions.length, 0),
+      description: formatExpressionCount(expressions.length),
+      children: createRsxExpressionPanelExpressionSectionNodes(
+        files,
+        expressions,
+        instanceGroups,
+        defaultDebugHooks,
+        customDebugHooks,
       ),
-      children: files.map(createRsxExpressionPanelFileNode),
     },
     {
       key: 'root:models',
       label: 'Models',
       kind: 'section',
       description: formatModelCount(models.length),
-      children: models.map(createRsxExpressionPanelModelNode),
+      children: [...models]
+        .sort(compareRsxExpressionPanelLabeledItems)
+        .map(createRsxExpressionPanelModelNode),
+    },
+  ];
+}
+
+function prefixRsxExpressionPanelStructuralKeys(
+  nodes: readonly IRsxExpressionPanelTreeNode[],
+  prefix: string,
+): IRsxExpressionPanelTreeNode[] {
+  return nodes.map((node) => ({
+    ...node,
+    key: shouldPrefixRsxExpressionPanelKey(node.key)
+      ? `${prefix}:${node.key}`
+      : node.key,
+    children: node.children
+      ? prefixRsxExpressionPanelStructuralKeys(node.children, prefix)
+      : undefined,
+  }));
+}
+
+function shouldPrefixRsxExpressionPanelKey(key: string): boolean {
+  return (
+    key.startsWith('root:') ||
+    key.startsWith('expressions:') ||
+    key.startsWith('hooks:')
+  );
+}
+
+function createRsxExpressionPanelExpressionSectionNodes(
+  files: readonly IRsxExpressionTreeFile[],
+  expressions: readonly IRsxExpressionTreeExpression[],
+  instanceGroups: readonly IRsxExpressionTreeExpressionInstanceGroup[],
+  defaultDebugHooks: ReadonlyMap<
+    string,
+    readonly IRsxExpressionTreeDebugHook[]
+  >,
+  customDebugHooks: readonly IRsxDebugChangeHookCandidate[],
+): IRsxExpressionPanelTreeNode[] {
+  const lazyGroups = new Map<string, IRsxExpressionTreeExpression[]>();
+  const defaultLazy: IRsxExpressionTreeExpression[] = [];
+  for (const expression of expressions) {
+    const lazyGroup = getRsxExpressionLazyGroupName(expression);
+    if (lazyGroup) {
+      const grouped = lazyGroups.get(lazyGroup) ?? [];
+      grouped.push(expression);
+      lazyGroups.set(lazyGroup, grouped);
+    } else if (expression.expression.lazy) {
+      defaultLazy.push(expression);
+    }
+  }
+
+  return [
+    createRsxExpressionPanelCustomHooksNode(customDebugHooks),
+    {
+      key: 'expressions:definitions',
+      label: 'Definitions',
+      kind: 'expressionGroup',
+      description: formatExpressionCount(expressions.length),
+      children: [
+        createRsxExpressionPanelHooksNode({
+          key: 'hooks:definitions',
+          label: 'Assigned hooks',
+          scope: 'group',
+          customHooks: customDebugHooks,
+          assignments: expressions
+            .flatMap((expression) =>
+              (defaultDebugHooks.get(expression.key) ?? []).map((hook) => ({
+                hook,
+                node: createRsxExpressionPanelHookAssignmentExpressionNode(
+                  expression,
+                ),
+              })),
+            )
+            .filter(
+              (
+                assignment,
+              ): assignment is {
+                hook: IRsxExpressionTreeDebugHook;
+                node: IRsxExpressionPanelTreeNode;
+              } => assignment.hook !== undefined,
+            ),
+        }),
+        ...[...files]
+          .sort(compareRsxExpressionPanelLabeledItems)
+          .map((file) => createRsxExpressionPanelFileNode(file)),
+      ],
     },
     {
-      key: 'root:instances',
-      label: 'Expression instances',
-      kind: 'section',
+      key: 'expressions:instances',
+      label: 'Instances',
+      kind: 'expressionGroup',
       description: formatInstanceCount(
         instanceGroups.reduce(
           (count, group) => count + group.instances.length,
           0,
         ),
       ),
-      children: instanceGroups.map(createRsxExpressionPanelInstanceGroupNode),
+      children: [
+        createRsxExpressionPanelHooksNode({
+          key: 'hooks:instances',
+          label: 'Assigned hooks',
+          scope: 'instance',
+          customHooks: customDebugHooks,
+          assignments: instanceGroups.flatMap((group) =>
+            group.instances
+              .flatMap((instance) =>
+                (instance.debugHooks ?? [])
+                  .filter((hook) => hook.scope === 'instance')
+                  .map((hook) => ({
+                    hook,
+                    node: createRsxExpressionPanelHookAssignmentInstanceNode(
+                      instance,
+                    ),
+                  })),
+              )
+              .filter(
+                (
+                  assignment,
+                ): assignment is {
+                  hook: IRsxExpressionTreeDebugHook;
+                  node: IRsxExpressionPanelTreeNode;
+                } => assignment.hook !== undefined,
+              ),
+          ),
+        }),
+        ...[...instanceGroups]
+          .sort((left, right) =>
+            compareRsxExpressionPanelExpressionNames(
+              left.expression,
+              right.expression,
+            ),
+          )
+          .map(createRsxExpressionPanelInstanceGroupNode),
+      ],
     },
+    createRsxExpressionPanelOptionGroupNode({
+      key: 'expressions:eager',
+      label: 'Eager',
+      expressions: expressions.filter(
+        (expression) =>
+          !expression.expression.lazy && !expression.expression.lazyGroup,
+      ),
+      dropAction: { option: 'lazy', value: 'false' },
+      defaultDebugHooks,
+    }),
+    {
+      key: 'expressions:lazy',
+      label: 'Lazy',
+      kind: 'expressionGroup',
+      description: formatExpressionCount(
+        defaultLazy.length +
+          [...lazyGroups.values()].reduce(
+            (count, group) => count + group.length,
+            0,
+          ),
+      ),
+      children: [
+        createRsxExpressionPanelOptionGroupNode({
+          key: 'expressions:lazy:default',
+          label: 'Default',
+          expressions: defaultLazy,
+          dropAction: {
+            option: 'lazy',
+            value: 'true',
+            clearLazyGroup: true,
+          },
+          deleteOptionAction: { option: 'lazy', remove: true },
+          defaultDebugHooks,
+        }),
+        ...[...lazyGroups.entries()]
+          .sort(([left], [right]) => left.localeCompare(right))
+          .map(([lazyGroup, groupExpressions]) =>
+            createRsxExpressionPanelOptionGroupNode({
+              key: `expressions:lazyGroup:${encodeURIComponent(lazyGroup)}`,
+              label: lazyGroup,
+              expressions: groupExpressions,
+              dropAction: { option: 'lazyGroup', value: lazyGroup },
+              deleteOptionAction: { option: 'lazyGroup', remove: true },
+              defaultDebugHooks,
+            }),
+          ),
+      ],
+    },
+    createRsxExpressionPanelOptionGroupNode({
+      key: 'expressions:compiled',
+      label: 'Compiled',
+      expressions: expressions.filter(
+        (expression) => expression.expression.compiled,
+      ),
+      dropAction: { option: 'compiled', value: 'true' },
+      deleteOptionAction: { option: 'compiled', remove: true },
+      defaultDebugHooks,
+    }),
+    createRsxExpressionPanelOptionGroupNode({
+      key: 'expressions:preparsed',
+      label: 'Preparsed',
+      expressions: expressions.filter(
+        (expression) => expression.expression.preparse,
+      ),
+      dropAction: { option: 'preparse', value: 'true' },
+      deleteOptionAction: { option: 'preparse', remove: true },
+      defaultDebugHooks,
+    }),
   ];
+}
+
+function getRsxExpressionLazyGroupName(
+  expression: IRsxExpressionTreeExpression,
+): string {
+  const lazyGroup = expression.expression.lazyGroup;
+  if (typeof lazyGroup === 'string') {
+    return lazyGroup.trim();
+  }
+  if (
+    typeof lazyGroup === 'object' &&
+    lazyGroup !== null &&
+    'value' in lazyGroup &&
+    typeof lazyGroup.value === 'string'
+  ) {
+    return lazyGroup.value.trim();
+  }
+  return '';
+}
+
+function createRsxExpressionPanelOptionGroupNode(args: {
+  readonly key: string;
+  readonly label: string;
+  readonly expressions: readonly IRsxExpressionTreeExpression[];
+  readonly dropAction: IRsxExpressionPanelDropAction;
+  readonly deleteOptionAction?: IRsxCompilerOptionCommandAction;
+  readonly defaultDebugHooks: ReadonlyMap<
+    string,
+    readonly IRsxExpressionTreeDebugHook[]
+  >;
+}): IRsxExpressionPanelTreeNode {
+  return {
+    key: args.key,
+    label: args.label,
+    kind: 'expressionOptionGroup',
+    description: formatExpressionCount(args.expressions.length),
+    dropAction: args.dropAction,
+    deleteOptionAction: args.deleteOptionAction,
+    canDeleteOptionAll:
+      args.deleteOptionAction !== undefined && args.expressions.length > 0,
+    children: [...args.expressions]
+      .sort(compareRsxExpressionPanelExpressionNames)
+      .map((expression) =>
+        createRsxExpressionPanelExpressionReferenceNode(expression, args.key),
+      ),
+  };
+}
+
+function collectRsxExpressionPanelDropActionKeys(
+  nodes: readonly IRsxExpressionPanelTreeNode[],
+): Set<string> {
+  const keys = new Set<string>();
+  for (const node of nodes) {
+    if (node.dropAction) {
+      keys.add(getRsxExpressionPanelDropActionKey(node.dropAction));
+    }
+    if (node.children) {
+      for (const key of collectRsxExpressionPanelDropActionKeys(
+        node.children,
+      )) {
+        keys.add(key);
+      }
+    }
+  }
+  return keys;
+}
+
+function collectRsxExpressionPanelNodeExpressionKeys(
+  node: IRsxExpressionPanelTreeNode,
+): string[] {
+  const keys: string[] = [];
+  const visit = (current: IRsxExpressionPanelTreeNode): void => {
+    const actionKey = current.actionKey ?? current.key;
+    if (isRsxPanelExpressionDragKey(actionKey) && !keys.includes(actionKey)) {
+      keys.push(actionKey);
+    }
+    for (const child of current.children ?? []) {
+      visit(child);
+    }
+  };
+  visit(node);
+  return keys;
+}
+
+function findRsxExpressionPanelNode(
+  nodes: readonly IRsxExpressionPanelTreeNode[],
+  key: string,
+): IRsxExpressionPanelTreeNode | undefined {
+  const normalizedKey = String(key);
+  for (const node of nodes) {
+    if (node.key === normalizedKey || node.actionKey === normalizedKey) {
+      return node;
+    }
+    const child = node.children
+      ? findRsxExpressionPanelNode(node.children, normalizedKey)
+      : undefined;
+    if (child) {
+      return child;
+    }
+  }
+  return undefined;
+}
+
+function getRsxExpressionPanelDropActionKey(
+  action: IRsxCompilerOptionCommandAction | IRsxExpressionPanelDropAction,
+): string {
+  return JSON.stringify({
+    option: action.option,
+    value: action.value ?? '',
+    clearLazyGroup: action.clearLazyGroup === true,
+  });
+}
+
+function isRsxPanelExpressionDragKey(key: string): boolean {
+  return key.startsWith('expression:');
+}
+
+function isRsxPanelDebugHookDragKey(key: string): boolean {
+  return key.startsWith('expression:') || key.startsWith('instance:');
+}
+
+function getRsxExpressionPanelExpressionKeyFromPanelKey(key: string): string {
+  return key.slice('expression:'.length).split('::scope:', 1)[0] ?? '';
+}
+
+function compareRsxExpressionPanelLabeledItems(
+  left: { readonly label: string; readonly key?: string },
+  right: { readonly label: string; readonly key?: string },
+): number {
+  return (
+    left.label.localeCompare(right.label) ||
+    (left.key ?? '').localeCompare(right.key ?? '')
+  );
+}
+
+function compareRsxExpressionPanelExpressionNames(
+  left: IRsxExpressionTreeExpression,
+  right: IRsxExpressionTreeExpression,
+): number {
+  return (
+    left.exportName.localeCompare(right.exportName) ||
+    left.relativePath.localeCompare(right.relativePath) ||
+    left.key.localeCompare(right.key)
+  );
+}
+
+async function getRsxExpressionPanelDefaultDebugHooks(
+  files: readonly IRsxExpressionTreeFile[],
+): Promise<ReadonlyMap<string, readonly IRsxExpressionTreeDebugHook[]>> {
+  const hooks = new Map<string, readonly IRsxExpressionTreeDebugHook[]>();
+  await Promise.all(
+    files.flatMap((file) =>
+      file.expressions.map(async (expression) => {
+        const debugHookConfig = await getRsxDebugHooksByExpressionForUri(
+          expression.uri,
+        );
+        const expressionHooks = debugHookConfig.get(
+          expression.exportName,
+        )?.group;
+        if (expressionHooks && expressionHooks.length > 0) {
+          hooks.set(expression.key, expressionHooks);
+        }
+      }),
+    ),
+  );
+  return hooks;
+}
+
+async function getRsxExpressionPanelCustomDebugHooks(
+  files: readonly IRsxExpressionTreeFile[],
+): Promise<readonly IRsxDebugChangeHookCandidate[]> {
+  const workspaceRoots = new Map<string, vscode.Uri>();
+  for (const folder of vscode.workspace.workspaceFolders ?? []) {
+    workspaceRoots.set(path.resolve(folder.uri.fsPath), folder.uri);
+  }
+  for (const file of files) {
+    const root = resolveRsxDebugHookProjectRoot(file.uri);
+    if (root) {
+      workspaceRoots.set(path.resolve(root.fsPath), root);
+    }
+  }
+  const standardExports = new Set(
+    Object.values(RSX_STANDARD_DEBUG_HOOKS).map((hook) => hook.exportName),
+  );
+  const candidates = (
+    await Promise.all(
+      [...workspaceRoots.values()].map((root) =>
+        findRsxDebugChangeHookCandidates(root),
+      ),
+    )
+  )
+    .flat()
+    .filter((candidate) => !standardExports.has(candidate.exportName));
+  const seen = new Set<string>();
+  return candidates
+    .filter((candidate) => {
+      const key = `${candidate.uri.toString()}\0${candidate.exportName}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    })
+    .sort(compareRsxDebugChangeHookCandidates);
+}
+
+function compareRsxDebugChangeHookCandidates(
+  left: IRsxDebugChangeHookCandidate,
+  right: IRsxDebugChangeHookCandidate,
+): number {
+  return (
+    left.exportName.localeCompare(right.exportName) ||
+    left.uri.toString().localeCompare(right.uri.toString())
+  );
+}
+
+function getRsxExpressionPanelHookProperties(
+  hook: IRsxExpressionTreeDebugHook | undefined,
+  anchorUri: vscode.Uri,
+): Pick<
+  IRsxExpressionPanelTreeNode,
+  | 'hookState'
+  | 'hookLabel'
+  | 'hookModuleSpecifier'
+  | 'hookExportName'
+  | 'hookAnchorUri'
+> {
+  return {
+    hookState: hook ? (hook.enabled ? 'enabled' : 'disabled') : undefined,
+    hookLabel: hook?.label,
+    hookModuleSpecifier: hook?.moduleSpecifier,
+    hookExportName: hook?.exportName,
+    hookAnchorUri: hook ? anchorUri.toString() : undefined,
+  };
+}
+
+function getRsxExpressionPanelHookIdentity(
+  hook: IRsxExpressionTreeDebugHook,
+): string {
+  return [
+    hook.moduleSpecifier,
+    hook.exportName ?? '',
+    hook.scope,
+    hook.enabled ? 'enabled' : 'disabled',
+  ].join('\0');
+}
+
+function createRsxExpressionPanelCustomHooksNode(
+  customHooks: readonly IRsxDebugChangeHookCandidate[],
+): IRsxExpressionPanelTreeNode {
+  return {
+    key: 'customHooks',
+    label: 'Hooks',
+    kind: 'customHookGroup',
+    description: formatRsxExpressionPanelHookCount(customHooks.length),
+    canDeleteCustomHooks: customHooks.length > 0,
+    children: customHooks.map((hook) =>
+      createRsxExpressionPanelCustomHookNode({
+        key: `customHook:${hook.uri.toString()}:${hook.exportName}`,
+        hook,
+      }),
+    ),
+  };
+}
+
+function createRsxExpressionPanelHooksNode(args: {
+  readonly key: string;
+  readonly label: string;
+  readonly scope: 'group' | 'instance';
+  readonly customHooks: readonly IRsxDebugChangeHookCandidate[];
+  readonly assignments: readonly {
+    readonly hook: IRsxExpressionTreeDebugHook;
+    readonly node: IRsxExpressionPanelTreeNode;
+  }[];
+}): IRsxExpressionPanelTreeNode {
+  const groups = new Map<
+    string,
+    {
+      hook: IRsxExpressionTreeDebugHook;
+      nodes: IRsxExpressionPanelTreeNode[];
+    }
+  >();
+  for (const assignment of args.assignments) {
+    const identity = getRsxExpressionPanelHookIdentity(assignment.hook);
+    const group = groups.get(identity) ?? {
+      hook: assignment.hook,
+      nodes: [],
+    };
+    group.nodes.push(assignment.node);
+    groups.set(identity, group);
+  }
+  const groupedAssignments = [...groups.values()];
+  const standardGroups = new Map<
+    IRsxStandardDebugHookKind,
+    Array<{
+      hook: IRsxExpressionTreeDebugHook;
+      nodes: IRsxExpressionPanelTreeNode[];
+    }>
+  >();
+  for (const group of groupedAssignments) {
+    const standardHook = getRsxStandardDebugHookKindForAssignment(group.hook);
+    if (standardHook) {
+      const standardAssignments = standardGroups.get(standardHook) ?? [];
+      standardAssignments.push(group);
+      standardGroups.set(standardHook, standardAssignments);
+    }
+  }
+  const children = groupedAssignments
+    .filter(({ hook }) => !getRsxStandardDebugHookKindForAssignment(hook))
+    .sort((left, right) =>
+      compareRsxExpressionPanelLabeledItems(
+        {
+          label: left.hook.exportName ?? 'Debug hook',
+          key: left.hook.moduleSpecifier,
+        },
+        {
+          label: right.hook.exportName ?? 'Debug hook',
+          key: right.hook.moduleSpecifier,
+        },
+      ),
+    )
+    .map(({ hook, nodes }, index) =>
+      createRsxExpressionPanelHookNode({
+        targetKey: `${args.key}:${index}`,
+        hook,
+        anchorUri:
+          nodes
+            .map((node) => (node.uri ? vscode.Uri.parse(node.uri) : undefined))
+            .find((uri): uri is vscode.Uri => uri !== undefined) ??
+          vscode.Uri.file(''),
+        children: nodes.sort(compareRsxExpressionPanelLabeledItems),
+      }),
+    );
+  const standardChildren = (
+    Object.entries(RSX_STANDARD_DEBUG_HOOKS) as Array<
+      [
+        IRsxStandardDebugHookKind,
+        (typeof RSX_STANDARD_DEBUG_HOOKS)[IRsxStandardDebugHookKind],
+      ]
+    >
+  ).map(([standardHook, hook]) => {
+    const assignments = standardGroups.get(standardHook) ?? [];
+    return createRsxExpressionPanelStandardHookNode({
+      key: `${args.key}:standard:${standardHook}`,
+      scope: args.scope,
+      standardHook,
+      label: hook.label,
+      description: hook.description,
+      assignments,
+    });
+  });
+  const customChildren = args.customHooks.map((hook) =>
+    createRsxExpressionPanelCustomHookNode({
+      key: `${args.key}:custom:${hook.uri.toString()}:${hook.exportName}`,
+      hook,
+      scope: args.scope,
+    }),
+  );
+  return {
+    key: args.key,
+    label: args.label,
+    kind: 'hookGroup',
+    description: formatRsxExpressionPanelHookCount(
+      standardChildren.length + customChildren.length + children.length,
+    ),
+    hookDropAction: { scope: args.scope },
+    canUnassignHookAll: children.length > 0,
+    children: [...standardChildren, ...customChildren, ...children],
+  };
+}
+
+function formatRsxExpressionPanelHookCount(count: number): string {
+  return `${count} hook${count === 1 ? '' : 's'}`;
+}
+
+function createRsxExpressionPanelHookNode(args: {
+  readonly targetKey: string;
+  readonly hook: IRsxExpressionTreeDebugHook;
+  readonly anchorUri: vscode.Uri;
+  readonly children?: readonly IRsxExpressionPanelTreeNode[];
+}): IRsxExpressionPanelTreeNode {
+  return {
+    key: `hook:${encodeURIComponent(args.targetKey)}`,
+    actionKey: args.targetKey,
+    label: args.hook.exportName ?? 'Debug hook',
+    kind: 'hookConfig',
+    tooltip: args.hook.moduleSpecifier,
+    hookDropAction: {
+      scope: args.hook.scope,
+      moduleSpecifier: args.hook.moduleSpecifier,
+      exportName: args.hook.exportName,
+      enabled: args.hook.enabled,
+      standardHook: args.hook.standardHook,
+    },
+    ...getRsxExpressionPanelHookProperties(args.hook, args.anchorUri),
+    standardHook: args.hook.standardHook,
+    canDeleteHook: false,
+    canUnassignHookAll: Boolean(args.children && args.children.length > 0),
+    canEnableHookAssignments: Boolean(
+      args.children?.some((child) => child.hookState === 'disabled'),
+    ),
+    canDisableHookAssignments: Boolean(
+      args.children?.some((child) => child.hookState === 'enabled'),
+    ),
+    children: args.children?.map((child) =>
+      withRsxExpressionPanelHookAssignmentAction(child, {
+        hookDropAction: {
+          scope: args.hook.scope,
+          moduleSpecifier: args.hook.moduleSpecifier,
+          exportName: args.hook.exportName,
+          enabled: args.hook.enabled,
+          standardHook: args.hook.standardHook,
+        },
+        targetKey: child.actionKey ?? child.key,
+        visualKeyScope: args.targetKey,
+      }),
+    ),
+  };
+}
+
+function withRsxExpressionPanelHookAssignmentAction(
+  node: IRsxExpressionPanelTreeNode,
+  args: {
+    readonly hookDropAction: IRsxExpressionPanelHookDropAction;
+    readonly targetKey: string;
+    readonly visualKeyScope: string;
+  },
+): IRsxExpressionPanelTreeNode {
+  const hookState =
+    args.hookDropAction.enabled === false ? 'disabled' : 'enabled';
+  return {
+    ...node,
+    key: getRsxExpressionPanelHookAssignmentVisualKey(
+      args.visualKeyScope,
+      node.key,
+    ),
+    hookDropAction: args.hookDropAction,
+    hookAssignmentTargetKey: args.targetKey,
+    hookState,
+    children: node.children?.map((child) =>
+      withRsxExpressionPanelHookAssignmentAction(child, args),
+    ),
+  };
+}
+
+function createRsxExpressionPanelStandardHookNode(args: {
+  readonly key: string;
+  readonly scope: 'group' | 'instance';
+  readonly standardHook: IRsxStandardDebugHookKind;
+  readonly label: string;
+  readonly description: string;
+  readonly assignments?: readonly {
+    readonly hook: IRsxExpressionTreeDebugHook;
+    readonly nodes: readonly IRsxExpressionPanelTreeNode[];
+  }[];
+}): IRsxExpressionPanelTreeNode {
+  const standardHook = RSX_STANDARD_DEBUG_HOOKS[args.standardHook];
+  const hookDropAction: IRsxExpressionPanelHookDropAction = {
+    scope: args.scope,
+    exportName: standardHook.exportName,
+    standardHook: args.standardHook,
+    enabled: true,
+  };
+  const children = (args.assignments ?? [])
+    .flatMap((assignment) =>
+      assignment.nodes.map((node) =>
+        withRsxExpressionPanelHookAssignmentAction(node, {
+          hookDropAction: {
+            scope: args.scope,
+            moduleSpecifier: assignment.hook.moduleSpecifier,
+            exportName: assignment.hook.exportName ?? standardHook.exportName,
+            standardHook: args.standardHook,
+            enabled: assignment.hook.enabled,
+          },
+          targetKey: node.actionKey ?? node.key,
+          visualKeyScope: args.key,
+        }),
+      ),
+    )
+    .sort(compareRsxExpressionPanelLabeledItems);
+  const firstHook = args.assignments?.[0]?.hook;
+  const firstAnchorUri =
+    args.assignments
+      ?.flatMap((assignment) => assignment.nodes)
+      .map((node) => (node.uri ? vscode.Uri.parse(node.uri) : undefined))
+      .find((uri): uri is vscode.Uri => uri !== undefined) ??
+    vscode.Uri.file('');
+  const aggregateHook =
+    firstHook && children.length > 0
+      ? {
+          ...firstHook,
+          enabled: children.some((child) => child.hookState === 'enabled'),
+        }
+      : firstHook;
+  return {
+    key: args.key,
+    label: args.label,
+    kind: 'hookConfig',
+    description: args.description,
+    standardHook: args.standardHook,
+    canDeleteHook: false,
+    hookDropAction,
+    ...getRsxExpressionPanelHookProperties(aggregateHook, firstAnchorUri),
+    canUnassignHookAll: children.length > 0,
+    canEnableHookAssignments: children.some(
+      (child) => child.hookState === 'disabled',
+    ),
+    canDisableHookAssignments: children.some(
+      (child) => child.hookState === 'enabled',
+    ),
+    children,
+  };
+}
+
+function getRsxExpressionPanelHookAssignmentVisualKey(
+  hookScope: string,
+  key: string,
+): string {
+  return `hookAssignment:${encodeURIComponent(hookScope)}:${key}`;
+}
+
+function getRsxStandardDebugHookKindForAssignment(
+  hook: IRsxExpressionTreeDebugHook,
+): IRsxStandardDebugHookKind | undefined {
+  if (hook.standardHook && hook.standardHook in RSX_STANDARD_DEBUG_HOOKS) {
+    return hook.standardHook;
+  }
+  return (
+    Object.entries(RSX_STANDARD_DEBUG_HOOKS) as Array<
+      [
+        IRsxStandardDebugHookKind,
+        (typeof RSX_STANDARD_DEBUG_HOOKS)[IRsxStandardDebugHookKind],
+      ]
+    >
+  ).find(
+    ([, standardHook]) => standardHook.exportName === hook.exportName,
+  )?.[0];
+}
+
+function createRsxExpressionPanelCustomHookNode(args: {
+  readonly key: string;
+  readonly hook: IRsxDebugChangeHookCandidate;
+  readonly scope?: 'group' | 'instance';
+}): IRsxExpressionPanelTreeNode {
+  return {
+    key: args.key,
+    label: args.hook.exportName,
+    kind: 'customHook',
+    tooltip: args.hook.description,
+    uri: args.hook.uri.toString(),
+    start: args.hook.start,
+    end: args.hook.end,
+    canDeleteCustomHooks: true,
+    hookDropAction: {
+      scope: args.scope,
+      moduleSpecifier: args.hook.moduleSpecifier,
+      hookUri: args.hook.uri.toString(),
+      exportName: args.hook.exportName,
+      enabled: true,
+    },
+  };
+}
+
+function createRsxExpressionPanelHookAssignmentExpressionNode(
+  expression: IRsxExpressionTreeExpression,
+): IRsxExpressionPanelTreeNode {
+  return {
+    key: `hookAssignment:expression:${expression.key}`,
+    actionKey: `expression:${expression.key}`,
+    label: expression.exportName,
+    kind: 'expression',
+    description: formatRsxExpressionPanelExpressionDescription(expression),
+    tooltip: expression.relativePath,
+    preparse: expression.expression.preparse,
+    compiled: expression.expression.compiled,
+    lazy:
+      expression.expression.lazy === true && !expression.expression.lazyGroup,
+    lazyGroup: Boolean(expression.expression.lazyGroup),
+    uri: expression.uri.toString(),
+    start: expression.start,
+    end: expression.end,
+  };
+}
+
+function createRsxExpressionPanelHookAssignmentInstanceNode(
+  instance: IRsxExpressionTreeExpressionInstance,
+): IRsxExpressionPanelTreeNode {
+  return createRsxExpressionPanelInstanceNode(instance, {
+    keyPrefix: 'hookAssignment:instance',
+    actionKey: `instance:${instance.key}`,
+    includeDefinitionChild: true,
+  });
 }
 
 function createRsxExpressionPanelInstanceGroupNode(
   group: IRsxExpressionTreeExpressionInstanceGroup,
 ): IRsxExpressionPanelTreeNode {
-  const hookedCount = group.instances.filter(
-    (instance) => instance.debugHook?.enabled,
-  ).length;
-  const firstDebugHook = group.instances.find(
-    (instance) => instance.debugHook,
-  )?.debugHook;
   return {
     key: `instanceGroup:${group.expression.key}`,
-    label: group.expression.exportName,
+    label: 'Definition',
     kind: 'instanceGroup',
-    description: formatInstanceCount(group.instances.length),
-    badge: firstDebugHook
-      ? firstDebugHook.enabled
-        ? 'HOOK'
-        : 'OFF'
-      : undefined,
-    badgeTitle: firstDebugHook
-      ? `${firstDebugHook.enabled ? hookedCount : 0} hooked: ${firstDebugHook.label}${firstDebugHook.enabled ? '' : ' (disabled)'}`
-      : undefined,
-    hookState: firstDebugHook
-      ? firstDebugHook.enabled
-        ? 'enabled'
-        : 'disabled'
-      : undefined,
+    description: [
+      group.expression.exportName,
+      formatInstanceCount(group.instances.length),
+    ].join(' · '),
+    tooltip: group.expression.relativePath,
     uri: group.expression.uri.toString(),
     start: group.expression.start,
     end: group.expression.end,
-    children: group.instances.map(createRsxExpressionPanelInstanceNode),
+    children: [...group.instances]
+      .sort(compareRsxExpressionInstances)
+      .map(createRsxExpressionPanelInstanceNode),
   };
 }
 
 function createRsxExpressionPanelInstanceNode(
   instance: IRsxExpressionTreeExpressionInstance,
+  options: {
+    readonly keyPrefix?: string;
+    readonly actionKey?: string;
+    readonly includeDefinitionChild?: boolean;
+  } = {},
 ): IRsxExpressionPanelTreeNode {
+  const key = `${options.keyPrefix ?? 'instance'}:${instance.key}`;
   return {
-    key: `instance:${instance.key}`,
-    label: `${path.basename(instance.relativePath)}:${instance.line + 1}`,
+    key,
+    actionKey: options.actionKey ?? `instance:${instance.key}`,
+    label: formatRsxExpressionInstancePanelLabel(instance),
     kind: 'instance',
-    description: [
-      instance.debugHook
-        ? `${instance.debugHook.enabled ? 'hook' : 'hook disabled'}: ${instance.debugHook.label}`
-        : undefined,
-      instance.relativePath,
-    ]
-      .filter(Boolean)
-      .join(' · '),
-    badge: instance.debugHook
-      ? instance.debugHook.enabled
-        ? 'HOOK'
-        : 'OFF'
-      : undefined,
-    badgeTitle: instance.debugHook
-      ? `RS-X debug hook${instance.debugHook.enabled ? '' : ' disabled'}: ${instance.debugHook.label}`
-      : undefined,
-    hookState: instance.debugHook
-      ? instance.debugHook.enabled
-        ? 'enabled'
-        : 'disabled'
-      : undefined,
+    description: instance.expression.exportName,
+    tooltip: `${instance.relativePath}:${instance.line + 1}`,
     uri: instance.uri.toString(),
     start: instance.start,
     end: instance.end,
+    children:
+      options.includeDefinitionChild === true
+        ? [createRsxExpressionPanelInstanceDefinitionNode(instance, key)]
+        : undefined,
   };
+}
+
+function createRsxExpressionPanelInstanceDefinitionNode(
+  instance: IRsxExpressionTreeExpressionInstance,
+  parentKey: string,
+): IRsxExpressionPanelTreeNode {
+  return {
+    key: `${parentKey}:definition`,
+    actionKey: `expression:${instance.expression.key}`,
+    label: 'Definition',
+    kind: 'expression',
+    description: formatRsxExpressionPanelExpressionDescription(
+      instance.expression,
+    ),
+    tooltip: instance.expression.relativePath,
+    preparse: instance.expression.expression.preparse,
+    compiled: instance.expression.expression.compiled,
+    lazy:
+      instance.expression.expression.lazy === true &&
+      !instance.expression.expression.lazyGroup,
+    lazyGroup: Boolean(instance.expression.expression.lazyGroup),
+    uri: instance.expression.uri.toString(),
+    start: instance.expression.start,
+    end: instance.expression.end,
+  };
+}
+
+function formatRsxExpressionInstancePanelLabel(
+  instance: IRsxExpressionTreeExpressionInstance,
+): string {
+  return `${path.basename(instance.relativePath)}:${instance.line + 1}`;
 }
 
 function createRsxExpressionPanelFileNode(
@@ -2384,42 +4943,87 @@ function createRsxExpressionPanelFileNode(
     label: file.label,
     kind: 'file',
     description: formatExpressionCount(file.expressions.length),
-    children: file.expressions.map(createRsxExpressionPanelExpressionNode),
+    tooltip: file.relativePath,
+    uri: file.uri.toString(),
+    children: [...file.expressions]
+      .sort(compareRsxExpressionPanelExpressionNames)
+      .map((expression) => createRsxExpressionPanelExpressionNode(expression)),
   };
 }
 
 function createRsxExpressionPanelExpressionNode(
   expression: IRsxExpressionTreeExpression,
 ): IRsxExpressionPanelTreeNode {
+  const key = `expression:${expression.key}`;
   return {
-    key: `expression:${expression.key}`,
+    key,
     label: expression.exportName,
     kind: 'expression',
-    description: [
-      expression.expression.returnTypeText,
-      expression.dependencies.length > 0
-        ? formatDependencyCount(expression.dependencies.length)
-        : undefined,
-    ]
-      .filter(Boolean)
-      .join(' · '),
+    description: formatRsxExpressionPanelExpressionDescription(expression),
+    preparse: expression.expression.preparse,
+    compiled: expression.expression.compiled,
+    lazy:
+      expression.expression.lazy === true && !expression.expression.lazyGroup,
+    lazyGroup: Boolean(expression.expression.lazyGroup),
     uri: expression.uri.toString(),
     start: expression.start,
     end: expression.end,
-    children: expression.dependencies.map((dependency) => ({
-      key: `dependency:${expression.key}:${dependency.targetKey}`,
-      label: dependency.targetExportName,
-      kind: 'dependency',
-      description:
-        dependency.matchKind === 'modelFieldExpressionType' ||
-        dependency.matchKind === 'exportValueName'
-          ? `via ${dependency.identifier}`
-          : undefined,
-      uri: dependency.targetUri.toString(),
-      start: dependency.targetStart,
-      end: dependency.targetEnd,
-    })),
+    children: [...expression.dependencies]
+      .sort(
+        (left, right) =>
+          left.targetExportName.localeCompare(right.targetExportName) ||
+          left.identifier.localeCompare(right.identifier) ||
+          left.targetKey.localeCompare(right.targetKey),
+      )
+      .map((dependency) => ({
+        key: `dependency:${expression.key}:${dependency.targetKey}`,
+        label: dependency.targetExportName,
+        kind: 'dependency',
+        description:
+          dependency.matchKind === 'modelFieldExpressionType' ||
+          dependency.matchKind === 'exportValueName'
+            ? `via ${dependency.identifier}`
+            : undefined,
+        uri: dependency.targetUri.toString(),
+        start: dependency.targetStart,
+        end: dependency.targetEnd,
+      })),
   };
+}
+
+function createRsxExpressionPanelExpressionReferenceNode(
+  expression: IRsxExpressionTreeExpression,
+  scopeKey: string,
+): IRsxExpressionPanelTreeNode {
+  const key = `expression:${expression.key}::scope:${encodeURIComponent(scopeKey)}`;
+  return {
+    key,
+    label: expression.exportName,
+    kind: 'expression',
+    description: formatRsxExpressionPanelExpressionDescription(expression),
+    tooltip: expression.relativePath,
+    preparse: expression.expression.preparse,
+    compiled: expression.expression.compiled,
+    lazy:
+      expression.expression.lazy === true && !expression.expression.lazyGroup,
+    lazyGroup: Boolean(expression.expression.lazyGroup),
+    uri: expression.uri.toString(),
+    start: expression.start,
+    end: expression.end,
+  };
+}
+
+function formatRsxExpressionPanelExpressionDescription(
+  expression: IRsxExpressionTreeExpression,
+): string {
+  return [
+    expression.expression.returnTypeText,
+    expression.dependencies.length > 0
+      ? formatDependencyCount(expression.dependencies.length)
+      : undefined,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 }
 
 function createRsxExpressionPanelModelNode(
@@ -2436,7 +5040,9 @@ function createRsxExpressionPanelModelNode(
     uri: model.uri.toString(),
     start: model.start,
     end: model.end,
-    children: model.fields.map(createRsxExpressionPanelFieldNode),
+    children: [...model.fields]
+      .sort(compareRsxExpressionPanelLabeledItems)
+      .map(createRsxExpressionPanelFieldNode),
   };
 }
 
@@ -2459,16 +5065,31 @@ function createRsxExpressionPanelFieldNode(
     start: field.start,
     end: field.end,
     children: [
-      ...field.children.map(createRsxExpressionPanelFieldNode),
-      ...field.expressionUses.map((use) => ({
-        key: `fieldUse:${use.key}`,
-        label: use.expression.exportName,
-        kind: 'expression',
-        description: use.fieldPath.join('.'),
-        uri: use.uri.toString(),
-        start: use.start,
-        end: use.end,
-      })),
+      ...[...field.children]
+        .sort(compareRsxExpressionPanelLabeledItems)
+        .map(createRsxExpressionPanelFieldNode),
+      ...[...field.expressionUses]
+        .sort((left, right) =>
+          compareRsxExpressionPanelExpressionNames(
+            left.expression,
+            right.expression,
+          ),
+        )
+        .map((use) => ({
+          key: `fieldUse:${use.key}`,
+          label: use.expression.exportName,
+          kind: 'expression',
+          tooltip: `${use.expression.relativePath} · ${use.fieldPath.join('.')}`,
+          preparse: use.expression.expression.preparse,
+          compiled: use.expression.expression.compiled,
+          lazy:
+            use.expression.expression.lazy === true &&
+            !use.expression.expression.lazyGroup,
+          lazyGroup: Boolean(use.expression.expression.lazyGroup),
+          uri: use.uri.toString(),
+          start: use.start,
+          end: use.end,
+        })),
     ],
   };
 }
@@ -2485,15 +5106,18 @@ function flattenRsxExpressionModelFields(
 function findRsxExpressionPanelActionTarget(
   files: readonly IRsxExpressionTreeFile[],
   models: readonly IRsxExpressionTreeModel[],
+  instanceGroups: readonly IRsxExpressionTreeExpressionInstanceGroup[],
   key: string,
 ):
   | IRsxExpressionTreeExpression
   | IRsxExpressionTreeModel
   | IRsxExpressionTreeModelField
   | IRsxExpressionTreeModelFieldExpressionUse
+  | IRsxExpressionTreeExpressionInstanceGroup
+  | IRsxExpressionTreeExpressionInstance
   | undefined {
   if (key.startsWith('expression:')) {
-    const expressionKey = key.slice('expression:'.length);
+    const expressionKey = getRsxExpressionPanelExpressionKeyFromPanelKey(key);
     return files
       .flatMap((file) => file.expressions)
       .find((expression) => expression.key === expressionKey);
@@ -2517,9 +5141,15 @@ function findRsxExpressionPanelActionTarget(
   }
   if (key.startsWith('instanceGroup:')) {
     const expressionKey = key.slice('instanceGroup:'.length);
-    return files
-      .flatMap((file) => file.expressions)
-      .find((candidate) => candidate.key === expressionKey);
+    return instanceGroups.find(
+      (group) => group.expression.key === expressionKey,
+    );
+  }
+  if (key.startsWith('instance:')) {
+    const instanceKey = key.slice('instance:'.length);
+    return instanceGroups
+      .flatMap((group) => group.instances)
+      .find((instance) => instance.key === instanceKey);
   }
   return undefined;
 }
@@ -2530,7 +5160,12 @@ function findRsxExpressionPanelActionUri(
   instanceGroups: readonly IRsxExpressionTreeExpressionInstanceGroup[],
   key: string,
 ): vscode.Uri | undefined {
-  const target = findRsxExpressionPanelActionTarget(files, models, key);
+  const target = findRsxExpressionPanelActionTarget(
+    files,
+    models,
+    instanceGroups,
+    key,
+  );
   if (target) {
     return target.uri;
   }
@@ -2546,6 +5181,10 @@ function findRsxExpressionPanelActionUri(
       .flatMap((group) => group.instances)
       .find((instance) => instance.key === instanceKey)?.uri;
   }
+  if (key.startsWith('file:')) {
+    const fileUri = key.slice('file:'.length);
+    return files.find((file) => file.uri.toString() === fileUri)?.uri;
+  }
   return undefined;
 }
 
@@ -2555,18 +5194,23 @@ function findRsxExpressionPanelActionExpressionName(
   instanceGroups: readonly IRsxExpressionTreeExpressionInstanceGroup[],
   key: string,
 ): string | undefined {
-  const target = findRsxExpressionPanelActionTarget(files, models, key);
+  const target = findRsxExpressionPanelActionTarget(
+    files,
+    models,
+    instanceGroups,
+    key,
+  );
   if (target?.kind === 'expression') {
     return target.exportName;
   }
   if (target?.kind === 'modelFieldExpression') {
     return target.expression.exportName;
   }
-  if (key.startsWith('instanceGroup:')) {
-    const expressionKey = key.slice('instanceGroup:'.length);
-    return files
-      .flatMap((file) => file.expressions)
-      .find((expression) => expression.key === expressionKey)?.exportName;
+  if (target?.kind === 'expressionInstanceGroup') {
+    return target.expression.exportName;
+  }
+  if (target?.kind === 'expressionInstance') {
+    return target.expression.exportName;
   }
   if (key.startsWith('instance:')) {
     const instanceKey = key.slice('instance:'.length);
@@ -2614,7 +5258,7 @@ function findRsxExpressionPanelActionDebugHookTarget(
 function getRsxExpressionSearchViewHtml(): string {
   const nonce = createWebviewNonce();
   return /* html */ `<!doctype html>
-<html lang="en">
+<html lang="en" data-vscode-context="{&quot;preventDefaultContextMenuItems&quot;:true}">
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
@@ -2622,15 +5266,30 @@ function getRsxExpressionSearchViewHtml(): string {
   <style>
     :root {
       color-scheme: light dark;
+      --rsx-selected-fg: var(--vscode-list-activeSelectionForeground, var(--vscode-list-focusForeground, var(--vscode-button-foreground, var(--vscode-foreground))));
+      --rsx-selected-bg: var(--vscode-list-activeSelectionBackground, var(--vscode-list-focusBackground, var(--vscode-list-inactiveSelectionBackground, var(--vscode-button-background))));
+      --rsx-selected-border: var(--vscode-focusBorder, var(--vscode-list-focusOutline, var(--vscode-contrastActiveBorder)));
+    }
+
+    html,
+    body {
+      min-height: 100%;
+      height: auto;
+      overflow-y: auto;
     }
 
     body {
+      box-sizing: border-box;
       margin: 0;
       padding: 8px;
+      min-height: 100vh;
       color: var(--vscode-foreground);
       background: var(--vscode-sideBar-background);
       font-family: var(--vscode-font-family);
       font-size: var(--vscode-font-size);
+      display: grid;
+      grid-template-rows: auto auto auto auto;
+      align-content: start;
     }
 
     input {
@@ -2656,12 +5315,20 @@ function getRsxExpressionSearchViewHtml(): string {
 
     .results {
       display: grid;
+      align-content: start;
       gap: 2px;
+      min-height: 0;
+      overflow: visible;
+    }
+
+    #hookPickerHost {
+      min-height: max-content;
+      overflow: visible;
     }
 
     .searchRow {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 22px;
+      grid-template-columns: minmax(0, 1fr) auto;
       align-items: stretch;
     }
 
@@ -2671,7 +5338,7 @@ function getRsxExpressionSearchViewHtml(): string {
       gap: 7px;
       width: 100%;
       border: 0;
-      padding: 5px 4px;
+      padding: 5px 6px;
       color: inherit;
       background: transparent;
       text-align: left;
@@ -2707,7 +5374,7 @@ function getRsxExpressionSearchViewHtml(): string {
 
     .treeRow {
       display: grid;
-      grid-template-columns: 18px 18px minmax(0, 1fr);
+      grid-template-columns: 18px 18px minmax(0, 1fr) auto;
       align-items: center;
       min-height: 22px;
       padding-left: calc(var(--depth, 0) * 14px);
@@ -2719,30 +5386,82 @@ function getRsxExpressionSearchViewHtml(): string {
       background: var(--vscode-list-hoverBackground);
     }
 
+    .treeRow.hookGroupRow {
+      min-height: 24px;
+      color: var(--vscode-charts-orange, var(--vscode-textLink-foreground));
+    }
+
+    .treeRow.hookGroupRow .treeOpen {
+      font-weight: 650;
+    }
+
+    .treeRow.hookDisabledRow {
+      color: var(--vscode-descriptionForeground, var(--vscode-foreground));
+      color: color-mix(in srgb, var(--vscode-descriptionForeground) 70%, var(--vscode-editor-background));
+    }
+
+    .treeRow.hookDisabledRow .treeOpen,
+    .treeRow.hookDisabledRow .treeIcon,
+    .treeRow.hookDisabledRow .treeDescription,
+    .treeRow.hookDisabledRow .treeToggle {
+      color: var(--vscode-descriptionForeground, var(--vscode-foreground));
+      color: color-mix(in srgb, var(--vscode-descriptionForeground) 70%, var(--vscode-editor-background));
+    }
+
+    .treeRow.hookDisabledRow .treeIcon {
+      opacity: 0.58;
+    }
+
     .treeNode[data-selected="true"] > .treeRow {
-      color: var(--vscode-list-activeSelectionForeground, var(--vscode-foreground));
-      background: var(--vscode-list-activeSelectionBackground);
+      color: var(--rsx-selected-fg);
+      background: var(--rsx-selected-bg);
+      border-radius: 3px;
+      outline: 1px solid var(--rsx-selected-border);
+      outline-offset: 1px;
     }
 
     .treeNode[data-selected="true"] > .treeRow .treeDescription,
     .treeNode[data-selected="true"] > .treeRow .treeToggle,
     .treeNode[data-selected="true"] > .treeRow .treeIcon,
     .treeNode[data-selected="true"] > .treeRow .treeAction {
-      color: var(--vscode-list-activeSelectionForeground, var(--vscode-foreground));
+      color: var(--rsx-selected-fg);
+      opacity: 1;
     }
 
     .treeNode[data-selected="true"] > .treeRow .treeActions {
       opacity: 1;
+      background: var(--rsx-selected-bg);
+    }
+
+    .treeNode.dropTarget > .treeRow,
+    .treeRow.dropTarget {
+      outline: 2px solid var(--vscode-focusBorder);
+      outline-offset: -2px;
+      background: var(--vscode-list-dropBackground, var(--vscode-list-hoverBackground));
+    }
+
+    .treeRow.dropTarget::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 2px;
+      bottom: 2px;
+      width: 3px;
+      border-radius: 2px;
+      background: var(--vscode-focusBorder);
     }
 
     button[data-selected="true"] {
-      color: var(--vscode-list-activeSelectionForeground, var(--vscode-foreground));
-      background: var(--vscode-list-activeSelectionBackground);
+      color: var(--rsx-selected-fg);
+      background: var(--rsx-selected-bg);
+      border-radius: 3px;
+      outline: 1px solid var(--rsx-selected-border);
+      outline-offset: 1px;
     }
 
     button[data-selected="true"] .kind,
     button[data-selected="true"] .description {
-      color: var(--vscode-list-activeSelectionForeground, var(--vscode-foreground));
+      color: var(--rsx-selected-fg);
     }
 
     .treeToggle,
@@ -2776,23 +5495,32 @@ function getRsxExpressionSearchViewHtml(): string {
       align-items: center;
       height: 22px;
       min-width: 0;
+      padding: 0 4px;
       text-align: left;
     }
 
     .treeActions {
       display: flex;
-      gap: 1px;
+      gap: 3px;
+      align-items: center;
+      justify-self: end;
+      min-height: 22px;
       opacity: 0;
-      position: absolute;
-      right: 0;
-      top: 0;
       background: var(--vscode-sideBar-background, var(--vscode-editor-background));
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .treeRow:hover .treeActions,
+    .treeRow:focus-within .treeActions {
+      background: var(--vscode-list-hoverBackground);
     }
 
     .treeRow:hover .treeActions,
     .treeRow:focus-within .treeActions,
     .treeNode[data-selected="true"] > .treeRow .treeActions {
       opacity: 1;
+      pointer-events: auto;
     }
 
     .treeAction {
@@ -2820,6 +5548,12 @@ function getRsxExpressionSearchViewHtml(): string {
       color: var(--vscode-icon-foreground, var(--vscode-descriptionForeground));
       background: transparent;
       cursor: pointer;
+    }
+
+    .searchActions {
+      display: inline-flex;
+      gap: 3px;
+      align-items: stretch;
     }
 
     .treeAction svg,
@@ -2879,6 +5613,10 @@ function getRsxExpressionSearchViewHtml(): string {
       color: var(--vscode-charts-blue, #3794ff);
     }
 
+    .treeIcon.hookConfig {
+      color: var(--vscode-charts-orange, #d18616);
+    }
+
     .treeIcon.field {
       color: var(--vscode-charts-yellow, #cca700);
     }
@@ -2923,6 +5661,7 @@ function getRsxExpressionSearchViewHtml(): string {
 
     .treeDescription {
       margin-left: 6px;
+      min-width: 0;
     }
 
     .treeLabel,
@@ -2934,36 +5673,315 @@ function getRsxExpressionSearchViewHtml(): string {
       white-space: nowrap;
     }
 
+    .treeLabel {
+      min-width: 0;
+    }
+
     .treeDescription,
     .description {
       color: var(--vscode-descriptionForeground);
       font-size: 11px;
     }
 
-    .hookBadge {
-      border: 1px solid var(--vscode-charts-orange, #d18616);
-      border-radius: 3px;
-      color: var(--vscode-charts-orange, #d18616);
-      flex: 0 0 auto;
-      font-size: 10px;
-      font-weight: 700;
-      line-height: 1;
-      padding: 2px 4px;
+    .hookPicker {
+      position: fixed;
+      z-index: 20;
+      display: grid;
+      gap: 10px;
+      width: min(390px, calc(100vw - 16px));
+      max-height: min(420px, calc(100vh - 16px));
+      overflow: auto;
+      border: 1px solid var(--vscode-dropdown-border, var(--vscode-widget-border));
+      border-radius: 4px;
+      padding: 12px;
+      background: var(--vscode-dropdown-background, var(--vscode-editorWidget-background));
+      color: var(--vscode-dropdown-foreground, var(--vscode-editorWidget-foreground));
+      box-shadow: 0 8px 22px rgb(0 0 0 / 28%);
     }
+
+    .expressionPicker {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-sizing: border-box;
+      width: 100%;
+      height: fit-content;
+      min-height: max-content;
+      max-height: none !important;
+      overflow: visible !important;
+      overflow-y: visible !important;
+      margin-top: 8px;
+      border: 1px solid var(--vscode-dropdown-border, var(--vscode-widget-border));
+      border-radius: 4px;
+      padding: 12px;
+      background: var(--vscode-dropdown-background, var(--vscode-editorWidget-background));
+      color: var(--vscode-dropdown-foreground, var(--vscode-editorWidget-foreground));
+      box-shadow: 0 8px 22px rgb(0 0 0 / 28%);
+    }
+
+    .expressionPicker .hookFormFields {
+      grid-template-columns: 1fr;
+    }
+
+    .hookPickerHeader,
+    .hookPickerOptionText {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .hookPickerHeader {
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--vscode-widget-border, transparent);
+    }
+
+    .hookPickerTitle {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--vscode-foreground);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .hookPickerHint,
+    .hookPickerOptionDescription,
+    .hookPickerOptionDetail {
+      color: var(--vscode-descriptionForeground);
+      font-size: 11px;
+    }
+
+    .hookPickerList {
+      display: grid;
+      gap: 2px;
+      min-height: 0;
+      overflow: auto;
+      padding: 2px 0;
+    }
+
+    .hookPickerOption {
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr);
+      gap: 7px;
+      align-items: start;
+      min-width: 0;
+      padding: 5px 4px;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    .hookPickerOption:hover {
+      background: var(--vscode-list-hoverBackground);
+    }
+
+    .hookPickerOption input {
+      margin: 2px 0 0;
+    }
+
+    .hookPickerOptionLabel,
+    .hookPickerOptionDescription,
+    .hookPickerOptionDetail {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .hookPickerActions {
+      display: flex;
+      flex: 0 0 auto;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    .hookPickerButton {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: auto;
+      min-width: 72px;
+      border: 1px solid var(--vscode-button-border, transparent);
+      border-radius: 2px;
+      padding: 4px 10px;
+      background: var(--vscode-button-secondaryBackground);
+      color: var(--vscode-button-secondaryForeground);
+      font: inherit;
+    }
+
+    .hookPickerButton.primary {
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+    }
+
+    .hookFormFields {
+      display: grid;
+      gap: 10px;
+    }
+
+    .hookFormSection {
+      display: grid;
+      gap: 7px;
+      min-width: 0;
+      padding-top: 10px;
+      border-top: 1px solid var(--vscode-widget-border, transparent);
+    }
+
+    .hookFormSection:first-child {
+      padding-top: 0;
+      border-top: 0;
+    }
+
+    .hookFormSectionHeader {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 0;
+      padding: 0;
+      background: transparent;
+    }
+
+    .hookFormSectionBody {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 8px 10px;
+      min-width: 0;
+      padding: 0;
+    }
+
+    .hookFormSectionBody > .hookFormField,
+    .hookFormSectionBody > .hookFormCheckbox,
+    .hookFormSectionBody > .hookFormGrid,
+    .hookFormSectionBody > .hookPickerHint,
+    .hookFormSectionBody > [data-expression-model-section] {
+      grid-column: 1 / -1;
+    }
+
+    .hookFormSectionTitle {
+      color: var(--vscode-textLink-foreground, var(--vscode-focusBorder));
+      font-size: 11px;
+      font-weight: 650;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .hookFormGrid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .hookFormInlineField {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .hookFormInlineField[hidden] {
+      display: none;
+    }
+
+    .hookFormInlineField .hookPickerButton {
+      min-width: 0;
+      height: 24px;
+      padding: 3px 9px;
+      white-space: nowrap;
+    }
+
+    .hookFormField {
+      display: grid;
+      gap: 3px;
+      min-width: 0;
+      color: var(--vscode-descriptionForeground);
+      font-size: 10px;
+    }
+
+    .hookFormField[hidden] {
+      display: none;
+    }
+
+    .hookFormField input,
+    .hookFormField select,
+    .hookFormField textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--vscode-input-border, transparent);
+      border-radius: 2px;
+      height: 24px;
+      padding: 3px 6px;
+      background: var(--vscode-input-background);
+      color: var(--vscode-input-foreground);
+      font: inherit;
+      font-size: 11px;
+    }
+
+    .hookFormCheckbox {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      min-width: 0;
+      color: var(--vscode-foreground);
+      font-size: 11px;
+    }
+
+    .hookFormCheckbox input {
+      width: 13px;
+      height: 13px;
+      flex: 0 0 auto;
+      margin: 0;
+      padding: 0;
+    }
+
+    [data-expression-model-section] {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    [data-expression-model-section][hidden] {
+      display: none;
+    }
+
+    .hookFormField textarea {
+      min-height: 56px;
+      resize: vertical;
+    }
+
   </style>
 </head>
-<body>
+<body data-vscode-context="{&quot;preventDefaultContextMenuItems&quot;:true}">
   <input id="query" type="search" placeholder="Search expressions, models, fields" aria-label="Search RS-X">
-  <div id="summary" class="summary">Type to search.</div>
-  <div id="results" class="results"></div>
+  <div id="summary" class="summary" data-vscode-context="{&quot;preventDefaultContextMenuItems&quot;:true}">Type to search.</div>
+  <div id="results" class="results" data-vscode-context="{&quot;preventDefaultContextMenuItems&quot;:true}"></div>
+  <div id="hookPickerHost" data-vscode-context="{&quot;preventDefaultContextMenuItems&quot;:true}"></div>
   <script nonce="${nonce}">
     const vscode = acquireVsCodeApi();
     const query = document.getElementById('query');
     const summary = document.getElementById('summary');
     const results = document.getElementById('results');
-    let currentTree = [];
-    let selectedKey = '';
-    const expandedKeys = new Set(['root:expressions', 'root:models', 'root:instances']);
+    const hookPickerHost = document.getElementById('hookPickerHost');
+    const persistedState = vscode.getState?.() ?? {};
+    let currentTree = Array.isArray(persistedState.currentTree) ? persistedState.currentTree : [];
+    let selectedKey = typeof persistedState.selectedKey === 'string' ? persistedState.selectedKey : '';
+    let selectedKeys = new Set(
+      Array.isArray(persistedState.selectedKeys)
+        ? persistedState.selectedKeys.map(String)
+        : selectedKey ? [selectedKey] : []
+    );
+    let restoredEditorSelection = false;
+    let lastSyncedActionKey = '';
+    const expandedKeys = new Set(
+      Array.isArray(persistedState.expandedKeys)
+        ? persistedState.expandedKeys
+        : ['root:expressions', 'expressions:definitions', 'expressions:instances', 'expressions:lazy', 'root:models']
+    );
+    let hookPickerState = null;
+    let addExpressionFormState = null;
+    if (typeof persistedState.query === 'string') {
+      query.value = persistedState.query;
+    }
 
     function esc(value) {
       return String(value ?? '')
@@ -2974,52 +5992,727 @@ function getRsxExpressionSearchViewHtml(): string {
         .replaceAll("'", '&#39;');
     }
 
+    function renderWebviewContextAttr(context) {
+      return ' data-vscode-context="' + esc(context || '{"preventDefaultContextMenuItems":true}') + '"';
+    }
+
     function requestSearch() {
+      closeHookPicker();
+      persistPanelState();
       vscode.postMessage({ type: 'search', query: query.value });
     }
 
+    function persistPanelState() {
+      vscode.setState?.({
+        currentTree,
+        expandedKeys: Array.from(expandedKeys),
+        query: query.value,
+        selectedKey,
+        selectedKeys: Array.from(selectedKeys)
+      });
+    }
+
+    function migratePanelTreeLabels(nodes) {
+      if (!Array.isArray(nodes)) {
+        return [];
+      }
+      return nodes.map((node) => {
+        const next = { ...node };
+        if (next.key === 'customHooks' && next.label === 'Custom hooks') {
+          next.label = 'Hooks';
+        }
+        if ((next.key === 'hooks:definitions' || next.key === 'hooks:instances') && next.label === 'Hooks') {
+          next.label = 'Assigned hooks';
+        }
+        if (Array.isArray(next.children)) {
+          next.children = migratePanelTreeLabels(next.children);
+        }
+        return next;
+      });
+    }
+
+    function getTreeNodeByKey(nodes, key) {
+      const normalizedKey = String(key ?? '');
+      for (const node of Array.isArray(nodes) ? nodes : []) {
+        if (String(node?.key ?? '') === normalizedKey) {
+          return node;
+        }
+        const childMatch = getTreeNodeByKey(node?.children, normalizedKey);
+        if (childMatch) {
+          return childMatch;
+        }
+      }
+      return undefined;
+    }
+
+    function getSelectedLocation() {
+      const normalizedKey = String(selectedKey ?? '');
+      if (!normalizedKey) {
+        return undefined;
+      }
+      const selectedButton = results.querySelector('button[data-key="' + CSS.escape(normalizedKey) + '"][data-uri][data-start][data-end]');
+      if (selectedButton) {
+        return {
+          key: normalizedKey,
+          commandKey: selectedButton.dataset.commandKey ?? normalizedKey,
+          uri: selectedButton.dataset.uri,
+          start: Number(selectedButton.dataset.start),
+          end: Number(selectedButton.dataset.end)
+        };
+      }
+      const selectedTreeNode = getTreeNodeByKey(currentTree, normalizedKey);
+      if (
+        selectedTreeNode &&
+        typeof selectedTreeNode.uri === 'string' &&
+        typeof selectedTreeNode.start === 'number' &&
+        typeof selectedTreeNode.end === 'number'
+      ) {
+        return {
+          key: normalizedKey,
+          commandKey: String(selectedTreeNode.actionKey ?? normalizedKey),
+          uri: selectedTreeNode.uri,
+          start: selectedTreeNode.start,
+          end: selectedTreeNode.end
+        };
+      }
+      return undefined;
+    }
+
+    function restoreEditorSelection() {
+      if (restoredEditorSelection) {
+        return;
+      }
+      const location = getSelectedLocation();
+      if (!location || !Number.isFinite(location.start) || !Number.isFinite(location.end)) {
+        return;
+      }
+      restoredEditorSelection = true;
+      vscode.postMessage({
+        type: 'restoreSelection',
+        key: location.commandKey ?? location.key,
+        visualKey: location.key,
+        uri: location.uri,
+        start: location.start,
+        end: location.end
+      });
+    }
+
     function selectNode(key) {
+      const options = arguments[1] ?? {};
       selectedKey = String(key ?? '');
+      if (options.additive) {
+        if (selectedKeys.has(selectedKey)) {
+          selectedKeys.delete(selectedKey);
+        } else if (selectedKey) {
+          selectedKeys.add(selectedKey);
+        }
+      } else {
+        selectedKeys = selectedKey ? new Set([selectedKey]) : new Set();
+      }
       results.querySelectorAll('[data-selected="true"]').forEach((node) => {
         node.removeAttribute('data-selected');
       });
-      if (!selectedKey) {
+      selectedKeys.forEach((key) => {
+        const treeNode = results.querySelector('[data-node-key="' + CSS.escape(key) + '"]');
+        if (treeNode) {
+          treeNode.dataset.selected = 'true';
+        }
+        const resultButton = results.querySelector('button[data-key="' + CSS.escape(key) + '"]');
+        if (resultButton) {
+          resultButton.dataset.selected = 'true';
+        }
+      });
+      persistPanelState();
+    }
+
+    function isDeletableTreeNode(node) {
+      if (!node || typeof node !== 'object') {
+        return false;
+      }
+      const key = String(node.key ?? '');
+      return (
+        (node.kind === 'expressionOptionGroup' && node.canDeleteOptionAll === true) ||
+        ((node.kind === 'customHookGroup' || node.kind === 'customHook') && node.canDeleteCustomHooks === true) ||
+        (key.startsWith('hookAssignment:') && node.hookDropAction && node.hookAssignmentTargetKey) ||
+        ((node.kind === 'hookGroup' || node.kind === 'hookConfig') && node.canUnassignHookAll === true)
+      );
+    }
+
+    function requestDeleteSelectedNode() {
+      const visualKey = String(selectedKey ?? '');
+      if (!visualKey) {
+        return false;
+      }
+      const node = getTreeNodeByPanelKey(currentTree, visualKey);
+      if (!isDeletableTreeNode(node)) {
+        return false;
+      }
+      const commandKey =
+        getCommandActionKeyForVisualKey(visualKey) ||
+        String(node.actionKey ?? node.key ?? visualKey);
+      vscode.postMessage({
+        type: 'deleteSelected',
+        key: commandKey,
+        visualKey
+      });
+      return true;
+    }
+
+    function expandAncestorsForKey(nodes, targetKey, ancestors) {
+      const normalizedTargetKey = String(targetKey || '');
+      if (!normalizedTargetKey) {
+        return false;
+      }
+      for (const node of Array.isArray(nodes) ? nodes : []) {
+        const nodeKey = String(node?.key || '');
+        const actionKey = String(node?.actionKey || nodeKey);
+        if (nodeKey === normalizedTargetKey || actionKey === normalizedTargetKey) {
+          ancestors.forEach((key) => expandedKeys.add(key));
+          return true;
+        }
+        if (expandAncestorsForKey(node?.children, normalizedTargetKey, [...ancestors, nodeKey].filter(Boolean))) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function isExpressionKey(key) {
+      return String(key ?? '').startsWith('expression:');
+    }
+
+    function isPanelDebugHookDragKey(key) {
+      const normalizedKey = String(key ?? '');
+      return normalizedKey.startsWith('expression:') || normalizedKey.startsWith('instance:');
+    }
+
+    function pushUniqueKey(target, key, predicate) {
+      const normalizedKey = String(key ?? '');
+      if (normalizedKey && predicate(normalizedKey) && !target.includes(normalizedKey)) {
+        target.push(normalizedKey);
+      }
+    }
+
+    function collectExpressionCommandKeysForTreeNode(node, target) {
+      if (!node || typeof node !== 'object') {
         return;
       }
-      const treeNode = results.querySelector('[data-node-key="' + CSS.escape(selectedKey) + '"]');
-      if (treeNode) {
-        treeNode.dataset.selected = 'true';
+      const nodeKey = String(node.key ?? '');
+      const actionKey = String(node.actionKey ?? nodeKey);
+      if (node.kind === 'expression' && !nodeKey.startsWith('fieldUse:')) {
+        pushUniqueKey(target, actionKey, isExpressionKey);
+      }
+      for (const child of Array.isArray(node.children) ? node.children : []) {
+        collectExpressionCommandKeysForTreeNode(child, target);
+      }
+    }
+
+    function getTreeNodeByPanelKey(nodes, key) {
+      const normalizedKey = String(key ?? '');
+      if (!normalizedKey) {
+        return undefined;
+      }
+      for (const node of Array.isArray(nodes) ? nodes : []) {
+        const nodeKey = String(node?.key ?? '');
+        const actionKey = String(node?.actionKey ?? nodeKey);
+        if (nodeKey === normalizedKey || actionKey === normalizedKey) {
+          return node;
+        }
+        const childMatch = getTreeNodeByPanelKey(node?.children, normalizedKey);
+        if (childMatch) {
+          return childMatch;
+        }
+      }
+      return undefined;
+    }
+
+    function getExpressionDragKeysForVisualKey(key) {
+      const normalizedKey = String(key ?? '');
+      const commandKey = getCommandActionKeyForVisualKey(normalizedKey);
+      const expressionKeys = [];
+      pushUniqueKey(expressionKeys, commandKey || normalizedKey, isExpressionKey);
+      if (expressionKeys.length > 0) {
+        return expressionKeys;
+      }
+      collectExpressionCommandKeysForTreeNode(getTreeNodeByPanelKey(currentTree, normalizedKey), expressionKeys);
+      return expressionKeys;
+    }
+
+    function getPanelDebugHookDragKeysForVisualKey(key) {
+      const normalizedKey = String(key ?? '');
+      const commandKey = getCommandActionKeyForVisualKey(normalizedKey);
+      const dragKeys = [];
+      pushUniqueKey(dragKeys, commandKey || normalizedKey, isPanelDebugHookDragKey);
+      if (dragKeys.length > 0) {
+        return dragKeys;
+      }
+      collectExpressionCommandKeysForTreeNode(getTreeNodeByPanelKey(currentTree, normalizedKey), dragKeys);
+      return dragKeys;
+    }
+
+    function isValidDropAction(value) {
+      return value &&
+        (value.option === 'preparse' ||
+          value.option === 'compiled' ||
+          value.option === 'lazy' ||
+          value.option === 'lazyGroup');
+    }
+
+    function getExpressionSelectionForKey(key) {
+      const selectedExpressionKeys = [];
+      for (const selectedKey of selectedKeys) {
+        for (const expressionKey of getExpressionDragKeysForVisualKey(selectedKey)) {
+          pushUniqueKey(selectedExpressionKeys, expressionKey, isExpressionKey);
+        }
+      }
+      for (const expressionKey of getExpressionDragKeysForVisualKey(key)) {
+        pushUniqueKey(selectedExpressionKeys, expressionKey, isExpressionKey);
+      }
+      return selectedExpressionKeys;
+    }
+
+    function getPanelDebugHookDragSelectionForKey(key) {
+      const selectedDragKeys = [];
+      for (const selectedKey of selectedKeys) {
+        for (const dragKey of getPanelDebugHookDragKeysForVisualKey(selectedKey)) {
+          pushUniqueKey(selectedDragKeys, dragKey, isPanelDebugHookDragKey);
+        }
+      }
+      for (const dragKey of getPanelDebugHookDragKeysForVisualKey(key)) {
+        pushUniqueKey(selectedDragKeys, dragKey, isPanelDebugHookDragKey);
+      }
+      return selectedDragKeys;
+    }
+
+    function hasExpressionDragData(dataTransfer) {
+      return Array.from(dataTransfer?.types ?? []).includes('application/x-rsx-expression-keys');
+    }
+
+    function hasPanelDebugHookDragData(dataTransfer) {
+      return Array.from(dataTransfer?.types ?? []).includes('application/x-rsx-panel-debug-hook-keys');
+    }
+
+    let activeDropFeedbackTarget = null;
+
+    function getDropFeedbackTarget(target) {
+      return target?.closest('.treeRow') ?? target ?? null;
+    }
+
+    function clearDropFeedbackTarget() {
+      activeDropFeedbackTarget?.classList.remove('dropTarget');
+      activeDropFeedbackTarget = null;
+    }
+
+    function setDropFeedbackTarget(target) {
+      const feedbackTarget = getDropFeedbackTarget(target);
+      if (feedbackTarget === activeDropFeedbackTarget) {
         return;
       }
-      const resultButton = results.querySelector('button[data-key="' + CSS.escape(selectedKey) + '"]');
-      if (resultButton) {
-        resultButton.dataset.selected = 'true';
+      clearDropFeedbackTarget();
+      activeDropFeedbackTarget = feedbackTarget;
+      activeDropFeedbackTarget?.classList.add('dropTarget');
+    }
+
+    function getActionKeyFromEventTarget(target) {
+      const action = target?.closest('[data-action-key]');
+      const resultButton = target?.closest('button[data-key]');
+      const treeNode = target?.closest('[data-node-key]');
+      return action?.dataset.actionKey ?? resultButton?.dataset.key ?? treeNode?.dataset.nodeKey ?? '';
+    }
+
+    function getCommandActionKeyFromEventTarget(target) {
+      const action = target?.closest('[data-action-key]');
+      const commandTarget = target?.closest('[data-command-key]');
+      const expressionTarget = target?.closest('[data-expression-key]');
+      const resultButton = target?.closest('button[data-key]');
+      const treeNode = target?.closest('[data-node-key]');
+      return action?.dataset.actionKey ?? commandTarget?.dataset.commandKey ?? expressionTarget?.dataset.expressionKey ?? resultButton?.dataset.key ?? treeNode?.dataset.nodeKey ?? '';
+    }
+
+    function getCommandActionKeyForVisualKey(key) {
+      const normalizedKey = String(key ?? '');
+      if (!normalizedKey) {
+        return '';
       }
+      const target =
+        results.querySelector('[data-node-key="' + CSS.escape(normalizedKey) + '"]') ??
+        results.querySelector('button[data-key="' + CSS.escape(normalizedKey) + '"]');
+      return getCommandActionKeyFromEventTarget(target) || normalizedKey;
+    }
+
+    function isEditableContextMenuTarget(target) {
+      return !!target?.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"]');
+    }
+
+    function hasRsxWebviewContextMenu(target) {
+      const contextTarget = target?.closest('[data-vscode-context]');
+      const context = contextTarget?.getAttribute('data-vscode-context') ?? '';
+      return context.includes('"webviewSection"');
+    }
+
+    function syncActionContextForTarget(target, options = {}) {
+      const visualKey = getActionKeyFromEventTarget(target);
+      const actionKey = getCommandActionKeyFromEventTarget(target);
+      if (!actionKey) {
+        return '';
+      }
+      if (options.select && visualKey) {
+        selectNode(visualKey);
+      }
+      lastSyncedActionKey = actionKey;
+      vscode.postMessage({ type: 'select', key: actionKey, visualKey });
+      return actionKey;
+    }
+
+    function closeHookPicker() {
+      hookPickerState = null;
+      if (hookPickerHost) {
+        hookPickerHost.innerHTML = '';
+      }
+    }
+
+    function getHookPickerAnchor(key) {
+      const normalizedKey = String(key ?? '');
+      return results.querySelector('[data-node-key="' + CSS.escape(normalizedKey) + '"] > .treeRow') ??
+        results.querySelector('button[data-key="' + CSS.escape(normalizedKey) + '"]');
+    }
+
+    function positionHookPicker(key) {
+      const picker = hookPickerHost?.querySelector('.hookPicker');
+      const anchor = getHookPickerAnchor(key);
+      if (!picker || !anchor) {
+        return;
+      }
+      const anchorRect = anchor.getBoundingClientRect();
+      const pickerRect = picker.getBoundingClientRect();
+      const left = Math.max(8, Math.min(anchorRect.left + 18, window.innerWidth - pickerRect.width - 8));
+      const belowTop = anchorRect.bottom + 4;
+      const top = belowTop + pickerRect.height <= window.innerHeight - 8
+        ? belowTop
+        : Math.max(8, anchorRect.top - pickerRect.height - 4);
+      picker.style.left = left + 'px';
+      picker.style.top = top + 'px';
+    }
+
+    function renderAssignedHooksPicker(message) {
+      const items = Array.isArray(message.items) ? message.items : [];
+      const key = String(message.key ?? selectedKey ?? '');
+      const anchorKey = String(message.anchorKey ?? key);
+      hookPickerState = { key, anchorKey, items };
+      selectNode(anchorKey);
+      hookPickerHost.innerHTML =
+        '<section class="hookPicker" role="dialog" aria-label="Manage assigned hooks">' +
+          '<div class="hookPickerHeader">' +
+            '<div class="hookPickerTitle">' + esc(message.title || 'Manage assigned hooks') + '</div>' +
+            '<div class="hookPickerHint">Check hooks to assign. Uncheck to remove.</div>' +
+          '</div>' +
+          '<div class="hookPickerList">' +
+            (items.length > 0
+              ? items.map((item, index) =>
+                  '<label class="hookPickerOption" title="' + esc(item.description || item.label) + '">' +
+                    '<input type="checkbox" data-hook-index="' + esc(index) + '"' + (item.picked ? ' checked' : '') + '>' +
+                    '<span class="hookPickerOptionText">' +
+                      '<span class="hookPickerOptionLabel">' + esc(item.label) + '</span>' +
+                      (item.description ? '<span class="hookPickerOptionDescription">' + esc(item.description) + '</span>' : '') +
+                      (item.detail ? '<span class="hookPickerOptionDetail">' + esc(item.detail) + '</span>' : '') +
+                    '</span>' +
+                  '</label>'
+                ).join('')
+              : '<div class="hookPickerHint">No hooks found.</div>') +
+          '</div>' +
+          '<div class="hookPickerActions">' +
+            '<button type="button" class="hookPickerButton" data-hook-picker-action="cancel">Cancel</button>' +
+            '<button type="button" class="hookPickerButton primary" data-hook-picker-action="apply">Apply</button>' +
+          '</div>' +
+        '</section>';
+      requestAnimationFrame(() => positionHookPicker(anchorKey));
+    }
+
+    function renderAddHookForm(message) {
+      const key = String(message.key ?? selectedKey ?? 'customHooks');
+      hookPickerState = { key, mode: 'addHook' };
+      selectNode(key);
+      hookPickerHost.innerHTML =
+        '<section class="hookPicker" role="dialog" aria-label="Add hook">' +
+          '<div class="hookPickerHeader">' +
+            '<div class="hookPickerTitle">' + esc(message.title || 'Add Hook') + '</div>' +
+            '<div class="hookPickerHint">Create a hook export, then assign it by dragging definitions or instances onto it.</div>' +
+          '</div>' +
+          '<div class="hookFormFields">' +
+            '<label class="hookFormField">Export name' +
+              '<input type="text" data-hook-form-field="exportName" value="' + esc(message.exportName || 'rsxDebugChangeHook') + '">' +
+            '</label>' +
+            '<label class="hookFormField">File path' +
+              '<input type="text" data-hook-form-field="relativePath" value="' + esc(message.relativePath || 'src/rsx-debug-change-hook.ts') + '">' +
+            '</label>' +
+          '</div>' +
+          '<div class="hookPickerActions">' +
+            '<button type="button" class="hookPickerButton" data-hook-picker-action="cancel">Cancel</button>' +
+            '<button type="button" class="hookPickerButton primary" data-hook-picker-action="createHook">Create</button>' +
+          '</div>' +
+        '</section>';
+      requestAnimationFrame(() => {
+        positionHookPicker(key);
+        hookPickerHost.querySelector('[data-hook-form-field="exportName"]')?.focus();
+      });
+    }
+
+    function renderAddExpressionForm(message) {
+      const key = String(message.key ?? selectedKey ?? 'expressions:definitions');
+      const files = Array.isArray(message.files) ? message.files.map(String) : [];
+      const modelFiles = Array.isArray(message.modelFiles) ? message.modelFiles : [];
+      const defaultsModelSelections = message.defaultsModelSelections && typeof message.defaultsModelSelections === 'object'
+        ? message.defaultsModelSelections
+        : {};
+      const selectedModelFilePath = String(message.selectedModelFilePath ?? '');
+      const selectedModelInterfaceName = String(message.selectedModelInterfaceName ?? '');
+      const shareModel = message.shareModel !== false;
+      const lockExpressionFile = message.lockExpressionFile === true;
+      const lockModelContract = message.lockModelContract === true && selectedModelFilePath && selectedModelInterfaceName;
+      addExpressionFormState = { ...message, key, files, modelFiles };
+      hookPickerState = { key, mode: 'addExpression', rootUri: String(message.rootUri ?? '') };
+      selectNode(key);
+      hookPickerHost.innerHTML =
+        '<section class="expressionPicker" role="dialog" aria-label="Add expression">' +
+          '<div class="hookPickerHeader">' +
+            '<div class="hookPickerTitle">' + esc(message.title || 'Add Expression') + '</div>' +
+            '<div class="hookPickerHint">Create an expression definition in an existing or new .rsx file.</div>' +
+          '</div>' +
+          '<div class="hookFormFields">' +
+            '<div class="hookFormSection">' +
+              '<div class="hookFormSectionHeader">' +
+                '<div class="hookFormSectionTitle">Model</div>' +
+              '</div>' +
+              '<div class="hookFormSectionBody">' +
+                (lockModelContract
+                  ? '<input type="checkbox" data-expression-form-field="useExistingModel" checked hidden>' +
+                    '<input type="checkbox" data-expression-form-field="shareModel" checked hidden>' +
+                    '<input type="hidden" data-expression-form-field="modelFilePath" value="' + esc(selectedModelFilePath) + '">' +
+                    '<input type="hidden" data-expression-form-field="modelInterfaceName" value="' + esc(selectedModelInterfaceName) + '">' +
+                    '<div class="hookPickerHint">Using defaults model ' + esc(selectedModelInterfaceName) + '.</div>'
+                  : '<label class="hookFormCheckbox">' +
+                  '<input type="checkbox" data-expression-form-field="useExistingModel"' + (selectedModelFilePath ? ' checked' : '') + '> Use existing model contract' +
+                '</label>' +
+                '<label class="hookFormCheckbox">' +
+                  '<input type="checkbox" data-expression-form-field="shareModel"' + (shareModel ? ' checked' : '') + '> Share model via defaults' +
+                '</label>' +
+                '<div class="hookPickerHint" data-expression-form-field="defaultsModelHint" hidden></div>' +
+                '<div data-expression-model-section="existing">' +
+                  '<div class="hookFormInlineField" data-expression-model-picker>' +
+                    '<label class="hookFormField">Model file' +
+                      '<select data-expression-form-field="modelFilePath">' +
+                        '<option value="">Select a model file</option>' +
+                        modelFiles.map((file) => '<option value="' + esc(file.path || '') + '"' + (file.path === selectedModelFilePath ? ' selected' : '') + '>' + esc(file.path || '') + '</option>').join('') +
+                      '</select>' +
+                    '</label>' +
+                    '<button type="button" class="hookPickerButton" data-hook-picker-action="selectModelFile">Browse</button>' +
+                  '</div>' +
+                  '<label class="hookFormField">Contract' +
+                    '<select data-expression-form-field="modelInterfaceName">' +
+                      '<option value="">Select a contract</option>' +
+                    '</select>' +
+                  '</label>' +
+                '</div>' +
+                '<div data-expression-model-section="new">' +
+                  '<label class="hookFormField">Model name' +
+                    '<input type="text" data-expression-form-field="newModelInterfaceName" value="' + esc(message.newModelInterfaceName || 'NewExpressionModel') + '">' +
+                  '</label>' +
+                  '<div class="hookFormGrid">' +
+                    '<label class="hookFormField">Model path' +
+                    '<input type="text" data-expression-form-field="newModelDirectory" value="' + esc(message.newModelDirectory || 'src/rsx/models') + '">' +
+                    '</label>' +
+                    '<label class="hookFormField">Model file name' +
+                      '<input type="text" data-expression-form-field="newModelFileName" value="' + esc(message.newModelFileName || 'new-expression.model') + '">' +
+                    '</label>' +
+                  '</div>' +
+                '</div>') +
+              '</div>' +
+            '</div>' +
+            '<div class="hookFormSection">' +
+              '<div class="hookFormSectionHeader">' +
+                '<div class="hookFormSectionTitle">Expression</div>' +
+              '</div>' +
+              '<div class="hookFormSectionBody">' +
+                '<label class="hookFormField">Expression name' +
+                  '<input type="text" data-expression-form-field="expressionName" value="' + esc(message.expressionName || 'newExpressionRsx') + '">' +
+                '</label>' +
+                (lockExpressionFile
+                  ? '<input type="hidden" data-expression-form-field="existingFilePath" value="' + esc(message.existingFilePath || '') + '">'
+                  : files.length > 0
+                  ? '<label class="hookFormField">Existing .rsx file' +
+                      '<select data-expression-form-field="existingFilePath">' +
+                        '<option value="">Create new file</option>' +
+                        files.map((file) => '<option value="' + esc(file) + '"' + (file === message.existingFilePath ? ' selected' : '') + '>' + esc(file) + '</option>').join('') +
+                    '</select>' +
+                    '</label>'
+                  : '<input type="hidden" data-expression-form-field="existingFilePath" value="">') +
+                (lockExpressionFile ? '' : '<div class="hookFormGrid">' +
+                  '<label class="hookFormField">Expression path' +
+                    '<input type="text" data-expression-form-field="directory" value="' + esc(message.directory || 'src/rsx/expressions') + '">' +
+                  '</label>' +
+                  '<label class="hookFormField">Expression file name' +
+                    '<input type="text" data-expression-form-field="fileName" value="' + esc(message.fileName || 'new-expression-rsx') + '">' +
+                  '</label>' +
+                '</div>' +
+                '<div class="hookPickerHint">File name is written without .rsx; RS-X adds .expressions.rsx automatically.</div>') +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="hookPickerActions">' +
+            '<button type="button" class="hookPickerButton" data-hook-picker-action="cancel">Cancel</button>' +
+            '<button type="button" class="hookPickerButton primary" data-hook-picker-action="createExpression">Create</button>' +
+          '</div>' +
+        '</section>';
+      requestAnimationFrame(() => {
+        const expressionInput = hookPickerHost.querySelector('[data-expression-form-field="expressionName"]');
+        const fileNameInput = hookPickerHost.querySelector('[data-expression-form-field="fileName"]');
+        const newModelFileNameInput = hookPickerHost.querySelector('[data-expression-form-field="newModelFileName"]');
+        const newModelInterfaceInput = hookPickerHost.querySelector('[data-expression-form-field="newModelInterfaceName"]');
+        const useExistingModelInput = hookPickerHost.querySelector('[data-expression-form-field="useExistingModel"]');
+        const shareModelInput = hookPickerHost.querySelector('[data-expression-form-field="shareModel"]');
+        const modelFileSelect = hookPickerHost.querySelector('[data-expression-form-field="modelFilePath"]');
+        const modelInterfaceSelect = hookPickerHost.querySelector('[data-expression-form-field="modelInterfaceName"]');
+        const existingFileSelect = hookPickerHost.querySelector('[data-expression-form-field="existingFilePath"]');
+        const defaultsModelHint = hookPickerHost.querySelector('[data-expression-form-field="defaultsModelHint"]');
+        let fileNameTouched = false;
+        let newModelFileNameTouched = false;
+        let newModelInterfaceTouched = false;
+        const modelFilesByPath = new Map(modelFiles.map((file) => [String(file.path || ''), file]));
+        const toKebab = (value) => String(value || 'newExpressionRsx')
+          .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+          .replace(/[_\\s]+/g, '-')
+          .replace(/[^A-Za-z0-9-]+/g, '-')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '')
+          .toLowerCase() || 'new-expression-rsx';
+        const toPascal = (value) => String(value || 'newExpressionRsx')
+          .replace(/Rsx$/i, '')
+          .split(/[^A-Za-z0-9]+|(?=[A-Z])/g)
+          .filter(Boolean)
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .join('') || 'NewExpression';
+        const syncNewModelDefaults = () => {
+          const stem = toPascal(expressionInput?.value);
+          if (!newModelFileNameTouched && newModelFileNameInput) {
+            newModelFileNameInput.value = toKebab(stem) + '.model';
+          }
+          if (!newModelInterfaceTouched && newModelInterfaceInput) {
+            newModelInterfaceInput.value = stem + 'Model';
+          }
+        };
+        const updateModelMode = () => {
+          const useExisting = Boolean(useExistingModelInput?.checked);
+          hookPickerHost.querySelectorAll('[data-expression-model-section]').forEach((section) => {
+            section.hidden = section.getAttribute('data-expression-model-section') === 'existing'
+              ? !useExisting
+              : useExisting;
+          });
+        };
+        const updateModelInterfaces = () => {
+          if (!modelFileSelect || !modelInterfaceSelect) {
+            return;
+          }
+          const selectedFile = modelFilesByPath.get(modelFileSelect.value || '');
+          const contracts = Array.isArray(selectedFile?.contracts) ? selectedFile.contracts : [];
+          const requestedContract = typeof message.selectedModelInterfaceName === 'string'
+            ? message.selectedModelInterfaceName
+            : '';
+          const selectedContract = contracts.includes(requestedContract)
+            ? requestedContract
+            : contracts.length === 1
+              ? String(contracts[0] || '')
+              : '';
+          modelInterfaceSelect.innerHTML =
+            '<option value="">' + (modelFileSelect.value && contracts.length === 0 ? 'No interface/type found' : 'Select a contract') + '</option>' +
+            contracts.map((name) => '<option value="' + esc(name) + '">' + esc(name) + '</option>').join('');
+          modelInterfaceSelect.value = selectedContract;
+        };
+        const getSelectedDefaultsModel = () => {
+          const existingFilePath = String(existingFileSelect?.value || message.existingFilePath || '');
+          const selection = defaultsModelSelections[existingFilePath];
+          return selection && typeof selection === 'object'
+            && typeof selection.modelFilePath === 'string'
+            && typeof selection.modelInterfaceName === 'string'
+            ? selection
+            : null;
+        };
+        const syncDefaultsModelSelection = () => {
+          const selection = getSelectedDefaultsModel();
+          const useDefaults = Boolean(selection && useExistingModelInput?.checked && shareModelInput?.checked);
+          if (useDefaults && modelFileSelect && modelInterfaceSelect) {
+            modelFileSelect.value = selection.modelFilePath;
+            updateModelInterfaces();
+            modelInterfaceSelect.value = selection.modelInterfaceName;
+          }
+          if (defaultsModelHint) {
+            defaultsModelHint.hidden = !useDefaults;
+            defaultsModelHint.textContent = useDefaults
+              ? 'Defaults model selected. Choosing another model will replace the defaults model for this file.'
+              : '';
+          }
+        };
+        fileNameInput?.addEventListener('input', () => {
+          fileNameTouched = true;
+        });
+        newModelFileNameInput?.addEventListener('input', () => {
+          newModelFileNameTouched = true;
+        });
+        newModelInterfaceInput?.addEventListener('input', () => {
+          newModelInterfaceTouched = true;
+        });
+        useExistingModelInput?.addEventListener('change', updateModelMode);
+        useExistingModelInput?.addEventListener('change', syncDefaultsModelSelection);
+        shareModelInput?.addEventListener('change', syncDefaultsModelSelection);
+        modelFileSelect?.addEventListener('change', updateModelInterfaces);
+        expressionInput?.addEventListener('input', () => {
+          if (!fileNameTouched && fileNameInput) {
+            fileNameInput.value = toKebab(expressionInput.value);
+          }
+          syncNewModelDefaults();
+        });
+        existingFileSelect?.addEventListener('change', () => {
+          const selectedPath = existingFileSelect.value || '';
+          if (!selectedPath) {
+            return;
+          }
+          const slashIndex = selectedPath.lastIndexOf('/');
+          const directory = slashIndex >= 0 ? selectedPath.slice(0, slashIndex) : '';
+          const file = slashIndex >= 0 ? selectedPath.slice(slashIndex + 1) : selectedPath;
+          const directoryInput = hookPickerHost.querySelector('[data-expression-form-field="directory"]');
+          if (directoryInput) {
+            directoryInput.value = directory;
+          }
+          if (fileNameInput) {
+            fileNameInput.value = file.replace(/\\.expressions\\.rsx$/i, '').replace(/\\.rsx$/i, '');
+            fileNameTouched = true;
+          }
+          syncDefaultsModelSelection();
+        });
+        updateModelInterfaces();
+        updateModelMode();
+        syncDefaultsModelSelection();
+        expressionInput?.focus();
+      });
     }
 
     function renderResultButton(result) {
       const key = String(result.key ?? '');
       const selected = selectedKey === key ? ' data-selected="true"' : '';
-      const button = '<button type="button" data-key="' + esc(key) + '" data-uri="' + esc(result.uri) + '" data-start="' + esc(result.start) + '" data-end="' + esc(result.end) + '" data-vscode-context="' + esc(renderWebviewContext(result.kind)) + '"' + selected + '>' +
+      const context = renderWebviewContext(result.kind, key, result);
+      const title = result.tooltip || result.description || result.label;
+      return '<button type="button" data-key="' + esc(key) + '" data-command-key="' + esc(key) + '" data-uri="' + esc(result.uri) + '" data-start="' + esc(result.start) + '" data-end="' + esc(result.end) + '" title="' + esc(title) + '"' + renderWebviewContextAttr(context) + selected + '>' +
           '<span class="kind">' + esc(result.kind) + '</span>' +
           '<span class="main">' +
             '<span class="label">' + esc(result.label) + '</span>' +
-            (result.badge ? '<span class="hookBadge" title="' + esc(result.badgeTitle || result.badge) + '">' + esc(result.badge) + '</span>' : '') +
             (result.description ? '<span class="description">' + esc(result.description) + '</span>' : '') +
           '</span>' +
         '</button>';
-      if (result.kind !== 'instance') {
-        return button;
-      }
-      return '<div class="searchRow">' + button +
-        '<button type="button" class="searchAction" data-action="enableDebugHooks" data-action-key="' + esc(key) + '" data-action-uri="' + esc(result.uri) + '" title="Set RS-X Debug Hook" aria-label="Set RS-X Debug Hook">' + renderDebugActionIcon() + '</button>' +
-        (result.hookState === 'enabled' ? '<button type="button" class="searchAction" data-action="disableDebugHooks" data-action-key="' + esc(key) + '" data-action-uri="' + esc(result.uri) + '" title="Disable RS-X Debug Hook" aria-label="Disable RS-X Debug Hook">OFF</button>' : '') +
-        (result.hookState === 'disabled' ? '<button type="button" class="searchAction" data-action="enableConfiguredDebugHooks" data-action-key="' + esc(key) + '" data-action-uri="' + esc(result.uri) + '" title="Enable RS-X Debug Hook" aria-label="Enable RS-X Debug Hook">ON</button>' : '') +
-        (result.hookState ? '<button type="button" class="searchAction" data-action="deleteDebugHooks" data-action-key="' + esc(key) + '" data-action-uri="' + esc(result.uri) + '" title="Delete RS-X Debug Hook Config" aria-label="Delete RS-X Debug Hook Config">×</button>' : '') +
-      '</div>';
     }
 
     function treeIcon(kind) {
+      if (kind === 'project') {
+        return '▣';
+      }
       if (kind === 'section') {
         return '◫';
       }
@@ -3029,6 +6722,9 @@ function getRsxExpressionSearchViewHtml(): string {
       if (kind === 'expression') {
         return 'ƒ';
       }
+      if (kind === 'expressionGroup' || kind === 'expressionOptionGroup') {
+        return '▦';
+      }
       if (kind === 'dependency') {
         return '↳';
       }
@@ -3037,6 +6733,12 @@ function getRsxExpressionSearchViewHtml(): string {
       }
       if (kind === 'instance') {
         return '○';
+      }
+      if (kind === 'hookGroup' || kind === 'customHookGroup') {
+        return '⚑';
+      }
+      if (kind === 'hookConfig' || kind === 'customHook') {
+        return '⚑';
       }
       if (kind === 'model') {
         return '{}';
@@ -3058,6 +6760,21 @@ function getRsxExpressionSearchViewHtml(): string {
       if (key === 'root:instances') {
         return 'root-instances';
       }
+      if (node.kind === 'expressionOptionGroup') {
+        return 'expression-option-group';
+      }
+      if (node.kind === 'project') {
+        return 'root-expressions';
+      }
+      if (node.kind === 'expressionGroup') {
+        return 'expression-group';
+      }
+      if (node.kind === 'hookGroup') {
+        return 'hookConfig';
+      }
+      if (node.kind === 'customHookGroup' || node.kind === 'customHook') {
+        return 'hookConfig';
+      }
       if (key.startsWith('fieldUse:')) {
         return 'field-expression';
       }
@@ -3068,11 +6785,27 @@ function getRsxExpressionSearchViewHtml(): string {
     }
 
     function webviewSectionForKind(kind, key = '') {
+      if (String(key).startsWith('hookAssignment:')) {
+        return 'rsxExpressionHookAssignment';
+      }
+      if (
+        kind === 'expressionGroup' &&
+        (key === 'expressions:definitions' ||
+          String(key).endsWith(':expressions:definitions'))
+      ) {
+        return 'rsxExpressionDefinitions';
+      }
+      if (kind === 'file') {
+        return 'rsxExpressionFile';
+      }
       if (kind === 'expression' && String(key).startsWith('fieldUse:')) {
         return 'rsxModelFieldExpression';
       }
       if (kind === 'expression') {
         return 'rsxExpression';
+      }
+      if (kind === 'expressionOptionGroup') {
+        return 'rsxExpressionOptionGroup';
       }
       if (kind === 'model') {
         return 'rsxExpressionModel';
@@ -3083,15 +6816,65 @@ function getRsxExpressionSearchViewHtml(): string {
       if (kind === 'instance' || kind === 'instanceGroup') {
         return 'rsxExpressionInstance';
       }
+      if (kind === 'hookGroup') {
+        return 'rsxExpressionHooks';
+      }
+      if (kind === 'customHookGroup') {
+        return 'rsxCustomHooks';
+      }
+      if (kind === 'customHook') {
+        return 'rsxCustomHook';
+      }
+      if (kind === 'hookConfig') {
+        return 'rsxExpressionHook';
+      }
       return '';
     }
 
-    function renderWebviewContext(kind, key = '') {
+    function renderWebviewContext(kind, key = '', node = {}) {
       const webviewSection = webviewSectionForKind(kind, key);
-      return webviewSection ? JSON.stringify({
-        webviewSection,
+      return JSON.stringify({
+        ...(webviewSection ? { webviewSection } : {}),
+        ...(webviewSection === 'rsxExpression'
+          ? {
+              rsxWebviewExpressionPreparse: node.preparse === true,
+              rsxWebviewExpressionCompiled: node.compiled === true,
+              rsxWebviewExpressionLazy: node.lazy === true,
+              rsxWebviewExpressionLazyGroup: node.lazyGroup === true
+            }
+          : {}),
+        ...(webviewSection === 'rsxExpressionHook'
+          ? {
+              rsxWebviewHookEnabled: node.hookState === 'enabled',
+              rsxWebviewHookDisabled: node.hookState === 'disabled',
+              rsxWebviewHookCanUnassignAll: node.canUnassignHookAll === true,
+              rsxWebviewHookCanEnableAll: node.canEnableHookAssignments === true,
+              rsxWebviewHookCanDisableAll: node.canDisableHookAssignments === true
+            }
+          : {}),
+        ...(webviewSection === 'rsxExpressionHookAssignment'
+          ? {
+              rsxWebviewHookEnabled: node.hookState === 'enabled',
+              rsxWebviewHookDisabled: node.hookState === 'disabled'
+            }
+          : {}),
+        ...(webviewSection === 'rsxExpressionHooks'
+          ? {
+              rsxWebviewHookCanUnassignAll: node.canUnassignHookAll === true
+            }
+          : {}),
+        ...(webviewSection === 'rsxExpressionOptionGroup'
+          ? {
+              rsxWebviewOptionCanDeleteAll: node.canDeleteOptionAll === true
+            }
+          : {}),
+        ...(webviewSection === 'rsxCustomHooks' || webviewSection === 'rsxCustomHook'
+          ? {
+              rsxWebviewCustomHookCanDelete: node.canDeleteCustomHooks === true
+            }
+          : {}),
         preventDefaultContextMenuItems: true
-      }) : '';
+      });
     }
 
     function renderPreviewActionIcon() {
@@ -3116,52 +6899,57 @@ function getRsxExpressionSearchViewHtml(): string {
       '</svg>';
     }
 
-    function renderDebugActionIcon() {
+    function renderReportActionIcon() {
       return '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">' +
-        '<path d="M8 1.8v2"></path>' +
-        '<path d="M8 12.2v2"></path>' +
-        '<path d="M3.6 3.6l1.4 1.4"></path>' +
-        '<path d="M11 11l1.4 1.4"></path>' +
-        '<path d="M1.8 8h2"></path>' +
-        '<path d="M12.2 8h2"></path>' +
-        '<circle cx="8" cy="8" r="3.2"></circle>' +
-        '<path d="M6.7 8.1l.8.8 1.9-2"></path>' +
+        '<path d="M4 1.8h5.5L13 5.3v8.9H4z"></path>' +
+        '<path d="M9.5 1.8v3.5H13"></path>' +
+        '<path d="M6 7.5h5"></path>' +
+        '<path d="M6 10h5"></path>' +
+        '<path d="M6 12.5h3.2"></path>' +
       '</svg>';
     }
 
     function renderTreeNode(node, depth = 0) {
       const key = String(node.key ?? '');
+      const actionKey = String(node.actionKey ?? key);
       const children = Array.isArray(node.children) ? node.children : [];
       const hasLocation = typeof node.uri === 'string' &&
         typeof node.start === 'number' &&
         typeof node.end === 'number';
       const hasChildren = children.length > 0;
       const isExpanded = expandedKeys.has(key);
+      const isExpression = node.kind === 'expression' && !key.startsWith('fieldUse:');
       const canPreview = node.kind === 'expression' || node.kind === 'instanceGroup';
-      const canTest = node.kind === 'expression' || node.kind === 'model' || node.kind === 'field' || node.kind === 'instanceGroup';
-      const canDebug = node.kind === 'instance' || node.kind === 'instanceGroup';
+      const canReport = node.kind === 'expression' || node.kind === 'instanceGroup' || node.kind === 'instance';
+      const canTest = node.kind === 'expression' || node.kind === 'field' || node.kind === 'instanceGroup';
+      const opensHook = node.kind === 'hookConfig' && node.hookModuleSpecifier;
+      const dropAction = node.dropAction ? JSON.stringify(node.dropAction) : '';
+      const hookDropAction = node.hookDropAction ? JSON.stringify(node.hookDropAction) : '';
+      const isDraggableHookTarget = isExpression || node.kind === 'instance' || node.kind === 'file';
+      const dragAttrs = isDraggableHookTarget ? ' draggable="true" data-draggable-expression="true" data-expression-key="' + esc(actionKey) + '" data-drag-visual-key="' + esc(key) + '"' : '';
+      const dropAttrs = (dropAction ? ' data-drop-action="' + esc(dropAction) + '"' : '') + (hookDropAction ? ' data-drop-hook-action="' + esc(hookDropAction) + '"' : '');
+      const titleAttr = node.tooltip ? ' title="' + esc(node.tooltip) + '"' : '';
       const openAttrs = hasLocation
-        ? ' data-key="' + esc(key) + '" data-uri="' + esc(node.uri) + '" data-start="' + esc(node.start) + '" data-end="' + esc(node.end) + '"'
-        : ' data-toggle-key="' + esc(key) + '"';
-      const context = renderWebviewContext(node.kind, key);
-      return '<div class="treeNode" data-node-key="' + esc(key) + '" data-expanded="' + (isExpanded ? 'true' : 'false') + '"' + (context ? ' data-vscode-context="' + esc(context) + '"' : '') + (selectedKey === key ? ' data-selected="true"' : '') + '>' +
-        '<div class="treeRow" style="--depth:' + esc(depth) + '">' +
+        ? ' data-key="' + esc(key) + '" data-command-key="' + esc(actionKey) + '" data-uri="' + esc(node.uri) + '" data-start="' + esc(node.start) + '" data-end="' + esc(node.end) + '"' + titleAttr
+        : opensHook
+          ? ' data-action="openDebugHookImplementation" data-action-key="' + esc(actionKey) + '" data-hook-module-specifier="' + esc(node.hookModuleSpecifier) + '"' + (node.hookExportName ? ' data-hook-export-name="' + esc(node.hookExportName) + '"' : '') + (node.hookAnchorUri ? ' data-hook-anchor-uri="' + esc(node.hookAnchorUri) + '"' : '') + titleAttr
+        : ' data-toggle-key="' + esc(key) + '"' + titleAttr;
+      const context = renderWebviewContext(node.kind, key, node);
+      const contextAttr = renderWebviewContextAttr(context);
+      return '<div class="treeNode" data-node-key="' + esc(key) + '" data-command-key="' + esc(actionKey) + '" data-expanded="' + (isExpanded ? 'true' : 'false') + '"' + contextAttr + (selectedKeys.has(key) ? ' data-selected="true"' : '') + '>' +
+        '<div class="treeRow' + (node.kind === 'hookGroup' ? ' hookGroupRow' : '') + (node.hookState === 'disabled' ? ' hookDisabledRow' : '') + '" style="--depth:' + esc(depth) + '"' + dragAttrs + dropAttrs + ' data-command-key="' + esc(actionKey) + '"' + contextAttr + '>' +
           (hasChildren
-            ? '<button type="button" class="treeToggle" aria-label="Toggle ' + esc(node.label) + '" data-toggle-key="' + esc(key) + '">⌄</button>'
-            : '<span class="treeToggle" aria-hidden="true"></span>') +
-          '<span class="treeIcon ' + esc(treeIconClass(node)) + '" aria-hidden="true">' + esc(treeIcon(node.kind)) + '</span>' +
-          '<button type="button" class="treeOpen"' + openAttrs + '>' +
+            ? '<button type="button" class="treeToggle" aria-label="Toggle ' + esc(node.label) + '" data-toggle-key="' + esc(key) + '"' + contextAttr + '>⌄</button>'
+            : '<span class="treeToggle" aria-hidden="true"' + contextAttr + '></span>') +
+          '<span class="treeIcon ' + esc(treeIconClass(node)) + '" aria-hidden="true"' + contextAttr + '>' + esc(treeIcon(node.kind)) + '</span>' +
+          '<button type="button" class="treeOpen"' + openAttrs + dragAttrs + dropAttrs + contextAttr + '>' +
             '<span class="treeLabel ' + (node.kind === 'section' ? 'sectionLabel' : '') + '">' + esc(node.label) + '</span>' +
-            (node.badge ? '<span class="hookBadge" title="' + esc(node.badgeTitle || node.badge) + '">' + esc(node.badge) + '</span>' : '') +
             (node.description ? '<span class="treeDescription">' + esc(node.description) + '</span>' : '') +
           '</button>' +
-          '<span class="treeActions">' +
-            (canPreview ? '<button type="button" class="treeAction" data-action="preview" data-action-key="' + esc(key) + '" title="Open RS-X Expression Tree" aria-label="Open RS-X Expression Tree">' + renderPreviewActionIcon() + '</button>' : '') +
-            (canTest ? '<button type="button" class="treeAction" data-action="test" data-action-key="' + esc(key) + '" title="Test RS-X Expression" aria-label="Test RS-X Expression">' + renderTestActionIcon() + '</button>' : '') +
-            (canDebug ? '<button type="button" class="treeAction" data-action="enableDebugHooks" data-action-key="' + esc(key) + '"' + (hasLocation ? ' data-action-uri="' + esc(node.uri) + '"' : '') + ' title="Set RS-X Debug Hook" aria-label="Set RS-X Debug Hook">' + renderDebugActionIcon() + '</button>' : '') +
-            (canDebug && node.hookState === 'enabled' ? '<button type="button" class="treeAction" data-action="disableDebugHooks" data-action-key="' + esc(key) + '"' + (hasLocation ? ' data-action-uri="' + esc(node.uri) + '"' : '') + ' title="Disable RS-X Debug Hook" aria-label="Disable RS-X Debug Hook">OFF</button>' : '') +
-            (canDebug && node.hookState === 'disabled' ? '<button type="button" class="treeAction" data-action="enableConfiguredDebugHooks" data-action-key="' + esc(key) + '"' + (hasLocation ? ' data-action-uri="' + esc(node.uri) + '"' : '') + ' title="Enable RS-X Debug Hook" aria-label="Enable RS-X Debug Hook">ON</button>' : '') +
-            (canDebug && node.hookState ? '<button type="button" class="treeAction" data-action="deleteDebugHooks" data-action-key="' + esc(key) + '"' + (hasLocation ? ' data-action-uri="' + esc(node.uri) + '"' : '') + ' title="Delete RS-X Debug Hook Config" aria-label="Delete RS-X Debug Hook Config">×</button>' : '') +
+          '<span class="treeActions"' + contextAttr + '>' +
+            (canPreview ? '<button type="button" class="treeAction" data-action="preview" data-action-key="' + esc(actionKey) + '" title="Open Expression Tree" aria-label="Open Expression Tree"' + contextAttr + '>' + renderPreviewActionIcon() + '</button>' : '') +
+            (canReport ? '<button type="button" class="treeAction" data-action="report" data-action-key="' + esc(actionKey) + '" title="Open Expression Report" aria-label="Open Expression Report"' + contextAttr + '>' + renderReportActionIcon() + '</button>' : '') +
+            (canTest ? '<button type="button" class="treeAction" data-action="test" data-action-key="' + esc(actionKey) + '" title="Test Expression" aria-label="Test Expression"' + contextAttr + '>' + renderTestActionIcon() + '</button>' : '') +
           '</span>' +
         '</div>' +
         (hasChildren && isExpanded
@@ -3177,29 +6965,174 @@ function getRsxExpressionSearchViewHtml(): string {
     }
 
     query.addEventListener('input', requestSearch);
+    function collectAddExpressionFormValues() {
+      return {
+        expressionName: hookPickerHost.querySelector('[data-expression-form-field="expressionName"]')?.value ?? '',
+        useExistingModel: Boolean(hookPickerHost.querySelector('[data-expression-form-field="useExistingModel"]')?.checked),
+        shareModel: Boolean(hookPickerHost.querySelector('[data-expression-form-field="shareModel"]')?.checked),
+        modelFilePath: hookPickerHost.querySelector('[data-expression-form-field="modelFilePath"]')?.value ?? '',
+        modelInterfaceName: hookPickerHost.querySelector('[data-expression-form-field="modelInterfaceName"]')?.value ?? '',
+        newModelDirectory: hookPickerHost.querySelector('[data-expression-form-field="newModelDirectory"]')?.value ?? '',
+        newModelFileName: hookPickerHost.querySelector('[data-expression-form-field="newModelFileName"]')?.value ?? '',
+        newModelInterfaceName: hookPickerHost.querySelector('[data-expression-form-field="newModelInterfaceName"]')?.value ?? '',
+        directory: hookPickerHost.querySelector('[data-expression-form-field="directory"]')?.value ?? '',
+        fileName: hookPickerHost.querySelector('[data-expression-form-field="fileName"]')?.value ?? '',
+        existingFilePath: hookPickerHost.querySelector('[data-expression-form-field="existingFilePath"]')?.value ?? ''
+      };
+    }
+    hookPickerHost?.addEventListener('click', (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const action = target?.closest('[data-hook-picker-action]');
+      if (!action) {
+        return;
+      }
+      if (action.dataset.hookPickerAction === 'cancel') {
+        closeHookPicker();
+        return;
+      }
+      const state = hookPickerState;
+      if (!state) {
+        closeHookPicker();
+        return;
+      }
+      if (action.dataset.hookPickerAction === 'createHook') {
+        const exportName = hookPickerHost.querySelector('[data-hook-form-field="exportName"]')?.value ?? '';
+        const relativePath = hookPickerHost.querySelector('[data-hook-form-field="relativePath"]')?.value ?? '';
+        vscode.postMessage({
+          type: 'createCustomHook',
+          exportName,
+          relativePath
+        });
+        closeHookPicker();
+        return;
+      }
+      if (action.dataset.hookPickerAction === 'selectModelFile') {
+        vscode.postMessage({
+          type: 'selectModelFile',
+          rootUri: hookPickerState?.rootUri ?? ''
+        });
+        return;
+      }
+      if (action.dataset.hookPickerAction === 'createExpression') {
+        const {
+          expressionName,
+          useExistingModel,
+          shareModel,
+          modelFilePath,
+          modelInterfaceName,
+          newModelDirectory,
+          newModelFileName,
+          newModelInterfaceName,
+          directory,
+          fileName,
+          existingFilePath
+        } = collectAddExpressionFormValues();
+        const rootUri = hookPickerState?.rootUri ?? '';
+        vscode.postMessage({
+          type: 'createExpression',
+          expressionName,
+          expressionSource: '',
+          useExistingModel,
+          shareModel,
+          modelFilePath: useExistingModel ? modelFilePath : '',
+          modelInterfaceName: useExistingModel ? modelInterfaceName : '',
+          newModelDirectory,
+          newModelFileName,
+          newModelInterfaceName,
+          directory,
+          fileName,
+          existingFilePath,
+          relativePath: existingFilePath,
+          rootUri
+        });
+        closeHookPicker();
+        return;
+      }
+      const checkedIndexes = new Set(
+        Array.from(hookPickerHost.querySelectorAll('input[data-hook-index]:checked'))
+          .map((input) => Number(input.dataset.hookIndex))
+          .filter((index) => Number.isInteger(index))
+      );
+      const hooks = state.items
+        .filter((_, index) => checkedIndexes.has(index))
+        .map((item) => item.hook)
+        .filter(Boolean);
+      vscode.postMessage({
+        type: 'applyAssignedHooks',
+        key: state.key,
+        hooks
+      });
+      closeHookPicker();
+    });
+
+    window.addEventListener('resize', () => {
+      if (hookPickerState) {
+        positionHookPicker(hookPickerState.anchorKey ?? hookPickerState.key);
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && hookPickerState) {
+        closeHookPicker();
+      }
+      if (
+        (event.key === 'Delete' || event.key === 'Backspace') &&
+        !hookPickerState &&
+        !isEditableContextMenuTarget(event.target instanceof Element ? event.target : null) &&
+        requestDeleteSelectedNode()
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    });
+
+    document.addEventListener('contextmenu', (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (isEditableContextMenuTarget(target) || hasRsxWebviewContextMenu(target)) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+    }, { capture: true });
+
     function toggleTreeNode(key) {
       const normalizedKey = String(key ?? '');
       if (!normalizedKey) {
         return;
       }
+      selectedKey = normalizedKey;
+      selectedKeys = new Set([normalizedKey]);
       if (expandedKeys.has(normalizedKey)) {
         expandedKeys.delete(normalizedKey);
       } else {
         expandedKeys.add(normalizedKey);
       }
       results.innerHTML = renderTree(currentTree);
+      persistPanelState();
       selectNode(normalizedKey);
     }
 
     results.addEventListener('click', (event) => {
       const target = event.target instanceof Element ? event.target : null;
-      const action = target?.closest('[data-action-key]');
+      if (
+        !target?.closest('.hookPicker') &&
+        hookPickerState?.mode !== 'addExpression'
+      ) {
+        closeHookPicker();
+      }
+      const action = target?.closest('button[data-action][data-action-key]');
       if (action) {
-        selectNode(action.dataset.actionKey);
+        const visualKey =
+          action.closest('[data-node-key]')?.dataset.nodeKey ??
+          action.dataset.actionKey;
+        selectNode(visualKey);
         vscode.postMessage({
           type: action.dataset.action,
           key: action.dataset.actionKey,
-          uri: action.dataset.actionUri
+          uri: action.dataset.actionUri,
+          hookModuleSpecifier: action.dataset.hookModuleSpecifier,
+          hookExportName: action.dataset.hookExportName,
+          hookAnchorUri: action.dataset.hookAnchorUri
         });
         return;
       }
@@ -3213,9 +7146,22 @@ function getRsxExpressionSearchViewHtml(): string {
       if (!button) {
         return;
       }
-      selectNode(button.dataset.key);
+      const additive = event.metaKey || event.ctrlKey;
+      const visualKey =
+        button.closest('[data-node-key]')?.dataset.nodeKey ??
+        button.dataset.key;
+      const commandKey = getCommandActionKeyFromEventTarget(button);
+      selectNode(visualKey, { additive });
+      if (additive) {
+        lastSyncedActionKey = commandKey;
+        vscode.postMessage({ type: 'select', key: commandKey, visualKey });
+        return;
+      }
+      lastSyncedActionKey = commandKey;
       vscode.postMessage({
         type: 'open',
+        key: commandKey,
+        visualKey,
         uri: button.dataset.uri,
         start: Number(button.dataset.start),
         end: Number(button.dataset.end)
@@ -3224,29 +7170,196 @@ function getRsxExpressionSearchViewHtml(): string {
 
     results.addEventListener('contextmenu', (event) => {
       const target = event.target instanceof Element ? event.target : null;
-      const action = target?.closest('[data-action-key]');
-      const resultButton = target?.closest('button[data-key]');
-      const treeNode = target?.closest('[data-node-key]');
-      const key = action?.dataset.actionKey ?? resultButton?.dataset.key ?? treeNode?.dataset.nodeKey;
-      if (!key) {
+      syncActionContextForTarget(target, { select: true });
+    }, { capture: true });
+
+    results.addEventListener('pointerover', (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const visualKey = getActionKeyFromEventTarget(target);
+      const commandKey = getCommandActionKeyFromEventTarget(target);
+      if (!commandKey || (visualKey === selectedKey && commandKey === lastSyncedActionKey)) {
         return;
       }
-      selectNode(key);
-      vscode.postMessage({ type: 'select', key });
+      lastSyncedActionKey = commandKey;
+      vscode.postMessage({ type: 'select', key: commandKey, visualKey });
+    });
+
+    results.addEventListener('dragstart', (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const source = target?.closest('[data-draggable-expression="true"][data-expression-key]');
+      const key = source?.dataset.dragVisualKey ?? source?.dataset.expressionKey;
+      if (!key || !event.dataTransfer) {
+        event.preventDefault();
+        return;
+      }
+      const keys = getExpressionSelectionForKey(key);
+      const hookKeys = getPanelDebugHookDragSelectionForKey(key);
+      if (keys.length === 0 && hookKeys.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const visualKey =
+        source.closest('[data-node-key]')?.dataset.nodeKey ??
+        key;
+      if (!selectedKeys.has(visualKey)) {
+        selectNode(visualKey);
+      }
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('application/x-rsx-expression-keys', JSON.stringify(keys));
+      event.dataTransfer.setData('application/x-rsx-panel-debug-hook-keys', JSON.stringify(hookKeys));
+      event.dataTransfer.setData('text/plain', (hookKeys.length > 0 ? hookKeys : keys).join('\\n'));
+    });
+
+    results.addEventListener('dragover', (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const dropTarget = target?.closest('[data-drop-action]');
+      const hookDropTarget = target?.closest('[data-drop-hook-action]');
+      if ((!dropTarget || !hasExpressionDragData(event.dataTransfer)) && (!hookDropTarget || !hasPanelDebugHookDragData(event.dataTransfer))) {
+        clearDropFeedbackTarget();
+        return;
+      }
+      event.preventDefault();
+      if (event.dataTransfer) {
+        event.dataTransfer.dropEffect = 'move';
+      }
+      setDropFeedbackTarget(hookDropTarget ?? dropTarget);
+    });
+
+    results.addEventListener('dragleave', (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const nextTarget = event.relatedTarget instanceof Element ? event.relatedTarget : null;
+      const feedbackTarget = getDropFeedbackTarget(
+        target?.closest('[data-drop-hook-action]') ?? target?.closest('[data-drop-action]')
+      );
+      if (feedbackTarget && feedbackTarget === activeDropFeedbackTarget && nextTarget && feedbackTarget.contains(nextTarget)) {
+        return;
+      }
+      if (feedbackTarget === activeDropFeedbackTarget) {
+        clearDropFeedbackTarget();
+      }
+    });
+
+    results.addEventListener('drop', (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const hookDropTarget = target?.closest('[data-drop-hook-action]');
+      if (hookDropTarget && event.dataTransfer && hasPanelDebugHookDragData(event.dataTransfer)) {
+        event.preventDefault();
+        clearDropFeedbackTarget();
+        let keys = [];
+        let hookDropAction = undefined;
+        try {
+          keys = JSON.parse(event.dataTransfer.getData('application/x-rsx-panel-debug-hook-keys') || '[]');
+        } catch {
+          keys = [];
+        }
+        try {
+          hookDropAction = JSON.parse(hookDropTarget.dataset.dropHookAction || '{}');
+        } catch {
+          hookDropAction = undefined;
+        }
+        const dragKeys = Array.isArray(keys) ? keys.filter(isPanelDebugHookDragKey) : [];
+        if (dragKeys.length === 0 || !hookDropAction) {
+          return;
+        }
+        vscode.postMessage({
+          type: 'dropDebugHookAssignments',
+          keys: dragKeys,
+          hookDropAction
+        });
+        return;
+      }
+      const dropTarget = target?.closest('[data-drop-action]');
+      if (!dropTarget || !event.dataTransfer || !hasExpressionDragData(event.dataTransfer)) {
+        return;
+      }
+      event.preventDefault();
+      clearDropFeedbackTarget();
+      let keys = [];
+      try {
+        keys = JSON.parse(event.dataTransfer.getData('application/x-rsx-expression-keys') || '[]');
+      } catch {
+        keys = [];
+      }
+      let dropAction = undefined;
+      try {
+        dropAction = JSON.parse(dropTarget.dataset.dropAction || '{}');
+      } catch {
+        dropAction = undefined;
+      }
+      const expressionKeys = Array.isArray(keys) ? keys.filter(isExpressionKey) : [];
+      if (expressionKeys.length === 0 || !isValidDropAction(dropAction)) {
+        return;
+      }
+      vscode.postMessage({
+        type: 'dropExpressions',
+        keys: expressionKeys,
+        dropAction
+      });
+    });
+
+    results.addEventListener('dragend', () => {
+      clearDropFeedbackTarget();
     });
 
     window.addEventListener('message', (event) => {
       const message = event.data;
+      if (message?.type === 'assignedHooksPicker') {
+        renderAssignedHooksPicker(message);
+        return;
+      }
+      if (message?.type === 'addHookForm') {
+        renderAddHookForm(message);
+        return;
+      }
+      if (message?.type === 'addExpressionForm') {
+        renderAddExpressionForm(message);
+        return;
+      }
+      if (message?.type === 'modelFileSelected' && message.file?.path) {
+        const currentValues = hookPickerState?.mode === 'addExpression'
+          ? collectAddExpressionFormValues()
+          : {};
+        const previous = addExpressionFormState ?? {};
+        const existingModelFiles = Array.isArray(previous.modelFiles) ? previous.modelFiles : [];
+        const selectedPath = String(message.file.path);
+        const mergedModelFiles = [
+          message.file,
+          ...existingModelFiles.filter((file) => String(file.path || '') !== selectedPath)
+        ].sort((left, right) => String(left.path || '').localeCompare(String(right.path || '')));
+        renderAddExpressionForm({
+          ...previous,
+          ...currentValues,
+          modelFiles: mergedModelFiles,
+          selectedModelFilePath: selectedPath,
+          selectedModelInterfaceName: Array.isArray(message.file.contracts) && message.file.contracts.length === 1
+            ? String(message.file.contracts[0] || '')
+            : ''
+        });
+        return;
+      }
       if (message?.type !== 'results') {
         return;
       }
+      closeHookPicker();
+      if (typeof message.selectedKey === 'string') {
+        selectedKey = message.selectedKey;
+        selectedKeys = selectedKey ? new Set([selectedKey]) : new Set();
+      }
       const text = String(message.query ?? '').trim();
       if (message.mode === 'tree') {
-        const tree = Array.isArray(message.tree) ? message.tree : [];
+        const tree = migratePanelTreeLabels(message.tree);
         currentTree = tree;
-        summary.textContent = 'Expressions, models, and instances';
+        tree.forEach((node) => {
+          if (node?.kind === 'project' && node.key) {
+            expandedKeys.add(String(node.key));
+          }
+        });
+        expandAncestorsForKey(currentTree, selectedKey, []);
+        summary.textContent = 'Expressions and models';
         results.innerHTML = renderTree(currentTree);
         selectNode(selectedKey);
+        restoreEditorSelection();
+        persistPanelState();
         return;
       }
       const resultItems = Array.isArray(message.results) ? message.results : [];
@@ -3255,8 +7368,19 @@ function getRsxExpressionSearchViewHtml(): string {
         ? resultItems.length + ' result' + (resultItems.length === 1 ? '' : 's')
         : resultItems.length + ' expression/model' + (resultItems.length === 1 ? '' : 's');
       results.innerHTML = resultItems.map(renderResultButton).join('');
+      selectNode(selectedKey);
+      restoreEditorSelection();
+      persistPanelState();
     });
 
+    if (currentTree.length > 0 && !query.value.trim()) {
+      currentTree = migratePanelTreeLabels(currentTree);
+      summary.textContent = 'Expressions and models';
+      results.innerHTML = renderTree(currentTree);
+      selectNode(selectedKey);
+      restoreEditorSelection();
+    }
+    vscode.postMessage({ type: 'ready', query: query.value, selectedKey });
     query.focus();
   </script>
 </body>
@@ -3280,6 +7404,1576 @@ async function openRsxExpressionTester(
   }
 
   await openRsxExpressionTesterModelDocument(data);
+}
+
+async function openRsxExpressionReport(
+  provider: RsxExpressionsTreeDataProvider,
+  item?: IRsxExpressionTreeItem,
+): Promise<void> {
+  const initialTitle =
+    item?.kind === 'expression'
+      ? `RS-X Report: ${item.exportName}`
+      : 'RS-X Expression Report';
+  const panel = vscode.window.createWebviewPanel(
+    'rsx.expressionReport',
+    initialTitle,
+    vscode.ViewColumn.Beside,
+    { enableScripts: true, retainContextWhenHidden: true },
+  );
+  await initializeRsxExpressionReportPanel(provider, panel, item);
+}
+
+async function initializeRsxExpressionReportPanel(
+  provider: RsxExpressionsTreeDataProvider,
+  panel: vscode.WebviewPanel,
+  itemOrTargetKey?: IRsxExpressionTreeItem | string,
+): Promise<void> {
+  rememberRsxEditorGroupColumn(panel.viewColumn);
+  const initialTitle =
+    typeof itemOrTargetKey !== 'string' &&
+    itemOrTargetKey?.kind === 'expression'
+      ? `RS-X Report: ${itemOrTargetKey.exportName}`
+      : 'RS-X Expression Report';
+  panel.webview.html = getRsxExpressionReportLoadingHtml(initialTitle);
+  const disposables: vscode.Disposable[] = [];
+  panel.onDidChangeViewState(
+    (event) => {
+      rememberRsxEditorGroupColumn(event.webviewPanel.viewColumn);
+    },
+    undefined,
+    disposables,
+  );
+  panel.webview.onDidReceiveMessage(
+    async (message: {
+      type?: string;
+      uri?: string;
+      start?: number;
+      end?: number;
+      hookModuleSpecifier?: string;
+      hookExportName?: string;
+      hookAnchorUri?: string;
+    }) => {
+      if (
+        message?.type === 'openDebugHookImplementation' &&
+        typeof message.hookModuleSpecifier === 'string'
+      ) {
+        await openRsxDebugHookImplementation({
+          moduleSpecifier: message.hookModuleSpecifier,
+          exportName:
+            typeof message.hookExportName === 'string'
+              ? message.hookExportName
+              : undefined,
+          anchorUri:
+            typeof message.hookAnchorUri === 'string'
+              ? vscode.Uri.parse(message.hookAnchorUri)
+              : undefined,
+          preview: false,
+        });
+        return;
+      }
+      if (
+        message?.type !== 'open' ||
+        typeof message.uri !== 'string' ||
+        typeof message.start !== 'number' ||
+        typeof message.end !== 'number'
+      ) {
+        return;
+      }
+      await openRsxExpressionLocation(
+        {
+          uri: vscode.Uri.parse(message.uri),
+          start: message.start,
+          end: message.end,
+        },
+        { viewColumn: vscode.ViewColumn.One, preview: false },
+      );
+    },
+    undefined,
+    disposables,
+  );
+  panel.onDidDispose(() => {
+    for (const disposable of disposables) {
+      disposable.dispose();
+    }
+    scheduleCloseRsxEmptyEditorGroups();
+  });
+  try {
+    const item =
+      typeof itemOrTargetKey === 'string'
+        ? await provider.getPanelActionTarget(itemOrTargetKey)
+        : itemOrTargetKey;
+    const data = await provider.getExpressionReportData(item);
+    if (!data) {
+      panel.webview.html = getRsxExpressionReportMessageHtml(
+        'RS-X Expression Report',
+        'Select an RS-X expression before opening an expression report.',
+      );
+      return;
+    }
+    panel.title = data.title;
+    panel.webview.html = getRsxExpressionReportHtml(data);
+    await rsxExpressionReportStateStore?.update(
+      RSX_EXPRESSION_REPORT_LAST_TARGET_KEY,
+      data.targetKey,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    panel.webview.html = getRsxExpressionReportMessageHtml(
+      'RS-X Expression Report',
+      `Could not create expression report: ${message}`,
+    );
+    await vscode.window.showErrorMessage(
+      `Could not create RS-X expression report: ${message}`,
+    );
+  }
+}
+
+async function createRsxExpressionReportData(
+  target: IRsxExpressionReportTarget,
+  instanceGroups: readonly IRsxExpressionTreeExpressionInstanceGroup[],
+): Promise<IRsxExpressionReportData> {
+  const expression = target.expression;
+  const scopeTargets = createRsxExpressionReportScopeTargets(
+    expression,
+    instanceGroups,
+  );
+  const configRows = await createRsxExpressionReportConfigRows(
+    expression.uri,
+    expression.exportName,
+    scopeTargets,
+    target.instance?.instanceId,
+  );
+  const rsxRows = await createRsxExpressionReportRsxRows(expression);
+  const codeRows = createRsxExpressionReportCodeRows(
+    expression,
+    instanceGroups,
+  );
+  return {
+    targetKey: target.instance
+      ? `instance:${target.instance.key}`
+      : `expression:${expression.key}`,
+    expressionName: expression.exportName,
+    expressionText: expression.expression.expression.trim(),
+    expressionUri: expression.uri.toString(),
+    expressionStart: expression.expression.expressionStart,
+    expressionEnd: expression.expression.expressionEnd,
+    expressionSource: expression.relativePath,
+    title: target.instance
+      ? `RS-X Report: ${expression.exportName} instance`
+      : `RS-X Report: ${expression.exportName}`,
+    sections: [
+      { title: 'Settings', rows: [...rsxRows.actualRows, ...configRows] },
+      { title: 'Usages', rows: codeRows },
+    ],
+  };
+}
+
+function getReportExpressionTarget(
+  files: readonly IRsxExpressionTreeFile[],
+  item?: IRsxExpressionTreeItem,
+): IRsxExpressionReportTarget | null {
+  if (item?.kind === 'expression') {
+    return { expression: item };
+  }
+  if (item?.kind === 'expressionInstanceGroup') {
+    return { expression: item.expression };
+  }
+  if (item?.kind === 'expressionInstance') {
+    return { expression: item.expression, instance: item };
+  }
+  if (item?.kind === 'searchResult' && item.target.kind === 'expression') {
+    return { expression: item.target };
+  }
+  if (
+    item?.kind === 'searchResult' &&
+    item.target.kind === 'expressionInstance'
+  ) {
+    return { expression: item.target.expression, instance: item.target };
+  }
+  if (item?.kind === 'dependency') {
+    const expression =
+      files
+        .flatMap((file) => file.expressions)
+        .find((expression) => expression.key === item.edge.targetKey) ?? null;
+    return expression ? { expression } : null;
+  }
+  return null;
+}
+
+function createRsxExpressionReportScopeTargets(
+  expression: IRsxExpressionTreeExpression,
+  instanceGroups: readonly IRsxExpressionTreeExpressionInstanceGroup[],
+): IRsxExpressionReportScopeTargets {
+  const instances = new Map<string, IRsxExpressionTreeLocation>();
+  const group = instanceGroups.find(
+    (instanceGroup) => instanceGroup.expression.key === expression.key,
+  );
+  for (const instance of group?.instances ?? []) {
+    instances.set(instance.instanceId, {
+      uri: instance.uri,
+      start: instance.start,
+      end: instance.end,
+    });
+  }
+  return {
+    definition: {
+      uri: expression.uri,
+      start:
+        typeof expression.expression.nameStart === 'number'
+          ? expression.expression.nameStart
+          : expression.start,
+      end:
+        typeof expression.expression.nameEnd === 'number'
+          ? expression.expression.nameEnd
+          : expression.end,
+    },
+    instances,
+  };
+}
+
+async function createRsxExpressionReportConfigRows(
+  anchorUri: vscode.Uri,
+  expressionName: string,
+  scopeTargets: IRsxExpressionReportScopeTargets,
+  selectedInstanceId?: string,
+): Promise<IRsxExpressionReportRow[]> {
+  const rowsBySetting = new Map<string, IRsxExpressionReportRow>();
+  for (const configUri of resolveRsxDebugHookConfigUrisForRead(anchorUri)) {
+    const text = await readWorkspaceTextFile(configUri);
+    if (!text?.trim()) {
+      continue;
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      rowsBySetting.set(vscode.workspace.asRelativePath(configUri, false), {
+        setting: vscode.workspace.asRelativePath(configUri, false),
+        value: 'Invalid JSON',
+        source: vscode.workspace.asRelativePath(configUri, false),
+        uri: configUri.toString(),
+        start: 0,
+        end: Math.min(text.length, 1),
+      });
+      continue;
+    }
+    for (const row of createRsxExpressionReportDebugHookRows({
+      parsed,
+      expressionName,
+      text,
+      configUri,
+      anchorUri,
+      scopeTargets,
+      selectedInstanceId,
+    })) {
+      rowsBySetting.set(row.setting, row);
+    }
+    for (const entry of flattenJsonSettings(parsed)) {
+      if (isConfigSettingCoveredByExpressionBehavior(entry.path)) {
+        continue;
+      }
+      if (entry.path.startsWith('build.debugChangeHooks.')) {
+        continue;
+      }
+      const debugHookPath = parseRsxExpressionReportDebugHookSetting(
+        entry.path,
+      );
+      if (debugHookPath && debugHookPath.expressionName !== expressionName) {
+        continue;
+      }
+      const range = findJsonSettingValueRange(text, entry.path, entry.value);
+      rowsBySetting.set(entry.path, {
+        setting: entry.path,
+        value: formatReportValue(entry.value),
+        source: vscode.workspace.asRelativePath(configUri, false),
+        uri: configUri.toString(),
+        start: range?.start ?? 0,
+        end: range?.end ?? Math.min(text.length, 1),
+      });
+    }
+  }
+  return [...rowsBySetting.values()];
+}
+
+function createRsxExpressionReportDebugHookRows(args: {
+  readonly parsed: unknown;
+  readonly expressionName: string;
+  readonly text: string;
+  readonly configUri: vscode.Uri;
+  readonly anchorUri: vscode.Uri;
+  readonly scopeTargets: IRsxExpressionReportScopeTargets;
+  readonly selectedInstanceId?: string;
+}): IRsxExpressionReportRow[] {
+  const build = getRecordProperty(args.parsed, 'build');
+  const debugChangeHooks = getRecordProperty(build, 'debugChangeHooks');
+  const hookConfig = debugChangeHooks?.[args.expressionName];
+  if (
+    !hookConfig ||
+    typeof hookConfig !== 'object' ||
+    Array.isArray(hookConfig)
+  ) {
+    return [];
+  }
+  const rows: IRsxExpressionReportRow[] = [];
+  const source = vscode.workspace.asRelativePath(args.configUri, false);
+  const config = hookConfig as Record<string, unknown>;
+  const addHook = (
+    hook: unknown,
+    details: {
+      readonly scope: 'definition' | 'instance';
+      readonly instanceId?: string;
+      readonly index: number;
+      readonly sourcePath: string;
+    },
+  ): void => {
+    if (!hook || typeof hook !== 'object' || Array.isArray(hook)) {
+      return;
+    }
+    const hookRecord = hook as Record<string, unknown>;
+    const range = findJsonHookSourceRange(
+      args.text,
+      details.sourcePath,
+      hookRecord,
+    );
+    const moduleSpecifier =
+      typeof hookRecord.moduleSpecifier === 'string'
+        ? hookRecord.moduleSpecifier
+        : undefined;
+    const exportName =
+      typeof hookRecord.exportName === 'string'
+        ? hookRecord.exportName
+        : undefined;
+    rows.push({
+      setting:
+        details.scope === 'definition'
+          ? `debugHooks.definition.${details.index}`
+          : `debugHooks.instance.${details.instanceId ?? 'unknown'}.${details.index}`,
+      label: formatRsxExpressionReportDebugHookLabel(hookRecord, details),
+      value: formatRsxExpressionReportDebugHookValue(hookRecord, details),
+      details: createRsxExpressionReportDebugHookDetails({
+        hook: hookRecord,
+        details,
+        configUri: args.configUri,
+        text: args.text,
+        source,
+        scopeTarget:
+          details.scope === 'definition'
+            ? args.scopeTargets.definition
+            : args.scopeTargets.instances.get(details.instanceId ?? ''),
+      }),
+      action: moduleSpecifier ? 'openDebugHookImplementation' : undefined,
+      hookModuleSpecifier: moduleSpecifier,
+      hookExportName: exportName,
+      hookAnchorUri: args.anchorUri.toString(),
+      source,
+      uri: moduleSpecifier ? undefined : args.configUri.toString(),
+      start: moduleSpecifier ? undefined : (range?.start ?? 0),
+      end: moduleSpecifier
+        ? undefined
+        : (range?.end ?? Math.min(args.text.length, 1)),
+    });
+  };
+  if (!args.selectedInstanceId) {
+    const groupHooks = normalizeRsxExpressionReportHookList(config.group);
+    groupHooks.forEach((hook, index) =>
+      addHook(hook, {
+        scope: 'definition',
+        index,
+        sourcePath: createJsonPath([
+          'build',
+          'debugChangeHooks',
+          args.expressionName,
+          'group',
+          ...(groupHooks.length > 1 ? [String(index)] : []),
+        ]),
+      }),
+    );
+    if (groupHooks.length === 0 && isRsxExpressionReportHookRecord(config)) {
+      addHook(config, {
+        scope: 'definition',
+        index: 0,
+        sourcePath: createJsonPath([
+          'build',
+          'debugChangeHooks',
+          args.expressionName,
+        ]),
+      });
+    }
+  }
+  const instances = getRecordProperty(config, 'instances');
+  for (const [instanceId, instanceHookConfig] of Object.entries(
+    instances ?? {},
+  )) {
+    if (args.selectedInstanceId && instanceId !== args.selectedInstanceId) {
+      continue;
+    }
+    if (!args.selectedInstanceId) {
+      continue;
+    }
+    const hooks = normalizeRsxExpressionReportHookList(instanceHookConfig);
+    hooks.forEach((hook, index) =>
+      addHook(hook, {
+        scope: 'instance',
+        instanceId,
+        index,
+        sourcePath: createJsonPath([
+          'build',
+          'debugChangeHooks',
+          args.expressionName,
+          'instances',
+          instanceId,
+          ...(hooks.length > 1 ? [String(index)] : []),
+        ]),
+      }),
+    );
+  }
+  return rows;
+}
+
+function getRecordProperty(
+  value: unknown,
+  key: string,
+): Record<string, unknown> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined;
+  }
+  const property = (value as Record<string, unknown>)[key];
+  return property && typeof property === 'object' && !Array.isArray(property)
+    ? (property as Record<string, unknown>)
+    : undefined;
+}
+
+function normalizeRsxExpressionReportHookList(
+  value: unknown,
+): readonly Record<string, unknown>[] {
+  if (Array.isArray(value)) {
+    return value.filter(isRsxExpressionReportHookRecord);
+  }
+  return isRsxExpressionReportHookRecord(value) ? [value] : [];
+}
+
+function isRsxExpressionReportHookRecord(
+  value: unknown,
+): value is Record<string, unknown> {
+  return (
+    Boolean(value) &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    (typeof (value as Record<string, unknown>).moduleSpecifier === 'string' ||
+      typeof (value as Record<string, unknown>).exportName === 'string' ||
+      typeof (value as Record<string, unknown>).standardHook === 'string')
+  );
+}
+
+function formatRsxExpressionReportDebugHookValue(
+  hook: Record<string, unknown>,
+  details: {
+    readonly scope: 'definition' | 'instance';
+    readonly instanceId?: string;
+  },
+): string {
+  return createRsxExpressionReportDebugHookDetails({
+    hook,
+    details: {
+      ...details,
+      sourcePath: '',
+    },
+    configUri: undefined,
+    text: '',
+    source: '',
+  })
+    .map((detail) => `${detail.label}: ${detail.value}`)
+    .join('\n');
+}
+
+function createRsxExpressionReportDebugHookDetails(args: {
+  readonly hook: Record<string, unknown>;
+  readonly details: {
+    readonly scope: 'definition' | 'instance';
+    readonly instanceId?: string;
+    readonly sourcePath: string;
+  };
+  readonly configUri?: vscode.Uri;
+  readonly text: string;
+  readonly source: string;
+  readonly scopeTarget?: IRsxExpressionTreeLocation;
+}): readonly IRsxExpressionReportDetail[] {
+  const hook = args.hook;
+  const standardHook =
+    typeof hook.standardHook === 'string' ? hook.standardHook : undefined;
+  const moduleSpecifier =
+    typeof hook.moduleSpecifier === 'string' ? hook.moduleSpecifier : undefined;
+  const exportName =
+    typeof hook.exportName === 'string' ? hook.exportName : undefined;
+  const scope =
+    args.details.scope === 'definition'
+      ? 'Definition (all instances)'
+      : `Specific instance (${args.details.instanceId ?? 'unknown'})`;
+  const configDetail = (
+    label: string,
+    value: string,
+    path: string,
+    rawValue: unknown = value,
+    sourceNote?: string,
+  ): IRsxExpressionReportDetail => {
+    const range =
+      args.configUri && path
+        ? findJsonSettingValueRange(args.text, path, rawValue)
+        : null;
+    return {
+      label,
+      value,
+      source: formatRsxExpressionReportDetailSource(
+        args.source,
+        path,
+        sourceNote,
+      ),
+      uri: args.configUri?.toString(),
+      start: range?.start,
+      end: range?.end,
+    };
+  };
+  const derivedScopeRange =
+    args.configUri && args.details.sourcePath
+      ? findJsonSettingKeyRange(args.text, args.details.sourcePath)
+      : null;
+  const assignment =
+    args.configUri && args.details.sourcePath
+      ? {
+          label: 'Configured as',
+          value:
+            args.details.scope === 'definition'
+              ? 'Definition hook entry'
+              : 'Instance hook entry',
+          source: formatRsxExpressionReportDetailSource(
+            args.source,
+            args.details.sourcePath,
+          ),
+          uri: args.configUri.toString(),
+          start: derivedScopeRange?.start,
+          end: derivedScopeRange?.end,
+        }
+      : undefined;
+  return [
+    {
+      label: 'Scope',
+      value: scope,
+      source: formatRsxExpressionReportScopeSource(args),
+      uri: args.scopeTarget?.uri.toString() ?? args.configUri?.toString(),
+      start: args.scopeTarget?.start ?? derivedScopeRange?.start,
+      end: args.scopeTarget?.end ?? derivedScopeRange?.end,
+    },
+    assignment,
+    'enabled' in hook
+      ? configDetail(
+          'Status',
+          hook.enabled === false ? 'Disabled' : 'Enabled',
+          `${args.details.sourcePath}.enabled`,
+          hook.enabled,
+        )
+      : {
+          label: 'Status',
+          value: 'Enabled',
+          source: 'default: enabled when omitted',
+        },
+    standardHook
+      ? configDetail(
+          'Kind',
+          standardHook,
+          `${args.details.sourcePath}.standardHook`,
+        )
+      : undefined,
+    moduleSpecifier
+      ? configDetail(
+          'Module',
+          moduleSpecifier,
+          `${args.details.sourcePath}.moduleSpecifier`,
+        )
+      : undefined,
+    exportName
+      ? configDetail(
+          'Export',
+          exportName,
+          `${args.details.sourcePath}.exportName`,
+        )
+      : undefined,
+  ].filter((detail): detail is IRsxExpressionReportDetail => Boolean(detail));
+}
+
+function formatRsxExpressionReportScopeSource(args: {
+  readonly details: {
+    readonly scope: 'definition' | 'instance';
+    readonly instanceId?: string;
+  };
+  readonly scopeTarget?: IRsxExpressionTreeLocation;
+}): string {
+  if (!args.scopeTarget) {
+    return args.details.scope === 'definition'
+      ? 'Expression definition'
+      : 'Expression instance';
+  }
+  const source = vscode.workspace.asRelativePath(args.scopeTarget.uri, false);
+  return args.details.scope === 'definition'
+    ? `${source} · expression definition`
+    : `${source} · expression instance`;
+}
+
+function formatRsxExpressionReportDetailSource(
+  source: string,
+  path: string,
+  note?: string,
+): string {
+  return [source, path, note].filter(Boolean).join(' · ');
+}
+
+function formatRsxExpressionReportDebugHookLabel(
+  hook: Record<string, unknown>,
+  details: {
+    readonly scope: 'definition' | 'instance';
+    readonly instanceId?: string;
+    readonly index: number;
+  },
+): string {
+  const name =
+    typeof hook.standardHook === 'string'
+      ? hook.standardHook
+      : typeof hook.exportName === 'string'
+        ? hook.exportName
+        : `Hook ${details.index + 1}`;
+  return details.scope === 'definition'
+    ? name
+    : `${name} (${details.instanceId ?? 'instance'})`;
+}
+
+function findJsonHookSourceRange(
+  text: string,
+  hookPath: string,
+  hook: Record<string, unknown>,
+): { readonly start: number; readonly end: number } | null {
+  for (const key of [
+    'standardHook',
+    'moduleSpecifier',
+    'exportName',
+    'enabled',
+  ]) {
+    if (key in hook) {
+      return findJsonSettingValueRange(text, `${hookPath}.${key}`, hook[key]);
+    }
+  }
+  return null;
+}
+
+function createJsonPath(parts: readonly string[]): string {
+  return parts.join('.');
+}
+
+function isConfigSettingCoveredByExpressionBehavior(
+  settingPath: string,
+): boolean {
+  return (
+    settingPath === 'build.preparse' ||
+    settingPath === 'build.compiled' ||
+    settingPath === 'build.compile' ||
+    settingPath === 'build.lazy' ||
+    settingPath === 'build.lazyGroup' ||
+    settingPath === 'build.lazy-group'
+  );
+}
+
+async function createRsxExpressionReportRsxRows(
+  expression: IRsxExpressionTreeExpression,
+): Promise<IRsxExpressionReportRsxRows> {
+  const text = await readWorkspaceTextFile(expression.uri);
+  if (!text) {
+    return {
+      actualRows: createRsxExpressionReportActualRows(expression, {
+        definitionRows: [],
+      }),
+    };
+  }
+  const definitionRows: IRsxExpressionReportRow[] = [];
+  const lineStarts = getTextLineStartOffsets(text);
+  const expressionLine = getTextLineIndexAtOffset(lineStarts, expression.start);
+  const expressionBodyLine = getTextLineIndexAtOffset(
+    lineStarts,
+    expression.expression.expressionStart,
+  );
+  const firstExpressionLine = findFirstTopLevelExpressionHeaderLine(text);
+  definitionRows.push(
+    createExpressionReportStaticRow(
+      'expression.name',
+      expression.exportName,
+      expression.uri,
+      expression.start,
+      expression.end,
+    ),
+    createExpressionReportStaticRow(
+      'expression.return',
+      expression.expression.returnTypeText ?? 'unknown',
+      expression.uri,
+      expression.start,
+      expression.end,
+    ),
+    createExpressionReportStaticRow(
+      'expression.model',
+      expression.expression.modelTypeText,
+      expression.uri,
+      expression.modelStart,
+      expression.modelEnd,
+    ),
+  );
+  definitionRows.push(
+    ...scanRsxHeaderRows({
+      text,
+      uri: expression.uri,
+      lineStarts,
+      lineStart: 0,
+      lineEnd: Math.max(0, firstExpressionLine),
+      prefix: 'defaults',
+    }),
+  );
+  definitionRows.push(
+    ...scanRsxHeaderRows({
+      text,
+      uri: expression.uri,
+      lineStarts,
+      lineStart: expressionLine + 1,
+      lineEnd: expressionBodyLine,
+      prefix: 'expression',
+    }),
+  );
+  return {
+    actualRows: createRsxExpressionReportActualRows(expression, {
+      definitionRows,
+    }),
+  };
+}
+
+function createRsxExpressionReportActualRows(
+  expression: IRsxExpressionTreeExpression,
+  args: {
+    readonly definitionRows: readonly IRsxExpressionReportRow[];
+  },
+): IRsxExpressionReportRow[] {
+  return [
+    ...['expression.name', 'expression.model', 'expression.return']
+      .map((setting) =>
+        findFirstReportRowBySetting(args.definitionRows, [setting]),
+      )
+      .filter((row): row is IRsxExpressionReportRow => Boolean(row)),
+    createRsxExpressionReportEffectiveRow({
+      setting: 'effective.preparse',
+      value: String(expression.expression.preparse),
+      sourceRows: args,
+      candidates: ['expression.preparse', 'defaults.preparse'],
+    }),
+    createRsxExpressionReportEffectiveRow({
+      setting: 'effective.compiled',
+      value: String(expression.expression.compiled),
+      sourceRows: args,
+      candidates: [
+        'expression.compiled',
+        'expression.compile',
+        'defaults.compiled',
+        'defaults.compile',
+      ],
+    }),
+    createRsxExpressionReportEffectiveRow({
+      setting: 'effective.lazy',
+      value: String(expression.expression.lazy),
+      sourceRows: args,
+      candidates: ['expression.lazy', 'defaults.lazy'],
+    }),
+    createRsxExpressionReportEffectiveRow({
+      setting: 'effective.lazyGroup',
+      value: getRsxExpressionLazyGroupName(expression) || '(none)',
+      sourceRows: args,
+      candidates: [
+        'expression.lazyGroup',
+        'expression.lazy-group',
+        'defaults.lazyGroup',
+        'defaults.lazy-group',
+      ],
+    }),
+  ];
+}
+
+function createRsxExpressionReportEffectiveRow(args: {
+  readonly setting: string;
+  readonly value: string;
+  readonly sourceRows: {
+    readonly definitionRows: readonly IRsxExpressionReportRow[];
+  };
+  readonly candidates: readonly string[];
+}): IRsxExpressionReportRow {
+  const definitionRow = findFirstReportRowBySetting(
+    args.sourceRows.definitionRows,
+    args.candidates,
+  );
+  if (definitionRow) {
+    return createRsxExpressionReportResolvedRow(args.setting, args.value, {
+      ...definitionRow,
+      source: `${definitionRow.source ?? '.rsx'} (.rsx definition)`,
+    });
+  }
+  return {
+    setting: args.setting,
+    value: args.value,
+    source: 'RS-X expression default',
+  };
+}
+
+function createRsxExpressionReportResolvedRow(
+  setting: string,
+  value: string,
+  sourceRow: IRsxExpressionReportRow,
+): IRsxExpressionReportRow {
+  return {
+    setting,
+    value,
+    source: sourceRow.source,
+    uri: sourceRow.uri,
+    start: sourceRow.start,
+    end: sourceRow.end,
+  };
+}
+
+function findFirstReportRowBySetting(
+  rows: readonly IRsxExpressionReportRow[],
+  settings: readonly string[],
+): IRsxExpressionReportRow | undefined {
+  const normalized = new Map(
+    rows.map((row) => [normalizeReportSettingKey(row.setting), row] as const),
+  );
+  for (const setting of settings) {
+    const row = normalized.get(normalizeReportSettingKey(setting));
+    if (row) {
+      return row;
+    }
+  }
+  return undefined;
+}
+
+function normalizeReportSettingKey(setting: string): string {
+  return setting.replace(/[-_]/gu, '').toLowerCase();
+}
+
+function createRsxExpressionReportCodeRows(
+  expression: IRsxExpressionTreeExpression,
+  instanceGroups: readonly IRsxExpressionTreeExpressionInstanceGroup[],
+): IRsxExpressionReportRow[] {
+  const group = instanceGroups.find(
+    (candidate) => candidate.expression.key === expression.key,
+  );
+  return (group?.instances ?? []).flatMap((instance, index) => [
+    {
+      setting: `usage[${index}].call`,
+      value: `${instance.relativePath}:${instance.line + 1}`,
+      source: instance.relativePath,
+      uri: instance.uri.toString(),
+      start: instance.start,
+      end: instance.end,
+    },
+    {
+      setting: `usage[${index}].debugInstanceId`,
+      value: instance.instanceId,
+      source: instance.relativePath,
+      uri: instance.uri.toString(),
+      start: instance.start,
+      end: instance.end,
+    },
+  ]);
+}
+
+function createExpressionReportStaticRow(
+  setting: string,
+  value: string,
+  uri: vscode.Uri,
+  start: number,
+  end: number,
+): IRsxExpressionReportRow {
+  return {
+    setting,
+    value,
+    source: vscode.workspace.asRelativePath(uri, false),
+    uri: uri.toString(),
+    start,
+    end,
+  };
+}
+
+function scanRsxHeaderRows(args: {
+  readonly text: string;
+  readonly uri: vscode.Uri;
+  readonly lineStarts: readonly number[];
+  readonly lineStart: number;
+  readonly lineEnd: number;
+  readonly prefix: string;
+}): IRsxExpressionReportRow[] {
+  const rows: IRsxExpressionReportRow[] = [];
+  for (let lineIndex = args.lineStart; lineIndex < args.lineEnd; lineIndex++) {
+    const lineStart = args.lineStarts[lineIndex] ?? 0;
+    const lineEnd = getTextLineEndOffset(args.text, lineStart);
+    const line = args.text.slice(lineStart, lineEnd);
+    const parsed = parseHeaderLine(line);
+    if (!parsed || parsed.value.trim().length === 0) {
+      continue;
+    }
+    const valueStart = lineStart + getHeaderValueStartCharacter(line);
+    rows.push({
+      setting: `${args.prefix}.${parsed.key}`,
+      value: parsed.value.trim(),
+      source: vscode.workspace.asRelativePath(args.uri, false),
+      uri: args.uri.toString(),
+      start: valueStart,
+      end: lineEnd,
+    });
+  }
+  return rows;
+}
+
+function flattenJsonSettings(
+  value: unknown,
+  pathParts: readonly string[] = [],
+): { readonly path: string; readonly value: unknown }[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((entry, index) =>
+      flattenJsonSettings(entry, [...pathParts, String(index)]),
+    );
+  }
+  if (value && typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>);
+    if (entries.length === 0) {
+      return [{ path: pathParts.join('.') || '(root)', value }];
+    }
+    return entries.flatMap(([key, entry]) =>
+      flattenJsonSettings(entry, [...pathParts, key]),
+    );
+  }
+  return [{ path: pathParts.join('.') || '(root)', value }];
+}
+
+function findJsonSettingValueRange(
+  text: string,
+  settingPath: string,
+  value: unknown,
+): { readonly start: number; readonly end: number } | null {
+  const key = settingPath.split('.').at(-1);
+  const serializedValue = JSON.stringify(value);
+  if (!key || serializedValue === undefined) {
+    return null;
+  }
+  const scopedKeyRange = findJsonSettingKeyRange(text, settingPath);
+  const scopedSearchStart = scopedKeyRange ? scopedKeyRange.end : 0;
+  const scopedValueIndex = text.indexOf(serializedValue, scopedSearchStart);
+  if (scopedValueIndex >= 0) {
+    return {
+      start: scopedValueIndex,
+      end: scopedValueIndex + serializedValue.length,
+    };
+  }
+  const keyPattern = JSON.stringify(key);
+  const keyIndex = text.indexOf(keyPattern);
+  const searchStart = keyIndex >= 0 ? keyIndex + keyPattern.length : 0;
+  const valueIndex = text.indexOf(serializedValue, searchStart);
+  return valueIndex >= 0
+    ? { start: valueIndex, end: valueIndex + serializedValue.length }
+    : null;
+}
+
+function findJsonSettingKeyRange(
+  text: string,
+  settingPath: string,
+): { readonly start: number; readonly end: number } | null {
+  const parts = settingPath.split('.').filter(Boolean);
+  let cursor = 0;
+  let lastKeyRange: { readonly start: number; readonly end: number } | null =
+    null;
+  for (const part of parts) {
+    if (/^\d+$/u.test(part)) {
+      const arrayElementStart = findJsonArrayElementStart(
+        text,
+        cursor,
+        Number(part),
+      );
+      if (arrayElementStart < 0) {
+        return lastKeyRange;
+      }
+      cursor = arrayElementStart;
+      continue;
+    }
+    const keyPattern = JSON.stringify(part);
+    const keyIndex = text.indexOf(keyPattern, cursor);
+    if (keyIndex < 0) {
+      return lastKeyRange;
+    }
+    lastKeyRange = {
+      start: keyIndex,
+      end: keyIndex + keyPattern.length,
+    };
+    cursor = keyIndex + keyPattern.length;
+  }
+  return lastKeyRange;
+}
+
+function findJsonArrayElementStart(
+  text: string,
+  searchStart: number,
+  index: number,
+): number {
+  const arrayStart = text.indexOf('[', searchStart);
+  if (arrayStart < 0) {
+    return -1;
+  }
+  let elementIndex = -1;
+  for (let offset = arrayStart + 1; offset < text.length; offset += 1) {
+    const character = text[offset];
+    if (character === '{') {
+      elementIndex += 1;
+      if (elementIndex === index) {
+        return offset;
+      }
+    }
+    if (character === ']') {
+      return -1;
+    }
+  }
+  return -1;
+}
+
+function findFirstTopLevelExpressionHeaderLine(text: string): number {
+  const lineStarts = getTextLineStartOffsets(text);
+  for (let index = 0; index < lineStarts.length; index++) {
+    const line = text.slice(
+      lineStarts[index],
+      getTextLineEndOffset(text, lineStarts[index]),
+    );
+    const parsed = parseHeaderLine(line);
+    if (parsed?.key === 'expression') {
+      return index;
+    }
+  }
+  return lineStarts.length;
+}
+
+function getTextLineStartOffsets(text: string): number[] {
+  const starts = [0];
+  for (let index = 0; index < text.length; index++) {
+    if (text[index] === '\n') {
+      starts.push(index + 1);
+    }
+  }
+  return starts;
+}
+
+function getTextLineIndexAtOffset(
+  lineStarts: readonly number[],
+  offset: number,
+): number {
+  let line = 0;
+  for (let index = 0; index < lineStarts.length; index++) {
+    if (lineStarts[index] > offset) {
+      break;
+    }
+    line = index;
+  }
+  return line;
+}
+
+function getTextLineEndOffset(text: string, lineStart: number): number {
+  const newline = text.indexOf('\n', lineStart);
+  const end = newline >= 0 ? newline : text.length;
+  return end > lineStart && text[end - 1] === '\r' ? end - 1 : end;
+}
+
+function formatReportValue(value: unknown): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  return JSON.stringify(value);
+}
+
+function getRsxExpressionReportLoadingHtml(title: string): string {
+  return getRsxExpressionReportShellHtml({
+    title,
+    body: '<main><div class="empty">Loading expression report...</div></main>',
+  });
+}
+
+function getRsxExpressionReportMessageHtml(
+  title: string,
+  message: string,
+): string {
+  return getRsxExpressionReportShellHtml({
+    title,
+    body: `<main><div class="empty">${escapeHtml(message)}</div></main>`,
+  });
+}
+
+function getRsxExpressionReportHtml(data: IRsxExpressionReportData): string {
+  return getRsxExpressionReportShellHtml({
+    title: data.title,
+    body: renderRsxExpressionReportBody(data),
+    targetKey: data.targetKey,
+  });
+}
+
+function getRsxExpressionReportShellHtml(args: {
+  readonly title: string;
+  readonly body: string;
+  readonly targetKey?: string;
+}): string {
+  const nonce = createWebviewNonce();
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(args.title)}</title>
+  <style>
+    :root { --rsx-border: var(--vscode-panel-border); --rsx-muted: var(--vscode-descriptionForeground); --rsx-row: var(--vscode-sideBar-background); --rsx-hover: var(--vscode-list-hoverBackground); --rsx-link: var(--vscode-textLink-foreground); --rsx-code: var(--vscode-textCodeBlock-background); --rsx-surface: color-mix(in srgb, var(--rsx-row) 54%, var(--vscode-editor-background)); --rsx-raised: color-mix(in srgb, var(--rsx-code) 48%, var(--vscode-editor-background)); }
+    body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); background: var(--vscode-editor-background); margin: 0; }
+    header { padding: 22px 24px 6px; }
+    h1 { font-size: 20px; font-weight: 600; margin: 0; }
+    .subtitle { margin-top: 4px; color: var(--rsx-muted); font-size: 12px; }
+    main { max-width: 1180px; padding: 16px 24px 36px; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+    .expressionBlock { margin-bottom: 18px; background: var(--rsx-surface); border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px color-mix(in srgb, var(--vscode-editor-background) 70%, transparent); }
+    .expressionHeader { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 14px 16px 4px; }
+    .expressionSource { color: var(--rsx-muted); font-size: 11px; white-space: nowrap; }
+    button.expressionText { display: block; width: calc(100% - 24px); margin: 12px; border: 0; border-radius: 6px; padding: 14px; color: var(--vscode-foreground); background: var(--rsx-raised); font-family: var(--vscode-editor-font-family); font-size: 12px; line-height: 1.55; text-align: left; white-space: pre; overflow-x: auto; cursor: pointer; }
+    button.expressionText:hover, button.expressionText:focus { background: var(--rsx-hover); outline: none; }
+    .tok-keyword { color: var(--vscode-symbolIconKeywordForeground, #c586c0); }
+    .tok-string { color: var(--vscode-symbolIconStringForeground, #ce9178); }
+    .tok-number { color: var(--vscode-symbolIconNumberForeground, #b5cea8); }
+    .tok-function, .tok-method { color: var(--vscode-symbolIconFunctionForeground, #dcdcaa); }
+    .tok-property { color: var(--vscode-symbolIconPropertyForeground, #9cdcfe); }
+    .tok-parameter { color: var(--vscode-symbolIconVariableForeground, #9cdcfe); }
+    .tok-variable { color: var(--vscode-symbolIconVariableForeground, #9cdcfe); }
+    .tok-operator { color: var(--vscode-editorOperator-foreground, var(--vscode-foreground)); }
+    .tok-comment { color: var(--vscode-editorLineNumber-foreground, #6a9955); }
+    .tok-regexp { color: var(--vscode-symbolIconStringForeground, #d16969); }
+    section { background: var(--rsx-surface); border-radius: 8px; padding: 14px; box-shadow: 0 1px 3px color-mix(in srgb, var(--vscode-editor-background) 70%, transparent); }
+    .sectionHeader { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 0 2px 12px; }
+    h2 { font-size: 14px; font-weight: 600; margin: 0; color: var(--rsx-link); }
+    .group { padding: 14px; border-radius: 7px; background: color-mix(in srgb, var(--vscode-editor-background) 66%, transparent); }
+    .group + .group { margin-top: 14px; }
+    .groupTitle { color: var(--rsx-muted); font-size: 11px; font-weight: 600; margin-bottom: 10px; overflow-wrap: anywhere; text-transform: uppercase; }
+    .rows { display: grid; grid-template-columns: var(--rsx-report-setting-col, max-content) var(--rsx-report-value-col, max-content) var(--rsx-report-source-col, max-content); gap: 4px 0; overflow-x: auto; }
+    .row { display: contents; }
+    .cell { padding: 8px 14px 8px 10px; background: color-mix(in srgb, var(--rsx-code) 36%, transparent); font-size: 12px; line-height: 1.45; min-width: 0; overflow-wrap: normal; white-space: nowrap; }
+    .cell.hasDetails { white-space: normal; }
+    .setting { color: var(--vscode-foreground); font-family: var(--vscode-editor-font-family); }
+    .source { color: var(--rsx-muted); font-size: 11px; }
+    .pill { display: inline-block; border-radius: 999px; padding: 2px 8px; background: color-mix(in srgb, var(--rsx-link) 18%, var(--rsx-code)); }
+    button.value { border: 0; padding: 0; color: var(--rsx-link); background: transparent; font: inherit; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+    button.value:hover, button.value:focus { text-decoration: underline; outline: none; }
+    .hookCards { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .hookCard { border-radius: 7px; background: var(--rsx-raised); overflow: hidden; }
+    .hookCardHeader { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 18px 7px 21px; }
+    .hookName { font-weight: 600; font-family: var(--vscode-editor-font-family); }
+    .hookSource { color: var(--rsx-muted); font-size: 11px; white-space: nowrap; }
+    .detailList { display: grid; grid-template-columns: max-content max-content minmax(18ch, 1fr); column-gap: 14px; row-gap: 7px; align-items: baseline; padding: 9px 14px 14px 17px; }
+    .hookCard .detailList { column-gap: 18px; row-gap: 11px; padding: 12px 18px 18px 21px; }
+    .detailLabel { color: var(--rsx-muted); font-size: 11px; }
+    .hookCard .detailLabel { text-transform: uppercase; }
+    .detailValue { color: var(--vscode-foreground); font-family: var(--vscode-editor-font-family); overflow-wrap: anywhere; }
+    button.detailValue { color: var(--rsx-link); }
+    .detailSource { color: var(--rsx-muted); font-size: 11px; overflow-wrap: anywhere; }
+    .empty { color: var(--rsx-muted); padding: 8px 10px; }
+    @media (max-width: 760px) {
+      main { padding: 12px; }
+      .detailList { grid-template-columns: max-content minmax(0, 1fr); }
+      .detailSource { grid-column: 2; }
+      .hookCardHeader { align-items: flex-start; flex-direction: column; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <header><h1>${escapeHtml(args.title)}</h1></header>
+  ${args.body}
+  <script nonce="${nonce}">
+    const vscode = acquireVsCodeApi();
+    const targetKey = ${JSON.stringify(args.targetKey ?? null)};
+    if (targetKey) {
+      vscode.setState?.({ targetKey });
+    }
+    document.addEventListener('click', (event) => {
+      const target = event.target instanceof Element ? event.target.closest('[data-uri], [data-action]') : null;
+      if (!target) return;
+      if (target.dataset.action === 'openDebugHookImplementation') {
+        vscode.postMessage({
+          type: 'openDebugHookImplementation',
+          hookModuleSpecifier: target.dataset.hookModuleSpecifier,
+          hookExportName: target.dataset.hookExportName,
+          hookAnchorUri: target.dataset.hookAnchorUri
+        });
+        return;
+      }
+      const start = Number(target.dataset.start);
+      const end = Number(target.dataset.end);
+      if (!target.dataset.uri || !Number.isFinite(start) || !Number.isFinite(end)) return;
+      vscode.postMessage({
+        type: 'open',
+        uri: target.dataset.uri,
+        start,
+        end
+      });
+    });
+  </script>
+</body>
+</html>`;
+}
+
+function renderRsxExpressionReportSection(
+  section: IRsxExpressionReportSection,
+): string {
+  const groups = groupRsxExpressionReportRows(section.rows);
+  return `<section><div class="sectionHeader"><h2>${escapeHtml(section.title)}</h2></div>${groups.length === 0 ? '<div class="empty">No settings found.</div>' : groups.map(renderRsxExpressionReportGroup).join('')}</section>`;
+}
+
+function renderRsxExpressionReportRow(row: IRsxExpressionReportRow): string {
+  const value = renderRsxExpressionReportRowValue(row);
+  const isHook = row.setting.startsWith('debugHooks.');
+  const cellClass = `cell${isHook ? ' hookCell' : ''}`;
+  const setting = renderRsxExpressionReportSetting(row);
+  return `<div class="row"><div class="${cellClass} setting${isHook ? ' hookSetting' : ''}">${setting}</div><div class="${cellClass}${row.details ? ' hasDetails' : ''}">${value}</div><div class="${cellClass} source">${escapeHtml(row.source ?? '')}</div></div>`;
+}
+
+function renderRsxExpressionReportSetting(
+  row: IRsxExpressionReportRow,
+): string {
+  const label = escapeHtml(row.label ?? formatReportSettingLabel(row.setting));
+  if (row.action === 'openDebugHookImplementation' && row.hookModuleSpecifier) {
+    return `<button type="button" class="value hookName" data-action="openDebugHookImplementation" data-hook-module-specifier="${escapeHtml(row.hookModuleSpecifier)}"${row.hookExportName ? ` data-hook-export-name="${escapeHtml(row.hookExportName)}"` : ''}${row.hookAnchorUri ? ` data-hook-anchor-uri="${escapeHtml(row.hookAnchorUri)}"` : ''}>${label}</button>`;
+  }
+  return label;
+}
+
+function renderRsxExpressionReportRowValue(
+  row: IRsxExpressionReportRow,
+): string {
+  const content = row.details
+    ? renderRsxExpressionReportDetails(row.details)
+    : escapeHtml(row.value);
+  if (!row.details) {
+    if (
+      row.action === 'openDebugHookImplementation' &&
+      row.hookModuleSpecifier
+    ) {
+      return `<button type="button" class="value" data-action="openDebugHookImplementation" data-hook-module-specifier="${escapeHtml(row.hookModuleSpecifier)}"${row.hookExportName ? ` data-hook-export-name="${escapeHtml(row.hookExportName)}"` : ''}${row.hookAnchorUri ? ` data-hook-anchor-uri="${escapeHtml(row.hookAnchorUri)}"` : ''}>${content}</button>`;
+    }
+  }
+  return row.uri && typeof row.start === 'number' && typeof row.end === 'number'
+    ? `<button type="button" class="value" data-uri="${escapeHtml(row.uri)}" data-start="${escapeHtml(String(row.start))}" data-end="${escapeHtml(String(row.end))}">${content}</button>`
+    : content;
+}
+
+function renderRsxExpressionReportDetails(
+  details: readonly IRsxExpressionReportDetail[],
+): string {
+  return `<span class="detailList">${details
+    .map((detail) => {
+      const value =
+        detail.uri &&
+        typeof detail.start === 'number' &&
+        typeof detail.end === 'number'
+          ? `<button type="button" class="value detailValue" data-uri="${escapeHtml(detail.uri)}" data-start="${escapeHtml(String(detail.start))}" data-end="${escapeHtml(String(detail.end))}">${escapeHtml(detail.value)}</button>`
+          : `<span class="detailValue">${escapeHtml(detail.value)}</span>`;
+      return `<span class="detailLabel">${escapeHtml(detail.label)}</span>${value}<span class="detailSource">${escapeHtml(detail.source ?? '')}</span>`;
+    })
+    .join('')}</span>`;
+}
+
+function renderRsxExpressionReportBody(data: IRsxExpressionReportData): string {
+  const columnStyle = getRsxExpressionReportColumnStyle(data);
+  return `<main style="${escapeHtml(columnStyle)}">
+    ${renderRsxExpressionReportExpressionBlock(data)}
+    <div class="layout">${data.sections.map(renderRsxExpressionReportSection).join('')}</div>
+  </main>`;
+}
+
+function renderRsxExpressionReportExpressionBlock(
+  data: IRsxExpressionReportData,
+): string {
+  return `<div class="expressionBlock"><div class="expressionHeader"><h2>Expression</h2><span class="expressionSource">${escapeHtml(data.expressionSource)}</span></div><button type="button" class="expressionText" data-uri="${escapeHtml(data.expressionUri)}" data-start="${escapeHtml(String(data.expressionStart))}" data-end="${escapeHtml(String(data.expressionEnd))}">${renderHighlightedRsxExpressionText(data.expressionText)}</button></div>`;
+}
+
+function renderHighlightedRsxExpressionText(expressionText: string): string {
+  const context = createRsxSemanticClassificationContext(expressionText);
+  const spans: Array<{
+    readonly start: number;
+    readonly end: number;
+    readonly className: string;
+  }> = [];
+  for (const token of tokenizeRsxExpression(expressionText)) {
+    const tokenType = resolveRsxSemanticTokenType({
+      context,
+      text: expressionText,
+      token,
+    });
+    if (tokenType === null) {
+      continue;
+    }
+    const tokenText = expressionText.slice(token.start, token.end);
+    if (
+      !shouldEmitRsxSemanticToken({
+        tokenType,
+        tokenText,
+        policy: RSX_DOCUMENT_SEMANTIC_TOKEN_POLICY,
+      })
+    ) {
+      continue;
+    }
+    const tokenName = rsxSemanticTokenTypes[tokenType];
+    if (!tokenName) {
+      continue;
+    }
+    spans.push({
+      start: token.start,
+      end: token.end,
+      className: `tok-${tokenName}`,
+    });
+  }
+  spans.sort((left, right) => left.start - right.start || left.end - right.end);
+  let cursor = 0;
+  const parts: string[] = [];
+  for (const span of spans) {
+    if (span.start < cursor || span.end <= span.start) {
+      continue;
+    }
+    parts.push(escapeHtml(expressionText.slice(cursor, span.start)));
+    parts.push(
+      `<span class="${escapeHtml(span.className)}">${escapeHtml(
+        expressionText.slice(span.start, span.end),
+      )}</span>`,
+    );
+    cursor = span.end;
+  }
+  parts.push(escapeHtml(expressionText.slice(cursor)));
+  return parts.join('');
+}
+
+function getRsxExpressionReportColumnStyle(
+  data: IRsxExpressionReportData,
+): string {
+  const rows = data.sections.flatMap((section) => section.rows);
+  const settingWidth = getRsxExpressionReportColumnWidth(
+    rows.map((row) => row.label ?? formatReportSettingLabel(row.setting)),
+    10,
+    40,
+  );
+  const valueWidth = getRsxExpressionReportColumnWidth(
+    rows.map((row) => row.value),
+    4,
+    72,
+  );
+  const sourceWidth = getRsxExpressionReportColumnWidth(
+    rows.map((row) => row.source ?? ''),
+    8,
+    64,
+  );
+  return [
+    `--rsx-report-setting-col: ${settingWidth}ch`,
+    `--rsx-report-value-col: ${valueWidth}ch`,
+    `--rsx-report-source-col: ${sourceWidth}ch`,
+  ].join('; ');
+}
+
+function getRsxExpressionReportColumnWidth(
+  values: readonly string[],
+  minWidth: number,
+  maxWidth: number,
+): number {
+  const contentWidth = values.reduce(
+    (width, value) => Math.max(width, getReportDisplayLength(value)),
+    minWidth,
+  );
+  return Math.min(Math.max(contentWidth + 2, minWidth), maxWidth);
+}
+
+function getReportDisplayLength(value: string): number {
+  return Math.max(...value.split(/\r?\n/u).map((line) => [...line].length), 0);
+}
+
+function renderRsxExpressionReportGroup(args: {
+  readonly title: string;
+  readonly rows: readonly IRsxExpressionReportRow[];
+}): string {
+  if (args.rows.every((row) => row.setting.startsWith('debugHooks.'))) {
+    return `<div class="group"><div class="groupTitle">${escapeHtml(args.title)}</div><div class="hookCards">${args.rows.map(renderRsxExpressionReportHookCard).join('')}</div></div>`;
+  }
+  return `<div class="group"><div class="groupTitle">${escapeHtml(args.title)}</div><div class="rows">${args.rows.map(renderRsxExpressionReportRow).join('')}</div></div>`;
+}
+
+function renderRsxExpressionReportHookCard(
+  row: IRsxExpressionReportRow,
+): string {
+  return `<div class="hookCard"><div class="hookCardHeader"><div>${renderRsxExpressionReportSetting(row)}</div><span class="hookSource">${escapeHtml(row.source ?? '')}</span></div>${renderRsxExpressionReportDetails(row.details ?? [])}</div>`;
+}
+
+function groupRsxExpressionReportRows(
+  rows: readonly IRsxExpressionReportRow[],
+): {
+  readonly title: string;
+  readonly rows: readonly IRsxExpressionReportRow[];
+}[] {
+  const groups = new Map<string, IRsxExpressionReportRow[]>();
+  for (const row of rows) {
+    const title = getRsxExpressionReportGroupTitle(row);
+    groups.set(title, [...(groups.get(title) ?? []), row]);
+  }
+  return [...groups.entries()].map(([title, groupRows]) => ({
+    title,
+    rows: groupRows,
+  }));
+}
+
+function getRsxExpressionReportGroupTitle(
+  row: IRsxExpressionReportRow,
+): string {
+  if (row.setting.startsWith('debugHooks.')) {
+    return 'Hooks';
+  }
+  const debugHookPath = parseRsxExpressionReportDebugHookSetting(row.setting);
+  if (debugHookPath) {
+    return 'Hooks';
+  }
+  if (row.setting.startsWith('effective.')) {
+    return 'Expression behavior';
+  }
+  if (row.setting.startsWith('expression.')) {
+    return 'Expression declaration';
+  }
+  if (row.setting.startsWith('defaults.')) {
+    return 'Defaults headers';
+  }
+  if (row.setting.startsWith('usage[')) {
+    const match = /^usage\[(\d+)\]/u.exec(row.setting);
+    return match ? `Usage ${Number(match[1]) + 1}` : 'Usages';
+  }
+  if (row.setting.startsWith('build.')) {
+    return 'Build';
+  }
+  if (row.setting.startsWith('cli.')) {
+    return 'CLI';
+  }
+  if (row.setting.startsWith('editor.')) {
+    return 'Editor';
+  }
+  if (row.setting.startsWith('languageService.')) {
+    return 'Language service';
+  }
+  if (row.setting.startsWith('typescript.')) {
+    return 'TypeScript';
+  }
+  const [first] = row.setting.split('.');
+  return first ? toReportGroupTitle(first) : 'Settings';
+}
+
+function formatReportSettingLabel(setting: string): string {
+  if (setting.startsWith('debugHooks.')) {
+    return formatRsxExpressionReportDebugHookRowLabel(setting);
+  }
+  const debugHookPath = parseRsxExpressionReportDebugHookSetting(setting);
+  if (debugHookPath) {
+    return formatRsxExpressionReportDebugHookSettingLabel(debugHookPath);
+  }
+  return setting
+    .replace(/^expression\.body$/u, 'expression')
+    .replace(/^effective\./u, '')
+    .replace(/^expression\./u, '')
+    .replace(/^defaults\./u, '')
+    .replace(/^usage\[\d+\]\./u, '');
+}
+
+function formatRsxExpressionReportDebugHookRowLabel(setting: string): string {
+  const parts = setting.split('.');
+  if (parts[1] === 'definition') {
+    const index = Number(parts[2] ?? '0');
+    return `definition hook ${Number.isFinite(index) ? index + 1 : 1}`;
+  }
+  if (parts[1] === 'instance') {
+    const instanceId = parts[2] ?? 'unknown';
+    const index = Number(parts[3] ?? '0');
+    return `instance ${instanceId} hook ${Number.isFinite(index) ? index + 1 : 1}`;
+  }
+  return 'debug hook';
+}
+
+function formatRsxExpressionReportDebugHookSettingLabel(debugHookPath: {
+  readonly scope: 'definition' | 'instance';
+  readonly instanceId?: string;
+  readonly settingPath: readonly string[];
+}): string {
+  const [first, ...rest] = debugHookPath.settingPath;
+  const hasHookIndex = first !== undefined && /^\d+$/u.test(first);
+  const hookTarget =
+    debugHookPath.scope === 'definition'
+      ? 'definition'
+      : `instance ${debugHookPath.instanceId ?? ''}`.trim();
+  const hookLabel = hasHookIndex
+    ? `${hookTarget} hook ${Number(first) + 1}`
+    : hookTarget;
+  const settingPath = hasHookIndex ? rest : debugHookPath.settingPath;
+  return [hookLabel, ...settingPath].filter(Boolean).join('.');
+}
+
+function parseRsxExpressionReportDebugHookSetting(setting: string): {
+  readonly expressionName: string;
+  readonly scope: 'definition' | 'instance';
+  readonly instanceId?: string;
+  readonly settingPath: readonly string[];
+} | null {
+  const parts = setting.split('.');
+  if (
+    parts.length < 5 ||
+    parts[0] !== 'build' ||
+    parts[1] !== 'debugChangeHooks'
+  ) {
+    return null;
+  }
+  const expressionName = parts[2] ?? '';
+  const scope = parts[3];
+  if (!expressionName || scope === undefined) {
+    return null;
+  }
+  if (scope === 'group') {
+    return {
+      expressionName,
+      scope: 'definition',
+      settingPath: parts.slice(4),
+    };
+  }
+  if (scope === 'instances') {
+    const instanceId = parts[4] ?? '';
+    const settingPath = parts.slice(5);
+    if (!instanceId || settingPath.length === 0) {
+      return null;
+    }
+    return {
+      expressionName,
+      scope: 'instance',
+      instanceId,
+      settingPath,
+    };
+  }
+  return {
+    expressionName,
+    scope: 'definition',
+    settingPath: parts.slice(3),
+  };
+}
+
+function toReportGroupTitle(value: string): string {
+  const spaced = value
+    .replace(/([a-z0-9])([A-Z])/gu, '$1 $2')
+    .replace(/[-_]+/gu, ' ')
+    .trim();
+  return spaced
+    ? `${spaced[0]?.toUpperCase() ?? ''}${spaced.slice(1)}`
+    : 'Settings';
 }
 
 async function openRsxExpressionTesterModelDocument(
@@ -4448,7 +10142,7 @@ function getRsxExpressionTesterReportHtml(
     }
   </style>
 </head>
-<body>
+<body data-vscode-context="{&quot;preventDefaultContextMenuItems&quot;:true}">
   <div class="toolbar">
     <div class="title">${escapeHtml(data.title)}</div>
     <div class="summary">${escapeHtml(status)}</div>
@@ -7415,12 +13109,181 @@ function escapeHtml(value: string): string {
     .replace(/'/gu, '&#39;');
 }
 
+async function getRsxExpressionTreeProjectRoots(
+  files: readonly IRsxExpressionTreeFile[],
+): Promise<IRsxExpressionTreeProjectRoot[]> {
+  if (files.length === 0) {
+    return [];
+  }
+  const explicitProjects = await readConfiguredRsxProjects();
+  const groups = new Map<
+    string,
+    {
+      label: string;
+      rootUri: vscode.Uri;
+      explicit: boolean;
+      files: IRsxExpressionTreeFile[];
+    }
+  >();
+
+  for (const project of explicitProjects) {
+    groups.set(project.rootUri.toString(), {
+      label: project.name,
+      rootUri: project.rootUri,
+      explicit: true,
+      files: [],
+    });
+  }
+
+  for (const file of files) {
+    const explicitProject = findContainingRsxProject(
+      file.uri,
+      explicitProjects,
+    );
+    const rootUri =
+      explicitProject?.rootUri ?? inferRsxExpressionProjectRoot(file.uri);
+    const key = rootUri.toString();
+    const existing = groups.get(key);
+    if (existing) {
+      existing.files.push(file);
+      continue;
+    }
+    groups.set(key, {
+      label: explicitProject?.name ?? path.basename(rootUri.fsPath),
+      rootUri,
+      explicit: explicitProject !== undefined,
+      files: [file],
+    });
+  }
+
+  return [...groups.values()]
+    .filter((group) => group.files.length > 0)
+    .map((group): IRsxExpressionTreeProjectRoot => {
+      const filesForProject = group.files.sort((left, right) =>
+        left.relativePath.localeCompare(right.relativePath),
+      );
+      return {
+        kind: 'projectRoot',
+        key: `project:${group.rootUri.toString()}`,
+        label: group.label,
+        description: vscode.workspace.asRelativePath(group.rootUri, false),
+        rootUri: group.rootUri,
+        files: filesForProject,
+        models: getUniqueRsxExpressionModels(filesForProject),
+        explicit: group.explicit,
+      };
+    })
+    .sort((left, right) => left.label.localeCompare(right.label));
+}
+
+async function readConfiguredRsxProjects(): Promise<
+  Array<{ readonly name: string; readonly rootUri: vscode.Uri }>
+> {
+  let configUris: readonly vscode.Uri[];
+  try {
+    const found = await vscode.workspace.findFiles(
+      '**/rsx.config.json',
+      '**/{node_modules,dist,out-tsc,coverage,.git}/**',
+    );
+    configUris = Array.isArray(found) ? found : [];
+  } catch {
+    configUris = [];
+  }
+  const projects: Array<{
+    readonly name: string;
+    readonly rootUri: vscode.Uri;
+  }> = [];
+  for (const configUri of configUris) {
+    try {
+      const text = new TextDecoder('utf8').decode(
+        await vscode.workspace.fs.readFile(configUri),
+      );
+      const config = JSON.parse(text) as { readonly projects?: unknown };
+      if (!Array.isArray(config.projects)) {
+        continue;
+      }
+      const configDir = vscode.Uri.file(path.dirname(configUri.fsPath));
+      for (const entry of config.projects) {
+        if (
+          typeof entry !== 'object' ||
+          entry === null ||
+          typeof (entry as { readonly root?: unknown }).root !== 'string'
+        ) {
+          continue;
+        }
+        const root = (entry as { readonly root: string }).root
+          .trim()
+          .replace(/\\/gu, '/');
+        if (
+          !root ||
+          root.startsWith('/') ||
+          root.split('/').some((segment) => segment === '..')
+        ) {
+          continue;
+        }
+        const rootUri = vscode.Uri.joinPath(configDir, ...root.split('/'));
+        projects.push({
+          name:
+            typeof (entry as { readonly name?: unknown }).name === 'string' &&
+            (entry as { readonly name: string }).name.trim()
+              ? (entry as { readonly name: string }).name.trim()
+              : path.basename(rootUri.fsPath),
+          rootUri,
+        });
+      }
+    } catch {
+      // Ignore malformed configs in the panel grouping path; schema diagnostics cover them.
+    }
+  }
+  return projects.sort((left, right) => {
+    const depthDelta =
+      right.rootUri.fsPath.split(path.sep).length -
+      left.rootUri.fsPath.split(path.sep).length;
+    return depthDelta || left.name.localeCompare(right.name);
+  });
+}
+
+function findContainingRsxProject(
+  uri: vscode.Uri,
+  projects: readonly { readonly name: string; readonly rootUri: vscode.Uri }[],
+): { readonly name: string; readonly rootUri: vscode.Uri } | undefined {
+  const filePath = path.resolve(uri.fsPath);
+  return projects.find((project) =>
+    isPathInsideDirectoryOrEqual(
+      filePath,
+      path.resolve(project.rootUri.fsPath),
+    ),
+  );
+}
+
+function inferRsxExpressionProjectRoot(uri: vscode.Uri): vscode.Uri {
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder?.(uri);
+  const workspaceRoot = workspaceFolder?.uri.fsPath
+    ? path.resolve(workspaceFolder.uri.fsPath)
+    : path.parse(uri.fsPath).root;
+  let current = path.dirname(path.resolve(uri.fsPath));
+  while (isPathInsideDirectoryOrEqual(current, workspaceRoot)) {
+    if (
+      fs.existsSync(path.join(current, 'package.json')) ||
+      fs.existsSync(path.join(current, 'project.json')) ||
+      fs.existsSync(path.join(current, 'angular.json'))
+    ) {
+      return vscode.Uri.file(current);
+    }
+    const parent = path.dirname(current);
+    if (parent === current) {
+      break;
+    }
+    current = parent;
+  }
+  return workspaceFolder?.uri ?? vscode.Uri.file(workspaceRoot);
+}
+
 async function readRsxExpressionTreeFile(
   uri: vscode.Uri,
 ): Promise<IRsxExpressionTreeFile | null> {
   try {
-    const bytes = await vscode.workspace.fs.readFile(uri);
-    const text = new TextDecoder('utf8').decode(bytes);
+    const text = getOpenRsxDocumentText(uri) ?? (await readRsxFileText(uri));
     const parsed = parseRsxFileExpressions({
       fileName: uri.fsPath,
       text,
@@ -7486,22 +13349,36 @@ async function readRsxExpressionTreeFile(
       },
     );
 
-    const directoryName = path.dirname(relativePath);
-
     return {
       kind: 'file',
       uri,
       label: path.basename(relativePath),
-      description:
-        directoryName === '.'
-          ? formatExpressionCount(expressions.length)
-          : `${formatExpressionCount(expressions.length)} · ${directoryName}`,
+      description: formatExpressionCount(expressions.length),
       relativePath,
       expressions,
     };
   } catch {
     return null;
   }
+}
+
+async function readRsxFileText(uri: vscode.Uri): Promise<string> {
+  const bytes = await vscode.workspace.fs.readFile(uri);
+  return new TextDecoder('utf8').decode(bytes);
+}
+
+function getOpenRsxDocumentText(uri: vscode.Uri): string | undefined {
+  const uriText = uri.toString();
+  const fsPath = uri.fsPath;
+  const document = vscode.workspace.textDocuments.find((candidate) => {
+    const candidateUri = candidate.uri;
+    return (
+      candidateUri.toString() === uriText ||
+      (typeof candidateUri.fsPath === 'string' &&
+        candidateUri.fsPath === fsPath)
+    );
+  });
+  return document?.getText();
 }
 
 async function readRsxExpressionInstanceGroups(
@@ -7596,17 +13473,20 @@ async function readRsxExpressionInstancesInFile(
     const addInstance = (
       expression: IRsxExpressionTreeExpression,
       target: ts.Node,
+      instanceIdOverride?: string,
     ): void => {
       const start = target.getStart(sourceFile);
       const end = target.getEnd();
       const position = sourceFile.getLineAndCharacterOfPosition(start);
-      const instanceId = createRsxDebugHookInstanceId({
-        relativePath,
-        start,
-        expressionName: expression.exportName,
-      });
+      const instanceId =
+        instanceIdOverride ??
+        createRsxDebugHookInstanceId({
+          relativePath,
+          start,
+          expressionName: expression.exportName,
+        });
       const debugHookConfig = debugHooksByExpression.get(expression.exportName);
-      const debugHook =
+      const debugHooks =
         debugHookConfig?.instances.get(instanceId) ?? debugHookConfig?.group;
       instances.push({
         kind: 'expressionInstance',
@@ -7618,7 +13498,8 @@ async function readRsxExpressionInstancesInFile(
         end,
         line: position.line,
         column: position.character,
-        debugHook,
+        instanceId,
+        debugHooks,
       });
     };
 
@@ -7645,7 +13526,11 @@ async function readRsxExpressionInstancesInFile(
           expressionsByExportName,
         );
         if (expression) {
-          addInstance(expression, node.expression);
+          addInstance(
+            expression,
+            node.expression,
+            getRsxExpressionCallDebugInstanceId(node),
+          );
         }
       } else if (ts.isPropertyAssignment(node)) {
         const expression = getRsxExpressionInstanceReference(
@@ -7655,7 +13540,11 @@ async function readRsxExpressionInstancesInFile(
           expressionsByExportName,
         );
         if (expression) {
-          addInstance(expression, node.initializer);
+          addInstance(
+            expression,
+            node.initializer,
+            getRsxExpressionObjectDebugInstanceId(node),
+          );
         }
       } else if (ts.isShorthandPropertyAssignment(node)) {
         const expression = getRsxExpressionInstanceReference(
@@ -7665,7 +13554,11 @@ async function readRsxExpressionInstancesInFile(
           expressionsByExportName,
         );
         if (expression) {
-          addInstance(expression, node.name);
+          addInstance(
+            expression,
+            node.name,
+            getRsxExpressionObjectDebugInstanceId(node),
+          );
         }
       }
       ts.forEachChild(node, visit);
@@ -7712,6 +13605,49 @@ function getRsxExpressionInstanceReference(
     return expressionsByExportName.get(expression.name.text);
   }
   return undefined;
+}
+
+function getRsxExpressionCallDebugInstanceId(
+  callExpression: ts.CallExpression,
+): string | undefined {
+  return getStaticStringLiteralText(callExpression.arguments[2]);
+}
+
+function getRsxExpressionObjectDebugInstanceId(
+  node: ts.Node,
+): string | undefined {
+  const objectLiteral = ts.isObjectLiteralExpression(node.parent)
+    ? node.parent
+    : undefined;
+  if (!objectLiteral) {
+    return undefined;
+  }
+  for (const property of objectLiteral.properties) {
+    if (
+      ts.isPropertyAssignment(property) &&
+      isPropertyNamed(property.name, 'debugInstanceId')
+    ) {
+      return getStaticStringLiteralText(property.initializer);
+    }
+  }
+  return undefined;
+}
+
+function getStaticStringLiteralText(
+  expression: ts.Expression | undefined,
+): string | undefined {
+  return expression &&
+    (ts.isStringLiteral(expression) ||
+      ts.isNoSubstitutionTemplateLiteral(expression))
+    ? expression.text
+    : undefined;
+}
+
+function isPropertyNamed(name: ts.PropertyName, expected: string): boolean {
+  return (
+    (ts.isIdentifier(name) && name.text === expected) ||
+    (ts.isStringLiteral(name) && name.text === expected)
+  );
 }
 
 function getRsxExpressionImportsByLocalName(
@@ -7789,13 +13725,16 @@ async function getRsxDebugHooksByExpressionForUri(uri: vscode.Uri): Promise<
   >();
   for (const configUri of configUris) {
     const configText = await readWorkspaceTextFile(configUri);
-    const hooks = parseRsxDebugHooksByExpression(configText);
+    const hooks = parseRsxDebugHooksByExpression(configText, configUri);
     mergeRsxDebugHooksByExpression(merged, hooks);
   }
   return merged;
 }
 
-function parseRsxDebugHooksByExpression(configText: string | null): ReadonlyMap<
+function parseRsxDebugHooksByExpression(
+  configText: string | null,
+  configUri: vscode.Uri,
+): ReadonlyMap<
   string,
   {
     readonly group?: IRsxExpressionTreeDebugHook;
@@ -7818,19 +13757,16 @@ function parseRsxDebugHooksByExpression(configText: string | null): ReadonlyMap<
     ) {
       return new Map();
     }
-    return parseRsxDebugHookEntries(config.build.debugChangeHooks);
+    return parseRsxDebugHookEntries(config.build.debugChangeHooks, configUri);
   } catch {
     return new Map();
   }
 }
 
-function parseRsxDebugHookEntries(value: object): ReadonlyMap<
-  string,
-  {
-    readonly group?: IRsxExpressionTreeDebugHook;
-    readonly instances: ReadonlyMap<string, IRsxExpressionTreeDebugHook>;
-  }
-> {
+function parseRsxDebugHookEntries(
+  value: object,
+  configUri: vscode.Uri,
+): ReadonlyMap<string, IRsxExpressionTreeDebugHookEntry> {
   return new Map(
     Object.entries(value)
       .map(([expressionName, expressionValue]) => {
@@ -7845,7 +13781,11 @@ function parseRsxDebugHookEntries(value: object): ReadonlyMap<
           group?: unknown;
           instances?: unknown;
         };
-        const group = parseRsxDebugHookConfig(expressionConfig.group, 'group');
+        const group = parseRsxDebugHookConfigList(
+          expressionConfig.group,
+          'group',
+          configUri,
+        );
         const instances =
           expressionConfig.instances &&
           typeof expressionConfig.instances === 'object' &&
@@ -7853,39 +13793,32 @@ function parseRsxDebugHookEntries(value: object): ReadonlyMap<
             ? new Map(
                 Object.entries(expressionConfig.instances)
                   .map(([instanceId, hookConfig]) => {
-                    const hook = parseRsxDebugHookConfig(
+                    const hooks = parseRsxDebugHookConfigList(
                       hookConfig,
                       'instance',
+                      configUri,
                     );
-                    return hook ? ([instanceId, hook] as const) : null;
+                    return hooks.length > 0
+                      ? ([instanceId, hooks] as const)
+                      : null;
                   })
                   .filter(
                     (
                       entry,
                     ): entry is readonly [
                       string,
-                      IRsxExpressionTreeDebugHook,
+                      readonly IRsxExpressionTreeDebugHook[],
                     ] => entry !== null,
                   ),
               )
-            : new Map<string, IRsxExpressionTreeDebugHook>();
-        return group || instances.size > 0
+            : new Map<string, readonly IRsxExpressionTreeDebugHook[]>();
+        return group.length > 0 || instances.size > 0
           ? ([expressionName, { group, instances }] as const)
           : null;
       })
       .filter(
-        (
-          entry,
-        ): entry is readonly [
-          string,
-          {
-            readonly group?: IRsxExpressionTreeDebugHook;
-            readonly instances: ReadonlyMap<
-              string,
-              IRsxExpressionTreeDebugHook
-            >;
-          },
-        ] => entry !== null,
+        (entry): entry is readonly [string, IRsxExpressionTreeDebugHookEntry] =>
+          entry !== null,
       ),
   );
 }
@@ -7894,35 +13827,41 @@ function mergeRsxDebugHooksByExpression(
   target: Map<
     string,
     {
-      group?: IRsxExpressionTreeDebugHook;
-      instances: Map<string, IRsxExpressionTreeDebugHook>;
+      group?: readonly IRsxExpressionTreeDebugHook[];
+      instances: Map<string, readonly IRsxExpressionTreeDebugHook[]>;
     }
   >,
-  source: ReadonlyMap<
-    string,
-    {
-      readonly group?: IRsxExpressionTreeDebugHook;
-      readonly instances: ReadonlyMap<string, IRsxExpressionTreeDebugHook>;
-    }
-  >,
+  source: ReadonlyMap<string, IRsxExpressionTreeDebugHookEntry>,
 ): void {
   for (const [expressionName, sourceConfig] of source) {
     const targetConfig = target.get(expressionName) ?? {
-      instances: new Map<string, IRsxExpressionTreeDebugHook>(),
+      instances: new Map<string, readonly IRsxExpressionTreeDebugHook[]>(),
     };
-    if (sourceConfig.group) {
+    if (sourceConfig.group && sourceConfig.group.length > 0) {
       targetConfig.group = sourceConfig.group;
     }
-    for (const [instanceId, hook] of sourceConfig.instances) {
-      targetConfig.instances.set(instanceId, hook);
+    for (const [instanceId, hooks] of sourceConfig.instances) {
+      targetConfig.instances.set(instanceId, hooks);
     }
     target.set(expressionName, targetConfig);
   }
 }
 
+function parseRsxDebugHookConfigList(
+  value: unknown,
+  scope: 'group' | 'instance',
+  configUri: vscode.Uri,
+): readonly IRsxExpressionTreeDebugHook[] {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+  return values
+    .map((entry) => parseRsxDebugHookConfig(entry, scope, configUri))
+    .filter((hook): hook is IRsxExpressionTreeDebugHook => hook !== null);
+}
+
 function parseRsxDebugHookConfig(
   value: unknown,
   scope: 'group' | 'instance',
+  configUri: vscode.Uri,
 ): IRsxExpressionTreeDebugHook | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return null;
@@ -7931,6 +13870,7 @@ function parseRsxDebugHookConfig(
     moduleSpecifier?: unknown;
     exportName?: unknown;
     enabled?: unknown;
+    standardHook?: unknown;
   };
   const moduleSpecifier =
     typeof config.moduleSpecifier === 'string'
@@ -7951,7 +13891,17 @@ function parseRsxDebugHookConfig(
       : moduleSpecifier,
     enabled: config.enabled !== false,
     scope,
+    configUri,
+    standardHook: isRsxStandardDebugHookKind(config.standardHook)
+      ? config.standardHook
+      : undefined,
   };
+}
+
+function isRsxStandardDebugHookKind(
+  value: unknown,
+): value is IRsxStandardDebugHookKind {
+  return value === 'breakpoint' || value === 'log';
 }
 
 function createRsxDebugHookInstanceId(args: {
@@ -9098,9 +15048,7 @@ function getUniqueRsxExpressionModels(
   >();
 
   for (const expression of files.flatMap((file) => file.expressions)) {
-    const key = normalizeRsxExpressionModelTreeKey(
-      expression.expression.modelTypeText,
-    );
+    const key = getRsxExpressionModelTreeKey(expression);
     const existing = modelsByKey.get(key);
     if (existing) {
       existing.expressions.push(expression);
@@ -9138,6 +15086,36 @@ function getUniqueRsxExpressionModels(
         left.label.localeCompare(right.label) ||
         left.relativePath.localeCompare(right.relativePath),
     );
+}
+
+function getRsxExpressionModelTreeKey(
+  expression: IRsxExpressionTreeExpression,
+): string {
+  const importedType = getRsxExpressionImportTypeReference(
+    expression.expression.modelTypeText,
+  );
+  if (expression.modelDefinition && importedType) {
+    return [
+      'definition',
+      expression.modelDefinition.uri.toString(),
+      importedType.typeName,
+    ].join(':');
+  }
+  return normalizeRsxExpressionModelTreeKey(
+    expression.expression.modelTypeText,
+  );
+}
+
+function getRsxExpressionImportTypeReference(
+  modelTypeText: string,
+): { readonly moduleName: string; readonly typeName: string } | null {
+  const normalized = normalizeRsxExpressionModelTreeKey(modelTypeText);
+  const match = normalized.match(
+    /^import\s*\(\s*(['"])([^'"]+)\1\s*\)\s*\.\s*([A-Za-z_$][A-Za-z0-9_$]*)$/u,
+  );
+  return match?.[2] && match[3]
+    ? { moduleName: match[2], typeName: match[3] }
+    : null;
 }
 
 function getRsxExpressionTreeSearchResults(
@@ -10491,6 +16469,7 @@ async function openRsxExpressionLocation(
   },
   options: {
     readonly viewColumn?: vscode.ViewColumn;
+    readonly preview?: boolean;
   } = {},
 ): Promise<void> {
   rsxEditorOpenInProgressUntil = Date.now() + 1_000;
@@ -10505,18 +16484,150 @@ async function openRsxExpressionLocation(
     (await vscode.window.showTextDocument(document, {
       viewColumn: options.viewColumn ?? vscode.ViewColumn.Beside,
       preserveFocus: false,
-      preview: true,
+      preview: options.preview ?? true,
     }));
   rememberRsxEditorGroupColumn(editor.viewColumn);
   const start = document.positionAt(args.start);
   const end = document.positionAt(args.end);
   const range = new vscode.Range(start, end);
-  editor.selection = new vscode.Selection(start, end);
+  editor.selection = new vscode.Selection(start, start);
   editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
-  highlightRsxRevealedRange(editor, range);
+  highlightRsxEditorRange(editor, range);
 }
 
-function highlightRsxRevealedRange(
+async function openRsxDebugHookImplementation(args: {
+  readonly moduleSpecifier: string;
+  readonly exportName?: string;
+  readonly anchorUri?: vscode.Uri;
+  readonly preview?: boolean;
+}): Promise<void> {
+  const resolvedFileName = await resolveRsxDebugHookModuleFileName(args);
+  if (!resolvedFileName) {
+    vscode.window.showWarningMessage(
+      `Could not resolve RS-X debug hook module ${args.moduleSpecifier}.`,
+    );
+    return;
+  }
+  const uri = vscode.Uri.file(resolvedFileName);
+  const text = await readWorkspaceTextFile(uri);
+  if (!text) {
+    await openRsxExpressionLocation(
+      { uri, start: 0, end: 0 },
+      { viewColumn: vscode.ViewColumn.One, preview: args.preview },
+    );
+    return;
+  }
+  const sourceFile = ts.createSourceFile(
+    resolvedFileName,
+    text,
+    ts.ScriptTarget.Latest,
+    true,
+    getScriptKindForRsxInstanceScan(resolvedFileName),
+  );
+  const range = args.exportName
+    ? findExportedDeclarationTextRange(sourceFile, args.exportName)
+    : null;
+  await openRsxExpressionLocation(
+    {
+      uri,
+      start: range?.start ?? 0,
+      end: range?.end ?? range?.start ?? 0,
+    },
+    { viewColumn: vscode.ViewColumn.One, preview: args.preview },
+  );
+}
+
+async function resolveRsxDebugHookModuleFileName(args: {
+  readonly moduleSpecifier: string;
+  readonly anchorUri?: vscode.Uri;
+}): Promise<string | null> {
+  const containingFile = args.anchorUri?.fsPath;
+  if (!containingFile) {
+    return null;
+  }
+  const options: ts.CompilerOptions = {
+    allowJs: true,
+    module: ts.ModuleKind.ES2022,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    target: ts.ScriptTarget.ES2022,
+  };
+  const compilerHost = ts.createCompilerHost(options, true);
+  const resolved = ts.resolveModuleName(
+    args.moduleSpecifier,
+    containingFile,
+    options,
+    compilerHost,
+  ).resolvedModule?.resolvedFileName;
+  if (resolved) {
+    return resolved;
+  }
+  if (!args.moduleSpecifier.startsWith('.')) {
+    return null;
+  }
+  const basePath = path.resolve(
+    path.dirname(containingFile),
+    args.moduleSpecifier,
+  );
+  for (const candidatePath of getRsxDebugHookModuleFileNameCandidates(
+    basePath,
+  )) {
+    if (await readWorkspaceTextFile(vscode.Uri.file(candidatePath))) {
+      return candidatePath;
+    }
+  }
+  return null;
+}
+
+function getRsxDebugHookModuleFileNameCandidates(
+  basePath: string,
+): readonly string[] {
+  if (/\.[cm]?[jt]sx?$/u.test(basePath)) {
+    return [basePath];
+  }
+  return ['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts'].map(
+    (extension) => `${basePath}${extension}`,
+  );
+}
+
+function findExportedDeclarationTextRange(
+  sourceFile: ts.SourceFile,
+  exportName: string,
+): { readonly start: number; readonly end: number } | null {
+  let range: { start: number; end: number } | null = null;
+  const visit = (node: ts.Node): void => {
+    if (range) {
+      return;
+    }
+    if (hasExportModifier(node)) {
+      if (ts.isFunctionDeclaration(node) && node.name?.text === exportName) {
+        range = {
+          start: node.name.getStart(sourceFile),
+          end: node.name.getEnd(),
+        };
+        return;
+      }
+      if (ts.isVariableStatement(node)) {
+        for (const declaration of node.declarationList.declarations) {
+          if (
+            ts.isIdentifier(declaration.name) &&
+            declaration.name.text === exportName
+          ) {
+            range = {
+              start: declaration.name.getStart(sourceFile),
+              end: declaration.name.getEnd(),
+            };
+            return;
+          }
+        }
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return range;
+}
+
+function highlightRsxEditorRange(
   editor: vscode.TextEditor,
   range: vscode.Range,
 ): void {
@@ -10529,34 +16640,87 @@ function highlightRsxRevealedRange(
     return;
   }
 
-  const decorationType = getRsxRevealDecorationType();
-  setDecorations.call(editor, decorationType, [range]);
+  setDecorations.call(editor, getRsxEditorLineHighlightDecorationType(), [
+    range,
+  ]);
+  setDecorations.call(editor, getRsxEditorRangeUnderlineDecorationType(), [
+    range,
+  ]);
 }
 
-function getRsxRevealDecorationType(): vscode.TextEditorDecorationType {
-  if (rsxRevealDecorationType) {
-    return rsxRevealDecorationType;
+function getRsxEditorLineHighlightDecorationType(): vscode.TextEditorDecorationType {
+  if (rsxEditorLineHighlightDecorationType) {
+    return rsxEditorLineHighlightDecorationType;
   }
-  rsxRevealDecorationType = vscode.window.createTextEditorDecorationType({
-    backgroundColor: 'rgba(255, 214, 10, 0.45)',
-    border: '2px solid',
-    borderColor: '#ffd60a',
-    overviewRulerColor: '#ffd60a',
+  rsxEditorLineHighlightDecorationType =
+    vscode.window.createTextEditorDecorationType(
+      createRsxEditorLineHighlightDecorationOptions(),
+    );
+  return rsxEditorLineHighlightDecorationType;
+}
+
+function createRsxEditorLineHighlightDecorationOptions(): vscode.DecorationRenderOptions {
+  const color = new vscode.ThemeColor(RSX_EDITOR_RANGE_HIGHLIGHT_COLOR);
+  return {
+    isWholeLine: true,
+    borderWidth: '0 0 0 4px',
+    borderStyle: 'solid',
+    borderColor: color,
+    overviewRulerColor: color,
     overviewRulerLane: vscode.OverviewRulerLane.Center,
-  });
-  return rsxRevealDecorationType;
+  };
+}
+
+function getRsxEditorRangeUnderlineDecorationType(): vscode.TextEditorDecorationType {
+  if (rsxEditorRangeUnderlineDecorationType) {
+    return rsxEditorRangeUnderlineDecorationType;
+  }
+  rsxEditorRangeUnderlineDecorationType =
+    vscode.window.createTextEditorDecorationType(
+      createRsxEditorRangeUnderlineDecorationOptions(),
+    );
+  return rsxEditorRangeUnderlineDecorationType;
+}
+
+function createRsxEditorRangeUnderlineDecorationOptions(): vscode.DecorationRenderOptions {
+  return {
+    backgroundColor: RSX_EDITOR_RANGE_SELECTION_BACKGROUND,
+    color: RSX_EDITOR_RANGE_SELECTION_FOREGROUND,
+  };
 }
 
 async function addRsxExpressionFromPanel(
   provider: RsxExpressionsTreeDataProvider,
+  options: {
+    readonly knownFileUri?: vscode.Uri;
+    readonly anchorFileUri?: vscode.Uri;
+    readonly forceKnownFile?: boolean;
+  } = {},
 ): Promise<void> {
-  const workspaceFolder = await pickRsxWorkspaceFolder();
+  const workspaceFolder = await pickRsxWorkspaceFolder(
+    options.knownFileUri ?? options.anchorFileUri,
+  );
   if (!workspaceFolder) {
     return;
   }
 
-  const mode = await vscode.window.showQuickPick(
-    [
+  let mode: { readonly value: 'create' | 'append' | 'appendKnown' } | undefined;
+  if (options.forceKnownFile && options.knownFileUri) {
+    mode = { value: 'appendKnown' };
+  } else {
+    const choices = [
+      ...(options.anchorFileUri
+        ? [
+            {
+              label: 'Add To This Expression File',
+              description: vscode.workspace.asRelativePath(
+                options.anchorFileUri,
+                false,
+              ),
+              value: 'appendKnown' as const,
+            },
+          ]
+        : []),
       {
         label: 'Create New Expression File',
         description: 'Recommended',
@@ -10567,13 +16731,13 @@ async function addRsxExpressionFromPanel(
         description: 'Append a new expression block',
         value: 'append' as const,
       },
-    ],
-    {
+    ];
+    mode = await vscode.window.showQuickPick(choices, {
       placeHolder: 'Choose how to add the RS-X expression',
-    },
-  );
-  if (!mode) {
-    return;
+    });
+    if (!mode) {
+      return;
+    }
   }
 
   const expressionName = await vscode.window.showInputBox({
@@ -10608,18 +16772,20 @@ async function addRsxExpressionFromPanel(
   });
 
   const targetUri =
-    mode.value === 'create'
-      ? await pickNewRsxExpressionFileUri(
-          workspaceFolder,
-          expressionName.trim(),
-        )
-      : await pickExistingRsxExpressionFileUri(workspaceFolder);
+    mode.value === 'appendKnown'
+      ? (options.knownFileUri ?? options.anchorFileUri)
+      : mode.value === 'create'
+        ? await pickNewRsxExpressionFileUri(
+            workspaceFolder,
+            expressionName.trim(),
+          )
+        : await pickExistingRsxExpressionFileUri(workspaceFolder);
   if (!targetUri) {
     return;
   }
 
-  const existingText = await readWorkspaceTextFile(targetUri);
-  if (existingText !== null && mode.value === 'create') {
+  const relativePath = getProjectRelativePath(workspaceFolder.uri, targetUri);
+  if (mode.value === 'create' && (await readWorkspaceTextFile(targetUri))) {
     const action = await vscode.window.showWarningMessage(
       `${vscode.workspace.asRelativePath(targetUri, false)} already exists.`,
       { modal: true },
@@ -10629,41 +16795,488 @@ async function addRsxExpressionFromPanel(
     if (!action) {
       return;
     }
-    await writeRsxExpressionFile(targetUri, {
-      existingText: action === 'Append' ? existingText : null,
-      expressionBlock,
-    });
-  } else {
-    await writeRsxExpressionFile(targetUri, {
-      existingText,
-      expressionBlock,
-    });
+    if (action === 'Overwrite') {
+      await writeRsxExpressionFile(targetUri, {
+        existingText: null,
+        expressionBlock,
+      });
+      provider.refresh();
+      await openCreatedRsxExpression(targetUri, expressionName.trim());
+      vscode.window.showInformationMessage(
+        `Added RS-X expression ${expressionName.trim()}.`,
+      );
+      return;
+    }
   }
 
+  await createRsxExpressionInFile(provider, workspaceFolder, {
+    expressionName: expressionName.trim(),
+    expressionSource: expressionSource.trim() || 'a',
+    relativePath,
+  });
+}
+
+async function createRsxExpressionInFile(
+  provider: RsxExpressionsTreeDataProvider,
+  workspaceFolder: vscode.WorkspaceFolder,
+  args: {
+    readonly expressionName: string;
+    readonly expressionSource: string;
+    readonly modelTypeText?: string;
+    readonly shareModel?: boolean;
+    readonly relativePath: string;
+  },
+): Promise<{
+  readonly uri: vscode.Uri;
+  readonly expressionName: string;
+  readonly start: number;
+  readonly end: number;
+} | null> {
+  const expressionName = args.expressionName.trim();
+  if (!isValidRsxExpressionIdentifier(expressionName)) {
+    vscode.window.showWarningMessage(
+      'Enter a valid TypeScript identifier for the RS-X expression.',
+    );
+    return null;
+  }
+  const normalizedPath = normalizeRsxRelativePath(args.relativePath);
+  if (normalizedPath === null) {
+    vscode.window.showWarningMessage(
+      'Enter a relative .rsx file path inside the workspace.',
+    );
+    return null;
+  }
+  const expressionSource = args.expressionSource.trim();
+  const modelTypeText =
+    args.modelTypeText && args.modelTypeText.trim()
+      ? args.modelTypeText.trim()
+      : createRsxModelTypeTemplate(expressionSource);
+  const targetUri = vscode.Uri.joinPath(
+    workspaceFolder.uri,
+    ...normalizedPath.split('/'),
+  );
+  const existingText = await readWorkspaceTextFile(targetUri);
+  const existingDefaultsModelTypeText =
+    existingText === null
+      ? undefined
+      : getRsxDefaultsModelTypeText(existingText);
+  const shareExistingDefaultsModel =
+    args.shareModel === true &&
+    existingDefaultsModelTypeText !== undefined &&
+    normalizeRsxModelTypeText(existingDefaultsModelTypeText) ===
+      normalizeRsxModelTypeText(modelTypeText);
+  const expressionBlock = createRsxExpressionBlock({
+    expressionName,
+    expressionSource,
+    modelTypeText,
+    includeModelHeader: !(
+      (args.shareModel === true && existingText === null) ||
+      shareExistingDefaultsModel
+    ),
+  });
+  await writeRsxExpressionFile(targetUri, {
+    existingText,
+    defaultsModelTypeText:
+      args.shareModel === true && existingText === null
+        ? modelTypeText
+        : undefined,
+    expressionBlock,
+  });
+
+  provider.refresh();
+  const location = await openCreatedRsxExpression(targetUri, expressionName);
+  vscode.window.showInformationMessage(
+    `Added RS-X expression ${expressionName}.`,
+  );
+  return location
+    ? {
+        uri: targetUri,
+        expressionName,
+        start: location.start,
+        end: location.end,
+      }
+    : {
+        uri: targetUri,
+        expressionName,
+        start: 0,
+        end: 0,
+      };
+}
+
+async function openCreatedRsxExpression(
+  targetUri: vscode.Uri,
+  expressionName: string,
+): Promise<{ readonly start: number; readonly end: number } | null> {
   const nextText = await readWorkspaceTextFile(targetUri);
   const expressionStart = Math.max(
     0,
-    nextText?.lastIndexOf(expressionName.trim()) ?? 0,
+    nextText?.lastIndexOf(expressionName) ?? 0,
   );
-
-  provider.refresh();
+  const expressionEnd = expressionStart + expressionName.length;
   await openRsxExpressionLocation({
     uri: targetUri,
     start: expressionStart,
-    end: expressionStart + expressionName.trim().length,
+    end: expressionEnd,
   });
-  vscode.window.showInformationMessage(
-    `Added RS-X expression ${expressionName.trim()}.`,
+  return { start: expressionStart, end: expressionEnd };
+}
+
+async function getExistingRsxExpressionRelativePaths(
+  workspaceFolder: vscode.WorkspaceFolder,
+): Promise<string[]> {
+  const workspaceRoot = `${workspaceFolder.uri.fsPath.replace(/[/\\]+$/u, '')}${path.sep}`;
+  const uris = await vscode.workspace.findFiles(
+    RSX_FILE_PATTERN,
+    '**/{node_modules,dist,out-tsc,coverage,.git}/**',
+  );
+  return (Array.isArray(uris) ? uris : [])
+    .filter(
+      (uri) =>
+        uri.fsPath === workspaceFolder.uri.fsPath ||
+        uri.fsPath.startsWith(workspaceRoot),
+    )
+    .map((uri) => getProjectRelativePath(workspaceFolder.uri, uri))
+    .sort((left, right) => left.localeCompare(right));
+}
+
+async function getRsxModelContractFiles(
+  workspaceFolder: vscode.WorkspaceFolder,
+): Promise<readonly IRsxModelContractFile[]> {
+  const searchRoots = await getRsxModelContractSearchRoots(workspaceFolder);
+  const cacheKey = [workspaceFolder.uri.toString(), ...searchRoots].join('\n');
+  const cached = rsxModelContractFileCache.get(cacheKey);
+  if (cached && Date.now() - cached.stamp < 30_000) {
+    return cached.files;
+  }
+
+  const files: IRsxModelContractFile[] = [];
+  const seenUris = new Set<string>();
+  for (const uri of await findLikelyRsxModelContractUris(
+    workspaceFolder,
+    searchRoots,
+  )) {
+    const uriKey = uri.toString();
+    if (seenUris.has(uriKey)) {
+      continue;
+    }
+    seenUris.add(uriKey);
+    const text = await readWorkspaceTextFile(uri);
+    if (!text) {
+      continue;
+    }
+    const sourceFile = ts.createSourceFile(
+      uri.fsPath,
+      text,
+      ts.ScriptTarget.Latest,
+      true,
+      getScriptKindForRsxInstanceScan(uri.fsPath),
+    );
+    const contracts = getModelContractNamesFromSourceFile(sourceFile);
+    if (contracts.length === 0) {
+      continue;
+    }
+    files.push({
+      path: getProjectRelativePath(workspaceFolder.uri, uri),
+      contracts,
+    });
+  }
+  const sortedFiles = files.sort((left, right) =>
+    left.path.localeCompare(right.path),
+  );
+  rsxModelContractFileCache.set(cacheKey, {
+    stamp: Date.now(),
+    files: sortedFiles,
+  });
+  return sortedFiles;
+}
+
+async function getAddExpressionDefaultsModelSelection(args: {
+  readonly workspaceFolder: vscode.WorkspaceFolder;
+  readonly expressionUri: vscode.Uri;
+  readonly modelFiles: readonly IRsxModelContractFile[];
+}): Promise<{
+  readonly modelFilePath: string;
+  readonly modelInterfaceName: string;
+} | null> {
+  if (!isUriInsideDirectory(args.expressionUri, args.workspaceFolder.uri)) {
+    return null;
+  }
+  const text = await readWorkspaceTextFile(args.expressionUri);
+  if (!text) {
+    return null;
+  }
+  const parsed = parseRsxFileExpressions({
+    fileName: args.expressionUri.fsPath,
+    text,
+  });
+  const expression = parsed.expressions.find(
+    (item) => typeof item.nameStart === 'number',
+  );
+  if (!expression) {
+    return null;
+  }
+  const modelSpan = findRsxExpressionModelSourceSpan({
+    text,
+    expressions: parsed.expressions,
+    expression,
+  });
+  if (!modelSpan) {
+    return null;
+  }
+  const importedType = getRsxExpressionImportTypeReference(
+    text.slice(modelSpan.start, modelSpan.end).trim(),
+  );
+  if (!importedType) {
+    return null;
+  }
+  const resolvedFileName = await resolveRsxDebugHookModuleFileName({
+    moduleSpecifier: importedType.moduleName,
+    anchorUri: args.expressionUri,
+  });
+  if (!resolvedFileName) {
+    return null;
+  }
+  const modelUri = vscode.Uri.file(resolvedFileName);
+  if (!isUriInsideDirectory(modelUri, args.workspaceFolder.uri)) {
+    return null;
+  }
+  const modelFilePath = getProjectRelativePath(
+    args.workspaceFolder.uri,
+    modelUri,
+  );
+  const matchingFile = args.modelFiles.find(
+    (file) => file.path === modelFilePath,
+  );
+  if (!matchingFile?.contracts.includes(importedType.typeName)) {
+    return null;
+  }
+  return {
+    modelFilePath,
+    modelInterfaceName: importedType.typeName,
+  };
+}
+
+async function getAddExpressionDefaultsModelSelections(args: {
+  readonly workspaceFolder: vscode.WorkspaceFolder;
+  readonly expressionFilePaths: readonly string[];
+  readonly modelFiles: readonly IRsxModelContractFile[];
+}): Promise<
+  Record<
+    string,
+    {
+      readonly modelFilePath: string;
+      readonly modelInterfaceName: string;
+    }
+  >
+> {
+  const selections: Record<
+    string,
+    {
+      readonly modelFilePath: string;
+      readonly modelInterfaceName: string;
+    }
+  > = {};
+  for (const expressionFilePath of args.expressionFilePaths) {
+    const expressionUri = vscode.Uri.joinPath(
+      args.workspaceFolder.uri,
+      ...expressionFilePath.split('/').filter(Boolean),
+    );
+    const selection = await getAddExpressionDefaultsModelSelection({
+      workspaceFolder: args.workspaceFolder,
+      expressionUri,
+      modelFiles: args.modelFiles,
+    });
+    if (selection) {
+      selections[expressionFilePath] = selection;
+    }
+  }
+  return selections;
+}
+
+async function getRsxModelContractSearchRoots(
+  workspaceFolder: vscode.WorkspaceFolder,
+): Promise<string[]> {
+  const configured = await getRsxConfiguredAddSearchRoots(workspaceFolder.uri);
+  if (configured.length > 0) {
+    return configured;
+  }
+  const sourceRoot = await getRsxAddSourceRootDirectory(workspaceFolder.uri);
+  return [sourceRoot || 'src'];
+}
+
+async function findLikelyRsxModelContractUris(
+  workspaceFolder: vscode.WorkspaceFolder,
+  searchRoots: readonly string[],
+): Promise<vscode.Uri[]> {
+  const uris: vscode.Uri[] = [];
+  for (const root of searchRoots) {
+    const prefix = normalizeRsxDirectoryPath(root);
+    const pattern = prefix
+      ? `${prefix}/**/${RSX_MODEL_CONTRACT_FILE_STEM_PATTERN}.{ts,tsx,mts,cts}`
+      : RSX_MODEL_CONTRACT_FILE_PATTERN;
+    const found = await vscode.workspace.findFiles(
+      pattern,
+      RSX_WORKSPACE_SCAN_EXCLUDE,
+    );
+    uris.push(
+      ...(Array.isArray(found) ? found : []).filter((uri) =>
+        isUriInsideDirectory(uri, workspaceFolder.uri),
+      ),
+    );
+  }
+  return uris;
+}
+
+function getModelContractNamesFromSourceFile(
+  sourceFile: ts.SourceFile,
+): string[] {
+  const names: string[] = [];
+  const visit = (node: ts.Node): void => {
+    if (ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) {
+      names.push(node.name.text);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return [...new Set(names)].sort((left, right) => left.localeCompare(right));
+}
+
+async function resolveAddExpressionModelType(args: {
+  readonly workspaceFolder: vscode.WorkspaceFolder;
+  readonly expressionUri: vscode.Uri;
+  readonly expressionName: string;
+  readonly useExistingModel?: boolean;
+  readonly modelFilePath?: string;
+  readonly modelInterfaceName?: string;
+  readonly newModelDirectory?: string;
+  readonly newModelFileName?: string;
+  readonly newModelInterfaceName?: string;
+}): Promise<string | null> {
+  if (args.modelFilePath?.trim() && args.modelInterfaceName?.trim()) {
+    const modelUri = vscode.Uri.joinPath(
+      args.workspaceFolder.uri,
+      ...args.modelFilePath
+        .trim()
+        .replace(/\\/gu, '/')
+        .split('/')
+        .filter(Boolean),
+    );
+    return formatRsxImportedModelType(
+      args.expressionUri,
+      modelUri,
+      args.modelInterfaceName.trim(),
+    );
+  }
+  if (args.useExistingModel) {
+    vscode.window.showWarningMessage(
+      'Select a model file and interface/type contract, or switch off existing model contract.',
+    );
+    return null;
+  }
+
+  const defaults = createRsxModelDefaults(
+    args.expressionName,
+    args.newModelDirectory ?? '',
+  );
+  const directory = normalizeRsxDirectoryPath(
+    args.newModelDirectory?.trim() || defaults.directory,
+  );
+  const fileName = normalizeTypescriptModelFileName(
+    args.newModelFileName?.trim() || defaults.fileName,
+  );
+  const interfaceName = normalizeTypescriptInterfaceName(
+    args.newModelInterfaceName?.trim() || defaults.interfaceName,
+  );
+  if (!interfaceName) {
+    vscode.window.showWarningMessage(
+      'Enter a valid TypeScript interface name for the RS-X model.',
+    );
+    return null;
+  }
+  const modelUri = vscode.Uri.joinPath(
+    args.workspaceFolder.uri,
+    ...[directory, `${fileName}.ts`].filter(Boolean).join('/').split('/'),
+  );
+  if (!(await readWorkspaceTextFile(modelUri))) {
+    await vscode.workspace.fs.createDirectory(getParentUri(modelUri));
+    await vscode.workspace.fs.writeFile(
+      modelUri,
+      new TextEncoder().encode(`export interface ${interfaceName} {\n}\n`),
+    );
+  }
+  return formatRsxImportedModelType(
+    args.expressionUri,
+    modelUri,
+    interfaceName,
   );
 }
 
-async function pickRsxWorkspaceFolder(): Promise<vscode.WorkspaceFolder | null> {
+function createRsxModelDefaults(
+  expressionName: string,
+  fallbackDirectory: string,
+): {
+  readonly directory: string;
+  readonly fileName: string;
+  readonly interfaceName: string;
+} {
+  const stem = getRsxDebugHookExpressionStem(expressionName || 'newExpression');
+  const interfaceName = `${toPascalCase(stem)}Model`;
+  return {
+    directory: fallbackDirectory || RSX_ADD_DEFAULT_MODEL_DIRECTORY,
+    fileName: `${toKebabCase(stem)}.model`,
+    interfaceName,
+  };
+}
+
+function normalizeTypescriptModelFileName(value: string): string {
+  return (
+    value
+      .replace(/\.[cm]?tsx?$/iu, '')
+      .replace(/\\/gu, '/')
+      .split('/')
+      .filter(Boolean)
+      .at(-1) || 'new-expression.model'
+  );
+}
+
+function normalizeTypescriptInterfaceName(value: string): string {
+  return ts.isIdentifierText(value, ts.ScriptTarget.Latest) ? value : '';
+}
+
+function formatRsxImportedModelType(
+  expressionUri: vscode.Uri,
+  modelUri: vscode.Uri,
+  interfaceName: string,
+): string {
+  return `import('${getRsxDebugHookModuleSpecifier(expressionUri, modelUri)}').${interfaceName}`;
+}
+
+function getWorkspaceFolderForUri(
+  uri: vscode.Uri,
+): vscode.WorkspaceFolder | undefined {
+  return (
+    vscode.workspace.getWorkspaceFolder(uri) ??
+    (vscode.workspace.workspaceFolders ?? []).find(
+      (folder) => folder.uri.toString() === uri.toString(),
+    )
+  );
+}
+
+async function pickRsxWorkspaceFolder(
+  preferredUri?: vscode.Uri,
+): Promise<vscode.WorkspaceFolder | null> {
   const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
   if (workspaceFolders.length === 0) {
     vscode.window.showWarningMessage(
       'Open a workspace before adding an RS-X expression.',
     );
     return null;
+  }
+  if (preferredUri) {
+    const folder = vscode.workspace.getWorkspaceFolder(preferredUri);
+    if (folder) {
+      return folder;
+    }
   }
   if (workspaceFolders.length === 1) {
     return workspaceFolders[0];
@@ -10745,22 +17358,165 @@ async function pickExistingRsxExpressionFileUri(
 async function getRsxAddDefaultDirectory(
   workspaceFolder: vscode.WorkspaceFolder,
 ): Promise<string> {
-  const configUri = vscode.Uri.joinPath(workspaceFolder.uri, 'rsx.config.json');
+  return getRsxConfiguredAddDefaultDirectory(workspaceFolder.uri);
+}
+
+async function getRsxConfiguredAddDefaultDirectory(
+  rootUri: vscode.Uri,
+): Promise<string> {
+  const config = await readRsxConfigJson(rootUri);
+  const configured = config?.cli?.add?.defaultDirectory;
+  const baseDirectory = await getRsxAddBaseDirectory(rootUri);
+  if (typeof configured === 'string' && configured.trim()) {
+    const normalizedConfigured = configured.trim().replace(/\\/gu, '/');
+    if (isRsxAddBaseDirectoryPath(normalizedConfigured)) {
+      return `${normalizedConfigured}/expressions`;
+    }
+    if (
+      config?.cli?.add?.baseDirectory !== undefined &&
+      isLegacyGeneratedRsxExpressionDirectory(normalizedConfigured)
+    ) {
+      return `${baseDirectory}/expressions`;
+    }
+    return normalizedConfigured;
+  }
+  if (baseDirectory === RSX_ADD_DEFAULT_BASE_DIRECTORY) {
+    return RSX_ADD_DEFAULT_EXPRESSIONS_DIRECTORY;
+  }
+  return `${baseDirectory}/expressions`;
+}
+
+function isLegacyGeneratedRsxExpressionDirectory(value: string): boolean {
+  return value === 'src/expressions' || value === 'app/expressions';
+}
+
+function isRsxAddBaseDirectoryPath(value: string): boolean {
+  return value === 'rsx' || value.endsWith('/rsx');
+}
+
+async function getRsxAddModelDirectory(
+  workspaceFolder: vscode.WorkspaceFolder,
+): Promise<string> {
+  const config = await readRsxConfigJson(workspaceFolder.uri);
+  const configured = config?.cli?.add?.modelDirectory;
+  if (typeof configured === 'string' && configured.trim()) {
+    return (
+      normalizeRsxDirectoryPath(configured) ?? RSX_ADD_DEFAULT_MODEL_DIRECTORY
+    );
+  }
+  const baseDirectory = await getRsxAddBaseDirectory(workspaceFolder.uri);
+  return baseDirectory === RSX_ADD_DEFAULT_BASE_DIRECTORY
+    ? RSX_ADD_DEFAULT_MODEL_DIRECTORY
+    : `${baseDirectory}/models`;
+}
+
+async function getRsxAddBaseDirectory(rootUri: vscode.Uri): Promise<string> {
+  const config = await readRsxConfigJson(rootUri);
+  const configured = config?.cli?.add?.baseDirectory;
+  if (typeof configured === 'string' && configured.trim()) {
+    return (
+      normalizeRsxDirectoryPath(configured) ?? RSX_ADD_DEFAULT_BASE_DIRECTORY
+    );
+  }
+  const configuredDefault = config?.cli?.add?.defaultDirectory;
+  if (typeof configuredDefault === 'string' && configuredDefault.trim()) {
+    const normalizedDefault = normalizeRsxDirectoryPath(configuredDefault);
+    if (normalizedDefault && isRsxAddBaseDirectoryPath(normalizedDefault)) {
+      return normalizedDefault;
+    }
+  }
+  return RSX_ADD_DEFAULT_BASE_DIRECTORY;
+}
+
+async function getRsxConfiguredAddSearchRoots(
+  rootUri: vscode.Uri,
+): Promise<string[]> {
+  const config = await readRsxConfigJson(rootUri);
+  const configured = config?.cli?.add?.searchRoots;
+  if (!Array.isArray(configured)) {
+    return [];
+  }
+  return configured
+    .filter((entry): entry is string => typeof entry === 'string')
+    .map((entry) => normalizeRsxDirectoryPath(entry))
+    .filter(Boolean);
+}
+
+async function readRsxConfigJson(rootUri: vscode.Uri): Promise<{
+  cli?: {
+    add?: {
+      baseDirectory?: unknown;
+      defaultDirectory?: unknown;
+      modelDirectory?: unknown;
+      sourceRoot?: unknown;
+      searchRoots?: unknown;
+    };
+  };
+} | null> {
+  const configUri = vscode.Uri.joinPath(rootUri, 'rsx.config.json');
   try {
     const text = new TextDecoder('utf8').decode(
       await vscode.workspace.fs.readFile(configUri),
     );
-    const config = JSON.parse(text) as {
-      cli?: { add?: { defaultDirectory?: unknown } };
+    return JSON.parse(text) as {
+      cli?: {
+        add?: {
+          baseDirectory?: unknown;
+          defaultDirectory?: unknown;
+          modelDirectory?: unknown;
+          sourceRoot?: unknown;
+          searchRoots?: unknown;
+        };
+      };
     };
-    const configured = config.cli?.add?.defaultDirectory;
-    if (typeof configured === 'string' && configured.trim()) {
-      return configured.trim().replace(/\\/gu, '/');
+  } catch {
+    // Missing or invalid config should not block the UI add flow.
+  }
+  return null;
+}
+
+async function getRsxAddSourceRootDirectory(
+  rootUri: vscode.Uri,
+): Promise<string> {
+  const config = await readRsxConfigJson(rootUri);
+  const configured = config?.cli?.add?.sourceRoot;
+  if (typeof configured === 'string' && configured.trim()) {
+    return normalizeRsxDirectoryPath(configured);
+  }
+  try {
+    const defaultDirectory = await getRsxConfiguredAddDefaultDirectory(rootUri);
+    if (defaultDirectory) {
+      return deriveRsxSourceRootFromDefaultDirectory(defaultDirectory);
     }
   } catch {
     // Missing or invalid config should not block the UI add flow.
   }
-  return 'src/expressions';
+  return await getRsxAddBaseDirectory(rootUri);
+}
+
+function deriveRsxSourceRootFromDefaultDirectory(value: string): string {
+  const normalized = normalizeRsxDirectoryPath(value);
+  if (!normalized) {
+    return RSX_ADD_DEFAULT_BASE_DIRECTORY;
+  }
+  const segments = normalized.split('/');
+  if (segments.at(-1) === 'expressions' && segments.length > 1) {
+    return segments.slice(0, -1).join('/');
+  }
+  return normalized;
+}
+
+function normalizeRsxDirectoryPath(value: string): string | null {
+  const normalized = value.trim().replace(/\\/gu, '/');
+  const segments = normalized.split('/').filter(Boolean);
+  if (
+    normalized.length === 0 ||
+    normalized.startsWith('/') ||
+    segments.some((segment) => segment === '.' || segment === '..')
+  ) {
+    return null;
+  }
+  return segments.join('/');
 }
 
 async function enableRsxDebugChangeHooksForWorkspace(
@@ -10790,6 +17546,30 @@ async function enableRsxDebugChangeHooksForWorkspace(
     return;
   }
 
+  await writeRsxDebugChangeHookConfigForWorkspace(anchorUri, target, {
+    moduleSpecifier: hookSelection.moduleSpecifier,
+    exportName: hookSelection.exportName,
+    enabled: true,
+  });
+  vscode.window.showInformationMessage(
+    `Enabled RS-X debug change hook ${hookSelection.exportName} from ${hookSelection.moduleSpecifier} for ${target.instanceId ? 'usage' : 'expression default'} ${target.expressionName}.`,
+  );
+}
+
+async function writeRsxDebugChangeHookConfigForWorkspace(
+  anchorUri: vscode.Uri | undefined,
+  target: IRsxDebugHookPanelTarget,
+  nextHookConfig: {
+    readonly moduleSpecifier: string;
+    readonly exportName?: string;
+    readonly enabled: boolean;
+    readonly standardHook?: IRsxStandardDebugHookKind;
+  },
+): Promise<boolean> {
+  const configRootUri = await resolveRsxDebugHookConfigRootForWrite(anchorUri);
+  if (!configRootUri) {
+    return false;
+  }
   const configUri = vscode.Uri.joinPath(configRootUri, 'rsx.config.json');
   let config: {
     build?: Record<string, unknown>;
@@ -10805,13 +17585,13 @@ async function enableRsxDebugChangeHooksForWorkspace(
         vscode.window.showWarningMessage(
           'RS-X config must be a JSON object before debug hooks can be enabled.',
         );
-        return;
+        return false;
       }
     } catch {
       vscode.window.showWarningMessage(
         'Could not parse rsx.config.json. Fix the JSON before enabling debug hooks.',
       );
-      return;
+      return false;
     }
   }
 
@@ -10836,11 +17616,6 @@ async function enableRsxDebugChangeHooksForWorkspace(
           ...(existingHooks[target.expressionName] as Record<string, unknown>),
         }
       : {};
-  const nextHookConfig = {
-    moduleSpecifier: hookSelection.moduleSpecifier,
-    exportName: hookSelection.exportName,
-    enabled: true,
-  };
   if (target.instanceId) {
     const instances =
       expressionConfig.instances &&
@@ -10848,10 +17623,16 @@ async function enableRsxDebugChangeHooksForWorkspace(
       !Array.isArray(expressionConfig.instances)
         ? { ...(expressionConfig.instances as Record<string, unknown>) }
         : {};
-    instances[target.instanceId] = nextHookConfig;
+    instances[target.instanceId] = appendRsxDebugHookConfigValue(
+      instances[target.instanceId],
+      nextHookConfig,
+    );
     expressionConfig.instances = instances;
   } else {
-    expressionConfig.group = nextHookConfig;
+    expressionConfig.group = appendRsxDebugHookConfigValue(
+      expressionConfig.group,
+      nextHookConfig,
+    );
   }
   existingHooks[target.expressionName] = expressionConfig;
   config.build = {
@@ -10862,9 +17643,130 @@ async function enableRsxDebugChangeHooksForWorkspace(
     configUri,
     new TextEncoder().encode(`${JSON.stringify(config, null, 2)}\n`),
   );
-  vscode.window.showInformationMessage(
-    `Enabled RS-X debug change hook ${hookSelection.exportName} from ${hookSelection.moduleSpecifier} for ${target.instanceId ? 'instance' : 'group'} ${target.expressionName}.`,
+  return true;
+}
+
+function appendRsxDebugHookConfigValue(
+  existingValue: unknown,
+  nextHookConfig: Record<string, unknown>,
+): Record<string, unknown> | readonly Record<string, unknown>[] {
+  const existingHooks = normalizeStoredRsxDebugHookConfigs(existingValue);
+  const nextIdentity = getStoredRsxDebugHookConfigIdentity(nextHookConfig);
+  const nextHooks = existingHooks.some(
+    (hook) => getStoredRsxDebugHookConfigIdentity(hook) === nextIdentity,
+  )
+    ? existingHooks.map((hook) =>
+        getStoredRsxDebugHookConfigIdentity(hook) === nextIdentity
+          ? nextHookConfig
+          : hook,
+      )
+    : [...existingHooks, nextHookConfig];
+  return serializeStoredRsxDebugHookConfigs(nextHooks) ?? nextHookConfig;
+}
+
+function normalizeStoredRsxDebugHookConfigs(
+  value: unknown,
+): Record<string, unknown>[] {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+  return values.filter(
+    (entry): entry is Record<string, unknown> =>
+      Boolean(entry) && typeof entry === 'object' && !Array.isArray(entry),
   );
+}
+
+function serializeStoredRsxDebugHookConfigs(
+  hooks: readonly Record<string, unknown>[],
+): Record<string, unknown> | readonly Record<string, unknown>[] | undefined {
+  if (hooks.length === 0) {
+    return undefined;
+  }
+  return hooks.length === 1 ? hooks[0] : hooks;
+}
+
+function getStoredRsxDebugHookConfigIdentity(
+  hookConfig: Record<string, unknown>,
+): string {
+  return [
+    typeof hookConfig.moduleSpecifier === 'string'
+      ? hookConfig.moduleSpecifier
+      : '',
+    typeof hookConfig.exportName === 'string' ? hookConfig.exportName : '',
+  ].join('\0');
+}
+
+async function createRsxDebugChangeHookForWorkspace(
+  anchorUri?: vscode.Uri,
+): Promise<void> {
+  const configRootUri = await resolveRsxDebugHookConfigRootForWrite(anchorUri);
+  if (!configRootUri) {
+    vscode.window.showWarningMessage(
+      'Open a workspace before creating an RS-X debug hook.',
+    );
+    return;
+  }
+  const hookSelection = await selectRsxDebugChangeHook(
+    configRootUri,
+    anchorUri,
+  );
+  if (!hookSelection) {
+    return;
+  }
+  vscode.window.showInformationMessage(
+    `RS-X debug change hook ready: ${hookSelection.exportName} from ${hookSelection.moduleSpecifier}. Drag a definition or instance onto the hook to assign it.`,
+  );
+}
+
+async function assignExistingRsxDebugChangeHookForWorkspace(
+  anchorUri: vscode.Uri | undefined,
+  target: IRsxDebugHookPanelTarget,
+  hook: {
+    readonly moduleSpecifier: string;
+    readonly exportName?: string;
+    readonly enabled: boolean;
+  },
+): Promise<boolean> {
+  return updateRsxDebugHookConfig(anchorUri, target, () => ({
+    moduleSpecifier: hook.moduleSpecifier,
+    exportName: hook.exportName,
+    enabled: hook.enabled,
+  }));
+}
+
+async function assignStandardRsxDebugChangeHookForWorkspace(
+  anchorUri: vscode.Uri | undefined,
+  target: IRsxDebugHookPanelTarget,
+  standardHook: IRsxStandardDebugHookKind,
+): Promise<boolean> {
+  const configRootUri = await resolveRsxDebugHookConfigRootForWrite(anchorUri);
+  if (!configRootUri) {
+    return false;
+  }
+  const hook = RSX_STANDARD_DEBUG_HOOKS[standardHook];
+  const hookUri = getStandardRsxDebugChangeHookUri(
+    configRootUri,
+    await getRsxAddSourceRootDirectory(configRootUri),
+  );
+  await createStandardRsxDebugChangeHookFile(hookUri);
+  const moduleSpecifier = getRsxDebugHookModuleSpecifier(
+    anchorUri ?? configRootUri,
+    hookUri,
+  );
+  const updated = await writeRsxDebugChangeHookConfigForWorkspace(
+    anchorUri,
+    target,
+    {
+      moduleSpecifier,
+      exportName: hook.exportName,
+      enabled: true,
+      standardHook,
+    },
+  );
+  if (updated) {
+    vscode.window.showInformationMessage(
+      `Assigned RS-X ${hook.label} hook to ${target.instanceId ? 'usage' : 'expression default'} ${target.expressionName}.`,
+    );
+  }
+  return updated;
 }
 
 async function setRsxDebugChangeHooksEnabledForWorkspace(
@@ -10880,9 +17782,35 @@ async function setRsxDebugChangeHooksEnabledForWorkspace(
   );
   if (updated) {
     vscode.window.showInformationMessage(
-      `${enabled ? 'Enabled' : 'Disabled'} RS-X debug hook for ${target.instanceId ? 'instance' : 'group'} ${target.expressionName}.`,
+      `${enabled ? 'Enabled' : 'Disabled'} RS-X debug hook for ${target.instanceId ? 'usage' : 'expression default'} ${target.expressionName}.`,
     );
   }
+}
+
+async function setRsxDebugHookAssignmentEnabledForWorkspace(
+  anchorUri: vscode.Uri | undefined,
+  target: IRsxDebugHookPanelTarget,
+  hook: IRsxExpressionPanelHookDropAction,
+  enabled: boolean,
+): Promise<boolean> {
+  const updated = await updateRsxDebugHookConfig(
+    anchorUri,
+    target,
+    (existingHook) => {
+      if (!existingHook) {
+        return existingHook;
+      }
+      return isSameRsxDebugHookAssignment(existingHook, hook)
+        ? { ...existingHook, enabled }
+        : existingHook;
+    },
+  );
+  if (updated) {
+    vscode.window.showInformationMessage(
+      `${enabled ? 'Enabled' : 'Disabled'} hook for ${target.instanceId ? 'usage' : 'expression default'} ${target.expressionName}.`,
+    );
+  }
+  return updated;
 }
 
 async function deleteRsxDebugChangeHooksForWorkspace(
@@ -10895,9 +17823,639 @@ async function deleteRsxDebugChangeHooksForWorkspace(
   const updated = await updateRsxDebugHookConfig(anchorUri, target, () => null);
   if (updated) {
     vscode.window.showInformationMessage(
-      `Deleted RS-X debug hook config for ${target.instanceId ? 'instance' : 'group'} ${target.expressionName}.`,
+      `Deleted RS-X debug hook config for ${target.instanceId ? 'usage' : 'expression default'} ${target.expressionName}.`,
     );
   }
+}
+
+async function unassignRsxDebugChangeHookForWorkspace(
+  anchorUri: vscode.Uri | undefined,
+  target: IRsxDebugHookPanelTarget,
+  hook: IRsxExpressionPanelHookDropAction,
+): Promise<boolean> {
+  return updateRsxDebugHookConfig(anchorUri, target, (existingHook) => {
+    if (!existingHook) {
+      return existingHook;
+    }
+    return isSameRsxDebugHookAssignment(existingHook, hook)
+      ? null
+      : existingHook;
+  });
+}
+
+function isSameRsxDebugHookAssignment(
+  existingHook: Record<string, unknown>,
+  hook: IRsxExpressionPanelHookDropAction,
+): boolean {
+  if (
+    hook.moduleSpecifier &&
+    typeof existingHook.moduleSpecifier === 'string' &&
+    existingHook.moduleSpecifier === hook.moduleSpecifier
+  ) {
+    return (
+      (typeof existingHook.exportName === 'string'
+        ? existingHook.exportName
+        : undefined) === hook.exportName
+    );
+  }
+  if (
+    hook.standardHook &&
+    typeof existingHook.standardHook === 'string' &&
+    existingHook.standardHook === hook.standardHook
+  ) {
+    return true;
+  }
+  return false;
+}
+
+async function deleteRsxCustomDebugHookForWorkspace(args: {
+  readonly hookUri: vscode.Uri;
+  readonly exportName: string;
+  readonly moduleSpecifier?: string;
+}): Promise<boolean> {
+  const referencesChanged =
+    await removeRsxDebugHookReferencesForWorkspace(args);
+  const sourceChanged = await removeRsxDebugHookExportFromSource(
+    args.hookUri,
+    args.exportName,
+  );
+  return referencesChanged || sourceChanged;
+}
+
+async function removeRsxDebugHookReferencesForWorkspace(args: {
+  readonly hookUri: vscode.Uri;
+  readonly exportName: string;
+  readonly moduleSpecifier?: string;
+}): Promise<boolean> {
+  const configUris = await vscode.workspace.findFiles(
+    '**/rsx.config.json',
+    '**/{node_modules,dist,out-tsc,coverage,.git,.rsx}/**',
+  );
+  let changed = false;
+  for (const configUri of configUris) {
+    const text = await readWorkspaceTextFile(configUri);
+    if (!text?.trim()) {
+      continue;
+    }
+    let config: { build?: Record<string, unknown>; [key: string]: unknown };
+    try {
+      const parsed = JSON.parse(text) as unknown;
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        continue;
+      }
+      config = parsed as typeof config;
+    } catch {
+      continue;
+    }
+    const build =
+      config.build &&
+      typeof config.build === 'object' &&
+      !Array.isArray(config.build)
+        ? config.build
+        : undefined;
+    const hooks =
+      build?.debugChangeHooks &&
+      typeof build.debugChangeHooks === 'object' &&
+      !Array.isArray(build.debugChangeHooks)
+        ? { ...(build.debugChangeHooks as Record<string, unknown>) }
+        : undefined;
+    if (!build || !hooks) {
+      continue;
+    }
+    let configChanged = false;
+    for (const [expressionName, expressionValue] of Object.entries(hooks)) {
+      if (
+        !expressionValue ||
+        typeof expressionValue !== 'object' ||
+        Array.isArray(expressionValue)
+      ) {
+        continue;
+      }
+      const expressionConfig = {
+        ...(expressionValue as Record<string, unknown>),
+      };
+      const nextGroup = removeStoredRsxDebugHookReferences(
+        expressionConfig.group,
+        args,
+        configUri,
+      );
+      if (nextGroup.changed) {
+        configChanged = true;
+        if (nextGroup.value === undefined) {
+          delete expressionConfig.group;
+        } else {
+          expressionConfig.group = nextGroup.value;
+        }
+      }
+      if (
+        expressionConfig.instances &&
+        typeof expressionConfig.instances === 'object' &&
+        !Array.isArray(expressionConfig.instances)
+      ) {
+        const instances = {
+          ...(expressionConfig.instances as Record<string, unknown>),
+        };
+        for (const [instanceId, instanceValue] of Object.entries(instances)) {
+          const nextInstance = removeStoredRsxDebugHookReferences(
+            instanceValue,
+            args,
+            configUri,
+          );
+          if (nextInstance.changed) {
+            configChanged = true;
+            if (nextInstance.value === undefined) {
+              delete instances[instanceId];
+            } else {
+              instances[instanceId] = nextInstance.value;
+            }
+          }
+        }
+        if (Object.keys(instances).length === 0) {
+          delete expressionConfig.instances;
+        } else {
+          expressionConfig.instances = instances;
+        }
+      }
+      if (Object.keys(expressionConfig).length === 0) {
+        delete hooks[expressionName];
+      } else {
+        hooks[expressionName] = expressionConfig;
+      }
+    }
+    if (!configChanged) {
+      continue;
+    }
+    config.build = {
+      ...build,
+      debugChangeHooks: hooks,
+    };
+    await vscode.workspace.fs.writeFile(
+      configUri,
+      new TextEncoder().encode(`${JSON.stringify(config, null, 2)}\n`),
+    );
+    changed = true;
+  }
+  return changed;
+}
+
+function removeStoredRsxDebugHookReferences(
+  value: unknown,
+  args: {
+    readonly hookUri: vscode.Uri;
+    readonly exportName: string;
+    readonly moduleSpecifier?: string;
+  },
+  configUri: vscode.Uri,
+): {
+  readonly changed: boolean;
+  readonly value?: Record<string, unknown> | readonly Record<string, unknown>[];
+} {
+  const existingHooks = normalizeStoredRsxDebugHookConfigs(value);
+  if (existingHooks.length === 0) {
+    return { changed: false, value: undefined };
+  }
+  const nextHooks = existingHooks.filter(
+    (hook) => !isStoredRsxDebugHookReferenceToCustomHook(hook, args, configUri),
+  );
+  return {
+    changed: nextHooks.length !== existingHooks.length,
+    value: serializeStoredRsxDebugHookConfigs(nextHooks),
+  };
+}
+
+function isStoredRsxDebugHookReferenceToCustomHook(
+  hook: Record<string, unknown>,
+  args: {
+    readonly hookUri: vscode.Uri;
+    readonly exportName: string;
+    readonly moduleSpecifier?: string;
+  },
+  configUri: vscode.Uri,
+): boolean {
+  const exportName =
+    typeof hook.exportName === 'string' ? hook.exportName : undefined;
+  if (exportName !== args.exportName) {
+    return false;
+  }
+  const moduleSpecifier =
+    typeof hook.moduleSpecifier === 'string' ? hook.moduleSpecifier : undefined;
+  if (!moduleSpecifier) {
+    return false;
+  }
+  if (args.moduleSpecifier && moduleSpecifier === args.moduleSpecifier) {
+    return true;
+  }
+  if (
+    path.basename(moduleSpecifier) ===
+    path.basename(args.hookUri.fsPath).replace(/\.[cm]?[jt]sx?$/u, '')
+  ) {
+    return true;
+  }
+  const resolved = resolveRsxDebugHookModuleFileNameFromAnchorSync({
+    moduleSpecifier,
+    anchorUri: configUri,
+  });
+  return resolved
+    ? path.resolve(resolved) === path.resolve(args.hookUri.fsPath)
+    : false;
+}
+
+function resolveRsxDebugHookModuleFileNameFromAnchorSync(args: {
+  readonly moduleSpecifier: string;
+  readonly anchorUri: vscode.Uri;
+}): string | null {
+  const containingFile = args.anchorUri.fsPath;
+  const options: ts.CompilerOptions = {
+    allowJs: true,
+    module: ts.ModuleKind.ES2022,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    target: ts.ScriptTarget.ES2022,
+  };
+  const compilerHost = ts.createCompilerHost(options, true);
+  const resolved = ts.resolveModuleName(
+    args.moduleSpecifier,
+    containingFile,
+    options,
+    compilerHost,
+  ).resolvedModule?.resolvedFileName;
+  if (resolved) {
+    return resolved;
+  }
+  if (!args.moduleSpecifier.startsWith('.')) {
+    return null;
+  }
+  const basePath = path.resolve(
+    path.dirname(containingFile),
+    args.moduleSpecifier,
+  );
+  return (
+    getRsxDebugHookModuleFileNameCandidates(basePath).find((candidatePath) =>
+      fs.existsSync(candidatePath),
+    ) ?? null
+  );
+}
+
+async function removeRsxDebugHookExportFromSource(
+  hookUri: vscode.Uri,
+  exportName: string,
+): Promise<boolean> {
+  const text = await readWorkspaceTextFile(hookUri);
+  if (!text) {
+    return false;
+  }
+  const sourceFile = ts.createSourceFile(
+    hookUri.fsPath,
+    text,
+    ts.ScriptTarget.Latest,
+    true,
+    getScriptKindForRsxInstanceScan(hookUri.fsPath),
+  );
+  const range = findExportedDeclarationStatementRange(sourceFile, exportName);
+  if (!range) {
+    return false;
+  }
+  const start = getLineStartOffset(text, range.start);
+  const end = getNextLineStartOffset(text, getLineEndOffset(text, range.end));
+  const nextText = `${text.slice(0, start)}${text.slice(end)}`;
+  if (!nextText.trim()) {
+    await vscode.workspace.fs.delete(hookUri, { useTrash: false });
+  } else {
+    await vscode.workspace.fs.writeFile(
+      hookUri,
+      new TextEncoder().encode(nextText),
+    );
+  }
+  return true;
+}
+
+function findExportedDeclarationStatementRange(
+  sourceFile: ts.SourceFile,
+  exportName: string,
+): { readonly start: number; readonly end: number } | null {
+  let range: { start: number; end: number } | null = null;
+  const visit = (node: ts.Node): void => {
+    if (range || !hasExportModifier(node)) {
+      ts.forEachChild(node, visit);
+      return;
+    }
+    if (ts.isFunctionDeclaration(node) && node.name?.text === exportName) {
+      range = { start: node.getFullStart(), end: node.getEnd() };
+      return;
+    }
+    if (ts.isVariableStatement(node)) {
+      const declarations = node.declarationList.declarations;
+      if (
+        declarations.length === 1 &&
+        ts.isIdentifier(declarations[0].name) &&
+        declarations[0].name.text === exportName
+      ) {
+        range = { start: node.getFullStart(), end: node.getEnd() };
+        return;
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return range;
+}
+
+interface IRsxDebugHookAssignment {
+  readonly moduleSpecifier: string;
+  readonly exportName?: string;
+  readonly enabled: boolean;
+  readonly standardHook?: IRsxStandardDebugHookKind;
+}
+
+interface IRsxDebugHookAssignmentPickerItem extends vscode.QuickPickItem {
+  readonly hook: IRsxDebugHookAssignment;
+}
+
+async function manageRsxDebugChangeHooksForWorkspace(
+  anchorUri: vscode.Uri | undefined,
+  target: IRsxDebugHookPanelTarget,
+): Promise<boolean> {
+  const configRootUri = await resolveRsxDebugHookConfigRootForWrite(anchorUri);
+  if (!configRootUri) {
+    vscode.window.showWarningMessage(
+      'Open a workspace before managing RS-X debug hooks.',
+    );
+    return false;
+  }
+  const items = await getRsxDebugHookAssignmentItems(
+    configRootUri,
+    anchorUri,
+    target,
+  );
+  if (items.length === 0) {
+    vscode.window.showWarningMessage(
+      'No RS-X hooks found. Add a hook from the root Hooks node first.',
+    );
+    return false;
+  }
+  const selected = await vscode.window.showQuickPick(items, {
+    canPickMany: true,
+    placeHolder: target.instanceId
+      ? `Assign hooks to this ${target.expressionName} instance`
+      : `Assign hooks to all ${target.expressionName} instances`,
+    title: 'Manage Assigned Hooks',
+  });
+  if (!selected) {
+    return false;
+  }
+  const changed = await writeSelectedRsxDebugHookAssignmentsForWorkspace(
+    anchorUri,
+    target,
+    selected.map((item) => item.hook),
+  );
+  if (changed) {
+    vscode.window.showInformationMessage(
+      `Updated RS-X hooks for ${target.instanceId ? 'instance' : 'definition'} ${target.expressionName}.`,
+    );
+  }
+  return changed;
+}
+
+async function getRsxDebugHookAssignmentItems(
+  configRootUri: vscode.Uri,
+  anchorUri: vscode.Uri | undefined,
+  target: IRsxDebugHookPanelTarget,
+): Promise<IRsxDebugHookAssignmentPickerItem[]> {
+  const effectiveHooks = await getEffectiveRsxDebugHooksForTarget(
+    anchorUri ?? configRootUri,
+    target,
+  );
+  const availableHooks = await getAssignableRsxDebugHooks(
+    configRootUri,
+    anchorUri,
+  );
+  const hooksByIdentity = new Map<string, IRsxDebugHookAssignmentPickerItem>();
+  for (const hook of [...availableHooks, ...effectiveHooks]) {
+    const identity = getStoredRsxDebugHookConfigIdentity(hook.hook);
+    if (!identity.trim() && !identity.includes('\0')) {
+      continue;
+    }
+    const existing = hooksByIdentity.get(identity);
+    hooksByIdentity.set(identity, {
+      ...hook,
+      picked: existing?.picked === true || hook.picked === true,
+    });
+  }
+  return [...hooksByIdentity.values()].sort(
+    (left, right) =>
+      left.label.localeCompare(right.label) ||
+      String(left.description ?? '').localeCompare(
+        String(right.description ?? ''),
+      ),
+  );
+}
+
+async function getEffectiveRsxDebugHooksForTarget(
+  anchorUri: vscode.Uri,
+  target: IRsxDebugHookPanelTarget,
+): Promise<IRsxDebugHookAssignmentPickerItem[]> {
+  const hooksByExpression = await getRsxDebugHooksByExpressionForUri(anchorUri);
+  const config = hooksByExpression.get(target.expressionName);
+  const hooks = target.instanceId
+    ? normalizeStoredRsxDebugHookConfigs(
+        config?.instances.get(target.instanceId),
+      )
+    : normalizeStoredRsxDebugHookConfigs(config?.group);
+  return hooks.map((hook) => {
+    const moduleSpecifier =
+      typeof hook.moduleSpecifier === 'string' ? hook.moduleSpecifier : '';
+    const exportName =
+      typeof hook.exportName === 'string' ? hook.exportName : undefined;
+    return {
+      label: exportName ?? moduleSpecifier,
+      description: moduleSpecifier,
+      detail: 'Currently assigned',
+      picked: true,
+      hook: {
+        moduleSpecifier,
+        exportName,
+        enabled: hook.enabled !== false,
+      },
+    };
+  });
+}
+
+async function getAssignableRsxDebugHooks(
+  configRootUri: vscode.Uri,
+  anchorUri: vscode.Uri | undefined,
+): Promise<IRsxDebugHookAssignmentPickerItem[]> {
+  const standardHookEntries = Object.entries(RSX_STANDARD_DEBUG_HOOKS) as Array<
+    [
+      IRsxStandardDebugHookKind,
+      (typeof RSX_STANDARD_DEBUG_HOOKS)[IRsxStandardDebugHookKind],
+    ]
+  >;
+  const sourceRoot = await getRsxAddSourceRootDirectory(configRootUri);
+  const standardHooks = standardHookEntries.map(([standardHook, hook]) => ({
+    label: hook.label,
+    description: hook.description,
+    detail: 'Standard hook',
+    hook: {
+      moduleSpecifier: getRsxDebugHookModuleSpecifier(
+        anchorUri ?? configRootUri,
+        getStandardRsxDebugChangeHookUri(configRootUri, sourceRoot),
+      ),
+      exportName: hook.exportName,
+      enabled: true,
+      standardHook,
+    },
+  }));
+  const standardExportNames = new Set(
+    Object.values(RSX_STANDARD_DEBUG_HOOKS).map((hook) => hook.exportName),
+  );
+  const customHooks = (
+    await findRsxDebugChangeHookCandidates(configRootUri, anchorUri)
+  )
+    .filter((hook) => !standardExportNames.has(hook.exportName))
+    .map((hook) => ({
+      label: hook.exportName,
+      description: hook.moduleSpecifier,
+      detail: 'Custom hook',
+      hook: {
+        moduleSpecifier: hook.moduleSpecifier,
+        exportName: hook.exportName,
+        enabled: true,
+      },
+    }));
+  return [...standardHooks, ...customHooks];
+}
+
+async function writeSelectedRsxDebugHookAssignmentsForWorkspace(
+  anchorUri: vscode.Uri | undefined,
+  target: IRsxDebugHookPanelTarget,
+  selectedHooks: readonly IRsxDebugHookAssignment[],
+): Promise<boolean> {
+  const configRootUri = await resolveRsxDebugHookConfigRootForWrite(anchorUri);
+  if (!configRootUri) {
+    return false;
+  }
+  const sourceRoot = await getRsxAddSourceRootDirectory(configRootUri);
+  const nextHooks = await Promise.all(
+    selectedHooks.map(async (hook) => {
+      if (hook.standardHook) {
+        const standardHook = RSX_STANDARD_DEBUG_HOOKS[hook.standardHook];
+        const hookUri = getStandardRsxDebugChangeHookUri(
+          configRootUri,
+          sourceRoot,
+        );
+        await createStandardRsxDebugChangeHookFile(hookUri);
+        return {
+          moduleSpecifier: getRsxDebugHookModuleSpecifier(
+            anchorUri ?? configRootUri,
+            hookUri,
+          ),
+          exportName: standardHook.exportName,
+          enabled: true,
+          standardHook: hook.standardHook,
+        };
+      }
+      return {
+        moduleSpecifier: hook.moduleSpecifier,
+        exportName: hook.exportName,
+        enabled: hook.enabled,
+      };
+    }),
+  );
+  return replaceRsxDebugChangeHooksForWorkspace(anchorUri, target, nextHooks);
+}
+
+async function replaceRsxDebugChangeHooksForWorkspace(
+  anchorUri: vscode.Uri | undefined,
+  target: IRsxDebugHookPanelTarget,
+  nextHookConfigs: readonly Record<string, unknown>[],
+): Promise<boolean> {
+  const configRootUri = await resolveRsxDebugHookConfigRootForWrite(anchorUri);
+  if (!configRootUri) {
+    return false;
+  }
+  const configUri = vscode.Uri.joinPath(configRootUri, 'rsx.config.json');
+  let config: { build?: Record<string, unknown>; [key: string]: unknown } = {};
+  const existingText = await readWorkspaceTextFile(configUri);
+  if (existingText?.trim()) {
+    try {
+      const parsed = JSON.parse(existingText) as unknown;
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return false;
+      }
+      config = parsed as typeof config;
+    } catch {
+      vscode.window.showWarningMessage(
+        'Could not parse rsx.config.json. Fix the JSON before managing hooks.',
+      );
+      return false;
+    }
+  }
+  const build =
+    config.build &&
+    typeof config.build === 'object' &&
+    !Array.isArray(config.build)
+      ? config.build
+      : {};
+  const hooks =
+    build.debugChangeHooks &&
+    typeof build.debugChangeHooks === 'object' &&
+    !Array.isArray(build.debugChangeHooks)
+      ? { ...(build.debugChangeHooks as Record<string, unknown>) }
+      : {};
+  const expressionConfig =
+    hooks[target.expressionName] &&
+    typeof hooks[target.expressionName] === 'object' &&
+    !Array.isArray(hooks[target.expressionName])
+      ? { ...(hooks[target.expressionName] as Record<string, unknown>) }
+      : {};
+  const nextSerialized = serializeStoredRsxDebugHookConfigs(
+    dedupeStoredRsxDebugHookConfigs(nextHookConfigs),
+  );
+  if (target.instanceId) {
+    const instances =
+      expressionConfig.instances &&
+      typeof expressionConfig.instances === 'object' &&
+      !Array.isArray(expressionConfig.instances)
+        ? { ...(expressionConfig.instances as Record<string, unknown>) }
+        : {};
+    if (nextSerialized === undefined) {
+      delete instances[target.instanceId];
+    } else {
+      instances[target.instanceId] = nextSerialized;
+    }
+    if (Object.keys(instances).length === 0) {
+      delete expressionConfig.instances;
+    } else {
+      expressionConfig.instances = instances;
+    }
+  } else if (nextSerialized === undefined) {
+    delete expressionConfig.group;
+  } else {
+    expressionConfig.group = nextSerialized;
+  }
+  if (Object.keys(expressionConfig).length === 0) {
+    delete hooks[target.expressionName];
+  } else {
+    hooks[target.expressionName] = expressionConfig;
+  }
+  config.build = {
+    ...build,
+    debugChangeHooks: hooks,
+  };
+  await vscode.workspace.fs.writeFile(
+    configUri,
+    new TextEncoder().encode(`${JSON.stringify(config, null, 2)}\n`),
+  );
+  return true;
+}
+
+function dedupeStoredRsxDebugHookConfigs(
+  hooks: readonly Record<string, unknown>[],
+): Record<string, unknown>[] {
+  const byIdentity = new Map<string, Record<string, unknown>>();
+  for (const hook of hooks) {
+    byIdentity.set(getStoredRsxDebugHookConfigIdentity(hook), hook);
+  }
+  return [...byIdentity.values()];
 }
 
 async function updateRsxDebugHookConfig(
@@ -10951,22 +18509,21 @@ async function updateRsxDebugHookConfig(
       !Array.isArray(expressionConfig.instances)
         ? { ...(expressionConfig.instances as Record<string, unknown>) }
         : {};
-    const next = update(
-      instances[target.instanceId] as Record<string, unknown> | undefined,
+    const next = updateRsxDebugHookConfigValue(
+      instances[target.instanceId],
+      update,
     );
-    if (next === null) {
+    if (next === undefined) {
       delete instances[target.instanceId];
-    } else if (next) {
+    } else {
       instances[target.instanceId] = next;
     }
     expressionConfig.instances = instances;
   } else {
-    const next = update(
-      expressionConfig.group as Record<string, unknown> | undefined,
-    );
-    if (next === null) {
+    const next = updateRsxDebugHookConfigValue(expressionConfig.group, update);
+    if (next === undefined) {
       delete expressionConfig.group;
-    } else if (next) {
+    } else {
       expressionConfig.group = next;
     }
   }
@@ -10979,6 +18536,23 @@ async function updateRsxDebugHookConfig(
   return true;
 }
 
+function updateRsxDebugHookConfigValue(
+  existingValue: unknown,
+  update: (
+    hook: Record<string, unknown> | undefined,
+  ) => Record<string, unknown> | null | undefined,
+): Record<string, unknown> | readonly Record<string, unknown>[] | undefined {
+  const existingHooks = normalizeStoredRsxDebugHookConfigs(existingValue);
+  if (existingHooks.length === 0) {
+    const next = update(undefined);
+    return next ? serializeStoredRsxDebugHookConfigs([next]) : undefined;
+  }
+  const nextHooks = existingHooks
+    .map((hook) => update(hook))
+    .filter((hook): hook is Record<string, unknown> => Boolean(hook));
+  return serializeStoredRsxDebugHookConfigs(nextHooks);
+}
+
 async function selectRsxDebugChangeHook(
   projectRootUri: vscode.Uri,
   anchorUri?: vscode.Uri,
@@ -10988,9 +18562,11 @@ async function selectRsxDebugChangeHook(
   readonly exportName: string;
 } | null> {
   const hookExportName = getDefaultRsxDebugChangeHookExportName(expressionName);
+  const sourceRoot = await getRsxAddSourceRootDirectory(projectRootUri);
   const hookUri = getDefaultRsxDebugChangeHookUri(
     projectRootUri,
     expressionName,
+    sourceRoot,
   );
   const projectRelativeHookPath = getProjectRelativePath(
     projectRootUri,
@@ -11044,24 +18620,13 @@ async function selectRsxDebugChangeHook(
 async function findRsxDebugChangeHookCandidates(
   projectRootUri: vscode.Uri,
   anchorUri?: vscode.Uri,
-): Promise<
-  Array<{
-    readonly label: string;
-    readonly description: string;
-    readonly moduleSpecifier: string;
-    readonly exportName: string;
-  }>
-> {
-  const uris = await vscode.workspace.findFiles(
+): Promise<IRsxDebugChangeHookCandidate[]> {
+  const found = await vscode.workspace.findFiles(
     '**/*.{ts,tsx,js,jsx,mts,cts}',
     '**/{node_modules,dist,out-tsc,coverage,.git,.rsx}/**',
   );
-  const candidates: Array<{
-    label: string;
-    description: string;
-    moduleSpecifier: string;
-    exportName: string;
-  }> = [];
+  const uris = Array.isArray(found) ? found : [];
+  const candidates: IRsxDebugChangeHookCandidate[] = [];
   for (const uri of uris.filter((uri) =>
     isUriInsideDirectory(uri, projectRootUri),
   )) {
@@ -11080,12 +18645,15 @@ async function findRsxDebugChangeHookCandidates(
       anchorUri ?? projectRootUri,
       uri,
     );
-    for (const exportName of getExportedHookNames(sourceFile)) {
+    for (const exportedHook of getExportedHookNames(sourceFile)) {
       candidates.push({
-        label: exportName,
+        label: exportedHook.name,
         description: moduleSpecifier,
         moduleSpecifier,
-        exportName,
+        exportName: exportedHook.name,
+        uri,
+        start: exportedHook.start,
+        end: exportedHook.end,
       });
     }
   }
@@ -11096,20 +18664,38 @@ async function findRsxDebugChangeHookCandidates(
   );
 }
 
-function getExportedHookNames(sourceFile: ts.SourceFile): string[] {
-  const names = new Set<string>();
+function getExportedHookNames(sourceFile: ts.SourceFile): Array<{
+  readonly name: string;
+  readonly start: number;
+  readonly end: number;
+}> {
+  const hooks = new Map<
+    string,
+    { readonly name: string; readonly start: number; readonly end: number }
+  >();
+  const addHook = (identifier: ts.Identifier): void => {
+    const name = identifier.text;
+    if (!/hook/iu.test(name)) {
+      return;
+    }
+    hooks.set(name, {
+      name,
+      start: identifier.getStart(sourceFile),
+      end: identifier.getEnd(),
+    });
+  };
   const visit = (node: ts.Node): void => {
     if (
       hasExportModifier(node) &&
       (ts.isFunctionDeclaration(node) || ts.isVariableStatement(node))
     ) {
       if (ts.isFunctionDeclaration(node) && node.name) {
-        names.add(node.name.text);
+        addHook(node.name);
       }
       if (ts.isVariableStatement(node)) {
         for (const declaration of node.declarationList.declarations) {
           if (ts.isIdentifier(declaration.name)) {
-            names.add(declaration.name.text);
+            addHook(declaration.name);
           }
         }
       }
@@ -11117,7 +18703,7 @@ function getExportedHookNames(sourceFile: ts.SourceFile): string[] {
     ts.forEachChild(node, visit);
   };
   visit(sourceFile);
-  return [...names].filter((name) => /hook/iu.test(name));
+  return [...hooks.values()];
 }
 
 function hasExportModifier(node: ts.Node): boolean {
@@ -11140,10 +18726,134 @@ async function createRsxDebugChangeHookFile(
     hookUri,
     new TextEncoder().encode(
       [
-        "import type { RsxDebugChangeHook } from '@rs-x/expression-parser';",
+        "import type { ChangeHook } from '@rs-x/expression-parser';",
         '',
-        `export const ${exportName}: RsxDebugChangeHook = (instance, expression, oldValue) => {`,
-        '  console.debug("[RS-X]", instance.expressionName, { expression, oldValue });',
+        `export const ${exportName}: ChangeHook = (`,
+        '  expression,',
+        '  oldValue: unknown,',
+        '): void => {',
+        '  console.debug("[RS-X]", expression.expressionString, {',
+        '    value: expression.value,',
+        '    oldValue,',
+        '  });',
+        '};',
+        '',
+      ].join('\n'),
+    ),
+  );
+}
+
+async function createOrAppendRsxDebugChangeHookFile(
+  hookUri: vscode.Uri,
+  exportName: string,
+): Promise<void> {
+  const existingText = await readWorkspaceTextFile(hookUri);
+  if (!existingText) {
+    await createRsxDebugChangeHookFile(hookUri, exportName);
+    return;
+  }
+  const sourceFile = ts.createSourceFile(
+    hookUri.fsPath,
+    existingText,
+    ts.ScriptTarget.Latest,
+    true,
+    getScriptKindForRsxInstanceScan(hookUri.fsPath),
+  );
+  if (findExportedDeclarationTextRange(sourceFile, exportName)) {
+    return;
+  }
+  const nextText = [
+    existingText.replace(/\s*$/u, ''),
+    '',
+    `export const ${exportName} = (expression, oldValue) => {`,
+    '  console.debug("[RS-X]", expression.expressionString, {',
+    '    value: expression.value,',
+    '    oldValue,',
+    '  });',
+    '};',
+    '',
+  ].join('\n');
+  await vscode.workspace.fs.writeFile(
+    hookUri,
+    new TextEncoder().encode(nextText),
+  );
+}
+
+function getRsxPanelHookFormUri(
+  projectRootUri: vscode.Uri,
+  relativePath: string,
+): vscode.Uri | null {
+  const normalizedPath = normalizeRsxHookRelativePath(relativePath);
+  if (!normalizedPath || !/\.[cm]?[jt]sx?$/u.test(normalizedPath)) {
+    return null;
+  }
+  const targetUri = vscode.Uri.joinPath(
+    projectRootUri,
+    ...normalizedPath.split('/'),
+  );
+  return isUriInsideDirectory(targetUri, projectRootUri) ? targetUri : null;
+}
+
+function normalizeRsxHookRelativePath(value: string): string | null {
+  const normalized = value.trim().replace(/\\/gu, '/');
+  const segments = normalized.split('/').filter(Boolean);
+  if (
+    normalized.length === 0 ||
+    normalized.startsWith('/') ||
+    segments.some((segment) => segment === '.' || segment === '..') ||
+    !/\.[cm]?[jt]sx?$/u.test(normalized)
+  ) {
+    return null;
+  }
+  return segments.join('/');
+}
+
+function isValidTypeScriptIdentifier(value: string): boolean {
+  return /^[A-Za-z_$][\w$]*$/u.test(value.trim());
+}
+
+function getStandardRsxDebugChangeHookUri(
+  projectRootUri: vscode.Uri,
+  sourceRoot = RSX_ADD_DEFAULT_BASE_DIRECTORY,
+): vscode.Uri {
+  return vscode.Uri.joinPath(
+    projectRootUri,
+    ...sourceRoot.split('/').filter(Boolean),
+    'hooks',
+    'rsx-standard-debug-hooks.ts',
+  );
+}
+
+async function createStandardRsxDebugChangeHookFile(
+  hookUri: vscode.Uri,
+): Promise<void> {
+  if (await readWorkspaceTextFile(hookUri)) {
+    return;
+  }
+  await vscode.workspace.fs.createDirectory(getParentUri(hookUri));
+  await vscode.workspace.fs.writeFile(
+    hookUri,
+    new TextEncoder().encode(
+      [
+        "import type { ChangeHook } from '@rs-x/expression-parser';",
+        '',
+        'export const rsxBreakpointDebugHook: ChangeHook = (',
+        '  expression,',
+        '  oldValue: unknown,',
+        '): void => {',
+        '  void expression;',
+        '  void oldValue;',
+        '  debugger;',
+        '};',
+        '',
+        'export const rsxLogDebugHook: ChangeHook = (',
+        '  expression,',
+        '  oldValue: unknown,',
+        '): void => {',
+        '  void oldValue;',
+        '  console.log("[RS-X]", expression.expressionString, {',
+        '    value: expression.value,',
+        '  });',
         '};',
         '',
       ].join('\n'),
@@ -11238,11 +18948,16 @@ function getRsxConfigAnchorDirectoryPath(
 function getDefaultRsxDebugChangeHookUri(
   projectRootUri: vscode.Uri,
   expressionName?: string,
+  sourceRoot = 'src',
 ): vscode.Uri {
   const fileName = `${toKebabCase(
     getRsxDebugHookExpressionStem(expressionName),
   )}-debug-change-hook.ts`;
-  return vscode.Uri.joinPath(projectRootUri, 'src', fileName);
+  return vscode.Uri.joinPath(
+    projectRootUri,
+    ...sourceRoot.split('/'),
+    fileName,
+  );
 }
 
 function getDefaultRsxDebugChangeHookExportName(
@@ -11311,16 +19026,49 @@ async function readWorkspaceTextFile(uri: vscode.Uri): Promise<string | null> {
   }
 }
 
+function getRsxDefaultsModelTypeText(text: string): string | undefined {
+  const lines = text.split(/\r?\n/u);
+  let inDefaults = false;
+  for (const line of lines) {
+    if (line.trim().length === 0) {
+      continue;
+    }
+    if (!isIndentedLine(line)) {
+      const header = parseHeaderLine(line);
+      inDefaults =
+        header?.key === 'defaults' && header.value.trim().length === 0;
+      continue;
+    }
+    if (!inDefaults) {
+      continue;
+    }
+    const header = parseHeaderLine(line);
+    if (header?.key === 'model') {
+      return header.value.trim();
+    }
+  }
+  return undefined;
+}
+
+function normalizeRsxModelTypeText(value: string): string {
+  return value.replace(/\s+/gu, '');
+}
+
 async function writeRsxExpressionFile(
   uri: vscode.Uri,
   args: {
     readonly existingText: string | null;
+    readonly defaultsModelTypeText?: string;
     readonly expressionBlock: string;
   },
 ): Promise<void> {
+  const prefix =
+    args.existingText === null && args.defaultsModelTypeText?.trim()
+      ? `defaults:\n  model: ${args.defaultsModelTypeText.trim()}\n\n`
+      : '';
   const nextText =
     args.existingText === null
-      ? `${args.expressionBlock}\n`
+      ? `${prefix}${args.expressionBlock}\n`
       : `${args.existingText.replace(/\s*$/u, '')}\n\n${args.expressionBlock}\n`;
   await vscode.workspace.fs.createDirectory(getParentUri(uri));
   await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(nextText));
@@ -11330,11 +19078,17 @@ function createRsxExpressionBlock(args: {
   readonly expressionName: string;
   readonly expressionSource: string;
   readonly modelTypeText: string;
+  readonly includeModelHeader?: boolean;
 }): string {
+  const expressionLines = args.expressionSource.trim()
+    ? args.expressionSource.split(/\r?\n/u).map((line) => `  ${line}`)
+    : [`  ${RSX_EXPRESSION_BODY_PLACEHOLDER}`];
   return [
     `expression: ${args.expressionName}`,
-    `  model: ${args.modelTypeText}`,
-    ...args.expressionSource.split(/\r?\n/u).map((line) => `  ${line}`),
+    ...(args.includeModelHeader === false
+      ? []
+      : [`  model: ${args.modelTypeText}`]),
+    ...expressionLines,
   ].join('\n');
 }
 
@@ -11368,6 +19122,43 @@ function normalizeRsxRelativePath(value: string): string | null {
   return segments.join('/');
 }
 
+function createRsxExpressionRelativePathFromParts(args: {
+  readonly directory: string;
+  readonly fileName: string;
+}): string {
+  const directory = normalizeRsxDirectoryPath(args.directory);
+  const fileName = normalizeRsxExpressionFileName(args.fileName);
+  return [directory, `${fileName}.expressions.rsx`].filter(Boolean).join('/');
+}
+
+function splitRsxExpressionFormPath(relativePath: string): {
+  readonly directory: string;
+  readonly fileName: string;
+} {
+  const normalized = relativePath.replace(/\\/gu, '/');
+  const slashIndex = normalized.lastIndexOf('/');
+  const directory = slashIndex >= 0 ? normalized.slice(0, slashIndex) : '';
+  const file = slashIndex >= 0 ? normalized.slice(slashIndex + 1) : normalized;
+  return {
+    directory,
+    fileName: stripRsxExpressionFileExtension(file),
+  };
+}
+
+function normalizeRsxExpressionFileName(value: string): string {
+  const stripped = stripRsxExpressionFileExtension(value.trim());
+  const kebab = toKebabCase(stripped);
+  return kebab || 'new-expression-rsx';
+}
+
+function stripRsxExpressionFileExtension(value: string): string {
+  return value.replace(/\.expressions\.rsx$/iu, '').replace(/\.rsx$/iu, '');
+}
+
+function isRsxFileUri(uri: vscode.Uri | undefined): uri is vscode.Uri {
+  return typeof uri?.fsPath === 'string' && uri.fsPath.endsWith('.rsx');
+}
+
 function toKebabCase(value: string): string {
   return value
     .replace(/([a-z0-9])([A-Z])/gu, '$1-$2')
@@ -11376,6 +19167,17 @@ function toKebabCase(value: string): string {
     .replace(/-+/gu, '-')
     .replace(/^-|-$/gu, '')
     .toLowerCase();
+}
+
+function toPascalCase(value: string): string {
+  return (
+    value
+      .replace(/([a-z0-9])([A-Z])/gu, '$1 $2')
+      .split(/[^A-Za-z0-9]+/u)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join('') || 'NewExpression'
+  );
 }
 
 class RsxCompletionItemProvider implements vscode.CompletionItemProvider<vscode.CompletionItem> {
@@ -11464,6 +19266,329 @@ class RsxCompletionItemProvider implements vscode.CompletionItemProvider<vscode.
 
     return [...completionByLabel.values()];
   }
+}
+
+class RsxTypeScriptExpressionInstanceCompletionProvider implements vscode.CompletionItemProvider<vscode.CompletionItem> {
+  public constructor(
+    private readonly expressionsProvider: RsxExpressionsTreeDataProvider,
+  ) {}
+
+  public async provideCompletionItems(
+    document: vscode.TextDocument,
+    position: vscode.Position,
+  ): Promise<vscode.CompletionItem[]> {
+    const triggerRange = getRsxTypeScriptExpressionTriggerRange(
+      document,
+      position,
+    );
+    if (!triggerRange) {
+      return [];
+    }
+
+    const modelCandidates = getRsxTypeScriptModelValueCandidates(
+      document,
+      position,
+    );
+
+    const expressions =
+      await this.expressionsProvider.getAllExpressionDefinitions();
+    const completions: vscode.CompletionItem[] = [];
+    for (const expression of expressions) {
+      const modelCandidate = modelCandidates.find((candidate) =>
+        isRsxExpressionModelCompatibleWithTypeScriptValue(
+          expression,
+          candidate,
+        ),
+      );
+      const modelName = modelCandidate?.name ?? 'model';
+
+      const callText = `${expression.exportName}(${modelName})`;
+      const completion = new vscode.CompletionItem(
+        expression.exportName,
+        vscode.CompletionItemKind.Method,
+      );
+      completion.insertText = callText;
+      completion.filterText = `rsx.${expression.exportName}`;
+      completion.detail = expression.relativePath;
+      completion.documentation = new vscode.MarkdownString(
+        [
+          `Insert RS-X expression instance for \`${expression.exportName}\`.`,
+          '',
+          `Model: \`${modelName}\``,
+          '',
+          '```ts',
+          expression.expression.modelTypeText,
+          '```',
+        ].join('\n'),
+      );
+      completion.range = triggerRange;
+      completion.sortText = `0_${expression.exportName}_${modelName}`;
+      const importEdit = createRsxExpressionInstanceImportTextEdit(
+        document,
+        expression,
+      );
+      if (importEdit) {
+        completion.additionalTextEdits = [importEdit];
+      }
+      completions.push(completion);
+    }
+    return completions;
+  }
+}
+
+interface IRsxTypeScriptModelValueCandidate {
+  readonly name: string;
+  readonly typeNames: readonly string[];
+  readonly fields: readonly string[];
+}
+
+function getRsxTypeScriptExpressionTriggerRange(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+): vscode.Range | null {
+  const lineText = document.lineAt(position.line).text;
+  const prefix = lineText.slice(0, position.character);
+  if (!prefix.endsWith('rsx.')) {
+    return null;
+  }
+  return new vscode.Range(
+    new vscode.Position(position.line, position.character - 'rsx.'.length),
+    position,
+  );
+}
+
+function getRsxTypeScriptModelValueCandidates(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+): IRsxTypeScriptModelValueCandidate[] {
+  const text = document.getText();
+  const offset = document.offsetAt(position);
+  const sourceFile = ts.createSourceFile(
+    document.uri.fsPath,
+    text,
+    ts.ScriptTarget.Latest,
+    true,
+    getScriptKindForRsxInstanceScan(document.uri.fsPath),
+  );
+  const localTypeFields = getTypeScriptLocalTypeFields(sourceFile);
+  const candidates = new Map<string, IRsxTypeScriptModelValueCandidate>();
+  const addCandidate = (
+    name: ts.BindingName,
+    typeNode?: ts.TypeNode,
+    initializer?: ts.Expression,
+  ) => {
+    if (!ts.isIdentifier(name)) {
+      return;
+    }
+    const typeNames = typeNode
+      ? getTypeScriptTypeNodeIdentifierNames(typeNode)
+      : [];
+    const fields = typeNode
+      ? getTypeScriptTypeNodeTopLevelFields(typeNode, localTypeFields)
+      : initializer
+        ? getTypeScriptObjectLiteralFields(initializer)
+        : [];
+    if (typeNames.length === 0 && fields.length === 0) {
+      return;
+    }
+    candidates.set(name.text, {
+      name: name.text,
+      typeNames,
+      fields,
+    });
+  };
+
+  const visit = (node: ts.Node): void => {
+    if (node.getFullStart() > offset) {
+      return;
+    }
+    if (ts.isParameter(node)) {
+      const parent = node.parent;
+      if (
+        parent &&
+        'body' in parent &&
+        parent.body &&
+        parent.body.getFullStart() <= offset &&
+        offset <= parent.body.getEnd()
+      ) {
+        addCandidate(node.name, node.type);
+      }
+    } else if (
+      ts.isVariableDeclaration(node) &&
+      node.getStart(sourceFile) < offset
+    ) {
+      addCandidate(node.name, node.type, node.initializer);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return [...candidates.values()];
+}
+
+function getTypeScriptLocalTypeFields(
+  sourceFile: ts.SourceFile,
+): ReadonlyMap<string, readonly string[]> {
+  const fieldsByTypeName = new Map<string, readonly string[]>();
+  const visit = (node: ts.Node): void => {
+    if (ts.isInterfaceDeclaration(node)) {
+      fieldsByTypeName.set(
+        node.name.text,
+        getTypeScriptTypeMembersTopLevelFields(node.members),
+      );
+    } else if (ts.isTypeAliasDeclaration(node)) {
+      fieldsByTypeName.set(
+        node.name.text,
+        getTypeScriptTypeNodeTopLevelFields(node.type, fieldsByTypeName),
+      );
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return fieldsByTypeName;
+}
+
+function getTypeScriptTypeMembersTopLevelFields(
+  members: ts.NodeArray<ts.TypeElement>,
+): string[] {
+  return members
+    .map((member) =>
+      ts.isPropertySignature(member) ? getPropertyNameText(member.name) : '',
+    )
+    .filter((field): field is string => Boolean(field));
+}
+
+function getTypeScriptTypeNodeTopLevelFields(
+  typeNode: ts.TypeNode,
+  localTypeFields: ReadonlyMap<string, readonly string[]>,
+): string[] {
+  if (ts.isTypeLiteralNode(typeNode)) {
+    return getTypeScriptTypeMembersTopLevelFields(typeNode.members);
+  }
+  if (ts.isTypeReferenceNode(typeNode) && ts.isIdentifier(typeNode.typeName)) {
+    return [...(localTypeFields.get(typeNode.typeName.text) ?? [])];
+  }
+  if (ts.isIntersectionTypeNode(typeNode)) {
+    return [
+      ...new Set(
+        typeNode.types.flatMap((entry) =>
+          getTypeScriptTypeNodeTopLevelFields(entry, localTypeFields),
+        ),
+      ),
+    ];
+  }
+  return [];
+}
+
+function getTypeScriptTypeNodeIdentifierNames(typeNode: ts.TypeNode): string[] {
+  const names = new Set<string>();
+  const visit = (node: ts.Node): void => {
+    if (ts.isIdentifier(node)) {
+      names.add(node.text);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(typeNode);
+  return [...names];
+}
+
+function getTypeScriptObjectLiteralFields(expression: ts.Expression): string[] {
+  if (!ts.isObjectLiteralExpression(expression)) {
+    return [];
+  }
+  return expression.properties
+    .map((property) =>
+      ts.isPropertyAssignment(property) ||
+      ts.isShorthandPropertyAssignment(property)
+        ? getPropertyNameText(property.name)
+        : '',
+    )
+    .filter((field): field is string => Boolean(field));
+}
+
+function isRsxExpressionModelCompatibleWithTypeScriptValue(
+  expression: IRsxExpressionTreeExpression,
+  candidate: IRsxTypeScriptModelValueCandidate,
+): boolean {
+  const modelTypeNames = getRsxModelContractTypeNames(
+    expression.expression.modelTypeText,
+  );
+  if (
+    modelTypeNames.some((typeName) => candidate.typeNames.includes(typeName))
+  ) {
+    return true;
+  }
+  const requiredFields = [
+    ...new Set(
+      expression.modelFields
+        .filter((field) => field.path.length === 1)
+        .map((field) => field.path[0])
+        .filter((field): field is string => Boolean(field)),
+    ),
+  ];
+  return (
+    requiredFields.length > 0 &&
+    requiredFields.every((field) => candidate.fields.includes(field))
+  );
+}
+
+function getRsxModelContractTypeNames(modelTypeText: string): string[] {
+  const names = new Set<string>();
+  const importTypePattern =
+    /\bimport\s*\(\s*['"][^'"]+['"]\s*\)\s*\.\s*([A-Za-z_$][\w$]*)/gu;
+  for (const match of modelTypeText.matchAll(importTypePattern)) {
+    if (match[1]) {
+      names.add(match[1]);
+    }
+  }
+  const sourceFile = ts.createSourceFile(
+    '/__rsx_model_contract__.ts',
+    `type __RSX_MODEL = ${modelTypeText};`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const visit = (node: ts.Node): void => {
+    if (ts.isTypeReferenceNode(node)) {
+      const name = getRightmostEntityNameText(node.typeName);
+      if (name && name !== 'Readonly' && name !== 'Partial') {
+        names.add(name);
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return [...names];
+}
+
+function createRsxExpressionInstanceImportTextEdit(
+  document: vscode.TextDocument,
+  expression: IRsxExpressionTreeExpression,
+): vscode.TextEdit | null {
+  const importSpecifier = getRsxExpressionInstanceImportSpecifier(
+    document.uri,
+    expression.uri,
+  );
+  const importPattern = new RegExp(
+    String.raw`import\s*\{[^}]*\b${escapeRegExp(expression.exportName)}\b[^}]*\}\s*from\s*['"]${escapeRegExp(importSpecifier)}['"]`,
+    'u',
+  );
+  if (importPattern.test(document.getText())) {
+    return null;
+  }
+  return vscode.TextEdit.insert(
+    new vscode.Position(0, 0),
+    `import { ${expression.exportName} } from '${importSpecifier}';\n`,
+  );
+}
+
+function getRsxExpressionInstanceImportSpecifier(
+  fromUri: vscode.Uri,
+  expressionUri: vscode.Uri,
+): string {
+  return getRsxDebugHookModuleSpecifier(fromUri, expressionUri).replace(
+    /\.rsx$/u,
+    '',
+  );
 }
 
 class RsxHoverProvider implements vscode.HoverProvider {
@@ -13370,13 +21495,35 @@ function getOrCreateMappedExpressionDiagnostics(args: {
     return [];
   }
 
-  const expressionDiagnostics = getRsxDiagnostics(
-    moduleExpressionService.document,
+  const isPlaceholderExpression = isRsxExpressionBodyPlaceholder(
+    moduleExpressionService.expression.expression,
   );
+  const expressionDiagnostics = isPlaceholderExpression
+    ? []
+    : getRsxDiagnostics(moduleExpressionService.document);
   const mappedDiagnostics: vscode.Diagnostic[] = [];
   const bodyStart = moduleExpressionService.standaloneExpressionStart;
   const bodyEnd =
     bodyStart + moduleExpressionService.expression.expression.length;
+  if (isPlaceholderExpression) {
+    mappedDiagnostics.push(
+      new vscode.Diagnostic(
+        new vscode.Range(
+          args.document.positionAt(
+            moduleExpressionService.expression.expressionStart,
+          ),
+          args.document.positionAt(
+            Math.max(
+              moduleExpressionService.expression.expressionEnd,
+              moduleExpressionService.expression.expressionStart + 1,
+            ),
+          ),
+        ),
+        RSX_EXPRESSION_BODY_REQUIRED_MESSAGE,
+        vscode.DiagnosticSeverity.Error,
+      ),
+    );
+  }
   for (const diagnostic of expressionDiagnostics) {
     const overlapsBody =
       diagnostic.end > bodyStart && diagnostic.start < bodyEnd;
@@ -13424,6 +21571,10 @@ function getOrCreateMappedExpressionDiagnostics(args: {
     mappedDiagnostics,
   );
   return mappedDiagnostics;
+}
+
+function isRsxExpressionBodyPlaceholder(expressionText: string): boolean {
+  return expressionText.trim() === RSX_EXPRESSION_BODY_PLACEHOLDER;
 }
 
 function getOrCreateMappedExpressionSemanticTokens(args: {
@@ -13568,10 +21719,13 @@ function resolveExpressionIndexesForMode(args: {
   mode: IDiagnosticsMode;
 }): number[] {
   const expressionCount = args.parsed.expressions.length;
+  const shouldUseFocusedAnalysis = shouldUseFocusedModuleAnalysis(
+    args.document,
+    args.parsed,
+  );
   const shouldFocus =
-    args.mode === 'focused' ||
-    (args.mode === 'auto' &&
-      shouldUseFocusedModuleAnalysis(args.document, args.parsed));
+    shouldUseFocusedAnalysis &&
+    (args.mode === 'focused' || args.mode === 'auto');
   if (!shouldFocus) {
     return args.parsed.expressions.map((_, index) => index);
   }
@@ -13895,6 +22049,582 @@ function mapModuleExpressionOffsetToDocument(
   return service.expression.expressionStart + relativeOffset;
 }
 
+async function setRsxCompilerOptionFromEditorContext(
+  commandAction?: IRsxCompilerOptionCommandAction,
+  panelItem?: IRsxExpressionTreeItem,
+): Promise<void> {
+  const target = await resolveRsxCompilerOptionEditTarget(panelItem);
+  const document = target?.document;
+  if (!document || !isRsxDocument(document)) {
+    await vscode.window.showWarningMessage(
+      'Open an .rsx expression before setting RS-X compiler options.',
+    );
+    return;
+  }
+
+  const expressionBlock = getModuleExpressionBlockAtPosition(
+    document,
+    target.position,
+  );
+  if (!expressionBlock) {
+    await vscode.window.showWarningMessage(
+      'Place the cursor inside a module expression block before setting RS-X compiler options.',
+    );
+    return;
+  }
+
+  const action =
+    commandAction ?? (await pickRsxCompilerOptionAction(expressionBlock.name));
+  if (!action) {
+    return;
+  }
+
+  let value = action.value;
+  if (action.toggle && action.option !== 'lazyGroup') {
+    value = getToggledRsxCompilerOptionValue(expressionBlock, action.option);
+  }
+  if (action.option === 'lazyGroup' && action.remove) {
+    value = '';
+  } else if (action.remove) {
+    value = '';
+  } else if (action.option === 'lazyGroup' && value === undefined) {
+    value = await vscode.window.showInputBox({
+      prompt: 'Lazy group name. Leave empty to remove lazyGroup.',
+      placeHolder: 'matrix',
+      value: expressionBlock.headers.get('lazyGroup')?.value ?? '',
+    });
+    if (value === undefined) {
+      return;
+    }
+    value = value.trim();
+  }
+
+  if (
+    !isValidRsxCompilerOptionChange({
+      block: expressionBlock,
+      option: action.option,
+      value,
+      clearLazyGroup: action.clearLazyGroup,
+    })
+  ) {
+    await vscode.window.showWarningMessage(
+      getInvalidRsxCompilerOptionChangeMessage({
+        block: expressionBlock,
+        option: action.option,
+        value,
+        clearLazyGroup: action.clearLazyGroup,
+      }),
+    );
+    return;
+  }
+
+  const edit = createRsxCompilerOptionEdit({
+    document,
+    block: expressionBlock,
+    option: action.option,
+    value,
+    remove: action.remove,
+    clearLazyGroup: action.clearLazyGroup,
+  });
+  if (!edit) {
+    return;
+  }
+
+  const applied = await vscode.workspace.applyEdit(edit);
+  if (applied) {
+    await document.save?.();
+  }
+}
+
+function isRsxCompilerOptionCommandAction(
+  value: unknown,
+): value is IRsxCompilerOptionCommandAction {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'option' in value &&
+    !('kind' in value)
+  );
+}
+
+function isRsxExpressionPanelDropAction(
+  value: unknown,
+): value is IRsxCompilerOptionCommandAction {
+  if (typeof value !== 'object' || value === null || !('option' in value)) {
+    return false;
+  }
+  const option = (value as { option?: unknown }).option;
+  return (
+    option === 'preparse' ||
+    option === 'compiled' ||
+    option === 'lazy' ||
+    option === 'lazyGroup'
+  );
+}
+
+function isRsxExpressionPanelHookDropAction(
+  value: unknown,
+): value is IRsxExpressionPanelHookDropAction {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const action = value as {
+    scope?: unknown;
+    moduleSpecifier?: unknown;
+    hookUri?: unknown;
+    exportName?: unknown;
+    enabled?: unknown;
+    standardHook?: unknown;
+  };
+  return (
+    (action.scope === undefined ||
+      action.scope === 'group' ||
+      action.scope === 'instance') &&
+    (action.moduleSpecifier === undefined ||
+      typeof action.moduleSpecifier === 'string') &&
+    (action.hookUri === undefined || typeof action.hookUri === 'string') &&
+    (action.exportName === undefined ||
+      typeof action.exportName === 'string') &&
+    (action.enabled === undefined || typeof action.enabled === 'boolean') &&
+    (action.standardHook === undefined ||
+      action.standardHook === 'breakpoint' ||
+      action.standardHook === 'log')
+  );
+}
+
+function isRsxExpressionTreeItemArgument(
+  value: unknown,
+): value is IRsxExpressionTreeItem {
+  return typeof value === 'object' && value !== null && 'kind' in value;
+}
+
+async function resolveRsxCompilerOptionEditTarget(
+  panelItem?: IRsxExpressionTreeItem,
+): Promise<
+  | {
+      readonly document: vscode.TextDocument;
+      readonly position: vscode.Position;
+    }
+  | undefined
+> {
+  const expressionTarget = getRsxCompilerOptionExpressionTarget(panelItem);
+  if (expressionTarget) {
+    const document = await vscode.workspace.openTextDocument(
+      expressionTarget.uri,
+    );
+    return {
+      document,
+      position: document.positionAt(expressionTarget.start),
+    };
+  }
+
+  const editor = vscode.window.activeTextEditor;
+  return editor
+    ? {
+        document: editor.document,
+        position: editor.selection.active,
+      }
+    : undefined;
+}
+
+function getRsxCompilerOptionExpressionTarget(
+  panelItem?: IRsxExpressionTreeItem,
+): { readonly uri: vscode.Uri; readonly start: number } | undefined {
+  if (panelItem?.kind === 'expression') {
+    return {
+      uri: panelItem.uri,
+      start: panelItem.start,
+    };
+  }
+  if (
+    panelItem?.kind === 'searchResult' &&
+    panelItem.target.kind === 'expression'
+  ) {
+    return {
+      uri: panelItem.target.uri,
+      start: panelItem.target.start,
+    };
+  }
+  return undefined;
+}
+
+interface IRsxCompilerOptionQuickPick {
+  readonly label: string;
+  readonly option: 'preparse' | 'compiled' | 'lazy' | 'lazyGroup';
+  readonly value?: string;
+  readonly remove?: boolean;
+  readonly toggle?: boolean;
+  readonly clearLazyGroup?: boolean;
+}
+
+type IRsxCompilerOptionCommandAction = Omit<
+  IRsxCompilerOptionQuickPick,
+  'label'
+>;
+
+async function pickRsxCompilerOptionAction(
+  expressionName: string,
+): Promise<IRsxCompilerOptionQuickPick | undefined> {
+  return vscode.window.showQuickPick<IRsxCompilerOptionQuickPick>(
+    [
+      {
+        label: 'Toggle preparse',
+        option: 'preparse',
+        toggle: true,
+      },
+      {
+        label: 'Toggle compiled',
+        option: 'compiled',
+        toggle: true,
+      },
+      {
+        label: 'Toggle lazy',
+        option: 'lazy',
+        toggle: true,
+      },
+      {
+        label: 'Lazy group...',
+        option: 'lazyGroup',
+      },
+    ],
+    { placeHolder: `Set compiler option for ${expressionName}` },
+  );
+}
+
+function getToggledRsxCompilerOptionValue(
+  block: IModuleExpressionOptionBlock,
+  option: 'preparse' | 'compiled' | 'lazy',
+): string {
+  const current =
+    option === 'preparse'
+      ? (parseBooleanModuleOption(block.headers.get('preparse')?.value) ?? true)
+      : option === 'compiled'
+        ? (parseBooleanModuleOption(block.headers.get('compiled')?.value) ??
+          parseBooleanModuleOption(block.headers.get('compile')?.value) ??
+          true)
+        : (parseBooleanModuleOption(block.headers.get('lazy')?.value) ?? false);
+  return current ? 'false' : 'true';
+}
+
+interface IModuleExpressionHeader {
+  readonly key: string;
+  readonly value: string;
+  readonly line: number;
+  readonly keyStartCharacter: number;
+  readonly valueStartCharacter: number;
+}
+
+interface IModuleExpressionOptionBlock {
+  readonly name: string;
+  readonly expressionLine: number;
+  readonly bodyLine: number;
+  readonly endLine: number;
+  readonly indent: string;
+  readonly headers: Map<string, IModuleExpressionHeader>;
+}
+
+function getModuleExpressionBlockAtPosition(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+): IModuleExpressionOptionBlock | null {
+  const text = document.getText();
+  if (!/^\s*expression\s*:/mu.test(text)) {
+    return null;
+  }
+
+  let expressionLine = -1;
+  let expressionName = '';
+  for (
+    let lineIndex = Math.min(position.line, document.lineCount - 1);
+    lineIndex >= 0;
+    lineIndex -= 1
+  ) {
+    const lineText = document.lineAt(lineIndex).text;
+    if (isIndentedLine(lineText)) {
+      continue;
+    }
+    const parsed = parseHeaderLine(lineText);
+    if (parsed?.key === 'expression' && parsed.value.trim().length > 0) {
+      expressionLine = lineIndex;
+      expressionName = parsed.value.trim();
+      break;
+    }
+    if (lineText.trim().length > 0) {
+      return null;
+    }
+  }
+  if (expressionLine < 0) {
+    return null;
+  }
+
+  let endLine = document.lineCount;
+  for (
+    let lineIndex = expressionLine + 1;
+    lineIndex < document.lineCount;
+    lineIndex += 1
+  ) {
+    const lineText = document.lineAt(lineIndex).text;
+    if (!isIndentedLine(lineText) && lineText.trim().length > 0) {
+      endLine = lineIndex;
+      break;
+    }
+  }
+
+  const headers = new Map<string, IModuleExpressionHeader>();
+  let bodyLine = endLine;
+  let indent = '  ';
+  for (
+    let lineIndex = expressionLine + 1;
+    lineIndex < endLine;
+    lineIndex += 1
+  ) {
+    const lineText = document.lineAt(lineIndex).text;
+    if (lineText.trim().length === 0) {
+      continue;
+    }
+    if (isIndentedLine(lineText) && indent === '  ') {
+      indent = lineText.match(/^\s*/u)?.[0] || '  ';
+    }
+    const parsed = parseHeaderLine(lineText);
+    if (!parsed || !isModuleExpressionHeaderKey(parsed.key)) {
+      bodyLine = lineIndex;
+      break;
+    }
+
+    headers.set(parsed.key, {
+      key: parsed.key,
+      value: parsed.value.trim(),
+      line: lineIndex,
+      keyStartCharacter: parsed.keyStartCharacter,
+      valueStartCharacter: getHeaderValueStartCharacter(lineText),
+    });
+  }
+
+  return {
+    name: expressionName,
+    expressionLine,
+    bodyLine,
+    endLine,
+    indent,
+    headers,
+  };
+}
+
+function isValidRsxCompilerOptionChange(args: {
+  block: IModuleExpressionOptionBlock;
+  option: 'preparse' | 'compiled' | 'lazy' | 'lazyGroup';
+  value: string | undefined;
+  clearLazyGroup?: boolean;
+}): boolean {
+  const preparse =
+    args.option === 'preparse'
+      ? parseBooleanModuleOption(args.value)
+      : (parseBooleanModuleOption(args.block.headers.get('preparse')?.value) ??
+        true);
+  const lazy =
+    args.option === 'lazy'
+      ? parseBooleanModuleOption(args.value)
+      : (parseBooleanModuleOption(args.block.headers.get('lazy')?.value) ??
+        false);
+  const compiled =
+    args.option === 'compiled'
+      ? parseBooleanModuleOption(args.value)
+      : (parseBooleanModuleOption(args.block.headers.get('compiled')?.value) ??
+        parseBooleanModuleOption(args.block.headers.get('compile')?.value) ??
+        true);
+  const lazyGroup =
+    args.option === 'lazyGroup'
+      ? args.value?.trim()
+      : args.block.headers.get('lazyGroup')?.value.trim();
+
+  if (
+    lazyGroup &&
+    args.option === 'lazy' &&
+    args.value !== 'false' &&
+    !args.clearLazyGroup
+  ) {
+    return false;
+  }
+  return (
+    preparse !== false || compiled === true || (lazy !== true && !lazyGroup)
+  );
+}
+
+function getInvalidRsxCompilerOptionChangeMessage(args: {
+  block: IModuleExpressionOptionBlock;
+  option: 'preparse' | 'compiled' | 'lazy' | 'lazyGroup';
+  value: string | undefined;
+  clearLazyGroup?: boolean;
+}): string {
+  const lazyGroup =
+    args.option === 'lazyGroup'
+      ? args.value?.trim()
+      : args.block.headers.get('lazyGroup')?.value.trim();
+  if (
+    lazyGroup &&
+    args.option === 'lazy' &&
+    args.value !== 'false' &&
+    !args.clearLazyGroup
+  ) {
+    return invalidLazyGroupLazyDiagnosticMessage;
+  }
+  return invalidLazyPreparseDiagnosticMessage;
+}
+
+function createRsxCompilerOptionEdit(args: {
+  document: vscode.TextDocument;
+  block: IModuleExpressionOptionBlock;
+  option: 'preparse' | 'compiled' | 'lazy' | 'lazyGroup';
+  value: string | undefined;
+  remove?: boolean;
+  clearLazyGroup?: boolean;
+}): vscode.WorkspaceEdit | null {
+  const edit = new vscode.WorkspaceEdit();
+
+  if (args.remove) {
+    removeRsxHeader({
+      document: args.document,
+      edit,
+      block: args.block,
+      key: args.option,
+    });
+    if (args.option === 'compiled') {
+      removeRsxHeader({
+        document: args.document,
+        edit,
+        block: args.block,
+        key: 'compile',
+      });
+    }
+    return edit;
+  }
+
+  if (args.option === 'lazy' && args.value === 'false') {
+    replaceOrInsertRsxHeader({
+      document: args.document,
+      edit,
+      block: args.block,
+      key: 'lazy',
+      value: 'false',
+    });
+    removeRsxHeader({
+      document: args.document,
+      edit,
+      block: args.block,
+      key: 'lazyGroup',
+    });
+    return edit;
+  }
+
+  if (args.option === 'lazy' && args.value === 'true' && args.clearLazyGroup) {
+    replaceOrInsertRsxHeader({
+      document: args.document,
+      edit,
+      block: args.block,
+      key: 'lazy',
+      value: 'true',
+    });
+    removeRsxHeader({
+      document: args.document,
+      edit,
+      block: args.block,
+      key: 'lazyGroup',
+    });
+    return edit;
+  }
+
+  if (args.option === 'lazyGroup' && !args.value?.trim()) {
+    removeRsxHeader({
+      document: args.document,
+      edit,
+      block: args.block,
+      key: 'lazyGroup',
+    });
+    return edit;
+  }
+
+  replaceOrInsertRsxHeader({
+    document: args.document,
+    edit,
+    block: args.block,
+    key: args.option,
+    value: args.value ?? '',
+  });
+  if (args.option === 'lazyGroup') {
+    removeRsxHeader({
+      document: args.document,
+      edit,
+      block: args.block,
+      key: 'lazy',
+    });
+  }
+  return edit;
+}
+
+function replaceOrInsertRsxHeader(args: {
+  document: vscode.TextDocument;
+  edit: vscode.WorkspaceEdit;
+  block: IModuleExpressionOptionBlock;
+  key: string;
+  value: string;
+}): void {
+  const existing = args.block.headers.get(args.key);
+  if (existing) {
+    const lineText = args.document.lineAt(existing.line).text;
+    args.edit.replace(
+      args.document.uri,
+      new vscode.Range(
+        new vscode.Position(existing.line, existing.valueStartCharacter),
+        new vscode.Position(existing.line, lineText.length),
+      ),
+      args.value,
+    );
+    return;
+  }
+
+  const insertLine = getRsxHeaderInsertLine(args.block);
+  args.edit.replace(
+    args.document.uri,
+    new vscode.Range(
+      new vscode.Position(insertLine, 0),
+      new vscode.Position(insertLine, 0),
+    ),
+    `${args.block.indent}${args.key}: ${args.value}\n`,
+  );
+}
+
+function removeRsxHeader(args: {
+  document: vscode.TextDocument;
+  edit: vscode.WorkspaceEdit;
+  block: IModuleExpressionOptionBlock;
+  key: string;
+}): void {
+  const existing = args.block.headers.get(args.key);
+  if (!existing) {
+    return;
+  }
+  const nextLine = Math.min(existing.line + 1, args.document.lineCount);
+  args.edit.replace(
+    args.document.uri,
+    new vscode.Range(
+      new vscode.Position(existing.line, 0),
+      new vscode.Position(nextLine, 0),
+    ),
+    '',
+  );
+}
+
+function getRsxHeaderInsertLine(block: IModuleExpressionOptionBlock): number {
+  const returnHeader = block.headers.get('return');
+  if (returnHeader) {
+    return returnHeader.line;
+  }
+  if (block.bodyLine < block.endLine) {
+    return block.bodyLine;
+  }
+  return block.expressionLine + 1;
+}
+
 function getModuleHeaderDiagnostics(
   document: vscode.TextDocument,
 ): vscode.Diagnostic[] {
@@ -13932,7 +22662,9 @@ function getModuleHeaderDiagnostics(
   let defaultsLineIndex: number | null = null;
   let defaultsHasModel = false;
   let defaultsHeaderOrderState = createHeaderOrderState('defaults block');
+  let defaultsOptionState = createModuleOptionState();
   let expressionHeaderOrderState: IHeaderOrderState | null = null;
+  let expressionOptionState: IModuleOptionState | null = null;
   let expressionSeen = false;
   let topLevelStandaloneHeaderLineIndex: number | null = null;
   const hasModuleTopLevelHeader = lines.some((line) => {
@@ -13943,6 +22675,56 @@ function getModuleHeaderDiagnostics(
       (parsed.key === 'defaults' || parsed.key === 'expression')
     );
   });
+  const addInvalidLazyOptionDiagnostics = (
+    effectiveOptions: IModuleOptionState,
+  ): void => {
+    const preparse = parseBooleanModuleOption(effectiveOptions.preparse?.value);
+    const compiled =
+      parseBooleanModuleOption(effectiveOptions.compiled?.value) ??
+      parseBooleanModuleOption(effectiveOptions.compile?.value);
+    const lazy = parseBooleanModuleOption(effectiveOptions.lazy?.value);
+    const lazyGroup = effectiveOptions.lazyGroup?.value.trim();
+    if (lazyGroup && effectiveOptions.lazy) {
+      addHeaderKeyDiagnostic({
+        diagnostics,
+        lineIndex: effectiveOptions.lazy.lineIndex,
+        keyStartCharacter: effectiveOptions.lazy.keyStartCharacter,
+        key: effectiveOptions.lazy.key,
+        message: invalidLazyGroupLazyDiagnosticMessage,
+      });
+    }
+    if (
+      preparse !== false ||
+      compiled === true ||
+      (lazy !== true && !lazyGroup)
+    ) {
+      return;
+    }
+
+    const culprit =
+      lazyGroup && effectiveOptions.lazyGroup
+        ? effectiveOptions.lazyGroup
+        : effectiveOptions.lazy;
+    if (!culprit) {
+      return;
+    }
+    addHeaderKeyDiagnostic({
+      diagnostics,
+      lineIndex: culprit.lineIndex,
+      keyStartCharacter: culprit.keyStartCharacter,
+      key: culprit.key,
+      message: invalidLazyPreparseDiagnosticMessage,
+    });
+  };
+  const finalizeExpressionOptions = (): void => {
+    if (!expressionOptionState) {
+      return;
+    }
+    addInvalidLazyOptionDiagnostics({
+      ...defaultsOptionState,
+      ...expressionOptionState,
+    });
+  };
 
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
     const line = lines[lineIndex];
@@ -13961,6 +22743,7 @@ function getModuleHeaderDiagnostics(
       topLevelHeader.value.trim().length === 0;
 
     const finalizeExpressionHeaderBlock = (): void => {
+      finalizeExpressionOptions();
       if (
         expressionHeaderOrderState &&
         !defaultsHasModel &&
@@ -13980,6 +22763,7 @@ function getModuleHeaderDiagnostics(
         });
       }
       expressionHeaderOrderState = null;
+      expressionOptionState = null;
     };
 
     if (topLevelHeader?.key === 'expression' && !topLevelExpressionHeader) {
@@ -14036,6 +22820,7 @@ function getModuleHeaderDiagnostics(
           expressionKeyStartCharacter: 0,
         },
       );
+      expressionOptionState = createModuleOptionState();
 
       if (!ts.isIdentifierText(expressionName, ts.ScriptTarget.Latest)) {
         diagnostics.push(
@@ -14107,6 +22892,7 @@ function getModuleHeaderDiagnostics(
       }
       defaultsLineIndex = lineIndex;
       defaultsHeaderOrderState = createHeaderOrderState('defaults block');
+      defaultsOptionState = createModuleOptionState();
       state = 'defaultsHeaders';
       continue;
     }
@@ -14138,6 +22924,13 @@ function getModuleHeaderDiagnostics(
             key: parsed.key,
             value: parsed.value,
           });
+          recordModuleOptionHeader({
+            lineIndex,
+            key: parsed.key,
+            keyStartCharacter: parsed.keyStartCharacter,
+            value: parsed.value,
+            state: defaultsOptionState,
+          });
           if (typeHeaderRegion) {
             lineIndex = typeHeaderRegion.endLine;
           }
@@ -14162,6 +22955,18 @@ function getModuleHeaderDiagnostics(
           lineIndex,
           state: expressionHeaderOrderState,
         });
+        if (headerLineHandled && expressionOptionState) {
+          const parsed = parseHeaderLine(line);
+          if (parsed) {
+            recordModuleOptionHeader({
+              lineIndex,
+              key: parsed.key,
+              keyStartCharacter: parsed.keyStartCharacter,
+              value: parsed.value,
+              state: expressionOptionState,
+            });
+          }
+        }
         if (!headerLineHandled) {
           finalizeExpressionHeaderBlock();
           state = 'expressionBody';
@@ -14238,6 +23043,7 @@ function getModuleHeaderDiagnostics(
         message: `Expression${expressionNameText} must declare a model header because defaults: does not define one.`,
       });
     }
+    finalizeExpressionOptions();
   }
 
   return diagnostics;
@@ -14727,6 +23533,55 @@ function createHeaderOrderState(
     seenHeaders: new Set<string>(),
     ...options,
   };
+}
+
+function createModuleOptionState(): IModuleOptionState {
+  return {};
+}
+
+function recordModuleOptionHeader(args: {
+  lineIndex: number;
+  key: string;
+  keyStartCharacter: number;
+  value: string;
+  state: IModuleOptionState;
+}): void {
+  const header: IModuleOptionHeaderValue = {
+    lineIndex: args.lineIndex,
+    key: args.key,
+    keyStartCharacter: args.keyStartCharacter,
+    value: args.value,
+  };
+
+  if (args.key === 'preparse') {
+    args.state.preparse = header;
+    return;
+  }
+  if (args.key === 'compiled') {
+    args.state.compiled = header;
+    return;
+  }
+  if (args.key === 'compile') {
+    args.state.compile = header;
+    return;
+  }
+  if (args.key === 'lazy') {
+    args.state.lazy = header;
+    return;
+  }
+  if (args.key === 'lazyGroup') {
+    args.state.lazyGroup = header;
+  }
+}
+
+function parseBooleanModuleOption(value: string | undefined): boolean | null {
+  if (value === 'true') {
+    return true;
+  }
+  if (value === 'false') {
+    return false;
+  }
+  return null;
 }
 
 function addHeaderOrderDiagnosticsForLine(args: {

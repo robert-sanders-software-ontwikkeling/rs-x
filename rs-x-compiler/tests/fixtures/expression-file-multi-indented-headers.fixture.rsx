@@ -1,6 +1,5 @@
 defaults:
   model: import('./rsx-file-model.fixture').IModel
-  lazy: true
   lazyGroup: shipping
 
 expression: total

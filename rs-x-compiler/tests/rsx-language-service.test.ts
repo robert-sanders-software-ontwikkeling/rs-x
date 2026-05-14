@@ -4,6 +4,10 @@ import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 
 import {
+  invalidLazyGroupLazyDiagnosticMessage,
+  invalidLazyPreparseDiagnosticMessage,
+} from '../lib/compiler/expression-site-validator';
+import {
   findRsxExpressionRegionAtPosition,
   getRsxCompletionsAtPosition,
   getRsxDiagnosticsForFile,
@@ -853,6 +857,40 @@ describe('rsx language service', () => {
         category: 'semantic',
         message:
           "Expression result is not assignable to declared return type 'Date'.",
+      },
+    ]);
+  });
+
+  it('reports invalid lazy options for module-style .rsx expressions', () => {
+    const fixturePath = path.resolve(
+      __dirname,
+      './fixtures/language-service-invalid-lazy.fixture.rsx',
+    );
+    const modelPath = path.resolve(
+      __dirname,
+      './fixtures/rsx-file-model.fixture.ts',
+    );
+    const program = createProgram([fixturePath, modelPath]);
+
+    const diagnostics = getRsxDiagnosticsForFile(program, fixturePath).map(
+      (diagnostic) => ({
+        category: diagnostic.category,
+        message: diagnostic.message,
+      }),
+    );
+
+    expect(diagnostics).toEqual([
+      {
+        category: 'semantic',
+        message: invalidLazyPreparseDiagnosticMessage,
+      },
+      {
+        category: 'semantic',
+        message: invalidLazyPreparseDiagnosticMessage,
+      },
+      {
+        category: 'semantic',
+        message: invalidLazyGroupLazyDiagnosticMessage,
       },
     ]);
   });

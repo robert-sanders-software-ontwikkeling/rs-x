@@ -290,10 +290,7 @@ export function generateAotLazyExpressionPreloadManifestModule(
   const lazyCompiledExpressions = [
     ...new Set(
       detections
-        .filter(
-          (detection) =>
-            detection.preparse && detection.lazy && detection.compiled,
-        )
+        .filter((detection) => detection.lazy && detection.compiled)
         .map((detection) => detection.expression),
     ),
   ];
@@ -429,9 +426,7 @@ export function generateAotLazyExpressionsModule(
 
   const ungroupedCompiled = [
     ...new Set(
-      ungroupedDetections
-        .filter((d) => d.preparse && d.compiled)
-        .map((d) => d.expression),
+      ungroupedDetections.filter((d) => d.compiled).map((d) => d.expression),
     ),
   ].sort();
 
@@ -503,9 +498,7 @@ export function generateAotLazyExpressionsModule(
     ].sort();
     const compiledExprs = [
       ...new Set(
-        groupDetections
-          .filter((d) => d.preparse && d.compiled)
-          .map((d) => d.expression),
+        groupDetections.filter((d) => d.compiled).map((d) => d.expression),
       ),
     ].sort();
 
@@ -615,7 +608,12 @@ export function generateAotLazyExpressionsModule(
 
   return {
     code,
-    expressions: ungroupedParsedAsts.map((item) => item.expression),
+    expressions: [
+      ...new Set([
+        ...ungroupedParsedAsts.map((item) => item.expression),
+        ...ungroupedCompiledPlans.map((item) => item.expression),
+      ]),
+    ].sort(),
     compiledExpressions: ungroupedCompiledPlans.map((item) => item.expression),
     skippedCompiledExpressions,
     skippedPreparsedExpressions,
